@@ -33,17 +33,34 @@ export function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength - 3) + '...';
 }
 
+export interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+  enabled: boolean;
+}
+
 export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
   private windowMs: number;
   private maxRequests: number;
+  private enabled: boolean;
 
-  constructor(windowMs: number, maxRequests: number) {
+  constructor(windowMs: number, maxRequests: number, enabled: boolean = true) {
     this.windowMs = windowMs;
     this.maxRequests = maxRequests;
+    this.enabled = enabled;
+  }
+
+  updateConfig(windowMs: number, maxRequests: number, enabled: boolean) {
+    this.windowMs = windowMs;
+    this.maxRequests = maxRequests;
+    this.enabled = enabled;
   }
 
   isAllowed(key: string): boolean {
+    if (!this.enabled) return true;
+    if (this.maxRequests === 0) return true;
+
     const now = Date.now();
     const timestamps = this.requests.get(key) || [];
     const validTimestamps = timestamps.filter((t) => now - t < this.windowMs);
@@ -62,6 +79,26 @@ export class RateLimiter {
   }
 }
 
-export const messageRateLimiter = new RateLimiter(60000, 20);
-export const commandRateLimiter = new RateLimiter(60000, 30);
-export const downloadRateLimiter = new RateLimiter(60000, 10);
+// Rate limiters - signup starts disabled (0 = unlimited)
+export const signupRateLimiter = new RateLimiter(60000, 0, false);
+export const loginRateLimiter = new RateLimiter(60000, 10, true);
+export const messageRateLimiter = new RateLimiter(60000, 20, true);
+export const commandRateLimiter = new RateLimiter(60000, 30, true);
+export const downloadRateLimiter = new RateLimiter(60000, 10, true);
+
+export const rateLimiters: Record<string, RateLimiter> = {
+  signup: signupRateLimiter,
+  login: loginRateLimiter,
+  message: messageRateLimiter,
+  command: commandRateLimiter,
+  download: downloadRateLimiter,
+};
+
+export function applyRateLimiterConfig(settings: RateLimitConfig[]) {
+  settings.forEach((setting) => {
+    const limiter = rateLimiters[setting.setting_key];
+    if (limiter) {
+      limiter.updateConfig(setting.window_ms, setting.max_requests, setting.enabled);
+    }
+  });
+}

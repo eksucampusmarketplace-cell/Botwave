@@ -104,8 +104,18 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
+  setting_key: string;
+  setting_name: string;
+  window_ms: number;
+  max_requests: number;
+  enabled: boolean;
+  description?: string;
+}
+
+export interface RateLimitSetting extends RateLimitConfig {
+  id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BotCommand {
