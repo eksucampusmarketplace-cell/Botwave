@@ -9,6 +9,8 @@ import { Boom } from '@hapi/boom';
 import { initDatabase, getUserSessions, updateSessionQR, updateSessionStatus } from './database';
 import { handleMessage } from './handlers/MessageHandler';
 import P from 'pino';
+import fs from 'fs';
+import path from 'path';
 
 const logger = P({ level: 'info' });
 
@@ -33,7 +35,12 @@ export class BotWaveBot {
   }
 
   async start(): Promise<void> {
-    const { state, saveCreds } = await useMultiFileAuthState(`./auth/${this.sessionId}`);
+    const authDir = path.join(process.cwd(), 'auth');
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+    
+    const { state, saveCreds } = await useMultiFileAuthState(path.join(authDir, this.sessionId));
     const { version } = await fetchLatestBaileysVersion();
 
     this.socket = makeWASocket({

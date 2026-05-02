@@ -54,7 +54,7 @@ export default function SignupPage() {
         throw new Error(data.error || 'Signup failed');
       }
 
-      router.push('/dashboard');
+      router.push('/login?message=Account created successfully. You can now login.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

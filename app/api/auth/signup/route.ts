@@ -1,30 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { signupRateLimiter, applyRateLimiterConfig, areSettingsLoaded } from '@/lib/utils';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { signupRateLimiter, applyRateLimiterConfig, areSettingsLoaded, settingsLoadedWithDefaults } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
     // Ensure rate limit settings are loaded from database
     const supabase = await createClient();
     if (!areSettingsLoaded()) {
-      const { data: settings, error: settingsError } = await supabase
-        .from('rate_limit_settings')
-        .select('*');
-      if (settingsError) {
-        console.error('Failed to load rate limit settings:', settingsError);
-      }
-      if (settings && settings.length > 0) {
-        applyRateLimiterConfig(settings);
-      } else {
-        // No settings found - use defaults (signup is disabled/unlimited)
-        applyRateLimiterConfig([{
-          setting_key: 'signup',
-          setting_name: 'Sign Up',
-          window_ms: 0,
-          max_requests: 0,
-          enabled: false,
-          description: 'Sign up rate limit - disabled by default'
-        }]);
+      try {
+        const { data: settings, error: settingsError } = await supabase
+          .from('rate_limit_settings')
+          .select('*');
+        
+        if (settingsError) {
+          // If the table doesn't exist, we'll get a PGRST205 error
+          if (settingsError.code === 'PGRST205') {
+            console.log('Rate limit settings table not found, using defaults');
+          } else {
+            console.error('Failed to load rate limit settings:', settingsError);
+          }
+          settingsLoadedWithDefaults();
+        } else if (settings && settings.length > 0) {
+          applyRateLimiterConfig(settings);
+        } else {
+          settingsLoadedWithDefaults();
+        }
+      } catch (err) {
+        console.error('Unexpected error loading rate limit settings:', err);
+        settingsLoadedWithDefaults();
       }
     }
 
@@ -54,13 +57,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    // Use admin client to create user and auto-confirm email for "basic" login flow
+    const adminSupabase = await createAdminClient();
+    const { data, error } = await adminSupabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          username,
-        },
+      email_confirm: true,
+      user_metadata: {
+        username,
       },
     });
 
@@ -75,8 +79,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: data.user,
-      session: data.session,
-      message: 'Account created successfully',
+      message: 'Account created successfully. You can now login.',
     });
   } catch (error) {
     console.error('Signup error:', error);
