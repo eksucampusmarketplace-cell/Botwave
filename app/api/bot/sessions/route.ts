@@ -109,6 +109,23 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('id');
+    const deleteAll = searchParams.get('all') === 'true';
+
+    if (deleteAll) {
+      const { error } = await supabase
+        .from('bot_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'All sessions deleted successfully',
+      });
+    }
 
     if (!sessionId) {
       return NextResponse.json(

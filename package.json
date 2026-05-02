@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:bot": "tsc bot/index.ts --outDir dist/bot --module commonjs --esModuleInterop --skipLibCheck --moduleResolution node --target es2017",
-    "start:bot": "node dist/bot/index.js"
+    "build:bot": "tsc -p tsconfig.bot.json",
+    "start:bot": "node dist/bot/bot/index.js"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
@@ -32,7 +32,9 @@ export default function DashboardPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
 
-  const fetchDashboardData = async (silent = false) => {
+  const activeSessionRef = useRef<any>(null);
+
+  const fetchDashboardData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const sessRes = await fetch('/api/bot/sessions');
@@ -40,10 +42,13 @@ export default function DashboardPage() {
       if (sessData.success) {
         setSessions(sessData.data);
         
-        // Update active session for QR polling
-        if (activeSession) {
-          const updated = sessData.data.find((s: any) => s.id === activeSession.id);
-          if (updated) setActiveSession(updated);
+        const currentActive = activeSessionRef.current;
+        if (currentActive) {
+          const updated = sessData.data.find((s: any) => s.id === currentActive.id);
+          if (updated) {
+            setActiveSession(updated);
+            activeSessionRef.current = updated;
+          }
         }
       }
 
@@ -57,7 +62,7 @@ export default function DashboardPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -70,18 +75,21 @@ export default function DashboardPage() {
       fetchDashboardData();
     };
     checkUser();
-  }, []);
+  }, [fetchDashboardData]);
 
-  // Poll for QR code when showQR is true and activeSession has no QR
+  useEffect(() => {
+    activeSessionRef.current = activeSession;
+  }, [activeSession]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (showQR && activeSession && !activeSession.qr_code) {
+    if (showQR && activeSessionRef.current && !activeSessionRef.current.qr_code) {
       interval = setInterval(() => {
         fetchDashboardData(true);
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [showQR, activeSession]);
+  }, [showQR, fetchDashboardData]);
 
   const toggleFeature = async (featureId: string) => {
     const isEnabled = activeFeatures.includes(featureId);

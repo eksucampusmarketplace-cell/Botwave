@@ -82,8 +82,8 @@ export class RateLimiter {
   }
 }
 
-// Rate limiters - signup starts disabled (0 = unlimited)
-export const signupRateLimiter = new RateLimiter(60000, 0, false);
+// Rate limiters - all enabled with sensible defaults
+export const signupRateLimiter = new RateLimiter(60000, 5, true);
 export const loginRateLimiter = new RateLimiter(60000, 10, true);
 export const messageRateLimiter = new RateLimiter(60000, 20, true);
 export const commandRateLimiter = new RateLimiter(60000, 30, true);
@@ -116,7 +116,7 @@ export function areSettingsLoaded() {
 export function settingsLoadedWithDefaults() {
   // Apply safe defaults for all limiters
   const defaults: RateLimitConfig[] = [
-    { setting_key: 'signup', setting_name: 'Sign Up', window_ms: 0, max_requests: 0, enabled: false },
+    { setting_key: 'signup', setting_name: 'Sign Up', window_ms: 60000, max_requests: 5, enabled: true },
     { setting_key: 'login', setting_name: 'Login', window_ms: 60000, max_requests: 10, enabled: true },
     { setting_key: 'message', setting_name: 'Messages', window_ms: 60000, max_requests: 20, enabled: true },
     { setting_key: 'command', setting_name: 'Commands', window_ms: 60000, max_requests: 30, enabled: true },
