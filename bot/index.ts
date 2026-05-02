@@ -1,4 +1,4 @@
-import { initializeBot } from './bot/BotManager';
+import { initializeBot } from './BotManager';
 
 const bot = initializeBot();
 
