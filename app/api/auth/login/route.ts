@@ -35,8 +35,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
