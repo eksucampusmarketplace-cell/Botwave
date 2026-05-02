@@ -23,19 +23,27 @@ const defaultFeatures = [
 export default function DashboardPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeFeatures, setActiveFeatures] = useState<string[]>([]);
   const [showQR, setShowQR] = useState(false);
   const [activeSession, setActiveSession] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const sessRes = await fetch('/api/bot/sessions');
       const sessData = await sessRes.json();
       if (sessData.success) {
         setSessions(sessData.data);
+        
+        // Update active session for QR polling
+        if (activeSession) {
+          const updated = sessData.data.find((s: any) => s.id === activeSession.id);
+          if (updated) setActiveSession(updated);
+        }
       }
 
       const featRes = await fetch('/api/bot/features');
@@ -45,13 +53,25 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Poll for QR code when showQR is true and activeSession has no QR
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showQR && activeSession && !activeSession.qr_code) {
+      interval = setInterval(() => {
+        fetchDashboardData(true);
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [showQR, activeSession]);
 
   const toggleFeature = async (featureId: string) => {
     const isEnabled = activeFeatures.includes(featureId);
@@ -85,6 +105,8 @@ export default function DashboardPage() {
 
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsCreating(true);
+    setError(null);
     try {
       const response = await fetch('/api/bot/sessions', {
         method: 'POST',
@@ -101,9 +123,14 @@ export default function DashboardPage() {
         fetchDashboardData();
         setActiveSession(data.data);
         setShowQR(true);
+      } else {
+        setError(data.error || 'Failed to create session');
       }
     } catch (err) {
+      setError('An unexpected error occurred');
       console.error('Error creating session:', err);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -250,6 +277,13 @@ export default function DashboardPage() {
           >
             <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
             <form onSubmit={handleAddSession} className="space-y-4">
+              {error && (
+                <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
+                  <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
+                    Error: {error}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
                 <input
@@ -259,6 +293,7 @@ export default function DashboardPage() {
                   onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
                   className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
                   placeholder="e.g. Personal"
+                  disabled={isCreating}
                 />
               </div>
               <div>
@@ -270,21 +305,24 @@ export default function DashboardPage() {
                   onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
                   className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
                   placeholder="+1234567890"
+                  disabled={isCreating}
                 />
               </div>
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                  disabled={isCreating}
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
+                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isCreating}
                 >
-                  CREATE
+                  {isCreating ? 'CREATING...' : 'CREATE'}
                 </button>
               </div>
             </form>

@@ -15,7 +15,7 @@ async function start() {
     } catch (error) {
       console.error('Error syncing sessions:', error);
     }
-  }, 30000); // Every 30 seconds
+  }, 5000); // Every 5 seconds
 }
 
 start().catch((error) => {

@@ -11,6 +11,14 @@ interface QRCodeDisplayProps {
 
 export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
+  const [hasQR, setHasQR] = useState(false);
+
+  useEffect(() => {
+    if (qrCode && !hasQR) {
+      setHasQR(true);
+      setTimeLeft(60); // Reset timer when QR code arrives
+    }
+  }, [qrCode, hasQR]);
 
   useEffect(() => {
     const timer = setInterval(() => {

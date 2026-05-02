@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 interface SessionCardProps {
   name: string;
   phone: string;
-  status: 'connected' | 'disconnected' | 'pending';
+  status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending';
   lastActive: string;
   onConnect: () => void;
 }
@@ -13,14 +13,20 @@ interface SessionCardProps {
 export default function SessionCard({ name, phone, status, lastActive, onConnect }: SessionCardProps) {
   const statusColors = {
     connected: 'bg-green text-dark',
+    active: 'bg-green text-dark',
     disconnected: 'bg-red-400/20 text-red-400',
+    inactive: 'bg-red-400/20 text-red-400',
     pending: 'bg-cyan/20 text-cyan',
+    qr_pending: 'bg-cyan/20 text-cyan',
   };
 
   const statusLabels = {
     connected: 'CONNECTED',
+    active: 'CONNECTED',
     disconnected: 'OFFLINE',
+    inactive: 'OFFLINE',
     pending: 'QR PENDING',
+    qr_pending: 'QR PENDING',
   };
 
   return (

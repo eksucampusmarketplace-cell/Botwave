@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/client';
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [activeSession, setActiveSession] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -17,37 +19,70 @@ export default function SessionsPage() {
 
   const supabase = createClient();
 
-  const fetchSessions = async () => {
-    setLoading(true);
-    const response = await fetch('/api/bot/sessions');
-    const data = await response.json();
-    if (data.success) {
-      setSessions(data.data);
+  const fetchSessions = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const response = await fetch('/api/bot/sessions');
+      const data = await response.json();
+      if (data.success) {
+        setSessions(data.data);
+        
+        // If we are waiting for a QR code, update the active session
+        if (activeSession) {
+          const updated = data.data.find((s: any) => s.id === activeSession.id);
+          if (updated) setActiveSession(updated);
+        }
+      }
+    } catch (err) {
+      console.error('Fetch sessions error:', err);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchSessions();
   }, []);
 
+  // Poll for QR code when showQR is true and activeSession has no QR
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showQR && activeSession && !activeSession.qr_code) {
+      interval = setInterval(() => {
+        fetchSessions(true);
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [showQR, activeSession]);
+
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await fetch('/api/bot/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionName: newSession.name,
-        phoneNumber: newSession.phone,
-      }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      setShowAddModal(false);
-      setNewSession({ name: '', phone: '' });
-      fetchSessions();
-      setActiveSession(data.data);
-      setShowQR(true);
+    setIsCreating(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: newSession.name,
+          phoneNumber: newSession.phone,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowAddModal(false);
+        setNewSession({ name: '', phone: '' });
+        fetchSessions();
+        setActiveSession(data.data);
+        setShowQR(true);
+      } else {
+        setError(data.error || 'Failed to create session');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Add session error:', err);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -116,6 +151,13 @@ export default function SessionsPage() {
           >
             <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
             <form onSubmit={handleAddSession} className="space-y-4">
+              {error && (
+                <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
+                  <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
+                    Error: {error}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
                 <input
@@ -125,6 +167,7 @@ export default function SessionsPage() {
                   onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
                   className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
                   placeholder="e.g. Personal"
+                  disabled={isCreating}
                 />
               </div>
               <div>
@@ -136,21 +179,24 @@ export default function SessionsPage() {
                   onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
                   className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
                   placeholder="+1234567890"
+                  disabled={isCreating}
                 />
               </div>
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                  disabled={isCreating}
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
+                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isCreating}
                 >
-                  CREATE
+                  {isCreating ? 'CREATING...' : 'CREATE'}
                 </button>
               </div>
             </form>
