@@ -1,0 +1,104 @@
+import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const updateFeatureSchema = z.object({
+  sessionId: z.string().uuid(),
+  featureName: z.string().min(1),
+  enabled: z.boolean(),
+  config: z.record(z.unknown()).optional(),
+});
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { data: features, error } = await supabase
+      .from('bot_features')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: features || [],
+    });
+  } catch (error) {
+    console.error('Get features error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch features' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const validation = updateFeatureSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { sessionId, featureName, enabled, config } = validation.data;
+
+    const { data: feature, error } = await supabase
+      .from('bot_features')
+      .upsert(
+        {
+          user_id: user.id,
+          session_id: sessionId,
+          feature_name: featureName,
+          enabled,
+          config: config || {},
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id,session_id,feature_name',
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: feature,
+      message: 'Feature updated successfully',
+    });
+  } catch (error) {
+    console.error('Update feature error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update feature' },
+      { status: 500 }
+    );
+  }
+}
