@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
       .order('setting_key');
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        return NextResponse.json({ success: true, data: [] });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

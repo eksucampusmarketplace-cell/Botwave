@@ -29,6 +29,13 @@ export async function GET() {
       .eq('user_id', user.id);
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        console.warn('bot_features table not found, using empty array');
+        return NextResponse.json({
+          success: true,
+          data: [],
+        });
+      }
       throw error;
     }
 
@@ -88,6 +95,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        return NextResponse.json(
+          { error: 'Feature update failed: bot_features table not found' },
+          { status: 503 }
+        );
+      }
       throw error;
     }
 
