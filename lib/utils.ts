@@ -34,9 +34,12 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 export interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
+  setting_key: string;
+  setting_name: string;
+  window_ms: number;
+  max_requests: number;
   enabled: boolean;
+  description?: string;
 }
 
 export class RateLimiter {
@@ -94,6 +97,8 @@ export const rateLimiters: Record<string, RateLimiter> = {
   download: downloadRateLimiter,
 };
 
+let settingsLoaded = false;
+
 export function applyRateLimiterConfig(settings: RateLimitConfig[]) {
   settings.forEach((setting) => {
     const limiter = rateLimiters[setting.setting_key];
@@ -101,4 +106,9 @@ export function applyRateLimiterConfig(settings: RateLimitConfig[]) {
       limiter.updateConfig(setting.window_ms, setting.max_requests, setting.enabled);
     }
   });
+  settingsLoaded = true;
+}
+
+export function areSettingsLoaded() {
+  return settingsLoaded;
 }
