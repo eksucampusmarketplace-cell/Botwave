@@ -89,7 +89,11 @@ export async function POST(request: NextRequest) {
     if (error) {
       if (error.code === 'PGRST205') {
         return NextResponse.json(
-          { error: 'Session creation failed: bot_sessions table not found' },
+          { 
+            error: 'Session creation failed: bot_sessions table not found',
+            message: 'Please run the initial schema migrations in your Supabase SQL Editor.',
+            action: 'Visit /admin/dashboard and go to System Health to get the SQL.'
+          },
           { status: 503 }
         );
       }

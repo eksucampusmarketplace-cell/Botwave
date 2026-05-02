@@ -323,7 +323,7 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
 
 async function handleAnswer(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendMessage(context.chatJid, '*📝 Please provide an answer: #answer [number]*, sock);
+    await sendMessage(context.chatJid, '*📝 Please provide an answer: #answer [number]*', sock);
     return;
   }
 
@@ -441,5 +441,5 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     return;
   }
 
-  await sendMessage(context.chatJid, '*⬇️ Media download feature coming soon!*\n\n*Note:* yt-dlp integration pending.`, sock);
+  await sendMessage(context.chatJid, '*⬇️ Media download feature coming soon!*\n\n*Note:* yt-dlp integration pending.', sock);
 }
