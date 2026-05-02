@@ -97,7 +97,11 @@ export async function POST(request: NextRequest) {
     if (error) {
       if (error.code === 'PGRST205') {
         return NextResponse.json(
-          { error: 'Feature update failed: bot_features table not found' },
+          { 
+            error: 'Feature update failed: bot_features table not found',
+            message: 'Please run the initial schema migrations in your Supabase SQL Editor.',
+            action: 'Visit /admin/dashboard and go to System Health to get the SQL.'
+          },
           { status: 503 }
         );
       }
