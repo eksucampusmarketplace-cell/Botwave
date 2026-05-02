@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "build:bot": "tsc -p tsconfig.bot.json",
-    "start:bot": "node dist/bot/bot/index.js"
+    "start:bot": "node dist/bot/bot/index.js",
+    "db:setup": "node scripts/setup-db.mjs"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
