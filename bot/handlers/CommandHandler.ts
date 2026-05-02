@@ -12,7 +12,7 @@ interface CommandContext {
   chatJid: string;
   pushName: string;
   isGroup: boolean;
-  client: unknown;
+  sock: any;
 }
 
 const registeredCommands: Map<string, BotCommand> = new Map();
@@ -38,7 +38,11 @@ export function getCommandsByCategory(category: BotCommand['category']): BotComm
   return getAllCommands().filter((cmd) => cmd.category === category);
 }
 
-export function registerCommands(client: unknown): void {
+async function sendMessage(jid: string, text: string, sock: any) {
+  await sock.sendMessage(jid, { text });
+}
+
+export function registerCommands(sock: any): void {
   registerCommand({
     name: 'help',
     aliases: ['h', '?', 'commands'],
@@ -66,10 +70,7 @@ export function registerCommands(client: unknown): void {
 *╚══════════════════════╝*
       `.trim();
 
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        message
-      );
+      await sendMessage(context.chatJid, message, context.sock);
     },
   });
 
@@ -81,10 +82,7 @@ export function registerCommands(client: unknown): void {
     category: 'general',
     execute: async (context) => {
       const response = `*🏓 PONG!*\n\n*Bot Status:* Online 🟢\n*Latency:* ${Math.floor(Math.random() * 100 + 50)}ms\n*Server:* BotWave HQ`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -96,10 +94,7 @@ export function registerCommands(client: unknown): void {
     category: 'general',
     execute: async (context) => {
       const response = `*🎴 STICKER MAKER*\n\nReply to any image with *#sticker* to convert it!\n\n*Note:* Image must be replyed to directly.`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -112,19 +107,13 @@ export function registerCommands(client: unknown): void {
     execute: async (context, args) => {
       if (!args.length) {
         const response = `*🌤️ WEATHER*\n\nUsage: *#weather [city]*\n\n*Example:* #weather Tokyo`;
-        await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-          context.chatJid,
-          response
-        );
+        await sendMessage(context.chatJid, response, context.sock);
         return;
       }
 
       const city = args.join(' ');
       const response = `*🌤️ WEATHER: ${city.toUpperCase()}*\n\n🌡️ *Temp:* 22°C\n💧 *Humidity:* 65%\n🌬️ *Wind:* 12 km/h\n☁️ *Condition:* Partly Cloudy\n\n*Updated:* Just now`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -144,10 +133,7 @@ export function registerCommands(client: unknown): void {
       ];
 
       const joke = jokes[Math.floor(Math.random() * jokes.length)];
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        `*😂 RANDOM JOKE*\n\n${joke}`
-      );
+      await sendMessage(context.chatJid, `*😂 RANDOM JOKE*\n\n${joke}`, context.sock);
     },
   });
 
@@ -162,18 +148,12 @@ export function registerCommands(client: unknown): void {
 
       if (!gameType || !['trivia', 'hangman', 'wordchain', 'numberguess'].includes(gameType)) {
         const response = `*🎮 MINI GAMES*\n\nAvailable games:\n• *trivia* - Answer trivia questions\n• *hangman* - Classic word game\n• *wordchain* - Chain words together\n• *numberguess* - Guess the number\n\n*Usage:* #play [game]`;
-        await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-          context.chatJid,
-          response
-        );
+        await sendMessage(context.chatJid, response, context.sock);
         return;
       }
 
       const response = `*🎮 GAME STARTED: ${gameType.toUpperCase()}*\n\nGame mechanics loaded! Use #answer [option] to play.`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -186,18 +166,12 @@ export function registerCommands(client: unknown): void {
     execute: async (context, args) => {
       if (!args.length) {
         const response = `*📊 CREATE POLL*\n\nUsage: *#poll Question? | Option1 | Option2*\n\n*Example:*\n#poll Favorite color? | Red | Blue | Green`;
-        await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-          context.chatJid,
-          response
-        );
+        await sendMessage(context.chatJid, response, context.sock);
         return;
       }
 
       const response = `*📊 POLL CREATED*\n\nPoll system ready. Use the dashboard to create and manage polls.`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -209,10 +183,7 @@ export function registerCommands(client: unknown): void {
     category: 'general',
     execute: async (context) => {
       const response = `*📊 LEADERBOARD*\n\n🥇 *@user_alpha* - 2,847 msgs\n🥈 *@user_beta* - 2,103 msgs\n🥉 *@user_gamma* - 1,654 msgs\n4. *@user_delta* - 1,203 msgs\n5. *@user_epsilon* - 987 msgs\n\n*Your position:* #12 (87 msgs)`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 
@@ -225,19 +196,13 @@ export function registerCommands(client: unknown): void {
     execute: async (context, args) => {
       if (!args.length) {
         const response = `*🤖 AI CHAT*\n\nUsage: *#ai [your question]*\n\n*Example:* #ai What is quantum computing?`;
-        await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-          context.chatJid,
-          response
-        );
+        await sendMessage(context.chatJid, response, context.sock);
         return;
       }
 
       const query = args.join(' ');
       const response = `*🤖 AI RESPONSE*\n\nProcessing: "${query}"\n\n⚙️ AI processing enabled. Configure OpenAI API key in settings for full functionality.`;
-      await (context.client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(
-        context.chatJid,
-        response
-      );
+      await sendMessage(context.chatJid, response, context.sock);
     },
   });
 

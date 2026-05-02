@@ -1,4 +1,4 @@
-import { messageRateLimiter, commandRateLimiter, delay } from '../../lib/utils';
+import { delay } from '../../lib/utils';
 
 const COMMAND_PREFIX = '#';
 const RATE_LIMIT_WINDOW = 60000;
@@ -13,22 +13,21 @@ interface MessageContext {
 
 const userMessageTracker: Map<string, number[]> = new Map();
 
-export async function handleMessage(message: unknown, client: unknown): Promise<void> {
+export async function handleMessage(message: any, sock: any): Promise<void> {
   try {
-    const msg = message as {
-      from: string;
-      id: { remote: string };
-      body: string;
-      fromMe: boolean;
-      hasMedia: boolean;
-      notifyName: string;
-    };
+    const chatJid = message.key.remoteJid;
+    const fromMe = message.key.fromMe;
+    
+    if (fromMe) return;
 
-    if (msg.fromMe) return;
+    const content = message.message?.conversation || 
+                    message.message?.extendedTextMessage?.text || 
+                    message.message?.imageMessage?.caption || 
+                    "";
+    
+    if (!content) return;
 
-    const senderJid = msg.from;
-    const chatJid = msg.id.remote;
-    const content = msg.body;
+    const senderJid = message.key.participant || chatJid;
     const isGroup = chatJid.endsWith('@g.us');
 
     const context: MessageContext = {
@@ -39,12 +38,12 @@ export async function handleMessage(message: unknown, client: unknown): Promise<
     };
 
     if (!isRateLimited(senderJid)) {
-      await processCommand(context, client);
+      await processCommand(context, sock);
     } else {
       console.log(`Rate limited: ${senderJid}`);
     }
 
-    await processAutoReply(context, client);
+    await processAutoReply(context, sock);
   } catch (error) {
     console.error('Error handling message:', error);
   }
@@ -64,7 +63,7 @@ function isRateLimited(userId: string): boolean {
   return false;
 }
 
-async function processCommand(context: MessageContext, client: unknown): Promise<void> {
+async function processCommand(context: MessageContext, sock: any): Promise<void> {
   if (!context.message.startsWith(COMMAND_PREFIX)) {
     return;
   }
@@ -79,42 +78,46 @@ async function processCommand(context: MessageContext, client: unknown): Promise
 
   switch (commandName) {
     case 'help':
-      await sendHelp(context.chatJid, client);
+      await sendHelp(context.chatJid, sock);
       break;
     case 'ping':
-      await sendPing(context.chatJid, client);
+      await sendPing(context.chatJid, sock);
       break;
     case 'sticker':
-      await createSticker(context, args, client);
+      await createSticker(context, args, sock);
       break;
     case 'ai':
-      await handleAICommand(context, args, client);
+      await handleAICommand(context, args, sock);
       break;
     case 'weather':
-      await handleWeatherCommand(context, args, client);
+      await handleWeatherCommand(context, args, sock);
       break;
     case 'joke':
-      await sendJoke(context.chatJid, client);
+      await sendJoke(context.chatJid, sock);
       break;
     case 'play':
-      await startGame(context, args, client);
+      await startGame(context, args, sock);
       break;
     case 'poll':
-      await createPoll(context, args, client);
+      await createPoll(context, args, sock);
       break;
     case 'leaderboard':
-      await showLeaderboard(context.chatJid, client);
+      await showLeaderboard(context.chatJid, sock);
       break;
     default:
-      await sendUnknownCommand(context.chatJid, client);
+      await sendUnknownCommand(context.chatJid, sock);
   }
 }
 
-async function processAutoReply(context: MessageContext, client: unknown): Promise<void> {
-  console.log('Auto-reply check for:', context.message.substring(0, 50));
+async function processAutoReply(context: MessageContext, sock: any): Promise<void> {
+  // console.log('Auto-reply check for:', context.message.substring(0, 50));
 }
 
-async function sendHelp(chatJid: string, client: unknown): Promise<void> {
+async function sendMessage(jid: string, text: string, sock: any) {
+    await sock.sendMessage(jid, { text });
+}
+
+async function sendHelp(chatJid: string, sock: any): Promise<void> {
   const helpMessage = `
 *╔══════════════════════╗*
 *║   BOTWAVE COMMANDS   ║*
@@ -133,37 +136,37 @@ async function sendHelp(chatJid: string, client: unknown): Promise<void> {
 *download, games, polls*
 *╚══════════════════════╝*`;
 
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, helpMessage);
+  await sendMessage(chatJid, helpMessage, sock);
 }
 
-async function sendPing(chatJid: string, client: unknown): Promise<void> {
+async function sendPing(chatJid: string, sock: any): Promise<void> {
   const ping = `*🏓 PONG!*\n\n*Bot Status:* Online\n*Response:* 120ms`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, ping);
+  await sendMessage(chatJid, ping, sock);
 }
 
-async function createSticker(context: MessageContext, args: string[], client: unknown): Promise<void> {
+async function createSticker(context: MessageContext, args: string[], sock: any): Promise<void> {
   const response = `*🎴 STICKER MAKER*\n\nSend an image with caption *#sticker* to convert it to a sticker!\n\n*Example:* Reply to an image with #sticker`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+  await sendMessage(context.chatJid, response, sock);
 }
 
-async function handleAICommand(context: MessageContext, args: string[], client: unknown): Promise<void> {
+async function handleAICommand(context: MessageContext, args: string[], sock: any): Promise<void> {
   const query = args.join(' ');
   if (!query) {
     const response = `*🤖 AI CHAT*\n\nPlease provide a message after *#ai*\n\n*Example:* #ai What is the weather today?`;
-    await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+    await sendMessage(context.chatJid, response, sock);
     return;
   }
 
   const response = `*🤖 AI Response*\n\nProcessing your query... \n\n*Note:* Connect your OpenAI API key in settings for full AI functionality.`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+  await sendMessage(context.chatJid, response, sock);
 }
 
-async function handleWeatherCommand(context: MessageContext, args: string[], client: unknown): Promise<void> {
+async function handleWeatherCommand(context: MessageContext, args: string[], sock: any): Promise<void> {
   const response = `*🌤️ WEATHER*\n\nPlease specify a city:\n*#weather [city name]*\n\n*Example:* #weather London`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+  await sendMessage(context.chatJid, response, sock);
 }
 
-async function sendJoke(chatJid: string, client: unknown): Promise<void> {
+async function sendJoke(chatJid: string, sock: any): Promise<void> {
   const jokes = [
     `Why don't scientists trust atoms?\nBecause they make up everything! 😂`,
     `Why did the scarecrow win an award?\nBecause he was outstanding in his field! 🌾`,
@@ -172,25 +175,23 @@ async function sendJoke(chatJid: string, client: unknown): Promise<void> {
   ];
 
   const joke = jokes[Math.floor(Math.random() * jokes.length)];
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, `*😂 JOKE*\n\n${joke}`);
+  await sendMessage(chatJid, `*😂 JOKE*\n\n${joke}`, sock);
 }
 
-async function startGame(context: MessageContext, args: string[], client: unknown): Promise<void> {
-  const gameType = args[0]?.toLowerCase() || 'menu';
-
+async function startGame(context: MessageContext, args: string[], sock: any): Promise<void> {
   const games = ['trivia', 'hangman', 'wordchain', 'numberguess'];
   const gameList = games.map((g) => `• #play ${g}`).join('\n');
 
   const response = `*🎮 MINI GAMES*\n\nSelect a game:\n${gameList}\n\n*Example:* #play trivia`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+  await sendMessage(context.chatJid, response, sock);
 }
 
-async function createPoll(context: MessageContext, args: string[], client: unknown): Promise<void> {
+async function createPoll(context: MessageContext, args: string[], sock: any): Promise<void> {
   const response = `*📊 CREATE POLL*\n\nUsage: *#poll [question] | [option1] | [option2] | ...*\n\n*Example:*\n#poll Favorite color? | Red | Blue | Green`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(context.chatJid, response);
+  await sendMessage(context.chatJid, response, sock);
 }
 
-async function showLeaderboard(chatJid: string, client: unknown): Promise<void> {
+async function showLeaderboard(chatJid: string, sock: any): Promise<void> {
   const leaderboard = `
 *📊 LEADERBOARD*\n
 *🥇 1.* @user123 - 1,247 msgs
@@ -200,22 +201,10 @@ async function showLeaderboard(chatJid: string, client: unknown): Promise<void> 
 *5.* @user202 - 398 msgs
 \n*Your Position:* #12 with 87 msgs`;
 
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, leaderboard);
+  await sendMessage(chatJid, leaderboard, sock);
 }
 
-async function sendUnknownCommand(chatJid: string, client: unknown): Promise<void> {
+async function sendUnknownCommand(chatJid: string, sock: any): Promise<void> {
   const response = `*❓ UNKNOWN COMMAND*\n\nType *#help* to see all available commands.`;
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, response);
-}
-
-export async function handleGroupJoin(notification: unknown, client: unknown): Promise<void> {
-  const notif = notification as { id: { remote: string }; recipientIds: string[] };
-  const chatJid = notif.id.remote;
-  const welcomeMessage = `*👋 WELCOME!*\n\nGlad you're here! Type *#help* to see what I can do.`;
-
-  await (client as { sendMessage: (jid: string, msg: string) => Promise<void> }).sendMessage(chatJid, welcomeMessage);
-}
-
-export async function handleGroupLeave(notification: unknown, client: unknown): Promise<void> {
-  console.log('User left group:', notification);
+  await sendMessage(chatJid, response, sock);
 }

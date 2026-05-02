@@ -1,8 +1,24 @@
-import { initializeBot } from './BotManager';
+import { initializeBot, syncSessionsWithDb } from './BotManager';
 
 const bot = initializeBot();
 
-bot.start().catch((error) => {
+async function start() {
+  await bot.start();
+  
+  // Initial sync
+  await syncSessionsWithDb();
+  
+  // Periodically sync sessions from database
+  setInterval(async () => {
+    try {
+      await syncSessionsWithDb();
+    } catch (error) {
+      console.error('Error syncing sessions:', error);
+    }
+  }, 30000); // Every 30 seconds
+}
+
+start().catch((error) => {
   console.error('Bot startup failed:', error);
   process.exit(1);
 });

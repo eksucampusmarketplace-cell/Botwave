@@ -1,15 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import DashboardNav from '@/components/layout/DashboardNav';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
 
-const features = [
+const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
   { id: 'ai_chat', name: 'AI CHAT REPLY', description: 'Intelligent AI responses', icon: '🤖' },
   { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '📥' },
@@ -22,19 +21,94 @@ const features = [
 ];
 
 export default function DashboardPage() {
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFeatures, setActiveFeatures] = useState<string[]>([]);
   const [showQR, setShowQR] = useState(false);
+  const [activeSession, setActiveSession] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSession, setNewSession] = useState({ name: '', phone: '' });
 
-  const toggleFeature = (featureId: string) => {
-    setActiveFeatures((prev) =>
-      prev.includes(featureId)
-        ? prev.filter((f) => f !== featureId)
-        : [...prev, featureId]
-    );
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const sessRes = await fetch('/api/bot/sessions');
+      const sessData = await sessRes.json();
+      if (sessData.success) {
+        setSessions(sessData.data);
+      }
+
+      const featRes = await fetch('/api/bot/features');
+      const featData = await featRes.json();
+      if (featData.success) {
+        setActiveFeatures(featData.data.filter((f: any) => f.enabled).map((f: any) => f.feature_name));
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    }
+    setLoading(false);
   };
 
-  const handleSessionConnect = () => {
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const toggleFeature = async (featureId: string) => {
+    const isEnabled = activeFeatures.includes(featureId);
+    const newEnabled = !isEnabled;
+
+    if (sessions.length === 0) {
+      alert('Please create a session first');
+      return;
+    }
+
+    // Update locally
+    setActiveFeatures((prev) =>
+      isEnabled ? prev.filter((f) => f !== featureId) : [...prev, featureId]
+    );
+
+    // Update on server for the first session (as a simple default)
+    try {
+      await fetch('/api/bot/features', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessions[0].id,
+          featureName: featureId,
+          enabled: newEnabled,
+        }),
+      });
+    } catch (err) {
+      console.error('Error updating feature:', err);
+    }
+  };
+
+  const handleAddSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: newSession.name,
+          phoneNumber: newSession.phone,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShowAddModal(false);
+        setNewSession({ name: '', phone: '' });
+        fetchDashboardData();
+        setActiveSession(data.data);
+        setShowQR(true);
+      }
+    } catch (err) {
+      console.error('Error creating session:', err);
+    }
+  };
+
+  const handleConnect = (session: any) => {
+    setActiveSession(session);
     setShowQR(true);
   };
 
@@ -79,15 +153,21 @@ export default function DashboardPage() {
               </h2>
 
               <div className="space-y-4">
-                <SessionCard
-                  name="Personal Number"
-                  phone="+1 234 567 8900"
-                  status="connected"
-                  lastActive="2 minutes ago"
-                  onConnect={handleSessionConnect}
-                />
+                {sessions.map((session) => (
+                  <SessionCard
+                    key={session.id}
+                    name={session.session_name}
+                    phone={session.phone_number}
+                    status={session.state === 'qr_pending' ? 'pending' : session.state}
+                    lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
+                    onConnect={() => handleConnect(session)}
+                  />
+                ))}
 
-                <button className="w-full border-2 border-dashed border-green/20 p-4 text-center font-mono text-xs text-[#5a9a7a] hover:border-green/40 hover:text-green transition-all tracking-[2px]">
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="w-full border-2 border-dashed border-green/20 p-4 text-center font-mono text-xs text-[#5a9a7a] hover:border-green/40 hover:text-green transition-all tracking-[2px]"
+                >
                   + ADD NEW SESSION
                 </button>
               </div>
@@ -107,7 +187,7 @@ export default function DashboardPage() {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature, index) => (
+                {defaultFeatures.map((feature, index) => (
                   <FeatureToggle
                     key={feature.id}
                     feature={feature}
@@ -126,7 +206,7 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <BotStatus isActive={true} sessionCount={1} />
+              <BotStatus isActive={sessions.some(s => s.state === 'active')} sessionCount={sessions.length} />
             </motion.div>
 
             <motion.div
@@ -147,52 +227,15 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">MESSAGES</span>
-                  <span className="font-display text-xl text-green">1,247</span>
+                  <span className="font-display text-xl text-green">0</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">COMMANDS</span>
-                  <span className="font-display text-xl text-green">89</span>
+                  <span className="font-display text-xl text-green">0</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">UPTIME</span>
-                  <span className="font-display text-xl text-cyan">99.9%</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-card border border-green/10 p-6 relative"
-            >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-6">
-                COMMANDS
-              </h2>
-
-              <div className="space-y-2 font-mono text-xs">
-                <div className="flex gap-2">
-                  <span className="text-cyan">#sticker</span>
-                  <span className="text-[#5a9a7a]">Create sticker</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-cyan">#ai</span>
-                  <span className="text-[#5a9a7a]">AI chat</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-cyan">#weather</span>
-                  <span className="text-[#5a9a7a]">Get forecast</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-cyan">#play</span>
-                  <span className="text-[#5a9a7a]">Start game</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-cyan">#poll</span>
-                  <span className="text-[#5a9a7a]">Create poll</span>
+                  <span className="font-display text-xl text-cyan">0%</span>
                 </div>
               </div>
             </motion.div>
@@ -200,11 +243,62 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {showQR && <QRCodeDisplay onClose={() => setShowQR(false)} />}
+      {showAddModal && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-dark/90 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-card border border-green/20 p-8 max-w-md w-full relative"
+          >
+            <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
+            <form onSubmit={handleAddSession} className="space-y-4">
+              <div>
+                <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
+                <input
+                  type="text"
+                  required
+                  value={newSession.name}
+                  onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
+                  className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                  placeholder="e.g. Personal"
+                />
+              </div>
+              <div>
+                <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
+                <input
+                  type="text"
+                  required
+                  value={newSession.phone}
+                  onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
+                  className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                  placeholder="+1234567890"
+                />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
+                >
+                  CREATE
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {showQR && <QRCodeDisplay onClose={() => { setShowQR(false); fetchDashboardData(); }} qrCode={activeSession?.qr_code} />}
 
       <script
         dangerouslySetInnerHTML={{
-          __html: `
+          __html: \`
             const canvas = document.getElementById('bg-canvas');
             const ctx = canvas.getContext('2d');
             let W, H, particles = [];
@@ -236,7 +330,7 @@ export default function DashboardPage() {
               requestAnimationFrame(drawParticles);
             }
             resize(); initParticles(); drawParticles(); window.addEventListener('resize', () => { resize(); initParticles(); });
-          `,
+          \`,
         }}
       />
     </main>
