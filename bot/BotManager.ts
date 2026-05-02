@@ -1,8 +1,16 @@
-import { useEffect } from 'react';
-import { Client, LocalAuth as Session, MessageMedia } from 'whatsapp-web.js';
+import { 
+  makeWASocket, 
+  useMultiFileAuthState, 
+  DisconnectReason, 
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore
+} from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
 import { initDatabase, getUserSessions, updateSessionQR, updateSessionStatus } from './database';
-import { handleMessage, handleGroupJoin, handleGroupLeave } from './handlers/MessageHandler';
-import { registerCommands } from './handlers/CommandHandler';
+import { handleMessage } from './handlers/MessageHandler';
+import P from 'pino';
+
+const logger = P({ level: 'info' });
 
 interface BotConfig {
   sessionId: string;
@@ -11,13 +19,12 @@ interface BotConfig {
 }
 
 export class BotWaveBot {
-  private client: Client | null = null;
   private sessionId: string;
   private userId: string;
   private phoneNumber: string;
+  private socket: any = null;
   private isReady: boolean = false;
   private qrCode: string | null = null;
-  private qrTimeout: NodeJS.Timeout | null = null;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -25,128 +32,82 @@ export class BotWaveBot {
     this.phoneNumber = config.phoneNumber;
   }
 
-  async initialize(): Promise<void> {
-    await initDatabase();
-
-    const authDir = `./auth/${this.sessionId}`;
-
-    this.client = new Client({
-      authStrategy: new Session({ clientId: this.sessionId }),
-      puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      },
-    });
-
-    this.setupEventHandlers();
-
-    await this.updateSessionStatus('qr_pending');
-  }
-
-  private setupEventHandlers(): void {
-    if (!this.client) return;
-
-    this.client.on('qr', (qr: string) => {
-      this.qrCode = qr;
-      this.updateSessionQR(qr);
-      console.log(`QR Code generated for session: ${this.sessionId}`);
-    });
-
-    this.client.on('authenticated', async () => {
-      console.log(`Session authenticated: ${this.sessionId}`);
-      await this.updateSessionStatus('active');
-    });
-
-    this.client.on('ready', async () => {
-      this.isReady = true;
-      console.log(`Bot is ready for session: ${this.sessionId}`);
-      await this.updateSessionStatus('active');
-      registerCommands(this.client!);
-    });
-
-    this.client.on('disconnected', async () => {
-      this.isReady = false;
-      console.log(`Session disconnected: ${this.sessionId}`);
-      await this.updateSessionStatus('inactive');
-    });
-
-    this.client.on('message', async (message) => {
-      await handleMessage(message, this.client!);
-    });
-
-    this.client.on('group_join', async (notification) => {
-      await handleGroupJoin(notification, this.client!);
-    });
-
-    this.client.on('group_leave', async (notification) => {
-      await handleGroupLeave(notification, this.client!);
-    });
-  }
-
-  private async updateSessionQR(qr: string): Promise<void> {
-    const expiresAt = new Date(Date.now() + 60 * 1000);
-    await updateSessionQR(this.sessionId, qr, expiresAt.toISOString());
-  }
-
-  private async updateSessionStatus(status: 'active' | 'inactive' | 'qr_pending'): Promise<void> {
-    await updateSessionStatus(this.sessionId, status);
-  }
-
   async start(): Promise<void> {
-    if (!this.client) {
-      await this.initialize();
-    }
-    await this.client!.initialize();
+    const { state, saveCreds } = await useMultiFileAuthState(`./auth/${this.sessionId}`);
+    const { version } = await fetchLatestBaileysVersion();
+
+    this.socket = makeWASocket({
+      version,
+      printQRInTerminal: false,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, logger),
+      },
+      logger,
+      browser: ['BotWave', 'Chrome', '1.0.0'],
+    });
+
+    this.socket.ev.on('creds.update', saveCreds);
+
+    this.socket.ev.on('connection.update', async (update: any) => {
+      const { connection, lastDisconnect, qr } = update;
+
+      if (qr) {
+        this.qrCode = qr;
+        const expiresAt = new Date(Date.now() + 60 * 1000);
+        await updateSessionQR(this.sessionId, qr, expiresAt.toISOString());
+        console.log(`QR Code generated for session: ${this.sessionId}`);
+      }
+
+      if (connection === 'close') {
+        const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+        console.log(`Connection closed for session ${this.sessionId}. Reconnecting: ${shouldReconnect}`);
+        this.isReady = false;
+        await updateSessionStatus(this.sessionId, 'inactive');
+        if (shouldReconnect) {
+          this.start();
+        }
+      } else if (connection === 'open') {
+        console.log(`Session connected: ${this.sessionId}`);
+        this.isReady = true;
+        this.qrCode = null;
+        await updateSessionStatus(this.sessionId, 'active');
+      }
+    });
+
+    this.socket.ev.on('messages.upsert', async (m: any) => {
+      if (m.type === 'notify') {
+        for (const msg of m.messages) {
+          if (!msg.key.fromMe) {
+            await handleMessage(msg, this.socket);
+          }
+        }
+      }
+    });
   }
 
   async stop(): Promise<void> {
-    if (this.client) {
-      await this.client.destroy();
-      this.client = null;
+    if (this.socket) {
+      this.socket.end();
+      this.socket = null;
       this.isReady = false;
     }
   }
 
-  getStatus(): { isReady: boolean; qrCode: string | null } {
+  getStatus() {
     return {
       isReady: this.isReady,
       qrCode: this.qrCode,
     };
   }
-
-  async sendMessage(to: string, content: string): Promise<void> {
-    if (!this.client || !this.isReady) {
-      throw new Error('Bot is not ready');
-    }
-
-    const delay = 1000 + Math.random() * 2000;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-
-    await this.client.sendMessage(to, content);
-  }
-
-  async sendImage(to: string, imageUrl: string, caption?: string): Promise<void> {
-    if (!this.client || !this.isReady) {
-      throw new Error('Bot is not ready');
-    }
-
-    const delay = 1000 + Math.random() * 2000;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-
-    const media = await MessageMedia.fromUrl(imageUrl);
-    await this.client.sendMessage(to, media, { caption });
-  }
 }
 
 const activeBots: Map<string, BotWaveBot> = new Map();
 
-export function initializeBot(sessionId?: string, userId?: string, phoneNumber?: string): {
-  start: () => Promise<void>;
-  stop: () => Promise<void>;
-  getBot: (sessionId: string) => BotWaveBot | undefined;
-} {
+export function initializeBot() {
   return {
     start: async () => {
+      await initDatabase();
       console.log('BotWave bot service started');
     },
     stop: async () => {
@@ -155,30 +116,22 @@ export function initializeBot(sessionId?: string, userId?: string, phoneNumber?:
       }
       activeBots.clear();
     },
-    getBot: (id: string) => activeBots.get(id),
   };
 }
 
-export async function createBotSession(
-  sessionId: string,
-  userId: string,
-  phoneNumber: string
-): Promise<BotWaveBot> {
-  if (activeBots.has(sessionId)) {
-    return activeBots.get(sessionId)!;
-  }
-
-  const bot = new BotWaveBot({ sessionId, userId, phoneNumber });
-  activeBots.set(sessionId, bot);
-  await bot.start();
-
-  return bot;
-}
-
-export async function destroyBotSession(sessionId: string): Promise<void> {
-  const bot = activeBots.get(sessionId);
-  if (bot) {
-    await bot.stop();
-    activeBots.delete(sessionId);
+export async function syncSessionsWithDb() {
+  const sessions = await getUserSessions();
+  
+  for (const session of sessions) {
+    if (!activeBots.has(session.id) && (session.state === 'qr_pending' || session.state === 'inactive' || session.state === 'active')) {
+      console.log(`Starting bot for session: ${session.id}`);
+      const bot = new BotWaveBot({
+        sessionId: session.id,
+        userId: session.user_id,
+        phoneNumber: session.phone_number,
+      });
+      activeBots.set(session.id, bot);
+      bot.start().catch(err => console.error(`Failed to start bot ${session.id}:`, err));
+    }
   }
 }

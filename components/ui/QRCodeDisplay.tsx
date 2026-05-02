@@ -2,12 +2,14 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeDisplayProps {
   onClose: () => void;
+  qrCode?: string;
 }
 
-export default function QRCodeDisplay({ onClose }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
@@ -61,25 +63,29 @@ export default function QRCodeDisplay({ onClose }: QRCodeDisplayProps) {
           </p>
 
           <div className="bg-white p-4 rounded-lg mx-auto mb-6 inline-block">
-            <div className="w-48 h-48 bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center">
-              <div className="grid grid-cols-5 gap-1 p-4">
-                {Array.from({ length: 25 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: Math.random() > 0.3 ? 1 : 0.2 }}
-                    transition={{ duration: 0.5, delay: i * 0.02 }}
-                    className={`w-6 h-6 ${Math.random() > 0.5 ? 'bg-dark' : 'bg-white border border-green/20'}`}
-                  />
-                ))}
+            {qrCode ? (
+              <QRCodeSVG value={qrCode} size={192} />
+            ) : (
+              <div className="w-48 h-48 bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center">
+                <div className="grid grid-cols-5 gap-1 p-4">
+                  {Array.from({ length: 25 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: Math.random() > 0.3 ? 1 : 0.2 }}
+                      transition={{ duration: 0.5, delay: i * 0.02 }}
+                      className={`w-6 h-6 ${Math.random() > 0.5 ? 'bg-dark' : 'bg-white border border-green/20'}`}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className="w-3 h-3 bg-cyan rounded-full animate-pulse" />
             <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">
-              EXPIRES IN {timeLeft}s
+              {qrCode ? `EXPIRES IN ${timeLeft}s` : 'GENERATING...'}
             </span>
           </div>
 
