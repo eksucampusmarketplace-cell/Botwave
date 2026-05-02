@@ -21,9 +21,10 @@ CREATE TABLE IF NOT EXISTS public.bot_sessions (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   phone_number TEXT NOT NULL,
   session_name TEXT NOT NULL,
-  state TEXT DEFAULT 'qr_pending' CHECK (state IN ('active', 'inactive', 'qr_pending')),
+  state TEXT DEFAULT 'qr_pending' CHECK (state IN ('active', 'inactive', 'qr_pending', 'needs_reauth')),
   qr_code TEXT,
   qr_expires_at TIMESTAMPTZ,
+  auth_state JSONB,
   last_active TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -202,6 +203,20 @@ CREATE POLICY "Admins can manage rate limit settings" ON public.rate_limit_setti
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
+
+-- Helper function to check if a column exists
+CREATE OR REPLACE FUNCTION check_column_exists(t_name TEXT, c_name TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 
+    FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = t_name 
+      AND column_name = c_name
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 `;
 
 export const REQUIRED_TABLES = [

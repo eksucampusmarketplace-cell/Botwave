@@ -111,6 +111,30 @@ export default function SessionsPage() {
       <DashboardNav />
 
       <div className="pt-24 px-4 md:px-8 max-w-7xl mx-auto relative z-10 pb-12">
+        {sessions.some(s => s.state === 'needs_reauth') && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-6 bg-red-950/20 border-2 border-red-600 flex flex-col md:flex-row items-center justify-between gap-6"
+          >
+            <div>
+              <h3 className="font-display text-lg text-red-600 font-bold tracking-wider">ACTION REQUIRED: SESSION DISCONNECTED</h3>
+              <p className="font-mono text-xs text-zinc-400 mt-1">
+                One or more of your sessions have been disconnected by WhatsApp. Re-authenticate to resume service.
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                const session = sessions.find(s => s.state === 'needs_reauth');
+                if (session) handleConnect(session);
+              }}
+              className="px-6 py-3 bg-red-600 text-white font-mono text-xs font-bold tracking-widest hover:bg-red-700 transition-colors whitespace-nowrap"
+            >
+              RECONNECT NOW
+            </button>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

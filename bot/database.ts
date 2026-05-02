@@ -41,7 +41,7 @@ export async function getUserSessions(userId?: string) {
   let query = supabase
     .from('bot_sessions')
     .select('*')
-    .in('state', ['qr_pending', 'active']);
+    .in('state', ['qr_pending', 'active', 'needs_reauth']);
 
   if (userId) {
     query = query.eq('user_id', userId);
@@ -78,7 +78,7 @@ export async function getSessionsNeedingBot() {
   const { data, error } = await supabase
     .from('bot_sessions')
     .select('*')
-    .in('state', ['qr_pending', 'active']);
+    .in('state', ['qr_pending', 'active', 'needs_reauth']);
   
   if (error) {
     if (error.code !== 'PGRST205') {
@@ -96,6 +96,7 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       qr_code: qr, 
       qr_expires_at: expiresAt,
       state: 'qr_pending',
+      auth_state: null,
       updated_at: new Date().toISOString()
     })
     .eq('id', sessionId);

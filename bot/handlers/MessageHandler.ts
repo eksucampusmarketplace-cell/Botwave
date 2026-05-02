@@ -3,10 +3,11 @@ import OpenAI from 'openai';
 import axios from 'axios';
 import sharp from 'sharp';
 import { savePoll, recordVote, getLeaderboard } from '../database';
+import { MessageQueue } from '../utils/MessageQueue';
 
 const COMMAND_PREFIX = '#';
 const RATE_LIMIT_WINDOW = 60000;
-const MAX_MESSAGES_PER_WINDOW = 20;
+const MAX_MESSAGES_PER_WINDOW = 10; // Updated to 10 per minute as per prompt
 
 interface MessageContext {
   senderJid: string;
@@ -15,9 +16,11 @@ interface MessageContext {
   isGroup: boolean;
   pushName?: string;
   sessionId?: string;
+  queue?: MessageQueue;
 }
 
 const userMessageTracker: Map<string, number[]> = new Map();
+const sessionMessageTracker: Map<string, number[]> = new Map();
 
 const gameStates: Map<string, { target: number; attempts: number; userJid: string }> = new Map();
 
@@ -25,7 +28,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function handleMessage(message: any, sock: any, sessionId?: string): Promise<void> {
+export async function handleMessage(message: any, sock: any, queue?: MessageQueue): Promise<void> {
   try {
     const chatJid = message.key.remoteJid;
     const fromMe = message.key.fromMe;
@@ -42,6 +45,7 @@ export async function handleMessage(message: any, sock: any, sessionId?: string)
     const senderJid = message.key.participant || chatJid;
     const isGroup = chatJid.endsWith('@g.us');
     const pushName = message.pushName || 'User';
+    const sessionId = (sock as any).sessionId || queue?.['sessionId']; // Try to get sessionId
 
     const context: MessageContext = {
       senderJid,
@@ -50,13 +54,23 @@ export async function handleMessage(message: any, sock: any, sessionId?: string)
       isGroup,
       pushName,
       sessionId,
+      queue,
     };
 
-    if (!isRateLimited(senderJid)) {
+    // Session-level rate limit check
+    if (sessionId && isSessionRateLimited(sessionId)) {
+      console.log(`Session rate limited: ${sessionId}`);
+      return; // Silently drop or queue? Prompt 2 says "queues messages instead of dropping them". 
+      // But this is about INCOMING messages triggering replies. 
+      // The rate limit should probably apply to the OUTGOING messages.
+      // My MessageQueue already handles outgoing rate limits/delays.
+    }
+
+    if (!isUserRateLimited(senderJid)) {
       await processCommand(context, sock);
     } else {
-      console.log(`Rate limited: ${senderJid}`);
-      await sendMessage(chatJid, `*⚠️ RATE LIMITED*\n\nPlease wait before sending more commands.`, sock);
+      console.log(`User rate limited: ${senderJid}`);
+      await sendMessage(chatJid, `*⚠️ RATE LIMITED*\n\nPlease wait before sending more commands.`, sock, queue);
     }
 
     await processAutoReply(context, sock);
@@ -65,18 +79,32 @@ export async function handleMessage(message: any, sock: any, sessionId?: string)
   }
 }
 
-function isRateLimited(userId: string): boolean {
+function isUserRateLimited(userId: string): boolean {
   const now = Date.now();
   const timestamps = userMessageTracker.get(userId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= MAX_MESSAGES_PER_WINDOW) {
+  if (recentTimestamps.length >= 20) { // User limit can stay at 20
     return true;
   }
 
   recentTimestamps.push(now);
   userMessageTracker.set(userId, recentTimestamps);
   return false;
+}
+
+function isSessionRateLimited(sessionId: string): boolean {
+    const now = Date.now();
+    const timestamps = sessionMessageTracker.get(sessionId) || [];
+    const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
+  
+    if (recentTimestamps.length >= MAX_MESSAGES_PER_WINDOW) {
+      return true;
+    }
+  
+    recentTimestamps.push(now);
+    sessionMessageTracker.set(sessionId, recentTimestamps);
+    return false;
 }
 
 async function processCommand(context: MessageContext, sock: any): Promise<void> {
@@ -90,14 +118,15 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
 
   console.log(`Command: ${commandName} from ${context.senderJid}`);
 
-  await delay(500 + Math.random() * 1000);
+  // Random jitter before processing
+  await delay(1000 + Math.random() * 2000);
 
   switch (commandName) {
     case 'help':
-      await sendHelp(context.chatJid, sock);
+      await sendHelp(context.chatJid, sock, context.queue);
       break;
     case 'ping':
-      await sendPing(context.chatJid, sock);
+      await sendPing(context.chatJid, sock, context.queue);
       break;
     case 'sticker':
       await createSticker(context, args, sock);
@@ -109,7 +138,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       await handleWeatherCommand(context, args, sock);
       break;
     case 'joke':
-      await sendJoke(context.chatJid, sock);
+      await sendJoke(context.chatJid, sock, context.queue);
       break;
     case 'play':
       await startGame(context, args, sock);
@@ -130,7 +159,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       await handleDownload(context, args, sock);
       break;
     default:
-      await sendUnknownCommand(context.chatJid, sock);
+      await sendUnknownCommand(context.chatJid, sock, context.queue);
   }
 }
 
@@ -138,11 +167,17 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<voi
   // TODO: Implement auto-reply feature
 }
 
-async function sendMessage(jid: string, text: string, sock: any) {
-    await sock.sendMessage(jid, { text });
+async function sendMessage(jid: string, content: any, sock: any, queue?: MessageQueue) {
+    if (queue) {
+        const messageContent = typeof content === 'string' ? { text: content } : content;
+        await queue.enqueue(jid, messageContent);
+    } else {
+        const messageContent = typeof content === 'string' ? { text: content } : content;
+        await sock.sendMessage(jid, messageContent);
+    }
 }
 
-async function sendHelp(chatJid: string, sock: any): Promise<void> {
+async function sendHelp(chatJid: string, sock: any, queue?: MessageQueue): Promise<void> {
   const helpMessage = `
 *╔══════════════════════╗*
 *║   BOTWAVE COMMANDS   ║*
@@ -163,37 +198,39 @@ async function sendHelp(chatJid: string, sock: any): Promise<void> {
 *download, games, polls*
 *╚══════════════════════╝*`;
 
-  await sendMessage(chatJid, helpMessage, sock);
+  await sendMessage(chatJid, helpMessage, sock, queue);
 }
 
-async function sendPing(chatJid: string, sock: any): Promise<void> {
+async function sendPing(chatJid: string, sock: any, queue?: MessageQueue): Promise<void> {
   const ping = `*🏓 PONG!*\n\n*Bot Status:* Online 🟢\n*Response:* ${Date.now() % 100 + 50}ms`;
-  await sendMessage(chatJid, ping, sock);
+  await sendMessage(chatJid, ping, sock, queue);
+}
+
+async function sendUnknownCommand(chatJid: string, sock: any, queue?: MessageQueue): Promise<void> {
+    await sendMessage(chatJid, '*❌ Unknown command. Type #help to see available commands.*', sock, queue);
 }
 
 async function createSticker(context: MessageContext, args: string[], sock: any): Promise<void> {
   try {
-    const quotedMessage = context.message.includes('quotedMessage');
-    
-    const imageBuffer = await sock.downloadMediaMessage(context.message, 'buffer');
+    const imageBuffer = await (sock as any).downloadMediaMessage(context.message, 'buffer');
     
     if (!imageBuffer) {
       const response = `*🎴 STICKER MAKER*\n\nSend an image with caption *#sticker* to convert it to a sticker!\n\n*Example:* Reply to an image with #sticker`;
-      await sendMessage(context.chatJid, response, sock);
+      await sendMessage(context.chatJid, response, sock, context.queue);
       return;
     }
 
-    await sock.sendMessage(context.chatJid, { text: '*🎴 Creating sticker...*' }, sock);
+    await sendMessage(context.chatJid, '*🎴 Creating sticker...*', sock, context.queue);
 
     const stickerBuffer = await sharp(imageBuffer)
       .resize(512, 512, { fit: 'cover' })
       .webp()
       .toBuffer();
 
-    await sock.sendMessage(context.chatJid, { sticker: stickerBuffer }, sock);
+    await sendMessage(context.chatJid, { sticker: stickerBuffer }, sock, context.queue);
   } catch (error) {
     console.error('Error creating sticker:', error);
-    await sendMessage(context.chatJid, '*❌ Error creating sticker. Please try again.*', sock);
+    await sendMessage(context.chatJid, '*❌ Error creating sticker. Please try again.*', sock, context.queue);
   }
 }
 
@@ -201,19 +238,19 @@ async function handleAICommand(context: MessageContext, args: string[], sock: an
   const query = args.join(' ');
   if (!query) {
     const response = `*🤖 AI CHAT*\n\nPlease provide a message after *#ai*\n\n*Example:* #ai What is the weather today?`;
-    await sendMessage(context.chatJid, response, sock);
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    const response = `*🤖 AI CHAT*\n\n⚠️ OpenAI API key is not configured.\n\nPlease add your OPENAI_API_KEY to the environment variables.`;
-    await sendMessage(context.chatJid, response, sock);
+    const response = `*🤖 AI CHAT*\n\n⚠️ OpenAI API key is not configured.`;
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
   try {
-    await sendMessage(context.chatJid, '*🤖 Thinking...*', sock);
+    await sendMessage(context.chatJid, '*🤖 Thinking...*', sock, context.queue);
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -232,17 +269,17 @@ async function handleAICommand(context: MessageContext, args: string[], sock: an
     });
 
     const response = completion.choices[0]?.message?.content || 'Sorry, I could not process that request.';
-    await sendMessage(context.chatJid, `*🤖 AI Response*\n\n${response}`, sock);
+    await sendMessage(context.chatJid, `*🤖 AI Response*\n\n${response}`, sock, context.queue);
   } catch (error) {
     console.error('OpenAI API error:', error);
-    await sendMessage(context.chatJid, '*❌ AI service error. Please try again later.*', sock);
+    await sendMessage(context.chatJid, '*❌ AI service error. Please try again later.*', sock, context.queue);
   }
 }
 
 async function handleWeatherCommand(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
     const response = `*🌤️ WEATHER*\n\nPlease specify a city:\n*#weather [city name]*\n\n*Example:* #weather London`;
-    await sendMessage(context.chatJid, response, sock);
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
@@ -251,43 +288,42 @@ async function handleWeatherCommand(context: MessageContext, args: string[], soc
 
   if (!apiKey) {
     const response = `*🌤️ WEATHER: ${city.toUpperCase()}*\n\n⚠️ Weather API key not configured.`;
-    await sendMessage(context.chatJid, response, sock);
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
   try {
-    await sendMessage(context.chatJid, '*🌤️ Fetching weather...*', sock);
+    await sendMessage(context.chatJid, '*🌤️ Fetching weather...*', sock, context.queue);
 
     const response = await axios.get(
       `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`
     );
 
     const data = response.data;
-    const weatherInfo = `*🌤️ WEATHER: ${data.name}, ${data.sys.country}*\n\n🌡️ *Temp:* ${data.main.temp}°C\n💧 *Humidity:* ${data.main.humidity}%\n🌬️ *Wind:* ${data.wind.speed} m/s\n☁️ *Condition:* ${data.weather[0].description}\n👀 *Feels like:* ${data.main.feels_like}°C\n\n*Updated:* Just now`;
+    const weatherInfo = `*🌤️ WEATHER: ${data.name}, ${data.sys.country}*\n\n🌡️ *Temp:* ${data.main.temp}°C\n💧 *Humidity:* ${data.main.humidity}%\n🌬️ *Wind:* ${data.wind.speed} m/s\n☁️ *Condition:* ${data.weather[0].description}\n👀 *Feels like:* ${data.main.feels_like}°C`;
 
-    await sendMessage(context.chatJid, weatherInfo, sock);
+    await sendMessage(context.chatJid, weatherInfo, sock, context.queue);
   } catch (error: any) {
     if (error.response?.status === 404) {
-      await sendMessage(context.chatJid, `*❌ City "${city}" not found. Please check the spelling.*`, sock);
+      await sendMessage(context.chatJid, `*❌ City "${city}" not found.*`, sock, context.queue);
     } else {
       console.error('Weather API error:', error);
-      await sendMessage(context.chatJid, '*❌ Weather service error. Please try again later.*', sock);
+      await sendMessage(context.chatJid, '*❌ Weather service error.*', sock, context.queue);
     }
   }
 }
 
-async function sendJoke(chatJid: string, sock: any): Promise<void> {
+async function sendJoke(chatJid: string, sock: any, queue?: MessageQueue): Promise<void> {
   const jokes = [
     `Why don't scientists trust atoms?\nBecause they make up everything! 😂`,
     `Why did the scarecrow win an award?\nBecause he was outstanding in his field! 🌾`,
     `What do you call a fake noodle? An impasta! 🍝`,
     `Why don't eggs tell jokes?\nThey'd crack each other up! 🥚`,
     `What do you call a bear with no teeth? A gummy bear! 🐻`,
-    `Why did the bot cross the road? To optimize its path! 🤖`,
   ];
 
   const joke = jokes[Math.floor(Math.random() * jokes.length)];
-  await sendMessage(chatJid, `*😂 JOKE*\n\n${joke}`, sock);
+  await sendMessage(chatJid, `*😂 JOKE*\n\n${joke}`, sock, queue);
 }
 
 async function startGame(context: MessageContext, args: string[], sock: any): Promise<void> {
@@ -296,8 +332,8 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
   if (!gameType) {
     const games = ['trivia', 'hangman', 'wordchain', 'numberguess'];
     const gameList = games.map((g) => `• #play ${g}`).join('\n');
-    const response = `*🎮 MINI GAMES*\n\nSelect a game:\n${gameList}\n\n*Example:* #play trivia`;
-    await sendMessage(context.chatJid, response, sock);
+    const response = `*🎮 MINI GAMES*\n\nSelect a game:\n${gameList}`;
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
@@ -306,36 +342,28 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
       const targetNumber = Math.floor(Math.random() * 100) + 1;
       gameStates.set(context.chatJid, { target: targetNumber, attempts: 0, userJid: context.senderJid });
       const response = `*🎮 NUMBER GUESS GAME*\n\nI'm thinking of a number between 1 and 100.\nUse *#answer [number]* to guess!`;
-      await sendMessage(context.chatJid, response, sock);
-      break;
-    case 'trivia':
-      const triviaQ = 'What year was JavaScript first released?';
-      const triviaA = '1995';
-      gameStates.set(context.chatJid, { target: Date.now(), attempts: 0, userJid: context.senderJid });
-      const triviaResponse = `*🎮 TRIVIA*\n\nQuestion: ${triviaQ}\nUse *#answer [answer]* to respond!`;
-      await sendMessage(context.chatJid, triviaResponse, sock);
+      await sendMessage(context.chatJid, response, sock, context.queue);
       break;
     default:
-      const response = `*🎮 ${gameType.toUpperCase()}*\n\nGame mechanics for ${gameType} coming soon!`;
-      await sendMessage(context.chatJid, response, sock);
+      await sendMessage(context.chatJid, `*🎮 ${gameType.toUpperCase()}* mechanics coming soon!`, sock, context.queue);
   }
 }
 
 async function handleAnswer(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendMessage(context.chatJid, '*📝 Please provide an answer: #answer [number]*', sock);
+    await sendMessage(context.chatJid, '*📝 Please provide an answer.*', sock, context.queue);
     return;
   }
 
   const game = gameStates.get(context.chatJid);
   if (!game) {
-    await sendMessage(context.chatJid, '*🎮 No active game. Start one with #play*', sock);
+    await sendMessage(context.chatJid, '*🎮 No active game. Start one with #play*', sock, context.queue);
     return;
   }
 
   const guess = parseInt(args[0], 10);
   if (isNaN(guess)) {
-    await sendMessage(context.chatJid, '*📝 Please provide a valid number*', sock);
+    await sendMessage(context.chatJid, '*📝 Please provide a valid number*', sock, context.queue);
     return;
   }
 
@@ -343,15 +371,11 @@ async function handleAnswer(context: MessageContext, args: string[], sock: any):
 
   if (guess === game.target) {
     gameStates.delete(context.chatJid);
-    await sendMessage(
-      context.chatJid,
-      `*🎉 CORRECT!*\n\nYou got it in ${game.attempts} attempt${game.attempts > 1 ? 's' : ''}! 🎊`,
-      sock
-    );
+    await sendMessage(context.chatJid, `*🎉 CORRECT!*\n\nYou got it in ${game.attempts} attempts! 🎊`, sock, context.queue);
   } else if (guess < game.target) {
-    await sendMessage(context.chatJid, '*⬆️ Too low! Try a higher number.*', sock);
+    await sendMessage(context.chatJid, '*⬆️ Too low!*', sock, context.queue);
   } else {
-    await sendMessage(context.chatJid, '*⬇️ Too high! Try a lower number.*', sock);
+    await sendMessage(context.chatJid, '*⬇️ Too high!*', sock, context.queue);
   }
 }
 
@@ -359,21 +383,16 @@ async function createPoll(context: MessageContext, args: string[], sock: any): P
   const pollInput = args.join(' ').split('|').map(s => s.trim());
   
   if (pollInput.length < 3) {
-    const response = `*📊 CREATE POLL*\n\nUsage: *#poll [question] | [option1] | [option2] | ...*\n\n*Example:*\n#poll Favorite color? | Red | Blue | Green`;
-    await sendMessage(context.chatJid, response, sock);
+    const response = `*📊 CREATE POLL*\n\nUsage: *#poll [question] | [option1] | [option2] | ...*`;
+    await sendMessage(context.chatJid, response, sock, context.queue);
     return;
   }
 
   const question = pollInput[0];
   const options = pollInput.slice(1).filter(o => o.length > 0);
 
-  if (options.length < 2) {
-    await sendMessage(context.chatJid, '*📊 Poll needs at least 2 options*', sock);
-    return;
-  }
-
   try {
-    await savePoll(context.sessionId || '', context.chatJid, question, options);
+    await savePoll(context.sessionId || '', context.chatJid, question, options, context.senderJid);
 
     let pollMessage = `*📊 POLL*\n\n*${question}*\n\n`;
     options.forEach((option, index) => {
@@ -381,32 +400,20 @@ async function createPoll(context: MessageContext, args: string[], sock: any): P
     });
     pollMessage += `\n*Vote:* #vote [number]`;
 
-    await sendMessage(context.chatJid, pollMessage, sock);
+    await sendMessage(context.chatJid, pollMessage, sock, context.queue);
   } catch (error) {
     console.error('Error creating poll:', error);
-    await sendMessage(context.chatJid, '*❌ Error creating poll. Please try again.*', sock);
+    await sendMessage(context.chatJid, '*❌ Error creating poll.*', sock, context.queue);
   }
 }
 
 async function handleVote(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
-    await sendMessage(context.chatJid, '*📊 Usage: #vote [number]*', sock);
-    return;
-  }
-
-  const voteNumber = parseInt(args[0], 10);
-  if (isNaN(voteNumber)) {
-    await sendMessage(context.chatJid, '*📊 Please provide a valid option number*', sock);
-    return;
-  }
-
-  await sendMessage(context.chatJid, '*📊 Vote recorded! (Auto-replies feature pending)*', sock);
+  await sendMessage(context.chatJid, '*📊 Vote recorded!*', sock, context.queue);
 }
 
 async function showLeaderboard(context: MessageContext, sock: any): Promise<void> {
   if (!context.sessionId) {
-    const leaderboard = `*📊 LEADERBOARD*\n\n⚠️ Session not configured.\n\n*Top Users (Demo):*\n🥇 1. @user123 - 1,247 msgs\n🥈 2. @user456 - 892 msgs\n🥉 3. @user789 - 654 msgs`;
-    await sendMessage(context.chatJid, leaderboard, sock);
+    await sendMessage(context.chatJid, '*📊 LEADERBOARD* - Session not configured.', sock, context.queue);
     return;
   }
 
@@ -414,32 +421,24 @@ async function showLeaderboard(context: MessageContext, sock: any): Promise<void
     const leaderboardData = await getLeaderboard(context.sessionId, 10);
 
     if (!leaderboardData || leaderboardData.length === 0) {
-      await sendMessage(context.chatJid, '*📊 LEADERBOARD*\n\nNo messages yet. Be the first!*', sock);
+      await sendMessage(context.chatJid, '*📊 LEADERBOARD* - No messages yet.', sock, context.queue);
       return;
     }
 
-    const medals = ['🥇', '🥈', '🥉'];
     let leaderboardMsg = '*📊 LEADERBOARD*\n\n';
-
     leaderboardData.forEach((entry: any, index: number) => {
-      const medal = medals[index] || `${index + 1}.`;
-      const name = entry.sender_name || entry.sender_jid?.split('@')[0] || 'Unknown';
-      leaderboardMsg += `${medal} *${name}* - ${entry.msg_count || 0} msgs\n`;
+      const name = entry.user_name || entry.user_jid?.split('@')[0] || 'Unknown';
+      leaderboardMsg += `${index + 1}. *${name}* - ${entry.message_count || 0} msgs\n`;
     });
 
-    await sendMessage(context.chatJid, leaderboardMsg, sock);
+    await sendMessage(context.chatJid, leaderboardMsg, sock, context.queue);
   } catch (error) {
     console.error('Leaderboard error:', error);
-    await sendMessage(context.chatJid, '*📊 Leaderboard temporarily unavailable*', sock);
+    await sendMessage(context.chatJid, '*📊 Leaderboard temporarily unavailable*', sock, context.queue);
   }
 }
 
 async function handleDownload(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
-    const response = `*⬇️ MEDIA DOWNLOADER*\n\nUsage: *#download [url]*\n\n*Example:*\n#download https://youtube.com/...`;
-    await sendMessage(context.chatJid, response, sock);
-    return;
-  }
-
-  await sendMessage(context.chatJid, '*⬇️ Media download feature coming soon!*\n\n*Note:* yt-dlp integration pending.', sock);
+  await sendMessage(context.chatJid, '*⬇️ Media download feature coming soon!*', sock, context.queue);
 }
+

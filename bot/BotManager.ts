@@ -1,17 +1,16 @@
 import { 
   makeWASocket, 
-  useMultiFileAuthState, 
   DisconnectReason, 
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus } from './database';
+import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage } from './handlers/MessageHandler';
 import { registerCommands } from './handlers/CommandHandler';
+import { MessageQueue } from './utils/MessageQueue';
 import P from 'pino';
-import fs from 'fs';
-import path from 'path';
 
 const logger = P({ level: 'info' });
 
@@ -33,6 +32,7 @@ export class BotWaveBot {
   private qrCode: string | null = null;
   private reconnectAttempt: number = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private messageQueue: MessageQueue | null = null;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -57,12 +57,7 @@ export class BotWaveBot {
   }
 
   async start(): Promise<void> {
-    const authDir = path.join(process.cwd(), 'auth');
-    if (!fs.existsSync(authDir)) {
-      fs.mkdirSync(authDir, { recursive: true });
-    }
-    
-    const { state, saveCreds } = await useMultiFileAuthState(path.join(authDir, this.sessionId));
+    const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
     const { version } = await fetchLatestBaileysVersion();
 
     this.socket = makeWASocket({
@@ -75,6 +70,8 @@ export class BotWaveBot {
       logger,
       browser: ['BotWave', 'Chrome', '1.0.0'],
     });
+
+    this.messageQueue = new MessageQueue(this.socket, this.sessionId);
 
     this.socket.ev.on('creds.update', saveCreds);
 
@@ -89,12 +86,28 @@ export class BotWaveBot {
       }
 
       if (connection === 'close') {
-        const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-        console.log(`Connection closed for session ${this.sessionId}. Reconnecting: ${shouldReconnect}`);
-        this.isReady = false;
-        await updateSessionStatus(this.sessionId, 'inactive');
+        const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        console.log(`Connection closed for session ${this.sessionId}. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`);
         
-        if (shouldReconnect) {
+        this.isReady = false;
+        
+        if (!shouldReconnect) {
+          console.log(`Session ${this.sessionId} logged out or kicked. Updating to needs_reauth.`);
+          await updateSessionStatus(this.sessionId, 'needs_reauth');
+          
+          // Trigger notification
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notify/session-down`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+            });
+          } catch (err) {
+            console.error('Failed to send session-down notification:', err);
+          }
+        } else {
+          await updateSessionStatus(this.sessionId, 'inactive');
           this.socket = null;
           const delay = this.getReconnectDelay();
           this.reconnectAttempt++;
@@ -117,7 +130,7 @@ export class BotWaveBot {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
           if (!msg.key.fromMe) {
-            await handleMessage(msg, this.socket);
+            await handleMessage(msg, this.socket, this.messageQueue);
           }
         }
       }

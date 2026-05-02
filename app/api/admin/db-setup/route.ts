@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createAdminClient();
     const results: Record<string, boolean> = {};
+    const columnChecks: Record<string, boolean> = {};
 
     for (const table of REQUIRED_TABLES) {
       const { error } = await supabase.from(table).select('count', { count: 'exact', head: true }).limit(1);
@@ -29,6 +30,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check for auth_state column in bot_sessions
+    if (results['bot_sessions']) {
+      const { data, error } = await supabase.rpc('check_column_exists', { 
+        t_name: 'bot_sessions', 
+        c_name: 'auth_state' 
+      });
+      // If RPC doesn't exist, we'll try a different way or just assume it's missing if we can't check
+      if (!error) {
+        columnChecks['bot_sessions.auth_state'] = !!data;
+      }
+    }
+
     const missingTables = Object.entries(results)
       .filter(([_, exists]) => !exists)
       .map(([table]) => table);
@@ -37,8 +50,9 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         tables: results,
+        columnChecks,
         missingTables,
-        allFound: missingTables.length === 0,
+        allFound: missingTables.length === 0 && (!results['bot_sessions'] || columnChecks['bot_sessions.auth_state'] !== false),
         schemaSql: SCHEMA_SQL
       }
     });
