@@ -61,6 +61,10 @@ export async function POST(request: NextRequest) {
         .eq('username', email)
         .single();
       
+      if (profileError && profileError.code === 'PGRST205') {
+        console.warn('profiles table not found, cannot resolve username to email');
+      }
+      
       if (profile) {
         const { data: userData, error: userError } = await adminSupabase.auth.admin.getUserById(profile.id);
         if (userData?.user?.email) {

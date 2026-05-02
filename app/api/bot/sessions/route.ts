@@ -28,6 +28,13 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        console.warn('bot_sessions table not found, using empty array');
+        return NextResponse.json({
+          success: true,
+          data: [],
+        });
+      }
       throw error;
     }
 
@@ -80,6 +87,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        return NextResponse.json(
+          { error: 'Session creation failed: bot_sessions table not found' },
+          { status: 503 }
+        );
+      }
       throw error;
     }
 
@@ -120,6 +133,12 @@ export async function DELETE(request: NextRequest) {
         .eq('user_id', user.id);
 
       if (error) {
+        if (error.code === 'PGRST205') {
+          return NextResponse.json({
+            success: true,
+            message: 'All sessions deleted successfully (no table found)',
+          });
+        }
         throw error;
       }
 
@@ -143,6 +162,12 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        return NextResponse.json({
+          success: true,
+          message: 'Session deleted successfully (no table found)',
+        });
+      }
       throw error;
     }
 

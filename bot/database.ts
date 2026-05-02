@@ -7,6 +7,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function initDatabase() {
   console.log('Database initialized');
+  // Check if tables exist
+  const { error } = await supabase.from('bot_sessions').select('id').limit(1);
+  if (error && error.code === 'PGRST205') {
+    console.warn('WARNING: bot_sessions table not found in Supabase. Please run migrations.');
+  }
 }
 
 export async function getUserSessions(userId?: string) {
@@ -22,7 +27,9 @@ export async function getUserSessions(userId?: string) {
   const { data, error } = await query;
   
   if (error) {
-    console.error('Error fetching sessions:', error);
+    if (error.code !== 'PGRST205') {
+      console.error('Error fetching sessions:', error);
+    }
     return [];
   }
   return data;
@@ -36,7 +43,9 @@ export async function getSessionById(sessionId: string) {
     .single();
   
   if (error) {
-    console.error(`Error fetching session ${sessionId}:`, error);
+    if (error.code !== 'PGRST205') {
+      console.error(`Error fetching session ${sessionId}:`, error);
+    }
     return null;
   }
   return data;
@@ -49,7 +58,9 @@ export async function getSessionsNeedingBot() {
     .in('state', ['qr_pending', 'active']);
   
   if (error) {
-    console.error('Error fetching sessions needing bot:', error);
+    if (error.code !== 'PGRST205') {
+      console.error('Error fetching sessions needing bot:', error);
+    }
     return [];
   }
   return data;
@@ -67,7 +78,9 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
     .eq('id', sessionId);
 
   if (error) {
-    console.error(`Error updating QR for session ${sessionId}:`, error);
+    if (error.code !== 'PGRST205') {
+      console.error(`Error updating QR for session ${sessionId}:`, error);
+    }
   } else {
     console.log(`Updated QR for session ${sessionId}`);
   }
@@ -84,63 +97,76 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     .eq('id', sessionId);
 
   if (error) {
-    console.error(`Error updating status for session ${sessionId}:`, error);
+    if (error.code !== 'PGRST205') {
+      console.error(`Error updating status for session ${sessionId}:`, error);
+    }
   } else {
     console.log(`Updated status for session ${sessionId} to ${status}`);
   }
 }
 
 export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[]) {
-  const { error } = await supabase
-    .from('auto_replies')
+  // Using the correct 'polls' table from the schema
+  const { data, error } = await supabase
+    .from('polls')
     .insert({
-      user_id: sessionId,
-      trigger_keyword: `poll_${chatJid}`,
-      reply_text: JSON.stringify({ question, options, votes: {} }),
+      session_id: sessionId,
+      group_jid: chatJid,
+      question: question,
+      options: options,
+      created_by_jid: 'admin', // Placeholder
       is_active: true,
       created_at: new Date().toISOString()
-    });
+    })
+    .select()
+    .single();
 
   if (error) {
-    console.error('Error saving poll:', error);
+    if (error.code !== 'PGRST205') {
+      console.error('Error saving poll:', error);
+    }
     return null;
   }
-  return { sessionId, chatJid, question, options };
+  return data;
 }
 
 export async function recordVote(pollId: string, optionIndex: number) {
   const { data, error } = await supabase
-    .from('auto_replies')
-    .select('reply_text')
+    .from('polls')
+    .select('votes')
     .eq('id', pollId)
     .single();
 
   if (error || !data) {
-    console.error('Poll not found:', error);
+    if (error && error.code !== 'PGRST205') {
+      console.error('Poll not found:', error);
+    }
     return null;
   }
 
-  const pollData = JSON.parse(data.reply_text);
-  pollData.votes[optionIndex] = (pollData.votes[optionIndex] || 0) + 1;
+  const votes = data.votes || {};
+  votes[optionIndex] = (votes[optionIndex] || 0) + 1;
 
   await supabase
-    .from('auto_replies')
-    .update({ reply_text: JSON.stringify(pollData) })
+    .from('polls')
+    .update({ votes: votes })
     .eq('id', pollId);
 
-  return pollData;
+  return { ...data, votes };
 }
 
 export async function getLeaderboard(sessionId: string, limit: number = 10) {
   const { data, error } = await supabase
-    .from('messages')
-    .select('sender_jid, sender_name, count')
+    .from('leaderboard')
+    .select('*')
     .eq('session_id', sessionId)
-    .order('count', { ascending: false })
+    .order('message_count', { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching leaderboard:', error);
+    if (error.code !== 'PGRST205') {
+      console.error('Error fetching leaderboard:', error);
+    }
     return [];
   }
   return data;
