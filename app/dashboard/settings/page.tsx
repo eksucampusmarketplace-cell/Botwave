@@ -1,9 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/login';
+      }
+    };
+    checkUser();
+  }, []);
   return (
     <main className="min-h-screen bg-dark relative">
       <DashboardNav />
