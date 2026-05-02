@@ -1,12 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
+
+export const viewport: Viewport = {
+  themeColor: '#00ff88',
+};
 
 export const metadata: Metadata = {
   title: 'BotWave — WhatsApp Automation',
   description: 'Next-gen WhatsApp bot automation service. Connect your number and automate with AI.',
   keywords: ['whatsapp', 'bot', 'automation', 'ai', 'sticker', 'download'],
   authors: [{ name: 'Decisive Analyst' }],
-  themeColor: '#00ff88',
   icons: {
     icon: '/favicon.ico',
   },

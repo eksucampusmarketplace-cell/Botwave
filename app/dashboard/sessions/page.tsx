@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import SessionCard from '@/components/ui/SessionCard';
@@ -17,9 +17,10 @@ export default function SessionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
 
-  const supabase = createClient();
+  const supabase = useRef(createClient()).current;
+  const activeSessionRef = useRef<any>(null);
 
-  const fetchSessions = async (silent = false) => {
+  const fetchSessions = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const response = await fetch('/api/bot/sessions');
@@ -27,10 +28,13 @@ export default function SessionsPage() {
       if (data.success) {
         setSessions(data.data);
         
-        // If we are waiting for a QR code, update the active session
-        if (activeSession) {
-          const updated = data.data.find((s: any) => s.id === activeSession.id);
-          if (updated) setActiveSession(updated);
+        const currentActive = activeSessionRef.current;
+        if (currentActive) {
+          const updated = data.data.find((s: any) => s.id === currentActive.id);
+          if (updated) {
+            setActiveSession(updated);
+            activeSessionRef.current = updated;
+          }
         }
       }
     } catch (err) {
@@ -38,7 +42,7 @@ export default function SessionsPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -50,18 +54,21 @@ export default function SessionsPage() {
       fetchSessions();
     };
     checkUser();
-  }, []);
+  }, [supabase, fetchSessions]);
 
-  // Poll for QR code when showQR is true and activeSession has no QR
+  useEffect(() => {
+    activeSessionRef.current = activeSession;
+  }, [activeSession]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (showQR && activeSession && !activeSession.qr_code) {
+    if (showQR && activeSessionRef.current && !activeSessionRef.current.qr_code) {
       interval = setInterval(() => {
         fetchSessions(true);
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [showQR, activeSession]);
+  }, [showQR, fetchSessions]);
 
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();

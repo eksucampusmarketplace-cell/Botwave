@@ -6,8 +6,9 @@ import {
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getUserSessions, updateSessionQR, updateSessionStatus } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus } from './database';
 import { handleMessage } from './handlers/MessageHandler';
+import { registerCommands } from './handlers/CommandHandler';
 import P from 'pino';
 import fs from 'fs';
 import path from 'path';
@@ -20,6 +21,9 @@ interface BotConfig {
   phoneNumber: string;
 }
 
+const MAX_RECONNECT_DELAY = 30000;
+const INITIAL_RECONNECT_DELAY = 1000;
+
 export class BotWaveBot {
   private sessionId: string;
   private userId: string;
@@ -27,11 +31,29 @@ export class BotWaveBot {
   private socket: any = null;
   private isReady: boolean = false;
   private qrCode: string | null = null;
+  private reconnectAttempt: number = 0;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
     this.userId = config.userId;
     this.phoneNumber = config.phoneNumber;
+  }
+
+  private getReconnectDelay(): number {
+    const delay = Math.min(
+      INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempt),
+      MAX_RECONNECT_DELAY
+    );
+    return delay;
+  }
+
+  private resetReconnectState() {
+    this.reconnectAttempt = 0;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
   }
 
   async start(): Promise<void> {
@@ -71,14 +93,23 @@ export class BotWaveBot {
         console.log(`Connection closed for session ${this.sessionId}. Reconnecting: ${shouldReconnect}`);
         this.isReady = false;
         await updateSessionStatus(this.sessionId, 'inactive');
+        
         if (shouldReconnect) {
-          this.start();
+          this.socket = null;
+          const delay = this.getReconnectDelay();
+          this.reconnectAttempt++;
+          console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt})`);
+          this.reconnectTimeout = setTimeout(() => {
+            this.start();
+          }, delay);
         }
       } else if (connection === 'open') {
         console.log(`Session connected: ${this.sessionId}`);
         this.isReady = true;
         this.qrCode = null;
+        this.resetReconnectState();
         await updateSessionStatus(this.sessionId, 'active');
+        registerCommands(this.socket);
       }
     });
 
@@ -94,6 +125,10 @@ export class BotWaveBot {
   }
 
   async stop(): Promise<void> {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     if (this.socket) {
       this.socket.end();
       this.socket = null;
@@ -127,18 +162,33 @@ export function initializeBot() {
 }
 
 export async function syncSessionsWithDb() {
-  const sessions = await getUserSessions();
+  const sessions = await getSessionsNeedingBot();
   
   for (const session of sessions) {
-    if (!activeBots.has(session.id) && (session.state === 'qr_pending' || session.state === 'inactive' || session.state === 'active')) {
+    const bot = activeBots.get(session.id);
+    
+    if (session.state === 'active' && bot) {
+      continue;
+    }
+    
+    if (!bot) {
       console.log(`Starting bot for session: ${session.id}`);
-      const bot = new BotWaveBot({
+      const newBot = new BotWaveBot({
         sessionId: session.id,
         userId: session.user_id,
         phoneNumber: session.phone_number,
       });
-      activeBots.set(session.id, bot);
-      bot.start().catch(err => console.error(`Failed to start bot ${session.id}:`, err));
+      activeBots.set(session.id, newBot);
+      newBot.start().catch(err => console.error(`Failed to start bot ${session.id}:`, err));
+    }
+  }
+
+  for (const [id, bot] of activeBots) {
+    const session = sessions.find(s => s.id === id);
+    if (!session) {
+      console.log(`Stopping bot for removed session: ${id}`);
+      await bot.stop();
+      activeBots.delete(id);
     }
   }
 }
