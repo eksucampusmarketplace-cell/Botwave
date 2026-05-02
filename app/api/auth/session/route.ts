@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,13 +9,13 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -24,7 +25,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Session check error:', error);
-    return Response.json(
+    return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }
     );

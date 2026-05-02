@@ -1,18 +1,39 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Validate required environment variables at module load
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error(
+    'CRITICAL: NEXT_PUBLIC_SUPABASE_URL environment variable is not set. ' +
+    'Please set it in your .env file.'
+  );
+}
+
+if (!supabaseServiceKey) {
+  throw new Error(
+    'CRITICAL: SUPABASE_SERVICE_ROLE_KEY environment variable is not set. ' +
+    'Please set it in your .env file.'
+  );
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function initDatabase() {
   console.log('Database initialized');
-  // Check if tables exist
+  
+  // Check if tables exist - fail fast if missing
   const { error } = await supabase.from('bot_sessions').select('id').limit(1);
   if (error && error.code === 'PGRST205') {
-    console.warn('CRITICAL WARNING: bot_sessions table not found in Supabase.');
-    console.warn('Please run the migrations in the Supabase SQL Editor.');
-    console.warn('Migrations can be found in the supabase/migrations folder.');
+    throw new Error(
+      'CRITICAL: bot_sessions table not found in Supabase.\n' +
+      'Please run the migrations in order:\n' +
+      '  1. supabase/migrations/001_initial_schema.sql\n' +
+      '  2. supabase/migrations/002_rate_limit_settings.sql\n' +
+      '  3. supabase/migrations/003_service_role_policies.sql\n' +
+      'Run these in your Supabase SQL Editor before starting the bot.'
+    );
   }
 }
 
@@ -89,13 +110,19 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
+  // Only include last_active when status is 'active'
+  const updatePayload: Record<string, string> = {
+    state: status,
+    updated_at: new Date().toISOString()
+  };
+  
+  if (status === 'active') {
+    updatePayload.last_active = new Date().toISOString();
+  }
+  
   const { error } = await supabase
     .from('bot_sessions')
-    .update({ 
-      state: status,
-      last_active: status === 'active' ? new Date().toISOString() : undefined,
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', sessionId);
 
   if (error) {
@@ -107,7 +134,7 @@ export async function updateSessionStatus(sessionId: string, status: string) {
   }
 }
 
-export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[]) {
+export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[], createdByJid: string) {
   // Using the correct 'polls' table from the schema
   const { data, error } = await supabase
     .from('polls')
@@ -116,7 +143,7 @@ export async function savePoll(sessionId: string, chatJid: string, question: str
       group_jid: chatJid,
       question: question,
       options: options,
-      created_by_jid: 'admin', // Placeholder
+      created_by_jid: createdByJid, // Real sender JID passed from caller
       is_active: true,
       created_at: new Date().toISOString()
     })
@@ -149,10 +176,15 @@ export async function recordVote(pollId: string, optionIndex: number) {
   const votes = data.votes || {};
   votes[optionIndex] = (votes[optionIndex] || 0) + 1;
 
-  await supabase
+  const { error: updateError } = await supabase
     .from('polls')
     .update({ votes: votes })
     .eq('id', pollId);
+
+  if (updateError) {
+    console.error('Error recording vote:', updateError);
+    return null;
+  }
 
   return { ...data, votes };
 }

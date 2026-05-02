@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { verifyAdminToken } from '@/lib/admin-auth'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -64,6 +65,18 @@ export async function middleware(request: NextRequest) {
   // Redirect logged in users away from auth pages
   if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Protect admin routes - return 404 if not authenticated
+  // This makes the admin panel invisible to unauthorized users
+  if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
+    const adminToken = request.cookies.get('admin_token');
+    const tokenValidation = verifyAdminToken(adminToken?.value);
+    
+    if (!tokenValidation) {
+      // Return 404 instead of 401 to hide the existence of admin panel
+      return NextResponse.json({ notFound: true }, { status: 404 });
+    }
   }
 
   return response

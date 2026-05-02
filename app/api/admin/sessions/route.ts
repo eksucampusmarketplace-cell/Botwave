@@ -1,41 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Verify admin token
     const adminToken = request.cookies.get('admin_token');
-    if (adminToken?.value !== 'botwave_admin_secret_token') {
+    const tokenValidation = verifyAdminToken(adminToken?.value);
+    
+    if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
+    const supabase = await createAdminClient();
 
     // Fetch sessions with user info
-    // Note: In a real app, you'd use a join or separate query
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
       .select(`
-        *,
+        id,
+        phone_number,
+        session_name,
+        state,
+        last_active,
+        created_at,
+        user_id,
         profiles:user_id (username)
       `)
       .order('created_at', { ascending: false });
 
     if (error) {
-      // Fallback to mock data if DB is not connected
-      return NextResponse.json({
-        success: true,
-        data: [
-          { id: '1', phone_number: '123456789', state: 'active', username: 'john_doe' },
-          { id: '2', phone_number: '987654321', state: 'qr_pending', username: 'jane_smith' },
-          { id: '3', phone_number: '555666777', state: 'inactive', username: 'bob_brown' },
-        ]
-      });
+      console.error('Error fetching sessions:', error);
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 
-    const formattedSessions = sessions.map((s: any) => ({
-      ...s,
+    // Project response to minimum necessary fields
+    const formattedSessions = (sessions || []).map((s: any) => ({
+      id: s.id,
+      phone_number: s.phone_number,
+      session_name: s.session_name,
+      state: s.state,
+      last_active: s.last_active,
+      created_at: s.created_at,
       username: s.profiles?.username || 'Unknown'
     }));
 
