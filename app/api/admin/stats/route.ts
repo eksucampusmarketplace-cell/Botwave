@@ -1,40 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin cookie
+    // Verify admin token
     const adminToken = request.cookies.get('admin_token');
-    if (adminToken?.value !== 'botwave_admin_secret_token') {
+    const tokenValidation = verifyAdminToken(adminToken?.value);
+    
+    if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS
+    const supabase = await createAdminClient();
 
-    // In a real scenario, we would fetch from Supabase
-    // But since we might not have a working Supabase setup in the sandbox,
-    // we'll return some mock data if the DB call fails
-    
+    // Fetch real stats from database
     let totalUsers = 0;
     let activeSessions = 0;
     let totalMessages = 0;
 
     try {
-      const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      const { count: userCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
       totalUsers = userCount || 0;
 
-      const { count: sessionCount } = await supabase.from('bot_sessions').select('*', { count: 'exact', head: true }).eq('state', 'active');
+      const { count: sessionCount } = await supabase
+        .from('bot_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('state', 'active');
       activeSessions = sessionCount || 0;
 
-      const { count: msgCount } = await supabase.from('messages').select('*', { count: 'exact', head: true });
+      const { count: msgCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true });
       totalMessages = msgCount || 0;
-    } catch (e) {
-      // Fallback to mock data if DB is not connected
-      totalUsers = 124;
-      activeSessions = 42;
-      totalMessages = 15420;
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      // Return actual error, not fake data
+      return NextResponse.json({ error: 'Failed to fetch statistics' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -43,7 +50,7 @@ export async function GET(request: NextRequest) {
         totalUsers,
         activeSessions,
         totalMessages,
-        systemStatus: 'Healthy'
+        systemStatus: totalUsers > 0 ? 'Healthy' : 'No Data'
       }
     });
   } catch (error) {

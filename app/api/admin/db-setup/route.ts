@@ -1,15 +1,17 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { REQUIRED_TABLES, SCHEMA_SQL } from '@/lib/db-setup';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check for admin token
+    // Verify admin token
     const adminToken = request.cookies.get('admin_token');
-    if (adminToken?.value !== 'botwave_admin_secret_token') {
+    const tokenValidation = verifyAdminToken(adminToken?.value);
+    
+    if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

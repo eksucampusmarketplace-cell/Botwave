@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import { generateSecureToken, storeAdminToken } from '@/lib/admin-auth';
 
-// Store active admin tokens in memory with expiry
-const adminTokens: Map<string, { expiresAt: number; username: string }> = new Map();
-const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const FAILED_LOGIN_DELAY_MS = 500; // Constant time delay to prevent timing attacks
 
 function getAdminCredentials(): { username: string; password: string } {
   const username = process.env.ADMIN_USERNAME;
@@ -20,30 +18,47 @@ function getAdminCredentials(): { username: string; password: string } {
   return { username, password };
 }
 
-function generateSecureToken(): string {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-function cleanupExpiredTokens() {
-  const now = Date.now();
-  const tokensToDelete: string[] = [];
-  adminTokens.forEach((data, token) => {
-    if (now > data.expiresAt) {
-      tokensToDelete.push(token);
-    }
-  });
-  tokensToDelete.forEach(token => adminTokens.delete(token));
+async function constantTimeDelay(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, FAILED_LOGIN_DELAY_MS));
 }
 
 export async function POST(request: NextRequest) {
   try {
-    cleanupExpiredTokens();
-
     const { username, password } = await request.json();
 
-    const adminCreds = getAdminCredentials();
+    let authSuccess = false;
+    let adminCreds: { username: string; password: string };
 
-    if (username !== adminCreds.username || password !== adminCreds.password) {
+    try {
+      adminCreds = getAdminCredentials();
+      
+      // Use timing-safe comparison for username
+      const usernameBuffer = Buffer.from(username || '');
+      const expectedUsernameBuffer = Buffer.from(adminCreds.username);
+      
+      const usernameMatch = usernameBuffer.length === expectedUsernameBuffer.length &&
+        crypto.timingSafeEqual(usernameBuffer, expectedUsernameBuffer);
+
+      // Use timing-safe comparison for password
+      const passwordBuffer = Buffer.from(password || '');
+      const expectedPasswordBuffer = Buffer.from(adminCreds.password);
+      
+      const passwordMatch = passwordBuffer.length === expectedPasswordBuffer.length &&
+        crypto.timingSafeEqual(passwordBuffer, expectedPasswordBuffer);
+
+      authSuccess = usernameMatch && passwordMatch;
+    } catch (credsError) {
+      // Log the actual error server-side but don't expose to client
+      console.error('Admin login error - credentials check failed:', credsError);
+      await constantTimeDelay();
+      return NextResponse.json(
+        { error: 'Authentication failed' },
+        { status: 401 }
+      );
+    }
+
+    if (!authSuccess) {
+      await constantTimeDelay();
       return NextResponse.json(
         { error: 'Invalid admin credentials' },
         { status: 401 }
@@ -51,27 +66,59 @@ export async function POST(request: NextRequest) {
     }
 
     const token = generateSecureToken();
-    const expiresAt = Date.now() + TOKEN_EXPIRY_MS;
-    adminTokens.set(token, { expiresAt, username });
+    storeAdminToken(token, username);
 
     const response = NextResponse.json({
       success: true,
       message: 'Admin authenticated successfully',
     });
 
+    // Cookie scoped to /admin path only - never sent to user-facing routes
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24,
-      path: '/',
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: '/admin', // Only sent to /admin/* routes
     });
 
     return response;
   } catch (error: any) {
     console.error('Admin login error:', error);
     return NextResponse.json(
-      { error: error.message || 'An unexpected error occurred' },
+      { error: 'Authentication failed' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const adminToken = request.cookies.get('admin_token');
+    
+    if (adminToken?.value) {
+      const { revokeAdminToken } = await import('@/lib/admin-auth');
+      revokeAdminToken(adminToken.value);
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+
+    response.cookies.set('admin_token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/admin',
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Admin logout error:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }

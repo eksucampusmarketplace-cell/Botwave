@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface RateLimitSetting {
   id: string;
@@ -14,25 +14,46 @@ interface RateLimitSetting {
   description: string;
 }
 
+interface Session {
+  id: string;
+  phone_number: string;
+  session_name: string;
+  state: string;
+  last_active: string | null;
+  created_at: string;
+  username: string;
+}
+
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSessions: 0,
     totalMessages: 0,
     systemStatus: 'Healthy'
   });
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'sessions' | 'settings' | 'health'>('sessions');
   const [rateLimits, setRateLimits] = useState<RateLimitSetting[]>([]);
   const [savingRateLimits, setSavingRateLimits] = useState(false);
   const [healthData, setHealthData] = useState<any>(null);
   const [fetchingHealth, setFetchingHealth] = useState(false);
+  
+  // Inline message state for better UX
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
         const statsRes = await fetch('/api/admin/stats');
+        
+        // Redirect to login on 401
+        if (statsRes.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        
         const statsData = await statsRes.json();
         if (statsData.success) {
           setStats(statsData.data);
@@ -51,7 +72,7 @@ export default function AdminDashboard() {
     };
 
     fetchAdminData();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (activeTab === 'settings') {
@@ -97,10 +118,14 @@ export default function AdminDashboard() {
         body: JSON.stringify({ settings: rateLimits }),
       });
       if (res.ok) {
-        alert('Rate limit settings saved successfully');
+        setMessage({ type: 'success', text: 'Rate limit settings saved successfully' });
+        // Clear message after 3 seconds
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ type: 'error', text: 'Failed to save rate limit settings' });
       }
     } catch (err) {
-      alert('Failed to save rate limit settings');
+      setMessage({ type: 'error', text: 'Failed to save rate limit settings' });
     } finally {
       setSavingRateLimits(false);
     }
@@ -119,10 +144,23 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/sessions/${sessionId}/stop`, { method: 'POST' });
       if (res.ok) {
         setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, state: 'inactive' } : s));
+        setMessage({ type: 'success', text: 'Session terminated successfully' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ type: 'error', text: 'Failed to stop session' });
       }
     } catch (err) {
-      alert('Failed to stop session');
+      setMessage({ type: 'error', text: 'Failed to stop session' });
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    router.push('/admin/login');
   };
 
   return (
@@ -135,10 +173,28 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-zinc-500 font-mono text-xs mt-1">{"// SYSTEM OVERVIEW"}</p>
           </div>
-          <Link href="/admin/login" className="text-zinc-400 hover:text-white font-mono text-xs border border-zinc-800 px-4 py-2 transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="text-zinc-400 hover:text-white font-mono text-xs border border-zinc-800 px-4 py-2 transition-colors"
+          >
             LOGOUT
-          </Link>
+          </button>
         </header>
+
+        {/* Inline message display */}
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mb-6 p-4 border ${
+              message.type === 'success' 
+                ? 'bg-green-950/30 border-green-900 text-green-400' 
+                : 'bg-red-950/30 border-red-900 text-red-400'
+            } font-mono text-sm`}
+          >
+            {message.text}
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           {[
@@ -189,7 +245,12 @@ export default function AdminDashboard() {
               </button>
             </div>
             {activeTab === 'sessions' && (
-              <button className="text-xs font-mono text-red-600 hover:text-red-500">REFRESH</button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="text-xs font-mono text-red-600 hover:text-red-500"
+              >
+                REFRESH
+              </button>
             )}
           </div>
 
@@ -206,7 +267,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session, i) => (
+                  {sessions.map((session) => (
                     <tr key={session.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                       <td className="p-6 text-zinc-400">{session.id.slice(0, 8)}...</td>
                       <td className="p-6">{session.username || 'Unknown'}</td>
@@ -220,12 +281,14 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="p-6">
-                        <button 
-                          onClick={() => handleStopSession(session.id)}
-                          className="text-red-600 hover:underline"
-                        >
-                          TERMINATE
-                        </button>
+                        {session.state !== 'inactive' && (
+                          <button 
+                            onClick={() => handleStopSession(session.id)}
+                            className="text-red-600 hover:underline"
+                          >
+                            TERMINATE
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -328,7 +391,8 @@ export default function AdminDashboard() {
                     <button 
                       onClick={() => {
                         navigator.clipboard.writeText(healthData.schemaSql);
-                        alert('SQL copied to clipboard!');
+                        setMessage({ type: 'success', text: 'SQL copied to clipboard!' });
+                        setTimeout(() => setMessage(null), 3000);
                       }}
                       className="absolute top-2 right-2 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono transition-colors"
                     >
