@@ -6,13 +6,26 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Ensure rate limit settings are loaded
+    // Ensure rate limit settings are loaded from database
     if (!areSettingsLoaded()) {
-      const { data: settings } = await supabase
+      const { data: settings, error: settingsError } = await supabase
         .from('rate_limit_settings')
         .select('*');
-      if (settings) {
+      if (settingsError) {
+        console.error('Failed to load rate limit settings:', settingsError);
+      }
+      if (settings && settings.length > 0) {
         applyRateLimiterConfig(settings);
+      } else {
+        // No settings found - use safe defaults
+        applyRateLimiterConfig([{
+          setting_key: 'login',
+          setting_name: 'Login',
+          window_ms: 60000,
+          max_requests: 10,
+          enabled: true,
+          description: 'Login attempts per minute'
+        }]);
       }
     }
 
@@ -21,7 +34,7 @@ export async function POST(request: NextRequest) {
     const ip = forwarded ? forwarded.split(',')[0] : 'anonymous';
     if (!loginRateLimiter.isAllowed(ip)) {
       return NextResponse.json(
-        { error: 'Too many login attempts. Please try again later.' },
+        { error: 'Too many login attempts. Please wait a minute before trying again.' },
         { status: 429 }
       );
     }
