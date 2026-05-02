@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getAuthCallbackUrl } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
         data: {
           username,
         },
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
 
