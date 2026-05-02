@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const createSessionSchema = z.object({
   phoneNumber: z.string().min(10),
   sessionName: z.string().min(1).max(50),
