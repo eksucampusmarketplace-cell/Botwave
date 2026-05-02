@@ -23,9 +23,11 @@ export default function AdminDashboard() {
   });
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'sessions' | 'settings'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'settings' | 'health'>('sessions');
   const [rateLimits, setRateLimits] = useState<RateLimitSetting[]>([]);
   const [savingRateLimits, setSavingRateLimits] = useState(false);
+  const [healthData, setHealthData] = useState<any>(null);
+  const [fetchingHealth, setFetchingHealth] = useState(false);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -54,8 +56,25 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'settings') {
       fetchRateLimits();
+    } else if (activeTab === 'health') {
+      fetchHealthData();
     }
   }, [activeTab]);
+
+  const fetchHealthData = async () => {
+    setFetchingHealth(true);
+    try {
+      const res = await fetch('/api/admin/db-setup');
+      const data = await res.json();
+      if (data.success) {
+        setHealthData(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching health data:', err);
+    } finally {
+      setFetchingHealth(false);
+    }
+  };
 
   const fetchRateLimits = async () => {
     try {
@@ -160,6 +179,14 @@ export default function AdminDashboard() {
               >
                 RATE LIMITS
               </button>
+              <button
+                onClick={() => setActiveTab('health')}
+                className={`font-display text-xs tracking-wider px-4 py-2 transition-colors ${
+                  activeTab === 'health' ? 'text-red-600 border-b-2 border-red-600' : 'text-zinc-500 hover:text-white'
+                }`}
+              >
+                SYSTEM HEALTH
+              </button>
             </div>
             {activeTab === 'sessions' && (
               <button className="text-xs font-mono text-red-600 hover:text-red-500">REFRESH</button>
@@ -259,6 +286,66 @@ export default function AdminDashboard() {
                   {savingRateLimits ? 'SAVING...' : 'SAVE SETTINGS'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'health' && (
+            <div className="p-6">
+              <div className="mb-8">
+                <h3 className="text-lg font-bold mb-2">Database Connection & Schema</h3>
+                <p className="text-zinc-500 font-mono text-xs mb-6">{"// Verifying that all required tables exist in your Supabase project."}</p>
+                
+                {fetchingHealth ? (
+                  <p className="text-zinc-500 font-mono text-xs">Checking system health...</p>
+                ) : healthData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(healthData.tables).map(([table, exists]: [any, any]) => (
+                      <div key={table} className="flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-800">
+                        <span className="font-mono text-xs">{table}</span>
+                        {exists ? (
+                          <span className="text-green-500 text-[10px] font-bold">READY</span>
+                        ) : (
+                          <span className="text-red-500 text-[10px] font-bold">MISSING</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-red-500 font-mono text-xs">Failed to fetch health data</p>
+                )}
+              </div>
+
+              {!fetchingHealth && healthData && !healthData.allFound && (
+                <div className="mt-8 p-6 bg-red-950/20 border border-red-900/50">
+                  <h3 className="text-red-500 font-bold mb-2">Required Tables Missing!</h3>
+                  <p className="text-zinc-400 font-mono text-xs mb-4">
+                    Some core tables are missing from your database. To fix this, copy the SQL below and run it in your Supabase SQL Editor.
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-black p-4 text-[10px] font-mono text-zinc-400 overflow-auto max-h-60 border border-zinc-800">
+                      {healthData.schemaSql}
+                    </pre>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(healthData.schemaSql);
+                        alert('SQL copied to clipboard!');
+                      }}
+                      className="absolute top-2 right-2 px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono transition-colors"
+                    >
+                      COPY SQL
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!fetchingHealth && healthData && healthData.allFound && (
+                <div className="mt-8 p-6 bg-green-950/10 border border-green-900/30">
+                  <h3 className="text-green-500 font-bold mb-2">All Systems Green</h3>
+                  <p className="text-zinc-400 font-mono text-xs">
+                    The database schema is correctly initialized. All required tables were found.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

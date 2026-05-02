@@ -10,7 +10,9 @@ export async function initDatabase() {
   // Check if tables exist
   const { error } = await supabase.from('bot_sessions').select('id').limit(1);
   if (error && error.code === 'PGRST205') {
-    console.warn('WARNING: bot_sessions table not found in Supabase. Please run migrations.');
+    console.warn('CRITICAL WARNING: bot_sessions table not found in Supabase.');
+    console.warn('Please run the migrations in the Supabase SQL Editor.');
+    console.warn('Migrations can be found in the supabase/migrations folder.');
   }
 }
 
