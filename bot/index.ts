@@ -1,3 +1,4 @@
+import './env';
 import { initializeBot, syncSessionsWithDb } from './BotManager';
 
 const bot = initializeBot();

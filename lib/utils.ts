@@ -112,3 +112,17 @@ export function applyRateLimiterConfig(settings: RateLimitConfig[]) {
 export function areSettingsLoaded() {
   return settingsLoaded;
 }
+
+export function settingsLoadedWithDefaults() {
+  // Apply safe defaults for all limiters
+  const defaults: RateLimitConfig[] = [
+    { setting_key: 'signup', setting_name: 'Sign Up', window_ms: 0, max_requests: 0, enabled: false },
+    { setting_key: 'login', setting_name: 'Login', window_ms: 60000, max_requests: 10, enabled: true },
+    { setting_key: 'message', setting_name: 'Messages', window_ms: 60000, max_requests: 20, enabled: true },
+    { setting_key: 'command', setting_name: 'Commands', window_ms: 60000, max_requests: 30, enabled: true },
+    { setting_key: 'download', setting_name: 'Downloads', window_ms: 60000, max_requests: 10, enabled: true },
+  ];
+  
+  applyRateLimiterConfig(defaults);
+  settingsLoaded = true;
+}

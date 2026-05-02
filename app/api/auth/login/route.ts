@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { loginRateLimiter, applyRateLimiterConfig, areSettingsLoaded } from '@/lib/utils';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { loginRateLimiter, applyRateLimiterConfig, areSettingsLoaded, settingsLoadedWithDefaults } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,24 +8,27 @@ export async function POST(request: NextRequest) {
 
     // Ensure rate limit settings are loaded from database
     if (!areSettingsLoaded()) {
-      const { data: settings, error: settingsError } = await supabase
-        .from('rate_limit_settings')
-        .select('*');
-      if (settingsError) {
-        console.error('Failed to load rate limit settings:', settingsError);
-      }
-      if (settings && settings.length > 0) {
-        applyRateLimiterConfig(settings);
-      } else {
-        // No settings found - use safe defaults
-        applyRateLimiterConfig([{
-          setting_key: 'login',
-          setting_name: 'Login',
-          window_ms: 60000,
-          max_requests: 10,
-          enabled: true,
-          description: 'Login attempts per minute'
-        }]);
+      try {
+        const { data: settings, error: settingsError } = await supabase
+          .from('rate_limit_settings')
+          .select('*');
+        
+        if (settingsError) {
+          // If the table doesn't exist, we'll get a PGRST205 error
+          if (settingsError.code === 'PGRST205') {
+            console.log('Rate limit settings table not found, using defaults');
+          } else {
+            console.error('Failed to load rate limit settings:', settingsError);
+          }
+          settingsLoadedWithDefaults();
+        } else if (settings && settings.length > 0) {
+          applyRateLimiterConfig(settings);
+        } else {
+          settingsLoadedWithDefaults();
+        }
+      } catch (err) {
+        console.error('Unexpected error loading rate limit settings:', err);
+        settingsLoadedWithDefaults();
       }
     }
 
@@ -43,13 +46,31 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email/Username and password are required' },
         { status: 400 }
       );
     }
 
+    let loginEmail = email;
+    // If it's not an email, assume it's a username
+    if (!email.includes('@')) {
+      const adminSupabase = await createAdminClient();
+      const { data: profile, error: profileError } = await adminSupabase
+        .from('profiles')
+        .select('id')
+        .eq('username', email)
+        .single();
+      
+      if (profile) {
+        const { data: userData, error: userError } = await adminSupabase.auth.admin.getUserById(profile.id);
+        if (userData?.user?.email) {
+          loginEmail = userData.user.email;
+        }
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
