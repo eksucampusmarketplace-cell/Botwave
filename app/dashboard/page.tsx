@@ -7,6 +7,7 @@ import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
+import { createClient } from '@/lib/supabase/client';
 
 const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
@@ -59,7 +60,16 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    const checkUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/login';
+        return;
+      }
+      fetchDashboardData();
+    };
+    checkUser();
   }, []);
 
   // Poll for QR code when showQR is true and activeSession has no QR

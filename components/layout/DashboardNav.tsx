@@ -3,9 +3,24 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardNav() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        router.push('/login');
+      }
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
   return (
     <motion.nav
@@ -34,7 +49,10 @@ export default function DashboardNav() {
         <div className="w-8 h-8 rounded-full bg-green/20 border border-green flex items-center justify-center">
           <span className="font-mono text-xs text-green">U</span>
         </div>
-        <button className="font-mono text-xs text-[#7abfa0] hover:text-red-400 transition-colors tracking-[2px]">
+        <button 
+          onClick={handleLogout}
+          className="font-mono text-xs text-[#7abfa0] hover:text-red-400 transition-colors tracking-[2px]"
+        >
           LOGOUT
         </button>
       </div>

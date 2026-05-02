@@ -41,7 +41,15 @@ export default function SessionsPage() {
   };
 
   useEffect(() => {
-    fetchSessions();
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/login';
+        return;
+      }
+      fetchSessions();
+    };
+    checkUser();
   }, []);
 
   // Poll for QR code when showQR is true and activeSession has no QR
