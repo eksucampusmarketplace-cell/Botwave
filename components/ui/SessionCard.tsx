@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 interface SessionCardProps {
   name: string;
   phone: string;
-  status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending';
+  status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'needs_reauth';
   lastActive: string;
   onConnect: () => void;
 }
@@ -16,6 +16,7 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
     active: 'bg-green text-dark',
     disconnected: 'bg-red-400/20 text-red-400',
     inactive: 'bg-red-400/20 text-red-400',
+    needs_reauth: 'bg-red-600 text-white',
     pending: 'bg-cyan/20 text-cyan',
     qr_pending: 'bg-cyan/20 text-cyan',
   };
@@ -25,6 +26,7 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
     active: 'CONNECTED',
     disconnected: 'OFFLINE',
     inactive: 'OFFLINE',
+    needs_reauth: 'RE-AUTH',
     pending: 'QR PENDING',
     qr_pending: 'QR PENDING',
   };
@@ -52,7 +54,7 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
         <span className={`font-mono text-[10px] tracking-[2px] px-3 py-1 ${statusColors[status]}`}>
           {statusLabels[status]}
         </span>
-        {status === 'disconnected' && (
+        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth') && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

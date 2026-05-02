@@ -19,9 +19,10 @@ CREATE TABLE IF NOT EXISTS public.bot_sessions (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   phone_number TEXT NOT NULL,
   session_name TEXT NOT NULL,
-  state TEXT DEFAULT 'qr_pending' CHECK (state IN ('active', 'inactive', 'qr_pending')),
+  state TEXT DEFAULT 'qr_pending' CHECK (state IN ('active', 'inactive', 'qr_pending', 'needs_reauth')),
   qr_code TEXT,
   qr_expires_at TIMESTAMPTZ,
+  auth_state JSONB,
   last_active TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
