@@ -76,14 +76,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export async function verifyAdminToken(token: string): Promise<boolean> {
-  cleanupExpiredTokens();
-  const tokenData = adminTokens.get(token);
-  if (!tokenData) return false;
-  return Date.now() < tokenData.expiresAt;
-}
-
-export async function logoutAdmin(token: string): Promise<void> {
-  adminTokens.delete(token);
-}
