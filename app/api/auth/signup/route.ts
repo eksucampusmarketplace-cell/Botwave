@@ -4,23 +4,36 @@ import { signupRateLimiter, applyRateLimiterConfig, areSettingsLoaded } from '@/
 
 export async function POST(request: NextRequest) {
   try {
-    // Ensure rate limit settings are loaded
+    // Ensure rate limit settings are loaded from database
     const supabase = await createClient();
     if (!areSettingsLoaded()) {
-      const { data: settings } = await supabase
+      const { data: settings, error: settingsError } = await supabase
         .from('rate_limit_settings')
         .select('*');
-      if (settings) {
+      if (settingsError) {
+        console.error('Failed to load rate limit settings:', settingsError);
+      }
+      if (settings && settings.length > 0) {
         applyRateLimiterConfig(settings);
+      } else {
+        // No settings found - use defaults (signup is disabled/unlimited)
+        applyRateLimiterConfig([{
+          setting_key: 'signup',
+          setting_name: 'Sign Up',
+          window_ms: 0,
+          max_requests: 0,
+          enabled: false,
+          description: 'Sign up rate limit - disabled by default'
+        }]);
       }
     }
 
-    // Apply rate limiting
+    // Apply rate limiting only if enabled in settings
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'anonymous';
     if (!signupRateLimiter.isAllowed(ip)) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
+        { error: 'Too many signup attempts. Please wait a minute before trying again.' },
         { status: 429 }
       );
     }
