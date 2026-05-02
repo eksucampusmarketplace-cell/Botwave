@@ -61,7 +61,7 @@ export default function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="font-mono text-xs tracking-[4px] text-cyan block mb-4">// GETTING STARTED</span>
+          <span className="font-mono text-xs tracking-[4px] text-cyan block mb-4">{"// GETTING STARTED"}</span>
           <h2 className="font-display text-[clamp(1.8rem,4vw,3rem)] font-bold text-white">
             HOW IT <span className="text-green">WORKS</span>
           </h2>

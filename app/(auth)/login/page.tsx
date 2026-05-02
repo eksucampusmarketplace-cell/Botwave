@@ -53,7 +53,7 @@ export default function LoginPage() {
             BOT<span className="text-cyan">WAVE</span>
           </Link>
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[3px] mt-4">
-            // MEMBER ACCESS PORTAL
+            {"// MEMBER ACCESS PORTAL"}
           </p>
         </div>
 
@@ -130,6 +130,10 @@ export default function LoginPage() {
         <p className="text-center mt-8 font-mono text-[11px] text-[#3a7a5a] tracking-[2px]">
           <Link href="/" className="hover:text-green transition-colors">
             ← BACK TO HOME
+          </Link>
+          <span className="mx-2">|</span>
+          <Link href="/admin/login" className="hover:text-green transition-colors">
+            ADMIN ACCESS →
           </Link>
         </p>
       </motion.div>
