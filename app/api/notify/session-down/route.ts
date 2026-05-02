@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createAdminClient } from '@/lib/supabase/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing API key');
+  }
+  return new Resend(apiKey);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +18,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured, skipping notification');
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 503 });
+    }
+
     const supabase = await createAdminClient();
+    const resend = getResendClient();
     
     // Get user email
     const { data: profile, error: profileError } = await supabase
