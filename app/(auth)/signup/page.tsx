@@ -77,7 +77,7 @@ export default function SignupPage() {
             BOT<span className="text-cyan">WAVE</span>
           </Link>
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[3px] mt-4">
-            // CREATE YOUR ACCOUNT
+            {"// CREATE YOUR ACCOUNT"}
           </p>
         </div>
 

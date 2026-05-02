@@ -62,7 +62,7 @@ export default function Disclaimer() {
           <div className="flex flex-col gap-3">
             {disclaimerItems.map((item, index) => (
               <div key={index} className="flex gap-3 items-start font-mono text-sm text-[#aa7070]">
-                <span className="text-red-400/50 shrink-0">//</span>
+                <span className="text-red-400/50 shrink-0">{"//"}</span>
                 <span>{item}</span>
               </div>
             ))}

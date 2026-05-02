@@ -106,7 +106,7 @@ export default function HomePage() {
           transition={{ duration: 0.8 }}
           className="font-mono text-xs tracking-[4px] text-cyan border border-cyan/30 px-4 py-2 mb-8 inline-block"
         >
-          // NEXT-GEN WHATSAPP AUTOMATION
+          {"// NEXT-GEN WHATSAPP AUTOMATION"}
         </motion.div>
 
         <motion.h1
@@ -187,7 +187,7 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="font-mono text-xs tracking-[4px] text-cyan block mb-4">// CAPABILITIES</span>
+          <span className="font-mono text-xs tracking-[4px] text-cyan block mb-4">{"// CAPABILITIES"}</span>
           <h2 className="font-display text-[clamp(1.8rem,4vw,3rem)] font-bold text-white">
             WHAT <span className="text-green">BOTWAVE</span> CAN DO
           </h2>
