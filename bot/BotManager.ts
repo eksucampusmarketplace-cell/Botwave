@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import type { ConnectionState, BaileysEventMap } from '@whatsapp-web.js';
-import { Client, Session } from '@whatsapp-web.js';
+import { Client, LocalAuth as Session, MessageMedia } from 'whatsapp-web.js';
 import { initDatabase, getUserSessions, updateSessionQR, updateSessionStatus } from './database';
 import { handleMessage, handleGroupJoin, handleGroupLeave } from './handlers/MessageHandler';
 import { registerCommands } from './handlers/CommandHandler';
@@ -32,7 +31,7 @@ export class BotWaveBot {
     const authDir = `./auth/${this.sessionId}`;
 
     this.client = new Client({
-      authStrategy: new Session({ sessionId: this.sessionId }),
+      authStrategy: new Session({ clientId: this.sessionId }),
       puppeteer: {
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -134,7 +133,8 @@ export class BotWaveBot {
     const delay = 1000 + Math.random() * 2000;
     await new Promise((resolve) => setTimeout(resolve, delay));
 
-    await this.client.sendImage(to, imageUrl, 'image', caption);
+    const media = await MessageMedia.fromUrl(imageUrl);
+    await this.client.sendMessage(to, media, { caption });
   }
 }
 

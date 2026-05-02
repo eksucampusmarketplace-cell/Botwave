@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:bot": "tsc bot/index.ts --outDir dist/bot --module commonjs --esModuleInterop --skipLibCheck --moduleResolution node --target es2017",
+    "start:bot": "node dist/bot/index.js"
   },
   "dependencies": {
     "next": "14.2.3",
@@ -14,7 +16,8 @@
     "react-dom": "^18.3.1",
     "@supabase/ssr": "^0.3.0",
     "@supabase/supabase-js": "^2.43.4",
-    "baileys": "5.0.0",
+    "baileys": "^6.0.1",
+    "whatsapp-web.js": "^1.23.0",
     "framer-motion": "^11.2.10",
     "libphonenumber-js": "^1.11.2",
     "openai": "^4.47.1",

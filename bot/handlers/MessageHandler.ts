@@ -1,4 +1,4 @@
-import { messageRateLimiter, commandRateLimiter, delay } from '@/lib/utils';
+import { messageRateLimiter, commandRateLimiter, delay } from '../../lib/utils';
 
 const COMMAND_PREFIX = '#';
 const RATE_LIMIT_WINDOW = 60000;
