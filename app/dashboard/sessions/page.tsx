@@ -66,12 +66,25 @@ export default function SessionsPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (showQR && activeSessionRef.current) {
-      interval = setInterval(() => {
-        fetchSessions(true);
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/bot/sessions');
+          const data = await response.json();
+          if (data.success) {
+            setSessions(data.data);
+            const refreshed = data.data.find((s: any) => s.id === activeSessionRef.current?.id);
+            if (refreshed) {
+              setActiveSession(refreshed);
+              activeSessionRef.current = refreshed;
+            }
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [showQR, fetchSessions]);
+  }, [showQR]);
 
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -99,12 +99,25 @@ export default function DashboardPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (showQR && activeSessionRef.current) {
-      interval = setInterval(() => {
-        fetchDashboardData(true);
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/bot/sessions');
+          const data = await res.json();
+          if (data.success) {
+            setSessions(data.data);
+            const refreshed = data.data.find((s: any) => s.id === activeSessionRef.current?.id);
+            if (refreshed) {
+              setActiveSession(refreshed);
+              activeSessionRef.current = refreshed;
+            }
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [showQR, fetchDashboardData]);
+  }, [showQR]);
 
   const toggleFeature = async (featureId: string) => {
     const isEnabled = activeFeatures.includes(featureId);
