@@ -36,6 +36,7 @@ export class BotWaveBot {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private messageQueue: MessageQueue | null = null;
   private isReconnecting: boolean = false;
+  private isPairingSent: boolean = false;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -116,12 +117,15 @@ export class BotWaveBot {
             // event before we send a new request on the same WebSocket.
             const sock = this.socket;
             const sid = this.sessionId;
+            const setSent = (v: boolean) => { this.isPairingSent = v; };
             setTimeout(async () => {
               console.log(`[${sid}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
               try {
                 const code = await sock.requestPairingCode(cleanPhone);
                 console.log(`[${sid}] <<< requestPairingCode returned: "${code}"`);
                 await updateSessionPairingCode(sid, code);
+                await updateSessionStatus(sid, 'pairing_sent');
+                setSent(true);
                 console.log(`[${sid}] Pairing code saved to DB!`);
               } catch (err: any) {
                 console.error(`[${sid}] <<< requestPairingCode FAILED:`, err);
@@ -160,6 +164,7 @@ export class BotWaveBot {
         }
 
         this.isReady = false;
+        this.isPairingSent = false;
 
         // 401 = credentials rejected by WhatsApp. Do NOT reconnect immediately;
         // rapid retries worsen IP reputation. Set a 5-minute cooldown.
@@ -169,14 +174,17 @@ export class BotWaveBot {
           this.socket = null;
           await updateSessionStatus(this.sessionId, 'needs_reauth');
 
-          try {
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notify/session-down`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
-            });
-          } catch (err) {
-            console.error('Failed to send session-down notification (non-fatal):', err);
+          const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+          if (appUrl) {
+            try {
+              await fetch(`${appUrl}/api/notify/session-down`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+              });
+            } catch (err) {
+              console.error('Failed to send session-down notification (non-fatal):', err);
+            }
           }
           return;
         }
@@ -186,14 +194,17 @@ export class BotWaveBot {
           this.isReconnecting = false;
           await updateSessionStatus(this.sessionId, 'needs_reauth');
 
-          try {
-            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notify/session-down`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
-            });
-          } catch (err) {
-            console.error('Failed to send session-down notification (non-fatal):', err);
+          const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+          if (appUrl) {
+            try {
+              await fetch(`${appUrl}/api/notify/session-down`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+              });
+            } catch (err) {
+              console.error('Failed to send session-down notification (non-fatal):', err);
+            }
           }
         } else {
           // Hard limit: max 3 reconnect attempts
@@ -229,6 +240,7 @@ export class BotWaveBot {
         console.log(`Session connected: ${this.sessionId}`);
         this.isReady = true;
         this.isReconnecting = false;
+        this.isPairingSent = false;
         this.qrCode = null;
         this.reconnectAttempts = 0;
         if (this.reconnectTimeout) {
@@ -277,6 +289,7 @@ export class BotWaveBot {
       qrCode: this.qrCode,
       isReconnecting: this.isReconnecting,
       isQrPending: !!this.qrCode,
+      isPairingSent: this.isPairingSent,
     };
   }
 }
@@ -312,11 +325,12 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
       continue;
     }
 
-    // If the session needs a fresh connection (qr_pending) but an old dead bot
+    // If the session needs a fresh connection but an old dead bot
     // is still in the map, stop it first so a new one can take over.
-    if (bot && session.state === 'qr_pending') {
+    // Never kill a bot that has already sent a pairing code and is waiting.
+    if (bot && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
       const status = bot.getStatus();
-      if (!status.isReady && !status.isReconnecting) {
+      if (!status.isReady && !status.isReconnecting && !status.isPairingSent) {
         console.log(`[SYNC] Replacing dead bot for session: ${session.id} (state: ${session.state})`);
         await bot.stop();
         activeBots.delete(session.id);
