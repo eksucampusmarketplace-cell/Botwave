@@ -1,15 +1,21 @@
+# BotWave Render Blueprint
+# Single free-tier Web Service running both Next.js + WhatsApp bot.
+#
+# Usage: Render Dashboard → New → Blueprint → connect this repo
+# Or manually update your existing service's Build/Start commands.
+
 services:
   - type: web
-    name: botwave-web
-    env: node
-    region: oregon
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    name: botwave
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build && npm run build:bot
+    startCommand: bash scripts/start-all.sh
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
+        sync: false  # Set manually in Render dashboard
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -18,22 +24,5 @@ services:
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
-  - type: worker
-    name: botwave-bot
-    env: node
-    region: oregon
-    buildCommand: npm install && npm run build:bot
-    startCommand: npm run start:bot
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
-      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: BOT_SECRET_KEY
-        sync: false
-      - key: NEXT_PUBLIC_APP_URL
+      - key: OPENWEATHER_API_KEY
         sync: false
