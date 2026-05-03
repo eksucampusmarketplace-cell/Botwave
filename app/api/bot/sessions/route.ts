@@ -211,3 +211,95 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'sessionId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the session belongs to this user
+    const { data: existing, error: fetchError } = await supabase
+      .from('bot_sessions')
+      .select('id, state, worker_url')
+      .eq('id', sessionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !existing) {
+      return NextResponse.json(
+        { error: 'Session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Reset session for fresh pairing: clear old auth, QR, and pairing code
+    const { data: session, error } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'qr_pending',
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        auth_state: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Notify the assigned worker to pick up the session
+    const workerUrl = existing.worker_url;
+    if (workerUrl && INTERNAL_SECRET) {
+      try {
+        await fetch(`${workerUrl}/api/internal/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': INTERNAL_SECRET,
+          },
+          body: JSON.stringify({
+            action: 'start',
+            sessionId,
+          }),
+        });
+      } catch (err) {
+        console.error(`Failed to notify worker ${workerUrl} for reconnect:`, err);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: session,
+      message: 'Session reset for reconnection',
+    });
+  } catch (error: any) {
+    console.error('Reconnect session error:', error);
+    return NextResponse.json(
+      { error: 'Failed to reconnect session' },
+      { status: 500 }
+    );
+  }
+}

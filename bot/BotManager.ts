@@ -312,7 +312,18 @@ export async function syncSessionsWithDb() {
       continue;
     }
 
-    if (!bot) {
+    // If the session needs a fresh connection (qr_pending) but an old dead bot
+    // is still in the map, stop it first so a new one can take over.
+    if (bot && session.state === 'qr_pending') {
+      const status = bot.getStatus();
+      if (!status.isReady && !status.isReconnecting) {
+        console.log(`[SYNC] Replacing dead bot for session: ${session.id} (state: ${session.state})`);
+        await bot.stop();
+        activeBots.delete(session.id);
+      }
+    }
+
+    if (!activeBots.has(session.id)) {
       console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);
       const newBot = new BotWaveBot({
         sessionId: session.id,
