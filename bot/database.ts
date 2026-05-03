@@ -89,15 +89,33 @@ export async function getSessionsNeedingBot() {
 }
 
 export async function updateSessionQR(sessionId: string, qr: string, expiresAt: string) {
+  // Check current session state - only clear auth_state for new sessions
+  // Preserving auth_state prevents WhatsApp rate-limiting (515 error)
+  // when reconnecting existing sessions that need to re-authenticate
+  const { data: existingSession } = await supabase
+    .from('bot_sessions')
+    .select('auth_state')
+    .eq('id', sessionId)
+    .single();
+
+  const hasExistingAuth = existingSession && existingSession.auth_state && Object.keys(existingSession.auth_state).length > 0;
+
+  const updatePayload: Record<string, unknown> = {
+    qr_code: qr,
+    qr_expires_at: expiresAt,
+    state: 'qr_pending',
+    updated_at: new Date().toISOString()
+  };
+
+  // Only clear auth_state if this is a genuinely new session (no existing auth)
+  // For reconnecting sessions, preserve auth_state to use existing pairing
+  if (!hasExistingAuth) {
+    updatePayload.auth_state = null;
+  }
+
   const { error } = await supabase
     .from('bot_sessions')
-    .update({
-      qr_code: qr,
-      qr_expires_at: expiresAt,
-      state: 'qr_pending',
-      auth_state: null,
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', sessionId);
 
   if (error) {
@@ -105,7 +123,7 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       console.error(`Error updating QR for session ${sessionId}:`, error);
     }
   } else {
-    console.log(`Updated QR for session ${sessionId}`);
+    console.log(`Updated QR for session ${sessionId}${hasExistingAuth ? ' (preserving existing auth_state for reconnection)' : ''}`);
   }
 }
 
