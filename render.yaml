@@ -1,15 +1,25 @@
+# BotWave Render Blueprint
+# Deploys two services from one repo:
+#   1. botwave-web  — Next.js dashboard + API (Web Service)
+#   2. botwave-bot  — WhatsApp bot engine (Background Worker)
+#
+# Usage: Render Dashboard → New → Blueprint → connect this repo
+# Env vars must be set in a shared Render Environment Group named "botwave-env"
+# or manually on each service.
+
 services:
+  # ─── Web Dashboard + API ─────────────────────────────────────────────────────
   - type: web
     name: botwave-web
-    env: node
-    region: oregon
+    runtime: node
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
+        sync: false  # Set manually in Render dashboard
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -18,10 +28,14 @@ services:
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+
+  # ─── WhatsApp Bot Engine ─────────────────────────────────────────────────────
   - type: worker
     name: botwave-bot
-    env: node
-    region: oregon
+    runtime: node
+    plan: free
     buildCommand: npm install && npm run build:bot
     startCommand: npm run start:bot
     envVars:
@@ -36,4 +50,6 @@ services:
       - key: BOT_SECRET_KEY
         sync: false
       - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: OPENWEATHER_API_KEY
         sync: false
