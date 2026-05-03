@@ -52,7 +52,7 @@ npm run lint         # Run ESLint
 - `!afk [reason]` - Set AFK status
 - `!download [url]` - Download media
 
-## Anti-Ban Features
+## Anti-Ban Features (Basic)
 - Human-like response flow (read receipts → seen delay → typing → pause → send)
 - 50-100 response variations per command (no identical message fingerprints)
 - Emoji rotation and dynamic variable injection ({name}, {time}, {date})
@@ -61,6 +61,19 @@ npm run lint         # Run ESLint
 - Max 3 reconnect attempts per session
 - 2-second stagger between session startups
 - Session-level (10 msgs/min) and user-level (20 msgs/min) rate limiting
+- Anti-spam flood detection (5 msgs in 10s = warning)
+- Never-send-same-message-twice dedup (10-message LRU buffer per pool)
+
+## Advanced Anti-Ban System (`bot/utils/advancedAntiban.ts`)
+- **Session Warmup**: New sessions limited to 15 msgs/day, scales to 200 over 7 days
+- **Daily Message Cap**: Hard 200 msg/day limit per session (combines with warmup)
+- **Read-But-Skip**: 15% chance bot reads but doesn't respond in groups (like a real person)
+- **Group Cooldown**: 3-8s random gap between replies in the same group
+- **Media Fingerprint Jitter**: Random bytes appended to stickers for unique hashes
+- **Presence Simulation**: Toggles online/offline based on time of day (80% offline at night)
+- **Message Length Jitter**: Zero-width chars + punctuation variations for unique byte fingerprints
+- **Activity Hours**: Quiet hours (12am-6am) with slower responses and shortened messages
+- **Anti-Pattern Delays**: 5% chance of 15-30s "distracted" delay, 3% chance of 30-60s, 1% chance of 60-120s
 
 ## Promo System
 - Shows "Create your own bot" link every 10th use of creative commands

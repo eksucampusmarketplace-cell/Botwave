@@ -36,6 +36,17 @@ import {
   autoReplyDefaults,
 } from '../utils/responsePools';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
+import {
+  isDailyCapReached,
+  trackMessageSent,
+  shouldSkipResponse,
+  isGroupOnCooldown,
+  markGroupReplied,
+  addMessageJitter,
+  getActivityConfig,
+  shortenForQuietHours,
+  naturalDelay,
+} from '../utils/advancedAntiban';
 
 const COMMAND_PREFIX = '!';
 const RATE_LIMIT_WINDOW = 60000;
@@ -99,6 +110,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
+    // Daily cap + warmup check (advanced anti-ban)
+    if (sessionId && isDailyCapReached(sessionId)) {
+      console.log(`Daily cap reached for session: ${sessionId}`);
+      return;
+    }
+
     // Anti-spam flood detection
     if (isGroup && isSpamming(senderJid)) {
       const response = pickResponse(spamWarnings, { name: pushName, time: currentTimeStr() });
@@ -106,8 +123,28 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
+    // Per-group cooldown (advanced anti-ban)
+    if (isGroup && isGroupOnCooldown(chatJid)) {
+      return; // Silently skip — don't even warn, just act like a human who's busy
+    }
+
+    // Read-but-skip probability (advanced anti-ban)
+    const isCommand = content.startsWith(COMMAND_PREFIX);
+    if (shouldSkipResponse(isGroup, isCommand)) {
+      // Mark as read but don't respond — like a real person ignoring a message
+      try {
+        await sock.readMessages([message.key]);
+      } catch { /* non-critical */ }
+      return;
+    }
+
+    // Natural delay variation (advanced anti-ban)
+    if (sessionId) {
+      await naturalDelay(sessionId);
+    }
+
     // Track message for leaderboard (groups only, non-commands)
-    if (isGroup && sessionId && !content.startsWith(COMMAND_PREFIX)) {
+    if (isGroup && sessionId && !isCommand) {
       incrementLeaderboard(sessionId, senderJid, pushName).catch(() => {});
     }
 
@@ -123,6 +160,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     await processAutoReply(context, sock);
+
+    // Track for daily cap + mark group replied (advanced anti-ban)
+    if (sessionId) trackMessageSent(sessionId);
+    if (isGroup) markGroupReplied(chatJid);
   } catch (error) {
     console.error('Error handling message:', error);
   }
@@ -339,11 +380,27 @@ async function sendReply(
   msgKey: any,
   queue?: MessageQueue,
 ): Promise<void> {
+  // Apply message jitter + quiet hours to text content (advanced anti-ban)
+  let processedContent = content;
+  if (typeof processedContent === 'string') {
+    const config = getActivityConfig();
+    if (config.shortenResponses) {
+      processedContent = shortenForQuietHours(processedContent);
+    }
+    processedContent = addMessageJitter(processedContent);
+  } else if (processedContent?.text && typeof processedContent.text === 'string') {
+    const config = getActivityConfig();
+    if (config.shortenResponses) {
+      processedContent = { ...processedContent, text: shortenForQuietHours(processedContent.text) };
+    }
+    processedContent = { ...processedContent, text: addMessageJitter(processedContent.text) };
+  }
+
   if (queue) {
-    const messageContent = typeof content === 'string' ? { text: content } : content;
+    const messageContent = typeof processedContent === 'string' ? { text: processedContent } : processedContent;
     await queue.enqueue(jid, messageContent);
   } else {
-    await humanSend(sock, jid, msgKey, content);
+    await humanSend(sock, jid, msgKey, processedContent);
   }
 }
 
@@ -467,10 +524,14 @@ async function createSticker(
       return;
     }
 
-    const stickerBuffer = await sharp(imageBuffer)
+    let stickerBuffer = await sharp(imageBuffer)
       .resize(512, 512, { fit: 'cover' })
       .webp()
       .toBuffer();
+
+    // Media fingerprint jitter — make every sticker unique at the binary level
+    const { jitterMediaBuffer } = await import('../utils/advancedAntiban');
+    stickerBuffer = jitterMediaBuffer(stickerBuffer);
 
     await sendReply(context.chatJid, { sticker: stickerBuffer }, sock, context.rawMessage.key, context.queue);
 
