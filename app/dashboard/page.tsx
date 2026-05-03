@@ -7,8 +7,7 @@ import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
-import PWAInstallGuide from '@/components/pwa/PWAInstallGuide';
-import SafetyNotice from '@/components/pwa/SafetyNotice';
+
 import { createClient } from '@/lib/supabase/client';
 
 const defaultFeatures = [
@@ -33,7 +32,6 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
-  const [pwaInstalled, setPwaInstalled] = useState(false);
 
   const activeSessionRef = useRef<any>(null);
 
@@ -78,18 +76,6 @@ export default function DashboardPage() {
       fetchDashboardData();
     };
     checkUser();
-
-    // Check if PWA is already installed
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    if (isStandalone) {
-      setPwaInstalled(true);
-    }
-    // Also check localStorage for manual confirmation
-    if (localStorage.getItem('botwave-pwa-installed') === 'true') {
-      setPwaInstalled(true);
-    }
   }, [fetchDashboardData]);
 
   useEffect(() => {
@@ -181,17 +167,8 @@ export default function DashboardPage() {
   };
 
   const handleConnect = (session: any) => {
-    if (!pwaInstalled) {
-      alert('Please install BotWave as an app first. Follow the guide at the top of this page.');
-      return;
-    }
     setActiveSession(session);
     setShowQR(true);
-  };
-
-  const handlePwaInstallConfirmed = () => {
-    setPwaInstalled(true);
-    localStorage.setItem('botwave-pwa-installed', 'true');
   };
 
   return (
@@ -217,11 +194,11 @@ export default function DashboardPage() {
           </p>
         </motion.div>
 
-        {!pwaInstalled && (
-          <PWAInstallGuide onInstallConfirmed={handlePwaInstallConfirmed} />
-        )}
-
-        <SafetyNotice />
+        <div className="bg-card border border-cyan/20 p-4 mb-6">
+          <p className="font-mono text-xs text-cyan">
+            Your bot runs 24/7 on BotWave&apos;s servers. You do not need to keep this app open or keep your phone on. Your session stays active as long as you remain connected.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">

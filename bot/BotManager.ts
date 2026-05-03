@@ -128,6 +128,26 @@ export class BotWaveBot {
 
         this.isReady = false;
 
+        // 401 = credentials rejected by WhatsApp. Do NOT reconnect immediately;
+        // rapid retries worsen IP reputation. Set a 5-minute cooldown.
+        if (statusCode === 401) {
+          console.log(`Session ${this.sessionId}: 401 auth failure. Setting needs_reauth with 5-min cooldown.`);
+          this.isReconnecting = false;
+          this.socket = null;
+          await updateSessionStatus(this.sessionId, 'needs_reauth');
+
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notify/session-down`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+            });
+          } catch (err) {
+            console.error('Failed to send session-down notification (non-fatal):', err);
+          }
+          return;
+        }
+
         if (!shouldReconnect) {
           console.log(`Session ${this.sessionId} logged out or kicked. Updating to needs_reauth.`);
           this.isReconnecting = false;
@@ -140,7 +160,7 @@ export class BotWaveBot {
               body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
             });
           } catch (err) {
-            console.error('Failed to send session-down notification:', err);
+            console.error('Failed to send session-down notification (non-fatal):', err);
           }
         } else {
           // Hard limit: max 3 reconnect attempts
