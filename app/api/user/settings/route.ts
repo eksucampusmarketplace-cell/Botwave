@@ -4,16 +4,16 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data, error } = await supabase
       .from('user_settings')
-      .select('groq_api_key, afk_enabled, afk_message, bot_name')
-      .eq('user_id', session.user.id)
+      .select('groq_api_key, afk_enabled, afk_message, bot_name, skip_probability')
+      .eq('user_id', user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       afkEnabled: data?.afk_enabled ?? false,
       afkMessage: data?.afk_message ?? 'I am currently away',
       botName: data?.bot_name ?? 'BotWave',
+      skipProbability: data?.skip_probability ?? 0.15,
     });
   } catch (error) {
     console.error('Error fetching user settings:', error);
@@ -35,17 +36,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { groqApiKey, afkEnabled, afkMessage, botName } = body;
+    const { groqApiKey, afkEnabled, afkMessage, botName, skipProbability } = body;
 
     const updateData: Record<string, unknown> = {
-      user_id: session.user.id,
+      user_id: user.id,
       updated_at: new Date().toISOString(),
     };
 
@@ -58,6 +59,10 @@ export async function POST(req: NextRequest) {
     if (afkEnabled !== undefined) updateData.afk_enabled = afkEnabled;
     if (afkMessage !== undefined) updateData.afk_message = afkMessage;
     if (botName !== undefined) updateData.bot_name = botName;
+    if (skipProbability !== undefined) {
+      const clamped = Math.max(0, Math.min(1, Number(skipProbability) || 0.15));
+      updateData.skip_probability = clamped;
+    }
 
     const { error } = await supabase
       .from('user_settings')

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
   const [groqKey, setGroqKey] = useState('');
+  const [skipProbability, setSkipProbability] = useState(15);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,14 +16,12 @@ export default function SettingsPage() {
   useEffect(() => {
     const checkUser = async () => {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         window.location.href = '/login';
         return;
       }
-      if (session.user) {
-        setUsername(session.user.email || session.user.id);
-      }
+      setUsername(user.email || user.id);
 
       // Fetch existing settings
       try {
@@ -30,6 +29,9 @@ export default function SettingsPage() {
         const data = await res.json();
         if (data.groqApiKey) {
           setGroqKey(data.groqApiKey);
+        }
+        if (data.skipProbability !== undefined) {
+          setSkipProbability(Math.round(data.skipProbability * 100));
         }
       } catch {
         // ignore
@@ -47,7 +49,10 @@ export default function SettingsPage() {
       const response = await fetch('/api/user/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groqApiKey: groqKey }),
+        body: JSON.stringify({
+          groqApiKey: groqKey,
+          skipProbability: skipProbability / 100,
+        }),
       });
 
       if (!response.ok) {
@@ -180,6 +185,42 @@ export default function SettingsPage() {
                   </ol>
                   <p className="font-mono text-[10px] text-[#5a9a7a] mt-2">
                     BotWave uses your own key so AI is 100% free for you and us.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">ANTI-BAN SETTINGS</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">
+                    READ-BUT-SKIP PROBABILITY (GROUPS): {skipProbability}%
+                  </label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Chance the bot reads a group message but doesn&apos;t reply — mimics real human behavior.
+                    Only you (the account owner) can change this. 0% = always reply, 100% = never reply.
+                  </p>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    value={skipProbability}
+                    onChange={(e) => setSkipProbability(Number(e.target.value))}
+                    className="w-full accent-green"
+                  />
+                  <div className="flex justify-between font-mono text-[9px] text-[#3a6a5a] mt-1">
+                    <span>0% (always reply)</span>
+                    <span>50% (skip half)</span>
+                  </div>
+                </div>
+                <div className="bg-dark/30 border border-green/5 p-4">
+                  <h4 className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-2">HOW IT WORKS</h4>
+                  <p className="font-mono text-[10px] text-[#3a6a5a]">
+                    Real users don&apos;t reply to every group message. This setting makes the bot
+                    randomly &quot;ignore&quot; some messages (while still marking them as read), which
+                    helps avoid WhatsApp ban detection. The default 15% is recommended.
+                    Commands (starting with !) are never skipped. Private chats are never skipped.
                   </p>
                 </div>
               </div>
