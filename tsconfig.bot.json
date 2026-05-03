@@ -13,6 +13,6 @@
     "noImplicitAny": false,
     "allowJs": true
   },
-  "include": ["bot/**/*"],
+  "include": ["bot/**/*", "lib/utils.ts"],
   "exclude": ["node_modules", "dist"]
 }

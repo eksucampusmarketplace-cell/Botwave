@@ -6,7 +6,7 @@ import DashboardNav from '@/components/layout/DashboardNav';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
-  const [apiKey, setApiKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,9 +22,17 @@ export default function SettingsPage() {
       }
       if (session.user) {
         setUsername(session.user.email || session.user.id);
-        if (session.user.user_metadata?.openai_api_key) {
-          setApiKey(session.user.user_metadata.openai_api_key);
+      }
+
+      // Fetch existing settings
+      try {
+        const res = await fetch('/api/user/settings');
+        const data = await res.json();
+        if (data.groqApiKey) {
+          setGroqKey(data.groqApiKey);
         }
+      } catch {
+        // ignore
       }
     };
     checkUser();
@@ -39,7 +47,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/user/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ openaiApiKey: apiKey }),
+        body: JSON.stringify({ groqApiKey: groqKey }),
       });
 
       if (!response.ok) {
@@ -58,16 +66,10 @@ export default function SettingsPage() {
 
   const handleDeleteAllSessions = async () => {
     const confirmed = window.confirm(
-      '⚠️ DANGER ZONE\n\nAre you sure you want to delete ALL sessions?\n\nThis action cannot be undone and will remove:\n• All WhatsApp connections\n• All session data\n• All message history\n\nClick OK to proceed or Cancel to abort.'
+      'Are you sure you want to delete ALL sessions?\n\nThis action cannot be undone and will remove:\n- All WhatsApp connections\n- All session data\n- All message history\n\nClick OK to proceed or Cancel to abort.'
     );
 
     if (!confirmed) return;
-
-    const doubleConfirm = window.confirm(
-      '🚨 FINAL CONFIRMATION 🚨\n\nThis will permanently delete ALL your sessions.\n\nType "DELETE" in the next prompt to confirm.'
-    );
-
-    if (!doubleConfirm) return;
 
     const finalConfirm = prompt('Type DELETE to confirm:');
     if (finalConfirm !== 'DELETE') {
@@ -86,10 +88,10 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Failed to delete sessions');
       }
 
-      alert('✅ All sessions have been deleted successfully.');
+      alert('All sessions have been deleted successfully.');
       window.location.reload();
     } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -115,7 +117,7 @@ export default function SettingsPage() {
         <div className="bg-card border border-green/10 p-8 relative">
           <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
           <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-          
+
           <div className="space-y-8 max-w-2xl">
             <div>
               <h3 className="font-display text-sm tracking-[3px] text-green mb-4">PROFILE</h3>
@@ -134,54 +136,65 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">API CONFIGURATION</h3>
+              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">AI SETTINGS</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">OPENAI API KEY</label>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">GROQ API KEY</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Get your free API key at{' '}
+                    <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-cyan hover:text-green">
+                      console.groq.com
+                    </a>
+                    {' '}— No credit card required. Supports Llama 3 70B and more.
+                  </p>
                   <div className="flex gap-2">
                     <input
                       type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="flex-1 bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                      placeholder="sk-..."
+                      value={groqKey}
+                      onChange={(e) => setGroqKey(e.target.value)}
+                      className="flex-1 bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
+                      placeholder="gsk_xxxxxxxxxxxx..."
                     />
                     <button
                       onClick={handleSaveApiKey}
                       disabled={saving}
-                      className="px-6 py-3 bg-green text-dark font-mono text-sm tracking-[2px] hover:bg-green/90 transition-colors disabled:opacity-50"
+                      className="px-6 py-3 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50"
                     >
-                      {saving ? 'SAVING...' : 'SAVE'}
+                      {saving ? 'SAVING...' : saved ? 'SAVED!' : 'SAVE'}
                     </button>
                   </div>
-                  {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
-                  {saved && <p className="text-green text-xs mt-2">✓ API key saved successfully</p>}
+                  {error && (
+                    <p className="mt-2 font-mono text-xs text-red-400">{error}</p>
+                  )}
+                  {saved && (
+                    <p className="mt-2 font-mono text-xs text-green">API key saved successfully!</p>
+                  )}
                 </div>
-
-                <div>
-                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">OPENWEATHER API KEY</label>
-                  <input
-                    type="password"
-                    className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                    placeholder="Optional - for #weather command"
-                  />
-                  <p className="text-[#5a9a7a]/60 text-xs mt-1">
-                    Get your free API key at openweathermap.org
+                <div className="bg-dark/30 border border-green/5 p-4">
+                  <h4 className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-2">HOW IT WORKS</h4>
+                  <ol className="font-mono text-[10px] text-[#3a6a5a] space-y-1 list-decimal list-inside">
+                    <li>Create a free account at console.groq.com</li>
+                    <li>Copy your API key</li>
+                    <li>Paste it above and click SAVE</li>
+                    <li>Use !ai in WhatsApp to chat with AI</li>
+                  </ol>
+                  <p className="font-mono text-[10px] text-[#5a9a7a] mt-2">
+                    BotWave uses your own key so AI is 100% free for you and us.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div>
+            <div className="border-t border-red-400/20 pt-8">
               <h3 className="font-display text-sm tracking-[3px] text-red-400 mb-4">DANGER ZONE</h3>
               <button
                 onClick={handleDeleteAllSessions}
-                className="border border-red-400/50 text-red-400 px-6 py-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 transition-colors"
+                className="px-6 py-3 border border-red-400/50 text-red-400 font-mono text-xs tracking-[2px] hover:bg-red-400/10 transition-colors"
               >
                 DELETE ALL SESSIONS
               </button>
-              <p className="text-red-400/60 text-xs mt-2">
-                This action is irreversible. All session data will be permanently deleted.
+              <p className="font-mono text-[10px] text-[#5a5a5a] mt-2">
+                This will permanently remove all your WhatsApp connections and data.
               </p>
             </div>
           </div>
