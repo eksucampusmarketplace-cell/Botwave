@@ -302,8 +302,8 @@ export function initializeBot() {
  * Sync sessions from DB — starts new bots and stops removed ones.
  * Sessions are staggered by 2 seconds to avoid suspicious simultaneous connections.
  */
-export async function syncSessionsWithDb() {
-  const sessions = await getSessionsNeedingBot(SELF_URL || undefined);
+export async function syncSessionsWithDb(isWorker?: boolean) {
+  const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
