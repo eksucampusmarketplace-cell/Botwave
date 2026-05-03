@@ -105,10 +105,12 @@ export async function POST(request: NextRequest) {
       data: session,
       message: 'Session created successfully',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create session error:', error);
+    const message = error?.message || error?.details || 'Failed to create session';
+    const hint = error?.hint || error?.code || undefined;
     return NextResponse.json(
-      { error: 'Failed to create session' },
+      { error: `Failed to create session: ${message}`, hint },
       { status: 500 }
     );
   }

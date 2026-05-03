@@ -8,9 +8,10 @@ interface SessionCardProps {
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'needs_reauth';
   lastActive: string;
   onConnect: () => void;
+  onDelete?: () => void;
 }
 
-export default function SessionCard({ name, phone, status, lastActive, onConnect }: SessionCardProps) {
+export default function SessionCard({ name, phone, status, lastActive, onConnect, onDelete }: SessionCardProps) {
   const statusColors = {
     connected: 'bg-green text-dark',
     active: 'bg-green text-dark',
@@ -54,7 +55,7 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
         <span className={`font-mono text-[10px] tracking-[2px] px-3 py-1 ${statusColors[status]}`}>
           {statusLabels[status]}
         </span>
-        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth') && (
+        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'qr_pending' || status === 'pending') && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -62,6 +63,16 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
             className="font-display text-[10px] tracking-[2px] px-4 py-2 bg-green text-dark font-bold hover:bg-cyan transition-colors"
           >
             CONNECT
+          </motion.button>
+        )}
+        {onDelete && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onDelete}
+            className="font-display text-[10px] tracking-[2px] px-3 py-2 border border-red-400/30 text-red-400 hover:bg-red-400/10 transition-colors"
+          >
+            &#10005;
           </motion.button>
         )}
       </div>

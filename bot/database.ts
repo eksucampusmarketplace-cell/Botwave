@@ -204,6 +204,93 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
   return data;
 }
 
+// ─── Feature Toggle Check ─────────────────────────────────────────────────────
+
+export async function getFeatureEnabled(userId: string, featureName: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('bot_features')
+    .select('enabled')
+    .eq('user_id', userId)
+    .eq('feature_name', featureName)
+    .single();
+
+  if (error) {
+    // Default to enabled if no feature toggle found
+    return error.code === 'PGRST116';
+  }
+  return data?.enabled ?? true;
+}
+
+// ─── Leaderboard Tracking ─────────────────────────────────────────────────────
+
+export async function incrementLeaderboard(sessionId: string, userJid: string, userName: string) {
+  try {
+    const { data: existing } = await supabase
+      .from('leaderboard')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_jid', userJid)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('leaderboard')
+        .update({
+          message_count: (existing.message_count || 0) + 1,
+          user_name: userName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('leaderboard').insert({
+        session_id: sessionId,
+        user_jid: userJid,
+        user_name: userName,
+        message_count: 1,
+      });
+    }
+  } catch {
+    // non-critical — leaderboard tracking should never break message handling
+  }
+}
+
+// ─── Auto-Reply Rules ─────────────────────────────────────────────────────────
+
+export async function getAutoReplies(sessionId: string) {
+  const { data, error } = await supabase
+    .from('auto_replies')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('is_active', true);
+
+  if (error) {
+    if (error.code !== 'PGRST205' && error.code !== 'PGRST116') {
+      console.error('Error fetching auto replies:', error);
+    }
+    return [];
+  }
+  return data || [];
+}
+
+// ─── Active Poll Lookup ───────────────────────────────────────────────────────
+
+export async function getActivePoll(sessionId: string, chatJid: string) {
+  const { data, error } = await supabase
+    .from('polls')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('group_jid', chatJid)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    return null;
+  }
+  return data;
+}
+
 // ─── New: User Settings (Groq API Key, etc.) ─────────────────────────────────
 
 export async function getUserSettings(userId: string) {

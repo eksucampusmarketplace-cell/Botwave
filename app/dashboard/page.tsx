@@ -7,6 +7,8 @@ import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
+import PWAInstallGuide from '@/components/pwa/PWAInstallGuide';
+import SafetyNotice from '@/components/pwa/SafetyNotice';
 import { createClient } from '@/lib/supabase/client';
 
 const defaultFeatures = [
@@ -31,6 +33,7 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
+  const [pwaInstalled, setPwaInstalled] = useState(false);
 
   const activeSessionRef = useRef<any>(null);
 
@@ -75,6 +78,18 @@ export default function DashboardPage() {
       fetchDashboardData();
     };
     checkUser();
+
+    // Check if PWA is already installed
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone) {
+      setPwaInstalled(true);
+    }
+    // Also check localStorage for manual confirmation
+    if (localStorage.getItem('botwave-pwa-installed') === 'true') {
+      setPwaInstalled(true);
+    }
   }, [fetchDashboardData]);
 
   useEffect(() => {
@@ -83,7 +98,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (showQR && activeSessionRef.current && !activeSessionRef.current.qr_code) {
+    if (showQR && activeSessionRef.current) {
       interval = setInterval(() => {
         fetchDashboardData(true);
       }, 2000);
@@ -153,8 +168,17 @@ export default function DashboardPage() {
   };
 
   const handleConnect = (session: any) => {
+    if (!pwaInstalled) {
+      alert('Please install BotWave as an app first. Follow the guide at the top of this page.');
+      return;
+    }
     setActiveSession(session);
     setShowQR(true);
+  };
+
+  const handlePwaInstallConfirmed = () => {
+    setPwaInstalled(true);
+    localStorage.setItem('botwave-pwa-installed', 'true');
   };
 
   return (
@@ -166,7 +190,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-12"
+          className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
             <span className="w-2 h-2 bg-green rounded-full animate-pulse" />
@@ -179,6 +203,12 @@ export default function DashboardPage() {
             Manage your WhatsApp sessions and bot features
           </p>
         </motion.div>
+
+        {!pwaInstalled && (
+          <PWAInstallGuide onInstallConfirmed={handlePwaInstallConfirmed} />
+        )}
+
+        <SafetyNotice />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">

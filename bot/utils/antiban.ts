@@ -166,16 +166,56 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// ─── Never-Send-Same-Message-Twice Dedup ──────────────────────────────────────
+/**
+ * Tracks the last N messages sent per pool key so the same response is never
+ * sent consecutively. Uses an LRU-style circular buffer per pool.
+ */
+const recentResponses = new Map<string, string[]>();
+const DEDUP_HISTORY = 10;
+
+function getPoolKey(pool: string[]): string {
+  // Use the first element as a stable key for the pool
+  return pool.length > 0 ? pool[0].slice(0, 30) : 'unknown';
+}
+
+function recordResponse(poolKey: string, response: string): void {
+  const history = recentResponses.get(poolKey) || [];
+  history.push(response);
+  if (history.length > DEDUP_HISTORY) {
+    history.shift();
+  }
+  recentResponses.set(poolKey, history);
+}
+
+function wasRecentlySent(poolKey: string, response: string): boolean {
+  const history = recentResponses.get(poolKey);
+  if (!history) return false;
+  return history.includes(response);
+}
+
 // ─── Response Variation Pools ─────────────────────────────────────────────────
 /**
  * Pick a random entry from a pool and inject dynamic variables + emoji rotation.
+ * Never sends the same message twice in a row (tracks last 10 per pool).
  */
 export function pickResponse(
   pool: string[],
   vars?: { name?: string; time?: string; date?: string; group?: string },
   addEmoji = true,
 ): string {
-  let response = pool[Math.floor(Math.random() * pool.length)];
+  const poolKey = getPoolKey(pool);
+
+  // Pick a response that hasn't been recently sent
+  let response: string;
+  let attempts = 0;
+  do {
+    response = pool[Math.floor(Math.random() * pool.length)];
+    attempts++;
+  } while (wasRecentlySent(poolKey, response) && attempts < pool.length);
+
+  // Record before variable injection (dedup on template)
+  recordResponse(poolKey, response);
 
   if (vars) {
     response = injectVars(response, vars);
