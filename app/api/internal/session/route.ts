@@ -2,21 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+function checkSecret(request: NextRequest): boolean {
   const secret = request.headers.get('x-internal-secret');
-  if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {
+  return !!process.env.INTERNAL_SECRET && secret === process.env.INTERNAL_SECRET;
+}
+
+export async function POST(request: NextRequest) {
+  if (!checkSecret(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
     const body = await request.json();
-    const { action, sessionId, ...rest } = body;
+    const { action, sessionId } = body;
 
     switch (action) {
-      case 'create':
+      case 'start':
         return NextResponse.json({
           success: true,
-          message: `Session ${sessionId} creation accepted by worker`,
+          message: `Session ${sessionId} start accepted by worker`,
         });
 
       case 'status':
@@ -45,4 +49,23 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(request: NextRequest) {
+  if (!checkSecret(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const sessionId = searchParams.get('sessionId');
+
+  if (!sessionId) {
+    return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
+  }
+
+  return NextResponse.json({
+    success: true,
+    sessionId,
+    status: 'ok',
+  });
 }

@@ -73,11 +73,19 @@ export async function getSessionById(sessionId: string) {
   return data;
 }
 
-export async function getSessionsNeedingBot() {
-  const { data, error } = await supabase
+export async function getSessionsNeedingBot(selfUrl?: string) {
+  let query = supabase
     .from('bot_sessions')
     .select('*')
     .in('state', ['qr_pending', 'active', 'needs_reauth']);
+
+  if (selfUrl) {
+    query = query.eq('worker_url', selfUrl);
+  } else {
+    query = query.is('worker_url', null);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (error.code !== 'PGRST205') {
