@@ -2,11 +2,10 @@ import {
   makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-  Browsers
+  makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
@@ -57,13 +56,6 @@ export class BotWaveBot {
       throw err; // Don't proceed with stale version
     }
 
-    const browserOptions = [
-      Browsers.macOS('Chrome'),
-      Browsers.ubuntu('Chrome'),
-      Browsers.windows('Firefox'),
-      Browsers.macOS('Safari'),
-    ];
-
     this.socket = makeWASocket({
       version,
       printQRInTerminal: false,
@@ -72,11 +64,11 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: browserOptions[Math.floor(Math.random() * browserOptions.length)],
+      browser: ['Mac OS', 'Chrome', '14.4.1'],
       syncFullHistory: false,
       markOnlineOnConnect: false,
       connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 0,
+      defaultQueryTimeoutMs: undefined,
       keepAliveIntervalMs: 10000,
     });
 
@@ -91,12 +83,24 @@ export class BotWaveBot {
     this.socket.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
 
-      if (qr) {
+      if (qr && !this.socket.authState.creds.registered) {
         this.qrCode = qr;
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 60 * 1000);
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
         console.log(`QR Code generated for session: ${this.sessionId}`);
+
+        // Try to get pairing code as well (Option 1)
+        try {
+          const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+          if (cleanPhone) {
+            const code = await this.socket.requestPairingCode(cleanPhone);
+            await updateSessionPairingCode(this.sessionId, code);
+            console.log(`Pairing code for ${this.sessionId}: ${code}`);
+          }
+        } catch (err) {
+          console.error('Failed to get pairing code:', err);
+        }
 
         // Auto-restart after 60 seconds to get a fresh QR if not connected
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);

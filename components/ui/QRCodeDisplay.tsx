@@ -8,9 +8,10 @@ interface QRCodeDisplayProps {
   onClose: () => void;
   qrCode?: string;
   qrGeneratedAt?: string;
+  pairingCode?: string;
 }
 
-export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
   const prevQRRef = useRef<string | undefined>(undefined);
 
@@ -63,21 +64,51 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt }: QRCode
 
         <div className="text-center">
           <h2 className="font-display text-lg tracking-[3px] text-green mb-2">
-            SCAN QR CODE
+            CONNECT DEVICE
           </h2>
-          <p className="font-mono text-xs text-[#5a9a7a] mb-6">
-            Open WhatsApp → Settings → Linked Devices → Link a Device
-            <br />
-            <span className="text-red-400 font-bold">Do NOT scan with your phone&apos;s camera app.</span>
-          </p>
+          
+          {pairingCode ? (
+            <div className="mb-8">
+              <p className="font-mono text-xs text-[#5a9a7a] mb-4">
+                1. Open WhatsApp on your phone
+                <br />
+                2. Go to <span className="text-white">Linked Devices</span>
+                <br />
+                3. Tap <span className="text-white">Link a Device</span>
+                <br />
+                4. Tap <span className="text-green underline cursor-pointer">Link with phone number instead</span>
+                <br />
+                5. Enter this 8-character code:
+              </p>
+              
+              <div className="bg-dark border-2 border-green/40 p-6 rounded-lg inline-block relative group overflow-hidden">
+                <div className="absolute inset-0 bg-green/5 animate-pulse" />
+                <span className="font-display text-4xl text-white tracking-[10px] font-black relative z-10">
+                  {pairingCode}
+                </span>
+              </div>
+              
+              <p className="font-mono text-[10px] text-[#3a7a5a] tracking-[1px] mt-6">
+                This code is more stable than QR scanning.
+                <br />
+                If it fails, use the QR method below.
+              </p>
+            </div>
+          ) : (
+            <p className="font-mono text-xs text-[#5a9a7a] mb-6">
+              Open WhatsApp → Settings → Linked Devices → Link a Device
+              <br />
+              <span className="text-red-400 font-bold">Do NOT scan with your phone&apos;s camera app.</span>
+            </p>
+          )}
 
-          <div className="bg-white p-4 rounded-lg mx-auto mb-6 inline-block">
+          <div className="bg-white p-4 rounded-lg mx-auto mb-6 inline-block opacity-90 hover:opacity-100 transition-opacity">
             {qrCode ? (
-              <QRCodeSVG value={qrCode} size={256} />
+              <QRCodeSVG value={qrCode} size={pairingCode ? 160 : 256} />
             ) : (
-              <div className="w-64 h-64 bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center">
-                <div className="grid grid-cols-5 gap-1 p-4">
-                  {Array.from({ length: 25 }).map((_, i) => (
+              <div className={`${pairingCode ? 'w-40 h-40' : 'w-64 h-64'} bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center`}>
+                <div className={`grid ${pairingCode ? 'grid-cols-4' : 'grid-cols-5'} gap-1 p-4`}>
+                  {Array.from({ length: pairingCode ? 16 : 25 }).map((_, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0 }}

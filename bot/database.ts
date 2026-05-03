@@ -110,6 +110,25 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
   }
 }
 
+export async function updateSessionPairingCode(sessionId: string, code: string) {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      pairing_code: code,
+      state: 'qr_pending',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', sessionId);
+
+  if (error) {
+    if (error.code !== 'PGRST205') {
+      console.error(`Error updating pairing code for session ${sessionId}:`, error);
+    }
+  } else {
+    console.log(`Updated pairing code for session ${sessionId}`);
+  }
+}
+
 export async function updateSessionStatus(sessionId: string, status: string) {
   const updatePayload: Record<string, any> = {
     state: status,
@@ -121,12 +140,14 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
+    updatePayload.pairing_code = null;
   }
 
   if (status === 'needs_reauth') {
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
+    updatePayload.pairing_code = null;
   }
 
   const { error } = await supabase
