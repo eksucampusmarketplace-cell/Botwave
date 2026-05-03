@@ -13,7 +13,8 @@ import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart }
 import { SELF_URL } from './workerConfig';
 import P from 'pino';
 
-const logger = P({ level: 'info' });
+// Cast to any: pino v10 types are incompatible with Baileys 6.x Logger typedef
+const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 2000;
