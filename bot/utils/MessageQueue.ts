@@ -1,4 +1,4 @@
-import { AnyWASocket, proto } from '@whiskeysockets/baileys';
+import { WASocket, proto } from '@whiskeysockets/baileys';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -15,11 +15,11 @@ interface QueuedMessage {
 export class MessageQueue {
   private queue: QueuedMessage[] = [];
   private isProcessing: boolean = false;
-  private socket: AnyWASocket;
+  private socket: any;
   private sessionId: string;
   private lastSendTime: number = 0;
 
-  constructor(socket: AnyWASocket, sessionId: string) {
+  constructor(socket: any, sessionId: string) {
     this.socket = socket;
     this.sessionId = sessionId;
   }

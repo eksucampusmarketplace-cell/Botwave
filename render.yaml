@@ -1,19 +1,9 @@
 services:
   - type: web
     name: botwave-web
-    env: static
-    region: oregon
-    buildCommand: npm install
-    staticPublishPath: out
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
-  - type: web
-    name: botwave-api
     env: node
     region: oregon
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
@@ -24,23 +14,26 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: OPENAI_API_KEY
+      - key: BOT_SECRET_KEY
         sync: false
-      - key: ADMIN_USERNAME
-        value: admin
-      - key: ADMIN_PASSWORD
-        value: admin123
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
   - type: worker
     name: botwave-bot
     env: node
     region: oregon
     buildCommand: npm install && npm run build:bot
     startCommand: npm run start:bot
-    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: BOT_TIMEOUT
-        value: 300000
-      - key: MAX_CONCURRENT_SESSIONS
-        value: 100
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: BOT_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false

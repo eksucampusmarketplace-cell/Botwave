@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Validate required environment variables at module load
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -22,8 +21,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function initDatabase() {
   console.log('Database initialized');
-  
-  // Check if tables exist - fail fast if missing
+
   const { error } = await supabase.from('bot_sessions').select('id').limit(1);
   if (error && error.code === 'PGRST205') {
     throw new Error(
@@ -32,6 +30,7 @@ export async function initDatabase() {
       '  1. supabase/migrations/001_initial_schema.sql\n' +
       '  2. supabase/migrations/002_rate_limit_settings.sql\n' +
       '  3. supabase/migrations/003_service_role_policies.sql\n' +
+      '  4. supabase/migrations/004_user_stats_settings.sql\n' +
       'Run these in your Supabase SQL Editor before starting the bot.'
     );
   }
@@ -46,9 +45,9 @@ export async function getUserSessions(userId?: string) {
   if (userId) {
     query = query.eq('user_id', userId);
   }
-  
+
   const { data, error } = await query;
-  
+
   if (error) {
     if (error.code !== 'PGRST205') {
       console.error('Error fetching sessions:', error);
@@ -64,7 +63,7 @@ export async function getSessionById(sessionId: string) {
     .select('*')
     .eq('id', sessionId)
     .single();
-  
+
   if (error) {
     if (error.code !== 'PGRST205') {
       console.error(`Error fetching session ${sessionId}:`, error);
@@ -79,7 +78,7 @@ export async function getSessionsNeedingBot() {
     .from('bot_sessions')
     .select('*')
     .in('state', ['qr_pending', 'active', 'needs_reauth']);
-  
+
   if (error) {
     if (error.code !== 'PGRST205') {
       console.error('Error fetching sessions needing bot:', error);
@@ -92,8 +91,8 @@ export async function getSessionsNeedingBot() {
 export async function updateSessionQR(sessionId: string, qr: string, expiresAt: string) {
   const { error } = await supabase
     .from('bot_sessions')
-    .update({ 
-      qr_code: qr, 
+    .update({
+      qr_code: qr,
       qr_expires_at: expiresAt,
       state: 'qr_pending',
       auth_state: null,
@@ -111,16 +110,15 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
-  // Only include last_active when status is 'active'
   const updatePayload: Record<string, string> = {
     state: status,
     updated_at: new Date().toISOString()
   };
-  
+
   if (status === 'active') {
     updatePayload.last_active = new Date().toISOString();
   }
-  
+
   const { error } = await supabase
     .from('bot_sessions')
     .update(updatePayload)
@@ -136,7 +134,6 @@ export async function updateSessionStatus(sessionId: string, status: string) {
 }
 
 export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[], createdByJid: string) {
-  // Using the correct 'polls' table from the schema
   const { data, error } = await supabase
     .from('polls')
     .insert({
@@ -144,7 +141,7 @@ export async function savePoll(sessionId: string, chatJid: string, question: str
       group_jid: chatJid,
       question: question,
       options: options,
-      created_by_jid: createdByJid, // Real sender JID passed from caller
+      created_by_jid: createdByJid,
       is_active: true,
       created_at: new Date().toISOString()
     })
@@ -205,4 +202,96 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
     return [];
   }
   return data;
+}
+
+// ─── New: User Settings (Groq API Key, etc.) ─────────────────────────────────
+
+export async function getUserSettings(userId: string) {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
+      console.error('Error fetching user settings:', error);
+    }
+    return null;
+  }
+  return data;
+}
+
+export async function upsertUserSettings(userId: string, settings: Record<string, unknown>) {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .upsert(
+      {
+        user_id: userId,
+        ...settings,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting user settings:', error);
+    return null;
+  }
+  return data;
+}
+
+// ─── New: AFK State ───────────────────────────────────────────────────────────
+
+export async function getAfkState(sessionId: string, userJid: string) {
+  const { data, error } = await supabase
+    .from('afk_states')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
+      console.error('Error fetching AFK state:', error);
+    }
+    return null;
+  }
+  return data;
+}
+
+export async function setAfkState(sessionId: string, userJid: string, isAfk: boolean, reason?: string) {
+  const { error } = await supabase
+    .from('afk_states')
+    .upsert(
+      {
+        session_id: sessionId,
+        user_jid: userJid,
+        is_afk: isAfk,
+        afk_reason: reason || null,
+        afk_since: isAfk ? new Date().toISOString() : null,
+      },
+      { onConflict: 'session_id,user_jid' },
+    );
+
+  if (error) {
+    console.error('Error setting AFK state:', error);
+  }
+}
+
+// ─── New: Get session's user_id for BYOK lookup ──────────────────────────────
+
+export async function getSessionUserId(sessionId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .select('user_id')
+    .eq('id', sessionId)
+    .single();
+
+  if (error) {
+    return null;
+  }
+  return data?.user_id || null;
 }

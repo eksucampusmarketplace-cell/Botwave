@@ -1,27 +1,26 @@
-import { 
-  makeWASocket, 
-  DisconnectReason, 
+import {
+  makeWASocket,
+  DisconnectReason,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus, getSessionUserId } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage } from './handlers/MessageHandler';
-import { registerCommands } from './handlers/CommandHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import P from 'pino';
 
 const logger = P({ level: 'info' });
+
+const MAX_RECONNECT_ATTEMPTS = 3;
+const SESSION_STAGGER_DELAY = 2000;
 
 interface BotConfig {
   sessionId: string;
   userId: string;
   phoneNumber: string;
 }
-
-const MAX_RECONNECT_DELAY = 30000;
-const INITIAL_RECONNECT_DELAY = 1000;
 
 export class BotWaveBot {
   private sessionId: string;
@@ -30,7 +29,7 @@ export class BotWaveBot {
   private socket: any = null;
   private isReady: boolean = false;
   private qrCode: string | null = null;
-  private reconnectAttempt: number = 0;
+  private reconnectAttempts: number = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private messageQueue: MessageQueue | null = null;
 
@@ -38,22 +37,6 @@ export class BotWaveBot {
     this.sessionId = config.sessionId;
     this.userId = config.userId;
     this.phoneNumber = config.phoneNumber;
-  }
-
-  private getReconnectDelay(): number {
-    const delay = Math.min(
-      INITIAL_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempt),
-      MAX_RECONNECT_DELAY
-    );
-    return delay;
-  }
-
-  private resetReconnectState() {
-    this.reconnectAttempt = 0;
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
   }
 
   async start(): Promise<void> {
@@ -70,6 +53,10 @@ export class BotWaveBot {
       logger,
       browser: ['BotWave', 'Chrome', '1.0.0'],
     });
+
+    // Attach metadata for downstream handlers
+    (this.socket as any).sessionId = this.sessionId;
+    (this.socket as any).userId = this.userId;
 
     this.messageQueue = new MessageQueue(this.socket, this.sessionId);
 
@@ -89,14 +76,13 @@ export class BotWaveBot {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
         console.log(`Connection closed for session ${this.sessionId}. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`);
-        
+
         this.isReady = false;
-        
+
         if (!shouldReconnect) {
           console.log(`Session ${this.sessionId} logged out or kicked. Updating to needs_reauth.`);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
-          
-          // Trigger notification
+
           try {
             await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notify/session-down`, {
               method: 'POST',
@@ -107,11 +93,19 @@ export class BotWaveBot {
             console.error('Failed to send session-down notification:', err);
           }
         } else {
+          // Hard limit: max 3 reconnect attempts
+          if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.log(`Session ${this.sessionId}: max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Stopping.`);
+            await updateSessionStatus(this.sessionId, 'disconnected');
+            this.socket = null;
+            return;
+          }
+
           await updateSessionStatus(this.sessionId, 'inactive');
           this.socket = null;
-          const delay = this.getReconnectDelay();
-          this.reconnectAttempt++;
-          console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt})`);
+          this.reconnectAttempts++;
+          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+          console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
           this.reconnectTimeout = setTimeout(() => {
             this.start();
           }, delay);
@@ -120,9 +114,12 @@ export class BotWaveBot {
         console.log(`Session connected: ${this.sessionId}`);
         this.isReady = true;
         this.qrCode = null;
-        this.resetReconnectState();
+        this.reconnectAttempts = 0;
+        if (this.reconnectTimeout) {
+          clearTimeout(this.reconnectTimeout);
+          this.reconnectTimeout = null;
+        }
         await updateSessionStatus(this.sessionId, 'active');
-        registerCommands(this.socket);
       }
     });
 
@@ -130,7 +127,7 @@ export class BotWaveBot {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
           if (!msg.key.fromMe) {
-            await handleMessage(msg, this.socket, this.messageQueue);
+            await handleMessage(msg, this.socket, this.messageQueue ?? undefined);
           }
         }
       }
@@ -166,7 +163,7 @@ export function initializeBot() {
       console.log('BotWave bot service started');
     },
     stop: async () => {
-      for (const [id, bot] of activeBots) {
+      for (const [, bot] of activeBots) {
         await bot.stop();
       }
       activeBots.clear();
@@ -174,16 +171,20 @@ export function initializeBot() {
   };
 }
 
+/**
+ * Sync sessions from DB — starts new bots and stops removed ones.
+ * Sessions are staggered by 2 seconds to avoid suspicious simultaneous connections.
+ */
 export async function syncSessionsWithDb() {
   const sessions = await getSessionsNeedingBot();
-  
+
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
-    
+
     if (session.state === 'active' && bot) {
       continue;
     }
-    
+
     if (!bot) {
       console.log(`Starting bot for session: ${session.id}`);
       const newBot = new BotWaveBot({
@@ -193,6 +194,9 @@ export async function syncSessionsWithDb() {
       });
       activeBots.set(session.id, newBot);
       newBot.start().catch(err => console.error(`Failed to start bot ${session.id}:`, err));
+
+      // Stagger: wait 2 seconds between each session start
+      await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
     }
   }
 
