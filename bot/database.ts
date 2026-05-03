@@ -40,7 +40,7 @@ export async function getUserSessions(userId?: string) {
   let query = supabase
     .from('bot_sessions')
     .select('*')
-    .in('state', ['qr_pending', 'active', 'needs_reauth']);
+    .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
 
   if (userId) {
     query = query.eq('user_id', userId);
@@ -77,7 +77,7 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
   let query = supabase
     .from('bot_sessions')
     .select('*')
-    .in('state', ['qr_pending', 'active', 'needs_reauth']);
+    .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
 
   if (selfUrl && isWorker) {
     // Dedicated worker: only pick up sessions explicitly assigned to it

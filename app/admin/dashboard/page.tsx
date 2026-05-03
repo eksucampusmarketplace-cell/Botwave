@@ -275,7 +275,7 @@ export default function AdminDashboard() {
                       <td className="p-6">
                         <span className={`px-2 py-1 ${
                           session.state === 'active' ? 'bg-green-500/10 text-green-500' : 
-                          session.state === 'qr_pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
+                          session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
                         }`}>
                           {session.state.toUpperCase()}
                         </span>
