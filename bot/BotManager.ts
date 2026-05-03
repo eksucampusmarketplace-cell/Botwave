@@ -82,10 +82,19 @@ export class BotWaveBot {
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
         console.log(`Connection closed for session ${this.sessionId}. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`);
 
+        // Baileys can fire duplicate close events (e.g. stream error + websocket close).
+        // If we already handled a close and are mid-reconnect with no active socket,
+        // ignore the stale event to prevent overwriting the DB state.
+        if (this.isReconnecting && !this.socket) {
+          console.log(`Session ${this.sessionId}: ignoring duplicate close event (already reconnecting)`);
+          return;
+        }
+
         this.isReady = false;
 
         if (!shouldReconnect) {
           console.log(`Session ${this.sessionId} logged out or kicked. Updating to needs_reauth.`);
+          this.isReconnecting = false;
           await updateSessionStatus(this.sessionId, 'needs_reauth');
 
           try {
@@ -107,9 +116,9 @@ export class BotWaveBot {
             return;
           }
 
+          this.isReconnecting = true;
           // Keep state as qr_pending during pairing restart (515)
           // so syncSessionsWithDb doesn't kill the bot mid-handshake
-          this.isReconnecting = true;
           if (statusCode !== 515) {
             await updateSessionStatus(this.sessionId, 'inactive');
           }
@@ -117,8 +126,13 @@ export class BotWaveBot {
           this.reconnectAttempts++;
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
           console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+          }
           this.reconnectTimeout = setTimeout(() => {
-            this.isReconnecting = false;
+            // Keep isReconnecting=true until connection opens (or max retries).
+            // Setting it false here would create a race where syncSessionsWithDb
+            // sees isReconnecting=false and kills the bot before start() finishes.
             this.start();
           }, delay);
         }
