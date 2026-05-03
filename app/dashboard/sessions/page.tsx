@@ -34,6 +34,9 @@ export default function SessionsPage() {
           if (updated) {
             setActiveSession(updated);
             activeSessionRef.current = updated;
+            if (updated.state === 'active') {
+              setShowQR(false);
+            }
           }
         }
       }
