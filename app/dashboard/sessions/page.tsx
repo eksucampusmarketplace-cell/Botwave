@@ -272,6 +272,7 @@ export default function SessionsPage() {
             fetchSessions();
           }} 
           qrCode={activeSession?.qr_code}
+          qrGeneratedAt={activeSession?.qr_generated_at}
         />
       )}
     </main>

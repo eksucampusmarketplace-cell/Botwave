@@ -7,32 +7,31 @@ import { QRCodeSVG } from 'qrcode.react';
 interface QRCodeDisplayProps {
   onClose: () => void;
   qrCode?: string;
+  qrGeneratedAt?: string;
 }
 
-export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
   const prevQRRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (qrCode && qrCode !== prevQRRef.current) {
-      prevQRRef.current = qrCode;
-      setTimeLeft(60);
+    if (qrCode && qrGeneratedAt) {
+      const generatedAt = new Date(qrGeneratedAt).getTime();
+      const expiresAt = generatedAt + 60 * 1000;
+      
+      const updateTimer = () => {
+        const now = Date.now();
+        const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
+        setTimeLeft(diff);
+        // We don't auto-close here anymore, the bot will auto-restart 
+        // and a new QR will be pushed via polling.
+      };
+
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+      return () => clearInterval(interval);
     }
-  }, [qrCode]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          onClose();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [onClose]);
+  }, [qrCode, qrGeneratedAt, onClose]);
 
   return (
     <motion.div

@@ -378,7 +378,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {showQR && <QRCodeDisplay onClose={() => { setShowQR(false); fetchDashboardData(); }} qrCode={activeSession?.qr_code} />}
+      {showQR && (
+        <QRCodeDisplay 
+          onClose={() => {
+            setShowQR(false);
+            fetchDashboardData();
+          }} 
+          qrCode={activeSession?.qr_code}
+          qrGeneratedAt={activeSession?.qr_generated_at}
+        />
+      )}
 
       <script
         dangerouslySetInnerHTML={{

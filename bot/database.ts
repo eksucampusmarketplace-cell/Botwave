@@ -88,12 +88,13 @@ export async function getSessionsNeedingBot() {
   return data;
 }
 
-export async function updateSessionQR(sessionId: string, qr: string, expiresAt: string) {
+export async function updateSessionQR(sessionId: string, qr: string, expiresAt: string, generatedAt: string) {
   const { error } = await supabase
     .from('bot_sessions')
     .update({
       qr_code: qr,
       qr_expires_at: expiresAt,
+      qr_generated_at: generatedAt,
       state: 'qr_pending',
       auth_state: null,
       updated_at: new Date().toISOString()
@@ -119,11 +120,13 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updatePayload.last_active = new Date().toISOString();
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
+    updatePayload.qr_generated_at = null;
   }
 
   if (status === 'needs_reauth') {
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
+    updatePayload.qr_generated_at = null;
   }
 
   const { error } = await supabase
