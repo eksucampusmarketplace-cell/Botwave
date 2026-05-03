@@ -117,7 +117,23 @@ export default function SessionsPage() {
     }
   };
 
-  const handleConnect = (session: any) => {
+  const handleConnect = async (session: any) => {
+    // For disconnected sessions, reset state so the worker generates a fresh pairing code
+    if (session.state === 'needs_reauth' || session.state === 'inactive') {
+      try {
+        const response = await fetch('/api/bot/sessions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: session.id }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          session = data.data;
+        }
+      } catch (err) {
+        console.error('Reconnect error:', err);
+      }
+    }
     setActiveSession(session);
     setShowQR(true);
   };
