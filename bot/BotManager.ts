@@ -15,7 +15,7 @@ import P from 'pino';
 
 const logger = P({ level: 'info' });
 
-const MAX_RECONNECT_ATTEMPTS = 3;
+const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 2000;
 
 interface BotConfig {
@@ -47,7 +47,15 @@ export class BotWaveBot {
     registerSessionStart(this.sessionId);
 
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
-    const { version } = await fetchLatestBaileysVersion();
+    
+    let version: any;
+    try {
+      const latest = await fetchLatestBaileysVersion();
+      version = latest.version;
+    } catch (err) {
+      console.warn(`Failed to fetch latest Baileys version for session ${this.sessionId}, using fallback:`, err);
+      version = [2, 3000, 1015901307]; // Safe fallback version
+    }
 
     this.socket = makeWASocket({
       version,
@@ -57,8 +65,12 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: Browsers.ubuntu('Chrome'),
+      browser: Browsers.macOS('Chrome'),
       syncFullHistory: false,
+      markOnline: false,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 0,
+      keepAliveIntervalMs: 10000,
     });
 
     // Attach metadata for downstream handlers

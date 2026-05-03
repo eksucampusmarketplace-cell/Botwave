@@ -28,15 +28,33 @@ export const useSupabaseAuthState = async (sessionId: string): Promise<{ state: 
     return JSON.parse(JSON.stringify(data.auth_state), BufferJSON.reviver);
   };
 
-  const saveAuthState = async (state: any) => {
-    const authStateSerialized = JSON.parse(JSON.stringify(state, BufferJSON.replacer));
-    const { error } = await supabase
-      .from('bot_sessions')
-      .update({ auth_state: authStateSerialized })
-      .eq('id', sessionId);
+  let isSaving = false;
+  let pendingSave: any = null;
 
-    if (error) {
-      console.error(`Error saving auth state for session ${sessionId}:`, error);
+  const saveAuthState = async (state: any) => {
+    if (isSaving) {
+      pendingSave = state;
+      return;
+    }
+
+    isSaving = true;
+    try {
+      const authStateSerialized = JSON.parse(JSON.stringify(state, BufferJSON.replacer));
+      const { error } = await supabase
+        .from('bot_sessions')
+        .update({ auth_state: authStateSerialized })
+        .eq('id', sessionId);
+
+      if (error) {
+        console.error(`Error saving auth state for session ${sessionId}:`, error);
+      }
+    } finally {
+      isSaving = false;
+      if (pendingSave) {
+        const nextState = pendingSave;
+        pendingSave = null;
+        await saveAuthState(nextState);
+      }
     }
   };
 

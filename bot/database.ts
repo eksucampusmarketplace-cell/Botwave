@@ -110,13 +110,20 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
-  const updatePayload: Record<string, string> = {
+  const updatePayload: Record<string, any> = {
     state: status,
     updated_at: new Date().toISOString()
   };
 
   if (status === 'active') {
     updatePayload.last_active = new Date().toISOString();
+    updatePayload.qr_code = null;
+    updatePayload.qr_expires_at = null;
+  }
+
+  if (status === 'needs_reauth') {
+    updatePayload.qr_code = null;
+    updatePayload.qr_expires_at = null;
   }
 
   const { error } = await supabase
