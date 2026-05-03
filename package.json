@@ -9,6 +9,7 @@
     "lint": "next lint",
     "build:bot": "tsc -p tsconfig.bot.json",
     "start:bot": "node dist/bot/bot/index.js",
+    "start:all": "bash scripts/start-all.sh",
     "db:setup": "node scripts/setup-db.mjs"
   },
   "dependencies": {
