@@ -110,7 +110,8 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       auth_state: null,
       updated_at: new Date().toISOString()
     })
-    .eq('id', sessionId);
+    .eq('id', sessionId)
+    .neq('state', 'pairing_sent');  // never overwrite pairing_sent
 
   if (error) {
     if (error.code !== 'PGRST205') {
@@ -171,6 +172,28 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     }
   } else {
     console.log(`Updated status for session ${sessionId} to ${status}`);
+  }
+}
+
+export async function updateSessionWorker(sessionId: string, workerUrl: string | null) {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      worker_url: workerUrl,
+      state: 'qr_pending',
+      pairing_code: null,
+      qr_code: null,
+      qr_expires_at: null,
+      qr_generated_at: null,
+      auth_state: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error(`Error updating worker for session ${sessionId}:`, error);
+  } else {
+    console.log(`[DB] Session ${sessionId} reassigned to worker: ${workerUrl ?? 'main'}`);
   }
 }
 
