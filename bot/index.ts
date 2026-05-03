@@ -5,10 +5,13 @@ import { WORKER_URLS, IS_WORKER } from './workerConfig';
 const bot = initializeBot();
 
 async function start() {
+  console.log('[BOT] Starting bot service...');
   await bot.start();
   
   // Initial sync
+  console.log('[BOT] Running initial session sync...');
   await syncSessionsWithDb();
+  console.log('[BOT] Initial sync complete. Polling every 5s...');
   
   // Periodically sync sessions from database
   setInterval(async () => {
@@ -36,8 +39,9 @@ async function start() {
   }
 }
 
+console.log('[BOT] Bot process starting...');
 start().catch((error) => {
-  console.error('Bot startup failed:', error);
+  console.error('[BOT] FATAL: Bot startup failed:', error);
   process.exit(1);
 });
 

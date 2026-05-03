@@ -44,20 +44,27 @@ export class BotWaveBot {
   }
 
   async start(): Promise<void> {
+    console.log(`[${this.sessionId}] start() called. Phone: ${this.phoneNumber}`);
+
     // Register session for warmup tracking (advanced anti-ban)
     registerSessionStart(this.sessionId);
 
+    console.log(`[${this.sessionId}] Loading auth state from Supabase...`);
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
+    console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}`);
     
     let version: any;
     try {
+      console.log(`[${this.sessionId}] Fetching latest Baileys version...`);
       const latest = await fetchLatestBaileysVersion();
       version = latest.version;
+      console.log(`[${this.sessionId}] Baileys version: ${JSON.stringify(version)}`);
     } catch (err) {
-      console.error(`CRITICAL: Failed to fetch latest Baileys version for session ${this.sessionId}:`, err);
-      throw err; // Don't proceed with stale version
+      console.error(`[${this.sessionId}] CRITICAL: Failed to fetch Baileys version:`, err);
+      throw err;
     }
 
+    console.log(`[${this.sessionId}] Creating WASocket...`);
     this.socket = makeWASocket({
       version,
       printQRInTerminal: false,
@@ -73,6 +80,7 @@ export class BotWaveBot {
       defaultQueryTimeoutMs: undefined,
       keepAliveIntervalMs: 10000,
     });
+    console.log(`[${this.sessionId}] WASocket created. Setting up event handlers...`);
 
     // Attach metadata for downstream handlers
     (this.socket as any).sessionId = this.sessionId;
@@ -82,35 +90,49 @@ export class BotWaveBot {
 
     this.socket.ev.on('creds.update', saveCreds);
 
-    // Request pairing code BEFORE the QR flow starts.
-    // Baileys expects requestPairingCode to be called right after socket
-    // creation — calling it inside the QR handler conflicts with the QR
-    // handshake and silently fails.
-    if (!state.creds.registered) {
-      const cleanPhone = this.phoneNumber.replace(/\D/g, '');
-      if (cleanPhone) {
-        console.log(`Requesting pairing code for ${this.sessionId} (phone: ${cleanPhone.slice(0, 4)}...)`);
-        try {
-          const code = await this.socket.requestPairingCode(cleanPhone);
-          await updateSessionPairingCode(this.sessionId, code);
-          console.log(`Pairing code for ${this.sessionId}: ${code}`);
-        } catch (err: any) {
-          console.error(`Failed to get pairing code for ${this.sessionId}:`, err?.message || err);
-        }
-      } else {
-        console.error(`No valid phone number for session ${this.sessionId}, cannot request pairing code`);
-      }
-    }
+    // Track whether we've requested a pairing code for this connection cycle
+    let pairingCodeRequested = false;
 
     this.socket.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
 
+      console.log(`[${this.sessionId}] connection.update:`, JSON.stringify({ connection, qr: !!qr, registered: this.socket?.authState?.creds?.registered }));
+
+      // When we receive a QR, the WebSocket IS connected and ready.
+      // Request pairing code here (once per cycle) — this is the right
+      // moment because sendNode() requires an active WebSocket.
       if (qr && !this.socket.authState.creds.registered) {
         this.qrCode = qr;
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 60 * 1000);
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
-        console.log(`QR generated for session: ${this.sessionId} (pairing code already requested)`);
+
+        if (!pairingCodeRequested) {
+          pairingCodeRequested = true;
+          const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+          console.log(`[${this.sessionId}] Phone raw: "${this.phoneNumber}" -> cleaned: "${cleanPhone}"`);
+          if (cleanPhone) {
+            // Use setTimeout to let Baileys finish processing the current
+            // event before we send a new request on the same WebSocket.
+            const sock = this.socket;
+            const sid = this.sessionId;
+            setTimeout(async () => {
+              console.log(`[${sid}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
+              try {
+                const code = await sock.requestPairingCode(cleanPhone);
+                console.log(`[${sid}] <<< requestPairingCode returned: "${code}"`);
+                await updateSessionPairingCode(sid, code);
+                console.log(`[${sid}] Pairing code saved to DB!`);
+              } catch (err: any) {
+                console.error(`[${sid}] <<< requestPairingCode FAILED:`, err);
+                console.error(`[${sid}] Error name: ${err?.name}, message: ${err?.message}, stack: ${err?.stack?.slice(0, 200)}`);
+                pairingCodeRequested = false; // Allow retry on next QR
+              }
+            }, 100);
+          } else {
+            console.error(`[${this.sessionId}] EMPTY phone number! Cannot request pairing code. Raw: "${this.phoneNumber}"`);
+          }
+        }
 
         // Auto-restart after 60 seconds to get a fresh code if not connected
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
@@ -118,6 +140,7 @@ export class BotWaveBot {
           if (!this.isReady && this.qrCode === qr) {
             console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
             this.reconnectAttempts = 0;
+            pairingCodeRequested = false;
             this.socket?.end(new Error('QR_TIMEOUT'));
           }
         }, 62000);
@@ -290,14 +313,14 @@ export async function syncSessionsWithDb() {
     }
 
     if (!bot) {
-      console.log(`Starting bot for session: ${session.id}`);
+      console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);
       const newBot = new BotWaveBot({
         sessionId: session.id,
         userId: session.user_id,
         phoneNumber: session.phone_number,
       });
       activeBots.set(session.id, newBot);
-      newBot.start().catch(err => console.error(`Failed to start bot ${session.id}:`, err));
+      newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
       // Stagger: wait 2 seconds between each session start
       await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
