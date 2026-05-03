@@ -2,7 +2,8 @@ import {
   makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore
+  makeCacheableSignalKeyStore,
+  Browsers
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
@@ -56,7 +57,8 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: ['BotWave', 'Chrome', '1.0.0'],
+      browser: Browsers.ubuntu('Chrome'),
+      syncFullHistory: false,
     });
 
     // Attach metadata for downstream handlers

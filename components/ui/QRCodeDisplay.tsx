@@ -67,14 +67,16 @@ export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
             SCAN QR CODE
           </h2>
           <p className="font-mono text-xs text-[#5a9a7a] mb-6">
-            Open WhatsApp → Linked Devices → Scan
+            Open WhatsApp → Settings → Linked Devices → Link a Device
+            <br />
+            <span className="text-red-400 font-bold">Do NOT scan with your phone&apos;s camera app.</span>
           </p>
 
           <div className="bg-white p-4 rounded-lg mx-auto mb-6 inline-block">
             {qrCode ? (
-              <QRCodeSVG value={qrCode} size={192} />
+              <QRCodeSVG value={qrCode} size={256} />
             ) : (
-              <div className="w-48 h-48 bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center">
+              <div className="w-64 h-64 bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center">
                 <div className="grid grid-cols-5 gap-1 p-4">
                   {Array.from({ length: 25 }).map((_, i) => (
                     <motion.div
@@ -97,8 +99,10 @@ export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
             </span>
           </div>
 
-          <p className="font-mono text-[10px] text-[#3a7a5a] tracking-[1px]">
-            Keep this window open during scanning
+          <p className="font-mono text-[10px] text-[#3a7a5a] tracking-[1px] mt-4">
+            Keep this window open during scanning.
+            <br />
+            If you see &quot;Can&apos;t link devices&quot;, try again in 15 minutes.
           </p>
         </div>
       </motion.div>
