@@ -10,6 +10,7 @@ import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
+import { SELF_URL } from './workerConfig';
 import P from 'pino';
 
 const logger = P({ level: 'info' });
@@ -270,7 +271,7 @@ export function initializeBot() {
  * Sessions are staggered by 2 seconds to avoid suspicious simultaneous connections.
  */
 export async function syncSessionsWithDb() {
-  const sessions = await getSessionsNeedingBot();
+  const sessions = await getSessionsNeedingBot(SELF_URL || undefined);
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSessionServer } from '@/bot/sessionRouter';
+import { assignWorker, INTERNAL_SECRET } from '@/bot/workerConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const { phoneNumber, sessionName } = validation.data;
 
-    const serverUrl = getSessionServer();
+    const workerUrl = assignWorker();
 
     const { data: session, error } = await supabase
       .from('bot_sessions')
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         phone_number: phoneNumber,
         session_name: sessionName,
         state: 'qr_pending',
-        server_url: serverUrl,
+        worker_url: workerUrl,
       })
       .select()
       .single();
@@ -102,6 +102,24 @@ export async function POST(request: NextRequest) {
         );
       }
       throw error;
+    }
+
+    if (workerUrl && INTERNAL_SECRET) {
+      try {
+        await fetch(`${workerUrl}/api/internal/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': INTERNAL_SECRET,
+          },
+          body: JSON.stringify({
+            action: 'start',
+            sessionId: session.id,
+          }),
+        });
+      } catch (err) {
+        console.error(`Failed to notify worker ${workerUrl}:`, err);
+      }
     }
 
     return NextResponse.json({
