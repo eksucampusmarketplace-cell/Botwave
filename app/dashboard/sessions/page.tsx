@@ -273,6 +273,7 @@ export default function SessionsPage() {
           }} 
           qrCode={activeSession?.qr_code}
           qrGeneratedAt={activeSession?.qr_generated_at}
+          pairingCode={activeSession?.pairing_code}
         />
       )}
     </main>
