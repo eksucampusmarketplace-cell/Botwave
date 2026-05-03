@@ -2,7 +2,7 @@ import { delay } from '../../lib/utils';
 import axios from 'axios';
 import sharp from 'sharp';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -26,6 +26,14 @@ import {
   translateReplies,
   weatherReplies,
   dictReplies,
+  aiIntros,
+  gameStartReplies,
+  pollReplies,
+  leaderboardReplies,
+  downloadReplies,
+  welcomeReplies,
+  spamWarnings,
+  autoReplyDefaults,
 } from '../utils/responsePools';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
 
@@ -48,6 +56,9 @@ interface MessageContext {
 const userMessageTracker: Map<string, number[]> = new Map();
 const sessionMessageTracker: Map<string, number[]> = new Map();
 const gameStates: Map<string, { target: number; attempts: number; userJid: string }> = new Map();
+const spamTracker: Map<string, { count: number; lastTime: number; warned: boolean }> = new Map();
+const SPAM_THRESHOLD = 5; // messages in 10 seconds = spam
+const SPAM_WINDOW = 10000;
 
 export async function handleMessage(message: any, sock: any, queue?: MessageQueue): Promise<void> {
   try {
@@ -88,6 +99,18 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
+    // Anti-spam flood detection
+    if (isGroup && isSpamming(senderJid)) {
+      const response = pickResponse(spamWarnings, { name: pushName, time: currentTimeStr() });
+      await sendReply(chatJid, response, sock, message.key, queue);
+      return;
+    }
+
+    // Track message for leaderboard (groups only, non-commands)
+    if (isGroup && sessionId && !content.startsWith(COMMAND_PREFIX)) {
+      incrementLeaderboard(sessionId, senderJid, pushName).catch(() => {});
+    }
+
     // Check if sender mentioned an AFK user
     await checkAfkMentions(context, sock);
 
@@ -95,10 +118,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       await processCommand(context, sock);
     } else {
       console.log(`User rate limited: ${senderJid}`);
-      const response = pickResponse(
-        ['Please wait before sending more commands, {name}', 'Slow down, {name}! Try again shortly'],
-        { name: pushName },
-      );
+      const response = pickResponse(spamWarnings, { name: pushName });
       await sendReply(chatJid, response, sock, message.key, queue);
     }
 
@@ -133,6 +153,29 @@ function isSessionRateLimited(sessionId: string): boolean {
 
   recentTimestamps.push(now);
   sessionMessageTracker.set(sessionId, recentTimestamps);
+  return false;
+}
+
+function isSpamming(userId: string): boolean {
+  const now = Date.now();
+  const tracker = spamTracker.get(userId);
+
+  if (!tracker || now - tracker.lastTime > SPAM_WINDOW) {
+    spamTracker.set(userId, { count: 1, lastTime: now, warned: false });
+    return false;
+  }
+
+  tracker.count++;
+  tracker.lastTime = now;
+
+  if (tracker.count >= SPAM_THRESHOLD) {
+    if (!tracker.warned) {
+      tracker.warned = true;
+      return true;
+    }
+    return false; // Already warned, silently ignore
+  }
+
   return false;
 }
 
@@ -304,10 +347,39 @@ async function sendReply(
   }
 }
 
-// ─── Auto Reply (stub) ───────────────────────────────────────────────────────
+// ─── Auto Reply ──────────────────────────────────────────────────────────────
 
-async function processAutoReply(_context: MessageContext, _sock: any): Promise<void> {
-  // Auto-reply logic loads from Supabase auto_replies table — to be connected
+async function processAutoReply(context: MessageContext, sock: any): Promise<void> {
+  if (!context.sessionId) return;
+  if (context.message.startsWith(COMMAND_PREFIX)) return;
+
+  try {
+    const rules = await getAutoReplies(context.sessionId);
+    if (!rules.length) return;
+
+    const msgLower = context.message.toLowerCase();
+
+    for (const rule of rules) {
+      const trigger = (rule.trigger || '').toLowerCase();
+      if (!trigger) continue;
+
+      const matches =
+        rule.match_type === 'exact'
+          ? msgLower === trigger
+          : msgLower.includes(trigger);
+
+      if (matches) {
+        const replyText = rule.response || pickResponse(autoReplyDefaults, {
+          name: context.pushName || 'User',
+          time: currentTimeStr(),
+        }, false);
+        await sendReply(context.chatJid, replyText, sock, context.rawMessage.key, context.queue);
+        break; // Only match the first rule
+      }
+    }
+  } catch {
+    // non-critical
+  }
 }
 
 // ─── Command Implementations ──────────────────────────────────────────────────
@@ -485,17 +557,9 @@ async function handleAICommand(
 
     const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not process that request.';
 
-    const tone = getTimeTone();
-    let prefix = '';
-    if (tone === 'late_night') {
-      prefix = 'AI: ';
-    } else if (tone === 'morning') {
-      prefix = 'Good morning! AI Response:\n\n';
-    } else {
-      prefix = 'AI Response:\n\n';
-    }
+    const intro = pickResponse(aiIntros, vars, false);
 
-    await sendReply(context.chatJid, `${prefix}${aiResponse}`, sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, `${intro}\n\n${aiResponse}`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('Groq API error:', error);
     await sendReply(
@@ -602,13 +666,13 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
       break;
     }
     case 'trivia':
-      await sendReply(context.chatJid, 'Trivia game starting! Stay tuned for questions.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Trivia mode! Stay tuned for questions.`, sock, context.rawMessage.key, context.queue);
       break;
     case 'hangman':
-      await sendReply(context.chatJid, 'Hangman game starting! Guess a letter with !answer [letter]', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Hangman! Guess a letter with !answer [letter]`, sock, context.rawMessage.key, context.queue);
       break;
     case 'wordchain':
-      await sendReply(context.chatJid, 'Word Chain! Send a word that starts with the last letter of the previous word.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Word Chain! Send a word starting with the last letter of the previous word.`, sock, context.rawMessage.key, context.queue);
       break;
     default:
       await sendReply(
@@ -688,7 +752,42 @@ async function createPoll(context: MessageContext, args: string[], sock: any): P
 }
 
 async function handleVote(context: MessageContext, args: string[], sock: any): Promise<void> {
-  await sendReply(context.chatJid, 'Vote recorded!', sock, context.rawMessage.key, context.queue);
+  if (!args.length) {
+    await sendReply(context.chatJid, 'Usage: *!vote [number]*\n\nVote for an option in the active poll.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const optionNum = parseInt(args[0], 10);
+  if (isNaN(optionNum) || optionNum < 1) {
+    await sendReply(context.chatJid, 'Please provide a valid option number.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Voting not available without a session.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const poll = await getActivePoll(context.sessionId, context.chatJid);
+    if (!poll) {
+      await sendReply(context.chatJid, 'No active poll in this chat. Create one with !poll', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    if (optionNum > (poll.options?.length || 0)) {
+      await sendReply(context.chatJid, `Invalid option. Choose 1-${poll.options.length}`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await recordVote(poll.id, optionNum - 1);
+    const vars = { name: context.senderJid.split('@')[0], time: currentTimeStr() };
+    const response = pickResponse(pollReplies, vars, false);
+    await sendReply(context.chatJid, `${response}\nYou voted for: *${poll.options[optionNum - 1]}*`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('Vote error:', error);
+    await sendReply(context.chatJid, 'Error recording vote. Try again.', sock, context.rawMessage.key, context.queue);
+  }
 }
 
 async function showLeaderboard(context: MessageContext, sock: any): Promise<void> {
@@ -720,7 +819,7 @@ async function showLeaderboard(context: MessageContext, sock: any): Promise<void
 }
 
 async function handleDownload(context: MessageContext, args: string[], sock: any): Promise<void> {
-  await sendReply(context.chatJid, 'Media download feature coming soon!', sock, context.rawMessage.key, context.queue);
+  await sendReply(context.chatJid, `${pickResponse(downloadReplies, { name: context.senderJid.split('@')[0], time: currentTimeStr() })} Media download feature coming soon!`, sock, context.rawMessage.key, context.queue);
 }
 
 // ─── New Commands from Spec ───────────────────────────────────────────────────
@@ -1009,5 +1108,45 @@ async function handleDoc(
   } catch (error) {
     console.error('Doc creation error:', error);
     await sendReply(context.chatJid, 'Error creating document.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Welcome Bot — New Group Members ─────────────────────────────────────────
+
+export async function handleGroupParticipantsUpdate(
+  update: any,
+  sock: any,
+  sessionId: string,
+  userId: string,
+  queue?: MessageQueue,
+): Promise<void> {
+  try {
+    const { id: groupJid, participants, action } = update;
+
+    if (action !== 'add') return;
+
+    // Check if welcome feature is enabled for this user
+    const isEnabled = await getFeatureEnabled(userId, 'welcome');
+    if (!isEnabled) return;
+
+    for (const jid of participants) {
+      const name = jid.split('@')[0];
+      const vars = {
+        name,
+        time: currentTimeStr(),
+        date: currentDateStr(),
+        group: groupJid.split('@')[0],
+      };
+
+      const welcome = pickResponse(welcomeReplies, vars);
+      await sendReply(groupJid, welcome, sock, undefined, queue);
+
+      // Small delay between multiple new members
+      if (participants.length > 1) {
+        await delay(1000 + Math.random() * 2000);
+      }
+    }
+  } catch (error) {
+    console.error('Welcome bot error:', error);
   }
 }

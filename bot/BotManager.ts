@@ -5,9 +5,9 @@ import {
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus, getSessionUserId } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStatus, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
-import { handleMessage } from './handlers/MessageHandler';
+import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import P from 'pino';
 
@@ -131,6 +131,11 @@ export class BotWaveBot {
           }
         }
       }
+    });
+
+    // Welcome bot — greet new group members
+    this.socket.ev.on('group-participants.update', async (update: any) => {
+      await handleGroupParticipantsUpdate(update, this.socket, this.sessionId, this.userId, this.messageQueue ?? undefined);
     });
   }
 

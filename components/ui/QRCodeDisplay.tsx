@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeDisplayProps {
@@ -11,14 +11,14 @@ interface QRCodeDisplayProps {
 
 export default function QRCodeDisplay({ onClose, qrCode }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
-  const [hasQR, setHasQR] = useState(false);
+  const prevQRRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (qrCode && !hasQR) {
-      setHasQR(true);
-      setTimeLeft(60); // Reset timer when QR code arrives
+    if (qrCode && qrCode !== prevQRRef.current) {
+      prevQRRef.current = qrCode;
+      setTimeLeft(60);
     }
-  }, [qrCode, hasQR]);
+  }, [qrCode]);
 
   useEffect(() => {
     const timer = setInterval(() => {

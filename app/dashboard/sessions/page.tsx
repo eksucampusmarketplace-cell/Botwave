@@ -62,7 +62,7 @@ export default function SessionsPage() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (showQR && activeSessionRef.current && !activeSessionRef.current.qr_code) {
+    if (showQR && activeSessionRef.current) {
       interval = setInterval(() => {
         fetchSessions(true);
       }, 2000);
@@ -104,6 +104,24 @@ export default function SessionsPage() {
   const handleConnect = (session: any) => {
     setActiveSession(session);
     setShowQR(true);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm('Delete this session? This cannot be undone.')) return;
+
+    try {
+      const response = await fetch(`/api/bot/sessions?id=${sessionId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchSessions();
+      } else {
+        setError(data.error || 'Failed to delete session');
+      }
+    } catch {
+      setError('Failed to delete session');
+    }
   };
 
   return (
@@ -163,6 +181,7 @@ export default function SessionsPage() {
                 status={session.state === 'qr_pending' ? 'pending' : session.state}
                 lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
                 onConnect={() => handleConnect(session)}
+                onDelete={() => handleDeleteSession(session.id)}
               />
             ))
           ) : (
