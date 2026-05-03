@@ -1,8 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { useState, useEffect } from 'react';
 
 interface QRCodeDisplayProps {
   onClose: () => void;
@@ -11,12 +10,11 @@ interface QRCodeDisplayProps {
   pairingCode?: string;
 }
 
-export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(60);
-  const prevQRRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (qrCode && qrGeneratedAt) {
+    if (qrGeneratedAt) {
       const generatedAt = new Date(qrGeneratedAt).getTime();
       const expiresAt = generatedAt + 60 * 1000;
       
@@ -24,15 +22,13 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
         const now = Date.now();
         const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
         setTimeLeft(diff);
-        // We don't auto-close here anymore, the bot will auto-restart 
-        // and a new QR will be pushed via polling.
       };
 
       updateTimer();
       const interval = setInterval(updateTimer, 1000);
       return () => clearInterval(interval);
     }
-  }, [qrCode, qrGeneratedAt, onClose]);
+  }, [qrGeneratedAt]);
 
   return (
     <motion.div
@@ -68,7 +64,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
           </h2>
           
           {pairingCode ? (
-            <div className="mb-8">
+            <div className="mb-6">
               <p className="font-mono text-xs text-[#5a9a7a] mb-4">
                 1. Open WhatsApp on your phone
                 <br />
@@ -76,7 +72,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                 <br />
                 3. Tap <span className="text-white">Link a Device</span>
                 <br />
-                4. Tap <span className="text-green underline cursor-pointer">Link with phone number instead</span>
+                4. Tap <span className="text-green underline">Link with phone number instead</span>
                 <br />
                 5. Enter this 8-character code:
               </p>
@@ -87,50 +83,41 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                   {pairingCode}
                 </span>
               </div>
-              
-              <p className="font-mono text-[10px] text-[#3a7a5a] tracking-[1px] mt-6">
-                This code is more stable than QR scanning.
-                <br />
-                If it fails, use the QR method below.
-              </p>
             </div>
           ) : (
-            <p className="font-mono text-xs text-[#5a9a7a] mb-6">
-              Open WhatsApp → Settings → Linked Devices → Link a Device
-              <br />
-              <span className="text-red-400 font-bold">Do NOT scan with your phone&apos;s camera app.</span>
-            </p>
-          )}
-
-          <div className="bg-white p-4 rounded-lg mx-auto mb-6 inline-block opacity-90 hover:opacity-100 transition-opacity">
-            {qrCode ? (
-              <QRCodeSVG value={qrCode} size={pairingCode ? 160 : 256} />
-            ) : (
-              <div className={`${pairingCode ? 'w-40 h-40' : 'w-64 h-64'} bg-gradient-to-br from-green/20 to-cyan/20 flex items-center justify-center`}>
-                <div className={`grid ${pairingCode ? 'grid-cols-4' : 'grid-cols-5'} gap-1 p-4`}>
-                  {Array.from({ length: pairingCode ? 16 : 25 }).map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: Math.random() > 0.3 ? 1 : 0.2 }}
-                      transition={{ duration: 0.5, delay: i * 0.02 }}
-                      className={`w-6 h-6 ${Math.random() > 0.5 ? 'bg-dark' : 'bg-white border border-green/20'}`}
-                    />
-                  ))}
-                </div>
+            <div className="mb-6">
+              <p className="font-mono text-xs text-[#5a9a7a] mb-6">
+                Generating your pairing code...
+              </p>
+              <div className="flex items-center justify-center gap-2 py-8">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1, delay: 0 }}
+                  className="w-3 h-3 bg-green/60 rounded-full"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
+                  className="w-3 h-3 bg-green/60 rounded-full"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
+                  className="w-3 h-3 bg-green/60 rounded-full"
+                />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className="w-3 h-3 bg-cyan rounded-full animate-pulse" />
             <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">
-              {qrCode ? `EXPIRES IN ${timeLeft}s` : 'GENERATING...'}
+              {pairingCode ? `EXPIRES IN ${timeLeft}s` : 'PLEASE WAIT...'}
             </span>
           </div>
 
           <p className="font-mono text-[10px] text-[#3a7a5a] tracking-[1px] mt-4">
-            Keep this window open during scanning.
+            Keep this window open while connecting.
             <br />
             If you see &quot;Can&apos;t link devices&quot;, try again in 15 minutes.
           </p>
