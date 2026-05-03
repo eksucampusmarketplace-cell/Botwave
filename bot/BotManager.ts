@@ -67,7 +67,7 @@ export class BotWaveBot {
       logger,
       browser: Browsers.macOS('Chrome'),
       syncFullHistory: false,
-      markOnline: false,
+      markOnlineOnConnect: false,
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 0,
       keepAliveIntervalMs: 10000,
