@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getSessionServer } from '@/bot/sessionRouter';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,8 @@ export async function POST(request: NextRequest) {
 
     const { phoneNumber, sessionName } = validation.data;
 
+    const serverUrl = getSessionServer();
+
     const { data: session, error } = await supabase
       .from('bot_sessions')
       .insert({
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         phone_number: phoneNumber,
         session_name: sessionName,
         state: 'qr_pending',
+        server_url: serverUrl,
       })
       .select()
       .single();

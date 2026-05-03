@@ -68,14 +68,7 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Periodic sync — ping every 15 minutes to keep alive
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'botwave-keepalive') {
-    event.waitUntil(
-      fetch('/api/auth/session', { method: 'GET' }).catch(() => {})
-    );
-  }
-});
+
 
 // Push notification support (future use)
 self.addEventListener('push', (event) => {
