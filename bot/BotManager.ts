@@ -51,7 +51,18 @@ export class BotWaveBot {
 
     console.log(`[${this.sessionId}] Loading auth state from Supabase...`);
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
-    console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}`);
+    console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}, me: ${state.creds.me?.id ?? 'null'}`);
+
+    // Fix: Baileys' requestPairingCode sets creds.me before pairing succeeds.
+    // If a previous attempt failed/timed out, creds.me is stale in the DB,
+    // causing Baileys to take the login path instead of registration on
+    // reconnect — which the server rejects (401).  Clear it so the
+    // registration path is always used until pairing actually completes.
+    if (!state.creds.registered && state.creds.me) {
+      console.log(`[${this.sessionId}] Clearing stale creds.me (not yet registered) to force registration flow`);
+      state.creds.me = undefined as any;
+      await saveCreds();
+    }
     
     let version: any;
     try {

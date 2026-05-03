@@ -105,7 +105,6 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       qr_expires_at: expiresAt,
       qr_generated_at: generatedAt,
       state: 'qr_pending',
-      auth_state: null,
       updated_at: new Date().toISOString()
     })
     .eq('id', sessionId);
