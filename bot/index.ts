@@ -10,13 +10,13 @@ async function start() {
   
   // Initial sync
   console.log('[BOT] Running initial session sync...');
-  await syncSessionsWithDb();
+  await syncSessionsWithDb(IS_WORKER);
   console.log('[BOT] Initial sync complete. Polling every 5s...');
   
   // Periodically sync sessions from database
   setInterval(async () => {
     try {
-      await syncSessionsWithDb();
+      await syncSessionsWithDb(IS_WORKER);
     } catch (error) {
       console.error('Error syncing sessions:', error);
     }
