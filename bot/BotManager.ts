@@ -92,16 +92,22 @@ export class BotWaveBot {
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
         console.log(`QR Code generated for session: ${this.sessionId}`);
 
-        // Try to get pairing code as well (Option 1)
-        try {
-          const cleanPhone = this.phoneNumber.replace(/\D/g, '');
-          if (cleanPhone) {
-            const code = await this.socket.requestPairingCode(cleanPhone);
-            await updateSessionPairingCode(this.sessionId, code);
-            console.log(`Pairing code for ${this.sessionId}: ${code}`);
-          }
-        } catch (err) {
-          console.error('Failed to get pairing code:', err);
+        // Request pairing code after a short delay to let Baileys establish
+        // the WebSocket handshake. Without this delay the request often fails
+        // because the socket isn't ready to issue pairing code requests yet.
+        const sock = this.socket;
+        const sid = this.sessionId;
+        const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+        if (cleanPhone) {
+          setTimeout(async () => {
+            try {
+              const code = await sock.requestPairingCode(cleanPhone);
+              await updateSessionPairingCode(sid, code);
+              console.log(`Pairing code for ${sid}: ${code}`);
+            } catch (err: any) {
+              console.error(`Failed to get pairing code for ${sid}:`, err?.message || err);
+            }
+          }, 3000);
         }
 
         // Auto-restart after 60 seconds to get a fresh QR if not connected
