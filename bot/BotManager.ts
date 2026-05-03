@@ -53,9 +53,16 @@ export class BotWaveBot {
       const latest = await fetchLatestBaileysVersion();
       version = latest.version;
     } catch (err) {
-      console.warn(`Failed to fetch latest Baileys version for session ${this.sessionId}, using fallback:`, err);
-      version = [2, 3000, 1015901307]; // Safe fallback version
+      console.error(`CRITICAL: Failed to fetch latest Baileys version for session ${this.sessionId}:`, err);
+      throw err; // Don't proceed with stale version
     }
+
+    const browserOptions = [
+      Browsers.macOS('Chrome'),
+      Browsers.ubuntu('Chrome'),
+      Browsers.windows('Firefox'),
+      Browsers.macOS('Safari'),
+    ];
 
     this.socket = makeWASocket({
       version,
@@ -65,7 +72,7 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: Browsers.macOS('Chrome'),
+      browser: browserOptions[Math.floor(Math.random() * browserOptions.length)],
       syncFullHistory: false,
       markOnlineOnConnect: false,
       connectTimeoutMs: 60000,
@@ -86,9 +93,20 @@ export class BotWaveBot {
 
       if (qr) {
         this.qrCode = qr;
-        const expiresAt = new Date(Date.now() + 60 * 1000);
-        await updateSessionQR(this.sessionId, qr, expiresAt.toISOString());
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 60 * 1000);
+        await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
         console.log(`QR Code generated for session: ${this.sessionId}`);
+
+        // Auto-restart after 60 seconds to get a fresh QR if not connected
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = setTimeout(async () => {
+          if (!this.isReady && this.qrCode === qr) {
+            console.log(`QR expired for session ${this.sessionId}, restarting connection...`);
+            this.reconnectAttempts = 0; // Reset attempts for a fresh QR start
+            this.socket?.end(new Error('QR_TIMEOUT'));
+          }
+        }, 62000);
       }
 
       if (connection === 'close') {
@@ -201,6 +219,7 @@ export class BotWaveBot {
       isReady: this.isReady,
       qrCode: this.qrCode,
       isReconnecting: this.isReconnecting,
+      isQrPending: !!this.qrCode,
     };
   }
 }
@@ -255,7 +274,9 @@ export async function syncSessionsWithDb() {
     const session = sessions.find(s => s.id === id);
     if (!session) {
       // Don't kill bots that are mid-reconnect (e.g. 515 pairing restart)
-      if (bot.getStatus().isReconnecting) {
+      // or in qr_pending state during the handshake
+      const status = bot.getStatus();
+      if (status.isReconnecting || status.isQrPending) {
         continue;
       }
       console.log(`Stopping bot for removed session: ${id}`);
