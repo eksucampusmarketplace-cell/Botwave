@@ -33,6 +33,7 @@ export class BotWaveBot {
   private reconnectAttempts: number = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private messageQueue: MessageQueue | null = null;
+  private isReconnecting: boolean = false;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -100,23 +101,31 @@ export class BotWaveBot {
           // Hard limit: max 3 reconnect attempts
           if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.log(`Session ${this.sessionId}: max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Stopping.`);
+            this.isReconnecting = false;
             await updateSessionStatus(this.sessionId, 'disconnected');
             this.socket = null;
             return;
           }
 
-          await updateSessionStatus(this.sessionId, 'inactive');
+          // Keep state as qr_pending during pairing restart (515)
+          // so syncSessionsWithDb doesn't kill the bot mid-handshake
+          this.isReconnecting = true;
+          if (statusCode !== 515) {
+            await updateSessionStatus(this.sessionId, 'inactive');
+          }
           this.socket = null;
           this.reconnectAttempts++;
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
           console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
           this.reconnectTimeout = setTimeout(() => {
+            this.isReconnecting = false;
             this.start();
           }, delay);
         }
       } else if (connection === 'open') {
         console.log(`Session connected: ${this.sessionId}`);
         this.isReady = true;
+        this.isReconnecting = false;
         this.qrCode = null;
         this.reconnectAttempts = 0;
         if (this.reconnectTimeout) {
@@ -163,6 +172,7 @@ export class BotWaveBot {
     return {
       isReady: this.isReady,
       qrCode: this.qrCode,
+      isReconnecting: this.isReconnecting,
     };
   }
 }
@@ -216,6 +226,10 @@ export async function syncSessionsWithDb() {
   for (const [id, bot] of activeBots) {
     const session = sessions.find(s => s.id === id);
     if (!session) {
+      // Don't kill bots that are mid-reconnect (e.g. 515 pairing restart)
+      if (bot.getStatus().isReconnecting) {
+        continue;
+      }
       console.log(`Stopping bot for removed session: ${id}`);
       await bot.stop();
       activeBots.delete(id);
