@@ -36,7 +36,6 @@ export class BotWaveBot {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private messageQueue: MessageQueue | null = null;
   private isReconnecting: boolean = false;
-  private pairingCodeRequested: boolean = false;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -83,6 +82,26 @@ export class BotWaveBot {
 
     this.socket.ev.on('creds.update', saveCreds);
 
+    // Request pairing code BEFORE the QR flow starts.
+    // Baileys expects requestPairingCode to be called right after socket
+    // creation — calling it inside the QR handler conflicts with the QR
+    // handshake and silently fails.
+    if (!state.creds.registered) {
+      const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+      if (cleanPhone) {
+        console.log(`Requesting pairing code for ${this.sessionId} (phone: ${cleanPhone.slice(0, 4)}...)`);
+        try {
+          const code = await this.socket.requestPairingCode(cleanPhone);
+          await updateSessionPairingCode(this.sessionId, code);
+          console.log(`Pairing code for ${this.sessionId}: ${code}`);
+        } catch (err: any) {
+          console.error(`Failed to get pairing code for ${this.sessionId}:`, err?.message || err);
+        }
+      } else {
+        console.error(`No valid phone number for session ${this.sessionId}, cannot request pairing code`);
+      }
+    }
+
     this.socket.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -91,29 +110,7 @@ export class BotWaveBot {
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 60 * 1000);
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
-        console.log(`QR Code generated for session: ${this.sessionId}`);
-
-        // Request pairing code on the first QR event only.
-        // Baileys generates QR when the WebSocket is connected, so the socket
-        // is ready to send the pairing code request at this point.
-        if (!this.pairingCodeRequested) {
-          this.pairingCodeRequested = true;
-          const cleanPhone = this.phoneNumber.replace(/\D/g, '');
-          if (cleanPhone) {
-            console.log(`Requesting pairing code for ${this.sessionId} (phone: ${cleanPhone.slice(0, 4)}...)`);
-            try {
-              const code = await this.socket.requestPairingCode(cleanPhone);
-              await updateSessionPairingCode(this.sessionId, code);
-              console.log(`Pairing code for ${this.sessionId}: ${code}`);
-            } catch (err: any) {
-              console.error(`Failed to get pairing code for ${this.sessionId}:`, err?.message || err);
-              // Reset so it can retry on next QR cycle
-              this.pairingCodeRequested = false;
-            }
-          } else {
-            console.error(`No valid phone number for session ${this.sessionId}, cannot request pairing code`);
-          }
-        }
+        console.log(`QR generated for session: ${this.sessionId} (pairing code already requested)`);
 
         // Auto-restart after 60 seconds to get a fresh code if not connected
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
@@ -121,7 +118,6 @@ export class BotWaveBot {
           if (!this.isReady && this.qrCode === qr) {
             console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
             this.reconnectAttempts = 0;
-            this.pairingCodeRequested = false;
             this.socket?.end(new Error('QR_TIMEOUT'));
           }
         }, 62000);
