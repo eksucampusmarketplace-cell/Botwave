@@ -9,6 +9,7 @@ import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionStat
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
+import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import P from 'pino';
 
 const logger = P({ level: 'info' });
@@ -40,6 +41,9 @@ export class BotWaveBot {
   }
 
   async start(): Promise<void> {
+    // Register session for warmup tracking (advanced anti-ban)
+    registerSessionStart(this.sessionId);
+
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
     const { version } = await fetchLatestBaileysVersion();
 
@@ -120,6 +124,9 @@ export class BotWaveBot {
           this.reconnectTimeout = null;
         }
         await updateSessionStatus(this.sessionId, 'active');
+
+        // Start presence simulation (advanced anti-ban)
+        startPresenceSimulation(this.socket, this.sessionId);
       }
     });
 
@@ -140,6 +147,7 @@ export class BotWaveBot {
   }
 
   async stop(): Promise<void> {
+    stopPresenceSimulation(this.sessionId);
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
