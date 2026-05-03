@@ -2,7 +2,7 @@ import { delay } from '../../lib/utils';
 import axios from 'axios';
 import sharp from 'sharp';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -128,9 +128,19 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return; // Silently skip — don't even warn, just act like a human who's busy
     }
 
-    // Read-but-skip probability (advanced anti-ban)
+    // Fetch owner settings for skip probability + AFK
+    let ownerSkipProbability: number | undefined;
+    let ownerSettings: { afk_enabled?: boolean; afk_message?: string; skip_probability?: number } | null = null;
+    if (userId) {
+      try {
+        ownerSettings = await getUserSettings(userId);
+        ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
+      } catch { /* non-critical */ }
+    }
+
+    // Read-but-skip probability (advanced anti-ban) — owner-controlled
     const isCommand = content.startsWith(COMMAND_PREFIX);
-    if (shouldSkipResponse(isGroup, isCommand)) {
+    if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
       // Mark as read but don't respond — like a real person ignoring a message
       try {
         await sock.readMessages([message.key]);
@@ -148,8 +158,24 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       incrementLeaderboard(sessionId, senderJid, pushName).catch(() => {});
     }
 
-    // Check if sender mentioned an AFK user
+    // Check if sender mentioned an AFK user (groups)
     await checkAfkMentions(context, sock);
+
+    // Private chat AFK auto-response: if someone DMs the bot owner and
+    // the owner has AFK enabled, respond with the AFK message.
+    if (!isGroup && sessionId && ownerSettings?.afk_enabled) {
+      const ownerJid = (sock as any).user?.id;
+      if (ownerJid && senderJid !== ownerJid) {
+        const afkMsg = ownerSettings.afk_message || 'I am currently away';
+        await sendReply(
+          chatJid,
+          `I'm currently AFK. ${afkMsg}`,
+          sock,
+          message.key,
+          queue,
+        );
+      }
+    }
 
     if (!isUserRateLimited(senderJid)) {
       await processCommand(context, sock);
@@ -535,7 +561,9 @@ async function createSticker(
 
     await sendReply(context.chatJid, { sticker: stickerBuffer }, sock, context.rawMessage.key, context.queue);
 
-    let reply = pickResponse(stickerReplies, vars);
+    // In private chats, omit {name} from sticker replies since it's 1:1
+    const stickerVars = context.isGroup ? vars : { time: vars.time, date: vars.date };
+    let reply = pickResponse(stickerReplies, stickerVars);
 
     // Promo check
     if (context.sessionId && context.userId) {

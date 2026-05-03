@@ -122,12 +122,21 @@ export function trackMessageSent(sessionId: string): void {
  * Never skips DMs or command messages (starting with !).
  */
 
-const SKIP_PROBABILITY_GROUP = 0.15;
+const DEFAULT_SKIP_PROBABILITY_GROUP = 0.15;
 const SKIP_PROBABILITY_DM = 0; // Never skip DMs
 
-export function shouldSkipResponse(isGroup: boolean, isCommand: boolean): boolean {
+/**
+ * Accepts an optional `ownerSkipProbability` from the account owner's
+ * user_settings.skip_probability column. Falls back to the default 0.15.
+ */
+export function shouldSkipResponse(
+  isGroup: boolean,
+  isCommand: boolean,
+  ownerSkipProbability?: number,
+): boolean {
   if (isCommand) return false; // Never skip commands
-  const probability = isGroup ? SKIP_PROBABILITY_GROUP : SKIP_PROBABILITY_DM;
+  if (!isGroup) return false; // Never skip private chats
+  const probability = ownerSkipProbability ?? DEFAULT_SKIP_PROBABILITY_GROUP;
   return Math.random() < probability;
 }
 
