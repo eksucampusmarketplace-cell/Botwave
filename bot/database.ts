@@ -88,10 +88,11 @@ export async function getSessionsNeedingBot(selfUrl?: string) {
   const { data, error } = await query;
 
   if (error) {
-    if (error.code !== 'PGRST205') {
-      console.error('Error fetching sessions needing bot:', error);
-    }
+    console.error('[DB] Error fetching sessions needing bot:', error);
     return [];
+  }
+  if (data && data.length > 0) {
+    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'})`).join(', '));
   }
   return data;
 }
@@ -119,6 +120,7 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
 }
 
 export async function updateSessionPairingCode(sessionId: string, code: string) {
+  console.log(`[DB] Saving pairing code for ${sessionId}: ${code}`);
   const { error } = await supabase
     .from('bot_sessions')
     .update({
@@ -129,11 +131,9 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
     .eq('id', sessionId);
 
   if (error) {
-    if (error.code !== 'PGRST205') {
-      console.error(`Error updating pairing code for session ${sessionId}:`, error);
-    }
+    console.error(`[DB] ERROR saving pairing code for ${sessionId}:`, error);
   } else {
-    console.log(`Updated pairing code for session ${sessionId}`);
+    console.log(`[DB] Pairing code saved successfully for ${sessionId}`);
   }
 }
 
