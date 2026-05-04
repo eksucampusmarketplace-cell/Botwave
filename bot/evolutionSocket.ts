@@ -125,9 +125,12 @@ export class EvolutionSocketAdapter {
 
   /**
    * Baileys-compatible sendPresenceUpdate.
+   * Evolution API's sendPresence requires a target phone number.
+   * Global presence updates (no JID) are not supported via REST — skip them.
    */
   async sendPresenceUpdate(type: string, jid?: string) {
-    return sendPresence(this.instanceName, jid || '', type);
+    if (!jid) return;
+    return sendPresence(this.instanceName, jid, type);
   }
 
   /**
