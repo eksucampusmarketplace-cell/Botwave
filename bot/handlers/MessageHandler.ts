@@ -76,13 +76,16 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const chatJid = message.key.remoteJid;
     const fromMe = message.key.fromMe;
 
-    if (fromMe) return;
-
+    // Extract text to check for command prefix
     const content =
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
       message.message?.imageMessage?.caption ||
       '';
+
+    // Allow fromMe commands (userbot mode: bot owner can use !help etc.)
+    // Skip non-command fromMe messages to avoid infinite loops
+    if (fromMe && !content.trimStart().startsWith('!')) return;
 
     if (!content) return;
 

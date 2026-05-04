@@ -59,23 +59,45 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', sessionId);
       } else if (state === 'close' || state === 'refused') {
-        await supabase.from('bot_sessions')
-          .update({
-            state: 'needs_reauth',
-            qr_code: null,
-            qr_expires_at: null,
-            qr_generated_at: null,
-            pairing_code: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', sessionId);
+        // Only set needs_reauth if the session was previously active.
+        // During pairing/connecting, 'close' events are normal reconnection
+        // cycles — don't nuke the session state.
+        const { data: current } = await supabase
+          .from('bot_sessions')
+          .select('state')
+          .eq('id', sessionId)
+          .single();
+
+        if (current?.state === 'active') {
+          await supabase.from('bot_sessions')
+            .update({
+              state: 'needs_reauth',
+              qr_code: null,
+              qr_expires_at: null,
+              qr_generated_at: null,
+              pairing_code: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+        }
+        // If state is qr_pending/pairing_sent/connecting, leave it alone —
+        // the BotManager sync loop handles reconnection during pairing.
       } else if (state === 'connecting') {
-        await supabase.from('bot_sessions')
-          .update({
-            state: 'qr_pending',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', sessionId);
+        // Only update to qr_pending if not already in a pairing state
+        const { data: current } = await supabase
+          .from('bot_sessions')
+          .select('state')
+          .eq('id', sessionId)
+          .single();
+
+        if (current?.state !== 'pairing_sent') {
+          await supabase.from('bot_sessions')
+            .update({
+              state: 'qr_pending',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+        }
       }
 
       return NextResponse.json({ ok: true });
@@ -165,7 +187,9 @@ export async function POST(request: NextRequest) {
           '';
         console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} text="${text.slice(0, 80)}"`);
 
-        if (fromMe) continue;
+        // Allow fromMe messages that start with command prefix (userbot mode)
+        // This lets the bot owner send !help, !ping, etc. from their own number
+        if (fromMe && !text.trimStart().startsWith('!')) continue;
         try {
           await handleMessage(msg, sock, queue);
         } catch (err) {
