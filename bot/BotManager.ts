@@ -12,7 +12,7 @@ import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook } from './evolutionClient';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -361,6 +361,9 @@ class EvolutionBot {
       // Ensure webhook is configured (safety net if create didn't set it)
       await setWebhook(this.sessionId);
 
+      // Register for keep-alive pings so Evolution API doesn't auto-delete
+      trackInstance(this.sessionId);
+
       // Wait briefly then fetch pairing code
       await new Promise(r => setTimeout(r, 2000));
       const code = await getPairingCode(this.sessionId, this.phoneNumber);
@@ -469,6 +472,7 @@ class EvolutionBot {
 
   async stop(): Promise<void> {
     this.stopPresenceLoop();
+    untrackInstance(this.sessionId);
     if (this.pollHandle) {
       clearInterval(this.pollHandle);
       this.pollHandle = null;

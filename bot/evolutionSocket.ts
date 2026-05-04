@@ -8,6 +8,7 @@ import {
   sendText,
   sendMedia,
   sendSticker,
+  sendAudio,
   markAsRead,
   sendPresence,
 } from './evolutionClient';
@@ -86,17 +87,15 @@ export class EvolutionSocketAdapter {
       return sendMedia(this.instanceName, to, base64, mimetype, 'video', 'video.mp4');
     }
 
-    // Audio
+    // Audio — use dedicated WhatsApp audio endpoint for proper opus encoding
     if (content.audio) {
       let base64: string;
       if (Buffer.isBuffer(content.audio)) {
-        const mimetype = (content.mimetype as string) || 'audio/ogg; codecs=opus';
-        base64 = `data:${mimetype};base64,${(content.audio as Buffer).toString('base64')}`;
+        base64 = (content.audio as Buffer).toString('base64');
       } else {
         base64 = String(content.audio);
       }
-      const mimetype = (content.mimetype as string) || 'audio/ogg; codecs=opus';
-      return sendMedia(this.instanceName, to, base64, mimetype, 'document', 'audio.ogg');
+      return sendAudio(this.instanceName, to, base64);
     }
 
     // Fallback: try as text if there's a caption

@@ -4,6 +4,7 @@
 const BASE = process.env.EVOLUTION_API_URL || '';
 const KEY  = process.env.EVOLUTION_API_KEY  || '';
 const REQUEST_TIMEOUT = 15_000;
+const KEEPALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
 const headers: Record<string, string> = {
   'Content-Type': 'application/json',
@@ -20,6 +21,16 @@ function getWebhookUrl(): string {
     process.env.SELF_URL ||
     '';
   return base ? `${base}/api/evolution/webhook` : '';
+}
+
+/**
+ * Strip a data-URI prefix ("data:…;base64,") and return raw base64.
+ * Evolution API validates with isBase64() which rejects data URIs.
+ */
+function stripDataUri(input: string): string {
+  const idx = input.indexOf(';base64,');
+  if (idx !== -1) return input.slice(idx + 8);
+  return input;
 }
 
 /**
@@ -169,7 +180,7 @@ export async function sendText(instanceName: string, to: string, text: string) {
   const res = await apiFetch(`${BASE}/message/sendText/${instanceName}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ number: to, text }),
+    body: JSON.stringify({ number: to, text, delay: 0 }),
   });
   return res.json();
 }
@@ -191,9 +202,10 @@ export async function sendMedia(
       number: to,
       mediatype,
       mimetype,
-      media: mediaBase64,
+      media: stripDataUri(mediaBase64),
       fileName: fileName || 'file',
       caption: caption || '',
+      delay: 0,
     }),
   });
   return res.json();
@@ -204,7 +216,17 @@ export async function sendSticker(instanceName: string, to: string, stickerBase6
   const res = await apiFetch(`${BASE}/message/sendSticker/${instanceName}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ number: to, sticker: stickerBase64 }),
+    body: JSON.stringify({ number: to, sticker: stripDataUri(stickerBase64), delay: 0 }),
+  });
+  return res.json();
+}
+
+// Send audio using the dedicated WhatsApp audio endpoint (encodes to opus)
+export async function sendAudio(instanceName: string, to: string, audioBase64: string) {
+  const res = await apiFetch(`${BASE}/message/sendWhatsAppAudio/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ number: to, audio: stripDataUri(audioBase64), delay: 0, encoding: true }),
   });
   return res.json();
 }
@@ -232,9 +254,42 @@ export async function sendPresence(instanceName: string, jid: string, presence: 
   const res = await apiFetch(`${BASE}/chat/sendPresence/${instanceName}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ number, presence }),
+    body: JSON.stringify({ number, presence, delay: 0 }),
   });
   return res.json();
+}
+
+// Keep-alive: ping Evolution API to prevent instance auto-deletion
+let keepAliveHandle: NodeJS.Timeout | null = null;
+const trackedInstances = new Set<string>();
+
+export function trackInstance(instanceName: string): void {
+  trackedInstances.add(instanceName);
+  ensureKeepAlive();
+}
+
+export function untrackInstance(instanceName: string): void {
+  trackedInstances.delete(instanceName);
+  if (trackedInstances.size === 0 && keepAliveHandle) {
+    clearInterval(keepAliveHandle);
+    keepAliveHandle = null;
+  }
+}
+
+function ensureKeepAlive(): void {
+  if (keepAliveHandle) return;
+  keepAliveHandle = setInterval(async () => {
+    for (const name of trackedInstances) {
+      try {
+        await apiFetch(`${BASE}/instance/connectionState/${name}`, {
+          method: 'GET',
+          headers,
+        });
+      } catch {
+        // non-critical — just a ping
+      }
+    }
+  }, KEEPALIVE_INTERVAL);
 }
 
 // Fetch instance info (includes user JID)
