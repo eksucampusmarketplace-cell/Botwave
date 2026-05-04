@@ -545,8 +545,81 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       break;
     case 'repost':
     case 'rp':
-    case 'reststatus':
+    case 'repoststatus':
       await handleRepost(context, sock);
+      break;
+    case 'qr':
+    case 'qrcode':
+      await handleQR(context, args, sock);
+      break;
+    case 'tts':
+    case 'speak':
+    case 'say':
+      await handleTTS(context, args, sock);
+      break;
+    case 'wiki':
+    case 'wikipedia':
+      await handleWiki(context, args, sock);
+      break;
+    case 'lyrics':
+    case 'lyric':
+      await handleLyrics(context, args, sock);
+      break;
+    case 'currency':
+    case 'convert':
+    case 'exchange':
+      await handleCurrency(context, args, sock);
+      break;
+    case 'tagall':
+    case 'everyone':
+    case 'all':
+      await handleTagAll(context, args, sock);
+      break;
+    case 'group':
+    case 'groupinfo':
+      await handleGroupInfo(context, sock);
+      break;
+    case 'meme':
+    case 'memes':
+      await handleMeme(context, sock);
+      break;
+    case '8ball':
+    case 'eightball':
+    case 'magic':
+      await handle8Ball(context, args, sock);
+      break;
+    case 'truth':
+      await handleTruth(context, sock);
+      break;
+    case 'dare':
+      await handleDare(context, sock);
+      break;
+    case 'ship':
+    case 'love':
+      await handleShip(context, args, sock);
+      break;
+    case 'compliment':
+      await handleCompliment(context, args, sock);
+      break;
+    case 'fortune':
+    case 'cookie':
+      await handleFortune(context, sock);
+      break;
+    case 'fact':
+    case 'facts':
+      await handleFact(context, sock);
+      break;
+    case 'riddle':
+      await handleRiddle(context, sock);
+      break;
+    case 'img':
+    case 'imagine':
+    case 'image':
+      await handleImg(context, args, sock);
+      break;
+    case 'short':
+    case 'shorten':
+      await handleShorten(context, args, sock);
       break;
     default:
       await sendUnknownCommand(context, sock, vars);
@@ -679,6 +752,7 @@ async function sendHelp(
 !sticker crop/circle/rounded — Crop modes
 !joke — Random joke
 !quote — Inspirational quote
+!meme — Random meme from Reddit
 
 *TOOLS*
 !ai [msg] — AI chat (Groq)
@@ -687,30 +761,47 @@ async function sendHelp(
 !horoscope [sign] — Daily horoscope
 !translate [lang] [text] — Translate text
 !doc [title] | [content] — Create .docx file
-!calc [expr] — Calculator (sqrt, pi, etc)
+!calc [expr] — Calculator
 !note save/list/view/delete — Notes
+!qr [text/url] — Generate QR code
+!tts [text] — Text to voice note
+!wiki [topic] — Wikipedia summary
+!lyrics [song] — Song lyrics
+!currency [amt] [FROM] [TO] — Convert currency
+!short [url] — Shorten a URL
+!img [prompt] — AI image generation
 
 *PRODUCTIVITY*
-!remind [time] [msg] — Set reminder (5m, 1h, 2d)
+!remind [time] [msg] — Set reminder
 !schedule [time] [msg] — Schedule message
 !stats — Bot status & session info
 
-*GAMES*
-!play numberguess — Guess the number (1-100)
+*GAMES & FUN*
+!play numberguess — Guess the number
 !trivia — Multiple choice trivia
-!hangman — Guess the word letter by letter
+!hangman — Guess the word
 !wordchain — Chain words by last letter
 !answer [text] — Answer active game
 !poll [q] | [opts] — Create poll
 !vote [n] — Vote on poll
 !leaderboard — Top active users
+!8ball [question] — Magic 8-Ball
+!truth — Truth question
+!dare — Dare challenge
+!ship [name1] [name2] — Love calculator
+!compliment [name] — Random compliment
+!fortune — Fortune cookie
+!fact — Random fun fact
+!riddle — Random riddle (answer in 30s)
 
 *SOCIAL*
-!afk [reason] — Set AFK (auto-reply when away)
+!afk [reason] — Set AFK (auto-reply)
 !afk off — Disable AFK
-!download [url] — Download media from URL
-!save — Reply to any msg to save to your chat
-!repost — Reply to msg/media to post as Status
+!download [url] — Download media
+!save — Reply to save msg to your chat
+!repost — Reply to post as Status
+!tagall [msg] — Mention all group members
+!group — View group info
 
 _Only the bot owner can use commands._`;
 
@@ -1998,8 +2089,9 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
   }
 
   try {
-    // Get the bot owner's JID (to send to self)
-    const ownerJid = (sock as any).user?.id;
+    // Get the bot owner's JID (to send to self) — normalize to strip device suffix
+    const rawOwnerJid = (sock as any).user?.id;
+    const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : '';
     if (!ownerJid) {
       await sendReply(context.chatJid, 'Could not determine your account. Try again after reconnecting.', sock, context.rawMessage.key, context.queue);
       return;
@@ -2142,6 +2234,597 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
   } catch (error) {
     console.error('[REPOST] Error:', error);
     await sendReply(context.chatJid, 'Failed to repost to status. This feature depends on your WhatsApp version.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── QR Code Generator ──────────────────────────────────────────────────────
+
+async function handleQR(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*QR CODE GENERATOR*\n\n!qr [text or URL]\n\nExample: !qr https://google.com', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const text = args.join(' ');
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(text)}`;
+    const response = await axios.get(qrUrl, { responseType: 'arraybuffer', timeout: 15000 });
+    const buffer = Buffer.from(response.data);
+    await sock.sendMessage(context.chatJid, { image: buffer, caption: `QR code for: ${text}` }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[QR] Error:', error);
+    await sendReply(context.chatJid, 'Failed to generate QR code. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Text-to-Speech ─────────────────────────────────────────────────────────
+
+async function handleTTS(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*TEXT TO SPEECH*\n\n!tts [text]\n\nConverts text to a voice note.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const text = args.join(' ').slice(0, 500);
+    // Use Google Translate TTS (free, no key)
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(text)}`;
+    const response = await axios.get(ttsUrl, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    const buffer = Buffer.from(response.data);
+    await sock.sendMessage(context.chatJid, {
+      audio: buffer,
+      mimetype: 'audio/mpeg',
+      ptt: true,
+    }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[TTS] Error:', error);
+    await sendReply(context.chatJid, 'TTS failed. Try shorter text or try again later.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Wikipedia Summary ──────────────────────────────────────────────────────
+
+async function handleWiki(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*WIKIPEDIA*\n\n!wiki [topic]\n\nExample: !wiki Albert Einstein', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const query = args.join(' ');
+    const response = await axios.get(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`,
+      { timeout: 10000 },
+    );
+    const data = response.data;
+    if (data.type === 'disambiguation') {
+      await sendReply(context.chatJid, `Multiple results for "${query}". Try being more specific.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    let msg = `*${data.title || query}*\n\n`;
+    msg += data.extract || 'No summary available.';
+    if (data.content_urls?.desktop?.page) {
+      msg += `\n\n🔗 ${data.content_urls.desktop.page}`;
+    }
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      await sendReply(context.chatJid, `No Wikipedia article found for "${args.join(' ')}". Try different keywords.`, sock, context.rawMessage.key, context.queue);
+    } else {
+      console.error('[WIKI] Error:', error);
+      await sendReply(context.chatJid, 'Wikipedia lookup failed. Try again.', sock, context.rawMessage.key, context.queue);
+    }
+  }
+}
+
+// ─── Lyrics Lookup ──────────────────────────────────────────────────────────
+
+async function handleLyrics(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*LYRICS FINDER*\n\n!lyrics [song name]\n!lyrics [artist] - [song]\n\nExample: !lyrics Bohemian Rhapsody', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const query = args.join(' ');
+    // Use lyricsovh free API
+    let artist = '';
+    let title = query;
+    if (query.includes(' - ')) {
+      const parts = query.split(' - ');
+      artist = parts[0].trim();
+      title = parts.slice(1).join(' - ').trim();
+    }
+
+    let lyrics = '';
+    if (artist) {
+      try {
+        const response = await axios.get(
+          `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`,
+          { timeout: 15000 },
+        );
+        lyrics = response.data?.lyrics || '';
+      } catch {
+        // Try fallback below
+      }
+    }
+
+    if (!lyrics) {
+      // Fallback: try with just the title as artist search
+      try {
+        const searchParts = query.split(' ');
+        const guessArtist = searchParts[0];
+        const guessTitle = searchParts.slice(1).join(' ') || searchParts[0];
+        const response = await axios.get(
+          `https://api.lyrics.ovh/v1/${encodeURIComponent(guessArtist)}/${encodeURIComponent(guessTitle)}`,
+          { timeout: 15000 },
+        );
+        lyrics = response.data?.lyrics || '';
+      } catch {
+        // No lyrics found
+      }
+    }
+
+    if (!lyrics) {
+      await sendReply(context.chatJid, `No lyrics found for "${query}".\n\nTry: !lyrics Artist - Song Title`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // Truncate if too long for WhatsApp
+    if (lyrics.length > 4000) {
+      lyrics = lyrics.slice(0, 4000) + '\n\n... (truncated)';
+    }
+    await sendReply(context.chatJid, `*${query.toUpperCase()}*\n\n${lyrics.trim()}`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[LYRICS] Error:', error);
+    await sendReply(context.chatJid, 'Lyrics lookup failed. Try: !lyrics Artist - Song Title', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Currency Converter ─────────────────────────────────────────────────────
+
+async function handleCurrency(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length < 3) {
+    await sendReply(
+      context.chatJid,
+      '*CURRENCY CONVERTER*\n\n!currency [amount] [FROM] [TO]\n\nExamples:\n!currency 100 USD NGN\n!currency 50 EUR GBP\n!currency 1000 NGN USD',
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+  try {
+    const amount = parseFloat(args[0]);
+    if (isNaN(amount) || amount <= 0) {
+      await sendReply(context.chatJid, 'Invalid amount. Use: !currency 100 USD NGN', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    // Skip "to" if user writes "100 USD to NGN"
+    const fromCurrency = args[1].toUpperCase();
+    const toCurrency = (args[2].toLowerCase() === 'to' && args[3]) ? args[3].toUpperCase() : args[2].toUpperCase();
+
+    const response = await axios.get(
+      `https://api.frankfurter.dev/v2/rates?base=${fromCurrency}&quotes=${toCurrency}`,
+      { timeout: 10000 },
+    );
+    const rates = response.data?.data?.[0]?.quotes;
+    if (!rates || !rates[toCurrency]) {
+      await sendReply(context.chatJid, `Could not find exchange rate for ${fromCurrency} to ${toCurrency}. Check currency codes.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const rate = rates[toCurrency];
+    const converted = (amount * rate).toFixed(2);
+    await sendReply(
+      context.chatJid,
+      `*CURRENCY EXCHANGE*\n\n${amount.toLocaleString()} ${fromCurrency} = *${parseFloat(converted).toLocaleString()} ${toCurrency}*\n\nRate: 1 ${fromCurrency} = ${rate.toFixed(4)} ${toCurrency}`,
+      sock, context.rawMessage.key, context.queue,
+    );
+  } catch (error) {
+    console.error('[CURRENCY] Error:', error);
+    await sendReply(context.chatJid, 'Currency conversion failed. Check your currency codes (e.g. USD, EUR, NGN, GBP).', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Tag All Group Members ──────────────────────────────────────────────────
+
+async function handleTagAll(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const groupMetadata = await sock.groupMetadata(context.chatJid);
+    const participants = groupMetadata?.participants || [];
+    if (!participants.length) {
+      await sendReply(context.chatJid, 'Could not fetch group members.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const customMsg = args.length > 0 ? args.join(' ') : 'Attention everyone!';
+    const mentions: string[] = [];
+    let tagText = `*${customMsg}*\n\n`;
+
+    // Batch to max 50 per message to avoid issues
+    const batch = participants.slice(0, 50);
+    for (const p of batch) {
+      const jid = p.id;
+      mentions.push(jid);
+      const number = jid.split('@')[0];
+      tagText += `@${number} `;
+    }
+
+    if (participants.length > 50) {
+      tagText += `\n\n_...and ${participants.length - 50} more members_`;
+    }
+
+    await sock.sendMessage(context.chatJid, { text: tagText.trim(), mentions }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[TAGALL] Error:', error);
+    await sendReply(context.chatJid, 'Failed to tag members. Bot may need admin rights.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Group Info ─────────────────────────────────────────────────────────────
+
+async function handleGroupInfo(context: MessageContext, sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const metadata = await sock.groupMetadata(context.chatJid);
+    const admins = metadata.participants?.filter((p: any) => p.admin === 'admin' || p.admin === 'superadmin') || [];
+    const totalMembers = metadata.participants?.length || 0;
+
+    let msg = `*GROUP INFO*\n\n`;
+    msg += `Name: ${metadata.subject || 'Unknown'}\n`;
+    msg += `Members: ${totalMembers}\n`;
+    msg += `Admins: ${admins.length}\n`;
+    if (metadata.desc) {
+      msg += `\nDescription:\n${metadata.desc.slice(0, 500)}\n`;
+    }
+    msg += `\nCreated: ${metadata.creation ? new Date(metadata.creation * 1000).toLocaleDateString() : 'Unknown'}`;
+
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[GROUP] Error:', error);
+    await sendReply(context.chatJid, 'Failed to fetch group info.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Random Meme ────────────────────────────────────────────────────────────
+
+async function handleMeme(context: MessageContext, sock: any): Promise<void> {
+  try {
+    const response = await axios.get('https://meme-api.com/gimme', { timeout: 10000 });
+    const meme = response.data;
+    if (!meme?.url) {
+      await sendReply(context.chatJid, 'Could not fetch meme. Try again.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const imageResponse = await axios.get(meme.url, { responseType: 'arraybuffer', timeout: 15000 });
+    const buffer = Buffer.from(imageResponse.data);
+    await sock.sendMessage(context.chatJid, {
+      image: buffer,
+      caption: `*${meme.title || 'Random Meme'}*\n\nr/${meme.subreddit || 'memes'} | ⬆️ ${meme.ups || 0}`,
+    }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[MEME] Error:', error);
+    await sendReply(context.chatJid, 'Meme machine broke. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Magic 8-Ball ───────────────────────────────────────────────────────────
+
+async function handle8Ball(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*MAGIC 8-BALL*\n\n!8ball [your question]\n\nAsk me anything and I\'ll predict the answer.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const responses = [
+    '🎱 It is certain.',
+    '🎱 It is decidedly so.',
+    '🎱 Without a doubt.',
+    '🎱 Yes, definitely.',
+    '🎱 You may rely on it.',
+    '🎱 As I see it, yes.',
+    '🎱 Most likely.',
+    '🎱 Outlook good.',
+    '🎱 Yes.',
+    '🎱 Signs point to yes.',
+    '🎱 Reply hazy, try again.',
+    '🎱 Ask again later.',
+    '🎱 Better not tell you now.',
+    '🎱 Cannot predict now.',
+    '🎱 Concentrate and ask again.',
+    '🎱 Don\'t count on it.',
+    '🎱 My reply is no.',
+    '🎱 My sources say no.',
+    '🎱 Outlook not so good.',
+    '🎱 Very doubtful.',
+  ];
+  const answer = responses[Math.floor(Math.random() * responses.length)];
+  await sendReply(context.chatJid, `*Q:* ${args.join(' ')}\n\n${answer}`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Truth or Dare ──────────────────────────────────────────────────────────
+
+const truthQuestions = [
+  "What's the most embarrassing thing you've done in public?",
+  "What's a secret you've never told anyone?",
+  "What's the worst lie you've ever told?",
+  "Have you ever stalked someone on social media?",
+  "What's the most childish thing you still do?",
+  "What's the biggest misconception about you?",
+  "What's the most trouble you've gotten into?",
+  "If you could be invisible for a day, what would you do?",
+  "What's the weirdest thing you've searched online?",
+  "What's a skill you wish you had?",
+  "What's the last thing you lied about?",
+  "Who in this group would you swap lives with?",
+  "What's the most embarrassing thing on your phone?",
+  "What's your guilty pleasure?",
+  "If you had to delete one app, which would it be?",
+  "What's the longest you've gone without showering?",
+  "What's the dumbest thing you've done for love?",
+  "What's your biggest fear?",
+  "Have you ever blamed someone else for something you did?",
+  "What's the worst gift you've ever received?",
+];
+
+const dareList = [
+  "Send a voice note singing your favorite song",
+  "Change your profile picture to something funny for 1 hour",
+  "Text your crush and screenshot it",
+  "Post a status saying 'I love pineapple on pizza'",
+  "Send a selfie with no filter right now",
+  "Let someone in the group text from your phone for 2 minutes",
+  "Record yourself doing 10 push-ups",
+  "Send the last photo in your gallery",
+  "Change your name in this group to 'I Lost a Dare'",
+  "Send a voice note in a fake accent",
+  "Type with your eyes closed: 'I am the smartest person here'",
+  "Send your screen time report",
+  "Make your status 'Looking for love' for 30 minutes",
+  "Send a paragraph complimenting the person above you",
+  "Use only emojis for the next 5 messages",
+  "Call someone random and say 'I just wanted to hear your voice'",
+  "Send the 5th photo in your gallery with no context",
+  "Record yourself saying a tongue twister 3 times fast",
+  "Let the group choose your status for 1 hour",
+  "Send a message to the last person you texted saying 'We need to talk'",
+];
+
+async function handleTruth(context: MessageContext, sock: any): Promise<void> {
+  const truth = truthQuestions[Math.floor(Math.random() * truthQuestions.length)];
+  await sendReply(context.chatJid, `*TRUTH*\n\n${truth}`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleDare(context: MessageContext, sock: any): Promise<void> {
+  const dare = dareList[Math.floor(Math.random() * dareList.length)];
+  await sendReply(context.chatJid, `*DARE*\n\n${dare}`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Ship / Love Compatibility ──────────────────────────────────────────────
+
+async function handleShip(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length < 2) {
+    await sendReply(context.chatJid, '*LOVE SHIP*\n\n!ship [name1] [name2]\n\nExample: !ship John Mary', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const name1 = args[0].replace('@', '');
+  const name2 = args.slice(1).join(' ').replace('@', '');
+
+  // Generate deterministic-ish percentage from names
+  const combined = (name1 + name2).toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    hash = ((hash << 5) - hash) + combined.charCodeAt(i);
+    hash = hash & hash;
+  }
+  const percentage = Math.abs(hash % 101);
+
+  let hearts = '';
+  let verdict = '';
+  if (percentage >= 90) { hearts = '❤️🔥❤️🔥❤️'; verdict = 'SOULMATES! Made for each other!'; }
+  else if (percentage >= 70) { hearts = '❤️❤️❤️❤️'; verdict = 'Strong connection! Great match!'; }
+  else if (percentage >= 50) { hearts = '❤️❤️❤️'; verdict = 'There\'s potential here...'; }
+  else if (percentage >= 30) { hearts = '💛💛'; verdict = 'Maybe just friends...'; }
+  else if (percentage >= 10) { hearts = '💔'; verdict = 'It\'s not looking good...'; }
+  else { hearts = '💀'; verdict = 'Absolutely not. Run.'; }
+
+  const bar = '█'.repeat(Math.floor(percentage / 10)) + '░'.repeat(10 - Math.floor(percentage / 10));
+
+  await sendReply(
+    context.chatJid,
+    `*LOVE CALCULATOR*\n\n${name1} × ${name2}\n\n${hearts}\n[${bar}] ${percentage}%\n\n${verdict}`,
+    sock, context.rawMessage.key, context.queue,
+  );
+}
+
+// ─── Compliment Generator ───────────────────────────────────────────────────
+
+async function handleCompliment(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const compliments = [
+    "You're the type of person everyone needs in their life.",
+    "Your energy lights up every room you walk into.",
+    "If everyone was like you, the world would be a better place.",
+    "You make difficult things look easy.",
+    "Your smile could end wars.",
+    "You're proof that good things exist.",
+    "The world is a better place because you're in it.",
+    "You have the best laugh.",
+    "You're someone's reason to smile.",
+    "Your kindness is a balm to everyone who encounters it.",
+    "You're more helpful than you realize.",
+    "You bring out the best in other people.",
+    "Your ability to recall random facts is impressive.",
+    "You're like a ray of sunshine on a cloudy day.",
+    "You're the friend everyone wishes they had.",
+    "Everything seems brighter when you're around.",
+    "You're one of a kind. Literally.",
+    "You have impeccable taste.",
+    "Your potential is limitless.",
+    "You could survive a zombie apocalypse. Easily.",
+  ];
+  const target = args.length > 0 ? args.join(' ').replace(/@/g, '') : context.pushName || 'You';
+  const compliment = compliments[Math.floor(Math.random() * compliments.length)];
+  await sendReply(context.chatJid, `*${target}* — ${compliment}`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Fortune Cookie ─────────────────────────────────────────────────────────
+
+async function handleFortune(context: MessageContext, sock: any): Promise<void> {
+  const fortunes = [
+    "A beautiful, smart, and loving person will come into your life... after you click this message.",
+    "Your hard work will pay off. Not today, but soon.",
+    "An unexpected opportunity will arise. Say yes.",
+    "Someone is thinking about you right now.",
+    "A great adventure awaits you this week.",
+    "The answer you're looking for is closer than you think.",
+    "Trust your instincts. They haven't failed you yet.",
+    "A friend will surprise you with kindness.",
+    "Your creativity will solve a major problem soon.",
+    "Stop overthinking. The answer is simple.",
+    "Money is coming your way — just not the way you expect.",
+    "Your next meal will be surprisingly good.",
+    "A stranger will change your perspective today.",
+    "You'll discover a hidden talent you didn't know you had.",
+    "The risk you've been considering? Take it.",
+    "Good news will arrive in an unexpected form.",
+    "Your patience will be rewarded this month.",
+    "Someone admires your strength more than you know.",
+    "A new friendship will bring you joy.",
+    "You're about to level up. Get ready.",
+  ];
+  const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+  const luckyNumber = Math.floor(Math.random() * 99) + 1;
+  await sendReply(context.chatJid, `*FORTUNE COOKIE*\n\n${fortune}\n\nLucky number: ${luckyNumber}`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Random Fun Fact ────────────────────────────────────────────────────────
+
+async function handleFact(context: MessageContext, sock: any): Promise<void> {
+  try {
+    // Try uselessfacts API first
+    const response = await axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random?language=en', { timeout: 8000 });
+    if (response.data?.text) {
+      await sendReply(context.chatJid, `*DID YOU KNOW?*\n\n${response.data.text}`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+  } catch {
+    // Fallback to local facts
+  }
+
+  const facts = [
+    "Honey never spoils. Archaeologists found 3000-year-old honey in Egyptian tombs that was still edible.",
+    "Octopuses have three hearts, nine brains, and blue blood.",
+    "A group of flamingos is called a 'flamboyance'.",
+    "The shortest war in history lasted 38 minutes (Britain vs Zanzibar, 1896).",
+    "Bananas are berries, but strawberries aren't.",
+    "The Eiffel Tower can grow up to 6 inches taller in summer due to heat expansion.",
+    "A single cloud can weigh more than 1 million pounds.",
+    "There are more possible chess games than atoms in the observable universe.",
+    "Cows have best friends and get stressed when separated.",
+    "The inventor of the Pringles can is buried in one.",
+    "A day on Venus is longer than a year on Venus.",
+    "Sharks are older than trees. Sharks: 400M years. Trees: 350M years.",
+    "The world's largest desert is Antarctica, not the Sahara.",
+    "Human teeth are as strong as shark teeth.",
+    "An average person walks about 100,000 miles in their lifetime.",
+  ];
+  const fact = facts[Math.floor(Math.random() * facts.length)];
+  await sendReply(context.chatJid, `*DID YOU KNOW?*\n\n${fact}`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Riddle ─────────────────────────────────────────────────────────────────
+
+async function handleRiddle(context: MessageContext, sock: any): Promise<void> {
+  const riddles = [
+    { q: "What has keys but no locks?", a: "A piano" },
+    { q: "What gets wetter the more it dries?", a: "A towel" },
+    { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", a: "An echo" },
+    { q: "What has a head and tail but no body?", a: "A coin" },
+    { q: "What can travel around the world while staying in a corner?", a: "A stamp" },
+    { q: "The more you take, the more you leave behind. What am I?", a: "Footsteps" },
+    { q: "What has many teeth but can't bite?", a: "A comb" },
+    { q: "I have cities, but no houses live there. I have mountains, but no trees grow there. I have water, but no fish swim there. What am I?", a: "A map" },
+    { q: "What can you catch but not throw?", a: "A cold" },
+    { q: "What has hands but can't clap?", a: "A clock" },
+    { q: "I'm tall when I'm young and short when I'm old. What am I?", a: "A candle" },
+    { q: "What begins with T, ends with T, and has T in it?", a: "A teapot" },
+    { q: "What has one eye but can't see?", a: "A needle" },
+    { q: "What goes up but never comes down?", a: "Your age" },
+    { q: "What invention lets you look right through a wall?", a: "A window" },
+  ];
+  const riddle = riddles[Math.floor(Math.random() * riddles.length)];
+  await sendReply(
+    context.chatJid,
+    `*RIDDLE*\n\n${riddle.q}\n\n_Reply with your answer! The answer will be revealed in 30 seconds..._`,
+    sock, context.rawMessage.key, context.queue,
+  );
+
+  // Reveal answer after 30 seconds
+  setTimeout(async () => {
+    try {
+      await sendReply(context.chatJid, `*ANSWER:* ${riddle.a}`, sock, context.rawMessage.key, context.queue);
+    } catch {
+      // Ignore errors in delayed sends
+    }
+  }, 30000);
+}
+
+// ─── AI Image Generation ────────────────────────────────────────────────────
+
+async function handleImg(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*AI IMAGE*\n\n!img [description]\n\nExample: !img a cat wearing sunglasses', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const prompt = args.join(' ');
+    await sendReply(context.chatJid, `Generating image for: "${prompt}"...\nThis may take 10-30 seconds.`, sock, context.rawMessage.key, context.queue);
+
+    // Use Pollinations AI (free, no key)
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`;
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 60000 });
+    const buffer = Buffer.from(response.data);
+
+    await sock.sendMessage(context.chatJid, {
+      image: buffer,
+      caption: `*AI Generated:* ${prompt}`,
+    }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[IMG] Error:', error);
+    await sendReply(context.chatJid, 'Image generation failed. Try a simpler description or try again later.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── URL Shortener ──────────────────────────────────────────────────────────
+
+async function handleShorten(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*URL SHORTENER*\n\n!short [url]\n\nExample: !short https://google.com', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const url = args[0];
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      await sendReply(context.chatJid, 'Please provide a valid URL starting with http:// or https://', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    // Use is.gd free URL shortener (no key needed)
+    const response = await axios.get(
+      `https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}`,
+      { timeout: 10000 },
+    );
+    if (response.data?.shorturl) {
+      await sendReply(context.chatJid, `*SHORTENED URL*\n\n${response.data.shorturl}\n\nOriginal: ${url}`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Could not shorten that URL. Make sure it\'s valid.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error) {
+    console.error('[SHORT] Error:', error);
+    await sendReply(context.chatJid, 'URL shortening failed. Try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
