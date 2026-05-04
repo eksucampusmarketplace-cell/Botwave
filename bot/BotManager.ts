@@ -284,9 +284,14 @@ export class BotWaveBot {
     this.socket.ev.on('messages.upsert', async (m: any) => {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
-          if (!msg.key.fromMe) {
-            await handleMessage(msg, this.socket, this.messageQueue ?? undefined);
-          }
+          const text =
+            msg.message?.conversation ||
+            msg.message?.extendedTextMessage?.text ||
+            msg.message?.imageMessage?.caption ||
+            '';
+          // Allow fromMe commands (userbot mode: owner can use !help etc.)
+          if (msg.key.fromMe && !text.trimStart().startsWith('!')) continue;
+          await handleMessage(msg, this.socket, this.messageQueue ?? undefined);
         }
       }
     });
@@ -354,8 +359,17 @@ class EvolutionBot {
       // Clean up any stale instance before creating a new one
       await deleteInstance(this.sessionId);
 
+      // Wait for Evolution API to finish cleaning up before creating
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Create instance on Evolution API (includes webhook config)
-      await createInstance(this.sessionId, this.phoneNumber);
+      const createResult = await createInstance(this.sessionId, this.phoneNumber);
+      if (createResult?.status === 403 || createResult?.error) {
+        console.error(`[EVO] Failed to create instance for ${this.sessionId}:`, JSON.stringify(createResult));
+        await updateSessionStatus(this.sessionId, 'inactive');
+        this.isReconnecting = false;
+        return;
+      }
       console.log(`[EVO] Instance created for ${this.sessionId}`);
 
       // Ensure webhook is configured (safety net if create didn't set it)

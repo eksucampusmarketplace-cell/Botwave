@@ -100,22 +100,29 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     };
   }
 
-  const res = await withRetry(() =>
-    apiFetch(`${BASE}/instance/create`, {
+  const res = await withRetry(async () => {
+    const r = await apiFetch(`${BASE}/instance/create`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
-    }),
-  );
-  const data: Record<string, unknown> = await res.json() as Record<string, unknown>;
+    });
 
-  // 403 = instance already exists (e.g. deleteInstance failed due to 502).
-  // This is fine — we'll connect to the existing instance.
-  if (res.status === 403) {
-    console.log(`[EVO-CLIENT] Instance ${instanceName} already exists, reusing`);
-  }
+    // If instance name is already in use (stale after restart), delete and retry
+    if (r.status === 403) {
+      console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists — deleting stale instance and retrying`);
+      await deleteInstance(instanceName);
+      // Small delay for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return apiFetch(`${BASE}/instance/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    }
 
-  return data;
+    return r;
+  });
+  return res.json();
 }
 
 // Get pairing code for an instance (pass phone number as query param).

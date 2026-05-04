@@ -155,6 +155,28 @@ export async function DELETE(request: NextRequest) {
     const deleteAll = searchParams.get('all') === 'true';
 
     if (deleteAll) {
+      // Fetch all sessions first so we can clean up Evolution API instances
+      const { data: sessions } = await supabase
+        .from('bot_sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
+      // Clean up Evolution API instances (best-effort)
+      if (sessions && sessions.length > 0) {
+        const evoUrl = process.env.EVOLUTION_API_URL;
+        const evoKey = process.env.EVOLUTION_API_KEY;
+        if (evoUrl && evoKey) {
+          await Promise.allSettled(
+            sessions.map(s =>
+              fetch(`${evoUrl}/instance/delete/${s.id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', apikey: evoKey },
+              }).catch(() => {})
+            )
+          );
+        }
+      }
+
       const { error } = await supabase
         .from('bot_sessions')
         .delete()
@@ -181,6 +203,20 @@ export async function DELETE(request: NextRequest) {
         { error: 'Session ID is required' },
         { status: 400 }
       );
+    }
+
+    // Clean up Evolution API instance before deleting from DB
+    const evoUrl = process.env.EVOLUTION_API_URL;
+    const evoKey = process.env.EVOLUTION_API_KEY;
+    if (evoUrl && evoKey) {
+      try {
+        await fetch(`${evoUrl}/instance/delete/${sessionId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', apikey: evoKey },
+        });
+      } catch {
+        // non-critical — instance may not exist on Evolution API
+      }
     }
 
     const { error } = await supabase
