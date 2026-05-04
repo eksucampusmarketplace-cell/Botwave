@@ -400,12 +400,18 @@ class EvolutionBot {
       let pairingWaitStart = Date.now();
       const PAIRING_TIMEOUT_MS = 120_000; // 2 minutes to pair
       let lastPairingCode = code;
+      let unknownStateCount = 0;
+      const MAX_UNKNOWN_BEFORE_RECREATE = 3;
+      let isRecreating = false;
 
       this.pollHandle = setInterval(async () => {
+        if (isRecreating) return;
+
         try {
           const state = await getInstanceStatus(this.sessionId);
 
           if (state === 'open' && !this.isReady) {
+            unknownStateCount = 0;
             this.isReady = true;
             this.isPairingSent = false;
             this.isReconnecting = false;
@@ -416,6 +422,7 @@ class EvolutionBot {
             this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
             this.startPresenceLoop();
           } else if (state === 'connecting' && this.isPairingSent) {
+            unknownStateCount = 0;
             // Instance is still connecting — refresh pairing code in case QR rotated
             const freshCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
             if (freshCode && freshCode !== lastPairingCode) {
@@ -424,6 +431,7 @@ class EvolutionBot {
               await updateSessionPairingCode(this.sessionId, freshCode);
             }
           } else if (state === 'close' || state === 'refused') {
+            unknownStateCount = 0;
             if (this.isReady) {
               // Was connected, now disconnected
               this.isReady = false;
@@ -453,6 +461,35 @@ class EvolutionBot {
                 clearInterval(this.pollHandle);
                 this.pollHandle = null;
               }
+            }
+          } else if (state === 'unknown') {
+            unknownStateCount++;
+            if (unknownStateCount >= MAX_UNKNOWN_BEFORE_RECREATE) {
+              // Instance was lost (e.g. Evolution API restarted). Recreate it.
+              console.log(`[EVO] Instance gone for ${this.sessionId} (${unknownStateCount} unknown polls). Recreating...`);
+              isRecreating = true;
+              unknownStateCount = 0;
+              try {
+                await deleteInstance(this.sessionId);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await createInstance(this.sessionId, this.phoneNumber);
+                await setWebhook(this.sessionId);
+                const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+                if (freshCode) {
+                  lastPairingCode = freshCode;
+                  await updateSessionPairingCode(this.sessionId, freshCode);
+                  await updateSessionStatus(this.sessionId, 'pairing_sent');
+                  this.isPairingSent = true;
+                  pairingWaitStart = Date.now();
+                  console.log(`[EVO] Instance recreated for ${this.sessionId}, new code: ${freshCode}`);
+                } else {
+                  console.warn(`[EVO] Instance recreated but no pairing code for ${this.sessionId}`);
+                  await updateSessionStatus(this.sessionId, 'qr_pending');
+                }
+              } catch (err) {
+                console.error(`[EVO] Failed to recreate instance for ${this.sessionId}:`, err);
+              }
+              isRecreating = false;
             }
           }
         } catch (err) {

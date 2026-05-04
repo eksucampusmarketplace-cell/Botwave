@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { assignWorker, INTERNAL_SECRET } from '@/bot/workerConfig';
+import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/workerConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const { phoneNumber, sessionName } = validation.data;
 
-    const workerUrl = assignWorker();
+    const workerUrl = await assignWorkerAsync();
 
     const { data: session, error } = await supabase
       .from('bot_sessions')

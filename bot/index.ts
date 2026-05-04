@@ -1,6 +1,7 @@
 import './env';
 import { initializeBot, syncSessionsWithDb } from './BotManager';
-import { WORKER_URLS, IS_WORKER } from './workerConfig';
+import { recoverStaleSessions } from './database';
+import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
 
 const bot = initializeBot();
 
@@ -22,7 +23,21 @@ async function start() {
     }
   }, 5000); // Every 5 seconds
 
-  // Keep-alive pings: main service pings all workers every 10 minutes
+  // Main service: recover sessions stuck on dead workers every 30s
+  if (!IS_WORKER) {
+    setInterval(async () => {
+      try {
+        const recovered = await recoverStaleSessions(isWorkerHealthy);
+        if (recovered > 0) {
+          console.log(`[RECOVERY] Recovered ${recovered} session(s) from dead workers`);
+        }
+      } catch (err) {
+        console.error('[RECOVERY] Error recovering stale sessions:', err);
+      }
+    }, 30_000);
+  }
+
+  // Keep-alive pings: main service pings all workers every 4 minutes
   // to prevent Render free tier from spinning them down
   if (!IS_WORKER && WORKER_URLS.length > 0) {
     const pingWorkers = async () => {
@@ -34,8 +49,8 @@ async function start() {
         }
       }
     };
-    setInterval(pingWorkers, 10 * 60 * 1000);
-    console.log(`Keeping ${WORKER_URLS.length} worker(s) alive with pings`);
+    setInterval(pingWorkers, 2 * 60 * 1000);
+    console.log(`Keeping ${WORKER_URLS.length} worker(s) alive with pings every 2min`);
   }
 }
 
