@@ -6,7 +6,7 @@ import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
 const bot = initializeBot();
 
 async function start() {
-  console.log('[BOT] Starting bot service...');
+  console.log(`[BOT] Starting bot service... IS_WORKER=${IS_WORKER} WORKER_URLS=${WORKER_URLS.join(',') || 'none'} SELF_URL=${process.env.SELF_URL || 'not set'}`);
   await bot.start();
   
   // Initial sync
@@ -37,20 +37,21 @@ async function start() {
     }, 30_000);
   }
 
-  // Keep-alive pings: main service pings all workers every 4 minutes
+  // Keep-alive pings: main service pings all workers every 2 minutes
   // to prevent Render free tier from spinning them down
   if (!IS_WORKER && WORKER_URLS.length > 0) {
     const pingWorkers = async () => {
       for (const url of WORKER_URLS) {
         try {
-          await fetch(`${url}/api/health`);
+          const res = await fetch(`${url}/api/health`);
+          console.log(`[KEEPALIVE] Worker ${url}: status=${res.status}`);
         } catch (err: any) {
-          console.warn(`Worker ${url} ping failed:`, err.message);
+          console.warn(`[KEEPALIVE] Worker ${url} UNREACHABLE: ${err.message}`);
         }
       }
     };
     setInterval(pingWorkers, 2 * 60 * 1000);
-    console.log(`Keeping ${WORKER_URLS.length} worker(s) alive with pings every 2min`);
+    console.log(`[BOT] Keeping ${WORKER_URLS.length} worker(s) alive with pings every 2min: ${WORKER_URLS.join(', ')}`);
   }
 }
 
@@ -61,13 +62,13 @@ start().catch((error) => {
 });
 
 process.on('SIGINT', async () => {
-  console.log('Shutting down bot...');
+  console.log('[BOT] Received SIGINT — shutting down gracefully...');
   await bot.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('Shutting down bot...');
+  console.log('[BOT] Received SIGTERM — shutting down gracefully...');
   await bot.stop();
   process.exit(0);
 });

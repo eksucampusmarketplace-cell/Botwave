@@ -76,6 +76,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay = 1000
 // connect to the existing instance via getPairingCode.
 export async function createInstance(instanceName: string, phoneNumber: string) {
   const webhookUrl = getWebhookUrl();
+  console.log(`[EVO-CLIENT] createInstance: name=${instanceName} phone=${phoneNumber} webhookUrl=${webhookUrl || 'NONE'}`);
 
   const payload: Record<string, unknown> = {
     instanceName,
@@ -122,7 +123,9 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
 
     return r;
   });
-  return res.json();
+  const result = await res.json();
+  console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${(result as any)?.instance?.instanceId || 'none'}`);
+  return result;
 }
 
 // Get pairing code for an instance (pass phone number as query param).
@@ -130,6 +133,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
 // since Baileys generates it asynchronously (~2-4s after connection starts).
 export async function getPairingCode(instanceName: string, phoneNumber: string) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
+  console.log(`[EVO-CLIENT] getPairingCode: instance=${instanceName} phone=${cleanPhone}`);
 
   // First call triggers connectToWhatsapp inside Evolution API
   const connectRes = await withRetry(() =>
@@ -139,6 +143,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
     }),
   );
   const connectData: any = await connectRes.json();
+  console.log(`[EVO-CLIENT] getPairingCode initial response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} state=${connectData?.state || 'unknown'}`);
   if (connectData?.pairingCode) return connectData.pairingCode;
 
   // Baileys may still be connecting — poll up to 5 times (3s apart)
@@ -150,9 +155,13 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
         headers,
       });
       const data: any = await res.json();
+      console.log(`[EVO-CLIENT] getPairingCode poll ${i + 1}/5: pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'}`);
       if (data?.pairingCode) return data.pairingCode;
-    } catch { /* retry */ }
+    } catch (err) {
+      console.warn(`[EVO-CLIENT] getPairingCode poll ${i + 1}/5 failed:`, err);
+    }
   }
+  console.warn(`[EVO-CLIENT] getPairingCode: no code returned after 5 polls for ${instanceName}`);
   return null;
 }
 
@@ -180,31 +189,43 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
       headers,
     });
     const data: any = await res.json();
-    return data?.instance?.state || 'unknown';
-  } catch {
+    const state = data?.instance?.state || 'unknown';
+    // Only log non-routine state changes (avoid flooding logs during polling)
+    if (state !== 'open' && state !== 'connecting') {
+      console.log(`[EVO-CLIENT] getInstanceStatus ${instanceName}: ${state}`);
+    }
+    return state;
+  } catch (err) {
+    console.warn(`[EVO-CLIENT] getInstanceStatus ${instanceName} failed:`, err);
     return 'unknown';
   }
 }
 
 // Delete an instance (used when session is removed)
 export async function deleteInstance(instanceName: string) {
+  console.log(`[EVO-CLIENT] deleteInstance: ${instanceName}`);
   try {
-    await apiFetch(`${BASE}/instance/delete/${instanceName}`, {
+    const res = await apiFetch(`${BASE}/instance/delete/${instanceName}`, {
       method: 'DELETE',
       headers,
     });
-  } catch {
-    // non-critical — instance may not exist
+    console.log(`[EVO-CLIENT] deleteInstance ${instanceName}: status=${res.status}`);
+  } catch (err) {
+    console.warn(`[EVO-CLIENT] deleteInstance ${instanceName} failed (non-critical):`, err);
   }
 }
 
 // Configure webhook for an existing instance
 export async function setWebhook(instanceName: string) {
   const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) return;
+  if (!webhookUrl) {
+    console.warn(`[EVO-CLIENT] setWebhook skipped for ${instanceName}: no webhook URL configured`);
+    return;
+  }
 
+  console.log(`[EVO-CLIENT] setWebhook for ${instanceName}: url=${webhookUrl}`);
   try {
-    await apiFetch(`${BASE}/webhook/set/${instanceName}`, {
+    const res = await apiFetch(`${BASE}/webhook/set/${instanceName}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -222,6 +243,7 @@ export async function setWebhook(instanceName: string) {
         },
       }),
     });
+    console.log(`[EVO-CLIENT] setWebhook ${instanceName}: status=${res.status}`);
   } catch (err) {
     console.error(`[EVO-CLIENT] Failed to set webhook for ${instanceName}:`, err);
   }
@@ -330,15 +352,19 @@ export function untrackInstance(instanceName: string): void {
 
 function ensureKeepAlive(): void {
   if (keepAliveHandle) return;
+  console.log(`[EVO-CLIENT] Starting keep-alive loop for ${trackedInstances.size} instance(s), interval=${KEEPALIVE_INTERVAL / 1000}s`);
   keepAliveHandle = setInterval(async () => {
     for (const name of trackedInstances) {
       try {
-        await apiFetch(`${BASE}/instance/connectionState/${name}`, {
+        const res = await apiFetch(`${BASE}/instance/connectionState/${name}`, {
           method: 'GET',
           headers,
         });
-      } catch {
-        // non-critical — just a ping
+        const data: any = await res.json();
+        const state = data?.instance?.state || 'unknown';
+        console.log(`[EVO-CLIENT] keep-alive ping ${name}: state=${state}`);
+      } catch (err) {
+        console.warn(`[EVO-CLIENT] keep-alive ping ${name} failed:`, err);
       }
     }
   }, KEEPALIVE_INTERVAL);
@@ -352,9 +378,11 @@ export async function fetchInstanceInfo(instanceName: string) {
       headers,
     });
     const data: any = await res.json();
-    // Returns array — first element is the instance
-    return Array.isArray(data) ? data[0] : data;
-  } catch {
+    const instance = Array.isArray(data) ? data[0] : data;
+    console.log(`[EVO-CLIENT] fetchInstanceInfo ${instanceName}: found=${!!instance} state=${instance?.instance?.state || 'unknown'}`);
+    return instance;
+  } catch (err) {
+    console.warn(`[EVO-CLIENT] fetchInstanceInfo ${instanceName} failed:`, err);
     return null;
   }
 }

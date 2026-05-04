@@ -73,25 +73,29 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
   }, [pairingCode]);
 
   useEffect(() => {
-    if (qrGeneratedAt) {
-      const generatedAt = new Date(qrGeneratedAt).getTime();
-      const expiresAt = generatedAt + 180 * 1000;
-      
-      const updateTimer = () => {
-        const now = Date.now();
-        const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
-        setTimeLeft(diff);
-      };
+    // Anchor the countdown to a real timestamp so it survives page
+    // refreshes and doesn't drift from setInterval accumulation.
+    // Priority: qrGeneratedAt from DB → fallback to when pairingCode first appeared.
+    let expiresAt: number;
 
-      updateTimer();
-      const interval = setInterval(updateTimer, 1000);
-      return () => clearInterval(interval);
+    if (qrGeneratedAt) {
+      expiresAt = new Date(qrGeneratedAt).getTime() + 180 * 1000;
     } else if (pairingCode) {
-      const interval = setInterval(() => {
-        setTimeLeft(t => Math.max(0, t - 1));
-      }, 1000);
-      return () => clearInterval(interval);
+      // No DB timestamp available — anchor to current time.
+      // On refresh this resets, but it's better than a drifting interval.
+      expiresAt = Date.now() + 180 * 1000;
+    } else {
+      return;
     }
+
+    const updateTimer = () => {
+      const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setTimeLeft(diff);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
   }, [qrGeneratedAt, pairingCode]);
 
   const handleStepDone = useCallback(() => {

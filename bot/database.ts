@@ -74,10 +74,15 @@ export async function getSessionById(sessionId: string) {
 }
 
 export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean) {
+  // Only fetch actionable states. needs_reauth sessions require user
+  // interaction (re-pair from the dashboard) — workers can't do anything
+  // with them and including them just pollutes sync logs.
+  const actionableStates = ['qr_pending', 'pairing_sent', 'active'];
+
   let query = supabase
     .from('bot_sessions')
     .select('*')
-    .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
+    .in('state', actionableStates);
 
   if (selfUrl && isWorker) {
     // Dedicated worker: only pick up sessions explicitly assigned to it
@@ -94,7 +99,7 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
     return [];
   }
   if (data && data.length > 0) {
-    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'})`).join(', '));
+    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'},worker=${s.worker_url ? new URL(s.worker_url).hostname : 'main'})`).join(', '));
   }
   return data;
 }
@@ -146,12 +151,15 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updated_at: new Date().toISOString()
   };
 
+  const clearedFields: string[] = [];
+
   if (status === 'active') {
     updatePayload.last_active = new Date().toISOString();
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
     updatePayload.pairing_code = null;
+    clearedFields.push('qr_code', 'pairing_code');
   }
 
   if (status === 'needs_reauth') {
@@ -159,6 +167,8 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
     updatePayload.pairing_code = null;
+    updatePayload.auth_state = null;
+    clearedFields.push('qr_code', 'pairing_code', 'auth_state');
   }
 
   const { error } = await supabase
@@ -168,10 +178,24 @@ export async function updateSessionStatus(sessionId: string, status: string) {
 
   if (error) {
     if (error.code !== 'PGRST205') {
-      console.error(`Error updating status for session ${sessionId}:`, error);
+      console.error(`[DB] Error updating status for ${sessionId} to ${status}:`, error);
     }
   } else {
-    console.log(`Updated status for session ${sessionId} to ${status}`);
+    const extra = clearedFields.length ? ` (cleared: ${clearedFields.join(', ')})` : '';
+    console.log(`[DB] Status updated for ${sessionId}: ${status}${extra}`);
+  }
+}
+
+export async function clearAuthState(sessionId: string) {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({ auth_state: null, updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error(`[DB] Error clearing auth state for ${sessionId}:`, error);
+  } else {
+    console.log(`[DB] Auth state cleared for ${sessionId}`);
   }
 }
 
@@ -214,11 +238,13 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
 
   if (error || !stuck || stuck.length === 0) return 0;
 
+  console.log(`[RECOVERY] Found ${stuck.length} stale session(s) to check: ${stuck.map(s => `${s.id.slice(0,8)}(${s.state}@${s.worker_url})`).join(', ')}`);
+
   let recovered = 0;
   for (const session of stuck) {
     const healthy = await isWorkerHealthy(session.worker_url);
     if (!healthy) {
-      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} stuck on dead worker ${session.worker_url} (state=${session.state}, stale since ${session.updated_at}). Reassigning to main service.`);
+      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} stuck on dead worker ${session.worker_url} (state=${session.state}, stale since ${session.updated_at}). Clearing auth and reassigning to main service.`);
       const { error: updateErr } = await supabase
         .from('bot_sessions')
         .update({
@@ -226,11 +252,19 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
           state: 'qr_pending',
           pairing_code: null,
           qr_code: null,
+          auth_state: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', session.id);
 
-      if (!updateErr) recovered++;
+      if (!updateErr) {
+        recovered++;
+        console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} recovered successfully — reset to qr_pending on main`);
+      } else {
+        console.error(`[RECOVERY] Failed to recover session ${session.id.slice(0, 8)}:`, updateErr);
+      }
+    } else {
+      console.log(`[RECOVERY] Worker ${session.worker_url} is healthy for session ${session.id.slice(0, 8)} — skipping`);
     }
   }
   return recovered;

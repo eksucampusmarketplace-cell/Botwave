@@ -5,7 +5,7 @@ import {
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
@@ -150,22 +150,29 @@ export class BotWaveBot {
           }
         }
 
-        // Auto-restart after 60 seconds to get a fresh code if not connected
+        // Auto-restart after 3 minutes to get a fresh code if not connected.
+        // This matches the "CODE VALID FOR" countdown shown in the UI and gives
+        // users enough time to navigate WhatsApp Settings > Linked Devices.
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
         this.reconnectTimeout = setTimeout(async () => {
           if (!this.isReady && this.qrCode === qr) {
             console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
             this.reconnectAttempts = 0;
             pairingCodeRequested = false;
+            // Clear stale auth state before reconnecting so the next
+            // attempt generates fresh credentials instead of reusing
+            // the incomplete pairing creds (which would cause a 401).
+            await clearAuthState(this.sessionId);
             this.socket?.end(new Error('QR_TIMEOUT'));
           }
-        }, 62000);
+        }, 180000);
       }
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        const errorMessage = (lastDisconnect?.error as Boom)?.message || 'unknown';
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-        console.log(`Connection closed for session ${this.sessionId}. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`);
+        console.log(`[${this.sessionId}] Connection closed. statusCode=${statusCode} error="${errorMessage}" shouldReconnect=${shouldReconnect} reconnectAttempts=${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} isPairingSent=${this.isPairingSent} isReconnecting=${this.isReconnecting}`);
 
         // Baileys can fire duplicate close events (e.g. stream error + websocket close).
         // If we already handled a close and are mid-reconnect with no active socket,
@@ -178,26 +185,43 @@ export class BotWaveBot {
         this.isReady = false;
         this.isPairingSent = false;
 
-        // 401 = credentials rejected by WhatsApp. Try switching to a different
-        // worker IP before giving up. If no other workers, fall back to needs_reauth.
+        // 401 = credentials rejected by WhatsApp (stale/invalid auth state).
+        // Following Evolution API's pattern: clear stale creds and retry with
+        // a fresh pairing flow instead of immediately giving up.
         if (statusCode === 401) {
-          this.isReconnecting = false;
           this.isPairingSent = false;
           this.socket = null;
 
-          // Try to switch to a different worker IP before giving up
+          console.log(`[${this.sessionId}] 401 auth failure on worker ${this.workerUrl ?? 'main'}. Clearing stale auth and retrying fresh pairing...`);
+          await clearAuthState(this.sessionId);
+
+          // If we haven't exhausted reconnect attempts, retry on the same worker
+          // with fresh credentials (auth_state cleared → next start() gets new creds).
+          if (this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            this.reconnectAttempts++;
+            this.isReconnecting = true;
+            await updateSessionStatus(this.sessionId, 'qr_pending');
+            const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+            console.log(`[${this.sessionId}] 401 retry ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms with fresh creds`);
+            if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = setTimeout(() => this.start(), delay);
+            return;
+          }
+
+          // Exhausted retries on this worker — try switching to a different worker IP
           const nextWorker = getNextWorker(this.workerUrl);
 
           if (nextWorker) {
-            console.log(`[${this.sessionId}] 401 on worker ${this.workerUrl ?? 'main'} — switching to ${nextWorker}`);
+            console.log(`[${this.sessionId}] 401 retries exhausted on ${this.workerUrl ?? 'main'} — switching to ${nextWorker}`);
             this.workerUrl = nextWorker;
+            this.reconnectAttempts = 0;
+            this.isReconnecting = false;
             await updateSessionWorker(this.sessionId, nextWorker);
-            // Session is now qr_pending on the new worker.
-            // That worker's sync loop will pick it up within 5 seconds.
-            console.log(`[${this.sessionId}] Reassigned to ${nextWorker}. New connection will start shortly.`);
+            console.log(`[${this.sessionId}] Reassigned to ${nextWorker}. Worker sync loop will pick it up.`);
           } else {
-            // No other workers available — fall back to needs_reauth
-            console.log(`[${this.sessionId}] 401 auth failure. No other workers available. Setting needs_reauth.`);
+            // All workers exhausted — fall back to needs_reauth so user can re-pair
+            console.log(`[${this.sessionId}] 401 auth failure. All retries and workers exhausted. Setting needs_reauth.`);
+            this.isReconnecting = false;
             await updateSessionStatus(this.sessionId, 'needs_reauth');
 
             const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
@@ -209,7 +233,7 @@ export class BotWaveBot {
                   body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
                 });
               } catch (err) {
-                console.error('Failed to send session-down notification (non-fatal):', err);
+                console.error(`[${this.sessionId}] Failed to send session-down notification (non-fatal):`, err);
               }
             }
           }
@@ -217,8 +241,9 @@ export class BotWaveBot {
         }
 
         if (!shouldReconnect) {
-          console.log(`Session ${this.sessionId} logged out or kicked. Updating to needs_reauth.`);
+          console.log(`[${this.sessionId}] Logged out by WhatsApp (statusCode=${statusCode}). Clearing auth and setting needs_reauth.`);
           this.isReconnecting = false;
+          await clearAuthState(this.sessionId);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
 
           const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
@@ -236,9 +261,10 @@ export class BotWaveBot {
         } else {
           // Hard limit: max 3 reconnect attempts
           if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.log(`Session ${this.sessionId}: max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Stopping.`);
+            console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth and stopping.`);
             this.isReconnecting = false;
-            await updateSessionStatus(this.sessionId, 'disconnected');
+            await clearAuthState(this.sessionId);
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.socket = null;
             return;
           }
@@ -252,7 +278,7 @@ export class BotWaveBot {
           this.socket = null;
           this.reconnectAttempts++;
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-          console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+          console.log(`[${this.sessionId}] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}). statusCode=${statusCode}`);
           if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
           }
@@ -264,7 +290,7 @@ export class BotWaveBot {
           }, delay);
         }
       } else if (connection === 'open') {
-        console.log(`Session connected: ${this.sessionId}`);
+        console.log(`[${this.sessionId}] Connection OPEN. Pairing successful! reconnectAttempts=${this.reconnectAttempts} workerUrl=${this.workerUrl ?? 'main'}`);
         this.isReady = true;
         this.isReconnecting = false;
         this.isPairingSent = false;
