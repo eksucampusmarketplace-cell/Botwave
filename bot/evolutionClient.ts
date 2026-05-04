@@ -29,7 +29,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
   const res = await fetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
     method: 'GET', headers,
   });
-  const data = await res.json();
+  const data: any = await res.json();
   return data?.pairingCode || null;
 }
 
@@ -39,7 +39,7 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
     const res = await fetch(`${BASE}/instance/connectionState/${instanceName}`, {
       method: 'GET', headers,
     });
-    const data = await res.json();
+    const data: any = await res.json();
     return data?.instance?.state || 'unknown';
   } catch {
     return 'unknown';

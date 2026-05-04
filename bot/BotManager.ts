@@ -11,6 +11,8 @@ import { handleMessage, handleGroupParticipantsUpdate } from './handlers/Message
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
+import { EvolutionSocketAdapter } from './evolutionSocket';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
