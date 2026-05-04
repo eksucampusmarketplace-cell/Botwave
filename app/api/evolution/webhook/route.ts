@@ -12,16 +12,33 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+/**
+ * Extract the session/instance name from the webhook payload.
+ * Evolution API sends `instance` as a plain string (the instance name),
+ * but older integrations may send it as `{ instanceName: "..." }`.
+ */
+function resolveSessionId(instance: unknown): string | null {
+  if (typeof instance === 'string') return instance;
+  if (instance && typeof instance === 'object' && 'instanceName' in instance) {
+    return (instance as Record<string, string>).instanceName || null;
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { instance, data, event } = body;
 
-    if (!instance?.instanceName) {
+    const sessionId = resolveSessionId(instance);
+
+    if (!sessionId) {
+      console.warn('[EVO-WEBHOOK] No session ID in payload:', JSON.stringify({ event, instance }).slice(0, 200));
       return NextResponse.json({ ok: true });
     }
 
-    const sessionId = instance.instanceName;
+    console.log(`[EVO-WEBHOOK] event=${event} session=${sessionId}`);
+
     const supabase = getSupabase();
 
     // --- Connection state changes ---
@@ -52,18 +69,51 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', sessionId);
+      } else if (state === 'connecting') {
+        await supabase.from('bot_sessions')
+          .update({
+            state: 'qr_pending',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId);
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // --- QR code / pairing code updates ---
+    if (event === 'qrcode.updated') {
+      const pairingCode = data?.pairingCode || data?.qrcode?.pairingCode;
+      const qrBase64 = data?.base64 || data?.qrcode?.base64;
+      const qrCode = data?.code || data?.qrcode?.code;
+
+      console.log(`[EVO-WEBHOOK] qrcode.updated for ${sessionId}: pairing=${!!pairingCode} qr=${!!qrCode}`);
+
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+      if (pairingCode) {
+        updates.pairing_code = pairingCode;
+        updates.state = 'pairing_sent';
+      }
+      if (qrCode) {
+        updates.qr_code = qrCode;
+        updates.qr_generated_at = new Date().toISOString();
+        updates.qr_expires_at = new Date(Date.now() + 60_000).toISOString();
+      }
+
+      if (Object.keys(updates).length > 1) {
+        await supabase.from('bot_sessions').update(updates).eq('id', sessionId);
       }
 
       return NextResponse.json({ ok: true });
     }
 
     // --- Incoming messages ---
-    // Evolution API fires 'messages.upsert' for incoming messages.
-    // We dynamically import the handler to avoid bundling bot code in Next.js
-    // edge runtime. The handler + anti-ban pipeline run in the same process.
+    // Evolution API fires 'messages.upsert' per message (single object),
+    // not as an array. Normalize to array for uniform handling.
     if (event === 'messages.upsert') {
-      const messages = data || [];
-      if (!Array.isArray(messages) || messages.length === 0) {
+      const messages = Array.isArray(data) ? data : (data ? [data] : []);
+      if (messages.length === 0) {
         return NextResponse.json({ ok: true });
       }
 
@@ -81,7 +131,7 @@ export async function POST(request: NextRequest) {
 
       // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
       const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
-      const { handleMessage, handleGroupParticipantsUpdate } = await import('@/bot/handlers/MessageHandler');
+      const { handleMessage } = await import('@/bot/handlers/MessageHandler');
       const { MessageQueue } = await import('@/bot/utils/MessageQueue');
 
       const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id);

@@ -36,7 +36,7 @@ export class EvolutionSocketAdapter {
 
     // Text message
     if (content.text && typeof content.text === 'string') {
-      return sendText(this.instanceName, jid, content.text);
+      return sendText(this.instanceName, to, content.text);
     }
 
     // Sticker
@@ -101,7 +101,7 @@ export class EvolutionSocketAdapter {
 
     // Fallback: try as text if there's a caption
     if (content.caption && typeof content.caption === 'string') {
-      return sendText(this.instanceName, jid, content.caption);
+      return sendText(this.instanceName, to, content.caption);
     }
 
     console.warn(`[EVO-SOCK] Unsupported content type for ${jid}:`, Object.keys(content));
@@ -132,17 +132,41 @@ export class EvolutionSocketAdapter {
   }
 
   /**
-   * Stub for downloadMediaMessage — Evolution API handles media differently.
-   * For incoming media from webhooks, the media URL is provided directly.
-   * Returns null; callers should handle gracefully.
+   * Download media from an incoming message.
+   * Evolution API webhook messages include a `url` field inside the
+   * media-specific message object (imageMessage, videoMessage, etc.).
    */
   async downloadMediaMessage(_msg: unknown, _type: string): Promise<Buffer | null> {
-    // Evolution API webhook messages include mediaUrl for media content.
-    // The actual download is handled in the webhook route.
     const msg = _msg as Record<string, unknown>;
     const message = msg?.message as Record<string, unknown> | undefined;
-    const imageMsg = message?.imageMessage as Record<string, unknown> | undefined;
-    const mediaUrl = imageMsg?.url as string | undefined;
+    if (!message) return null;
+
+    // Check all media message types for a URL
+    const mediaKeys = [
+      'imageMessage',
+      'videoMessage',
+      'audioMessage',
+      'documentMessage',
+      'documentWithCaptionMessage',
+      'stickerMessage',
+    ];
+
+    let mediaUrl: string | undefined;
+    for (const key of mediaKeys) {
+      const mediaMsg = message[key] as Record<string, unknown> | undefined;
+      if (mediaMsg?.url && typeof mediaMsg.url === 'string') {
+        mediaUrl = mediaMsg.url;
+        break;
+      }
+      // documentWithCaptionMessage nests further
+      if (key === 'documentWithCaptionMessage' && mediaMsg) {
+        const inner = (mediaMsg as any)?.message?.documentMessage;
+        if (inner?.url && typeof inner.url === 'string') {
+          mediaUrl = inner.url;
+          break;
+        }
+      }
+    }
 
     if (mediaUrl) {
       try {

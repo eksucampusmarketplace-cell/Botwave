@@ -12,7 +12,7 @@ import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus } from './evolutionClient';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -354,9 +354,12 @@ class EvolutionBot {
       // Clean up any stale instance before creating a new one
       await deleteInstance(this.sessionId);
 
-      // Create instance on Evolution API
+      // Create instance on Evolution API (includes webhook config)
       await createInstance(this.sessionId, this.phoneNumber);
       console.log(`[EVO] Instance created for ${this.sessionId}`);
+
+      // Ensure webhook is configured (safety net if create didn't set it)
+      await setWebhook(this.sessionId);
 
       // Wait briefly then fetch pairing code
       await new Promise(r => setTimeout(r, 2000));
@@ -375,7 +378,11 @@ class EvolutionBot {
         return;
       }
 
-      // Poll Evolution API every 5 seconds to detect connection state changes
+      // Poll Evolution API every 5 seconds to detect connection state changes.
+      // Also track how long we've been waiting for a pairing code to be used.
+      let pairingWaitStart = Date.now();
+      const PAIRING_TIMEOUT_MS = 120_000; // 2 minutes to pair
+
       this.pollHandle = setInterval(async () => {
         try {
           const state = await getInstanceStatus(this.sessionId);
@@ -390,23 +397,35 @@ class EvolutionBot {
             // Create socket adapter for presence simulation
             this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
             this.startPresenceLoop();
-          } else if ((state === 'close' || state === 'refused') && this.isReady) {
-            this.isReady = false;
-            this.isPairingSent = false;
-            await updateSessionStatus(this.sessionId, 'needs_reauth');
-            this.stopPresenceLoop();
-            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth`);
+          } else if (state === 'close' || state === 'refused') {
+            if (this.isReady) {
+              // Was connected, now disconnected
+              this.isReady = false;
+              this.isPairingSent = false;
+              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              this.stopPresenceLoop();
+              console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth`);
 
-            const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-            if (appUrl) {
-              try {
-                await fetch(`${appUrl}/api/notify/session-down`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
-                });
-              } catch (err) {
-                console.error('[EVO] Failed to send session-down notification:', err);
+              const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+              if (appUrl) {
+                try {
+                  await fetch(`${appUrl}/api/notify/session-down`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+                  });
+                } catch (err) {
+                  console.error('[EVO] Failed to send session-down notification:', err);
+                }
+              }
+            } else if (this.isPairingSent && Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
+              // Pairing code was never used — timed out
+              console.log(`[EVO] Pairing timed out for ${this.sessionId}`);
+              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              this.isPairingSent = false;
+              if (this.pollHandle) {
+                clearInterval(this.pollHandle);
+                this.pollHandle = null;
               }
             }
           }
