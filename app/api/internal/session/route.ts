@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 function checkSecret(request: NextRequest): boolean {
   const secret = request.headers.get('x-internal-secret');
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
         // Verify the session exists and is in a startable state.
         // The bot sync loop (every 5s) will pick it up once the DB
         // state is qr_pending. This endpoint ensures the state is correct.
-        const { data: session, error } = await supabase
+        const { data: session, error } = await getSupabase()
           .from('bot_sessions')
           .select('id, state, worker_url, phone_number')
           .eq('id', sessionId)
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
         // If stuck in needs_reauth or inactive, reset to qr_pending with fresh auth
         if (session.state === 'needs_reauth' || session.state === 'inactive') {
           console.log(`[INTERNAL] Session ${sessionId} was ${session.state} — resetting to qr_pending with fresh auth and clearing lock`);
-          const { error: updateErr } = await supabase
+          const { error: updateErr } = await getSupabase()
             .from('bot_sessions')
             .update({
               state: 'qr_pending',
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'status': {
-        const { data: session, error } = await supabase
+        const { data: session, error } = await getSupabase()
           .from('bot_sessions')
           .select('id, state, worker_url, updated_at')
           .eq('id', sessionId)
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
 
       case 'disconnect': {
         console.log(`[INTERNAL] Disconnect requested for session ${sessionId}`);
-        const { error: updateErr } = await supabase
+        const { error: updateErr } = await getSupabase()
           .from('bot_sessions')
           .update({
             state: 'inactive',
@@ -158,7 +160,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
   }
 
-  const { data: session, error } = await supabase
+  const { data: session, error } = await getSupabase()
     .from('bot_sessions')
     .select('id, state, worker_url, updated_at, phone_number')
     .eq('id', sessionId)

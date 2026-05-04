@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
       if (!profile) {
         return NextResponse.json(
-          { error: 'No account found with that username' },
+          { error: 'Invalid email/username or password' },
           { status: 401 },
         );
       }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       const { data: userData } = await adminSupabase.auth.admin.getUserById(profile.id);
       if (!userData?.user?.email) {
         return NextResponse.json(
-          { error: 'Could not resolve username to email' },
+          { error: 'Invalid email/username or password' },
           { status: 401 },
         );
       }
