@@ -539,6 +539,15 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'sched':
       await handleSchedule(context, args, sock);
       break;
+    case 'save':
+    case 'sv':
+      await handleSave(context, sock);
+      break;
+    case 'repost':
+    case 'rp':
+    case 'reststatus':
+      await handleRepost(context, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -700,6 +709,8 @@ async function sendHelp(
 !afk [reason] — Set AFK (auto-reply when away)
 !afk off — Disable AFK
 !download [url] — Download media from URL
+!save — Reply to any msg to save to your chat
+!repost — Reply to msg/media to post as Status
 
 _Only the bot owner can use commands._`;
 
@@ -1967,6 +1978,170 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
     await sendReply(context.chatJid, `Message scheduled for ${mins} minute(s) from now: "${message}"`, sock, context.rawMessage.key, context.queue);
   } else {
     await sendReply(context.chatJid, 'Failed to schedule message. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Save Command — Forward to self ──────────────────────────────────────────
+
+async function handleSave(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+
+  if (!quotedMsg) {
+    await sendReply(
+      context.chatJid,
+      `*SAVE MESSAGE*\n\nReply to any message with *!save* to forward it to your private chat (like Saved Messages).\n\nWorks with: text, images, videos, documents, stickers, audio.`,
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+    return;
+  }
+
+  try {
+    // Get the bot owner's JID (to send to self)
+    const ownerJid = (sock as any).user?.id;
+    if (!ownerJid) {
+      await sendReply(context.chatJid, 'Could not determine your account. Try again after reconnecting.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // Build the forwarded message with a "Saved from" header
+    const chatName = context.isGroup ? context.chatJid.split('@')[0] : context.senderJid.split('@')[0];
+    const savedHeader = `_Saved from ${chatName} at ${currentTimeStr()} ${currentDateStr()}_\n\n`;
+
+    // Try to forward the quoted message content
+    if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
+      const text = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
+      await sock.sendMessage(ownerJid, { text: savedHeader + text });
+    } else if (quotedMsg.imageMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(ownerJid, {
+          image: buffer,
+          caption: savedHeader + (quotedMsg.imageMessage.caption || ''),
+        });
+      } else {
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Image — could not download]' });
+      }
+    } else if (quotedMsg.videoMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(ownerJid, {
+          video: buffer,
+          caption: savedHeader + (quotedMsg.videoMessage.caption || ''),
+        });
+      } else {
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Video — could not download]' });
+      }
+    } else if (quotedMsg.audioMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(ownerJid, {
+          audio: buffer,
+          mimetype: quotedMsg.audioMessage.mimetype || 'audio/ogg; codecs=opus',
+          ptt: quotedMsg.audioMessage.ptt || false,
+        });
+      } else {
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Audio — could not download]' });
+      }
+    } else if (quotedMsg.documentMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(ownerJid, {
+          document: buffer,
+          mimetype: quotedMsg.documentMessage.mimetype || 'application/octet-stream',
+          fileName: quotedMsg.documentMessage.fileName || 'saved_file',
+        });
+      } else {
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Document — could not download]' });
+      }
+    } else if (quotedMsg.stickerMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(ownerJid, { sticker: buffer });
+      } else {
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Sticker — could not download]' });
+      }
+    } else {
+      // Unknown message type — send notification
+      await sock.sendMessage(ownerJid, { text: savedHeader + '[Message type not supported for save]' });
+    }
+
+    await sendReply(context.chatJid, 'Saved to your private chat!', sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[SAVE] Error:', error);
+    await sendReply(context.chatJid, 'Failed to save message. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Repost Command — Repost to WhatsApp Status ─────────────────────────────
+
+async function handleRepost(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+
+  if (!quotedMsg) {
+    await sendReply(
+      context.chatJid,
+      `*STATUS REPOST*\n\nReply to any message with *!repost* to post it as your WhatsApp Status.\n\nWorks with: text, images, videos.\n\n_Note: Status posting depends on your WhatsApp version and linked device support._`,
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+    return;
+  }
+
+  try {
+    const statusJid = 'status@broadcast';
+
+    // Get contact list for statusJidList (required by Baileys)
+    let statusJidList: string[] = [];
+    try {
+      const contacts = await sock.getContacts?.() || [];
+      statusJidList = Array.isArray(contacts)
+        ? contacts.filter((c: any) => c?.id?.endsWith('@s.whatsapp.net')).map((c: any) => c.id).slice(0, 500)
+        : [];
+    } catch {
+      // If can't get contacts, try without the list
+    }
+
+    if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
+      const text = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
+      await sock.sendMessage(statusJid, {
+        text,
+        font: 0,
+        backgroundColor: '#000000',
+      }, { statusJidList });
+    } else if (quotedMsg.imageMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(statusJid, {
+          image: buffer,
+          caption: quotedMsg.imageMessage.caption || '',
+        }, { statusJidList });
+      } else {
+        await sendReply(context.chatJid, 'Could not download the image to repost.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+    } else if (quotedMsg.videoMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(statusJid, {
+          video: buffer,
+          caption: quotedMsg.videoMessage.caption || '',
+        }, { statusJidList });
+      } else {
+        await sendReply(context.chatJid, 'Could not download the video to repost.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+    } else {
+      await sendReply(context.chatJid, 'This message type cannot be reposted to status. Only text, images, and videos are supported.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(context.chatJid, 'Posted to your WhatsApp Status!', sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[REPOST] Error:', error);
+    await sendReply(context.chatJid, 'Failed to repost to status. This feature depends on your WhatsApp version.', sock, context.rawMessage.key, context.queue);
   }
 }
 
