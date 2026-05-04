@@ -12,7 +12,7 @@ import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance } from './evolutionClient';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, refreshPairingCode } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -364,8 +364,7 @@ class EvolutionBot {
       // Register for keep-alive pings so Evolution API doesn't auto-delete
       trackInstance(this.sessionId);
 
-      // Wait briefly then fetch pairing code
-      await new Promise(r => setTimeout(r, 2000));
+      // Fetch pairing code — getPairingCode now handles its own polling
       const code = await getPairingCode(this.sessionId, this.phoneNumber);
 
       if (code) {
@@ -382,9 +381,11 @@ class EvolutionBot {
       }
 
       // Poll Evolution API every 5 seconds to detect connection state changes.
-      // Also track how long we've been waiting for a pairing code to be used.
+      // While waiting for pairing, also refresh the pairing code every cycle
+      // because Baileys rotates QR codes every ~20s (each invalidates the old code).
       let pairingWaitStart = Date.now();
       const PAIRING_TIMEOUT_MS = 120_000; // 2 minutes to pair
+      let lastPairingCode = code;
 
       this.pollHandle = setInterval(async () => {
         try {
@@ -400,6 +401,14 @@ class EvolutionBot {
             // Create socket adapter for presence simulation
             this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
             this.startPresenceLoop();
+          } else if (state === 'connecting' && this.isPairingSent) {
+            // Instance is still connecting — refresh pairing code in case QR rotated
+            const freshCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
+            if (freshCode && freshCode !== lastPairingCode) {
+              lastPairingCode = freshCode;
+              console.log(`[EVO] Refreshed pairing code for ${this.sessionId}: ${freshCode}`);
+              await updateSessionPairingCode(this.sessionId, freshCode);
+            }
           } else if (state === 'close' || state === 'refused') {
             if (this.isReady) {
               // Was connected, now disconnected
