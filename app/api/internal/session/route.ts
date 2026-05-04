@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         // If stuck in needs_reauth or inactive, reset to qr_pending with fresh auth
         if (session.state === 'needs_reauth' || session.state === 'inactive') {
-          console.log(`[INTERNAL] Session ${sessionId} was ${session.state} — resetting to qr_pending with fresh auth`);
+          console.log(`[INTERNAL] Session ${sessionId} was ${session.state} — resetting to qr_pending with fresh auth and clearing lock`);
           const { error: updateErr } = await supabase
             .from('bot_sessions')
             .update({
@@ -64,6 +64,9 @@ export async function POST(request: NextRequest) {
               qr_code: null,
               qr_expires_at: null,
               qr_generated_at: null,
+              locked_by: null,
+              locked_at: null,
+              heartbeat_at: null,
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);

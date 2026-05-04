@@ -11,6 +11,7 @@ import { handleMessage, handleGroupParticipantsUpdate } from './handlers/Message
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
+import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance } from './evolutionClient';
 import P from 'pino';
@@ -222,8 +223,9 @@ export class BotWaveBot {
             console.log(`[${this.sessionId}] Reassigned to ${nextWorker}. Worker sync loop will pick it up.`);
           } else {
             // All workers exhausted — fall back to needs_reauth so user can re-pair
-            console.log(`[${this.sessionId}] 401 auth failure. All retries and workers exhausted. Setting needs_reauth.`);
+            console.log(`[${this.sessionId}] 401 auth failure. All retries and workers exhausted. Setting needs_reauth and releasing lock.`);
             this.isReconnecting = false;
+            await releaseLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
 
             const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
@@ -243,9 +245,10 @@ export class BotWaveBot {
         }
 
         if (!shouldReconnect) {
-          console.log(`[${this.sessionId}] Logged out by WhatsApp (statusCode=${statusCode}). Clearing auth and setting needs_reauth.`);
+          console.log(`[${this.sessionId}] Logged out by WhatsApp (statusCode=${statusCode}). Clearing auth, releasing lock, setting needs_reauth.`);
           this.isReconnecting = false;
           await clearAuthState(this.sessionId);
+          await releaseLock(this.sessionId);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
 
           const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
@@ -263,9 +266,10 @@ export class BotWaveBot {
         } else {
           // Hard limit: max 3 reconnect attempts
           if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth and stopping.`);
+            console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth, releasing lock, stopping.`);
             this.isReconnecting = false;
             await clearAuthState(this.sessionId);
+            await releaseLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.socket = null;
             return;
@@ -598,8 +602,9 @@ export function initializeBot() {
       console.log(`BotWave bot service started (mode: ${USE_EVOLUTION ? 'Evolution API' : 'Baileys direct'})`);
     },
     stop: async () => {
-      for (const [, bot] of activeBots) {
+      for (const [id, bot] of activeBots) {
         await bot.stop();
+        await releaseLock(id);
       }
       activeBots.clear();
     },
@@ -633,6 +638,20 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
+      // Check for conflicts — another instance may already be running this session
+      const conflict = await detectConflict(session.id);
+      if (conflict) {
+        console.log(`[SYNC] Session ${session.id.slice(0, 8)} is actively managed by ${conflict} — skipping to avoid duplicate`);
+        continue;
+      }
+
+      // Try to acquire lock — idempotent, prevents duplicates
+      const locked = await tryAcquireLock(session.id);
+      if (!locked) {
+        console.log(`[SYNC] Could not acquire lock for session ${session.id.slice(0, 8)} — another instance owns it`);
+        continue;
+      }
+
       // If the session is in pairing_sent but we have no active bot for it,
       // it means the process restarted mid-pairing. The old pairing code is
       // dead (WebSocket gone), so reset to qr_pending with fresh auth to
@@ -675,7 +694,13 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
       }
       console.log(`Stopping bot for removed session: ${id}`);
       await bot.stop();
+      await releaseLock(id);
       activeBots.delete(id);
     }
+  }
+
+  // Refresh heartbeats for all active bots
+  for (const [id] of activeBots) {
+    await refreshHeartbeat(id);
   }
 }

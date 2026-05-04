@@ -2,12 +2,17 @@ import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
 import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
 import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId } from './sessionCoordinator';
 
 const bot = initializeBot();
 
 async function start() {
-  console.log(`[BOT] Starting bot service... IS_WORKER=${IS_WORKER} WORKER_URLS=${WORKER_URLS.join(',') || 'none'} SELF_URL=${process.env.SELF_URL || 'not set'}`);
+  console.log(`[BOT] Starting bot service... IS_WORKER=${IS_WORKER} WORKER_URLS=${WORKER_URLS.join(',') || 'none'} SELF_URL=${process.env.SELF_URL || 'not set'} INSTANCE=${getInstanceId()}`);
   await bot.start();
+
+  // Coordinator: clean up stale locks from previous run, start heartbeat
+  await cleanupOnStartup();
+  startHeartbeatLoop();
   
   // Initial sync
   console.log('[BOT] Running initial session sync...');
@@ -35,6 +40,28 @@ async function start() {
         console.error('[RECOVERY] Error recovering stale sessions:', err);
       }
     }, 30_000);
+  }
+
+  // Coordinator: orphan recovery (every 60s, main only) + audit (every 120s)
+  if (!IS_WORKER) {
+    setInterval(async () => {
+      try {
+        const recovered = await recoverOrphanedSessions();
+        if (recovered > 0) {
+          console.log(`[COORD] Recovered ${recovered} orphaned session(s)`);
+        }
+      } catch (err) {
+        console.error('[COORD] Orphan recovery error:', err);
+      }
+    }, 60_000);
+
+    setInterval(async () => {
+      try {
+        await auditSessions();
+      } catch (err) {
+        console.error('[COORD] Audit error:', err);
+      }
+    }, 120_000);
   }
 
   // Reminder + Scheduled Message delivery loop (every 15s)
@@ -105,12 +132,14 @@ start().catch((error) => {
 
 process.on('SIGINT', async () => {
   console.log('[BOT] Received SIGINT — shutting down gracefully...');
+  stopHeartbeatLoop();
   await bot.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('[BOT] Received SIGTERM — shutting down gracefully...');
+  stopHeartbeatLoop();
   await bot.stop();
   process.exit(0);
 });

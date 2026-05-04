@@ -22,7 +22,7 @@ export const useSupabaseAuthState = async (sessionId: string): Promise<{ state: 
       .single();
 
     if (error || !data || !data.auth_state) {
-      console.log(`[AuthState] Session ${sessionId}: no existing auth state found (fresh session)`);
+      console.log(`[AuthState] Session ${sessionId}: no existing auth state found (fresh session). error=${error ? `${error.code}:${error.message}` : 'none'} hasData=${!!data} hasAuthState=${!!(data?.auth_state)}`);
       return null;
     }
 
@@ -48,7 +48,7 @@ export const useSupabaseAuthState = async (sessionId: string): Promise<{ state: 
         .eq('id', sessionId);
 
       if (error) {
-        console.error(`Error saving auth state for session ${sessionId}:`, error);
+        console.error(`[AuthState] SAVE FAILED for session ${sessionId}: code=${error.code} message=${error.message} details=${error.details}`);
       }
     } finally {
       isSaving = false;
