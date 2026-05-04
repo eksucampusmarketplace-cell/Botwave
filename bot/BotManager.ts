@@ -11,7 +11,11 @@ import { handleMessage, handleGroupParticipantsUpdate } from './handlers/Message
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL } from './workerConfig';
+import { createInstance, getPairingCode, getInstanceStatus, deleteInstance } from './evolutionClient';
+import { EvolutionSocketAdapter } from './evolutionSocket';
 import P from 'pino';
+
+const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 
 // Cast to any: pino v10 types are incompatible with Baileys 6.x Logger typedef
 const logger = P({ level: 'info' }) as any;
@@ -294,13 +298,167 @@ export class BotWaveBot {
   }
 }
 
-const activeBots: Map<string, BotWaveBot> = new Map();
+// ─── Evolution API Bot ────────────────────────────────────────────────────────
+// Used when EVOLUTION_API_URL is set. Replaces direct Baileys connection with
+// Evolution API REST calls. Messages are handled via webhook; this class only
+// manages connection lifecycle + presence simulation.
+
+class EvolutionBot {
+  private sessionId: string;
+  private userId: string;
+  private phoneNumber: string;
+  private isReady: boolean = false;
+  private isPairingSent: boolean = false;
+  private isReconnecting: boolean = false;
+  private pollHandle: NodeJS.Timeout | null = null;
+  private presenceHandle: NodeJS.Timeout | null = null;
+  private socketAdapter: EvolutionSocketAdapter | null = null;
+
+  constructor(config: BotConfig) {
+    this.sessionId = config.sessionId;
+    this.userId = config.userId;
+    this.phoneNumber = config.phoneNumber;
+  }
+
+  async start(): Promise<void> {
+    console.log(`[EVO] Starting session ${this.sessionId} for ${this.phoneNumber}`);
+    this.isReconnecting = true;
+
+    // Register for warmup tracking (advanced anti-ban)
+    registerSessionStart(this.sessionId);
+
+    try {
+      // Clean up any stale instance before creating a new one
+      await deleteInstance(this.sessionId);
+
+      // Create instance on Evolution API
+      await createInstance(this.sessionId, this.phoneNumber);
+      console.log(`[EVO] Instance created for ${this.sessionId}`);
+
+      // Wait briefly then fetch pairing code
+      await new Promise(r => setTimeout(r, 2000));
+      const code = await getPairingCode(this.sessionId, this.phoneNumber);
+
+      if (code) {
+        console.log(`[EVO] Pairing code for ${this.sessionId}: ${code}`);
+        await updateSessionPairingCode(this.sessionId, code);
+        await updateSessionStatus(this.sessionId, 'pairing_sent');
+        this.isPairingSent = true;
+        this.isReconnecting = false;
+      } else {
+        console.warn(`[EVO] No pairing code returned for ${this.sessionId}`);
+        await updateSessionStatus(this.sessionId, 'inactive');
+        this.isReconnecting = false;
+        return;
+      }
+
+      // Poll Evolution API every 5 seconds to detect connection state changes
+      this.pollHandle = setInterval(async () => {
+        try {
+          const state = await getInstanceStatus(this.sessionId);
+
+          if (state === 'open' && !this.isReady) {
+            this.isReady = true;
+            this.isPairingSent = false;
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'active');
+            console.log(`[EVO] Session ${this.sessionId} is now active!`);
+
+            // Create socket adapter for presence simulation
+            this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
+            this.startPresenceLoop();
+          } else if ((state === 'close' || state === 'refused') && this.isReady) {
+            this.isReady = false;
+            this.isPairingSent = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
+            this.stopPresenceLoop();
+            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth`);
+
+            const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+            if (appUrl) {
+              try {
+                await fetch(`${appUrl}/api/notify/session-down`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+                });
+              } catch (err) {
+                console.error('[EVO] Failed to send session-down notification:', err);
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`[EVO] Poll error for ${this.sessionId}:`, err);
+        }
+      }, 5000);
+
+    } catch (err) {
+      console.error(`[EVO] Failed to start session ${this.sessionId}:`, err);
+      await updateSessionStatus(this.sessionId, 'inactive');
+      this.isReconnecting = false;
+    }
+  }
+
+  private startPresenceLoop(): void {
+    this.stopPresenceLoop();
+    const simulate = async () => {
+      if (!this.socketAdapter) return;
+      try {
+        const hour = new Date().getHours();
+        let unavailableProb = 0.2;
+        if (hour >= 0 && hour < 6) unavailableProb = 0.8;
+        else if (hour >= 6 && hour < 9) unavailableProb = 0.5;
+        else if (hour >= 22) unavailableProb = 0.4;
+        const shouldBeUnavailable = Math.random() < unavailableProb;
+        await this.socketAdapter.sendPresenceUpdate(shouldBeUnavailable ? 'unavailable' : 'available');
+      } catch { /* non-critical */ }
+      const nextDelay = (5 + Math.random() * 10) * 60 * 1000;
+      this.presenceHandle = setTimeout(simulate, nextDelay);
+    };
+    this.presenceHandle = setTimeout(simulate, 10000 + Math.random() * 20000);
+  }
+
+  private stopPresenceLoop(): void {
+    if (this.presenceHandle) {
+      clearTimeout(this.presenceHandle);
+      this.presenceHandle = null;
+    }
+  }
+
+  async stop(): Promise<void> {
+    this.stopPresenceLoop();
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+      this.pollHandle = null;
+    }
+    try { await deleteInstance(this.sessionId); } catch { /* non-critical */ }
+    this.isReady = false;
+    this.isPairingSent = false;
+    this.isReconnecting = false;
+    this.socketAdapter = null;
+  }
+
+  getStatus() {
+    return {
+      isReady: this.isReady,
+      qrCode: null as string | null,
+      isReconnecting: this.isReconnecting,
+      isQrPending: false,
+      isPairingSent: this.isPairingSent,
+    };
+  }
+}
+
+// ─── Shared Bot Map + Sync ────────────────────────────────────────────────────
+
+type AnyBot = BotWaveBot | EvolutionBot;
+const activeBots: Map<string, AnyBot> = new Map();
 
 export function initializeBot() {
   return {
     start: async () => {
       await initDatabase();
-      console.log('BotWave bot service started');
+      console.log(`BotWave bot service started (mode: ${USE_EVOLUTION ? 'Evolution API' : 'Baileys direct'})`);
     },
     stop: async () => {
       for (const [, bot] of activeBots) {
@@ -339,11 +497,17 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 
     if (!activeBots.has(session.id)) {
       console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);
-      const newBot = new BotWaveBot({
-        sessionId: session.id,
-        userId: session.user_id,
-        phoneNumber: session.phone_number,
-      });
+      const newBot = USE_EVOLUTION
+        ? new EvolutionBot({
+            sessionId: session.id,
+            userId: session.user_id,
+            phoneNumber: session.phone_number,
+          })
+        : new BotWaveBot({
+            sessionId: session.id,
+            userId: session.user_id,
+            phoneNumber: session.phone_number,
+          });
       activeBots.set(session.id, newBot);
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
