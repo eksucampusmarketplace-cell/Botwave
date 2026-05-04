@@ -423,6 +423,129 @@ export function getAntiPatternDelay(): number {
   return 0; // Normal timing
 }
 
+// ─── Per-Contact Reply Frequency ──────────────────────────────────────────────
+/**
+ * Tracks how often the bot replies to each individual contact. If the bot
+ * has replied to the same person more than N times in a window, it starts
+ * skipping replies with increasing probability — just like a real person
+ * who gets tired of replying to the same person over and over.
+ *
+ * Window: 10 minutes
+ * Threshold: after 5 replies to the same contact, skip probability ramps up
+ */
+
+const contactReplyTracker: Map<string, number[]> = new Map();
+const CONTACT_WINDOW = 10 * 60 * 1000; // 10 minutes
+const CONTACT_THRESHOLD = 5; // after this many replies, start skipping
+
+export function shouldThrottleContact(contactJid: string): boolean {
+  const now = Date.now();
+  const timestamps = contactReplyTracker.get(contactJid) || [];
+  const recent = timestamps.filter(t => now - t < CONTACT_WINDOW);
+  contactReplyTracker.set(contactJid, recent);
+
+  if (recent.length < CONTACT_THRESHOLD) return false;
+
+  // Probability ramps: 5 replies = 20%, 6 = 35%, 7 = 50%, 8+ = 60%
+  const excess = recent.length - CONTACT_THRESHOLD;
+  const skipProb = Math.min(0.6, 0.2 + excess * 0.15);
+  return Math.random() < skipProb;
+}
+
+export function trackContactReply(contactJid: string): void {
+  const timestamps = contactReplyTracker.get(contactJid) || [];
+  timestamps.push(Date.now());
+  contactReplyTracker.set(contactJid, timestamps);
+}
+
+// ─── Typing Speed Variation ───────────────────────────────────────────────────
+/**
+ * Real people type at different speeds depending on time of day.
+ * Morning: slower (still waking up). Afternoon: normal. Night: slower + typos.
+ * Returns a multiplier for typing delay.
+ */
+
+export function getTypingSpeedMultiplier(): number {
+  const hour = new Date().getHours();
+
+  if (hour >= 0 && hour < 6) return 1.8 + Math.random() * 0.5;   // Very slow late night
+  if (hour >= 6 && hour < 9) return 1.3 + Math.random() * 0.3;   // Slow morning
+  if (hour >= 9 && hour < 12) return 0.9 + Math.random() * 0.2;  // Normal-fast morning
+  if (hour >= 12 && hour < 14) return 1.1 + Math.random() * 0.2; // Lunch = slightly slow
+  if (hour >= 14 && hour < 18) return 0.8 + Math.random() * 0.3; // Fastest — afternoon
+  if (hour >= 18 && hour < 22) return 1.0 + Math.random() * 0.2; // Normal evening
+  return 1.4 + Math.random() * 0.3;                               // Late evening
+}
+
+// ─── Reply Order Randomization (Groups) ───────────────────────────────────────
+/**
+ * In group chats, bots that always reply instantly to the very first message
+ * are suspicious. This function adds a random "I was reading other messages"
+ * delay that's proportional to recent group activity.
+ *
+ * If 5 messages came in the last 30 seconds, delay is higher (the bot
+ * "was reading the backlog"). If it's a quiet group, respond faster.
+ */
+
+const groupActivityTracker: Map<string, number[]> = new Map();
+const GROUP_ACTIVITY_WINDOW = 30_000; // 30 seconds
+
+export function trackGroupMessage(groupJid: string): void {
+  const timestamps = groupActivityTracker.get(groupJid) || [];
+  timestamps.push(Date.now());
+  // Keep only recent messages
+  const recent = timestamps.filter(t => Date.now() - t < GROUP_ACTIVITY_WINDOW);
+  groupActivityTracker.set(groupJid, recent);
+}
+
+export function getGroupReplyDelay(groupJid: string): number {
+  const timestamps = groupActivityTracker.get(groupJid) || [];
+  const recentCount = timestamps.filter(t => Date.now() - t < GROUP_ACTIVITY_WINDOW).length;
+
+  if (recentCount <= 1) return 0; // Quiet group — reply normally
+  if (recentCount <= 3) return 1000 + Math.random() * 2000; // Moderate — 1-3s extra
+  if (recentCount <= 6) return 2000 + Math.random() * 4000; // Busy — 2-6s extra
+  return 4000 + Math.random() * 6000; // Very busy — 4-10s extra ("catching up")
+}
+
+// ─── Connection Fingerprint Diversity ─────────────────────────────────────────
+/**
+ * Using the exact same browser fingerprint for every session is a pattern.
+ * This generates slightly varied browser configurations while staying within
+ * Baileys' supported range. WhatsApp sees each session as a slightly
+ * different device.
+ */
+
+const BROWSER_CONFIGS: [string, string, string][] = [
+  ['Mac OS', 'Chrome', '14.4.1'],
+  ['Mac OS', 'Chrome', '14.5.0'],
+  ['Mac OS', 'Safari', '18.3.1'],
+  ['Windows', 'Chrome', '131.0.0'],
+  ['Windows', 'Edge', '131.0.0'],
+  ['Windows', 'Firefox', '133.0'],
+  ['Ubuntu', 'Chrome', '131.0.0'],
+  ['Ubuntu', 'Firefox', '133.0'],
+];
+
+export function getRandomBrowserConfig(): [string, string, string] {
+  return BROWSER_CONFIGS[Math.floor(Math.random() * BROWSER_CONFIGS.length)];
+}
+
+/**
+ * Get a deterministic-but-varied browser config based on session ID.
+ * Same session always gets the same fingerprint (consistent across reconnects)
+ * but different sessions get different ones.
+ */
+export function getBrowserConfigForSession(sessionId: string): [string, string, string] {
+  let hash = 0;
+  for (let i = 0; i < sessionId.length; i++) {
+    hash = ((hash << 5) - hash) + sessionId.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % BROWSER_CONFIGS.length;
+  return BROWSER_CONFIGS[index];
+}
+
 // ─── Response Delay Variation ─────────────────────────────────────────────────
 /**
  * Instead of always responding in 2-5 seconds, create a more natural

@@ -1,6 +1,6 @@
 import './env';
-import { initializeBot, syncSessionsWithDb } from './BotManager';
-import { recoverStaleSessions } from './database';
+import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
+import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
 import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
 
 const bot = initializeBot();
@@ -36,6 +36,48 @@ async function start() {
       }
     }, 30_000);
   }
+
+  // Reminder + Scheduled Message delivery loop (every 15s)
+  setInterval(async () => {
+    try {
+      // Deliver due reminders
+      const dueReminders = await getDueReminders();
+      for (const reminder of dueReminders) {
+        const sock = getActiveBotSocket(reminder.session_id);
+        if (sock) {
+          try {
+            const msg = `*Reminder:* ${reminder.message}`;
+            if (typeof sock.sendMessage === 'function') {
+              await sock.sendMessage(reminder.chat_jid, { text: msg });
+            }
+            await markReminderDelivered(reminder.id);
+            console.log(`[REMIND] Delivered reminder ${reminder.id} to ${reminder.chat_jid}`);
+          } catch (err) {
+            console.error(`[REMIND] Failed to deliver reminder ${reminder.id}:`, err);
+          }
+        }
+      }
+
+      // Deliver due scheduled messages
+      const dueScheduled = await getDueScheduledMessages();
+      for (const scheduled of dueScheduled) {
+        const sock = getActiveBotSocket(scheduled.session_id);
+        if (sock) {
+          try {
+            if (typeof sock.sendMessage === 'function') {
+              await sock.sendMessage(scheduled.target_jid, { text: scheduled.message });
+            }
+            await markScheduledMessageSent(scheduled.id);
+            console.log(`[SCHED] Delivered scheduled message ${scheduled.id} to ${scheduled.target_jid}`);
+          } catch (err) {
+            console.error(`[SCHED] Failed to deliver scheduled message ${scheduled.id}:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[REMIND/SCHED] Error in delivery loop:', err);
+    }
+  }, 15_000);
 
   // Keep-alive pings: main service pings all workers every 2 minutes
   // to prevent Render free tier from spinning them down

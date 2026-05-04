@@ -9,7 +9,7 @@ import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPair
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
-import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
+import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance } from './evolutionClient';
@@ -42,6 +42,8 @@ export class BotWaveBot {
   private isReconnecting: boolean = false;
   private isPairingSent: boolean = false;
   private workerUrl: string | null = null;
+
+  public getSocket(): any { return this.isReady ? this.socket : null; }
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
@@ -80,7 +82,7 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: ['Mac OS', 'Chrome', '14.4.1'],
+      browser: getBrowserConfigForSession(this.sessionId),
       syncFullHistory: false,
       markOnlineOnConnect: false,
       connectTimeoutMs: 60000,
@@ -368,6 +370,8 @@ class EvolutionBot {
   private presenceHandle: NodeJS.Timeout | null = null;
   private socketAdapter: EvolutionSocketAdapter | null = null;
 
+  public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
+
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
     this.userId = config.userId;
@@ -581,6 +585,11 @@ class EvolutionBot {
 
 type AnyBot = BotWaveBot | EvolutionBot;
 const activeBots: Map<string, AnyBot> = new Map();
+
+export function getActiveBotSocket(sessionId: string): any | null {
+  const bot = activeBots.get(sessionId);
+  return bot?.getSocket() ?? null;
+}
 
 export function initializeBot() {
   return {
