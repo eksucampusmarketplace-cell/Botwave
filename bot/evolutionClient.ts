@@ -107,17 +107,51 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   return res.json();
 }
 
-// Get pairing code for an instance (pass phone number as query param)
+// Get pairing code for an instance (pass phone number as query param).
+// Triggers Baileys connection if not yet started, then polls for the code
+// since Baileys generates it asynchronously (~2-4s after connection starts).
 export async function getPairingCode(instanceName: string, phoneNumber: string) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
-  const res = await withRetry(() =>
+
+  // First call triggers connectToWhatsapp inside Evolution API
+  const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
       method: 'GET',
       headers,
     }),
   );
-  const data: any = await res.json();
-  return data?.pairingCode || null;
+  const connectData: any = await connectRes.json();
+  if (connectData?.pairingCode) return connectData.pairingCode;
+
+  // Baileys may still be connecting — poll up to 5 times (3s apart)
+  for (let i = 0; i < 5; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    try {
+      const res = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
+        method: 'GET',
+        headers,
+      });
+      const data: any = await res.json();
+      if (data?.pairingCode) return data.pairingCode;
+    } catch { /* retry */ }
+  }
+  return null;
+}
+
+// Fetch the latest pairing code without triggering a new connection.
+// Safe to call repeatedly — returns current QR data when instance is connecting.
+export async function refreshPairingCode(instanceName: string, phoneNumber: string): Promise<string | null> {
+  try {
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const res = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
+      method: 'GET',
+      headers,
+    });
+    const data: any = await res.json();
+    return data?.pairingCode || null;
+  } catch {
+    return null;
+  }
 }
 
 // Get connection status of an instance
