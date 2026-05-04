@@ -633,6 +633,17 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
+      // If the session is in pairing_sent but we have no active bot for it,
+      // it means the process restarted mid-pairing. The old pairing code is
+      // dead (WebSocket gone), so reset to qr_pending with fresh auth to
+      // avoid a 401 from WhatsApp seeing two connections with the same creds.
+      if (session.state === 'pairing_sent') {
+        console.log(`[SYNC] Session ${session.id} is pairing_sent but no active bot — process likely restarted. Resetting to qr_pending with fresh auth.`);
+        await clearAuthState(session.id);
+        await updateSessionStatus(session.id, 'qr_pending');
+        session.state = 'qr_pending';
+      }
+
       console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);
       const newBot = USE_EVOLUTION
         ? new EvolutionBot({
