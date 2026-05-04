@@ -113,6 +113,9 @@ export async function POST(request: NextRequest) {
     // not as an array. Normalize to array for uniform handling.
     if (event === 'messages.upsert') {
       const messages = Array.isArray(data) ? data : (data ? [data] : []);
+
+      console.log(`[EVO-WEBHOOK] messages.upsert for ${sessionId}: count=${messages.length}`);
+
       if (messages.length === 0) {
         return NextResponse.json({ ok: true });
       }
@@ -138,7 +141,16 @@ export async function POST(request: NextRequest) {
       const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
       for (const msg of messages) {
-        if (msg.key?.fromMe) continue;
+        const from = msg.key?.remoteJid || 'unknown';
+        const fromMe = msg.key?.fromMe;
+        const text =
+          msg.message?.conversation ||
+          msg.message?.extendedTextMessage?.text ||
+          msg.message?.imageMessage?.caption ||
+          '';
+        console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} text="${text.slice(0, 80)}"`);
+
+        if (fromMe) continue;
         try {
           await handleMessage(msg, sock, queue);
         } catch (err) {
