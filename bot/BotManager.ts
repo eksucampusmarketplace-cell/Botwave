@@ -363,7 +363,7 @@ class EvolutionBot {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Create instance on Evolution API (includes webhook config)
-      const createResult = await createInstance(this.sessionId, this.phoneNumber);
+      const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
       if (createResult?.status === 403 || createResult?.error) {
         console.error(`[EVO] Failed to create instance for ${this.sessionId}:`, JSON.stringify(createResult));
         await updateSessionStatus(this.sessionId, 'inactive');
