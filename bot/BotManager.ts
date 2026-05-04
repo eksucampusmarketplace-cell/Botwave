@@ -12,7 +12,7 @@ import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, refreshPairingCode } from './evolutionClient';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -395,10 +395,10 @@ class EvolutionBot {
       }
 
       // Poll Evolution API every 5 seconds to detect connection state changes.
-      // While waiting for pairing, also refresh the pairing code every cycle
-      // because Baileys rotates QR codes every ~20s (each invalidates the old code).
+      // Do NOT refresh pairing code during polling — the Evolution API fix ensures
+      // the code is requested only once per connection and stays valid across QR rotations.
       let pairingWaitStart = Date.now();
-      const PAIRING_TIMEOUT_MS = 120_000; // 2 minutes to pair
+      const PAIRING_TIMEOUT_MS = 180_000; // 3 minutes to pair (generous for manual entry)
       let lastPairingCode = code;
       let unknownStateCount = 0;
       const MAX_UNKNOWN_BEFORE_RECREATE = 3;
@@ -423,13 +423,9 @@ class EvolutionBot {
             this.startPresenceLoop();
           } else if (state === 'connecting' && this.isPairingSent) {
             unknownStateCount = 0;
-            // Instance is still connecting — refresh pairing code in case QR rotated
-            const freshCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
-            if (freshCode && freshCode !== lastPairingCode) {
-              lastPairingCode = freshCode;
-              console.log(`[EVO] Refreshed pairing code for ${this.sessionId}: ${freshCode}`);
-              await updateSessionPairingCode(this.sessionId, freshCode);
-            }
+            // Pairing code stays stable — Evolution API only requests it once per
+            // connection. No need to refresh here (refreshing would hit the connect
+            // endpoint and risk triggering a new code that invalidates the current one).
           } else if (state === 'close' || state === 'refused') {
             unknownStateCount = 0;
             if (this.isReady) {
