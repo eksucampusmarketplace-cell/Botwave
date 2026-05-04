@@ -2497,7 +2497,7 @@ async function handleMeme(context: MessageContext, sock: any): Promise<void> {
   try {
     const response = await axios.get('https://meme-api.com/gimme', { timeout: 10000 });
     const meme = response.data;
-    if (!meme?.url) {
+    if (!meme?.url || meme.nsfw) {
       await sendReply(context.chatJid, 'Could not fetch meme. Try again.', sock, context.rawMessage.key, context.queue);
       return;
     }
@@ -2763,10 +2763,12 @@ async function handleRiddle(context: MessageContext, sock: any): Promise<void> {
     sock, context.rawMessage.key, context.queue,
   );
 
-  // Reveal answer after 30 seconds
+  // Reveal answer after 30 seconds (with daily cap check)
   setTimeout(async () => {
     try {
+      if (context.sessionId && isDailyCapReached(context.sessionId)) return;
       await sendReply(context.chatJid, `*ANSWER:* ${riddle.a}`, sock, context.rawMessage.key, context.queue);
+      if (context.sessionId) trackMessageSent(context.sessionId);
     } catch {
       // Ignore errors in delayed sends
     }
