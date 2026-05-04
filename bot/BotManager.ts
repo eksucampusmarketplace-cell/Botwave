@@ -2,7 +2,8 @@ import {
   makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore
+  makeCacheableSignalKeyStore,
+  delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
@@ -74,7 +75,13 @@ export class BotWaveBot {
       throw err;
     }
 
-    console.log(`[${this.sessionId}] Creating WASocket...`);
+    // Evolution API does NOT set browser config when using phone number pairing.
+    // Setting a custom browser changes the companion_platform_id sent to WhatsApp
+    // during the link_code_companion_reg handshake, which can cause pairing rejection.
+    // Only set browser fingerprint diversity AFTER successful pairing (on reconnect).
+    const isRegistered = state.creds.registered;
+    const browserConfig = isRegistered ? getBrowserConfigForSession(this.sessionId) : undefined;
+    console.log(`[${this.sessionId}] Creating WASocket... registered=${isRegistered} browser=${JSON.stringify(browserConfig || 'default')}`);
     this.socket = makeWASocket({
       version,
       printQRInTerminal: false,
@@ -83,12 +90,15 @@ export class BotWaveBot {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       logger,
-      browser: getBrowserConfigForSession(this.sessionId),
+      ...(browserConfig ? { browser: browserConfig } : {}),
       syncFullHistory: false,
       markOnlineOnConnect: false,
-      connectTimeoutMs: 60000,
+      connectTimeoutMs: 30_000,
       defaultQueryTimeoutMs: undefined,
-      keepAliveIntervalMs: 10000,
+      keepAliveIntervalMs: 30_000,
+      retryRequestDelayMs: 350,
+      fireInitQueries: true,
+      qrTimeout: 45_000,
     });
     console.log(`[${this.sessionId}] WASocket created. Setting up event handlers...`);
 
@@ -104,9 +114,14 @@ export class BotWaveBot {
     let pairingCodeRequested = false;
 
     this.socket.ev.on('connection.update', async (update: any) => {
-      const { connection, lastDisconnect, qr } = update;
+      const { connection, lastDisconnect, qr, isNewLogin } = update;
 
-      console.log(`[${this.sessionId}] connection.update:`, JSON.stringify({ connection, qr: !!qr, registered: this.socket?.authState?.creds?.registered }));
+      console.log(`[${this.sessionId}] connection.update:`, JSON.stringify({ connection, qr: !!qr, registered: this.socket?.authState?.creds?.registered, isNewLogin: isNewLogin || undefined }));
+
+      // isNewLogin = true means WhatsApp accepted the pairing code
+      if (isNewLogin) {
+        console.log(`[${this.sessionId}] PAIRING SUCCESS — WhatsApp accepted the pairing code! Connection will restart to complete handshake.`);
+      }
 
       // When we receive a QR, the WebSocket IS connected and ready.
       // Request pairing code here (once per cycle) — this is the right
@@ -128,26 +143,23 @@ export class BotWaveBot {
           const cleanPhone = this.phoneNumber.replace(/\D/g, '');
           console.log(`[${this.sessionId}] Phone raw: "${this.phoneNumber}" -> cleaned: "${cleanPhone}"`);
           if (cleanPhone) {
-            // Use setTimeout to let Baileys finish processing the current
-            // event before we send a new request on the same WebSocket.
-            const sock = this.socket;
-            const sid = this.sessionId;
-            const setSent = (v: boolean) => { this.isPairingSent = v; };
-            setTimeout(async () => {
-              console.log(`[${sid}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
-              try {
-                const code = await sock.requestPairingCode(cleanPhone);
-                console.log(`[${sid}] <<< requestPairingCode returned: "${code}"`);
-                await updateSessionPairingCode(sid, code);
-                await updateSessionStatus(sid, 'pairing_sent');
-                setSent(true);
-                console.log(`[${sid}] Pairing code saved to DB!`);
-              } catch (err: any) {
-                console.error(`[${sid}] <<< requestPairingCode FAILED:`, err);
-                console.error(`[${sid}] Error name: ${err?.name}, message: ${err?.message}, stack: ${err?.stack?.slice(0, 200)}`);
-                pairingCodeRequested = false; // Allow retry on next QR
-              }
-            }, 100);
+            // Match Evolution API: await a proper delay before requesting
+            // pairing code. This lets Baileys fully settle the WebSocket
+            // handshake before we send the link_code_companion_reg IQ stanza.
+            try {
+              await delay(2000);
+              console.log(`[${this.sessionId}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
+              const code = await this.socket.requestPairingCode(cleanPhone);
+              console.log(`[${this.sessionId}] <<< requestPairingCode returned: "${code}"`);
+              await updateSessionPairingCode(this.sessionId, code);
+              await updateSessionStatus(this.sessionId, 'pairing_sent');
+              this.isPairingSent = true;
+              console.log(`[${this.sessionId}] Pairing code saved to DB!`);
+            } catch (err: any) {
+              console.error(`[${this.sessionId}] <<< requestPairingCode FAILED:`, err);
+              console.error(`[${this.sessionId}] Error name: ${err?.name}, message: ${err?.message}, stack: ${err?.stack?.slice(0, 200)}`);
+              pairingCodeRequested = false;
+            }
           } else {
             console.error(`[${this.sessionId}] EMPTY phone number! Cannot request pairing code. Raw: "${this.phoneNumber}"`);
           }
