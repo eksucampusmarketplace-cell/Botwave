@@ -81,6 +81,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // --- Instance logout (WhatsApp terminated the linked device) ---
+    if (event === 'logout.instance') {
+      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId}`);
+      await supabase.from('bot_sessions')
+        .update({
+          state: 'needs_reauth',
+          qr_code: null,
+          pairing_code: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+
+      return NextResponse.json({ ok: true });
+    }
+
     // --- QR code / pairing code updates ---
     if (event === 'qrcode.updated') {
       const pairingCode = data?.pairingCode || data?.qrcode?.pairingCode;

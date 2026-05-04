@@ -71,7 +71,9 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay = 1000
   throw lastError;
 }
 
-// Create a new WhatsApp instance for a session, including webhook config
+// Create a new WhatsApp instance for a session, including webhook config.
+// If the instance already exists (403), log and continue — the caller will
+// connect to the existing instance via getPairingCode.
 export async function createInstance(instanceName: string, phoneNumber: string) {
   const webhookUrl = getWebhookUrl();
 
@@ -105,7 +107,15 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       body: JSON.stringify(payload),
     }),
   );
-  return res.json();
+  const data: Record<string, unknown> = await res.json() as Record<string, unknown>;
+
+  // 403 = instance already exists (e.g. deleteInstance failed due to 502).
+  // This is fine — we'll connect to the existing instance.
+  if (res.status === 403) {
+    console.log(`[EVO-CLIENT] Instance ${instanceName} already exists, reusing`);
+  }
+
+  return data;
 }
 
 // Get pairing code for an instance (pass phone number as query param).
