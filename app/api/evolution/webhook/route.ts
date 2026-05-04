@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
     // --- Connection state changes ---
     if (event === 'connection.update') {
       const state = data?.state;
-      console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: ${state}`);
+      const statusCode = data?.statusCode || data?.disconnectionReasonCode;
+      console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: state=${state} statusCode=${statusCode}`);
 
       if (state === 'open') {
         await supabase.from('bot_sessions')
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (current?.state === 'active') {
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — clearing auth and setting needs_reauth`);
           await supabase.from('bot_sessions')
             .update({
               state: 'needs_reauth',
@@ -76,9 +78,12 @@ export async function POST(request: NextRequest) {
               qr_expires_at: null,
               qr_generated_at: null,
               pairing_code: null,
+              auth_state: null,
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
+        } else {
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused — ignoring (handled by sync loop)`);
         }
         // If state is qr_pending/pairing_sent/connecting, leave it alone —
         // the BotManager sync loop handles reconnection during pairing.
@@ -105,12 +110,15 @@ export async function POST(request: NextRequest) {
 
     // --- Instance logout (WhatsApp terminated the linked device) ---
     if (event === 'logout.instance') {
-      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId}`);
+      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} — clearing all auth data`);
       await supabase.from('bot_sessions')
         .update({
           state: 'needs_reauth',
           qr_code: null,
+          qr_expires_at: null,
+          qr_generated_at: null,
           pairing_code: null,
+          auth_state: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);

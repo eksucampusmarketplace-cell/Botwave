@@ -286,6 +286,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Reset session for fresh pairing: clear old auth, QR, and pairing code
+    console.log(`[API] PATCH reconnect: session=${sessionId} previousState=${existing.state} worker=${existing.worker_url ?? 'main'}`);
     const { data: session, error } = await supabase
       .from('bot_sessions')
       .update({
@@ -305,12 +306,14 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       throw error;
     }
+    console.log(`[API] PATCH reconnect: session=${sessionId} reset to qr_pending with fresh auth`);
 
     // Notify the assigned worker to pick up the session
     const workerUrl = existing.worker_url;
     if (workerUrl && INTERNAL_SECRET) {
+      console.log(`[API] Notifying worker ${workerUrl} to start session ${sessionId}`);
       try {
-        await fetch(`${workerUrl}/api/internal/session`, {
+        const notifyRes = await fetch(`${workerUrl}/api/internal/session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -321,9 +324,13 @@ export async function PATCH(request: NextRequest) {
             sessionId,
           }),
         });
+        const notifyData = await notifyRes.json().catch(() => ({}));
+        console.log(`[API] Worker notification response: status=${notifyRes.status} data=${JSON.stringify(notifyData).slice(0, 200)}`);
       } catch (err) {
-        console.error(`Failed to notify worker ${workerUrl} for reconnect:`, err);
+        console.error(`[API] Failed to notify worker ${workerUrl} for reconnect:`, err);
       }
+    } else {
+      console.log(`[API] No worker assigned for session ${sessionId} — main service sync loop will pick it up within 5s`);
     }
 
     return NextResponse.json({

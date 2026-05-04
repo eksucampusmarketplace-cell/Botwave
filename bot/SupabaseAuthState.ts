@@ -22,9 +22,11 @@ export const useSupabaseAuthState = async (sessionId: string): Promise<{ state: 
       .single();
 
     if (error || !data || !data.auth_state) {
+      console.log(`[AuthState] Session ${sessionId}: no existing auth state found (fresh session)`);
       return null;
     }
 
+    console.log(`[AuthState] Session ${sessionId}: loaded existing auth state from DB`);
     return JSON.parse(JSON.stringify(data.auth_state), BufferJSON.reviver);
   };
 
@@ -59,9 +61,23 @@ export const useSupabaseAuthState = async (sessionId: string): Promise<{ state: 
   };
 
   let loadedState = await fetchAuthState();
-  
+
+  // If there are stale credentials from a previous failed pairing attempt
+  // (registered=false but auth was saved), clear them and start fresh.
+  // Stale creds cause Baileys to attempt "logging in" instead of
+  // "registering", which results in a 401 auth failure on reconnect.
+  if (loadedState?.creds && !loadedState.creds.registered) {
+    console.log(`[AuthState] Session ${sessionId}: clearing stale unregistered credentials`);
+    await supabase
+      .from('bot_sessions')
+      .update({ auth_state: null, updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+    loadedState = null;
+  }
+
   const creds: AuthenticationCreds = loadedState?.creds || initAuthCreds();
   const keys: any = loadedState?.keys || {};
+  console.log(`[AuthState] Session ${sessionId}: initialized. registered=${creds.registered} hasKeys=${Object.keys(keys).length > 0}`);
 
   return {
     state: {

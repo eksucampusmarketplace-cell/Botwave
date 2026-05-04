@@ -31,12 +31,19 @@ export async function isWorkerHealthy(url: string): Promise<boolean> {
  * Falls back to null (main service handles it) if no workers respond.
  */
 export async function assignWorkerAsync(): Promise<string | null> {
-  if (!WORKER_URLS.length) return null;
+  if (!WORKER_URLS.length) {
+    console.log('[WORKER] No worker URLs configured — session will run on main service');
+    return null;
+  }
 
+  console.log(`[WORKER] Checking ${WORKER_URLS.length} worker(s) for assignment...`);
   for (let i = 0; i < WORKER_URLS.length; i++) {
     const url = WORKER_URLS[(counter + i) % WORKER_URLS.length];
-    if (await isWorkerHealthy(url)) {
+    const healthy = await isWorkerHealthy(url);
+    console.log(`[WORKER] Health check ${url}: ${healthy ? 'HEALTHY' : 'UNREACHABLE'}`);
+    if (healthy) {
       counter = counter + i + 1;
+      console.log(`[WORKER] Assigned session to ${url}`);
       return url;
     }
   }
@@ -57,12 +64,20 @@ export function assignWorker(): string | null {
 // Returns the next worker URL that is different from the current one.
 // Used for failover when the current worker gets a 401.
 export function getNextWorker(currentWorkerUrl: string | null): string | null {
-  if (WORKER_URLS.length === 0) return null;
+  if (WORKER_URLS.length === 0) {
+    console.log(`[WORKER] getNextWorker: no worker URLs configured`);
+    return null;
+  }
 
   // Filter out the current worker so we always switch to a different IP
   const others = WORKER_URLS.filter(url => url !== currentWorkerUrl);
-  if (others.length === 0) return null; // only one worker, can't switch
+  if (others.length === 0) {
+    console.log(`[WORKER] getNextWorker: no other workers available (current: ${currentWorkerUrl})`);
+    return null;
+  }
 
   // Pick the next one round-robin from the remaining workers
-  return others[counter++ % others.length];
+  const next = others[counter++ % others.length];
+  console.log(`[WORKER] getNextWorker: switching from ${currentWorkerUrl} to ${next}`);
+  return next;
 }
