@@ -1548,27 +1548,33 @@ async function handleDoc(
     return;
   }
 
+  // Use the raw message text (preserves newlines, spacing, formatting exactly)
+  const rawText = context.message.replace(/^!doc(ument)?\s*/i, '');
+
   // Check if replying to a message — use that as content
   const quotedText = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
     context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text || '';
 
-  const fullInput = args.join(' ');
   let title: string;
   let content: string;
 
   if (quotedText) {
-    // Replying to a message: args = title, quoted = content
-    title = fullInput || 'Document';
+    // Replying to a message: what you type = title, quoted message = content
+    title = rawText.trim() || 'Document';
     content = quotedText;
-  } else if (fullInput.includes('|')) {
-    // Pipe separator: title | content
-    const pipeIndex = fullInput.indexOf('|');
-    title = fullInput.slice(0, pipeIndex).trim() || 'Document';
-    content = fullInput.slice(pipeIndex + 1).trim() || title;
+  } else if (rawText.includes('|')) {
+    // Pipe separator: title | content (everything after the first | is content)
+    const pipeIndex = rawText.indexOf('|');
+    title = rawText.slice(0, pipeIndex).trim() || 'Document';
+    content = rawText.slice(pipeIndex + 1).trim();
+    if (!content) {
+      content = title;
+      title = 'Document';
+    }
   } else {
-    // No pipe, no reply: everything is content, auto-title
+    // No pipe, no reply: everything you typed is the content, title is auto
     title = 'Document';
-    content = fullInput;
+    content = rawText;
   }
 
   try {
