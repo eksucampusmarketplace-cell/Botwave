@@ -6,6 +6,7 @@
  */
 
 import { delay } from '../../lib/utils';
+import { getTypingSpeedMultiplier } from './advancedAntiban';
 
 // ─── Emoji Pool ───────────────────────────────────────────────────────────────
 const emojiPool = [
@@ -52,12 +53,13 @@ export async function humanSend(
     // non-critical
   }
 
-  // Step 4 – typing duration (based on text length, max 6s)
+  // Step 4 – typing duration (based on text length, max 6s, varies by time of day)
   const textLength =
     typeof content === 'string'
       ? content.length
       : content?.text?.length ?? 40;
-  const typingTime = Math.min(textLength * 30, 6000);
+  const baseTypingTime = Math.min(textLength * 30, 6000);
+  const typingTime = Math.round(baseTypingTime * getTypingSpeedMultiplier());
   await delay(typingTime);
 
   // Step 5 – pause typing

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (current?.state === 'active') {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — clearing auth and setting needs_reauth`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — clearing auth, lock, and setting needs_reauth`);
           await supabase.from('bot_sessions')
             .update({
               state: 'needs_reauth',
@@ -79,6 +79,9 @@ export async function POST(request: NextRequest) {
               qr_generated_at: null,
               pairing_code: null,
               auth_state: null,
+              locked_by: null,
+              locked_at: null,
+              heartbeat_at: null,
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     // --- Instance logout (WhatsApp terminated the linked device) ---
     if (event === 'logout.instance') {
-      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} — clearing all auth data`);
+      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} — clearing all auth data and locks`);
       await supabase.from('bot_sessions')
         .update({
           state: 'needs_reauth',
@@ -119,6 +122,9 @@ export async function POST(request: NextRequest) {
           qr_generated_at: null,
           pairing_code: null,
           auth_state: null,
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
@@ -234,9 +240,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    console.log(`[EVO-WEBHOOK] Unhandled event=${event} for session=${sessionId} — ignoring`);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('[EVO-WEBHOOK] Error processing webhook:', error);
+    console.error('[EVO-WEBHOOK] CRITICAL ERROR processing webhook:', error);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

@@ -30,12 +30,13 @@ export async function GET() {
 
     if (error) {
       if (error.code === 'PGRST205') {
-        console.warn('bot_sessions table not found, using empty array');
+        console.warn('[API] GET sessions: bot_sessions table not found, using empty array');
         return NextResponse.json({
           success: true,
           data: [],
         });
       }
+      console.error(`[API] GET sessions error: code=${error.code} message=${error.message}`);
       throw error;
     }
 
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
     const { phoneNumber, sessionName } = validation.data;
 
     const workerUrl = await assignWorkerAsync();
+    console.log(`[API] POST session: user=${user.id.slice(0,8)} phone=${phoneNumber} name=${sessionName} assignedWorker=${workerUrl ?? 'main'}`);
 
     const { data: session, error } = await supabase
       .from('bot_sessions')
@@ -118,17 +120,18 @@ export async function POST(request: NextRequest) {
           }),
         });
       } catch (err) {
-        console.error(`Failed to notify worker ${workerUrl}:`, err);
+        console.error(`[API] POST session: FAILED to notify worker ${workerUrl} for session ${session.id}:`, err);
       }
     }
 
+    console.log(`[API] POST session: created ${session.id} state=qr_pending worker=${workerUrl ?? 'main'}`);
     return NextResponse.json({
       success: true,
       data: session,
       message: 'Session created successfully',
     });
   } catch (error: any) {
-    console.error('Create session error:', error);
+    console.error('[API] POST session FAILED:', error);
     const message = error?.message || error?.details || 'Failed to create session';
     const hint = error?.hint || error?.code || undefined;
     return NextResponse.json(
@@ -155,6 +158,7 @@ export async function DELETE(request: NextRequest) {
     const deleteAll = searchParams.get('all') === 'true';
 
     if (deleteAll) {
+      console.log(`[API] DELETE all sessions for user ${user.id.slice(0,8)}`);
       // Fetch all sessions first so we can clean up Evolution API instances
       const { data: sessions } = await supabase
         .from('bot_sessions')
@@ -210,12 +214,13 @@ export async function DELETE(request: NextRequest) {
     const evoKey = process.env.EVOLUTION_API_KEY;
     if (evoUrl && evoKey) {
       try {
+        console.log(`[API] DELETE session: cleaning up Evolution instance ${sessionId}`);
         await fetch(`${evoUrl}/instance/delete/${sessionId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', apikey: evoKey },
         });
-      } catch {
-        // non-critical — instance may not exist on Evolution API
+      } catch (err) {
+        console.log(`[API] DELETE session: Evolution cleanup failed for ${sessionId} (non-critical):`, err);
       }
     }
 
@@ -240,7 +245,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Session deleted successfully',
     });
   } catch (error) {
-    console.error('Delete session error:', error);
+    console.error('[API] DELETE session FAILED:', error);
     return NextResponse.json(
       { error: 'Failed to delete session' },
       { status: 500 }
@@ -296,6 +301,9 @@ export async function PATCH(request: NextRequest) {
         qr_expires_at: null,
         qr_generated_at: null,
         auth_state: null,
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', sessionId)
@@ -339,7 +347,7 @@ export async function PATCH(request: NextRequest) {
       message: 'Session reset for reconnection',
     });
   } catch (error: any) {
-    console.error('Reconnect session error:', error);
+    console.error(`[API] PATCH reconnect FAILED:`, error);
     return NextResponse.json(
       { error: 'Failed to reconnect session' },
       { status: 500 }

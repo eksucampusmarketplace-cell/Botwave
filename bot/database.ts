@@ -99,7 +99,7 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
     return [];
   }
   if (data && data.length > 0) {
-    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'},worker=${s.worker_url ? new URL(s.worker_url).hostname : 'main'})`).join(', '));
+    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'},worker=${s.worker_url ? (() => { try { return new URL(s.worker_url).hostname; } catch { return s.worker_url; } })() : 'main'})`).join(', '));
   }
   return data;
 }
@@ -518,4 +518,243 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
     return null;
   }
   return data?.user_id || null;
+}
+
+// ─── Reminders ────────────────────────────────────────────────────────────────
+
+export async function createReminder(sessionId: string, userJid: string, chatJid: string, message: string, remindAt: Date) {
+  const { data, error } = await supabase
+    .from('reminders')
+    .insert({
+      session_id: sessionId,
+      user_jid: userJid,
+      chat_jid: chatJid,
+      message,
+      remind_at: remindAt.toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[DB] Error creating reminder:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function getDueReminders(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('reminders')
+    .select('*, bot_sessions!inner(state)')
+    .eq('delivered', false)
+    .lte('remind_at', new Date().toISOString())
+    .eq('bot_sessions.state', 'active')
+    .limit(50);
+
+  if (error) {
+    console.error('[DB] Error fetching due reminders:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function markReminderDelivered(reminderId: string) {
+  const { error } = await supabase
+    .from('reminders')
+    .update({ delivered: true })
+    .eq('id', reminderId);
+
+  if (error) {
+    console.error('[DB] Error marking reminder delivered:', error);
+  }
+}
+
+export async function getUserReminders(sessionId: string, userJid: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('reminders')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid)
+    .eq('delivered', false)
+    .order('remind_at', { ascending: true })
+    .limit(10);
+
+  if (error) {
+    console.error('[DB] Error fetching user reminders:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function deleteReminder(reminderId: string, userJid: string) {
+  const { error } = await supabase
+    .from('reminders')
+    .delete()
+    .eq('id', reminderId)
+    .eq('user_jid', userJid);
+
+  if (error) {
+    console.error('[DB] Error deleting reminder:', error);
+    return false;
+  }
+  return true;
+}
+
+// ─── Notes ────────────────────────────────────────────────────────────────────
+
+export async function createNote(sessionId: string, userJid: string, title: string, content: string) {
+  const { data, error } = await supabase
+    .from('notes')
+    .insert({
+      session_id: sessionId,
+      user_jid: userJid,
+      title,
+      content,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[DB] Error creating note:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function getUserNotes(sessionId: string, userJid: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error('[DB] Error fetching user notes:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function deleteNote(noteId: string, userJid: string) {
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', noteId)
+    .eq('user_jid', userJid);
+
+  if (error) {
+    console.error('[DB] Error deleting note:', error);
+    return false;
+  }
+  return true;
+}
+
+// ─── Scheduled Messages ───────────────────────────────────────────────────────
+
+export async function createScheduledMessage(sessionId: string, userJid: string, targetJid: string, message: string, sendAt: Date) {
+  const { data, error } = await supabase
+    .from('scheduled_messages')
+    .insert({
+      session_id: sessionId,
+      user_jid: userJid,
+      target_jid: targetJid,
+      message,
+      send_at: sendAt.toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[DB] Error creating scheduled message:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function getDueScheduledMessages(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('scheduled_messages')
+    .select('*, bot_sessions!inner(state)')
+    .eq('sent', false)
+    .lte('send_at', new Date().toISOString())
+    .eq('bot_sessions.state', 'active')
+    .limit(50);
+
+  if (error) {
+    console.error('[DB] Error fetching due scheduled messages:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function markScheduledMessageSent(messageId: string) {
+  const { error } = await supabase
+    .from('scheduled_messages')
+    .update({ sent: true })
+    .eq('id', messageId);
+
+  if (error) {
+    console.error('[DB] Error marking scheduled message sent:', error);
+  }
+}
+
+export async function getUserScheduledMessages(sessionId: string, userJid: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('scheduled_messages')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid)
+    .eq('sent', false)
+    .order('send_at', { ascending: true })
+    .limit(10);
+
+  if (error) {
+    console.error('[DB] Error fetching user scheduled messages:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function deleteScheduledMessage(messageId: string, userJid: string) {
+  const { error } = await supabase
+    .from('scheduled_messages')
+    .delete()
+    .eq('id', messageId)
+    .eq('user_jid', userJid);
+
+  if (error) {
+    console.error('[DB] Error deleting scheduled message:', error);
+    return false;
+  }
+  return true;
+}
+
+// ─── Session Stats ────────────────────────────────────────────────────────────
+
+export async function getSessionStats(sessionId: string) {
+  const [messagesResult, leaderboardResult, sessionResult] = await Promise.all([
+    supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', sessionId),
+    supabase
+      .from('leaderboard')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('message_count', { ascending: false })
+      .limit(5),
+    supabase
+      .from('bot_sessions')
+      .select('created_at, last_active, state, session_name')
+      .eq('id', sessionId)
+      .single(),
+  ]);
+
+  return {
+    totalMessages: messagesResult.count || 0,
+    topUsers: leaderboardResult.data || [],
+    session: sessionResult.data,
+  };
 }

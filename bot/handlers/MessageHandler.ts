@@ -2,7 +2,7 @@ import { delay } from '../../lib/utils';
 import axios from 'axios';
 import sharp from 'sharp';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -46,6 +46,11 @@ import {
   getActivityConfig,
   shortenForQuietHours,
   naturalDelay,
+  shouldThrottleContact,
+  trackContactReply,
+  getTypingSpeedMultiplier,
+  trackGroupMessage,
+  getGroupReplyDelay,
 } from '../utils/advancedAntiban';
 
 const COMMAND_PREFIX = '!';
@@ -131,6 +136,17 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return; // Silently skip — don't even warn, just act like a human who's busy
     }
 
+    // Track group activity for reply delay calculation
+    if (isGroup) {
+      trackGroupMessage(chatJid);
+    }
+
+    // Per-contact reply frequency throttling (advanced anti-ban)
+    if (shouldThrottleContact(senderJid)) {
+      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+      return;
+    }
+
     // Fetch owner settings for skip probability + AFK
     let ownerSkipProbability: number | undefined;
     let ownerSettings: { afk_enabled?: boolean; afk_message?: string; skip_probability?: number } | null = null;
@@ -154,6 +170,14 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Natural delay variation (advanced anti-ban)
     if (sessionId) {
       await naturalDelay(sessionId);
+    }
+
+    // Group reply delay — simulate reading backlog in busy groups
+    if (isGroup) {
+      const groupDelay = getGroupReplyDelay(chatJid);
+      if (groupDelay > 0) {
+        await delay(groupDelay);
+      }
     }
 
     // Track message for leaderboard (groups only, non-commands)
@@ -190,9 +214,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     await processAutoReply(context, sock);
 
-    // Track for daily cap + mark group replied (advanced anti-ban)
+    // Track for daily cap + mark group replied + contact frequency (advanced anti-ban)
     if (sessionId) trackMessageSent(sessionId);
     if (isGroup) markGroupReplied(chatJid);
+    trackContactReply(senderJid);
   } catch (error) {
     console.error('Error handling message:', error);
   }
@@ -364,6 +389,30 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'pdf':
       await handleDoc(context, args, sock, vars);
       break;
+    case 'remind':
+    case 'reminder':
+    case 'remindme':
+      await handleRemind(context, args, sock);
+      break;
+    case 'note':
+    case 'notes':
+    case 'memo':
+      await handleNote(context, args, sock);
+      break;
+    case 'calc':
+    case 'calculate':
+    case 'math':
+      await handleCalc(context, args, sock);
+      break;
+    case 'stats':
+    case 'status':
+    case 'info':
+      await handleStats(context, sock);
+      break;
+    case 'schedule':
+    case 'sched':
+      await handleSchedule(context, args, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -492,6 +541,13 @@ async function sendHelp(
 !horoscope [sign] - Daily horoscope
 !translate [lang] [text] - Translate text
 !doc [title] | [content] - Create document
+!calc [expr] - Calculator
+!note save/list/view/delete - Notes
+
+*PRODUCTIVITY*
+!remind [time] [msg] - Set reminder
+!schedule [time] [msg] - Schedule message
+!stats - Session statistics
 
 *GAMES*
 !play [game] - Start a game
@@ -1200,6 +1256,295 @@ async function handleDoc(
   } catch (error) {
     console.error('Doc creation error:', error);
     await sendReply(context.chatJid, 'Error creating document.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Remind Command ──────────────────────────────────────────────────────────
+
+function parseTimeString(timeStr: string): Date | null {
+  const now = new Date();
+
+  // Match patterns: 5m, 10min, 1h, 2hr, 30s, 1d, 1day
+  const match = timeStr.match(/^(\d+)\s*(s|sec|m|min|h|hr|hour|d|day)s?$/i);
+  if (match) {
+    const amount = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    const ms = now.getTime();
+
+    if (unit === 's' || unit === 'sec') return new Date(ms + amount * 1000);
+    if (unit === 'm' || unit === 'min') return new Date(ms + amount * 60000);
+    if (unit === 'h' || unit === 'hr' || unit === 'hour') return new Date(ms + amount * 3600000);
+    if (unit === 'd' || unit === 'day') return new Date(ms + amount * 86400000);
+  }
+
+  return null;
+}
+
+async function handleRemind(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Session not available for reminders.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (args.length === 0) {
+    // Show pending reminders
+    const reminders = await getUserReminders(context.sessionId, context.senderJid);
+    if (reminders.length === 0) {
+      await sendReply(context.chatJid, 'You have no pending reminders. Use: !remind 30m Take a break', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    let msg = '*Your Reminders:*\n';
+    reminders.forEach((r, i) => {
+      const timeLeft = Math.max(0, new Date(r.remind_at).getTime() - Date.now());
+      const mins = Math.ceil(timeLeft / 60000);
+      msg += `${i + 1}. "${r.message}" — in ${mins}min\n`;
+    });
+    msg += '\nUse !remind cancel <number> to remove one.';
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // Cancel a reminder: !remind cancel 1
+  if (args[0].toLowerCase() === 'cancel' && args[1]) {
+    const reminders = await getUserReminders(context.sessionId, context.senderJid);
+    const index = parseInt(args[1]) - 1;
+    if (index >= 0 && index < reminders.length) {
+      await deleteReminder(reminders[index].id, context.senderJid);
+      await sendReply(context.chatJid, `Reminder "${reminders[index].message}" cancelled.`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Invalid reminder number. Use !remind to see your list.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // Create a reminder: !remind 30m Take a break
+  const remindAt = parseTimeString(args[0]);
+  if (!remindAt) {
+    await sendReply(context.chatJid, 'Invalid time format. Examples: !remind 5m Drink water, !remind 1h Check email, !remind 2d Follow up', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const message = args.slice(1).join(' ') || 'Reminder!';
+  const reminder = await createReminder(context.sessionId, context.senderJid, context.chatJid, message, remindAt);
+  if (reminder) {
+    const mins = Math.ceil((remindAt.getTime() - Date.now()) / 60000);
+    await sendReply(context.chatJid, `Got it! I'll remind you in ${mins} minute(s): "${message}"`, sock, context.rawMessage.key, context.queue);
+  } else {
+    await sendReply(context.chatJid, 'Failed to set reminder. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Note Command ────────────────────────────────────────────────────────────
+
+async function handleNote(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Session not available for notes.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const subCommand = (args[0] || 'list').toLowerCase();
+
+  if (subCommand === 'list' || args.length === 0) {
+    const notes = await getUserNotes(context.sessionId, context.senderJid);
+    if (notes.length === 0) {
+      await sendReply(context.chatJid, 'No notes saved. Use: !note save <title> | <content>', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    let msg = '*Your Notes:*\n';
+    notes.forEach((n, i) => {
+      const preview = n.content.length > 50 ? n.content.slice(0, 50) + '...' : n.content;
+      msg += `${i + 1}. *${n.title}* — ${preview}\n`;
+    });
+    msg += '\nUse !note view <number> to read, !note delete <number> to remove.';
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (subCommand === 'save' || subCommand === 'add') {
+    const rest = args.slice(1).join(' ');
+    const parts = rest.split('|').map(p => p.trim());
+    const title = parts[0] || 'Untitled';
+    const content = parts[1] || parts[0] || '';
+    if (!content) {
+      await sendReply(context.chatJid, 'Usage: !note save My Title | This is the content', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const note = await createNote(context.sessionId, context.senderJid, title, content);
+    if (note) {
+      await sendReply(context.chatJid, `Note saved: *${title}*`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Failed to save note. Try again.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (subCommand === 'view' || subCommand === 'read') {
+    const notes = await getUserNotes(context.sessionId, context.senderJid);
+    const index = parseInt(args[1]) - 1;
+    if (index >= 0 && index < notes.length) {
+      const n = notes[index];
+      await sendReply(context.chatJid, `*${n.title}*\n\n${n.content}\n\n_Saved: ${new Date(n.created_at).toLocaleDateString()}_`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Invalid note number. Use !note to see your list.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (subCommand === 'delete' || subCommand === 'del' || subCommand === 'remove') {
+    const notes = await getUserNotes(context.sessionId, context.senderJid);
+    const index = parseInt(args[1]) - 1;
+    if (index >= 0 && index < notes.length) {
+      await deleteNote(notes[index].id, context.senderJid);
+      await sendReply(context.chatJid, `Note "${notes[index].title}" deleted.`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Invalid note number. Use !note to see your list.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  await sendReply(context.chatJid, 'Usage: !note save <title> | <content>, !note list, !note view <n>, !note delete <n>', sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Calc Command ────────────────────────────────────────────────────────────
+
+async function handleCalc(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length === 0) {
+    await sendReply(context.chatJid, 'Usage: !calc 2+2, !calc 100/3, !calc sqrt(144)', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const expression = args.join(' ');
+
+  // Sanitize: only allow digits, operators, parentheses, decimal points, and math words
+  const sanitized = expression.replace(/[^0-9+\-*/().%^, a-z]/gi, '');
+  if (!sanitized || sanitized.length > 100) {
+    await sendReply(context.chatJid, 'Invalid expression. Only basic math is supported.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    // Replace common math functions with JS equivalents
+    let jsExpr = sanitized
+      .replace(/\bsqrt\b/gi, 'Math.sqrt')
+      .replace(/\babs\b/gi, 'Math.abs')
+      .replace(/\bround\b/gi, 'Math.round')
+      .replace(/\bfloor\b/gi, 'Math.floor')
+      .replace(/\bceil\b/gi, 'Math.ceil')
+      .replace(/\bpi\b/gi, 'Math.PI')
+      .replace(/\^/g, '**');
+
+    // Block dangerous patterns
+    if (/[a-z]/i.test(jsExpr.replace(/Math\.(sqrt|abs|round|floor|ceil|PI)/g, ''))) {
+      await sendReply(context.chatJid, 'Invalid expression. Only numbers and basic operators allowed.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const fn = new Function(`return (${jsExpr})`);
+    const result = fn();
+
+    if (typeof result !== 'number' || !isFinite(result)) {
+      await sendReply(context.chatJid, `Result: undefined (check your expression)`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const formatted = Number.isInteger(result) ? result.toString() : result.toFixed(6).replace(/\.?0+$/, '');
+    await sendReply(context.chatJid, `${expression} = *${formatted}*`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Could not evaluate that expression. Try something like: !calc 2 * (3 + 4)', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Stats Command ───────────────────────────────────────────────────────────
+
+async function handleStats(context: MessageContext, sock: any): Promise<void> {
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Session info not available.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const stats = await getSessionStats(context.sessionId);
+    let msg = '*Session Stats*\n\n';
+
+    if (stats.session) {
+      msg += `Name: ${stats.session.session_name}\n`;
+      msg += `State: ${stats.session.state}\n`;
+      msg += `Created: ${new Date(stats.session.created_at).toLocaleDateString()}\n`;
+      if (stats.session.last_active) {
+        msg += `Last Active: ${new Date(stats.session.last_active).toLocaleString()}\n`;
+      }
+    }
+
+    msg += `\nTotal Messages: ${stats.totalMessages}\n`;
+
+    if (stats.topUsers.length > 0) {
+      msg += '\n*Top Users:*\n';
+      stats.topUsers.forEach((u, i) => {
+        msg += `${i + 1}. ${u.user_name || u.user_jid.split('@')[0]} — ${u.message_count} msgs\n`;
+      });
+    }
+
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('Stats error:', error);
+    await sendReply(context.chatJid, 'Failed to fetch stats.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Schedule Command ────────────────────────────────────────────────────────
+
+async function handleSchedule(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Session not available for scheduling.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (args.length === 0) {
+    // Show pending scheduled messages
+    const scheduled = await getUserScheduledMessages(context.sessionId, context.senderJid);
+    if (scheduled.length === 0) {
+      await sendReply(context.chatJid, 'No scheduled messages. Use: !schedule 1h Hello future me!', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    let msg = '*Scheduled Messages:*\n';
+    scheduled.forEach((s, i) => {
+      const timeLeft = Math.max(0, new Date(s.send_at).getTime() - Date.now());
+      const mins = Math.ceil(timeLeft / 60000);
+      const preview = s.message.length > 30 ? s.message.slice(0, 30) + '...' : s.message;
+      msg += `${i + 1}. "${preview}" — sends in ${mins}min\n`;
+    });
+    msg += '\nUse !schedule cancel <number> to remove.';
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // Cancel: !schedule cancel 1
+  if (args[0].toLowerCase() === 'cancel' && args[1]) {
+    const scheduled = await getUserScheduledMessages(context.sessionId, context.senderJid);
+    const index = parseInt(args[1]) - 1;
+    if (index >= 0 && index < scheduled.length) {
+      await deleteScheduledMessage(scheduled[index].id, context.senderJid);
+      await sendReply(context.chatJid, 'Scheduled message cancelled.', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Invalid number. Use !schedule to see your list.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // Create: !schedule 1h Hello future me!
+  const sendAt = parseTimeString(args[0]);
+  if (!sendAt) {
+    await sendReply(context.chatJid, 'Invalid time. Examples: !schedule 30m Check in, !schedule 2h Meeting time', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const message = args.slice(1).join(' ') || 'Scheduled message';
+  const scheduled = await createScheduledMessage(context.sessionId, context.senderJid, context.chatJid, message, sendAt);
+  if (scheduled) {
+    const mins = Math.ceil((sendAt.getTime() - Date.now()) / 60000);
+    await sendReply(context.chatJid, `Message scheduled for ${mins} minute(s) from now: "${message}"`, sock, context.rawMessage.key, context.queue);
+  } else {
+    await sendReply(context.chatJid, 'Failed to schedule message. Try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
