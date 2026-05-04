@@ -5,14 +5,12 @@ import {
   makeCacheableSignalKeyStore
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
-import { SELF_URL } from './workerConfig';
-import { createInstance, getPairingCode, getInstanceStatus, deleteInstance } from './evolutionClient';
-import { EvolutionSocketAdapter } from './evolutionSocket';
+import { SELF_URL, getNextWorker } from './workerConfig';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -41,11 +39,13 @@ export class BotWaveBot {
   private messageQueue: MessageQueue | null = null;
   private isReconnecting: boolean = false;
   private isPairingSent: boolean = false;
+  private workerUrl: string | null = null;
 
   constructor(config: BotConfig) {
     this.sessionId = config.sessionId;
     this.userId = config.userId;
     this.phoneNumber = config.phoneNumber;
+    this.workerUrl = SELF_URL || null;
   }
 
   async start(): Promise<void> {
@@ -107,6 +107,12 @@ export class BotWaveBot {
       // Request pairing code here (once per cycle) — this is the right
       // moment because sendNode() requires an active WebSocket.
       if (qr && !this.socket.authState.creds.registered) {
+        // If we already sent a pairing code, ignore subsequent QR refreshes
+        if (this.isPairingSent) {
+          console.log(`[${this.sessionId}] Ignoring QR refresh — pairing code already sent`);
+          return;
+        }
+
         this.qrCode = qr;
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 60 * 1000);
@@ -170,24 +176,39 @@ export class BotWaveBot {
         this.isReady = false;
         this.isPairingSent = false;
 
-        // 401 = credentials rejected by WhatsApp. Do NOT reconnect immediately;
-        // rapid retries worsen IP reputation. Set a 5-minute cooldown.
+        // 401 = credentials rejected by WhatsApp. Try switching to a different
+        // worker IP before giving up. If no other workers, fall back to needs_reauth.
         if (statusCode === 401) {
-          console.log(`Session ${this.sessionId}: 401 auth failure. Setting needs_reauth with 5-min cooldown.`);
           this.isReconnecting = false;
+          this.isPairingSent = false;
           this.socket = null;
-          await updateSessionStatus(this.sessionId, 'needs_reauth');
 
-          const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-          if (appUrl) {
-            try {
-              await fetch(`${appUrl}/api/notify/session-down`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
-              });
-            } catch (err) {
-              console.error('Failed to send session-down notification (non-fatal):', err);
+          // Try to switch to a different worker IP before giving up
+          const nextWorker = getNextWorker(this.workerUrl);
+
+          if (nextWorker) {
+            console.log(`[${this.sessionId}] 401 on worker ${this.workerUrl ?? 'main'} — switching to ${nextWorker}`);
+            this.workerUrl = nextWorker;
+            await updateSessionWorker(this.sessionId, nextWorker);
+            // Session is now qr_pending on the new worker.
+            // That worker's sync loop will pick it up within 5 seconds.
+            console.log(`[${this.sessionId}] Reassigned to ${nextWorker}. New connection will start shortly.`);
+          } else {
+            // No other workers available — fall back to needs_reauth
+            console.log(`[${this.sessionId}] 401 auth failure. No other workers available. Setting needs_reauth.`);
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
+
+            const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+            if (appUrl) {
+              try {
+                await fetch(`${appUrl}/api/notify/session-down`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ sessionId: this.sessionId, userId: this.userId }),
+                });
+              } catch (err) {
+                console.error('Failed to send session-down notification (non-fatal):', err);
+              }
             }
           }
           return;
