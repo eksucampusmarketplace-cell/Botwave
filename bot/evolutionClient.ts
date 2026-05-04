@@ -42,7 +42,8 @@ async function apiFetch(url: string, options: RequestInit): Promise<Response> {
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
+      // Clone before reading so the original body stays usable for callers
+      const text = await res.clone().text().catch(() => '');
       console.error(`[EVO-CLIENT] ${options.method || 'GET'} ${url} -> ${res.status}: ${text.slice(0, 300)}`);
     }
     return res;
