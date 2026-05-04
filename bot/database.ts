@@ -197,6 +197,45 @@ export async function updateSessionWorker(sessionId: string, workerUrl: string |
   }
 }
 
+/**
+ * Find sessions stuck on unresponsive workers and reassign them.
+ * Called periodically from the main service sync loop.
+ */
+export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Promise<boolean>): Promise<number> {
+  const STALE_THRESHOLD_MS = 90_000; // 90 seconds without update
+  const cutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
+
+  const { data: stuck, error } = await supabase
+    .from('bot_sessions')
+    .select('id, worker_url, state, updated_at')
+    .in('state', ['qr_pending', 'pairing_sent', 'needs_reauth'])
+    .not('worker_url', 'is', null)
+    .lt('updated_at', cutoff);
+
+  if (error || !stuck || stuck.length === 0) return 0;
+
+  let recovered = 0;
+  for (const session of stuck) {
+    const healthy = await isWorkerHealthy(session.worker_url);
+    if (!healthy) {
+      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} stuck on dead worker ${session.worker_url} (state=${session.state}, stale since ${session.updated_at}). Reassigning to main service.`);
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          worker_url: null,
+          state: 'qr_pending',
+          pairing_code: null,
+          qr_code: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+
+      if (!updateErr) recovered++;
+    }
+  }
+  return recovered;
+}
+
 export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[], createdByJid: string) {
   const { data, error } = await supabase
     .from('polls')
