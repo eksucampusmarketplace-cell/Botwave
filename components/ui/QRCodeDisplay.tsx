@@ -60,7 +60,7 @@ function SpinnerChar() {
 }
 
 export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, sessionState }: QRCodeDisplayProps) {
-  const [timeLeft, setTimeLeft] = useState(120);
+  const [timeLeft, setTimeLeft] = useState(180);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
   const [showTerminal, setShowTerminal] = useState(!pairingCode);
@@ -75,7 +75,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
   useEffect(() => {
     if (qrGeneratedAt) {
       const generatedAt = new Date(qrGeneratedAt).getTime();
-      const expiresAt = generatedAt + 120 * 1000;
+      const expiresAt = generatedAt + 180 * 1000;
       
       const updateTimer = () => {
         const now = Date.now();
@@ -324,7 +324,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                 <div className="w-full h-1 bg-green/10 overflow-hidden">
                   <motion.div
                     className={`h-full ${timeLeft <= 15 ? 'bg-red-400' : timeLeft <= 30 ? 'bg-yellow-500' : 'bg-green/60'}`}
-                    style={{ width: `${(timeLeft / 120) * 100}%` }}
+                    style={{ width: `${(timeLeft / 180) * 100}%` }}
                     transition={{ duration: 0.5 }}
                   />
                 </div>
