@@ -12,7 +12,7 @@ import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, refreshPairingCode } from './evolutionClient';
+import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, trackInstance, untrackInstance, refreshPairingCode } from './evolutionClient';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -372,11 +372,18 @@ class EvolutionBot {
       }
       console.log(`[EVO] Instance created for ${this.sessionId}`);
 
-      // Ensure webhook is configured (safety net if create didn't set it)
-      await setWebhook(this.sessionId);
+      // DO NOT call setWebhook() here — webhooks are already configured in the
+      // createInstance payload. Calling webhook/set separately crashes the instance
+      // because Evolution API hasn't loaded it into waInstances yet, causing a
+      // "Cannot read properties of undefined (reading 'instanceId')" 500 error
+      // that destroys the instance and leads to 404s on all subsequent calls.
 
       // Register for keep-alive pings so Evolution API doesn't auto-delete
       trackInstance(this.sessionId);
+
+      // Give Evolution API time to fully load the instance into memory
+      // before requesting a connection + pairing code
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Fetch pairing code — getPairingCode now handles its own polling
       const code = await getPairingCode(this.sessionId, this.phoneNumber);
@@ -394,11 +401,13 @@ class EvolutionBot {
         return;
       }
 
-      // Poll Evolution API every 5 seconds to detect connection state changes.
-      // While waiting for pairing, also refresh the pairing code every cycle
-      // because Baileys rotates QR codes every ~20s (each invalidates the old code).
+      // Poll Evolution API to detect connection state changes.
+      // Check state every 5s, but only refresh pairing code every ~20s
+      // to match QR rotation cadence and avoid hammering Evolution API.
       let pairingWaitStart = Date.now();
-      const PAIRING_TIMEOUT_MS = 120_000; // 2 minutes to pair
+      let lastPairingRefresh = Date.now();
+      const PAIRING_TIMEOUT_MS = 180_000; // 3 minutes to pair
+      const PAIRING_REFRESH_INTERVAL = 20_000; // refresh code every 20s
       let lastPairingCode = code;
 
       this.pollHandle = setInterval(async () => {
@@ -416,7 +425,9 @@ class EvolutionBot {
             this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
             this.startPresenceLoop();
           } else if (state === 'connecting' && this.isPairingSent) {
-            // Instance is still connecting — refresh pairing code in case QR rotated
+            // Only refresh pairing code every ~20s (QR rotation cadence)
+            if (Date.now() - lastPairingRefresh < PAIRING_REFRESH_INTERVAL) return;
+            lastPairingRefresh = Date.now();
             const freshCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
             if (freshCode && freshCode !== lastPairingCode) {
               lastPairingCode = freshCode;
