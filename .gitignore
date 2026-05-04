@@ -11,7 +11,8 @@ coverage/
 .idea/
 dist/
 build/
-auth/
+# Baileys auth state directories (not API routes)
+/auth/
 bot/node_modules/
 *.pem
 *.key
