@@ -36,40 +36,66 @@ export async function humanSend(
   msgKey: any,
   content: any,
 ): Promise<void> {
-  // Step 1 – mark as read
+  // Step 1 – mark as read (with small natural delay before reading)
+  const preReadDelay = 300 + Math.random() * 700; // 0.3-1s before even "seeing" it
+  await delay(preReadDelay);
   try {
     await sock.readMessages([msgKey]);
   } catch {
     // non-critical
   }
 
-  // Step 2 – seen delay 2-5s
-  await delay(2000 + Math.random() * 3000);
+  // Step 2 – "reading" delay — simulate reading the message before responding
+  // Shorter for simple messages, longer for longer ones
+  const msgLength = typeof content === 'string' ? content.length : (content?.text?.length ?? 40);
+  const incomingLength = 20; // rough average incoming message length
+  const readTime = Math.min(1500 + incomingLength * 40 + Math.random() * 2000, 5000);
+  await delay(readTime);
 
-  // Step 3 – start composing
+  // Step 3 – "thinking" pause before typing (humans don't type instantly)
+  const thinkTime = 500 + Math.random() * 1500;
+  await delay(thinkTime);
+
+  // Step 4 – show typing indicator ("composing")
   try {
     await sock.sendPresenceUpdate('composing', jid);
   } catch {
     // non-critical
   }
 
-  // Step 4 – typing duration (based on text length, max 6s, varies by time of day)
-  const textLength =
-    typeof content === 'string'
-      ? content.length
-      : content?.text?.length ?? 40;
-  const baseTypingTime = Math.min(textLength * 30, 6000);
-  const typingTime = Math.round(baseTypingTime * getTypingSpeedMultiplier());
+  // Step 5 – typing duration (based on response length, varies by time of day)
+  // Average human types ~40 WPM = ~200 chars/min = ~3.3 chars/sec
+  // But on phone it's slower: ~25 WPM = ~125 chars/min = ~2 chars/sec
+  const charsPerSecond = 2 + Math.random() * 1.5; // 2-3.5 chars/sec
+  const baseTypingTime = Math.min((msgLength / charsPerSecond) * 1000, 8000);
+  const typingTime = Math.max(800, Math.round(baseTypingTime * getTypingSpeedMultiplier()));
   await delay(typingTime);
 
-  // Step 5 – pause typing
+  // Step 6 – brief pause after typing (reviewing before send)
+  // 20% chance of a longer "re-read" pause
+  if (Math.random() < 0.2) {
+    try {
+      await sock.sendPresenceUpdate('paused', jid);
+    } catch { /* non-critical */ }
+    await delay(800 + Math.random() * 1200);
+    // Resume typing briefly
+    try {
+      await sock.sendPresenceUpdate('composing', jid);
+    } catch { /* non-critical */ }
+    await delay(300 + Math.random() * 500);
+  }
+
+  // Step 7 – stop typing
   try {
     await sock.sendPresenceUpdate('paused', jid);
   } catch {
     // non-critical
   }
 
-  // Step 6 – send
+  // Step 8 – tiny delay before send (finger moving to send button)
+  await delay(100 + Math.random() * 300);
+
+  // Step 9 – send
   const messageContent =
     typeof content === 'string' ? { text: content } : content;
   await sock.sendMessage(jid, messageContent);

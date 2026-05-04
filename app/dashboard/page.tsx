@@ -95,6 +95,9 @@ export default function DashboardPage() {
             if (refreshed) {
               setActiveSession(refreshed);
               activeSessionRef.current = refreshed;
+              if (refreshed.state === 'active') {
+                setShowQR(false);
+              }
             }
           }
         } catch (err) {
@@ -393,6 +396,7 @@ export default function DashboardPage() {
           qrCode={activeSession?.qr_code}
           qrGeneratedAt={activeSession?.qr_generated_at}
           pairingCode={activeSession?.pairing_code}
+          sessionState={activeSession?.state}
         />
       )}
 

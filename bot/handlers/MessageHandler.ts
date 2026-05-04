@@ -1,6 +1,8 @@
 import { delay } from '../../lib/utils';
 import axios from 'axios';
 import sharp from 'sharp';
+import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
+import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
@@ -51,11 +53,22 @@ import {
   getTypingSpeedMultiplier,
   trackGroupMessage,
   getGroupReplyDelay,
+  checkBurstAndDelay,
+  simulateGoingOnline,
+  shouldSilentlyIgnore,
+  trackWhoSentLast,
+  shouldAvoidDoubleText,
 } from '../utils/advancedAntiban';
 
 const COMMAND_PREFIX = '!';
 const RATE_LIMIT_WINDOW = 60000;
 const MAX_MESSAGES_PER_WINDOW = 10;
+
+function normalizeJid(jid: string): string {
+  // Remove the device suffix (:XX) from JIDs for comparison
+  // e.g. "1234567890:12@s.whatsapp.net" → "1234567890@s.whatsapp.net"
+  return jid.replace(/:\d+@/, '@');
+}
 
 interface MessageContext {
   senderJid: string;
@@ -71,15 +84,74 @@ interface MessageContext {
 
 const userMessageTracker: Map<string, number[]> = new Map();
 const sessionMessageTracker: Map<string, number[]> = new Map();
-const gameStates: Map<string, { target: number; attempts: number; userJid: string }> = new Map();
+interface NumberGuessGame { type: 'numberguess'; target: number; attempts: number; userJid: string }
+interface TriviaGame { type: 'trivia'; question: string; answer: string; options: string[]; userJid: string }
+interface HangmanGame { type: 'hangman'; word: string; guessed: Set<string>; wrongGuesses: number; userJid: string }
+interface WordChainGame { type: 'wordchain'; lastWord: string; usedWords: Set<string>; userJid: string }
+type GameState = NumberGuessGame | TriviaGame | HangmanGame | WordChainGame;
+const gameStates: Map<string, GameState> = new Map();
+
+const triviaQuestions = [
+  { q: 'What planet is known as the Red Planet?', a: 'mars', opts: ['Venus', 'Mars', 'Jupiter', 'Saturn'] },
+  { q: 'How many continents are there?', a: '7', opts: ['5', '6', '7', '8'] },
+  { q: 'What is the chemical symbol for gold?', a: 'au', opts: ['Go', 'Gd', 'Au', 'Ag'] },
+  { q: 'Which ocean is the largest?', a: 'pacific', opts: ['Atlantic', 'Indian', 'Pacific', 'Arctic'] },
+  { q: 'What year did the Titanic sink?', a: '1912', opts: ['1905', '1912', '1920', '1898'] },
+  { q: 'What is the smallest country in the world?', a: 'vatican', opts: ['Monaco', 'Vatican City', 'San Marino', 'Liechtenstein'] },
+  { q: 'How many bones are in the human body?', a: '206', opts: ['186', '206', '216', '256'] },
+  { q: 'What gas do plants absorb from the atmosphere?', a: 'carbon dioxide', opts: ['Oxygen', 'Nitrogen', 'Carbon Dioxide', 'Hydrogen'] },
+  { q: 'Which animal is the largest mammal?', a: 'blue whale', opts: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippo'] },
+  { q: 'What is the hardest natural substance?', a: 'diamond', opts: ['Gold', 'Iron', 'Diamond', 'Platinum'] },
+  { q: 'In which country is the Great Barrier Reef?', a: 'australia', opts: ['Indonesia', 'Australia', 'Philippines', 'Brazil'] },
+  { q: 'What is the speed of light in km/s (approx)?', a: '300000', opts: ['150,000', '200,000', '300,000', '400,000'] },
+  { q: 'Who painted the Mona Lisa?', a: 'da vinci', opts: ['Michelangelo', 'Da Vinci', 'Raphael', 'Picasso'] },
+  { q: 'What is the capital of Japan?', a: 'tokyo', opts: ['Osaka', 'Tokyo', 'Kyoto', 'Yokohama'] },
+  { q: 'How many sides does a hexagon have?', a: '6', opts: ['5', '6', '7', '8'] },
+];
+
+const hangmanWords = [
+  'javascript', 'python', 'whatsapp', 'computer', 'programming', 'algorithm',
+  'database', 'keyboard', 'internet', 'software', 'hardware', 'function',
+  'variable', 'elephant', 'chocolate', 'universe', 'adventure', 'butterfly',
+  'telescope', 'dinosaur', 'pineapple', 'waterfall', 'hurricane', 'astronomy',
+];
 const spamTracker: Map<string, { count: number; lastTime: number; warned: boolean }> = new Map();
 const SPAM_THRESHOLD = 5; // messages in 10 seconds = spam
 const SPAM_WINDOW = 10000;
+
+// Message deduplication — Baileys can deliver the same message event twice
+// (e.g. on reconnect, sync, or WebSocket hiccup). Track recent message IDs.
+const processedMessages = new Set<string>();
+const DEDUP_MAX_SIZE = 500;
+const DEDUP_CLEANUP_AT = 600;
+
+function isDuplicateMessage(msgId: string): boolean {
+  if (processedMessages.has(msgId)) return true;
+  processedMessages.add(msgId);
+  // Periodic cleanup to avoid memory leak
+  if (processedMessages.size > DEDUP_CLEANUP_AT) {
+    const entries = Array.from(processedMessages);
+    const toRemove = entries.slice(0, entries.length - DEDUP_MAX_SIZE);
+    toRemove.forEach(id => processedMessages.delete(id));
+  }
+  return false;
+}
+
+// AFK auto-reply cooldown per user — don't spam the same person
+// Key: `${sessionId}:${senderJid}` → last reply timestamp
+const afkReplyCooldown: Map<string, number> = new Map();
+const AFK_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour default
 
 export async function handleMessage(message: any, sock: any, queue?: MessageQueue): Promise<void> {
   try {
     const chatJid = message.key.remoteJid;
     const fromMe = message.key.fromMe;
+    const msgId = message.key.id;
+
+    // Dedup: skip if we already processed this exact message
+    if (msgId && isDuplicateMessage(msgId)) {
+      return;
+    }
 
     // Extract text to check for command prefix
     const content =
@@ -96,6 +168,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const senderJid = message.key.participant || chatJid;
     const isGroup = chatJid.endsWith('@g.us');
+    const isCommand = content.startsWith(COMMAND_PREFIX);
     const pushName = message.pushName || 'User';
     const sessionId = (sock as any).sessionId || queue?.['sessionId'];
     const userId = (sock as any).userId;
@@ -112,6 +185,9 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       queue,
     };
 
+    // Track who sent last for double-text avoidance
+    if (!fromMe) trackWhoSentLast(chatJid, false);
+
     // Session-level rate limit
     if (sessionId && isSessionRateLimited(sessionId)) {
       console.log(`Session rate limited: ${sessionId}`);
@@ -121,6 +197,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Daily cap + warmup check (advanced anti-ban)
     if (sessionId && isDailyCapReached(sessionId)) {
       console.log(`Daily cap reached for session: ${sessionId}`);
+      return;
+    }
+
+    // Smart reply filtering — skip ultra-short msgs, emoji-only, etc in groups
+    if (!isCommand && shouldSilentlyIgnore(isGroup, content, senderJid)) {
+      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
       return;
     }
 
@@ -136,10 +218,19 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return; // Silently skip — don't even warn, just act like a human who's busy
     }
 
+    // Avoid double-texting in non-command scenarios
+    if (!isCommand && shouldAvoidDoubleText(chatJid)) {
+      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+      return;
+    }
+
     // Track group activity for reply delay calculation
     if (isGroup) {
       trackGroupMessage(chatJid);
     }
+
+    // Simulate going online naturally before responding
+    await simulateGoingOnline(sock);
 
     // Per-contact reply frequency throttling (advanced anti-ban)
     if (shouldThrottleContact(senderJid)) {
@@ -158,7 +249,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     // Read-but-skip probability (advanced anti-ban) — owner-controlled
-    const isCommand = content.startsWith(COMMAND_PREFIX);
     if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
       // Mark as read but don't respond — like a real person ignoring a message
       try {
@@ -170,6 +260,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Natural delay variation (advanced anti-ban)
     if (sessionId) {
       await naturalDelay(sessionId);
+
+      // Burst detection — if bot is replying too fast, add cooldown
+      const burstDelay = checkBurstAndDelay(sessionId);
+      if (burstDelay > 0) {
+        await delay(burstDelay);
+      }
     }
 
     // Group reply delay — simulate reading backlog in busy groups
@@ -190,34 +286,64 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     // Private chat AFK auto-response: if someone DMs the bot owner and
     // the owner has AFK enabled, respond with the AFK message.
-    if (!isGroup && sessionId && ownerSettings?.afk_enabled) {
+    // ONLY for non-command messages — commands should get their normal response.
+    if (!isGroup && !isCommand && sessionId) {
       const ownerJid = (sock as any).user?.id;
       if (ownerJid && senderJid !== ownerJid) {
-        const afkMsg = ownerSettings.afk_message || 'I am currently away';
-        await sendReply(
-          chatJid,
-          `I'm currently AFK. ${afkMsg}`,
-          sock,
-          message.key,
-          queue,
-        );
+        // Check afk_states table (not user_settings) for the owner's AFK status
+        try {
+          const ownerAfk = await getAfkState(sessionId, ownerJid);
+          if (ownerAfk?.is_afk) {
+            // Per-user cooldown — don't spam the same person
+            const cooldownKey = `${sessionId}:${senderJid}`;
+            const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
+            if (Date.now() - lastReply > AFK_COOLDOWN_MS) {
+              afkReplyCooldown.set(cooldownKey, Date.now());
+              const afkMsg = ownerAfk.afk_reason || 'I am currently away';
+              const response = pickResponse(afkReplies, { name: pushName || 'User', time: currentTimeStr() });
+              await sendReply(
+                chatJid,
+                `${response}${ownerAfk.afk_reason ? `\n_Reason: ${ownerAfk.afk_reason}_` : ''}`,
+                sock,
+                message.key,
+                queue,
+              );
+            }
+          }
+        } catch { /* afk check non-critical */ }
       }
     }
 
-    if (!isUserRateLimited(senderJid)) {
+    // Owner-only command restriction:
+    // Only the bot owner (the WhatsApp account linked to this session) can use ! commands.
+    // Other users' command messages are silently ignored (they still get AFK/auto-replies above).
+    const ownerJid = (sock as any).user?.id;
+    const isOwner = fromMe || (ownerJid && normalizeJid(senderJid) === normalizeJid(ownerJid));
+
+    if (isCommand && !isOwner) {
+      // Non-owner tried to use a command — silently ignore
+      // They already got AFK auto-reply above if applicable
+      return;
+    }
+
+    if (isCommand && !isUserRateLimited(senderJid)) {
       await processCommand(context, sock);
-    } else {
+    } else if (isCommand) {
       console.log(`User rate limited: ${senderJid}`);
       const response = pickResponse(spamWarnings, { name: pushName });
       await sendReply(chatJid, response, sock, message.key, queue);
     }
 
-    await processAutoReply(context, sock);
+    // Auto-reply only for non-command messages
+    if (!isCommand) {
+      await processAutoReply(context, sock);
+    }
 
     // Track for daily cap + mark group replied + contact frequency (advanced anti-ban)
     if (sessionId) trackMessageSent(sessionId);
     if (isGroup) markGroupReplied(chatJid);
     trackContactReply(senderJid);
+    trackWhoSentLast(chatJid, true); // Track that bot was last to send
   } catch (error) {
     console.error('Error handling message:', error);
   }
@@ -474,12 +600,22 @@ async function sendReply(
     processedContent = { ...processedContent, text: addMessageJitter(processedContent.text) };
   }
 
+  // Always show typing indicator before sending — even when using queue
+  try {
+    await sock.sendPresenceUpdate('composing', jid);
+  } catch { /* non-critical */ }
+
   if (queue) {
     const messageContent = typeof processedContent === 'string' ? { text: processedContent } : processedContent;
     await queue.enqueue(jid, messageContent);
   } else {
     await humanSend(sock, jid, msgKey, processedContent);
   }
+
+  // Clear typing indicator after send
+  try {
+    await sock.sendPresenceUpdate('paused', jid);
+  } catch { /* non-critical */ }
 }
 
 // ─── Auto Reply ──────────────────────────────────────────────────────────────
@@ -528,39 +664,44 @@ async function sendHelp(
   const helpMessage = `${intro}
 
 *GENERAL*
-!help - Show commands
-!ping - Check bot status
-!sticker - Create sticker from image
-!joke - Random joke
-!quote - Inspirational quote
+!help — Show this menu
+!ping — Check bot status
+!sticker — Image/video/GIF to sticker
+!sticker crop/circle/rounded — Crop modes
+!joke — Random joke
+!quote — Inspirational quote
 
 *TOOLS*
-!ai [msg] - AI chat (Groq)
-!weather [city] - Weather info
-!define [word] - Dictionary lookup
-!horoscope [sign] - Daily horoscope
-!translate [lang] [text] - Translate text
-!doc [title] | [content] - Create document
-!calc [expr] - Calculator
-!note save/list/view/delete - Notes
+!ai [msg] — AI chat (Groq)
+!weather [city] — Weather info
+!define [word] — Dictionary lookup
+!horoscope [sign] — Daily horoscope
+!translate [lang] [text] — Translate text
+!doc [title] | [content] — Create .docx file
+!calc [expr] — Calculator (sqrt, pi, etc)
+!note save/list/view/delete — Notes
 
 *PRODUCTIVITY*
-!remind [time] [msg] - Set reminder
-!schedule [time] [msg] - Schedule message
-!stats - Session statistics
+!remind [time] [msg] — Set reminder (5m, 1h, 2d)
+!schedule [time] [msg] — Schedule message
+!stats — Bot status & session info
 
 *GAMES*
-!play [game] - Start a game
-!trivia - Trivia questions
-!hangman - Word guessing
-!wordchain - Chain words
-!poll [q] | [opts] - Create poll
-!vote [n] - Vote on poll
-!leaderboard - Top users
+!play numberguess — Guess the number (1-100)
+!trivia — Multiple choice trivia
+!hangman — Guess the word letter by letter
+!wordchain — Chain words by last letter
+!answer [text] — Answer active game
+!poll [q] | [opts] — Create poll
+!vote [n] — Vote on poll
+!leaderboard — Top active users
 
 *SOCIAL*
-!afk [reason] - Set AFK status
-!download [url] - Media download`;
+!afk [reason] — Set AFK (auto-reply when away)
+!afk off — Disable AFK
+!download [url] — Download media from URL
+
+_Only the bot owner can use commands._`;
 
   await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
 }
@@ -583,19 +724,82 @@ async function sendUnknownCommand(
   await sendReply(context.chatJid, response, sock, context.rawMessage.key, context.queue);
 }
 
+async function downloadMedia(message: any, sock: any): Promise<Buffer | null> {
+  // Try Baileys standalone download first (works with real Baileys sockets)
+  try {
+    const buffer = await baileysDownloadMedia(message, 'buffer', {});
+    if (buffer) return Buffer.from(buffer);
+  } catch {
+    // Fallback below
+  }
+
+  // Fallback: try sock.downloadMediaMessage (works with EvolutionSocketAdapter)
+  try {
+    if (typeof (sock as any).downloadMediaMessage === 'function') {
+      const buffer = await (sock as any).downloadMediaMessage(message, 'buffer');
+      if (buffer) return buffer;
+    }
+  } catch {
+    // Fallback below
+  }
+
+  // Last resort: try to get URL directly from message and fetch
+  try {
+    const msg = message?.message;
+    const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
+    for (const type of mediaTypes) {
+      const mediaMsg = msg?.[type];
+      if (mediaMsg?.url && typeof mediaMsg.url === 'string') {
+        const res = await axios.get(mediaMsg.url, { responseType: 'arraybuffer', timeout: 15000 });
+        return Buffer.from(res.data);
+      }
+    }
+  } catch {
+    // All methods failed
+  }
+
+  return null;
+}
+
 async function createSticker(
   context: MessageContext,
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   try {
-    const imageMessage = context.rawMessage.message?.imageMessage ||
-      context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+    const args = context.message.replace(/^!sticker\s*/i, '').trim().split(/\s+/);
+    const subcommand = args[0]?.toLowerCase() || '';
 
-    if (!imageMessage) {
+    // Determine media message — direct image/video or quoted
+    const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const hasImage = !!(context.rawMessage.message?.imageMessage || quotedMsg?.imageMessage);
+    const hasVideo = !!(context.rawMessage.message?.videoMessage || quotedMsg?.videoMessage);
+    const hasStickerMedia = !!(context.rawMessage.message?.stickerMessage || quotedMsg?.stickerMessage);
+
+    // Parse sticker type from args
+    let stickerType: StickerTypes = StickerTypes.FULL;
+    let packName = 'BotWave';
+    let authorName = context.pushName || 'User';
+
+    if (['crop', 'cropped'].includes(subcommand)) stickerType = StickerTypes.CROPPED;
+    else if (['circle', 'round'].includes(subcommand)) stickerType = StickerTypes.CIRCLE;
+    else if (['rounded'].includes(subcommand)) stickerType = StickerTypes.ROUNDED;
+    else if (['full'].includes(subcommand)) stickerType = StickerTypes.FULL;
+    else if (subcommand === 'pack' && args.length > 1) {
+      packName = args.slice(1).join(' ');
+    }
+
+    // No media provided — show usage
+    if (!hasImage && !hasVideo && !hasStickerMedia) {
       await sendReply(
         context.chatJid,
-        'Send or reply to an image with *!sticker* to convert it!',
+        `*STICKER MAKER*\n\nSend or reply to an image/video/GIF with:\n\n` +
+        `*!sticker* — Full sticker (default)\n` +
+        `*!sticker crop* — Cropped to square\n` +
+        `*!sticker circle* — Circular crop\n` +
+        `*!sticker rounded* — Rounded corners\n` +
+        `*!sticker pack [name]* — Set pack name\n\n` +
+        `_Supports: images, short videos, GIFs_`,
         sock,
         context.rawMessage.key,
         context.queue,
@@ -603,20 +807,26 @@ async function createSticker(
       return;
     }
 
-    const imageBuffer = await (sock as any).downloadMediaMessage(context.rawMessage, 'buffer');
-    if (!imageBuffer) {
-      await sendReply(context.chatJid, 'Could not download image. Try again!', sock, context.rawMessage.key, context.queue);
+    // Use the quoted message if replying, otherwise the direct message
+    const mediaMessage = quotedMsg
+      ? { ...context.rawMessage, message: quotedMsg }
+      : context.rawMessage;
+
+    const mediaBuffer = await downloadMedia(mediaMessage, sock);
+    if (!mediaBuffer) {
+      await sendReply(context.chatJid, 'Could not download the media. Please try sending the image again.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
-    let stickerBuffer = await sharp(imageBuffer)
-      .resize(512, 512, { fit: 'cover' })
-      .webp()
-      .toBuffer();
+    // Use wa-sticker-formatter for proper sticker creation with metadata
+    const sticker = new Sticker(mediaBuffer, {
+      pack: packName,
+      author: authorName,
+      type: stickerType,
+      quality: 70,
+    });
 
-    // Media fingerprint jitter — make every sticker unique at the binary level
-    const { jitterMediaBuffer } = await import('../utils/advancedAntiban');
-    stickerBuffer = jitterMediaBuffer(stickerBuffer);
+    const stickerBuffer = await sticker.toBuffer();
 
     await sendReply(context.chatJid, { sticker: stickerBuffer }, sock, context.rawMessage.key, context.queue);
 
@@ -639,8 +849,8 @@ async function createSticker(
 
     await sendReply(context.chatJid, reply, sock, context.rawMessage.key, context.queue);
   } catch (error) {
-    console.error('Error creating sticker:', error);
-    await sendReply(context.chatJid, 'Error creating sticker. Please try again.', sock, context.rawMessage.key, context.queue);
+    console.error('[STICKER] Error creating sticker:', error);
+    await sendReply(context.chatJid, 'Error creating sticker. Make sure the image/video is valid and try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
@@ -740,35 +950,42 @@ async function handleWeatherCommand(
   const city = args.join(' ');
   const apiKey = process.env.OPENWEATHER_API_KEY;
 
-  if (!apiKey) {
-    await sendReply(
-      context.chatJid,
-      `Weather API key not configured. Contact the bot admin.`,
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
-    return;
-  }
-
   try {
     const intro = pickResponse(weatherReplies, vars, false);
-    await sendReply(context.chatJid, 'Fetching weather...', sock, context.rawMessage.key, context.queue);
 
-    const response = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`,
-    );
-
-    const data = response.data;
-    const weatherInfo = `${intro}\n\n*${data.name}, ${data.sys.country}*\n\nTemp: ${data.main.temp}°C\nHumidity: ${data.main.humidity}%\nWind: ${data.wind.speed} m/s\nCondition: ${data.weather[0].description}\nFeels like: ${data.main.feels_like}°C`;
-
-    await sendReply(context.chatJid, weatherInfo, sock, context.rawMessage.key, context.queue);
+    if (apiKey) {
+      // OpenWeatherMap API (if key configured)
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`,
+        { timeout: 10000 },
+      );
+      const data = response.data;
+      const weatherInfo = `${intro}\n\n*${data.name}, ${data.sys.country}*\n\nTemp: ${data.main.temp}°C\nHumidity: ${data.main.humidity}%\nWind: ${data.wind.speed} m/s\nCondition: ${data.weather[0].description}\nFeels like: ${data.main.feels_like}°C`;
+      await sendReply(context.chatJid, weatherInfo, sock, context.rawMessage.key, context.queue);
+    } else {
+      // Free fallback: wttr.in (no API key needed)
+      const response = await axios.get(
+        `https://wttr.in/${encodeURIComponent(city)}?format=j1`,
+        { timeout: 10000 },
+      );
+      const data = response.data;
+      const current = data?.current_condition?.[0];
+      const area = data?.nearest_area?.[0];
+      if (!current) {
+        await sendReply(context.chatJid, `Could not get weather for "${city}".`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      const areaName = area?.areaName?.[0]?.value || city;
+      const country = area?.country?.[0]?.value || '';
+      const weatherInfo = `${intro}\n\n*${areaName}${country ? ', ' + country : ''}*\n\nTemp: ${current.temp_C}°C\nHumidity: ${current.humidity}%\nWind: ${current.windspeedKmph} km/h\nCondition: ${current.weatherDesc?.[0]?.value || 'N/A'}\nFeels like: ${current.FeelsLikeC}°C`;
+      await sendReply(context.chatJid, weatherInfo, sock, context.rawMessage.key, context.queue);
+    }
   } catch (error: any) {
     if (error.response?.status === 404) {
       await sendReply(context.chatJid, `City "${city}" not found.`, sock, context.rawMessage.key, context.queue);
     } else {
       console.error('Weather API error:', error);
-      await sendReply(context.chatJid, 'Weather service error.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'Weather service temporarily unavailable. Try again later.', sock, context.rawMessage.key, context.queue);
     }
   }
 }
@@ -803,7 +1020,7 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
   switch (gameType) {
     case 'numberguess': {
       const targetNumber = Math.floor(Math.random() * 100) + 1;
-      gameStates.set(context.chatJid, { target: targetNumber, attempts: 0, userJid: context.senderJid });
+      gameStates.set(context.chatJid, { type: 'numberguess', target: targetNumber, attempts: 0, userJid: context.senderJid });
       await sendReply(
         context.chatJid,
         "I'm thinking of a number between 1 and 100.\nUse *!answer [number]* to guess!",
@@ -813,15 +1030,29 @@ async function startGame(context: MessageContext, args: string[], sock: any): Pr
       );
       break;
     }
-    case 'trivia':
-      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Trivia mode! Stay tuned for questions.`, sock, context.rawMessage.key, context.queue);
+    case 'trivia': {
+      const trivia = triviaQuestions[Math.floor(Math.random() * triviaQuestions.length)];
+      gameStates.set(context.chatJid, { type: 'trivia', question: trivia.q, answer: trivia.a, options: trivia.opts, userJid: context.senderJid });
+      let msg = `*TRIVIA TIME!*\n\n${trivia.q}\n\n`;
+      trivia.opts.forEach((opt, i) => { msg += `${i + 1}. ${opt}\n`; });
+      msg += '\nUse *!answer [number or text]* to answer!';
+      await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
       break;
-    case 'hangman':
-      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Hangman! Guess a letter with !answer [letter]`, sock, context.rawMessage.key, context.queue);
+    }
+    case 'hangman': {
+      const word = hangmanWords[Math.floor(Math.random() * hangmanWords.length)];
+      gameStates.set(context.chatJid, { type: 'hangman', word, guessed: new Set<string>(), wrongGuesses: 0, userJid: context.senderJid });
+      const display = word.split('').map(() => '_').join(' ');
+      await sendReply(context.chatJid, `*HANGMAN*\n\n${display}\n\nWord: ${word.length} letters\nWrong guesses left: 6\n\nGuess a letter with *!answer [letter]*`, sock, context.rawMessage.key, context.queue);
       break;
-    case 'wordchain':
-      await sendReply(context.chatJid, `${pickResponse(gameStartReplies, { name: context.senderJid.split('@')[0] })} Word Chain! Send a word starting with the last letter of the previous word.`, sock, context.rawMessage.key, context.queue);
+    }
+    case 'wordchain': {
+      const starters = ['apple', 'house', 'music', 'table', 'river', 'light', 'ocean', 'stone'];
+      const starter = starters[Math.floor(Math.random() * starters.length)];
+      gameStates.set(context.chatJid, { type: 'wordchain', lastWord: starter, usedWords: new Set([starter]), userJid: context.senderJid });
+      await sendReply(context.chatJid, `*WORD CHAIN*\n\nI start with: *${starter}*\n\nYour turn! Send a word starting with the letter *${starter[starter.length - 1].toUpperCase()}*\n\nUse *!answer [word]*`, sock, context.rawMessage.key, context.queue);
       break;
+    }
     default:
       await sendReply(
         context.chatJid,
@@ -845,21 +1076,100 @@ async function handleAnswer(context: MessageContext, args: string[], sock: any):
     return;
   }
 
-  const guess = parseInt(args[0], 10);
-  if (isNaN(guess)) {
-    await sendReply(context.chatJid, 'Please provide a valid number', sock, context.rawMessage.key, context.queue);
-    return;
-  }
+  const answer = args.join(' ').toLowerCase().trim();
 
-  game.attempts++;
-
-  if (guess === game.target) {
-    gameStates.delete(context.chatJid);
-    await sendReply(context.chatJid, `CORRECT! You got it in ${game.attempts} attempts!`, sock, context.rawMessage.key, context.queue);
-  } else if (guess < game.target) {
-    await sendReply(context.chatJid, 'Too low! Try again', sock, context.rawMessage.key, context.queue);
-  } else {
-    await sendReply(context.chatJid, 'Too high! Try again', sock, context.rawMessage.key, context.queue);
+  switch (game.type) {
+    case 'numberguess': {
+      const guess = parseInt(args[0], 10);
+      if (isNaN(guess)) {
+        await sendReply(context.chatJid, 'Please provide a valid number', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      game.attempts++;
+      if (guess === game.target) {
+        gameStates.delete(context.chatJid);
+        await sendReply(context.chatJid, `CORRECT! The number was ${game.target}. You got it in ${game.attempts} attempt(s)!`, sock, context.rawMessage.key, context.queue);
+      } else if (guess < game.target) {
+        await sendReply(context.chatJid, `Too low! Try higher. (Attempt ${game.attempts})`, sock, context.rawMessage.key, context.queue);
+      } else {
+        await sendReply(context.chatJid, `Too high! Try lower. (Attempt ${game.attempts})`, sock, context.rawMessage.key, context.queue);
+      }
+      break;
+    }
+    case 'trivia': {
+      // Accept option number or text match
+      const optionNum = parseInt(answer, 10);
+      const isCorrect =
+        answer === game.answer ||
+        answer.includes(game.answer) ||
+        game.answer.includes(answer) ||
+        (optionNum >= 1 && optionNum <= game.options.length && game.options[optionNum - 1].toLowerCase().includes(game.answer));
+      gameStates.delete(context.chatJid);
+      if (isCorrect) {
+        await sendReply(context.chatJid, `Correct! The answer is *${game.options.find(o => o.toLowerCase().includes(game.answer)) || game.answer}*`, sock, context.rawMessage.key, context.queue);
+      } else {
+        await sendReply(context.chatJid, `Wrong! The correct answer was *${game.options.find(o => o.toLowerCase().includes(game.answer)) || game.answer}*\n\nTry again with !trivia`, sock, context.rawMessage.key, context.queue);
+      }
+      break;
+    }
+    case 'hangman': {
+      const letter = answer[0]?.toLowerCase();
+      if (!letter || !/[a-z]/.test(letter)) {
+        await sendReply(context.chatJid, 'Please guess a single letter (a-z)', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      if (game.guessed.has(letter)) {
+        await sendReply(context.chatJid, `You already guessed "${letter}". Try a different letter.`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      game.guessed.add(letter);
+      if (!game.word.includes(letter)) {
+        game.wrongGuesses++;
+      }
+      const display = game.word.split('').map(c => game.guessed.has(c) ? c : '_').join(' ');
+      const guessedLetters = Array.from(game.guessed).join(', ');
+      if (!display.includes('_')) {
+        gameStates.delete(context.chatJid);
+        await sendReply(context.chatJid, `*YOU WIN!*\n\n${display}\n\nThe word was *${game.word}*! Wrong guesses: ${game.wrongGuesses}`, sock, context.rawMessage.key, context.queue);
+      } else if (game.wrongGuesses >= 6) {
+        gameStates.delete(context.chatJid);
+        await sendReply(context.chatJid, `*GAME OVER!*\n\nThe word was *${game.word}*\n\nTry again with !hangman`, sock, context.rawMessage.key, context.queue);
+      } else {
+        await sendReply(context.chatJid, `${display}\n\nGuessed: ${guessedLetters}\nWrong guesses left: ${6 - game.wrongGuesses}`, sock, context.rawMessage.key, context.queue);
+      }
+      break;
+    }
+    case 'wordchain': {
+      const word = answer.toLowerCase().trim();
+      if (word.length < 2) {
+        await sendReply(context.chatJid, 'Word must be at least 2 letters long.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      const requiredLetter = game.lastWord[game.lastWord.length - 1];
+      if (word[0] !== requiredLetter) {
+        await sendReply(context.chatJid, `Your word must start with *${requiredLetter.toUpperCase()}*! (Last word: ${game.lastWord})`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      if (game.usedWords.has(word)) {
+        await sendReply(context.chatJid, `"${word}" was already used! Try another word starting with *${requiredLetter.toUpperCase()}*`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      game.usedWords.add(word);
+      // Bot's turn — find a word starting with the last letter of user's word
+      const nextLetter = word[word.length - 1];
+      const botWords = ['elephant', 'tiger', 'rainbow', 'whisper', 'rocket', 'engine', 'energy', 'yellow', 'wizard', 'dream', 'music', 'castle', 'eagle', 'echo', 'orbit', 'turtle', 'emerald', 'desert', 'train', 'needle', 'eagle', 'evening', 'garden', 'nature', 'escape'];
+      const available = botWords.filter(w => w[0] === nextLetter && !game.usedWords.has(w));
+      if (available.length === 0) {
+        gameStates.delete(context.chatJid);
+        await sendReply(context.chatJid, `Nice one! I can't think of a word starting with *${nextLetter.toUpperCase()}*. You win! Chain length: ${game.usedWords.size} words`, sock, context.rawMessage.key, context.queue);
+      } else {
+        const botWord = available[Math.floor(Math.random() * available.length)];
+        game.usedWords.add(botWord);
+        game.lastWord = botWord;
+        await sendReply(context.chatJid, `*${word}* — nice!\n\nMy turn: *${botWord}*\n\nYour turn! Word starting with *${botWord[botWord.length - 1].toUpperCase()}*\nChain: ${game.usedWords.size} words`, sock, context.rawMessage.key, context.queue);
+      }
+      break;
+    }
   }
 }
 
@@ -967,7 +1277,57 @@ async function showLeaderboard(context: MessageContext, sock: any): Promise<void
 }
 
 async function handleDownload(context: MessageContext, args: string[], sock: any): Promise<void> {
-  await sendReply(context.chatJid, `${pickResponse(downloadReplies, { name: context.senderJid.split('@')[0], time: currentTimeStr() })} Media download feature coming soon!`, sock, context.rawMessage.key, context.queue);
+  if (!args.length) {
+    await sendReply(
+      context.chatJid,
+      'Usage: *!download [url]*\n\nSupported: YouTube, TikTok, Instagram, Twitter/X links\n\n_Note: Due to platform restrictions, some links may not work. We use a free API._',
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+    return;
+  }
+
+  const url = args[0];
+  if (!url.startsWith('http')) {
+    await sendReply(context.chatJid, 'Please provide a valid URL starting with http:// or https://', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    await sendReply(context.chatJid, 'Fetching media... this may take a moment.', sock, context.rawMessage.key, context.queue);
+
+    // Try cobalt API for video/audio download
+    const response = await axios.post('https://api.cobalt.tools/api/json', {
+      url,
+      vCodec: 'h264',
+      vQuality: '720',
+      aFormat: 'mp3',
+    }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      timeout: 15000,
+    });
+
+    if (response.data?.url) {
+      // Download the media
+      const mediaResponse = await axios.get(response.data.url, { responseType: 'arraybuffer', timeout: 30000 });
+      const buffer = Buffer.from(mediaResponse.data);
+      const contentType = String(mediaResponse.headers['content-type'] || '');
+
+      if (contentType.includes('video')) {
+        await sendReply(context.chatJid, { video: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+      } else if (contentType.includes('audio')) {
+        await sendReply(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
+      } else {
+        await sendReply(context.chatJid, { document: buffer, mimetype: contentType, fileName: 'download' }, sock, context.rawMessage.key, context.queue);
+      }
+    } else {
+      await sendReply(context.chatJid, 'Could not extract media from that URL. The link may not be supported or the content may be private.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error: any) {
+    console.error('[DOWNLOAD] Error:', error?.message || error);
+    await sendReply(context.chatJid, 'Download failed. The URL may not be supported or the service is temporarily unavailable. Try again later.', sock, context.rawMessage.key, context.queue);
+  }
 }
 
 // ─── New Commands from Spec ───────────────────────────────────────────────────
@@ -1173,7 +1533,14 @@ async function handleDoc(
   if (!args.length) {
     await sendReply(
       context.chatJid,
-      'Usage: *!doc [title] | [content]*\n\nExample: !doc Meeting Notes | Today we discussed the project timeline...',
+      `*DOCUMENT MAKER*\n\n` +
+      `*Option 1 — Title + Content:*\n` +
+      `!doc My Title | Your content goes here exactly as you type it\n\n` +
+      `*Option 2 — Reply to a message:*\n` +
+      `Reply to any message with *!doc My Title* and the replied message becomes the content\n\n` +
+      `*Option 3 — Content only:*\n` +
+      `!doc Just type your content here and the title will be "Document"\n\n` +
+      `_Your formatting, line breaks, and spacing are preserved exactly._`,
       sock,
       context.rawMessage.key,
       context.queue,
@@ -1181,11 +1548,49 @@ async function handleDoc(
     return;
   }
 
-  const input = args.join(' ').split('|').map((s) => s.trim());
-  const title = input[0] || 'Untitled';
-  const content = input.slice(1).join(' ') || input[0];
+  // Use the raw message text (preserves newlines, spacing, formatting exactly)
+  const rawText = context.message.replace(/^!doc(ument)?\s*/i, '');
+
+  // Check if replying to a message — use that as content
+  const quotedText = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
+    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text || '';
+
+  let title: string;
+  let content: string;
+
+  if (quotedText) {
+    // Replying to a message: what you type = title, quoted message = content
+    title = rawText.trim() || 'Document';
+    content = quotedText;
+  } else if (rawText.includes('|')) {
+    // Pipe separator: title | content (everything after the first | is content)
+    const pipeIndex = rawText.indexOf('|');
+    title = rawText.slice(0, pipeIndex).trim() || 'Document';
+    content = rawText.slice(pipeIndex + 1).trim();
+    if (!content) {
+      content = title;
+      title = 'Document';
+    }
+  } else {
+    // No pipe, no reply: everything you typed is the content, title is auto
+    title = 'Document';
+    content = rawText;
+  }
 
   try {
+    // Preserve line breaks and formatting — each line becomes its own paragraph
+    const contentLines = content.split('\n');
+    const contentParagraphs = contentLines.map(line =>
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: line,
+            size: 24,
+          }),
+        ],
+      })
+    );
+
     const doc = new Document({
       sections: [
         {
@@ -1200,14 +1605,7 @@ async function handleDoc(
               ],
             }),
             new Paragraph({ children: [new TextRun({ text: '' })] }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: content,
-                  size: 24,
-                }),
-              ],
-            }),
+            ...contentParagraphs,
             new Paragraph({ children: [new TextRun({ text: '' })] }),
             new Paragraph({
               children: [
@@ -1224,13 +1622,14 @@ async function handleDoc(
     });
 
     const buffer = await Packer.toBuffer(doc);
+    const safeTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 50) || 'Document';
 
     await sendReply(
       context.chatJid,
       {
         document: buffer,
         mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.docx`,
+        fileName: `${safeTitle}.docx`,
       },
       sock,
       context.rawMessage.key,
@@ -1464,25 +1863,48 @@ async function handleStats(context: MessageContext, sock: any): Promise<void> {
 
   try {
     const stats = await getSessionStats(context.sessionId);
-    let msg = '*Session Stats*\n\n';
+
+    // Calculate uptime
+    const uptimeMs = process.uptime() * 1000;
+    const uptimeHrs = Math.floor(uptimeMs / 3600000);
+    const uptimeMins = Math.floor((uptimeMs % 3600000) / 60000);
+    const uptimeStr = uptimeHrs > 0 ? `${uptimeHrs}h ${uptimeMins}m` : `${uptimeMins}m`;
+
+    // Get daily message count from anti-ban tracking
+    const { isDailyCapReached } = await import('../utils/advancedAntiban');
+    const dailyCapInfo = isDailyCapReached(context.sessionId) ? 'Limit reached' : 'Active';
+
+    let msg = `*BOT STATUS*\n\n`;
+    msg += `Status: Online\n`;
+    msg += `Uptime: ${uptimeStr}\n`;
+    msg += `Daily Sending: ${dailyCapInfo}\n`;
 
     if (stats.session) {
-      msg += `Name: ${stats.session.session_name}\n`;
-      msg += `State: ${stats.session.state}\n`;
+      msg += `\n*SESSION*\n`;
+      msg += `Name: ${stats.session.session_name || 'Default'}\n`;
+      msg += `Connected: ${stats.session.state === 'active' ? 'Yes' : stats.session.state}\n`;
       msg += `Created: ${new Date(stats.session.created_at).toLocaleDateString()}\n`;
       if (stats.session.last_active) {
-        msg += `Last Active: ${new Date(stats.session.last_active).toLocaleString()}\n`;
+        const lastActiveAgo = Date.now() - new Date(stats.session.last_active).getTime();
+        const agoMins = Math.floor(lastActiveAgo / 60000);
+        msg += `Last Active: ${agoMins < 1 ? 'Just now' : agoMins < 60 ? `${agoMins}m ago` : `${Math.floor(agoMins / 60)}h ago`}\n`;
       }
     }
 
-    msg += `\nTotal Messages: ${stats.totalMessages}\n`;
+    msg += `\n*MESSAGES*\n`;
+    msg += `Total: ${stats.totalMessages}\n`;
+    msg += `Active Games: ${gameStates.size}\n`;
+    msg += `Dedup Cache: ${processedMessages.size} msgs\n`;
 
     if (stats.topUsers.length > 0) {
-      msg += '\n*Top Users:*\n';
-      stats.topUsers.forEach((u, i) => {
-        msg += `${i + 1}. ${u.user_name || u.user_jid.split('@')[0]} — ${u.message_count} msgs\n`;
+      msg += '\n*TOP USERS*\n';
+      stats.topUsers.slice(0, 5).forEach((u, i) => {
+        const name = u.user_name || u.user_jid.split('@')[0];
+        msg += `${i + 1}. ${name} — ${u.message_count} msgs\n`;
       });
     }
+
+    msg += `\n_BotWave v1.0 | ${currentTimeStr()} ${currentDateStr()}_`;
 
     await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
   } catch (error) {

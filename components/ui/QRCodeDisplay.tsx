@@ -130,7 +130,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="bg-[#0a0f0a] border border-green/30 max-w-lg w-full mx-4 relative overflow-hidden"
+        className="bg-[#0a0f0a] border border-green/30 max-w-lg w-full mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scan line effect */}
@@ -249,7 +249,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                   />
                   <div className="relative z-10 flex items-center gap-3">
                     <span
-                      className="font-mono text-5xl md:text-6xl text-white font-black tracking-[12px] md:tracking-[16px] select-all"
+                      className="font-mono text-3xl sm:text-4xl md:text-5xl text-white font-black tracking-[6px] sm:tracking-[10px] md:tracking-[14px] select-all"
                       style={{ textShadow: '0 0 20px rgba(0,255,128,0.3)' }}
                     >
                       {pairingCode}
@@ -304,6 +304,18 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                     WhatsApp may show a &quot;could be a scam&quot; warning — this is normal when linking from a different region. Tap <span className="text-yellow-500 font-bold">Continue</span> to proceed safely.
                   </p>
                 </div>
+              </div>
+
+              {/* Cancel button (mobile-friendly) */}
+              <div className="flex justify-center mb-4">
+                <motion.button
+                  onClick={onClose}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="font-mono text-xs tracking-[2px] px-6 py-2.5 border border-red-400/30 text-red-400/70 hover:border-red-400 hover:text-red-400 hover:bg-red-400/5 transition-all"
+                >
+                  CANCEL
+                </motion.button>
               </div>
 
               {/* Timer bar */}

@@ -561,3 +561,104 @@ export async function naturalDelay(sessionId: string): Promise<void> {
     await delay(totalExtra);
   }
 }
+
+// ─── Burst Detection ──────────────────────────────────────────────────────────
+/**
+ * Detect if the bot is replying in rapid bursts (multiple replies within a
+ * few seconds). Real humans don't send 5 messages in 10 seconds unless
+ * they're in a heated argument. If burst detected, add a cooldown.
+ */
+
+const burstTracker: Map<string, number[]> = new Map();
+const BURST_WINDOW = 10_000; // 10 seconds
+const BURST_THRESHOLD = 3; // 3 replies in 10s = burst
+const BURST_COOLDOWN = 8_000; // 8 second cooldown after burst
+
+export function checkBurstAndDelay(sessionId: string): number {
+  const now = Date.now();
+  const timestamps = burstTracker.get(sessionId) || [];
+  const recent = timestamps.filter(t => now - t < BURST_WINDOW);
+  recent.push(now);
+  burstTracker.set(sessionId, recent);
+
+  if (recent.length >= BURST_THRESHOLD) {
+    // Burst detected — add cooldown
+    return BURST_COOLDOWN + Math.random() * 4000; // 8-12s cooldown
+  }
+  return 0;
+}
+
+// ─── Consecutive Reply Detection ──────────────────────────────────────────────
+/**
+ * If the bot is the last person to send a message in a chat, and it's about
+ * to send ANOTHER message without the user responding in between, it should
+ * sometimes hold back. Real people don't double-text constantly.
+ *
+ * This is tracked per chat and returns true if the bot should skip.
+ */
+
+const lastSenderTracker: Map<string, string> = new Map(); // chatJid → 'bot' | 'user'
+
+export function trackWhoSentLast(chatJid: string, wasBot: boolean): void {
+  lastSenderTracker.set(chatJid, wasBot ? 'bot' : 'user');
+}
+
+export function shouldAvoidDoubleText(chatJid: string): boolean {
+  const lastSender = lastSenderTracker.get(chatJid);
+  if (lastSender !== 'bot') return false;
+  // 30% chance to skip if bot would double-text
+  return Math.random() < 0.3;
+}
+
+// ─── Online Status Randomizer ─────────────────────────────────────────────────
+/**
+ * Before processing any message, randomly set presence to "available" with
+ * natural timing. A bot that's always "available" the instant a message
+ * arrives is suspicious. Sometimes it should already be "available" (was
+ * browsing), sometimes it should go from "unavailable" to "available" (picked
+ * up phone).
+ */
+
+export async function simulateGoingOnline(sock: any): Promise<void> {
+  try {
+    // 40% chance to already be online (no transition needed)
+    if (Math.random() < 0.4) return;
+
+    // Set available with a small delay (picking up phone)
+    await delay(200 + Math.random() * 800);
+    await sock.sendPresenceUpdate('available');
+  } catch {
+    // non-critical
+  }
+}
+
+// ─── Smart Reply Filtering ────────────────────────────────────────────────────
+/**
+ * Additional conditions to decide whether to respond at all.
+ * Returns true if the bot should NOT respond.
+ */
+
+export function shouldSilentlyIgnore(
+  isGroup: boolean,
+  messageText: string,
+  senderJid: string,
+): boolean {
+  // Skip very short messages in groups (like "ok", "k", "lol", "hmm")
+  // Real people don't respond to these
+  if (isGroup && messageText.length <= 3 && !messageText.startsWith('!')) {
+    return Math.random() < 0.7; // 70% skip chance for ultra-short group msgs
+  }
+
+  // Skip forwarded-looking messages (long messages with lots of formatting)
+  if (messageText.length > 1000 && !messageText.startsWith('!')) {
+    return Math.random() < 0.5; // 50% skip for broadcast-like messages
+  }
+
+  // Skip messages that are just emoji (no text content)
+  const emojiOnly = messageText.replace(/[\p{Emoji}\s]/gu, '').trim();
+  if (emojiOnly.length === 0 && messageText.length > 0 && !messageText.startsWith('!')) {
+    return Math.random() < 0.6; // 60% skip for emoji-only messages
+  }
+
+  return false;
+}
