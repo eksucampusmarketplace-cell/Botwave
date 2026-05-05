@@ -138,8 +138,15 @@ export function startPresenceSimulation(sock: any, sessionId: string): void {
 
   const simulate = async () => {
     try {
-      const shouldBeUnavailable = Math.random() < getUnavailableProbability();
-      await sock.sendPresenceUpdate(shouldBeUnavailable ? 'unavailable' : 'available');
+      // Only send 'unavailable' to go offline. Never send 'available' from
+      // this loop — the bot naturally appears online when handling messages
+      // (via composing/recording in humanSend). Sending 'available' here
+      // causes WhatsApp to show a "syncing" notification on the user's phone
+      // every cycle, which is disruptive.
+      const shouldGoOffline = Math.random() < getUnavailableProbability();
+      if (shouldGoOffline) {
+        await sock.sendPresenceUpdate('unavailable');
+      }
     } catch {
       // non-critical
     }

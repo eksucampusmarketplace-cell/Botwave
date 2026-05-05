@@ -848,8 +848,11 @@ class EvolutionBot {
         if (hour >= 0 && hour < 6) unavailableProb = 0.8;
         else if (hour >= 6 && hour < 9) unavailableProb = 0.5;
         else if (hour >= 22) unavailableProb = 0.4;
-        const shouldBeUnavailable = Math.random() < unavailableProb;
-        await this.socketAdapter.sendPresenceUpdate(shouldBeUnavailable ? 'unavailable' : 'available');
+        // Only send 'unavailable' — avoid 'available' which triggers
+        // "syncing with WhatsApp" notifications on the user's phone
+        if (Math.random() < unavailableProb) {
+          await this.socketAdapter.sendPresenceUpdate('unavailable');
+        }
       } catch { /* non-critical */ }
       const nextDelay = (5 + Math.random() * 10) * 60 * 1000;
       this.presenceHandle = setTimeout(simulate, nextDelay);

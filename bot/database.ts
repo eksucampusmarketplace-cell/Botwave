@@ -506,6 +506,9 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
 
 // ─── Feature Toggle Check ─────────────────────────────────────────────────────
 
+// Features that default to OFF when no toggle row exists
+const FEATURES_DEFAULT_OFF = new Set(['welcome']);
+
 export async function getFeatureEnabled(userId: string, featureName: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('bot_features')
@@ -515,10 +518,13 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
     .single();
 
   if (error) {
-    // Default to enabled if no feature toggle found
-    return error.code === 'PGRST116';
+    // No row found — use feature-specific default
+    if (error.code === 'PGRST116') {
+      return !FEATURES_DEFAULT_OFF.has(featureName);
+    }
+    return !FEATURES_DEFAULT_OFF.has(featureName);
   }
-  return data?.enabled ?? true;
+  return data?.enabled ?? !FEATURES_DEFAULT_OFF.has(featureName);
 }
 
 // ─── Leaderboard Tracking ─────────────────────────────────────────────────────

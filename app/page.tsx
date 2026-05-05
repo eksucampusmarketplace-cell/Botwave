@@ -63,6 +63,12 @@ const features = [
     description: 'Set custom auto-replies for when you\'re offline, busy, or want to automate responses.',
     code: 'SYS_09',
   },
+  {
+    icon: '🔒',
+    title: 'PRIVACY FIRST',
+    description: 'Your chats stay private. The bot owner cannot read or access your messages. BotWave only responds to commands — nothing else is stored or shared.',
+    code: 'SYS_10',
+  },
 ];
 
 const tickerItems = [
