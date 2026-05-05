@@ -24,23 +24,66 @@ interface Session {
   username: string;
 }
 
+interface UserData {
+  id: string;
+  username: string;
+  created_at: string;
+  totalSessions: number;
+  activeSessions: number;
+  enabledFeatures: number;
+  lastActive: string | null;
+  sessions: Array<{
+    id: string;
+    phone_number: string;
+    session_name: string;
+    state: string;
+    last_active: string | null;
+  }>;
+}
+
+interface SecurityData {
+  loginAttempts: Array<{
+    timestamp: number;
+    ip: string;
+    username: string;
+    success: boolean;
+  }>;
+  auditLog: Array<{
+    timestamp: number;
+    admin: string;
+    action: string;
+    target: string;
+    details: string;
+    ip: string;
+  }>;
+  security: Record<string, string>;
+}
+
+type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health';
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSessions: 0,
+    totalSessions: 0,
+    needsReauthSessions: 0,
     totalMessages: 0,
-    systemStatus: 'Healthy'
+    totalCommands: 0,
+    systemStatus: 'Loading',
+    evolutionStatus: 'Unknown',
   });
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [securityData, setSecurityData] = useState<SecurityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'sessions' | 'settings' | 'health'>('sessions');
+  const [activeTab, setActiveTab] = useState<TabType>('sessions');
   const [rateLimits, setRateLimits] = useState<RateLimitSetting[]>([]);
   const [savingRateLimits, setSavingRateLimits] = useState(false);
   const [healthData, setHealthData] = useState<any>(null);
   const [fetchingHealth, setFetchingHealth] = useState(false);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
   
-  // Inline message state for better UX
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -48,7 +91,6 @@ export default function AdminDashboard() {
       try {
         const statsRes = await fetch('/api/admin/stats');
         
-        // Redirect to login on 401
         if (statsRes.status === 401) {
           router.push('/admin/login');
           return;
@@ -72,6 +114,9 @@ export default function AdminDashboard() {
     };
 
     fetchAdminData();
+    // Auto-refresh stats every 30s
+    const interval = setInterval(fetchAdminData, 30_000);
+    return () => clearInterval(interval);
   }, [router]);
 
   useEffect(() => {
@@ -79,8 +124,32 @@ export default function AdminDashboard() {
       fetchRateLimits();
     } else if (activeTab === 'health') {
       fetchHealthData();
+    } else if (activeTab === 'users') {
+      fetchUsers();
+    } else if (activeTab === 'security') {
+      fetchSecurityData();
     }
   }, [activeTab]);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/admin/users');
+      const data = await res.json();
+      if (data.success) setUsers(data.data);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
+  const fetchSecurityData = async () => {
+    try {
+      const res = await fetch('/api/admin/security');
+      const data = await res.json();
+      if (data.success) setSecurityData(data.data);
+    } catch (err) {
+      console.error('Error fetching security data:', err);
+    }
+  };
 
   const fetchHealthData = async () => {
     setFetchingHealth(true);
@@ -119,7 +188,6 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setMessage({ type: 'success', text: 'Rate limit settings saved successfully' });
-        // Clear message after 3 seconds
         setTimeout(() => setMessage(null), 3000);
       } else {
         setMessage({ type: 'error', text: 'Failed to save rate limit settings' });
@@ -163,13 +231,23 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
+  const formatDate = (d: string | null) => d ? new Date(d).toLocaleString() : 'Never';
+
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'sessions', label: 'BOT SESSIONS' },
+    { id: 'users', label: 'USERS' },
+    { id: 'settings', label: 'RATE LIMITS' },
+    { id: 'security', label: 'SECURITY' },
+    { id: 'health', label: 'SYSTEM HEALTH' },
+  ];
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-8">
+    <div className="min-h-screen bg-zinc-950 text-white p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
+        <header className="flex justify-between items-center mb-8 sm:mb-12">
           <div>
-            <h1 className="font-display text-2xl font-black tracking-widest text-red-600">
-              BOTWAVE <span className="text-white">ADMIN CONTROL</span>
+            <h1 className="font-display text-xl sm:text-2xl font-black tracking-widest text-red-600">
+              BOTWAVE <span className="text-white">ADMIN</span>
             </h1>
             <p className="text-zinc-500 font-mono text-xs mt-1">{"// SYSTEM OVERVIEW"}</p>
           </div>
@@ -181,7 +259,6 @@ export default function AdminDashboard() {
           </button>
         </header>
 
-        {/* Inline message display */}
         {message && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -196,53 +273,46 @@ export default function AdminDashboard() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
           {[
             { label: 'TOTAL USERS', value: stats.totalUsers, color: 'text-blue-500' },
             { label: 'ACTIVE BOTS', value: stats.activeSessions, color: 'text-green-500' },
-            { label: 'MSG PROCESSED', value: stats.totalMessages, color: 'text-purple-500' },
-            { label: 'SYSTEM STATUS', value: stats.systemStatus, color: 'text-red-500' },
+            { label: 'TOTAL SESSIONS', value: stats.totalSessions, color: 'text-cyan-500' },
+            { label: 'NEEDS REAUTH', value: stats.needsReauthSessions, color: stats.needsReauthSessions > 0 ? 'text-yellow-500' : 'text-zinc-500' },
+            { label: 'MSG PROCESSED', value: stats.totalMessages.toLocaleString(), color: 'text-purple-500' },
+            { label: 'COMMANDS RUN', value: stats.totalCommands.toLocaleString(), color: 'text-indigo-500' },
+            { label: 'SYSTEM STATUS', value: stats.systemStatus, color: stats.systemStatus === 'Healthy' ? 'text-green-500' : stats.systemStatus === 'Degraded' ? 'text-yellow-500' : 'text-red-500' },
+            { label: 'EVOLUTION API', value: stats.evolutionStatus, color: stats.evolutionStatus === 'Connected' ? 'text-green-500' : 'text-red-500' },
           ].map((stat, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-zinc-900 border border-zinc-800 p-6"
+              transition={{ delay: i * 0.05 }}
+              className="bg-zinc-900 border border-zinc-800 p-4 sm:p-6"
             >
-              <p className="text-zinc-500 font-mono text-[10px] tracking-[2px] mb-2">{stat.label}</p>
-              <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+              <p className="text-zinc-500 font-mono text-[9px] sm:text-[10px] tracking-[2px] mb-2">{stat.label}</p>
+              <p className={`text-lg sm:text-2xl font-black ${stat.color}`}>{stat.value}</p>
             </motion.div>
           ))}
         </div>
 
+        {/* Tab Navigation */}
         <div className="bg-zinc-900 border border-zinc-800">
-          <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab('sessions')}
-                className={`font-display text-xs tracking-wider px-4 py-2 transition-colors ${
-                  activeTab === 'sessions' ? 'text-red-600 border-b-2 border-red-600' : 'text-zinc-500 hover:text-white'
-                }`}
-              >
-                BOT SESSIONS
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`font-display text-xs tracking-wider px-4 py-2 transition-colors ${
-                  activeTab === 'settings' ? 'text-red-600 border-b-2 border-red-600' : 'text-zinc-500 hover:text-white'
-                }`}
-              >
-                RATE LIMITS
-              </button>
-              <button
-                onClick={() => setActiveTab('health')}
-                className={`font-display text-xs tracking-wider px-4 py-2 transition-colors ${
-                  activeTab === 'health' ? 'text-red-600 border-b-2 border-red-600' : 'text-zinc-500 hover:text-white'
-                }`}
-              >
-                SYSTEM HEALTH
-              </button>
+          <div className="p-4 sm:p-6 border-b border-zinc-800 flex flex-wrap gap-2 sm:gap-4 justify-between items-center">
+            <div className="flex flex-wrap gap-1 sm:gap-4">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`font-display text-[10px] sm:text-xs tracking-wider px-2 sm:px-4 py-2 transition-colors ${
+                    activeTab === tab.id ? 'text-red-600 border-b-2 border-red-600' : 'text-zinc-500 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
             {activeTab === 'sessions' && (
               <button 
@@ -254,37 +324,41 @@ export default function AdminDashboard() {
             )}
           </div>
 
+          {/* Sessions Tab */}
           {activeTab === 'sessions' && (
             <div className="overflow-x-auto">
               <table className="w-full text-left font-mono text-xs">
                 <thead>
                   <tr className="text-zinc-500 border-b border-zinc-800">
-                    <th className="p-6">SESSION ID</th>
-                    <th className="p-6">USER</th>
-                    <th className="p-6">PHONE</th>
-                    <th className="p-6">STATUS</th>
-                    <th className="p-6">ACTIONS</th>
+                    <th className="p-4 sm:p-6">SESSION ID</th>
+                    <th className="p-4 sm:p-6">USER</th>
+                    <th className="p-4 sm:p-6">PHONE</th>
+                    <th className="p-4 sm:p-6">STATUS</th>
+                    <th className="p-4 sm:p-6">LAST ACTIVE</th>
+                    <th className="p-4 sm:p-6">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sessions.map((session) => (
                     <tr key={session.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
-                      <td className="p-6 text-zinc-400">{session.id.slice(0, 8)}...</td>
-                      <td className="p-6">{session.username || 'Unknown'}</td>
-                      <td className="p-6">{session.phone_number}</td>
-                      <td className="p-6">
-                        <span className={`px-2 py-1 ${
+                      <td className="p-4 sm:p-6 text-zinc-400">{session.id.slice(0, 8)}...</td>
+                      <td className="p-4 sm:p-6">{session.username || 'Unknown'}</td>
+                      <td className="p-4 sm:p-6">{session.phone_number}</td>
+                      <td className="p-4 sm:p-6">
+                        <span className={`px-2 py-1 text-[10px] ${
                           session.state === 'active' ? 'bg-green-500/10 text-green-500' : 
-                          session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
+                          session.state === 'needs_reauth' ? 'bg-yellow-500/10 text-yellow-500' :
+                          session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-red-500/10 text-red-500'
                         }`}>
                           {session.state.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-6">
+                      <td className="p-4 sm:p-6 text-zinc-500">{formatDate(session.last_active)}</td>
+                      <td className="p-4 sm:p-6">
                         {session.state !== 'inactive' && (
                           <button 
                             onClick={() => handleStopSession(session.id)}
-                            className="text-red-600 hover:underline"
+                            className="text-red-600 hover:underline text-[10px]"
                           >
                             TERMINATE
                           </button>
@@ -294,7 +368,7 @@ export default function AdminDashboard() {
                   ))}
                   {sessions.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={5} className="p-12 text-center text-zinc-600">NO ACTIVE SESSIONS FOUND</td>
+                      <td colSpan={6} className="p-12 text-center text-zinc-600">NO SESSIONS FOUND</td>
                     </tr>
                   )}
                 </tbody>
@@ -302,12 +376,87 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Users Tab */}
+          {activeTab === 'users' && (
+            <div className="p-4 sm:p-6">
+              <p className="text-zinc-500 font-mono text-xs mb-6">{"// All registered users and their session details"}</p>
+              {users.length === 0 ? (
+                <p className="text-zinc-600 font-mono text-xs text-center py-12">Loading users...</p>
+              ) : (
+                <div className="space-y-3">
+                  {users.map(user => (
+                    <div key={user.id} className="bg-zinc-800/30 border border-zinc-800">
+                      <button
+                        onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                        className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center">
+                            <span className="font-mono text-[10px] text-blue-400">{(user.username || '?')[0].toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="font-mono text-sm text-white">{user.username || 'Unknown'}</p>
+                            <p className="font-mono text-[10px] text-zinc-500">Joined: {formatDate(user.created_at)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="text-right hidden sm:block">
+                            <p className="font-mono text-[10px] text-zinc-500">SESSIONS</p>
+                            <p className="font-mono text-sm">
+                              <span className="text-green-500">{user.activeSessions}</span>
+                              <span className="text-zinc-600">/{user.totalSessions}</span>
+                            </p>
+                          </div>
+                          <div className="text-right hidden sm:block">
+                            <p className="font-mono text-[10px] text-zinc-500">FEATURES</p>
+                            <p className="font-mono text-sm text-cyan-500">{user.enabledFeatures}</p>
+                          </div>
+                          <span className="font-mono text-zinc-500">{expandedUser === user.id ? '[-]' : '[+]'}</span>
+                        </div>
+                      </button>
+                      {expandedUser === user.id && user.sessions.length > 0 && (
+                        <div className="border-t border-zinc-800 p-4">
+                          <table className="w-full font-mono text-[10px]">
+                            <thead>
+                              <tr className="text-zinc-500">
+                                <th className="text-left p-2">SESSION</th>
+                                <th className="text-left p-2">PHONE</th>
+                                <th className="text-left p-2">STATE</th>
+                                <th className="text-left p-2">LAST ACTIVE</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {user.sessions.map(s => (
+                                <tr key={s.id} className="border-t border-zinc-800/50">
+                                  <td className="p-2 text-zinc-400">{s.session_name || s.id.slice(0, 8)}</td>
+                                  <td className="p-2">{s.phone_number}</td>
+                                  <td className="p-2">
+                                    <span className={
+                                      s.state === 'active' ? 'text-green-500' :
+                                      s.state === 'needs_reauth' ? 'text-yellow-500' : 'text-red-500'
+                                    }>{s.state.toUpperCase()}</span>
+                                  </td>
+                                  <td className="p-2 text-zinc-500">{formatDate(s.last_active)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rate Limits Tab */}
           {activeTab === 'settings' && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <p className="text-zinc-500 font-mono text-xs mb-6">{"// Configure rate limits for the application. Set to 0 for unlimited."}</p>
               <div className="space-y-4">
                 {rateLimits.map((setting) => (
-                  <div key={setting.id} className="bg-zinc-800/50 border border-zinc-700 p-4 flex items-center justify-between gap-6">
+                  <div key={setting.id} className="bg-zinc-800/50 border border-zinc-700 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-mono text-sm text-white">{setting.setting_name.toUpperCase()}</p>
                       <p className="font-mono text-xs text-zinc-500">{setting.description}</p>
@@ -327,7 +476,7 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                       <div className="flex items-center gap-2">
-                        <label className="font-mono text-xs text-zinc-400">MAX/INTERVAL</label>
+                        <label className="font-mono text-xs text-zinc-400">MAX</label>
                         <input
                           type="number"
                           value={setting.max_requests}
@@ -352,10 +501,109 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className="p-4 sm:p-6">
+              {!securityData ? (
+                <p className="text-zinc-500 font-mono text-xs text-center py-12">Loading security data...</p>
+              ) : (
+                <>
+                  {/* Security Overview */}
+                  <div className="mb-8">
+                    <h3 className="font-display text-sm tracking-wider text-red-600 mb-4">SECURITY CONFIGURATION</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {Object.entries(securityData.security).map(([key, value]) => (
+                        <div key={key} className="flex justify-between items-center p-3 bg-zinc-800/30 border border-zinc-800">
+                          <span className="font-mono text-[10px] text-zinc-400 uppercase">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <span className="font-mono text-[10px] text-green-500">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Audit Log */}
+                  <div className="mb-8">
+                    <h3 className="font-display text-sm tracking-wider text-red-600 mb-4">AUDIT LOG</h3>
+                    {securityData.auditLog.length === 0 ? (
+                      <p className="text-zinc-600 font-mono text-xs py-6">No audit entries yet (resets on deploy)</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full font-mono text-[10px]">
+                          <thead>
+                            <tr className="text-zinc-500 border-b border-zinc-800">
+                              <th className="text-left p-3">TIME</th>
+                              <th className="text-left p-3">ADMIN</th>
+                              <th className="text-left p-3">ACTION</th>
+                              <th className="text-left p-3">DETAILS</th>
+                              <th className="text-left p-3">IP</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {securityData.auditLog.map((entry, i) => (
+                              <tr key={i} className="border-b border-zinc-800/50">
+                                <td className="p-3 text-zinc-500">{new Date(entry.timestamp).toLocaleString()}</td>
+                                <td className="p-3">{entry.admin}</td>
+                                <td className="p-3">
+                                  <span className={
+                                    entry.action === 'login' ? 'text-green-500' :
+                                    entry.action === 'login_failed' ? 'text-red-500' :
+                                    entry.action === 'session_stop' ? 'text-yellow-500' : 'text-zinc-400'
+                                  }>{entry.action.toUpperCase()}</span>
+                                </td>
+                                <td className="p-3 text-zinc-400 max-w-[300px] truncate">{entry.details}</td>
+                                <td className="p-3 text-zinc-500">{entry.ip}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Login Attempts */}
+                  <div>
+                    <h3 className="font-display text-sm tracking-wider text-red-600 mb-4">RECENT LOGIN ATTEMPTS</h3>
+                    {securityData.loginAttempts.length === 0 ? (
+                      <p className="text-zinc-600 font-mono text-xs py-6">No login attempts recorded (resets on deploy)</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full font-mono text-[10px]">
+                          <thead>
+                            <tr className="text-zinc-500 border-b border-zinc-800">
+                              <th className="text-left p-3">TIME</th>
+                              <th className="text-left p-3">USERNAME</th>
+                              <th className="text-left p-3">IP</th>
+                              <th className="text-left p-3">RESULT</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {securityData.loginAttempts.map((attempt, i) => (
+                              <tr key={i} className="border-b border-zinc-800/50">
+                                <td className="p-3 text-zinc-500">{new Date(attempt.timestamp).toLocaleString()}</td>
+                                <td className="p-3">{attempt.username}</td>
+                                <td className="p-3 text-zinc-500">{attempt.ip}</td>
+                                <td className="p-3">
+                                  <span className={attempt.success ? 'text-green-500' : 'text-red-500'}>
+                                    {attempt.success ? 'SUCCESS' : 'FAILED'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* System Health Tab */}
           {activeTab === 'health' && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="mb-8">
-                <h3 className="text-lg font-bold mb-2">Database Connection & Schema</h3>
+                <h3 className="font-display text-sm tracking-wider text-white mb-2">Database Connection & Schema</h3>
                 <p className="text-zinc-500 font-mono text-xs mb-6">{"// Verifying that all required tables exist in your Supabase project."}</p>
                 
                 {fetchingHealth ? (
@@ -378,11 +626,27 @@ export default function AdminDashboard() {
                 )}
               </div>
 
+              {/* Evolution API Status */}
+              <div className="mb-8">
+                <h3 className="font-display text-sm tracking-wider text-white mb-2">Evolution API</h3>
+                <div className="flex items-center gap-3 p-4 bg-zinc-800/30 border border-zinc-800">
+                  <div className={`w-3 h-3 rounded-full ${
+                    stats.evolutionStatus === 'Connected' ? 'bg-green-500' : 'bg-red-500'
+                  }`} />
+                  <span className="font-mono text-xs">
+                    Status: <span className={stats.evolutionStatus === 'Connected' ? 'text-green-500' : 'text-red-500'}>{stats.evolutionStatus}</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-zinc-500 ml-4">
+                    URL: {process.env.NEXT_PUBLIC_EVOLUTION_API_URL || 'Configured server-side'}
+                  </span>
+                </div>
+              </div>
+
               {!fetchingHealth && healthData && !healthData.allFound && (
                 <div className="mt-8 p-6 bg-red-950/20 border border-red-900/50">
                   <h3 className="text-red-500 font-bold mb-2">Required Tables Missing!</h3>
                   <p className="text-zinc-400 font-mono text-xs mb-4">
-                    Some core tables are missing from your database. To fix this, copy the SQL below and run it in your Supabase SQL Editor.
+                    Some core tables are missing from your database. Copy the SQL below and run it in your Supabase SQL Editor.
                   </p>
                   <div className="relative">
                     <pre className="bg-black p-4 text-[10px] font-mono text-zinc-400 overflow-auto max-h-60 border border-zinc-800">

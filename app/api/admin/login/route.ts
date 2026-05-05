@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { generateSecureToken, storeAdminToken } from '@/lib/admin-auth';
+import { isLockedOut, recordLoginAttempt, logAdminAction, getClientIp } from '@/lib/admin-security';
 
-const FAILED_LOGIN_DELAY_MS = 500; // Constant time delay to prevent timing attacks
+const FAILED_LOGIN_DELAY_MS = 500;
 
 function getAdminCredentials(): { username: string; password: string } {
   const username = process.env.ADMIN_USERNAME;
@@ -24,6 +25,18 @@ async function constantTimeDelay(): Promise<void> {
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request.headers);
+
+    // Check brute-force lockout before processing
+    const lockout = isLockedOut(clientIp);
+    if (lockout.locked) {
+      const remainingMin = Math.ceil(lockout.remainingMs / 60_000);
+      return NextResponse.json(
+        { error: `Too many failed attempts. Try again in ${remainingMin} minute(s).` },
+        { status: 429 }
+      );
+    }
+
     const { username, password } = await request.json();
 
     let authSuccess = false;
@@ -32,14 +45,12 @@ export async function POST(request: NextRequest) {
     try {
       adminCreds = getAdminCredentials();
       
-      // Use timing-safe comparison for username
       const usernameBuffer = Buffer.from(username || '');
       const expectedUsernameBuffer = Buffer.from(adminCreds.username);
       
       const usernameMatch = usernameBuffer.length === expectedUsernameBuffer.length &&
         crypto.timingSafeEqual(usernameBuffer, expectedUsernameBuffer);
 
-      // Use timing-safe comparison for password
       const passwordBuffer = Buffer.from(password || '');
       const expectedPasswordBuffer = Buffer.from(adminCreds.password);
       
@@ -48,8 +59,8 @@ export async function POST(request: NextRequest) {
 
       authSuccess = usernameMatch && passwordMatch;
     } catch (credsError) {
-      // Log the actual error server-side but don't expose to client
       console.error('Admin login error - credentials check failed:', credsError);
+      recordLoginAttempt(clientIp, username || 'unknown', false);
       await constantTimeDelay();
       return NextResponse.json(
         { error: 'Authentication failed' },
@@ -58,12 +69,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (!authSuccess) {
+      recordLoginAttempt(clientIp, username || 'unknown', false);
+      logAdminAction('anonymous', 'login_failed', 'admin', `Failed login attempt as "${username}"`, clientIp);
       await constantTimeDelay();
       return NextResponse.json(
         { error: 'Invalid admin credentials' },
         { status: 401 }
       );
     }
+
+    // Successful login
+    recordLoginAttempt(clientIp, username, true);
+    logAdminAction(username, 'login', 'admin', 'Admin logged in successfully', clientIp);
 
     const token = await generateSecureToken(username);
     storeAdminToken(token, username);
@@ -73,12 +90,11 @@ export async function POST(request: NextRequest) {
       message: 'Admin authenticated successfully',
     });
 
-    // Cookie sent to both /admin/* pages and /api/admin/* API routes
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
 
@@ -100,6 +116,9 @@ export async function DELETE(request: NextRequest) {
       const { revokeAdminToken } = await import('@/lib/admin-auth');
       revokeAdminToken(adminToken.value);
     }
+
+    const clientIp = getClientIp(request.headers);
+    logAdminAction('admin', 'logout', 'admin', 'Admin logged out', clientIp);
 
     const response = NextResponse.json({
       success: true,

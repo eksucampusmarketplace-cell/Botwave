@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin token
     const adminToken = request.cookies.get('admin_token');
     const tokenValidation = await verifyAdminToken(adminToken?.value);
     
@@ -14,13 +13,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Use admin client to bypass RLS
     const supabase = await createAdminClient();
 
-    // Fetch real stats from database
     let totalUsers = 0;
     let activeSessions = 0;
+    let totalSessions = 0;
     let totalMessages = 0;
+    let totalCommands = 0;
+    let needsReauthSessions = 0;
 
     try {
       const { count: userCount } = await supabase
@@ -28,30 +28,62 @@ export async function GET(request: NextRequest) {
         .select('*', { count: 'exact', head: true });
       totalUsers = userCount || 0;
 
-      const { count: sessionCount } = await supabase
+      const { data: allSessions } = await supabase
         .from('bot_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('state', 'active');
-      activeSessions = sessionCount || 0;
+        .select('state');
+      totalSessions = allSessions?.length || 0;
+      activeSessions = allSessions?.filter(s => s.state === 'active').length || 0;
+      needsReauthSessions = allSessions?.filter(s => s.state === 'needs_reauth').length || 0;
 
       const { count: msgCount } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true });
       totalMessages = msgCount || 0;
+
+      const { data: statsData } = await supabase
+        .from('user_stats')
+        .select('total_commands');
+      totalCommands = (statsData || []).reduce((sum, s) => sum + (s.total_commands || 0), 0);
     } catch (dbError) {
       console.error('Database query error:', dbError);
-      // Return actual error, not fake data
       return NextResponse.json({ error: 'Failed to fetch statistics' }, { status: 500 });
     }
+
+    // Check Evolution API health
+    let evolutionStatus = 'Unknown';
+    const evoUrl = process.env.EVOLUTION_API_URL;
+    const evoKey = process.env.EVOLUTION_API_KEY;
+    if (evoUrl && evoKey) {
+      try {
+        const evoRes = await fetch(`${evoUrl}/instance/fetchInstances`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', apikey: evoKey },
+          signal: AbortSignal.timeout(5000),
+        });
+        evolutionStatus = evoRes.ok ? 'Connected' : `Error (${evoRes.status})`;
+      } catch {
+        evolutionStatus = 'Unreachable';
+      }
+    } else {
+      evolutionStatus = 'Not Configured';
+    }
+
+    const systemStatus = activeSessions > 0 ? 'Healthy' :
+      needsReauthSessions > 0 ? 'Degraded' :
+      totalUsers > 0 ? 'Idle' : 'No Data';
 
     return NextResponse.json({
       success: true,
       data: {
         totalUsers,
         activeSessions,
+        totalSessions,
+        needsReauthSessions,
         totalMessages,
-        systemStatus: totalUsers > 0 ? 'Healthy' : 'No Data'
-      }
+        totalCommands,
+        systemStatus,
+        evolutionStatus,
+      },
     });
   } catch (error) {
     console.error('Admin stats error:', error);

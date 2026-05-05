@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyAdminToken } from '@/lib/admin-auth';
+import { logAdminAction, getClientIp } from '@/lib/admin-security';
 
-// UUID format validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,6 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin token
     const adminToken = request.cookies.get('admin_token');
     const tokenValidation = await verifyAdminToken(adminToken?.value);
     
@@ -22,15 +21,19 @@ export async function POST(
 
     const { id } = params;
 
-    // Validate UUID format to prevent arbitrary strings being passed to Supabase
     if (!UUID_REGEX.test(id)) {
       return NextResponse.json({ error: 'Invalid session ID format' }, { status: 400 });
     }
 
-    // Use admin client to bypass RLS
     const supabase = await createAdminClient();
 
-    // Update session state in DB
+    // Fetch session info for audit log before stopping
+    const { data: session } = await supabase
+      .from('bot_sessions')
+      .select('phone_number, session_name, state')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('bot_sessions')
       .update({ state: 'inactive' })
@@ -40,6 +43,29 @@ export async function POST(
       console.error('Error stopping session:', error);
       return NextResponse.json({ error: 'Failed to stop session' }, { status: 500 });
     }
+
+    // Also clean up Evolution API instance
+    const evoUrl = process.env.EVOLUTION_API_URL;
+    const evoKey = process.env.EVOLUTION_API_KEY;
+    if (evoUrl && evoKey) {
+      try {
+        await fetch(`${evoUrl}/instance/delete/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', apikey: evoKey },
+        });
+      } catch {
+        // Non-critical
+      }
+    }
+
+    const clientIp = getClientIp(request.headers);
+    logAdminAction(
+      tokenValidation.username,
+      'session_stop',
+      id,
+      `Terminated session ${session?.session_name || 'unknown'} (${session?.phone_number || 'unknown'}) from state=${session?.state || 'unknown'}`,
+      clientIp,
+    );
 
     return NextResponse.json({
       success: true,
