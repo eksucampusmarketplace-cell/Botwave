@@ -14,6 +14,17 @@ const PROXY_LIST = (process.env.PROXY_LIST || '')
   .filter(Boolean);
 let proxyCounter = 0;
 
+// Log proxy pool status at startup so you can verify config in Render logs
+if (PROXY_LIST.length > 0) {
+  console.log(`[PROXY] Pool loaded: ${PROXY_LIST.length} proxies configured`);
+  PROXY_LIST.forEach((p, i) => {
+    const parts = p.split(':');
+    console.log(`[PROXY]   #${i + 1}: ${parts[0]}:${parts[1]} (user: ${parts[2] || 'none'})`);
+  });
+} else {
+  console.log('[PROXY] No PROXY_LIST configured — all connections will use server IP directly');
+}
+
 // Track consecutive Evolution API failures for health gating
 let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
@@ -139,6 +150,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   // Assign a proxy from the pool so each instance connects from a different IP.
   // This prevents WhatsApp from seeing too many concurrent unregistered
   // WebSocket connections from the same Render IP (which triggers 428 bans).
+  const proxyIndex = proxyCounter;
   const proxy = getNextProxy();
   if (proxy) {
     payload.proxyHost = proxy.host;
@@ -146,7 +158,9 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     payload.proxyProtocol = proxy.protocol;
     payload.proxyUsername = proxy.username;
     payload.proxyPassword = proxy.password;
-    console.log(`[EVO-CLIENT] Using proxy ${proxy.host}:${proxy.port} for instance ${instanceName}`);
+    console.log(`[PROXY] Assigned proxy #${(proxyIndex % PROXY_LIST.length) + 1}/${PROXY_LIST.length} to instance ${instanceName}: ${proxy.host}:${proxy.port} (user: ${proxy.username}, protocol: ${proxy.protocol})`);
+  } else {
+    console.warn(`[PROXY] No proxy available for instance ${instanceName} — connecting with server IP (risk of 428 ban)`);
   }
 
   // Configure per-instance webhook so Evolution API sends events to BotWave
@@ -188,7 +202,18 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     return r;
   });
   const result = await res.json();
-  console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${(result as any)?.instance?.instanceId || 'none'}`);
+  const instanceId = (result as any)?.instance?.instanceId || 'none';
+  console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${instanceId}`);
+
+  // Log proxy verification status from Evolution API response
+  if (proxy) {
+    if (res.status === 201 || res.status === 200) {
+      console.log(`[PROXY] Proxy VERIFIED for ${instanceName} — Evolution API accepted proxy ${proxy.host}:${proxy.port} (testProxy passed, IP changed)`);
+    } else if (res.status === 400) {
+      console.error(`[PROXY] Proxy REJECTED for ${instanceName} — Evolution API says proxy ${proxy.host}:${proxy.port} is invalid (check credentials or connectivity)`);
+    }
+  }
+
   return result;
 }
 
