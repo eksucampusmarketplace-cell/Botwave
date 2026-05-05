@@ -41,6 +41,12 @@ export default function DashboardNav() {
           <Link href="/dashboard/sessions" data-tour="nav-sessions" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SESSIONS
           </Link>
+          <Link href="/dashboard/messages" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+            MESSAGES
+          </Link>
+          <Link href="/dashboard/analytics" data-tour="nav-analytics" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+            ANALYTICS
+          </Link>
           <Link href="/dashboard/settings" data-tour="nav-settings" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SETTINGS
           </Link>
@@ -93,6 +99,20 @@ export default function DashboardNav() {
                 className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
               >
                 SESSIONS
+              </Link>
+              <Link
+                href="/dashboard/messages"
+                onClick={() => setMenuOpen(false)}
+                className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
+              >
+                MESSAGES
+              </Link>
+              <Link
+                href="/dashboard/analytics"
+                onClick={() => setMenuOpen(false)}
+                className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
+              >
+                ANALYTICS
               </Link>
               <Link
                 href="/dashboard/settings"

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('user_settings')
-      .select('groq_api_key, afk_enabled, afk_message, bot_name, skip_probability')
+      .select('groq_api_key, afk_enabled, afk_message, bot_name, skip_probability, welcome_message, command_prefix, timezone')
       .eq('user_id', user.id)
       .single();
 
@@ -26,6 +26,9 @@ export async function GET(req: NextRequest) {
       afkMessage: data?.afk_message ?? 'I am currently away',
       botName: data?.bot_name ?? 'BotWave',
       skipProbability: data?.skip_probability ?? 0.15,
+      welcomeMessage: data?.welcome_message ?? '',
+      commandPrefix: data?.command_prefix ?? '!',
+      timezone: data?.timezone ?? '',
     });
   } catch (error) {
     console.error('Error fetching user settings:', error);
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { groqApiKey, afkEnabled, afkMessage, botName, skipProbability } = body;
+    const { groqApiKey, afkEnabled, afkMessage, botName, skipProbability, welcomeMessage, commandPrefix, timezone } = body;
 
     const updateData: Record<string, unknown> = {
       user_id: user.id,
@@ -59,6 +62,9 @@ export async function POST(req: NextRequest) {
     if (afkEnabled !== undefined) updateData.afk_enabled = afkEnabled;
     if (afkMessage !== undefined) updateData.afk_message = afkMessage;
     if (botName !== undefined) updateData.bot_name = botName;
+    if (welcomeMessage !== undefined) updateData.welcome_message = welcomeMessage;
+    if (commandPrefix !== undefined) updateData.command_prefix = commandPrefix || '!';
+    if (timezone !== undefined) updateData.timezone = timezone;
     if (skipProbability !== undefined) {
       const clamped = Math.max(0, Math.min(1, Number(skipProbability) || 0.15));
       updateData.skip_probability = clamped;
