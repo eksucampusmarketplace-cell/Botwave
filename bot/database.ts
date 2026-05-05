@@ -322,6 +322,20 @@ export async function logPairingEvent(
   statusCode?: number,
   details?: Record<string, unknown>,
 ) {
+  // Verify the session still exists before inserting to avoid FK violations.
+  // The session may have been deleted between the time the event occurred and
+  // the audit log insert (race condition with cascade deletes).
+  const { data: exists } = await supabase
+    .from('bot_sessions')
+    .select('id')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  if (!exists) {
+    console.warn(`[AUDIT] Skipping pairing event ${eventType} — session ${sessionId} not found in bot_sessions`);
+    return;
+  }
+
   const { error } = await supabase
     .from('pairing_events')
     .insert({

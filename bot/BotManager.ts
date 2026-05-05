@@ -246,6 +246,14 @@ export class BotWaveBot {
         // users enough time to navigate WhatsApp Settings > Linked Devices.
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
         this.reconnectTimeout = setTimeout(async () => {
+          // Guard: if a terminal handler (428, loggedOut, max-retries) already
+          // moved the session to needs_reauth and cleared the socket, do NOT
+          // overwrite that state. The timer was scheduled before the error
+          // occurred and is now stale.
+          if (this.pairingStartedAt === 0 && !this.socket) {
+            console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=0, socket=null) — skipping restart`);
+            return;
+          }
           if (!this.isReady && this.qrCode === qr) {
             console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
             // Reset pairingStartedAt BEFORE closing so syncSessionsWithDb
@@ -351,8 +359,15 @@ export class BotWaveBot {
         if (statusCode === 428 && !this.isReady) {
           console.log(`[ERR_428] [${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
           logPairingEvent(this.sessionId, '428_received', this.workerUrl, 428).catch(() => {});
+          // Cancel the QR expiry timer to prevent it from overwriting
+          // needs_reauth back to qr_pending after this handler finishes.
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+          }
           this.isReconnecting = false;
           this.pairingStartedAt = 0;
+          this.isPairingSent = false;
           this.socket = null;
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
@@ -363,6 +378,10 @@ export class BotWaveBot {
 
         if (!shouldReconnect) {
           console.log(`[${this.sessionId}] Logged out by WhatsApp (statusCode=${statusCode}). Clearing auth, releasing lock, setting needs_reauth.`);
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+          }
           this.isReconnecting = false;
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
@@ -384,6 +403,10 @@ export class BotWaveBot {
           // Hard limit: max 3 reconnect attempts
           if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth, releasing lock, stopping.`);
+            if (this.reconnectTimeout) {
+              clearTimeout(this.reconnectTimeout);
+              this.reconnectTimeout = null;
+            }
             this.isReconnecting = false;
             await clearAuthState(this.sessionId);
             await releaseLock(this.sessionId);
