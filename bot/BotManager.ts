@@ -26,6 +26,7 @@ const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 5000;
+const PAIRING_TIMEOUT_MS = 180_000;
 
 // Proxy pool for Baileys direct mode — distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
@@ -150,7 +151,7 @@ export class BotWaveBot {
       keepAliveIntervalMs: 30_000,
       retryRequestDelayMs: 350,
       fireInitQueries: true,
-      qrTimeout: 180_000,
+      qrTimeout: PAIRING_TIMEOUT_MS,
     });
     console.log(`[${this.sessionId}] WASocket created. Setting up event handlers...`);
 
@@ -243,7 +244,7 @@ export class BotWaveBot {
             await clearAuthState(this.sessionId);
             this.socket?.end(new Error('QR_TIMEOUT'));
           }
-        }, 180000);
+        }, PAIRING_TIMEOUT_MS);
       }
 
       if (connection === 'close') {
@@ -647,7 +648,7 @@ class EvolutionBot {
     }
 
     let pairingWaitStart = Date.now();
-    const PAIRING_TIMEOUT_MS = 180_000; // 3 min for pairing
+    // Use module-level PAIRING_TIMEOUT_MS (180s = 3 min for pairing)
     const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
     const reconnectStart = Date.now();
     let unknownStateCount = 0;
@@ -871,7 +872,7 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
   // Check if any in-memory bot is actively pairing (started <3 min ago).
   // pairingStartedAt is set BEFORE the WebSocket opens (in start()) so
   // even bots still connecting count as "pairing in progress".
-  const PAIRING_TIMEOUT_MS = 180_000; // 3 min (matches pairing code expiry)
+  // Use module-level PAIRING_TIMEOUT_MS (180s = 3 min, matches pairing code expiry)
   let pairingInProgress = false;
   for (const [, bot] of activeBots) {
     const status = bot.getStatus();
