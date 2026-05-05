@@ -297,8 +297,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
-    // Anti-spam flood detection
-    if (isGroup && isSpamming(senderJid)) {
+    // Anti-spam flood detection — never block commands (owner needs reliable access)
+    if (isGroup && !isCommand && isSpamming(senderJid)) {
       const response = pickResponse(spamWarnings, { name: pushName, time: currentTimeStr() });
       await sendReply(chatJid, response, sock, message.key, queue);
       return;
