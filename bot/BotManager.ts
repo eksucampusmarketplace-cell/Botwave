@@ -544,6 +544,7 @@ class EvolutionBot {
   /**
    * Poll Evolution API every 5 seconds to detect connection state changes.
    * Handles transitions between connecting, open, close, and unknown states.
+   * Tracks both pairing and reconnection lifecycles with proper timeouts.
    */
   private startPollLoop(): void {
     if (this.pollHandle) {
@@ -552,7 +553,9 @@ class EvolutionBot {
     }
 
     let pairingWaitStart = Date.now();
-    const PAIRING_TIMEOUT_MS = 180_000;
+    const PAIRING_TIMEOUT_MS = 180_000; // 3 min for pairing
+    const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
+    const reconnectStart = Date.now();
     let unknownStateCount = 0;
     const MAX_UNKNOWN_BEFORE_RECREATE = 3;
     let isRecreating = false;
@@ -573,11 +576,25 @@ class EvolutionBot {
 
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
           this.startPresenceLoop();
-        } else if (state === 'connecting' && this.isPairingSent) {
+        } else if (state === 'connecting') {
           unknownStateCount = 0;
+          // Waiting for connection — applies to both pairing and reconnect.
+          // Check for timeouts so we don't wait forever.
+          if (this.isPairingSent) {
+            // Pairing in progress — use pairing timeout
+          } else if (this.isReconnecting && Date.now() - reconnectStart > RECONNECT_TIMEOUT_MS) {
+            console.log(`[EVO] Reconnect timed out for ${this.sessionId} — stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
+            if (this.pollHandle) {
+              clearInterval(this.pollHandle);
+              this.pollHandle = null;
+            }
+          }
         } else if (state === 'close' || state === 'refused') {
           unknownStateCount = 0;
           if (this.isReady) {
+            // Was connected, now disconnected
             this.isReady = false;
             this.isPairingSent = false;
             await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -600,6 +617,17 @@ class EvolutionBot {
             console.log(`[EVO] Pairing timed out for ${this.sessionId}`);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.isPairingSent = false;
+            if (this.pollHandle) {
+              clearInterval(this.pollHandle);
+              this.pollHandle = null;
+            }
+          } else if (this.isReconnecting && !this.isPairingSent) {
+            // Reconnect attempt ended with close/refused — the session is
+            // genuinely disconnected. Update DB immediately to avoid stale
+            // "active" state in the dashboard.
+            console.log(`[EVO] Reconnect ended with ${state} for ${this.sessionId} — marking needs_reauth`);
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
             if (this.pollHandle) {
               clearInterval(this.pollHandle);
               this.pollHandle = null;
