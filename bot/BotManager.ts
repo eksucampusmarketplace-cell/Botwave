@@ -931,13 +931,20 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 
     // If the session needs a fresh connection but an old dead bot
     // is still in the map, stop it first so a new one can take over.
-    // Never kill a bot that has already sent a pairing code and is waiting.
+    // Never kill a bot that is actively pairing or waiting for a code.
     if (bot && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
       const status = bot.getStatus();
-      if (!status.isReady && !status.isReconnecting && !status.isPairingSent) {
+      // Guard: pairingStartedAt > 0 means the bot is actively trying to pair
+      // (set before WebSocket opens). isPairingSent means code was already sent.
+      // isReconnecting means Baileys is reconnecting after a drop.
+      // Only replace if NONE of these are true — the bot is truly dead.
+      const isActivelyPairing = status.pairingStartedAt > 0 && (Date.now() - status.pairingStartedAt) < PAIRING_TIMEOUT_MS;
+      if (!status.isReady && !status.isReconnecting && !status.isPairingSent && !isActivelyPairing) {
         console.log(`[SYNC] Replacing dead bot for session: ${session.id} (state: ${session.state})`);
         await bot.stop();
         activeBots.delete(session.id);
+      } else {
+        console.log(`[SYNC] Keeping active bot for session: ${session.id.slice(0, 8)} (isPairingSent=${status.isPairingSent} pairingAge=${status.pairingStartedAt > 0 ? Math.round((Date.now() - status.pairingStartedAt) / 1000) + 's' : 'none'} isReconnecting=${status.isReconnecting})`);
       }
     }
 
