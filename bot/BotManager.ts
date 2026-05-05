@@ -737,6 +737,11 @@ export function initializeBot() {
     start: async () => {
       await initDatabase();
       console.log(`BotWave bot service started (mode: ${USE_EVOLUTION ? 'Evolution API' : 'Baileys direct'})`);
+
+      // Warn if Evolution API may not persist sessions across redeploys
+      if (USE_EVOLUTION) {
+        console.log('[BOT] Evolution API mode — ensure DATABASE_SAVE_DATA_INSTANCE=true is set on your Evolution API service for sessions to survive redeploys');
+      }
     },
     stop: async (preserveInstances = false) => {
       for (const [id, bot] of activeBots) {

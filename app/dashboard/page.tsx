@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
+  const [stats, setStats] = useState({ totalMessages: 0, totalCommands: 0, uptimePercent: 0 });
 
   const activeSessionRef = useRef<any>(null);
 
@@ -53,10 +54,21 @@ export default function DashboardPage() {
         }
       }
 
-      const featRes = await fetch('/api/bot/features');
+      const [featRes, statsRes] = await Promise.all([
+        fetch('/api/bot/features'),
+        fetch('/api/bot/stats'),
+      ]);
       const featData = await featRes.json();
       if (featData.success) {
         setActiveFeatures(featData.data.filter((f: any) => f.enabled).map((f: any) => f.feature_name));
+      }
+      const statsData = await statsRes.json();
+      if (statsData.success) {
+        setStats({
+          totalMessages: statsData.data.totalMessages || 0,
+          totalCommands: statsData.data.totalCommands || 0,
+          uptimePercent: statsData.data.uptimePercent || 0,
+        });
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -202,8 +214,10 @@ export default function DashboardPage() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <span className="w-2 h-2 bg-green rounded-full animate-pulse" />
-            <span className="font-mono text-xs tracking-[4px] text-green">{"// SYSTEM ACTIVE"}</span>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${sessions.some(s => s.state === 'active') ? 'bg-green' : sessions.some(s => s.state === 'needs_reauth') ? 'bg-yellow-500' : 'bg-red-400'}`} />
+            <span className={`font-mono text-xs tracking-[4px] ${sessions.some(s => s.state === 'active') ? 'text-green' : sessions.some(s => s.state === 'needs_reauth') ? 'text-yellow-500' : 'text-red-400'}`}>
+              {sessions.some(s => s.state === 'active') ? '// SYSTEM ACTIVE' : sessions.some(s => s.state === 'needs_reauth') ? '// RECONNECT REQUIRED' : sessions.length > 0 ? '// SYSTEM OFFLINE' : '// NO SESSIONS'}
+            </span>
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
             CONTROL <span className="text-green">PANEL</span>
@@ -288,7 +302,14 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <BotStatus isActive={sessions.some(s => s.state === 'active')} sessionCount={sessions.length} />
+              <BotStatus
+                isActive={sessions.some(s => s.state === 'active')}
+                sessionCount={sessions.length}
+                needsReauth={sessions.filter(s => s.state === 'needs_reauth').length}
+                totalMessages={stats.totalMessages}
+                totalCommands={stats.totalCommands}
+                uptimePercent={stats.uptimePercent}
+              />
             </motion.div>
 
             <motion.div
@@ -309,15 +330,15 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">MESSAGES</span>
-                  <span className="font-display text-xl text-green">0</span>
+                  <span className="font-display text-xl text-green">{stats.totalMessages.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">COMMANDS</span>
-                  <span className="font-display text-xl text-green">0</span>
+                  <span className="font-display text-xl text-green">{stats.totalCommands.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">UPTIME</span>
-                  <span className="font-display text-xl text-cyan">0%</span>
+                  <span className="font-display text-xl text-cyan">{stats.uptimePercent}%</span>
                 </div>
               </div>
             </motion.div>
