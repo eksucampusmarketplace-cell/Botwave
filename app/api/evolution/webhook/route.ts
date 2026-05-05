@@ -116,15 +116,17 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (current?.state === 'active') {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — clearing auth, lock, and setting needs_reauth`);
+          // Temporary disconnect — preserve auth state so Evolution API can
+          // auto-reconnect without forcing the user to re-pair.  Only clear
+          // transient fields (locks, QR) so the sync loop picks this up.
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — setting inactive (auth preserved for auto-reconnect)`);
           await supabase.from('bot_sessions')
             .update({
-              state: 'needs_reauth',
+              state: 'inactive',
               qr_code: null,
               qr_expires_at: null,
               qr_generated_at: null,
               pairing_code: null,
-              auth_state: null,
               locked_by: null,
               locked_at: null,
               heartbeat_at: null,

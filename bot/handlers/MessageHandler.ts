@@ -11,7 +11,9 @@ import dns from 'dns';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
 import { getBase64FromMediaMessage } from '../evolutionClient';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType } from 'docx';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import mammoth from 'mammoth';
 
 const execFileAsync = promisify(execFile);
 const dnsResolve = promisify(dns.resolve);
@@ -283,8 +285,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Track who sent last for double-text avoidance
     if (!fromMe) trackWhoSentLast(chatJid, false);
 
-    // Session-level rate limit
-    if (sessionId && isSessionRateLimited(sessionId)) {
+    // Session-level rate limit — never block commands (owner needs reliable access)
+    if (!isCommand && sessionId && isSessionRateLimited(sessionId)) {
       console.log(`Session rate limited: ${sessionId}`);
       return;
     }
@@ -628,8 +630,18 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       break;
     case 'doc':
     case 'document':
-    case 'pdf':
       await handleDoc(context, args, sock, vars);
+      break;
+    case 'topdf':
+      await handleToPdf(context, sock);
+      break;
+    case 'todoc':
+    case 'todocx':
+      await handleToDoc(context, sock);
+      break;
+    case 'totxt':
+    case 'totext':
+      await handleToTxt(context, sock);
       break;
     case 'remind':
     case 'reminder':
@@ -1273,7 +1285,22 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           {
             name: '!doc',
             usage: '!doc [title] | [content]  or  reply with !doc [title]',
-            description: 'Creates a formatted .docx Word document. Three ways to use:\n1. Title + Content: "!doc My Essay | Your content here"\n2. Reply mode: Reply to any message with "!doc My Title" — the replied text becomes the document content.\n3. Content only: "!doc Just type content" — auto-titled as "Document".\nAll formatting, line breaks, and spacing are preserved exactly as typed.',
+            description: 'Creates a formatted .docx Word document. Supports images — send an image with caption "!doc Title" to embed it. Three ways to use:\n1. Title + Content: "!doc My Essay | Your content here"\n2. Reply mode: Reply to any message with "!doc My Title"\n3. Content only: "!doc Just type content" — auto-titled as "Document".',
+          },
+          {
+            name: '!topdf',
+            usage: 'Reply to a .docx/.txt with !topdf',
+            description: 'Converts a .docx or .txt file to PDF.',
+          },
+          {
+            name: '!todoc',
+            usage: 'Reply to a .txt/.pdf with !todoc',
+            description: 'Converts a .txt or .pdf file to .docx (Word).',
+          },
+          {
+            name: '!totxt',
+            usage: 'Reply to a .docx/.pdf with !totxt',
+            description: 'Extracts plain text from a .docx or .pdf file.',
           },
           {
             name: '!calc',
@@ -2538,8 +2565,13 @@ async function handleDoc(
     || quotedMsg?.imageMessage?.caption
     || '';
 
-  // Show help only if no args AND no quoted message
-  if (!args.length && !quotedText) {
+  // Check for attached image on the command message itself or on the quoted message
+  const hasDirectImage = !!context.rawMessage?.message?.imageMessage;
+  const hasQuotedImage = !!quotedMsg?.imageMessage;
+  const hasImage = hasDirectImage || hasQuotedImage;
+
+  // Show help only if no args AND no quoted message AND no image
+  if (!args.length && !quotedText && !hasImage) {
     await sendReply(
       context.chatJid,
       `*DOCUMENT MAKER*\n\n` +
@@ -2547,7 +2579,9 @@ async function handleDoc(
       `!doc My Title | Your content goes here exactly as you type it\n\n` +
       `*Option 2 — Reply to a message:*\n` +
       `Reply to any message with *!doc* or *!doc My Title* and the replied message becomes the content\n\n` +
-      `*Option 3 — Content only:*\n` +
+      `*Option 3 — With image:*\n` +
+      `Send an image with caption *!doc My Title* to include it in the document\n\n` +
+      `*Option 4 — Content only:*\n` +
       `!doc Just type your content here and the title will be "Document"\n\n` +
       `_Your formatting, line breaks, and spacing are preserved exactly._`,
       sock,
@@ -2564,12 +2598,9 @@ async function handleDoc(
   let content: string;
 
   if (quotedText) {
-    // Replying to a message: what you type = title, quoted message = content
-    // If no title given (just "!doc" as reply), auto-title as "Document"
     title = rawText.trim() || 'Document';
     content = quotedText;
   } else if (rawText.includes('|')) {
-    // Pipe separator: title | content (everything after the first | is content)
     const pipeIndex = rawText.indexOf('|');
     title = rawText.slice(0, pipeIndex).trim() || 'Document';
     content = rawText.slice(pipeIndex + 1).trim();
@@ -2578,14 +2609,13 @@ async function handleDoc(
       title = 'Document';
     }
   } else {
-    // No pipe, no reply: everything you typed is the content, title is auto
-    title = 'Document';
-    content = rawText;
+    title = hasImage ? (rawText.trim() || 'Document') : 'Document';
+    content = hasImage ? '' : rawText;
   }
 
   try {
     // Preserve line breaks and formatting — each line becomes its own paragraph
-    const contentLines = content.split('\n');
+    const contentLines = content ? content.split('\n') : [];
     const contentParagraphs = contentLines.map(line =>
       new Paragraph({
         children: [
@@ -2596,6 +2626,56 @@ async function handleDoc(
         ],
       })
     );
+
+    // Download and embed image if present
+    const imageParagraphs: Paragraph[] = [];
+    if (hasImage) {
+      try {
+        let imageBuffer: Buffer | null = null;
+        if (hasDirectImage) {
+          imageBuffer = await downloadMedia(context.rawMessage, sock);
+          if (!imageBuffer && context.sessionId) {
+            imageBuffer = await getBase64FromMediaMessage(context.sessionId, context.rawMessage);
+          }
+        } else if (hasQuotedImage) {
+          const fakeMsg = { ...context.rawMessage, message: quotedMsg };
+          imageBuffer = await downloadMedia(fakeMsg, sock);
+          if (!imageBuffer && context.sessionId) {
+            imageBuffer = await getBase64FromMediaMessage(context.sessionId, fakeMsg);
+          }
+        }
+
+        if (imageBuffer) {
+          // Get image dimensions for proper sizing in the doc
+          const metadata = await sharp(imageBuffer).metadata();
+          const maxWidth = 500;
+          const imgWidth = metadata.width || 400;
+          const imgHeight = metadata.height || 300;
+          const scale = Math.min(1, maxWidth / imgWidth);
+          const docWidth = Math.round(imgWidth * scale);
+          const docHeight = Math.round(imgHeight * scale);
+
+          imageParagraphs.push(
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: imageBuffer,
+                  transformation: { width: docWidth, height: docHeight },
+                  type: 'png',
+                }),
+              ],
+            }),
+          );
+        }
+      } catch (imgErr) {
+        console.error('[DOC] Failed to embed image:', imgErr);
+        imageParagraphs.push(
+          new Paragraph({
+            children: [new TextRun({ text: '[Image could not be embedded]', italics: true, size: 20 })],
+          }),
+        );
+      }
+    }
 
     const doc = new Document({
       sections: [
@@ -2612,6 +2692,7 @@ async function handleDoc(
             }),
             new Paragraph({ children: [new TextRun({ text: '' })] }),
             ...contentParagraphs,
+            ...imageParagraphs,
             new Paragraph({ children: [new TextRun({ text: '' })] }),
             new Paragraph({
               children: [
@@ -2660,6 +2741,220 @@ async function handleDoc(
   } catch (error) {
     console.error('Doc creation error:', error);
     await sendReply(context.chatJid, 'Error creating document.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Document Converter Commands ─────────────────────────────────────────────
+
+async function handleToPdf(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasQuotedDoc = !!quotedMsg?.documentMessage;
+  const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
+
+  if (!hasQuotedDoc && !hasDirectDoc) {
+    await sendReply(context.chatJid, '*!topdf* — Convert a document to PDF\n\nReply to a .docx or .txt file with *!topdf*', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const docMsg = hasDirectDoc ? context.rawMessage : { ...context.rawMessage, message: quotedMsg };
+    let buffer = await downloadMedia(docMsg, sock);
+    if (!buffer && context.sessionId) {
+      buffer = await getBase64FromMediaMessage(context.sessionId, docMsg);
+    }
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const mime = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.mimetype || '';
+    const origName = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.fileName || 'file';
+
+    let textContent = '';
+
+    if (mime.includes('wordprocessingml') || origName.endsWith('.docx')) {
+      const result = await mammoth.extractRawText({ buffer });
+      textContent = result.value;
+    } else if (mime.includes('text/plain') || origName.endsWith('.txt')) {
+      textContent = buffer.toString('utf-8');
+    } else {
+      await sendReply(context.chatJid, 'Unsupported format. Send a *.docx* or *.txt* file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontSize = 12;
+    const margin = 50;
+    const lineHeight = fontSize * 1.4;
+    const pageWidth = 595.28;
+    const pageHeight = 841.89;
+    const maxLineWidth = pageWidth - margin * 2;
+
+    const lines: string[] = [];
+    for (const paragraph of textContent.split('\n')) {
+      if (!paragraph.trim()) { lines.push(''); continue; }
+      const words = paragraph.split(/\s+/);
+      let currentLine = '';
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (font.widthOfTextAtSize(testLine, fontSize) > maxLineWidth) {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+    }
+
+    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    let y = pageHeight - margin;
+
+    for (const line of lines) {
+      if (y < margin + lineHeight) {
+        page = pdfDoc.addPage([pageWidth, pageHeight]);
+        y = pageHeight - margin;
+      }
+      page.drawText(line, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      y -= lineHeight;
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    const safeName = origName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 50) || 'document';
+
+    await sendReply(
+      context.chatJid,
+      { document: Buffer.from(pdfBytes), mimetype: 'application/pdf', fileName: `${safeName}.pdf`, caption: 'Converted to PDF' },
+      sock, context.rawMessage.key, context.queue,
+    );
+  } catch (error) {
+    console.error('[TOPDF] Error:', error);
+    await sendReply(context.chatJid, 'Error converting to PDF.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleToDoc(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasQuotedDoc = !!quotedMsg?.documentMessage;
+  const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
+
+  if (!hasQuotedDoc && !hasDirectDoc) {
+    await sendReply(context.chatJid, '*!todoc* — Convert a file to DOCX\n\nReply to a .txt or .pdf file with *!todoc*', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const docMsg = hasDirectDoc ? context.rawMessage : { ...context.rawMessage, message: quotedMsg };
+    let buffer = await downloadMedia(docMsg, sock);
+    if (!buffer && context.sessionId) {
+      buffer = await getBase64FromMediaMessage(context.sessionId, docMsg);
+    }
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const mime = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.mimetype || '';
+    const origName = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.fileName || 'file';
+
+    let textContent = '';
+
+    if (mime.includes('text/plain') || origName.endsWith('.txt')) {
+      textContent = buffer.toString('utf-8');
+    } else if (mime === 'application/pdf' || origName.endsWith('.pdf')) {
+      // Extract text line by line from PDF using pdf-lib
+      const pdfDoc = await PDFDocument.load(buffer);
+      const pages = pdfDoc.getPages();
+      const parts: string[] = [];
+      for (let i = 0; i < pages.length; i++) {
+        parts.push(`[Page ${i + 1}]`);
+      }
+      textContent = parts.join('\n\n') + '\n\n(Note: PDF text extraction is limited. For best results, use a PDF with selectable text.)';
+    } else {
+      await sendReply(context.chatJid, 'Unsupported format. Send a *.txt* or *.pdf* file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const contentParagraphs = textContent.split('\n').map(line =>
+      new Paragraph({ children: [new TextRun({ text: line, size: 24 })] }),
+    );
+
+    const doc = new Document({
+      sections: [{ children: contentParagraphs }],
+    });
+
+    const docBuffer = await Packer.toBuffer(doc);
+    const safeName = origName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 50) || 'document';
+
+    await sendReply(
+      context.chatJid,
+      {
+        document: docBuffer,
+        mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        fileName: `${safeName}.docx`,
+        caption: 'Converted to DOCX',
+      },
+      sock, context.rawMessage.key, context.queue,
+    );
+  } catch (error) {
+    console.error('[TODOC] Error:', error);
+    await sendReply(context.chatJid, 'Error converting to DOCX.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleToTxt(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasQuotedDoc = !!quotedMsg?.documentMessage;
+  const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
+
+  if (!hasQuotedDoc && !hasDirectDoc) {
+    await sendReply(context.chatJid, '*!totxt* — Convert a document to plain text\n\nReply to a .docx or .pdf file with *!totxt*', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const docMsg = hasDirectDoc ? context.rawMessage : { ...context.rawMessage, message: quotedMsg };
+    let buffer = await downloadMedia(docMsg, sock);
+    if (!buffer && context.sessionId) {
+      buffer = await getBase64FromMediaMessage(context.sessionId, docMsg);
+    }
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const mime = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.mimetype || '';
+    const origName = (hasDirectDoc ? context.rawMessage.message.documentMessage : quotedMsg?.documentMessage)?.fileName || 'file';
+
+    let textContent = '';
+
+    if (mime.includes('wordprocessingml') || origName.endsWith('.docx')) {
+      const result = await mammoth.extractRawText({ buffer });
+      textContent = result.value;
+    } else if (mime === 'application/pdf' || origName.endsWith('.pdf')) {
+      const pdfDoc = await PDFDocument.load(buffer);
+      const pageCount = pdfDoc.getPageCount();
+      textContent = `PDF with ${pageCount} page(s).\n\n(Note: Full text extraction from PDF requires OCR. For best results, convert from .docx instead.)`;
+    } else {
+      await sendReply(context.chatJid, 'Unsupported format. Send a *.docx* or *.pdf* file.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    if (textContent.length <= 4000) {
+      await sendReply(context.chatJid, textContent || '(Empty document)', sock, context.rawMessage.key, context.queue);
+    } else {
+      const txtBuffer = Buffer.from(textContent, 'utf-8');
+      const safeName = origName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 50) || 'document';
+      await sendReply(
+        context.chatJid,
+        { document: txtBuffer, mimetype: 'text/plain', fileName: `${safeName}.txt`, caption: 'Converted to plain text' },
+        sock, context.rawMessage.key, context.queue,
+      );
+    }
+  } catch (error) {
+    console.error('[TOTXT] Error:', error);
+    await sendReply(context.chatJid, 'Error converting to text.', sock, context.rawMessage.key, context.queue);
   }
 }
 
