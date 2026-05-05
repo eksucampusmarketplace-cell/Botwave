@@ -13,16 +13,31 @@ export async function GET() {
     }
 
     const encoder = new TextEncoder();
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let closed = false;
+
+    const cleanup = () => {
+      closed = true;
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    };
 
     const stream = new ReadableStream({
       start(controller) {
         const sendEvent = (event: string, data: unknown) => {
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          if (closed) return;
+          try {
+            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+          } catch {
+            cleanup();
+          }
         };
 
         sendEvent('connected', { userId: user.id, timestamp: Date.now() });
 
-        const interval = setInterval(async () => {
+        intervalId = setInterval(async () => {
+          if (closed) return;
           try {
             const [sessRes, statsRes] = await Promise.all([
               supabase.from('bot_sessions').select('id, session_name, phone_number, state, last_active').eq('user_id', user.id),
@@ -39,17 +54,15 @@ export async function GET() {
           }
         }, 5000);
 
-        const timeout = setTimeout(() => {
-          clearInterval(interval);
-          controller.close();
+        timeoutId = setTimeout(() => {
+          cleanup();
+          try { controller.close(); } catch { /* already closed */ }
         }, 5 * 60 * 1000);
 
         controller.enqueue(encoder.encode(': keepalive\n\n'));
-
-        return () => {
-          clearInterval(interval);
-          clearTimeout(timeout);
-        };
+      },
+      cancel() {
+        cleanup();
       },
     });
 
