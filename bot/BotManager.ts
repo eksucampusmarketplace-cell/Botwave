@@ -64,7 +64,14 @@ export class BotWaveBot {
     console.log(`[${this.sessionId}] Loading auth state from Supabase...`);
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
     console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}`);
-    
+
+    // Mark pairing start EARLY — before the WebSocket opens — so the
+    // queue in syncSessionsWithDb blocks other sessions immediately.
+    // Only for unregistered sessions that will need to pair.
+    if (!state.creds.registered) {
+      this.pairingStartedAt = Date.now();
+    }
+
     let version: any;
     try {
       console.log(`[${this.sessionId}] Fetching latest Baileys version...`);
@@ -263,6 +270,7 @@ export class BotWaveBot {
         if (statusCode === 428 && !this.isReady) {
           console.log(`[${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
           this.isReconnecting = false;
+          this.pairingStartedAt = 0;
           this.socket = null;
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
@@ -489,6 +497,12 @@ class EvolutionBot {
   async start(): Promise<void> {
     console.log(`[EVO] Starting session ${this.sessionId} for ${this.phoneNumber} (previousDbState=${this.previousDbState})`);
     this.isReconnecting = true;
+
+    // Mark pairing start EARLY so the queue blocks other sessions immediately.
+    // Only for fresh sessions that will need to pair (not reconnecting existing ones).
+    if (this.previousDbState === 'qr_pending') {
+      this.pairingStartedAt = Date.now();
+    }
 
     // Register for warmup tracking (advanced anti-ban)
     registerSessionStart(this.sessionId);
@@ -789,13 +803,15 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 
   // Check if any in-memory bot is actively pairing (started <3 min ago).
   // Only checks bots this worker process owns — not DB state from other workers.
+  // pairingStartedAt is set BEFORE the WebSocket opens (in start()) so
+  // even bots still connecting count as "pairing in progress".
   const PAIRING_TIMEOUT_MS = 180_000; // 3 min (matches pairing code expiry)
   let pairingInProgress = false;
   for (const [, bot] of activeBots) {
     const status = bot.getStatus();
-    if (!status.isReady && (status.isQrPending || status.isPairingSent)) {
-      const elapsed = Date.now() - (status.pairingStartedAt || 0);
-      if (status.pairingStartedAt > 0 && elapsed < PAIRING_TIMEOUT_MS) {
+    if (!status.isReady && status.pairingStartedAt > 0) {
+      const elapsed = Date.now() - status.pairingStartedAt;
+      if (elapsed < PAIRING_TIMEOUT_MS) {
         pairingInProgress = true;
         break;
       }
