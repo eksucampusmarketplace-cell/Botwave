@@ -425,9 +425,15 @@ export class BotWaveBot {
             }
           }
         } else {
-          // Hard limit: max 3 reconnect attempts
-          if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth, releasing lock, stopping.`);
+          // Reconnect with exponential backoff — preserve auth credentials so the
+          // session auto-recovers after temporary disconnects (network blip, Render
+          // restart, etc.) without forcing the user to re-pair.
+          // Only give up after MAX_RECONNECT_ATTEMPTS if the session was never
+          // successfully connected (pairing phase). Once connected, retry indefinitely
+          // with capped backoff — the auth state is valid and worth preserving.
+          const wasEverConnected = this.isReady || this.reconnectAttempts > 0;
+          if (!wasEverConnected && this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached during initial pairing. Setting needs_reauth (auth preserved for manual retry).`);
             cancelPendingLinks(this.sessionId);
             if (this.reconnectTimeout) {
               clearTimeout(this.reconnectTimeout);
@@ -435,7 +441,6 @@ export class BotWaveBot {
             }
             this.isReconnecting = false;
             this.pairingStartedAt = -1;
-            await clearAuthState(this.sessionId);
             await releaseLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.socket = null;
@@ -450,17 +455,16 @@ export class BotWaveBot {
           }
           this.socket = null;
           this.reconnectAttempts++;
-          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-          console.log(`[${this.sessionId}] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}). statusCode=${statusCode}`);
+          // Longer backoff for established sessions: cap at 2 minutes instead of 30s
+          const maxDelay = wasEverConnected ? 120000 : 30000;
+          const reconnectDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), maxDelay);
+          console.log(`[${this.sessionId}] Reconnecting in ${reconnectDelay}ms (attempt ${this.reconnectAttempts}, wasConnected=${wasEverConnected}). statusCode=${statusCode}`);
           if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
           }
           this.reconnectTimeout = setTimeout(() => {
-            // Keep isReconnecting=true until connection opens (or max retries).
-            // Setting it false here would create a race where syncSessionsWithDb
-            // sees isReconnecting=false and kills the bot before start() finishes.
             this.start();
-          }, delay);
+          }, reconnectDelay);
         }
       } else if (connection === 'open') {
         console.log(`[${this.sessionId}] Connection OPEN. Pairing successful! reconnectAttempts=${this.reconnectAttempts} workerUrl=${this.workerUrl ?? 'main'}`);
@@ -477,6 +481,12 @@ export class BotWaveBot {
         // Release DB pairing lock and log success
         releasePairingLock(this.sessionId).catch(() => {});
         logPairingEvent(this.sessionId, 'pairing_success', this.workerUrl).catch(() => {});
+
+        // Send 'available' on connect so WhatsApp shows the device as online
+        // instead of "last seen" — prevents the linked device appearing inactive.
+        try {
+          await this.socket.sendPresenceUpdate('available');
+        } catch { /* non-critical */ }
 
         // Start presence simulation (advanced anti-ban)
         startPresenceSimulation(this.socket, this.sessionId);
