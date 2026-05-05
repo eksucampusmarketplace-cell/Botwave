@@ -25,6 +25,14 @@ const defaultFeatures = [
   { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '📊' },
   { id: 'tools', name: 'SMART TOOLS', description: 'Weather, jokes, horoscope', icon: '🌤️' },
   { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '💬' },
+  { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '🔄' },
+  { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '👤' },
+  { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, cal, timezone, paste', icon: '⚡' },
+  { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '🔍' },
+  { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '✍️' },
+  { id: 'utilities', name: 'QUICK UTILITIES', description: 'pick, dice, password, uuid, unit, bmi', icon: '🔧' },
+  { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '🖼️' },
+  { id: 'social', name: 'SOCIAL', description: 'forward, base64, hash, color, save', icon: '🔗' },
 ];
 
 export default function DashboardPage() {
@@ -99,7 +107,11 @@ export default function DashboardPage() {
       ]);
       const featData = await featRes.json();
       if (featData.success) {
-        setActiveFeatures(featData.data.filter((f: BotFeature) => f.enabled).map((f: BotFeature) => f.feature_name));
+        // Features default to ON — only mark as off if explicitly disabled in DB
+        const explicitlyDisabled = new Set(
+          featData.data.filter((f: BotFeature) => !f.enabled).map((f: BotFeature) => f.feature_name)
+        );
+        setActiveFeatures(defaultFeatures.filter(f => !explicitlyDisabled.has(f.id)).map(f => f.id));
       }
       const statsData = await statsRes.json();
       if (statsData.success) {
@@ -174,7 +186,10 @@ export default function DashboardPage() {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            setActiveFeatures(data.data.filter((f: BotFeature) => f.enabled).map((f: BotFeature) => f.feature_name));
+            const explicitlyDisabled = new Set(
+              data.data.filter((f: BotFeature) => !f.enabled).map((f: BotFeature) => f.feature_name)
+            );
+            setActiveFeatures(defaultFeatures.filter(f => !explicitlyDisabled.has(f.id)).map(f => f.id));
           }
         })
         .catch(err => console.error('Error fetching session features:', err));
