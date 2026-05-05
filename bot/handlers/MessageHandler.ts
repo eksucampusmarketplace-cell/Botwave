@@ -1026,6 +1026,20 @@ async function checkAfkMentions(context: MessageContext, sock: any): Promise<voi
 
 // ─── Helper: Send with Human-Like Flow ────────────────────────────────────────
 
+/**
+ * Check whether content is text-only (no media attachments).
+ * Text-only content can be edited into the original command message.
+ */
+function isTextOnlyContent(content: any): boolean {
+  if (typeof content === 'string') return true;
+  if (content && typeof content === 'object' && content.text &&
+      !content.image && !content.sticker && !content.video &&
+      !content.audio && !content.document) {
+    return true;
+  }
+  return false;
+}
+
 async function sendReply(
   jid: string,
   content: any,
@@ -1047,6 +1061,25 @@ async function sendReply(
       processedContent = { ...processedContent, text: shortenForQuietHours(processedContent.text) };
     }
     processedContent = { ...processedContent, text: addMessageJitter(processedContent.text) };
+  }
+
+  // For text-only responses to the owner's own commands (fromMe), edit the
+  // original command message instead of sending a new message.
+  if (isTextOnlyContent(processedContent) && msgKey?.fromMe) {
+    const textContent = typeof processedContent === 'string'
+      ? processedContent
+      : processedContent.text;
+
+    // Small natural delay before editing
+    await delay(300 + Math.random() * 700);
+
+    try {
+      await sock.sendMessage(jid, { text: textContent, edit: msgKey });
+      return;
+    } catch (editErr) {
+      // Fallback to normal send if edit fails (e.g. message too old)
+      console.error('[EDIT] Edit failed, falling back to normal send:', editErr);
+    }
   }
 
   // Always show typing indicator before sending — even when using queue
