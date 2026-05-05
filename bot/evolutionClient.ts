@@ -395,6 +395,26 @@ export async function markAsRead(instanceName: string, keys: Array<{ remoteJid: 
   return res.json();
 }
 
+// Update profile status/bio text
+export async function updateProfileStatus(instanceName: string, status: string) {
+  const res = await apiFetch(`${BASE}/chat/updateProfileStatus/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ status }),
+  });
+  return res.json();
+}
+
+// Update profile picture (base64 image)
+export async function updateProfilePicture(instanceName: string, pictureBase64: string) {
+  const res = await apiFetch(`${BASE}/chat/updateProfilePicture/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ picture: pictureBase64 }),
+  });
+  return res.json();
+}
+
 // Send presence update (composing, paused, available, unavailable)
 export async function sendPresence(instanceName: string, jid: string, presence: string) {
   // Strip JID suffix — Evolution API expects plain number

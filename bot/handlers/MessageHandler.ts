@@ -1,9 +1,17 @@
 import { delay } from '../../lib/utils';
 import axios from 'axios';
 import sharp from 'sharp';
+import crypto from 'crypto';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { writeFile, unlink } from 'fs/promises';
+import path from 'path';
+import os from 'os';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+
+const execFileAsync = promisify(execFile);
 import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
@@ -731,6 +739,68 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'shorten':
       await handleShorten(context, args, sock);
       break;
+    case 'viewonce':
+    case 'vo':
+      await handleViewOnce(context, sock);
+      break;
+    case 'toimg':
+    case 'toimage':
+      await handleToImg(context, sock);
+      break;
+    case 'togif':
+      await handleToGif(context, sock);
+      break;
+    case 'toaudio':
+    case 'tomp3':
+      await handleToAudio(context, sock);
+      break;
+    case 'removebg':
+    case 'rbg':
+      await handleRemoveBg(context, sock);
+      break;
+    case 'carbon':
+    case 'code':
+      await handleCarbon(context, args, sock);
+      break;
+    case 'ss':
+    case 'screenshot':
+      await handleScreenshot(context, args, sock);
+      break;
+    case 'ocr':
+    case 'readtext':
+      await handleOCR(context, sock);
+      break;
+    case 'bio':
+    case 'about':
+      await handleBio(context, args, sock);
+      break;
+    case 'setpp':
+    case 'setpfp':
+    case 'profilepic':
+      await handleSetPP(context, sock);
+      break;
+    case 'markread':
+    case 'read':
+      await handleMarkRead(context, sock);
+      break;
+    case 'forward':
+    case 'fwd':
+      await handleForward(context, args, sock);
+      break;
+    case 'base64':
+    case 'b64':
+      await handleBase64(context, args, sock);
+      break;
+    case 'hash':
+    case 'md5':
+    case 'sha256':
+      await handleHash(context, args, sock, commandName);
+      break;
+    case 'color':
+    case 'colour':
+    case 'hex':
+      await handleColor(context, args, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -920,6 +990,27 @@ async function sendHelp(
 !repost [caption] — Reply to post as Status
 !tagall [msg] — Mention all group members
 !group — View group info
+
+*MEDIA & CONVERSION*
+!viewonce — Save view-once media
+!toimg — Sticker to image
+!togif — Animated sticker/video to GIF
+!toaudio — Extract audio from video
+!removebg — Remove image background
+!carbon [code] — Code screenshot
+!screenshot [url] — Website screenshot
+!ocr — Extract text from image
+
+*PROFILE*
+!bio [text] — Update WhatsApp bio
+!setpp — Set profile picture (reply to image)
+!read — Mark messages as read
+
+*UTILITIES*
+!forward [number] — Forward replied message
+!base64 encode/decode [text] — Base64
+!hash [text] — MD5 + SHA-256 hash
+!color [hex] — Color swatch generator
 
 _Type *!help doc* for a full guide with deep explanations._
 _Only the bot owner can use commands._`;
@@ -1185,6 +1276,96 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!group',
             usage: '!group',
             description: 'Displays detailed group information including the group name, description, creation date, participant count, and admin list. Only works in group chats.',
+          },
+        ],
+      },
+      {
+        title: 'MEDIA & CONVERSION',
+        commands: [
+          {
+            name: '!viewonce',
+            usage: '!viewonce (reply to view-once message)',
+            description: 'Saves a "view once" image, video, or audio and resends it as a normal message in the same chat. Reply to any view-once media with "!viewonce" to save it before it disappears.\n\nAliases: !vo',
+          },
+          {
+            name: '!toimg',
+            usage: '!toimg (reply to sticker)',
+            description: 'Converts a WhatsApp sticker back to a PNG image. Reply to any sticker with "!toimg" to get the original image. Works with both static and animated stickers (first frame for animated).\n\nAliases: !toimage',
+          },
+          {
+            name: '!togif',
+            usage: '!togif (reply to animated sticker or video)',
+            description: 'Converts an animated sticker or short video into a GIF-style looping video. Reply to an animated sticker or video with "!togif". Requires ffmpeg on the server.',
+          },
+          {
+            name: '!toaudio',
+            usage: '!toaudio (reply to video)',
+            description: 'Extracts the audio track from a video and sends it as an MP3 file. Reply to any video with "!toaudio" to get just the sound. Requires ffmpeg on the server.\n\nAliases: !tomp3',
+          },
+          {
+            name: '!removebg',
+            usage: '!removebg (reply to image)',
+            description: 'Removes the background from an image using edge-based color detection. Works best with solid-colored backgrounds (white, green screen, etc.). Reply to an image with "!removebg" to get a transparent PNG.\n\nAliases: !rbg',
+          },
+          {
+            name: '!carbon',
+            usage: '!carbon [code]  or  reply to text with !carbon',
+            description: 'Generates a beautiful code screenshot. Type your code after the command, or reply to a text message with "!carbon". The screenshot uses a dark theme with syntax-style formatting.\n\nAliases: !code',
+          },
+          {
+            name: '!screenshot',
+            usage: '!screenshot [url]',
+            description: 'Takes a screenshot of any website and sends it as an image. Provide the full URL after the command. Example: "!screenshot https://google.com". The screenshot is captured at 1280px width.\n\nAliases: !ss',
+          },
+          {
+            name: '!ocr',
+            usage: '!ocr (reply to image)',
+            description: 'Extracts text from an image using Optical Character Recognition (OCR). Reply to any image with "!ocr" to read the text in it. Supports English text. Uses Tesseract.js for local processing — no API key needed.\n\nAliases: !readtext',
+          },
+        ],
+      },
+      {
+        title: 'PROFILE',
+        commands: [
+          {
+            name: '!bio',
+            usage: '!bio [text]',
+            description: 'Updates your WhatsApp bio (About section). Maximum 139 characters. Example: "!bio Living my best life". Your bio is visible to all your contacts.\n\nAliases: !about',
+          },
+          {
+            name: '!setpp',
+            usage: '!setpp (reply to image)',
+            description: 'Sets your WhatsApp profile picture. Reply to an image with "!setpp" and the bot will resize it to a 640x640 square and set it as your profile picture.\n\nAliases: !setpfp, !profilepic',
+          },
+          {
+            name: '!read',
+            usage: '!read',
+            description: 'Marks messages in the current chat as read. Useful for quickly clearing unread indicators without manually reading each message.\n\nAliases: !markread',
+          },
+        ],
+      },
+      {
+        title: 'UTILITIES',
+        commands: [
+          {
+            name: '!forward',
+            usage: '!forward [phone number] (reply to message)',
+            description: 'Forwards a replied message to another contact. Reply to any message (text, image, video, audio, document) and use "!forward" followed by the phone number. Example: "!forward 2348012345678".\n\nAliases: !fwd',
+          },
+          {
+            name: '!base64',
+            usage: '!base64 encode [text]  |  !base64 decode [encoded]',
+            description: 'Encodes text to Base64 or decodes Base64 back to text. Useful for encoding data or decoding encoded strings.\n\nExamples:\n"!base64 encode Hello World" → SGVsbG8gV29ybGQ=\n"!base64 decode SGVsbG8gV29ybGQ=" → Hello World\n\nAliases: !b64',
+          },
+          {
+            name: '!hash',
+            usage: '!hash [text]  |  !md5 [text]  |  !sha256 [text]',
+            description: 'Generates cryptographic hashes of text. "!hash" shows both MD5 and SHA-256, while "!md5" and "!sha256" show only the specific hash. Useful for checksums and verification.\n\nExample: "!hash Hello World"',
+          },
+          {
+            name: '!color',
+            usage: '!color [hex code]',
+            description: 'Generates a visual color swatch from a hex color code. Shows the color as an image with the hex code and RGB values. Supports 3-digit and 6-digit hex codes.\n\nExamples: "!color #FF5733" or "!color 3498DB"\n\nAliases: !colour, !hex',
           },
         ],
       },
@@ -1854,32 +2035,62 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
   try {
     await sendReply(context.chatJid, 'Fetching media... this may take a moment.', sock, context.rawMessage.key, context.queue);
 
-    // Try cobalt API for video/audio download
-    const response = await axios.post('https://api.cobalt.tools/api/json', {
-      url,
-      vCodec: 'h264',
-      vQuality: '720',
-      aFormat: 'mp3',
-    }, {
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      timeout: 15000,
-    });
+    // Try yt-dlp binary first (supports 1000+ sites)
+    let downloaded = false;
+    try {
+      const tmpFile = path.join(os.tmpdir(), `botwave_dl_${Date.now()}`);
+      await execFileAsync('yt-dlp', [
+        '-f', 'best[filesize<50M]/best',
+        '--no-playlist',
+        '--max-filesize', '50M',
+        '-o', tmpFile + '.%(ext)s',
+        '--print', 'filename',
+        url,
+      ], { timeout: 60000 });
 
-    if (response.data?.url) {
-      // Download the media
-      const mediaResponse = await axios.get(response.data.url, { responseType: 'arraybuffer', timeout: 30000 });
+      // Find the output file
+      const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
+      const outFile = files.trim();
+      if (outFile) {
+        const { readFile } = await import('fs/promises');
+        const buffer = await readFile(outFile);
+        const ext = path.extname(outFile).toLowerCase();
+        if (['.mp4', '.webm', '.mkv', '.mov'].includes(ext)) {
+          await sendReply(context.chatJid, { video: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        } else if (['.mp3', '.m4a', '.ogg', '.opus', '.wav'].includes(ext)) {
+          await sendReply(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
+        } else if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+          await sendReply(context.chatJid, { image: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        } else {
+          await sendReply(context.chatJid, { document: buffer, mimetype: 'application/octet-stream', fileName: `download${ext}` }, sock, context.rawMessage.key, context.queue);
+        }
+        await unlink(outFile).catch(() => {});
+        downloaded = true;
+      }
+    } catch {
+      // yt-dlp not available or failed, try direct download
+    }
+
+    if (!downloaded) {
+      // Fallback: direct HTTP download (works for direct media links)
+      const mediaResponse = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      });
       const buffer = Buffer.from(mediaResponse.data);
       const contentType = String(mediaResponse.headers['content-type'] || '');
 
       if (contentType.includes('video')) {
         await sendReply(context.chatJid, { video: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
       } else if (contentType.includes('audio')) {
-        await sendReply(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
+        await sendReply(context.chatJid, { audio: buffer, mimetype: contentType || 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
+      } else if (contentType.includes('image')) {
+        await sendReply(context.chatJid, { image: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
       } else {
         await sendReply(context.chatJid, { document: buffer, mimetype: contentType, fileName: 'download' }, sock, context.rawMessage.key, context.queue);
       }
-    } else {
-      await sendReply(context.chatJid, 'Could not extract media from that URL. The link may not be supported or the content may be private.', sock, context.rawMessage.key, context.queue);
     }
   } catch (error: any) {
     console.error('[DOWNLOAD] Error:', error?.message || error);
@@ -3273,6 +3484,580 @@ async function handleShorten(context: MessageContext, args: string[], sock: any)
   } catch (error) {
     console.error('[SHORT] Error:', error);
     await sendReply(context.chatJid, 'URL shortening failed. Try again.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Welcome Bot — New Group Members ─────────────────────────────────────────
+
+// ─── View Once — Save & Resend View-Once Media ─────────────────────────────
+
+async function handleViewOnce(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const viewOnce = quotedMsg?.viewOnceMessage?.message
+    || quotedMsg?.viewOnceMessageV2?.message
+    || (quotedMsg as any)?.viewOnceMessageV2Extension?.message
+    || null;
+
+  // Also check the top-level message for viewOnce wrapper
+  const rawMsg = context.rawMessage?.message as Record<string, any> | undefined;
+  const topViewOnce = rawMsg?.viewOnceMessage?.message
+    || rawMsg?.viewOnceMessageV2?.message
+    || null;
+
+  const inner = viewOnce || topViewOnce;
+
+  if (!inner) {
+    await sendReply(
+      context.chatJid,
+      '*VIEW ONCE*\n\nReply to a view-once message with *!viewonce* to save and resend it as a normal message.',
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  try {
+    // Reconstruct a message object so downloadMedia works
+    const fakeMsg = { ...context.rawMessage, message: inner };
+    const buffer = await downloadMedia(fakeMsg, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the view-once media.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    if (inner.imageMessage) {
+      await sock.sendMessage(context.chatJid, { image: buffer, caption: inner.imageMessage.caption || '' }, { quoted: context.rawMessage });
+    } else if (inner.videoMessage) {
+      await sock.sendMessage(context.chatJid, { video: buffer, caption: inner.videoMessage.caption || '' }, { quoted: context.rawMessage });
+    } else if (inner.audioMessage) {
+      await sock.sendMessage(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true }, { quoted: context.rawMessage });
+    } else {
+      await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    await sendReply(context.chatJid, 'View-once media saved!', sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[VIEWONCE] Error:', error);
+    await sendReply(context.chatJid, 'Failed to save view-once media.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Sticker to Image ───────────────────────────────────────────────────────
+
+async function handleToImg(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasStickerQuoted = quotedMsg?.stickerMessage;
+  const hasStickerDirect = (context.rawMessage?.message as any)?.stickerMessage;
+
+  if (!hasStickerQuoted && !hasStickerDirect) {
+    await sendReply(context.chatJid, '*STICKER TO IMAGE*\n\nReply to a sticker with *!toimg* to convert it back to an image.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = hasStickerQuoted
+      ? { ...context.rawMessage, message: quotedMsg }
+      : context.rawMessage;
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the sticker.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const pngBuffer = await sharp(buffer).png().toBuffer();
+    await sock.sendMessage(context.chatJid, { image: pngBuffer, caption: 'Sticker converted to image' }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[TOIMG] Error:', error);
+    await sendReply(context.chatJid, 'Failed to convert sticker to image.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Sticker/Video to GIF ───────────────────────────────────────────────────
+
+async function handleToGif(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasStickerQuoted = quotedMsg?.stickerMessage;
+  const hasVideoQuoted = quotedMsg?.videoMessage;
+
+  if (!hasStickerQuoted && !hasVideoQuoted) {
+    await sendReply(context.chatJid, '*TO GIF*\n\nReply to an animated sticker or video with *!togif* to convert it.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = { ...context.rawMessage, message: quotedMsg };
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the media.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const tmpIn = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.webp`);
+    const tmpOut = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.mp4`);
+    await writeFile(tmpIn, buffer);
+
+    await execFileAsync('ffmpeg', ['-y', '-i', tmpIn, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', tmpOut], { timeout: 30000 });
+    const { readFile } = await import('fs/promises');
+    const gifBuffer = await readFile(tmpOut);
+
+    await sock.sendMessage(context.chatJid, { video: gifBuffer, gifPlayback: true, caption: 'Converted to GIF' }, { quoted: context.rawMessage });
+    await unlink(tmpIn).catch(() => {});
+    await unlink(tmpOut).catch(() => {});
+  } catch (error) {
+    console.error('[TOGIF] Error:', error);
+    await sendReply(context.chatJid, 'Failed to convert to GIF. ffmpeg may not be available.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Video to Audio ─────────────────────────────────────────────────────────
+
+async function handleToAudio(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasVideo = quotedMsg?.videoMessage;
+
+  if (!hasVideo) {
+    await sendReply(context.chatJid, '*TO AUDIO*\n\nReply to a video with *!toaudio* to extract its audio as MP3.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = { ...context.rawMessage, message: quotedMsg };
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the video.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const tmpIn = path.join(os.tmpdir(), `botwave_toaud_${Date.now()}.mp4`);
+    const tmpOut = path.join(os.tmpdir(), `botwave_toaud_${Date.now()}.mp3`);
+    await writeFile(tmpIn, buffer);
+
+    await execFileAsync('ffmpeg', ['-y', '-i', tmpIn, '-vn', '-ab', '128k', '-ar', '44100', '-f', 'mp3', tmpOut], { timeout: 30000 });
+    const { readFile } = await import('fs/promises');
+    const audioBuffer = await readFile(tmpOut);
+
+    await sock.sendMessage(context.chatJid, { audio: audioBuffer, mimetype: 'audio/mpeg' }, { quoted: context.rawMessage });
+    await unlink(tmpIn).catch(() => {});
+    await unlink(tmpOut).catch(() => {});
+  } catch (error) {
+    console.error('[TOAUDIO] Error:', error);
+    await sendReply(context.chatJid, 'Failed to extract audio. ffmpeg may not be available.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Remove Background ──────────────────────────────────────────────────────
+
+async function handleRemoveBg(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
+
+  if (!hasImage) {
+    await sendReply(context.chatJid, '*REMOVE BACKGROUND*\n\nReply to an image with *!removebg* to remove its background.\nWorks best with solid-colored backgrounds.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = quotedMsg?.imageMessage ? { ...context.rawMessage, message: quotedMsg } : context.rawMessage;
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(context.chatJid, 'Removing background... this may take a moment.', sock, context.rawMessage.key, context.queue);
+
+    // Use sharp to do edge-based background removal:
+    // 1. Get image metadata and raw pixels
+    const image = sharp(buffer);
+    const { width, height, channels } = await image.metadata();
+    if (!width || !height) throw new Error('Invalid image dimensions');
+
+    const raw = await image.ensureAlpha().raw().toBuffer();
+    const ch = 4; // RGBA
+
+    // 2. Sample border pixels to determine background color
+    const borderPixels: number[][] = [];
+    for (let x = 0; x < width; x++) {
+      borderPixels.push(getPixel(raw, x, 0, width, ch));
+      borderPixels.push(getPixel(raw, x, height - 1, width, ch));
+    }
+    for (let y = 0; y < height; y++) {
+      borderPixels.push(getPixel(raw, 0, y, width, ch));
+      borderPixels.push(getPixel(raw, width - 1, y, width, ch));
+    }
+
+    // Average background color
+    const bgR = Math.round(borderPixels.reduce((s, p) => s + p[0], 0) / borderPixels.length);
+    const bgG = Math.round(borderPixels.reduce((s, p) => s + p[1], 0) / borderPixels.length);
+    const bgB = Math.round(borderPixels.reduce((s, p) => s + p[2], 0) / borderPixels.length);
+
+    // 3. Replace similar pixels with transparent
+    const tolerance = 50;
+    const output = Buffer.from(raw);
+    for (let i = 0; i < output.length; i += ch) {
+      const dr = Math.abs(output[i] - bgR);
+      const dg = Math.abs(output[i + 1] - bgG);
+      const db = Math.abs(output[i + 2] - bgB);
+      if (dr + dg + db < tolerance * 3) {
+        const diff = (dr + dg + db) / (tolerance * 3);
+        output[i + 3] = Math.round(diff * 255); // fade alpha
+      }
+    }
+
+    const resultBuffer = await sharp(output, { raw: { width, height, channels: 4 } }).png().toBuffer();
+    await sock.sendMessage(context.chatJid, { image: resultBuffer, caption: 'Background removed (best with solid backgrounds)' }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[REMOVEBG] Error:', error);
+    await sendReply(context.chatJid, 'Failed to remove background.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+function getPixel(buf: Buffer, x: number, y: number, width: number, channels: number): number[] {
+  const idx = (y * width + x) * channels;
+  return [buf[idx], buf[idx + 1], buf[idx + 2], buf[idx + 3]];
+}
+
+// ─── Carbon — Code Screenshots ─────────────────────────────────────────────
+
+async function handleCarbon(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '';
+  const code = args.length > 0 ? args.join(' ') : quotedText;
+
+  if (!code) {
+    await sendReply(context.chatJid, '*CODE SCREENSHOT*\n\nUsage:\n!carbon [code]\nor reply to a text message with !carbon', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    // Use ray.so free API for code screenshots (no key needed)
+    const params = new URLSearchParams({
+      code,
+      theme: 'midnight',
+      background: 'true',
+      darkMode: 'true',
+      padding: '32',
+      language: 'auto',
+    });
+
+    const response = await axios.get(`https://ray.so/api/image?${params.toString()}`, {
+      responseType: 'arraybuffer',
+      timeout: 15000,
+    });
+    const buffer = Buffer.from(response.data);
+    await sock.sendMessage(context.chatJid, { image: buffer, caption: 'Code screenshot by BotWave' }, { quoted: context.rawMessage });
+  } catch {
+    // Fallback: generate with sharp
+    try {
+      const lines = code.split('\n').slice(0, 30);
+      const lineHeight = 20;
+      const padding = 40;
+      const imgWidth = 600;
+      const imgHeight = padding * 2 + lines.length * lineHeight + 20;
+
+      const svgLines = lines.map((line: string, i: number) => {
+        const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<text x="${padding}" y="${padding + 20 + i * lineHeight}" font-family="monospace" font-size="14" fill="#e6e6e6">${escaped}</text>`;
+      }).join('');
+
+      const svg = `<svg width="${imgWidth}" height="${imgHeight}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#1e1e2e" rx="12"/>
+        <circle cx="20" cy="16" r="6" fill="#ff5f57"/><circle cx="38" cy="16" r="6" fill="#febc2e"/><circle cx="56" cy="16" r="6" fill="#28c840"/>
+        ${svgLines}
+      </svg>`;
+
+      const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+      await sock.sendMessage(context.chatJid, { image: buffer, caption: 'Code screenshot by BotWave' }, { quoted: context.rawMessage });
+    } catch (error) {
+      console.error('[CARBON] Error:', error);
+      await sendReply(context.chatJid, 'Failed to generate code screenshot.', sock, context.rawMessage.key, context.queue);
+    }
+  }
+}
+
+// ─── Website Screenshot ─────────────────────────────────────────────────────
+
+async function handleScreenshot(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*SCREENSHOT*\n\n!screenshot [url]\n\nExample: !ss https://google.com', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  let url = args[0];
+  if (!url.startsWith('http')) url = 'https://' + url;
+
+  try {
+    await sendReply(context.chatJid, 'Taking screenshot...', sock, context.rawMessage.key, context.queue);
+    const screenshotUrl = `https://image.thum.io/get/width/1280/${url}`;
+    const response = await axios.get(screenshotUrl, { responseType: 'arraybuffer', timeout: 20000 });
+    const buffer = Buffer.from(response.data);
+    await sock.sendMessage(context.chatJid, { image: buffer, caption: `Screenshot: ${url}` }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[SCREENSHOT] Error:', error);
+    await sendReply(context.chatJid, 'Failed to take screenshot. Make sure the URL is valid.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── OCR — Extract Text from Image ─────────────────────────────────────────
+
+async function handleOCR(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
+
+  if (!hasImage) {
+    await sendReply(context.chatJid, '*OCR — TEXT EXTRACTION*\n\nReply to an image with *!ocr* to extract text from it.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = quotedMsg?.imageMessage ? { ...context.rawMessage, message: quotedMsg } : context.rawMessage;
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(context.chatJid, 'Extracting text... this may take a moment.', sock, context.rawMessage.key, context.queue);
+
+    const Tesseract = await import('tesseract.js');
+    const { data: { text } } = await Tesseract.recognize(buffer, 'eng', {});
+
+    const cleanText = text.trim();
+    if (!cleanText) {
+      await sendReply(context.chatJid, 'No text found in the image.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const truncated = cleanText.length > 4000 ? cleanText.slice(0, 4000) + '\n\n... (truncated)' : cleanText;
+    await sendReply(context.chatJid, `*EXTRACTED TEXT*\n\n${truncated}`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[OCR] Error:', error);
+    await sendReply(context.chatJid, 'Failed to extract text from image.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Bio — Update WhatsApp Bio/About ────────────────────────────────────────
+
+async function handleBio(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*UPDATE BIO*\n\n!bio [your new bio text]\n\nExample: !bio Living my best life', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const bioText = args.join(' ').slice(0, 139); // WhatsApp bio limit
+
+  try {
+    if (typeof sock.updateProfileStatus === 'function') {
+      await sock.updateProfileStatus(bioText);
+      await sendReply(context.chatJid, `Bio updated to: "${bioText}"`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Bio update is not supported in the current connection mode.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error) {
+    console.error('[BIO] Error:', error);
+    await sendReply(context.chatJid, 'Failed to update bio.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Set Profile Picture ────────────────────────────────────────────────────
+
+async function handleSetPP(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
+
+  if (!hasImage) {
+    await sendReply(context.chatJid, '*SET PROFILE PICTURE*\n\nSend or reply to an image with *!setpp* to set it as your WhatsApp profile picture.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const msgForDownload = quotedMsg?.imageMessage ? { ...context.rawMessage, message: quotedMsg } : context.rawMessage;
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // Resize to square for profile picture
+    const resized = await sharp(buffer).resize(640, 640, { fit: 'cover' }).jpeg().toBuffer();
+    const base64 = 'data:image/jpeg;base64,' + resized.toString('base64');
+
+    if (typeof sock.updateProfilePicture === 'function') {
+      await sock.updateProfilePicture(base64);
+      await sendReply(context.chatJid, 'Profile picture updated!', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Profile picture update is not supported in the current connection mode.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error) {
+    console.error('[SETPP] Error:', error);
+    await sendReply(context.chatJid, 'Failed to update profile picture.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Mark as Read ───────────────────────────────────────────────────────────
+
+async function handleMarkRead(context: MessageContext, sock: any): Promise<void> {
+  try {
+    if (typeof sock.readMessages === 'function') {
+      await sock.readMessages([context.rawMessage.key]);
+      await sendReply(context.chatJid, 'Messages marked as read.', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Mark-read is not supported in the current connection mode.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error) {
+    console.error('[READ] Error:', error);
+    await sendReply(context.chatJid, 'Failed to mark messages as read.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Forward Message ────────────────────────────────────────────────────────
+
+async function handleForward(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  if (!quotedMsg || !args.length) {
+    await sendReply(
+      context.chatJid,
+      '*FORWARD MESSAGE*\n\nReply to a message with:\n!forward [phone number]\n\nExample: !forward 2348012345678\n\nThe message will be forwarded to that contact.',
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  try {
+    let targetNumber = args[0].replace(/[^0-9]/g, '');
+    if (!targetNumber.includes('@')) {
+      targetNumber = targetNumber + '@s.whatsapp.net';
+    }
+
+    // Forward the quoted message content
+    if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
+      const text = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
+      await sock.sendMessage(targetNumber, { text });
+    } else if (quotedMsg.imageMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(targetNumber, { image: buffer, caption: quotedMsg.imageMessage.caption || '' });
+      }
+    } else if (quotedMsg.videoMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(targetNumber, { video: buffer, caption: quotedMsg.videoMessage.caption || '' });
+      }
+    } else if (quotedMsg.audioMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(targetNumber, { audio: buffer, mimetype: 'audio/mpeg' });
+      }
+    } else if (quotedMsg.documentMessage) {
+      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (buffer) {
+        await sock.sendMessage(targetNumber, { document: buffer, mimetype: quotedMsg.documentMessage.mimetype || 'application/octet-stream', fileName: quotedMsg.documentMessage.fileName || 'document' });
+      }
+    } else {
+      await sendReply(context.chatJid, 'This message type cannot be forwarded.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(context.chatJid, `Message forwarded to ${args[0]}`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[FORWARD] Error:', error);
+    await sendReply(context.chatJid, 'Failed to forward message. Check the phone number.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Base64 Encode/Decode ───────────────────────────────────────────────────
+
+async function handleBase64(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length < 2) {
+    await sendReply(
+      context.chatJid,
+      '*BASE64*\n\n!base64 encode [text] — Encode text\n!base64 decode [encoded] — Decode base64\n\nExample: !base64 encode Hello World',
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  const action = args[0].toLowerCase();
+  const input = args.slice(1).join(' ');
+
+  if (action === 'encode' || action === 'enc' || action === 'e') {
+    const encoded = Buffer.from(input, 'utf-8').toString('base64');
+    await sendReply(context.chatJid, `*ENCODED*\n\n${encoded}`, sock, context.rawMessage.key, context.queue);
+  } else if (action === 'decode' || action === 'dec' || action === 'd') {
+    try {
+      const decoded = Buffer.from(input, 'base64').toString('utf-8');
+      await sendReply(context.chatJid, `*DECODED*\n\n${decoded}`, sock, context.rawMessage.key, context.queue);
+    } catch {
+      await sendReply(context.chatJid, 'Invalid base64 input.', sock, context.rawMessage.key, context.queue);
+    }
+  } else {
+    await sendReply(context.chatJid, 'Use !base64 encode or !base64 decode', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Hash Generator ─────────────────────────────────────────────────────────
+
+async function handleHash(context: MessageContext, args: string[], sock: any, commandName: string): Promise<void> {
+  if (!args.length) {
+    await sendReply(
+      context.chatJid,
+      '*HASH GENERATOR*\n\n!hash [text] — Generate MD5 + SHA-256\n!md5 [text] — MD5 only\n!sha256 [text] — SHA-256 only\n\nExample: !hash Hello World',
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  const input = args.join(' ');
+  const md5 = crypto.createHash('md5').update(input).digest('hex');
+  const sha256 = crypto.createHash('sha256').update(input).digest('hex');
+
+  if (commandName === 'md5') {
+    await sendReply(context.chatJid, `*MD5*\n\n${md5}`, sock, context.rawMessage.key, context.queue);
+  } else if (commandName === 'sha256') {
+    await sendReply(context.chatJid, `*SHA-256*\n\n${sha256}`, sock, context.rawMessage.key, context.queue);
+  } else {
+    await sendReply(context.chatJid, `*HASH*\n\n*MD5:* ${md5}\n*SHA-256:* ${sha256}`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Color Swatch Generator ────────────────────────────────────────────────
+
+async function handleColor(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*COLOR SWATCH*\n\n!color [hex code]\n\nExample: !color #FF5733\nExample: !color FF5733', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  let hex = args[0].replace('#', '').toUpperCase();
+  if (!/^[0-9A-F]{3,8}$/.test(hex)) {
+    await sendReply(context.chatJid, 'Invalid hex color. Example: !color #FF5733', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // Expand 3-char hex to 6-char
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  try {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Generate 200x200 color swatch with label
+    const svg = `<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="300" height="200" fill="#${hex}" rx="16"/>
+      <rect x="10" y="150" width="280" height="40" fill="rgba(0,0,0,0.5)" rx="8"/>
+      <text x="150" y="178" font-family="Arial,sans-serif" font-size="20" fill="white" text-anchor="middle" font-weight="bold">#${hex}</text>
+    </svg>`;
+
+    const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    await sock.sendMessage(context.chatJid, {
+      image: buffer,
+      caption: `*#${hex}*\nRGB: ${r}, ${g}, ${b}`,
+    }, { quoted: context.rawMessage });
+  } catch (error) {
+    console.error('[COLOR] Error:', error);
+    await sendReply(context.chatJid, 'Failed to generate color swatch.', sock, context.rawMessage.key, context.queue);
   }
 }
 
