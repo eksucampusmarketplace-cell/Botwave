@@ -6,6 +6,45 @@ const KEY  = process.env.EVOLUTION_API_KEY  || '';
 const REQUEST_TIMEOUT = 15_000;
 const KEEPALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
+// Proxy pool for distributing WebSocket connections across different IPs.
+// Each proxy string is "host:port:user:pass".
+const PROXY_LIST = (process.env.PROXY_LIST || '')
+  .split(',')
+  .map(p => p.trim())
+  .filter(Boolean);
+let proxyCounter = 0;
+
+// Track consecutive Evolution API failures for health gating
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 5;
+
+/**
+ * Check if the Evolution API endpoint is healthy enough to accept new
+ * instance creation requests. Returns false if the last N requests all failed.
+ */
+export function isEvolutionHealthy(): boolean {
+  return consecutiveFailures < MAX_CONSECUTIVE_FAILURES;
+}
+
+/**
+ * Pick the next proxy from the pool in round-robin order.
+ * Returns proxy config or null if no proxies configured.
+ */
+function getNextProxy(): { host: string; port: string; protocol: string; username: string; password: string } | null {
+  if (PROXY_LIST.length === 0) return null;
+  const proxy = PROXY_LIST[proxyCounter % PROXY_LIST.length];
+  proxyCounter++;
+  const parts = proxy.split(':');
+  if (parts.length < 4) return null;
+  return {
+    host: parts[0],
+    port: parts[1],
+    protocol: 'http',
+    username: parts[2],
+    password: parts[3],
+  };
+}
+
 const headers: Record<string, string> = {
   'Content-Type': 'application/json',
   'apikey': KEY,
@@ -45,8 +84,14 @@ async function apiFetch(url: string, options: RequestInit): Promise<Response> {
       // Clone before reading so the original body stays usable for callers
       const text = await res.clone().text().catch(() => '');
       console.error(`[EVO-CLIENT] ${options.method || 'GET'} ${url} -> ${res.status}: ${text.slice(0, 300)}`);
+      consecutiveFailures++;
+    } else {
+      consecutiveFailures = 0;
     }
     return res;
+  } catch (err) {
+    consecutiveFailures++;
+    throw err;
   } finally {
     clearTimeout(timeout);
   }
@@ -75,6 +120,12 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay = 1000
 // If the instance already exists (403), log and continue — the caller will
 // connect to the existing instance via getPairingCode.
 export async function createInstance(instanceName: string, phoneNumber: string) {
+  // Guard: refuse to create new instances if Evolution API has been failing
+  if (!isEvolutionHealthy()) {
+    console.error(`[EVO-CLIENT] createInstance BLOCKED: Evolution API has ${consecutiveFailures} consecutive failures — refusing to accept new pairing sessions`);
+    throw new Error('Evolution API is unhealthy — cannot create new instances');
+  }
+
   const webhookUrl = getWebhookUrl();
   console.log(`[EVO-CLIENT] createInstance: name=${instanceName} phone=${phoneNumber} webhookUrl=${webhookUrl || 'NONE'}`);
 
@@ -84,6 +135,19 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     qrcode: false,
     integration: 'WHATSAPP-BAILEYS',
   };
+
+  // Assign a proxy from the pool so each instance connects from a different IP.
+  // This prevents WhatsApp from seeing too many concurrent unregistered
+  // WebSocket connections from the same Render IP (which triggers 428 bans).
+  const proxy = getNextProxy();
+  if (proxy) {
+    payload.proxyHost = proxy.host;
+    payload.proxyPort = proxy.port;
+    payload.proxyProtocol = proxy.protocol;
+    payload.proxyUsername = proxy.username;
+    payload.proxyPassword = proxy.password;
+    console.log(`[EVO-CLIENT] Using proxy ${proxy.host}:${proxy.port} for instance ${instanceName}`);
+  }
 
   // Configure per-instance webhook so Evolution API sends events to BotWave
   if (webhookUrl) {

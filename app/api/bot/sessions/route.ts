@@ -313,8 +313,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Reassign to the least-loaded worker instead of keeping the session
+    // on its current (potentially overloaded) worker.
+    const newWorkerUrl = await assignWorkerAsync();
+    console.log(`[API] PATCH reconnect: session=${sessionId} previousState=${existing.state} oldWorker=${existing.worker_url ?? 'main'} newWorker=${newWorkerUrl ?? 'main'}`);
+
     // Reset session for fresh pairing: clear old auth, QR, and pairing code
-    console.log(`[API] PATCH reconnect: session=${sessionId} previousState=${existing.state} worker=${existing.worker_url ?? 'main'}`);
     const { data: session, error } = await supabase
       .from('bot_sessions')
       .update({
@@ -327,6 +331,7 @@ export async function PATCH(request: NextRequest) {
         locked_by: null,
         locked_at: null,
         heartbeat_at: null,
+        worker_url: newWorkerUrl,
         updated_at: new Date().toISOString(),
       })
       .eq('id', sessionId)
@@ -337,10 +342,10 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       throw error;
     }
-    console.log(`[API] PATCH reconnect: session=${sessionId} reset to qr_pending with fresh auth`);
+    console.log(`[API] PATCH reconnect: session=${sessionId} reset to qr_pending with fresh auth, worker=${newWorkerUrl ?? 'main'}`);
 
-    // Notify the assigned worker to pick up the session
-    const workerUrl = existing.worker_url;
+    // Notify the newly assigned worker to pick up the session
+    const workerUrl = newWorkerUrl;
     if (workerUrl && INTERNAL_SECRET) {
       console.log(`[API] Notifying worker ${workerUrl} to start session ${sessionId}`);
       try {

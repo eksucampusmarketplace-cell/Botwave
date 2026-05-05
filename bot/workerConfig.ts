@@ -1,3 +1,5 @@
+import { getPairingCountsByWorker } from './database';
+
 export const SELF_URL = process.env.SELF_URL || '';
 export const IS_WORKER = process.env.IS_WORKER === 'true';
 export const INTERNAL_SECRET = process.env.INTERNAL_SECRET || '';
@@ -27,8 +29,9 @@ export async function isWorkerHealthy(url: string): Promise<boolean> {
 
 /**
  * Assign a worker for a new session.
- * Pings each candidate worker and returns the first healthy one.
- * Falls back to null (main service handles it) if no workers respond.
+ * Queries active pairing counts per worker and picks the healthy worker
+ * with the fewest pairing sessions. Falls back to round-robin if DB query
+ * fails. Falls back to null (main service) if no workers respond.
  */
 export async function assignWorkerAsync(): Promise<string | null> {
   if (!WORKER_URLS.length) {
@@ -37,15 +40,33 @@ export async function assignWorkerAsync(): Promise<string | null> {
   }
 
   console.log(`[WORKER] Checking ${WORKER_URLS.length} worker(s) for assignment...`);
-  for (let i = 0; i < WORKER_URLS.length; i++) {
-    const url = WORKER_URLS[(counter + i) % WORKER_URLS.length];
-    const healthy = await isWorkerHealthy(url);
-    console.log(`[WORKER] Health check ${url}: ${healthy ? 'HEALTHY' : 'UNREACHABLE'}`);
-    if (healthy) {
-      counter = counter + i + 1;
-      console.log(`[WORKER] Assigned session to ${url}`);
-      return url;
-    }
+
+  // Query DB for active pairing counts per worker
+  let pairingCounts: Record<string, number> = {};
+  try {
+    pairingCounts = await getPairingCountsByWorker();
+  } catch (err) {
+    console.warn('[WORKER] Failed to query pairing counts — falling back to round-robin:', err);
+  }
+
+  // Check health of all workers in parallel
+  const healthChecks = await Promise.all(
+    WORKER_URLS.map(async (url) => {
+      const healthy = await isWorkerHealthy(url);
+      console.log(`[WORKER] Health check ${url}: ${healthy ? 'HEALTHY' : 'UNREACHABLE'} (pairing: ${pairingCounts[url] || 0})`);
+      return { url, healthy };
+    })
+  );
+
+  // Filter to healthy workers and sort by fewest pairing sessions
+  const healthyWorkers = healthChecks
+    .filter(w => w.healthy)
+    .sort((a, b) => (pairingCounts[a.url] || 0) - (pairingCounts[b.url] || 0));
+
+  if (healthyWorkers.length > 0) {
+    const chosen = healthyWorkers[0].url;
+    console.log(`[WORKER] Assigned session to ${chosen} (least loaded: ${pairingCounts[chosen] || 0} pairing sessions)`);
+    return chosen;
   }
 
   console.warn('[WORKER] No healthy workers found — session will run on main service');

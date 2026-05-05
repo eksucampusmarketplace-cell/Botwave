@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
@@ -15,6 +15,7 @@ import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
+import { queueLink } from './linkQueue';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -23,7 +24,21 @@ const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
-const SESSION_STAGGER_DELAY = 2000;
+const SESSION_STAGGER_DELAY = 5000;
+
+// Cache the Baileys/WhatsApp Web version to avoid fetching on every start().
+// fetchLatestBaileysVersion() adds 500-2000ms latency per call and risks
+// returning a version incompatible with the current Baileys library.
+let cachedWAVersion: [number, number, number] | null = null;
+
+async function getWAVersion(): Promise<[number, number, number]> {
+  if (!cachedWAVersion) {
+    const { version } = await fetchLatestBaileysVersion();
+    cachedWAVersion = version;
+    console.log(`[WA-VERSION] Cached Baileys version: ${JSON.stringify(cachedWAVersion)}`);
+  }
+  return cachedWAVersion;
+}
 
 interface BotConfig {
   sessionId: string;
@@ -72,14 +87,13 @@ export class BotWaveBot {
       this.pairingStartedAt = Date.now();
     }
 
-    let version: any;
+    let version: [number, number, number];
     try {
-      console.log(`[${this.sessionId}] Fetching latest Baileys version...`);
-      const latest = await fetchLatestBaileysVersion();
-      version = latest.version;
+      console.log(`[${this.sessionId}] Getting cached Baileys version...`);
+      version = await getWAVersion();
       console.log(`[${this.sessionId}] Baileys version: ${JSON.stringify(version)}`);
     } catch (err) {
-      console.error(`[${this.sessionId}] CRITICAL: Failed to fetch Baileys version:`, err);
+      console.error(`[${this.sessionId}] CRITICAL: Failed to get Baileys version:`, err);
       throw err;
     }
 
@@ -147,12 +161,15 @@ export class BotWaveBot {
           const cleanPhone = this.phoneNumber.replace(/\D/g, '');
           console.log(`[${this.sessionId}] Phone raw: "${this.phoneNumber}" -> cleaned: "${cleanPhone}"`);
           if (cleanPhone) {
-            // Delay before requesting pairing code to let Baileys fully
-            // settle the WebSocket handshake.
+            // Use the pairing queue to serialize pairing code requests across
+            // all sessions on this worker. This prevents multiple concurrent
+            // requestPairingCode() calls which trigger WhatsApp 428 errors.
             try {
-              await delay(2000);
-              console.log(`[${this.sessionId}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
-              const code = await this.socket.requestPairingCode(cleanPhone);
+              console.log(`[${this.sessionId}] >>> Queuing pairing code request for "${cleanPhone}"...`);
+              const code = await queueLink(this.sessionId, cleanPhone, async (phone: string) => {
+                await delay(2000);
+                return this.socket.requestPairingCode(phone);
+              });
               console.log(`[${this.sessionId}] <<< requestPairingCode returned: "${code}"`);
               await updateSessionPairingCode(this.sessionId, code);
               await updateSessionStatus(this.sessionId, 'pairing_sent');
@@ -160,6 +177,7 @@ export class BotWaveBot {
               this.pairingStartedAt = Date.now();
               pairingCodeRequested = true;
               console.log(`[${this.sessionId}] Pairing code saved to DB!`);
+              logPairingEvent(this.sessionId, 'code_generated', this.workerUrl).catch(() => {});
             } catch (err: any) {
               console.error(`[${this.sessionId}] <<< requestPairingCode FAILED:`, err);
               console.error(`[${this.sessionId}] Error name: ${err?.name}, message: ${err?.message}, stack: ${err?.stack?.slice(0, 200)}`);
@@ -177,8 +195,18 @@ export class BotWaveBot {
         this.reconnectTimeout = setTimeout(async () => {
           if (!this.isReady && this.qrCode === qr) {
             console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
+            // Reset pairingStartedAt BEFORE closing so syncSessionsWithDb
+            // sees this session as "pairing in progress" and doesn't start
+            // another session concurrently during the restart window.
+            this.pairingStartedAt = Date.now();
             this.reconnectAttempts = 0;
             pairingCodeRequested = false;
+            this.isPairingSent = false;
+            // Clear stale QR display: update state to qr_pending and clear
+            // the expired pairing code so the UI shows "Generating..." instead
+            // of displaying the stale, expired code.
+            await updateSessionStatus(this.sessionId, 'qr_pending');
+            await updateSessionPairingCode(this.sessionId, '');
             // Clear stale auth state before reconnecting so the next
             // attempt generates fresh credentials instead of reusing
             // the incomplete pairing creds (which would cause a 401).
@@ -268,12 +296,14 @@ export class BotWaveBot {
         // yet another WebSocket that will also be terminated.
         // Fail fast so the user can retry from a clean state.
         if (statusCode === 428 && !this.isReady) {
-          console.log(`[${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
+          console.log(`[ERR_428] [${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
+          logPairingEvent(this.sessionId, '428_received', this.workerUrl, 428).catch(() => {});
           this.isReconnecting = false;
           this.pairingStartedAt = 0;
           this.socket = null;
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
+          await releasePairingLock(this.sessionId);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
           return;
         }
@@ -341,6 +371,9 @@ export class BotWaveBot {
           this.reconnectTimeout = null;
         }
         await updateSessionStatus(this.sessionId, 'active');
+        // Release DB pairing lock and log success
+        releasePairingLock(this.sessionId).catch(() => {});
+        logPairingEvent(this.sessionId, 'pairing_success', this.workerUrl).catch(() => {});
 
         // Start presence simulation (advanced anti-ban)
         startPresenceSimulation(this.socket, this.sessionId);
@@ -588,7 +621,7 @@ class EvolutionBot {
     const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
     const reconnectStart = Date.now();
     let unknownStateCount = 0;
-    const MAX_UNKNOWN_BEFORE_RECREATE = 3;
+    const MAX_UNKNOWN_BEFORE_RECREATE = 6;
     let isRecreating = false;
 
     this.pollHandle = setInterval(async () => {
@@ -666,7 +699,11 @@ class EvolutionBot {
           }
         } else if (state === 'unknown') {
           unknownStateCount++;
-          if (unknownStateCount >= MAX_UNKNOWN_BEFORE_RECREATE) {
+          if (this.isPairingSent && unknownStateCount < MAX_UNKNOWN_BEFORE_RECREATE * 2) {
+            // User has a pairing code in hand — don't recreate yet, wait longer
+            // to tolerate short network hiccups to the Evolution API endpoint
+            console.log(`[EVO] Skipping recreate for ${this.sessionId} — pairing code is in user's hand (${unknownStateCount} unknown polls)`);
+          } else if (unknownStateCount >= MAX_UNKNOWN_BEFORE_RECREATE) {
             console.log(`[EVO] Instance gone for ${this.sessionId} (${unknownStateCount} unknown polls). Recreating...`);
             isRecreating = true;
             unknownStateCount = 0;
@@ -802,7 +839,6 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
 
   // Check if any in-memory bot is actively pairing (started <3 min ago).
-  // Only checks bots this worker process owns — not DB state from other workers.
   // pairingStartedAt is set BEFORE the WebSocket opens (in start()) so
   // even bots still connecting count as "pairing in progress".
   const PAIRING_TIMEOUT_MS = 180_000; // 3 min (matches pairing code expiry)
@@ -815,6 +851,21 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
         pairingInProgress = true;
         break;
       }
+    }
+  }
+
+  // Also check the DB-level pairing lock so cross-worker pairing is serialized.
+  // This catches cases where another worker is pairing but this worker's
+  // in-memory state doesn't know about it (shared-nothing architecture).
+  if (!pairingInProgress) {
+    try {
+      const dbLocked = await isWorkerPairingLocked(SELF_URL || null);
+      if (dbLocked) {
+        pairingInProgress = true;
+      }
+    } catch (err) {
+      // Non-critical — fall back to in-memory check only
+      console.warn('[SYNC] Failed to check DB pairing lock:', err);
     }
   }
 
@@ -844,6 +895,8 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
       // completes or its 3-minute timeout expires.
       if (pairingInProgress && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
         console.log(`[SYNC] Session ${session.id.slice(0, 8)} queued — another session is pairing on this worker`);
+        // Update queue position so the dashboard can show the user their place
+        updateQueuePosition(session.id, 1).catch(() => {});
         continue;
       }
       // Check for conflicts — another instance may already be running this session
@@ -898,9 +951,15 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
       // Mark pairing in progress so subsequent sessions in this cycle are queued
       if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
         pairingInProgress = true;
+        // Acquire DB-level pairing lock so other workers see it too
+        acquirePairingLock(session.id).catch(() => {});
+        // Clear queue position since this session is now active
+        updateQueuePosition(session.id, null).catch(() => {});
+        // Log pairing event for audit trail
+        logPairingEvent(session.id, 'pairing_started', SELF_URL || null).catch(() => {});
       }
 
-      // Stagger: wait 2 seconds between each session start
+      // Stagger: wait between each session start
       await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
     }
   }
