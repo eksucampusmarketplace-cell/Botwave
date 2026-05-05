@@ -20,7 +20,7 @@
     "@supabase/ssr": "^0.3.0",
     "@supabase/supabase-js": "^2.43.4",
     "@types/pg": "^8.20.0",
-    "@whiskeysockets/baileys": "6.7.9",
+    "@whiskeysockets/baileys": "^6.7.21",
     "axios": "^1.7.2",
     "clsx": "^2.1.1",
     "docx": "^9.6.1",
