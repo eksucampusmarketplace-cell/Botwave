@@ -11,6 +11,7 @@ import {
   sendAudio,
   markAsRead,
   sendPresence,
+  fetchGroupInfo,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -131,6 +132,23 @@ export class EvolutionSocketAdapter {
   async sendPresenceUpdate(type: string, jid?: string) {
     if (!jid) return;
     return sendPresence(this.instanceName, jid, type);
+  }
+
+  /**
+   * Baileys-compatible groupMetadata.
+   * Fetches group info + participants from Evolution API.
+   */
+  async groupMetadata(jid: string) {
+    const data = await fetchGroupInfo(this.instanceName, jid);
+    if (!data) {
+      return { subject: 'Unknown', participants: [], desc: '', creation: 0 };
+    }
+    return {
+      subject: data.subject || data.name || 'Unknown',
+      participants: data.participants || [],
+      desc: data.desc || data.description || '',
+      creation: data.creation || 0,
+    };
   }
 
   /**
