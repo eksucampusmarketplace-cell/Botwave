@@ -7,6 +7,7 @@
 import {
   sendText,
   sendMedia,
+  sendStatus,
   sendSticker,
   sendAudio,
   markAsRead,
@@ -34,6 +35,11 @@ export class EvolutionSocketAdapter {
    * Handles text, sticker, document, image content types.
    */
   async sendMessage(jid: string, content: Record<string, unknown>, _options?: Record<string, unknown>) {
+    // Status broadcast — route through the dedicated sendStatus endpoint
+    if (jid === 'status@broadcast') {
+      return this.sendStatusMessage(content, _options);
+    }
+
     const to = jid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');
 
     // Text message
@@ -105,6 +111,63 @@ export class EvolutionSocketAdapter {
     }
 
     console.warn(`[EVO-SOCK] Unsupported content type for ${jid}:`, Object.keys(content));
+    return null;
+  }
+
+  /**
+   * Route status broadcast messages through Evolution API's sendStatus endpoint.
+   * The sendStatus endpoint expects { type, content, caption?, statusJidList?, allContacts? }
+   * instead of the regular sendMedia payload.
+   */
+  private async sendStatusMessage(content: Record<string, unknown>, options?: Record<string, unknown>) {
+    const statusJidList = (options?.statusJidList as string[]) || [];
+    const caption = (content.caption as string) || '';
+
+    // Text status
+    if (content.text && typeof content.text === 'string') {
+      return sendStatus(this.instanceName, 'text', content.text, {
+        statusJidList,
+        backgroundColor: (content.backgroundColor as string) || '#000000',
+        font: (content.font as number) ?? 0,
+      });
+    }
+
+    // Image status
+    if (content.image) {
+      let base64: string;
+      if (Buffer.isBuffer(content.image)) {
+        base64 = (content.image as Buffer).toString('base64');
+      } else if (typeof content.image === 'object' && 'url' in (content.image as Record<string, unknown>)) {
+        base64 = (content.image as Record<string, string>).url;
+      } else {
+        base64 = String(content.image);
+      }
+      return sendStatus(this.instanceName, 'image', base64, { caption, statusJidList });
+    }
+
+    // Video status
+    if (content.video) {
+      let base64: string;
+      if (Buffer.isBuffer(content.video)) {
+        base64 = (content.video as Buffer).toString('base64');
+      } else {
+        base64 = String(content.video);
+      }
+      return sendStatus(this.instanceName, 'video', base64, { caption, statusJidList });
+    }
+
+    // Audio status
+    if (content.audio) {
+      let base64: string;
+      if (Buffer.isBuffer(content.audio)) {
+        base64 = (content.audio as Buffer).toString('base64');
+      } else {
+        base64 = String(content.audio);
+      }
+      return sendStatus(this.instanceName, 'audio', base64, { statusJidList });
+    }
+
+    console.warn('[EVO-SOCK] Unsupported status content type:', Object.keys(content));
     return null;
   }
 
