@@ -139,7 +139,7 @@ export class EvolutionSocketAdapter {
    * Fetches group info + participants from Evolution API.
    */
   async groupMetadata(jid: string) {
-    const data = await fetchGroupInfo(this.instanceName, jid);
+    const data = await fetchGroupInfo(this.instanceName, jid) as Record<string, any> | null;
     if (!data) {
       return { subject: 'Unknown', participants: [], desc: '', creation: 0 };
     }
