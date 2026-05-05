@@ -27,7 +27,6 @@ import {
   timeGreeting,
 } from '../utils/antiban';
 import {
-  stickerReplies,
   afkReplies,
   jokePool,
   quotePool,
@@ -331,7 +330,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     await simulateGoingOnline(sock);
 
     // Per-contact reply frequency throttling (advanced anti-ban)
-    if (shouldThrottleContact(senderJid)) {
+    // Never throttle commands — only throttle auto-replies/non-command responses
+    if (!isCommand && shouldThrottleContact(senderJid)) {
       try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
       return;
     }
@@ -1668,19 +1668,19 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
     const doc = new Document({ sections: [{ children }] });
     const buffer = await Packer.toBuffer(doc);
 
+    const intro = pickResponse(helpIntros, { name: context.pushName || 'User', time: currentTimeStr() }, false);
     await sendReply(
       context.chatJid,
       {
         document: buffer,
         mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         fileName: 'BotWave_Command_Guide.docx',
+        caption: `${intro}\n\n_Full command guide with detailed explanations._`,
       },
       sock,
       context.rawMessage.key,
       context.queue,
     );
-
-    await sendReply(context.chatJid, 'Here\'s the full command guide with detailed explanations!', sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('[HELP-DOC] Error generating help docx:', error);
     await sendReply(context.chatJid, 'Failed to generate the help document. Try !help for the text version.', sock, context.rawMessage.key, context.queue);
@@ -1810,25 +1810,6 @@ async function createSticker(
     const stickerBuffer = await sticker.toBuffer();
 
     await sendReply(context.chatJid, { sticker: stickerBuffer }, sock, context.rawMessage.key, context.queue);
-
-    // In private chats, omit {name} from sticker replies since it's 1:1
-    const stickerVars = context.isGroup ? vars : { time: vars.time, date: vars.date };
-    let reply = pickResponse(stickerReplies, stickerVars);
-
-    // Promo check
-    if (context.sessionId && context.userId) {
-      const showPromo = await shouldShowPromo(
-        context.sessionId,
-        context.userId,
-        context.senderJid,
-        'sticker',
-      );
-      if (showPromo) {
-        reply += getPromoMessage();
-      }
-    }
-
-    await sendReply(context.chatJid, reply, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('[STICKER] Error creating sticker:', error);
     await sendReply(context.chatJid, 'Error creating sticker. Make sure the image/video is valid and try again.', sock, context.rawMessage.key, context.queue);
@@ -2607,19 +2588,7 @@ async function handleDoc(
     const buffer = await Packer.toBuffer(doc);
     const safeTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 50) || 'Document';
 
-    await sendReply(
-      context.chatJid,
-      {
-        document: buffer,
-        mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        fileName: `${safeTitle}.docx`,
-      },
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
-
-    let reply = pickResponse(docReplies, vars);
+    let caption = pickResponse(docReplies, vars);
 
     // Promo check
     if (context.sessionId && context.userId) {
@@ -2630,11 +2599,22 @@ async function handleDoc(
         'doc',
       );
       if (showPromo) {
-        reply += getPromoMessage();
+        caption += getPromoMessage();
       }
     }
 
-    await sendReply(context.chatJid, reply, sock, context.rawMessage.key, context.queue);
+    await sendReply(
+      context.chatJid,
+      {
+        document: buffer,
+        mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        fileName: `${safeTitle}.docx`,
+        caption,
+      },
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
   } catch (error) {
     console.error('Doc creation error:', error);
     await sendReply(context.chatJid, 'Error creating document.', sock, context.rawMessage.key, context.queue);
@@ -3034,21 +3014,38 @@ async function handleSaveStatus(context: MessageContext, args: string[], sock: a
       ? statusPosterJid
       : context.senderJid;
 
-    if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
-      const text = customCaption || quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
+    // Restore binary fields that were serialised as indexed-objects during webhook roundtrip
+    const restoredQuoted = restoreBufferFields(quotedMsg) as Record<string, any>;
+
+    if (restoredQuoted.conversation || restoredQuoted.extendedTextMessage?.text) {
+      const text = customCaption || restoredQuoted.conversation || restoredQuoted.extendedTextMessage?.text || '';
       await sock.sendMessage(targetJid, { text });
-    } else if (quotedMsg.imageMessage) {
-      const mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+    } else if (restoredQuoted.imageMessage) {
+      let mediaBuffer = await downloadMedia({ ...context.rawMessage, message: restoredQuoted }, sock);
+      // Evolution API REST fallback
+      if (!mediaBuffer && context.sessionId) {
+        mediaBuffer = await getBase64FromMediaMessage(context.sessionId, { ...context.rawMessage, message: restoredQuoted });
+      }
       if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue); return; }
-      const caption = customCaption || quotedMsg.imageMessage.caption || '';
+      const caption = customCaption || restoredQuoted.imageMessage.caption || '';
       await sock.sendMessage(targetJid, { image: mediaBuffer, caption: caption || undefined });
-    } else if (quotedMsg.videoMessage) {
-      const mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+    } else if (restoredQuoted.videoMessage) {
+      let mediaBuffer = await downloadMedia({ ...context.rawMessage, message: restoredQuoted }, sock);
+      if (!mediaBuffer && context.sessionId) {
+        mediaBuffer = await getBase64FromMediaMessage(context.sessionId, { ...context.rawMessage, message: restoredQuoted });
+      }
       if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the video.', sock, context.rawMessage.key, context.queue); return; }
-      const caption = customCaption || quotedMsg.videoMessage.caption || '';
+      const caption = customCaption || restoredQuoted.videoMessage.caption || '';
       await sock.sendMessage(targetJid, { video: mediaBuffer, caption: caption || undefined });
+    } else if (restoredQuoted.audioMessage) {
+      let mediaBuffer = await downloadMedia({ ...context.rawMessage, message: restoredQuoted }, sock);
+      if (!mediaBuffer && context.sessionId) {
+        mediaBuffer = await getBase64FromMediaMessage(context.sessionId, { ...context.rawMessage, message: restoredQuoted });
+      }
+      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the audio.', sock, context.rawMessage.key, context.queue); return; }
+      await sock.sendMessage(targetJid, { audio: mediaBuffer, mimetype: 'audio/mpeg' });
     } else {
-      await sendReply(context.chatJid, 'This message type is not supported. Only text, images, and videos can be saved.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'This message type is not supported. Only text, images, videos, and audio can be saved.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -3742,16 +3739,19 @@ async function handleViewOnce(context: MessageContext, sock: any): Promise<void>
     }
 
     if (restored.imageMessage) {
-      await sock.sendMessage(context.chatJid, { image: buffer, caption: restored.imageMessage.caption || '' }, { quoted: context.rawMessage });
+      const origCaption = restored.imageMessage.caption || '';
+      const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
+      await sock.sendMessage(context.chatJid, { image: buffer, caption }, { quoted: context.rawMessage });
     } else if (restored.videoMessage) {
-      await sock.sendMessage(context.chatJid, { video: buffer, caption: restored.videoMessage.caption || '' }, { quoted: context.rawMessage });
+      const origCaption = restored.videoMessage.caption || '';
+      const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
+      await sock.sendMessage(context.chatJid, { video: buffer, caption }, { quoted: context.rawMessage });
     } else if (restored.audioMessage) {
       await sock.sendMessage(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true }, { quoted: context.rawMessage });
     } else {
       await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
       return;
     }
-    await sendReply(context.chatJid, 'View-once media saved!', sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('[VIEWONCE] Error:', error);
     await sendReply(context.chatJid, 'Failed to save view-once media.', sock, context.rawMessage.key, context.queue);
