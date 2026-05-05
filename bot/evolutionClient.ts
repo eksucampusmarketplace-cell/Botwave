@@ -464,6 +464,26 @@ function ensureKeepAlive(): void {
   }, KEEPALIVE_INTERVAL);
 }
 
+// Download media from a message via Evolution API's getBase64FromMediaMessage endpoint.
+// This is more reliable than direct CDN download because Evolution API uses the
+// active Baileys client to decrypt and fetch the media.
+export async function getBase64FromMediaMessage(instanceName: string, message: Record<string, unknown>): Promise<Buffer | null> {
+  try {
+    const res = await apiFetch(`${BASE}/chat/getBase64FromMediaMessage/${instanceName}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message }),
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    if (data?.base64) return Buffer.from(data.base64, 'base64');
+    return null;
+  } catch (err) {
+    console.error(`[EVO-CLIENT] getBase64FromMediaMessage failed for ${instanceName}:`, err);
+    return null;
+  }
+}
+
 // Fetch group metadata (info + participants) via Evolution API
 export async function fetchGroupInfo(instanceName: string, groupJid: string) {
   const jid = groupJid.includes('@') ? groupJid : `${groupJid}@g.us`;

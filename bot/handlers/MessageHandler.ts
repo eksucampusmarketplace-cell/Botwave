@@ -9,6 +9,7 @@ import path from 'path';
 import os from 'os';
 import dns from 'dns';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
+import { getBase64FromMediaMessage } from '../evolutionClient';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 
@@ -3651,6 +3652,36 @@ async function handleShorten(context: MessageContext, args: string[], sock: any)
 
 // ─── View Once — Save & Resend View-Once Media ─────────────────────────────
 
+/**
+ * Restore binary fields that were serialised as indexed-objects during the
+ * Evolution API webhook JSON roundtrip.
+ * Uint8Array → JSON.stringify → {"0":1,"1":2,...} → JSON.parse → plain object.
+ * Baileys needs them back as Uint8Array / Buffer for media download.
+ */
+function restoreBufferFields(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Buffer.isBuffer(obj) || obj instanceof Uint8Array) return obj;
+  if (Array.isArray(obj)) return obj.map(restoreBufferFields);
+
+  const record = obj as Record<string, unknown>;
+  const keys = Object.keys(record);
+
+  // Detect indexed-object pattern (all numeric keys) — convert to Uint8Array
+  if (keys.length > 0 && keys.every(k => /^\d+$/.test(k))) {
+    const values = keys
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => Number(record[k]));
+    return new Uint8Array(values);
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const key of keys) {
+    out[key] = restoreBufferFields(record[key]);
+  }
+  return out;
+}
+
 async function handleViewOnce(context: MessageContext, sock: any): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const viewOnce = quotedMsg?.viewOnceMessage?.message
@@ -3664,7 +3695,23 @@ async function handleViewOnce(context: MessageContext, sock: any): Promise<void>
     || rawMsg?.viewOnceMessageV2?.message
     || null;
 
-  const inner = viewOnce || topViewOnce;
+  let inner = viewOnce || topViewOnce;
+
+  // Fallback: Evolution API / recent WhatsApp protocol versions may strip the
+  // viewOnce wrapper in quoted messages, leaving just the inner media type
+  // (imageMessage, videoMessage, audioMessage) directly in the quotedMessage.
+  if (!inner && quotedMsg) {
+    if (quotedMsg.imageMessage || quotedMsg.videoMessage || quotedMsg.audioMessage) {
+      inner = quotedMsg;
+    }
+  }
+
+  // Also check the top-level raw message for direct media without wrapper
+  if (!inner && rawMsg) {
+    if (rawMsg.imageMessage || rawMsg.videoMessage || rawMsg.audioMessage) {
+      inner = rawMsg;
+    }
+  }
 
   if (!inner) {
     await sendReply(
@@ -3676,19 +3723,29 @@ async function handleViewOnce(context: MessageContext, sock: any): Promise<void>
   }
 
   try {
-    // Reconstruct a message object so downloadMedia works
-    const fakeMsg = { ...context.rawMessage, message: inner };
-    const buffer = await downloadMedia(fakeMsg, sock);
+    // Restore binary fields (mediaKey, fileEncSha256, etc.) that the JSON
+    // webhook roundtrip converted from Uint8Array to indexed-objects.
+    const restored = restoreBufferFields(inner) as Record<string, any>;
+    const fakeMsg = { ...context.rawMessage, message: restored };
+    let buffer = await downloadMedia(fakeMsg, sock);
+
+    // Fallback: use Evolution API REST endpoint to download media.
+    // This is more reliable because Evolution API uses the active Baileys
+    // client connection to decrypt and fetch media from WhatsApp CDN.
+    if (!buffer && context.sessionId) {
+      buffer = await getBase64FromMediaMessage(context.sessionId, fakeMsg);
+    }
+
     if (!buffer) {
       await sendReply(context.chatJid, 'Could not download the view-once media.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
-    if (inner.imageMessage) {
-      await sock.sendMessage(context.chatJid, { image: buffer, caption: inner.imageMessage.caption || '' }, { quoted: context.rawMessage });
-    } else if (inner.videoMessage) {
-      await sock.sendMessage(context.chatJid, { video: buffer, caption: inner.videoMessage.caption || '' }, { quoted: context.rawMessage });
-    } else if (inner.audioMessage) {
+    if (restored.imageMessage) {
+      await sock.sendMessage(context.chatJid, { image: buffer, caption: restored.imageMessage.caption || '' }, { quoted: context.rawMessage });
+    } else if (restored.videoMessage) {
+      await sock.sendMessage(context.chatJid, { video: buffer, caption: restored.videoMessage.caption || '' }, { quoted: context.rawMessage });
+    } else if (restored.audioMessage) {
       await sock.sendMessage(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true }, { quoted: context.rawMessage });
     } else {
       await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
