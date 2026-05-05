@@ -5,8 +5,31 @@ import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/workerConfig';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Normalize a phone number to international E.164 format.
+ * Handles common Nigerian local formats (080, 090, 070, 081, etc.)
+ * and strips spaces, dashes, parentheses.
+ */
+function normalizePhoneNumber(raw: string): string {
+  // Strip non-digit chars except leading +
+  let num = raw.replace(/(?!^\+)\D/g, '');
+
+  // Nigerian local format → international
+  // 080x, 081x, 090x, 091x, 070x, 071x → +234...
+  if (/^0[789]\d{9}$/.test(num)) {
+    num = '+234' + num.slice(1);
+  }
+
+  // Ensure leading +
+  if (!num.startsWith('+')) {
+    num = '+' + num;
+  }
+
+  return num;
+}
+
 const createSessionSchema = z.object({
-  phoneNumber: z.string().min(10),
+  phoneNumber: z.string().min(10).transform(normalizePhoneNumber),
   sessionName: z.string().min(1).max(50),
 });
 

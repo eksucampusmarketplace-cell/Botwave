@@ -130,7 +130,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="bg-[#0a0f0a] border border-green/30 max-w-sm sm:max-w-md w-full mx-2 sm:mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="bg-[#0a0f0a] border border-green/30 max-w-[95vw] sm:max-w-md w-full mx-1 sm:mx-3 relative overflow-hidden max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scan line effect */}
@@ -166,7 +166,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
           </button>
         </div>
 
-        <div className="p-3 sm:p-6">
+        <div className="p-2.5 sm:p-6">
           {/* Status header */}
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-2.5 h-2.5 rounded-full ${

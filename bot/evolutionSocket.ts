@@ -60,10 +60,11 @@ export class EvolutionSocketAdapter {
       const base64 = (content.document as Buffer).toString('base64');
       const mimetype = (content.mimetype as string) || 'application/octet-stream';
       const fileName = (content.fileName as string) || 'document';
+      const caption = (content.caption as string) || '';
       return sendMedia(
         this.instanceName, to,
         `data:${mimetype};base64,${base64}`,
-        mimetype, 'document', fileName,
+        mimetype, 'document', fileName, caption,
       );
     }
 

@@ -98,7 +98,7 @@ export class BotWaveBot {
       keepAliveIntervalMs: 30_000,
       retryRequestDelayMs: 350,
       fireInitQueries: true,
-      qrTimeout: 45_000,
+      qrTimeout: 180_000,
     });
     console.log(`[${this.sessionId}] WASocket created. Setting up event handlers...`);
 
@@ -124,28 +124,23 @@ export class BotWaveBot {
       }
 
       // When we receive a QR, the WebSocket IS connected and ready.
-      // Request pairing code here (once per cycle) — this is the right
-      // moment because sendNode() requires an active WebSocket.
+      // Request pairing code here — this is the right moment because
+      // sendNode() requires an active WebSocket.
+      // IMPORTANT: Each QR refresh means Baileys cycled the connection
+      // and generated new identity keys. Any previously issued pairing
+      // code is now INVALID. We MUST request a fresh code each time.
       if (qr && !this.socket.authState.creds.registered) {
-        // If we already sent a pairing code, ignore subsequent QR refreshes
-        if (this.isPairingSent) {
-          console.log(`[${this.sessionId}] Ignoring QR refresh — pairing code already sent`);
-          return;
-        }
-
         this.qrCode = qr;
         const now = new Date();
-        const expiresAt = new Date(now.getTime() + 60 * 1000);
+        const expiresAt = new Date(now.getTime() + 180 * 1000);
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
 
-        if (!pairingCodeRequested) {
-          pairingCodeRequested = true;
+        {
           const cleanPhone = this.phoneNumber.replace(/\D/g, '');
           console.log(`[${this.sessionId}] Phone raw: "${this.phoneNumber}" -> cleaned: "${cleanPhone}"`);
           if (cleanPhone) {
-            // Match Evolution API: await a proper delay before requesting
-            // pairing code. This lets Baileys fully settle the WebSocket
-            // handshake before we send the link_code_companion_reg IQ stanza.
+            // Delay before requesting pairing code to let Baileys fully
+            // settle the WebSocket handshake.
             try {
               await delay(2000);
               console.log(`[${this.sessionId}] >>> Calling sock.requestPairingCode("${cleanPhone}")...`);
@@ -154,6 +149,7 @@ export class BotWaveBot {
               await updateSessionPairingCode(this.sessionId, code);
               await updateSessionStatus(this.sessionId, 'pairing_sent');
               this.isPairingSent = true;
+              pairingCodeRequested = true;
               console.log(`[${this.sessionId}] Pairing code saved to DB!`);
             } catch (err: any) {
               console.error(`[${this.sessionId}] <<< requestPairingCode FAILED:`, err);

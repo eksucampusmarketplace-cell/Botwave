@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       // Look up session info for the handler
       const { data: session } = await supabase
         .from('bot_sessions')
-        .select('id, user_id, phone_number')
+        .select('id, user_id, phone_number, state')
         .eq('id', sessionId)
         .single();
 
@@ -234,14 +234,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
-      const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
-      const { handleMessage } = await import('@/bot/handlers/MessageHandler');
-      const { MessageQueue } = await import('@/bot/utils/MessageQueue');
+      // Auto-correct session state: if we're receiving messages from
+      // Evolution API but the DB thinks the session is qr_pending/pairing_sent,
+      // the instance is clearly connected — update the state to active.
+      if (session.state && session.state !== 'active' && session.state !== 'needs_reauth') {
+        const hasFromMe = messages.some((m: any) => m.key?.fromMe);
+        if (hasFromMe) {
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${session.state} but receiving fromMe messages — auto-correcting to active`);
+          await supabase.from('bot_sessions')
+            .update({
+              state: 'active',
+              last_active: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+        }
+      }
 
-      const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id);
-      const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
-
+      // Log and filter messages synchronously, then fire-and-forget the
+      // actual processing.  Anti-ban delays inside handleMessage can take
+      // 30-120 s, which exceeds Render's 30 s request timeout and causes
+      // the handler to be killed before processCommand is reached.
+      const commandMsgs: any[] = [];
       for (const msg of messages) {
         const from = msg.key?.remoteJid || 'unknown';
         const fromMe = msg.key?.fromMe;
@@ -255,11 +269,31 @@ export async function POST(request: NextRequest) {
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
         if (fromMe && !text.trimStart().startsWith('!')) continue;
-        try {
-          await handleMessage(msg, sock, queue);
-        } catch (err) {
-          console.error(`[EVO-WEBHOOK] Error handling message for ${sessionId}:`, err);
-        }
+        commandMsgs.push(msg);
+      }
+
+      // Fire-and-forget: process messages in the background so the webhook
+      // response is returned immediately (avoids Render 30 s timeout killing
+      // the handler mid-delay).
+      if (commandMsgs.length > 0) {
+        // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
+        const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
+        const { handleMessage } = await import('@/bot/handlers/MessageHandler');
+        const { MessageQueue } = await import('@/bot/utils/MessageQueue');
+
+        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id);
+        const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
+
+        // Use void to fire-and-forget — do NOT await
+        void (async () => {
+          for (const msg of commandMsgs) {
+            try {
+              await handleMessage(msg, sock, queue);
+            } catch (err) {
+              console.error(`[EVO-WEBHOOK] Error handling message for ${sessionId}:`, err);
+            }
+          }
+        })();
       }
 
       return NextResponse.json({ ok: true });

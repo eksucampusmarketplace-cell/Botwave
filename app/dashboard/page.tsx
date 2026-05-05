@@ -485,9 +485,10 @@ export default function DashboardPage() {
                   value={newSession.phone}
                   onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
                   className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                  placeholder="+1234567890"
+                  placeholder="+2348012345678"
                   disabled={isCreating}
                 />
+                <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, not 080)</p>
               </div>
               <div className="flex gap-4 pt-4">
                 <button
