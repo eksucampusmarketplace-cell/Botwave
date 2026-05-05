@@ -15,11 +15,14 @@ import SessionAlerts from '@/components/ui/SessionAlerts';
 import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
 import { useSSE } from '@/lib/useSSE';
 
+// Features that default to OFF — must be explicitly enabled by the user
+const FEATURES_DEFAULT_OFF = new Set(['welcome']);
+
 const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
   { id: 'ai_chat', name: 'AI CHAT REPLY', description: 'Intelligent AI responses', icon: '🤖' },
   { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '📥' },
-  { id: 'welcome', name: 'WELCOME BOT', description: 'Auto greet new members', icon: '👋' },
+  { id: 'welcome', name: 'WELCOME BOT', description: 'Greet new members & goodbye (OFF by default)', icon: '👋' },
   { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '🛡️' },
   { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, etc', icon: '🎮' },
   { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '📊' },
@@ -107,11 +110,15 @@ export default function DashboardPage() {
       ]);
       const featData = await featRes.json();
       if (featData.success) {
-        // Features default to ON — only mark as off if explicitly disabled in DB
-        const explicitlyDisabled = new Set(
-          featData.data.filter((f: BotFeature) => !f.enabled).map((f: BotFeature) => f.feature_name)
+        // Build set of explicitly enabled/disabled features from DB
+        const dbFeatures = new Map(
+          featData.data.map((f: BotFeature) => [f.feature_name, f.enabled])
         );
-        setActiveFeatures(defaultFeatures.filter(f => !explicitlyDisabled.has(f.id)).map(f => f.id));
+        // Features default to ON unless in FEATURES_DEFAULT_OFF set
+        setActiveFeatures(defaultFeatures.filter(f => {
+          if (dbFeatures.has(f.id)) return dbFeatures.get(f.id);
+          return !FEATURES_DEFAULT_OFF.has(f.id);
+        }).map(f => f.id));
       }
       const statsData = await statsRes.json();
       if (statsData.success) {
@@ -186,10 +193,13 @@ export default function DashboardPage() {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            const explicitlyDisabled = new Set(
-              data.data.filter((f: BotFeature) => !f.enabled).map((f: BotFeature) => f.feature_name)
+            const dbFeatures = new Map(
+              data.data.map((f: BotFeature) => [f.feature_name, f.enabled])
             );
-            setActiveFeatures(defaultFeatures.filter(f => !explicitlyDisabled.has(f.id)).map(f => f.id));
+            setActiveFeatures(defaultFeatures.filter(f => {
+              if (dbFeatures.has(f.id)) return dbFeatures.get(f.id);
+              return !FEATURES_DEFAULT_OFF.has(f.id);
+            }).map(f => f.id));
           }
         })
         .catch(err => console.error('Error fetching session features:', err));

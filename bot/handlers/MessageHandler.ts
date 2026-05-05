@@ -18,7 +18,7 @@ import mammoth from 'mammoth';
 const execFileAsync = promisify(execFile);
 const dnsResolve = promisify(dns.resolve);
 const botStartTime = Date.now();
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage, getSessionSettings, updateSessionSettings } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, setFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -47,6 +47,7 @@ import {
   leaderboardReplies,
   downloadReplies,
   welcomeReplies,
+  goodbyeReplies,
   spamWarnings,
   autoReplyDefaults,
 } from '../utils/responsePools';
@@ -999,6 +1000,13 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'set':
       await handleSettings(context, args, sock);
       break;
+    case 'welcome':
+      await handleWelcomeCmd(context, args, sock);
+      break;
+    case 'goodbye':
+    case 'bye':
+      await handleGoodbyeCmd(context, args, sock);
+      break;
     case 'kick':
     case 'remove':
       await handleKick(context, args, sock);
@@ -1214,6 +1222,7 @@ async function sendHelp(
 !download / !save / !savestatus / !tagall
 !afk / !group / !purge / !settings
 !kick / !promote / !demote
+!welcome / !goodbye
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -1523,7 +1532,17 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           {
             name: '!settings',
             usage: '!settings [option] [value]',
-            description: 'Configure bot settings via WhatsApp. Options: afk on/off, afk msg [text], name [name], status.',
+            description: 'Configure bot settings via WhatsApp. Options: afk on/off, afk msg [text], name [name], welcome on/off, status.',
+          },
+          {
+            name: '!welcome',
+            usage: '!welcome [message]  or  !welcome reset',
+            description: 'Set a custom welcome message for new group members. Use {name}, {group}, {time}, {date}, {count} as placeholders. Must enable with !settings welcome on first.',
+          },
+          {
+            name: '!goodbye',
+            usage: '!goodbye [message]  or  !goodbye reset',
+            description: 'Set a custom goodbye message when members leave the group. Same placeholders as !welcome.',
           },
         ],
       },
@@ -3702,6 +3721,7 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       `!settings afk on/off — Toggle AFK\n` +
       `!settings afk msg [text] — Set AFK message\n` +
       `!settings name [name] — Set bot name\n` +
+      `!settings welcome on/off — Toggle welcome/goodbye\n` +
       `!settings status — Show current settings`,
       sock, context.rawMessage.key, context.queue,
     );
@@ -3758,11 +3778,109 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
     return;
   }
 
+  if (sub === 'welcome') {
+    const action = args[1]?.toLowerCase();
+    if (!context.sessionId || !context.userId) {
+      await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    if (action === 'on' || action === 'enable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'welcome', true);
+      await sendReply(context.chatJid, 'Welcome/goodbye messages *enabled*.', sock, context.rawMessage.key, context.queue);
+    } else if (action === 'off' || action === 'disable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'welcome', false);
+      await sendReply(context.chatJid, 'Welcome/goodbye messages *disabled*.', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Usage: !settings welcome on/off', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
   await sendReply(
     context.chatJid,
     'Unknown setting. Use !settings to see available options.',
     sock, context.rawMessage.key, context.queue,
   );
+}
+
+// ─── Welcome / Goodbye Custom Message Commands ──────────────────────────────
+
+async function handleWelcomeCmd(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups. Set a custom welcome message for this group.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!context.sessionId || !userId) {
+    await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const text = args.join(' ');
+  if (!text) {
+    const current = await getWelcomeMessage(context.sessionId, context.chatJid, 'welcome');
+    await sendReply(
+      context.chatJid,
+      `*WELCOME MESSAGE*\n\n` +
+      `Current: ${current || '_Default random messages_'}\n\n` +
+      `*Set custom:* !welcome Hello {name}, welcome to {group}!\n\n` +
+      `*Placeholders:*\n` +
+      `{name} — new member's name\n` +
+      `{group} — group name\n` +
+      `{time} — current time\n` +
+      `{date} — current date\n` +
+      `{count} — member count\n\n` +
+      `*Reset to default:* !welcome reset\n` +
+      `*Toggle on/off:* !settings welcome on/off`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  if (text.toLowerCase() === 'reset') {
+    await setWelcomeMessage(userId, context.sessionId, context.chatJid, '', 'welcome');
+    await sendReply(context.chatJid, 'Welcome message reset to default.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await setWelcomeMessage(userId, context.sessionId, context.chatJid, text, 'welcome');
+  await sendReply(context.chatJid, `Custom welcome message set!\n\nPreview: ${text.replace(/\{name\}/g, 'John').replace(/\{group\}/g, 'Test Group')}`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleGoodbyeCmd(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups. Set a custom goodbye message for this group.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!context.sessionId || !userId) {
+    await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const text = args.join(' ');
+  if (!text) {
+    const current = await getWelcomeMessage(context.sessionId, context.chatJid, 'goodbye');
+    await sendReply(
+      context.chatJid,
+      `*GOODBYE MESSAGE*\n\n` +
+      `Current: ${current || '_Default random messages_'}\n\n` +
+      `*Set custom:* !goodbye Bye {name}, we'll miss you!\n\n` +
+      `*Placeholders:* {name}, {group}, {time}, {date}, {count}\n\n` +
+      `*Reset to default:* !goodbye reset`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  if (text.toLowerCase() === 'reset') {
+    await setWelcomeMessage(userId, context.sessionId, context.chatJid, '', 'goodbye');
+    await sendReply(context.chatJid, 'Goodbye message reset to default.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await setWelcomeMessage(userId, context.sessionId, context.chatJid, text, 'goodbye');
+  await sendReply(context.chatJid, `Custom goodbye message set!\n\nPreview: ${text.replace(/\{name\}/g, 'John').replace(/\{group\}/g, 'Test Group')}`, sock, context.rawMessage.key, context.queue);
 }
 
 // ─── Group Admin Tools ──────────────────────────────────────────────────────
@@ -4218,8 +4336,6 @@ async function handleShorten(context: MessageContext, args: string[], sock: any)
     await sendReply(context.chatJid, 'URL shortening failed. Try again.', sock, context.rawMessage.key, context.queue);
   }
 }
-
-// ─── Welcome Bot — New Group Members ─────────────────────────────────────────
 
 // ─── View Once — Save & Resend View-Once Media ─────────────────────────────
 
@@ -5611,7 +5727,7 @@ async function handleCompress(context: MessageContext, sock: any): Promise<void>
   } catch { await sendReply(context.chatJid, 'Failed to compress image.', sock, context.rawMessage.key, context.queue); }
 }
 
-// ─── Welcome Bot — New Group Members ─────────────────────────────────────────
+// ─── Welcome / Goodbye Bot — Group Member Events ─────────────────────────────
 
 export async function handleGroupParticipantsUpdate(
   update: any,
@@ -5623,18 +5739,21 @@ export async function handleGroupParticipantsUpdate(
   try {
     const { id: groupJid, participants, action } = update;
 
-    if (action !== 'add') return;
+    // Only handle add (welcome) and remove (goodbye)
+    if (action !== 'add' && action !== 'remove') return;
 
-    // Check if welcome feature is enabled for this user
+    // Check if welcome feature is enabled for this user (defaults OFF)
     const isEnabled = await getFeatureEnabled(userId, 'welcome');
     if (!isEnabled) return;
 
-    // Fetch group metadata once to resolve display names
+    // Fetch group metadata once to resolve display names and member count
     let groupName = groupJid.split('@')[0];
-    let memberMap: Map<string, string> = new Map();
+    let memberCount = 0;
+    const memberMap: Map<string, string> = new Map();
     try {
       const metadata = await sock.groupMetadata(groupJid);
       if (metadata?.subject) groupName = metadata.subject;
+      memberCount = metadata?.participants?.length || 0;
       for (const p of metadata?.participants || []) {
         if (p.name || p.notify) {
           memberMap.set(p.id, p.name || p.notify);
@@ -5642,24 +5761,80 @@ export async function handleGroupParticipantsUpdate(
       }
     } catch { /* use fallback names */ }
 
-    for (const jid of participants) {
-      const displayName = memberMap.get(jid) || jid.split('@')[0];
-      const vars = {
-        name: displayName,
-        time: currentTimeStr(),
-        date: currentDateStr(),
-        group: groupName,
-      };
+    if (action === 'add') {
+      // Check for custom welcome message for this group
+      const customMsg = await getWelcomeMessage(sessionId, groupJid, 'welcome');
 
-      const welcome = pickResponse(welcomeReplies, vars);
-      await sendReply(groupJid, welcome, sock, undefined, queue);
+      for (const jid of participants) {
+        const displayName = memberMap.get(jid) || jid.split('@')[0];
+        const vars = {
+          name: displayName,
+          time: currentTimeStr(),
+          date: currentDateStr(),
+          group: groupName,
+          count: String(memberCount),
+        };
 
-      // Small delay between multiple new members
-      if (participants.length > 1) {
-        await delay(1000 + Math.random() * 2000);
+        let text: string;
+        if (customMsg) {
+          // Replace placeholders in custom message
+          text = customMsg
+            .replace(/\{name\}/g, displayName)
+            .replace(/\{group\}/g, groupName)
+            .replace(/\{time\}/g, currentTimeStr())
+            .replace(/\{date\}/g, currentDateStr())
+            .replace(/\{count\}/g, String(memberCount));
+        } else {
+          text = pickResponse(welcomeReplies, vars);
+        }
+
+        // Send with mention so the new member gets a notification
+        await sock.sendMessage(groupJid, {
+          text,
+          mentions: [jid],
+        });
+
+        // Small delay between multiple new members
+        if (participants.length > 1) {
+          await delay(1000 + Math.random() * 2000);
+        }
+      }
+    }
+
+    if (action === 'remove') {
+      // Check for custom goodbye message for this group
+      const customMsg = await getWelcomeMessage(sessionId, groupJid, 'goodbye');
+
+      for (const jid of participants) {
+        const displayName = memberMap.get(jid) || jid.split('@')[0];
+        const vars = {
+          name: displayName,
+          time: currentTimeStr(),
+          date: currentDateStr(),
+          group: groupName,
+          count: String(memberCount),
+        };
+
+        let text: string;
+        if (customMsg) {
+          text = customMsg
+            .replace(/\{name\}/g, displayName)
+            .replace(/\{group\}/g, groupName)
+            .replace(/\{time\}/g, currentTimeStr())
+            .replace(/\{date\}/g, currentDateStr())
+            .replace(/\{count\}/g, String(memberCount));
+        } else {
+          text = pickResponse(goodbyeReplies, vars);
+        }
+
+        await sendReply(groupJid, text, sock, undefined, queue);
+
+        if (participants.length > 1) {
+          await delay(1000 + Math.random() * 2000);
+        }
       }
     }
   } catch (error) {
-    console.error('Welcome bot error:', error);
+    console.error('Welcome/goodbye bot error:', error);
   }
 }

@@ -1164,3 +1164,62 @@ export async function updateSessionSettings(sessionId: string, updates: Record<s
   }
   return data;
 }
+
+// ─── Welcome / Goodbye Messages ───────────────────────────────────────────────
+
+export async function getWelcomeMessage(sessionId: string, groupJid: string, messageType: 'welcome' | 'goodbye' = 'welcome'): Promise<string | null> {
+  const { data } = await supabase
+    .from('welcome_messages')
+    .select('message_text, enabled')
+    .eq('session_id', sessionId)
+    .eq('group_jid', groupJid)
+    .eq('message_type', messageType)
+    .single();
+
+  if (data?.enabled && data.message_text) return data.message_text;
+  return null;
+}
+
+export async function setFeatureEnabled(userId: string, sessionId: string, featureName: string, enabled: boolean): Promise<boolean> {
+  const { error } = await supabase
+    .from('bot_features')
+    .upsert(
+      { user_id: userId, session_id: sessionId, feature_name: featureName, enabled },
+      { onConflict: 'user_id,feature_name' },
+    );
+
+  if (error) {
+    console.error('[DB] Error setting feature:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function setWelcomeMessage(
+  userId: string,
+  sessionId: string,
+  groupJid: string,
+  messageText: string,
+  messageType: 'welcome' | 'goodbye' = 'welcome',
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('welcome_messages')
+    .upsert(
+      {
+        user_id: userId,
+        session_id: sessionId,
+        group_jid: groupJid,
+        message_text: messageText,
+        message_type: messageType,
+        enabled: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'session_id,group_jid,message_type' },
+    );
+
+  if (error) {
+    console.error('[DB] Error setting welcome message:', error);
+    return false;
+  }
+  return true;
+}
