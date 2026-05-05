@@ -936,6 +936,25 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 async function _syncSessionsWithDbInner(isWorker?: boolean) {
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
 
+  // Release stale DB-level pairing locks for sessions on THIS worker that
+  // have no corresponding active bot in memory. This handles:
+  //   - Worker restart/crash (activeBots is empty, but DB locks persist)
+  //   - Reconnect API reassigning a session without clearing the lock
+  //   - Any handler that forgot to call releasePairingLock()
+  // Without this, a session can block itself (its own stale lock makes
+  // isWorkerPairingLocked return true, preventing it from starting).
+  const staleReleases: Promise<void>[] = [];
+  for (const session of sessions) {
+    if (!activeBots.has(session.id)) {
+      staleReleases.push(releasePairingLock(session.id).catch(() => {}));
+    }
+  }
+  // Wait for stale lock releases to complete before checking
+  // isWorkerPairingLocked — otherwise the check would still see them.
+  if (staleReleases.length > 0) {
+    await Promise.all(staleReleases);
+  }
+
   // Check if any in-memory bot is actively pairing (started <3 min ago).
   // pairingStartedAt is set BEFORE the WebSocket opens (in start()) so
   // even bots still connecting count as "pairing in progress".

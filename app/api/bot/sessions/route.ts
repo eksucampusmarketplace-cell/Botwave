@@ -318,7 +318,9 @@ export async function PATCH(request: NextRequest) {
     const newWorkerUrl = await assignWorkerAsync();
     console.log(`[API] PATCH reconnect: session=${sessionId} previousState=${existing.state} oldWorker=${existing.worker_url ?? 'main'} newWorker=${newWorkerUrl ?? 'main'}`);
 
-    // Reset session for fresh pairing: clear old auth, QR, and pairing code
+    // Reset session for fresh pairing: clear old auth, QR, pairing code,
+    // and the DB-level pairing lock so the new worker doesn't see a stale
+    // lock and block the session from starting.
     const { data: session, error } = await supabase
       .from('bot_sessions')
       .update({
@@ -331,6 +333,7 @@ export async function PATCH(request: NextRequest) {
         locked_by: null,
         locked_at: null,
         heartbeat_at: null,
+        pairing_lock_acquired_at: null,
         worker_url: newWorkerUrl,
         updated_at: new Date().toISOString(),
       })
