@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        green: '#00ff88',
-        cyan: '#00e5ff',
-        dark: '#030a0f',
-        card: '#071520',
+        green: 'var(--green)',
+        cyan: 'var(--cyan)',
+        dark: 'var(--dark)',
+        card: 'var(--card)',
       },
       fontFamily: {
         display: ['Orbitron', 'sans-serif'],

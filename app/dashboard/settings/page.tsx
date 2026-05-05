@@ -5,6 +5,17 @@ import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import { createClient } from '@/lib/supabase/client';
 
+interface ApiKeyData {
+  id: string;
+  key_prefix: string;
+  name: string;
+  permissions: string[];
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  rawKey?: string;
+}
+
 export default function SettingsPage() {
   const [groqKey, setGroqKey] = useState('');
   const [skipProbability, setSkipProbability] = useState(15);
@@ -16,6 +27,11 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState('User');
+  const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyPerms, setNewKeyPerms] = useState<string[]>(['read']);
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [creatingKey, setCreatingKey] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -28,6 +44,8 @@ export default function SettingsPage() {
       setUsername(user.email || user.id);
 
       // Fetch existing settings
+      fetchApiKeys();
+
       try {
         const res = await fetch('/api/user/settings');
         const data = await res.json();
@@ -47,6 +65,47 @@ export default function SettingsPage() {
     };
     checkUser();
   }, []);
+
+  const fetchApiKeys = async () => {
+    try {
+      const res = await fetch('/api/user/api-keys');
+      const data = await res.json();
+      if (data.success) setApiKeys(data.data);
+    } catch {
+      // ignore - table may not exist yet
+    }
+  };
+
+  const handleCreateApiKey = async () => {
+    setCreatingKey(true);
+    try {
+      const res = await fetch('/api/user/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName || 'Default', permissions: newKeyPerms }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCreatedKey(data.data.rawKey);
+        setNewKeyName('');
+        fetchApiKeys();
+      }
+    } catch (err) {
+      console.error('Error creating API key:', err);
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleDeleteApiKey = async (id: string) => {
+    if (!confirm('Revoke this API key? Any integrations using it will stop working.')) return;
+    try {
+      await fetch(`/api/user/api-keys?id=${id}`, { method: 'DELETE' });
+      fetchApiKeys();
+    } catch (err) {
+      console.error('Error deleting API key:', err);
+    }
+  };
 
   const handleSaveApiKey = async () => {
     setSaving(true);
@@ -310,6 +369,76 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="border-t border-green/10 pt-8">
+              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">API ACCESS</h3>
+              <p className="font-mono text-[10px] text-[#3a6a5a] mb-4">
+                Generate API keys to access BotWave programmatically. Use the webhook endpoint at <span className="text-cyan">/api/bot/webhook</span> with your key as a Bearer token.
+              </p>
+
+              {createdKey && (
+                <div className="bg-green/10 border border-green/30 p-4 mb-4">
+                  <p className="font-mono text-[10px] text-green tracking-[2px] mb-2">NEW API KEY (copy now — shown once)</p>
+                  <code className="font-mono text-xs text-white break-all select-all">{createdKey}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(createdKey); }}
+                    className="ml-2 font-mono text-[10px] text-cyan hover:text-green"
+                  >COPY</button>
+                </div>
+              )}
+
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="flex-1 bg-dark border border-green/20 px-3 py-2 text-white font-mono text-sm focus:border-green outline-none"
+                  placeholder="Key name (e.g. My Integration)"
+                  maxLength={50}
+                />
+                <label className="flex items-center gap-1 font-mono text-[10px] text-[#5a9a7a]">
+                  <input
+                    type="checkbox"
+                    checked={newKeyPerms.includes('write')}
+                    onChange={(e) => setNewKeyPerms(e.target.checked ? ['read', 'write'] : ['read'])}
+                    className="accent-green"
+                  />
+                  WRITE
+                </label>
+                <button
+                  onClick={handleCreateApiKey}
+                  disabled={creatingKey}
+                  className="px-4 py-2 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50"
+                >
+                  {creatingKey ? '...' : 'CREATE KEY'}
+                </button>
+              </div>
+
+              {apiKeys.length > 0 && (
+                <div className="space-y-2">
+                  {apiKeys.map((key) => (
+                    <div key={key.id} className="flex items-center justify-between bg-dark/50 border border-green/10 p-3">
+                      <div>
+                        <span className="font-mono text-xs text-white">{key.name}</span>
+                        <span className="font-mono text-[10px] text-[#5a9a7a] ml-2">{key.key_prefix}</span>
+                        <span className="font-mono text-[10px] text-[#3a6a5a] ml-2">
+                          [{key.permissions.join(', ')}]
+                        </span>
+                        {key.last_used_at && (
+                          <span className="font-mono text-[10px] text-[#3a6a5a] ml-2">
+                            Last used: {new Date(key.last_used_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteApiKey(key.id)}
+                        className="font-mono text-[10px] text-red-400 hover:text-red-300 tracking-[1px]"
+                      >REVOKE</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-red-400/20 pt-8">
