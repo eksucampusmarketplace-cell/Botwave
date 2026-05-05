@@ -1,5 +1,5 @@
 {
-  "name": "BotWave — WhatsApp Bot Platform",
+  "name": "BotWave",
   "short_name": "BotWave",
   "description": "WhatsApp bot automation platform. Connect your number, toggle features, and let BotWave handle the rest.",
   "start_url": "/dashboard",

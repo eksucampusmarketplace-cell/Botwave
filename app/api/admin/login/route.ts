@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = generateSecureToken();
+    const token = await generateSecureToken(username);
     storeAdminToken(token, username);
 
     const response = NextResponse.json({
@@ -73,13 +73,13 @@ export async function POST(request: NextRequest) {
       message: 'Admin authenticated successfully',
     });
 
-    // Cookie scoped to /admin path only - never sent to user-facing routes
+    // Cookie sent to both /admin/* pages and /api/admin/* API routes
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 60 * 60 * 24, // 24 hours
-      path: '/admin', // Only sent to /admin/* routes
+      path: '/',
     });
 
     return response;
@@ -111,7 +111,7 @@ export async function DELETE(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 0,
-      path: '/admin',
+      path: '/',
     });
 
     return response;

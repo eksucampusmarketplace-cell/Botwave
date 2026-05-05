@@ -130,7 +130,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="bg-[#0a0f0a] border border-green/30 max-w-lg w-full mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="bg-[#0a0f0a] border border-green/30 max-w-lg w-full mx-2 sm:mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scan line effect */}
@@ -166,7 +166,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           {/* Status header */}
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-2.5 h-2.5 rounded-full ${
@@ -236,7 +236,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                   ENTER THIS CODE ON YOUR PHONE
                 </div>
                 <motion.div
-                  className="bg-[#050a05] border-2 border-green/50 p-5 inline-block relative cursor-pointer group"
+                  className="bg-[#050a05] border-2 border-green/50 p-3 sm:p-5 inline-block relative cursor-pointer group"
                   onClick={handleCopy}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -249,7 +249,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                   />
                   <div className="relative z-10 flex items-center gap-3">
                     <span
-                      className="font-mono text-3xl sm:text-4xl md:text-5xl text-white font-black tracking-[6px] sm:tracking-[10px] md:tracking-[14px] select-all"
+                      className="font-mono text-2xl sm:text-4xl md:text-5xl text-white font-black tracking-[4px] sm:tracking-[10px] md:tracking-[14px] select-all"
                       style={{ textShadow: '0 0 20px rgba(0,255,128,0.3)' }}
                     >
                       {pairingCode}
@@ -262,7 +262,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
               </div>
 
               {/* Copy button (mobile-friendly) */}
-              <div className="flex justify-center mb-5 mt-8">
+              <div className="flex justify-center mb-4 sm:mb-5 mt-6 sm:mt-8">
                 <motion.button
                   onClick={handleCopy}
                   whileHover={{ scale: 1.05 }}
@@ -278,7 +278,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
               </div>
 
               {/* Steps */}
-              <div className="bg-[#050a05] border border-green/10 p-4 mb-5 space-y-2">
+              <div className="bg-[#050a05] border border-green/10 p-3 sm:p-4 mb-4 sm:mb-5 space-y-1.5 sm:space-y-2">
                 <div className="font-mono text-[10px] text-green/40 tracking-[1px] mb-2">HOW TO LINK:</div>
                 {[
                   ['1', 'Open', 'WhatsApp', 'on your phone'],
@@ -297,7 +297,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
               </div>
 
               {/* WhatsApp scam warning note */}
-              <div className="bg-yellow-950/20 border border-yellow-600/20 p-3 mb-4">
+              <div className="bg-yellow-950/20 border border-yellow-600/20 p-2 sm:p-3 mb-3 sm:mb-4">
                 <div className="flex items-start gap-2">
                   <span className="text-yellow-500 text-xs mt-0.5">!</span>
                   <p className="font-mono text-[10px] text-yellow-600/80 leading-relaxed">
@@ -307,7 +307,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
               </div>
 
               {/* Cancel button (mobile-friendly) */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-3 sm:mb-4">
                 <motion.button
                   onClick={onClose}
                   whileHover={{ scale: 1.05 }}
