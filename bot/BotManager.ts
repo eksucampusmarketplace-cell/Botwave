@@ -16,6 +16,7 @@ import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from '.
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
 import { queueLink } from './linkQueue';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -25,6 +26,27 @@ const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 5000;
+
+// Proxy pool for Baileys direct mode — distributes WebSocket connections
+// across different IPs to avoid WhatsApp 428 bans from shared Render IP.
+const PROXY_LIST = (process.env.PROXY_LIST || '')
+  .split(',')
+  .map(p => p.trim())
+  .filter(Boolean);
+let baileysProxyCounter = 0;
+
+function getNextBaileysProxy(): HttpsProxyAgent<string> | undefined {
+  if (PROXY_LIST.length === 0) return undefined;
+  const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
+  baileysProxyCounter++;
+  const parts = entry.split(':');
+  if (parts.length < 4) return undefined;
+  const [host, port, user, pass] = parts;
+  const proxyUrl = `http://${user}:${pass}@${host}:${port}`;
+  const proxyIndex = ((baileysProxyCounter - 1) % PROXY_LIST.length) + 1;
+  console.log(`[PROXY] Baileys direct: assigned proxy #${proxyIndex}/${PROXY_LIST.length} → ${host}:${port} (user: ${user})`);
+  return new HttpsProxyAgent(proxyUrl);
+}
 
 // Cache the Baileys/WhatsApp Web version to avoid fetching on every start().
 // fetchLatestBaileysVersion() adds 500-2000ms latency per call and risks
@@ -103,6 +125,13 @@ export class BotWaveBot {
     // Only set browser fingerprint diversity AFTER successful pairing (on reconnect).
     const isRegistered = state.creds.registered;
     const browserConfig = isRegistered ? getBrowserConfigForSession(this.sessionId) : undefined;
+    // Get proxy agent for this session's WebSocket connection
+    const proxyAgent = getNextBaileysProxy();
+    if (proxyAgent) {
+      console.log(`[${this.sessionId}] Creating WASocket with PROXY agent...`);
+    } else {
+      console.log(`[${this.sessionId}] Creating WASocket WITHOUT proxy (direct IP)`);
+    }
     console.log(`[${this.sessionId}] Creating WASocket... registered=${isRegistered} browser=${JSON.stringify(browserConfig || 'default')}`);
     this.socket = makeWASocket({
       version,
@@ -113,6 +142,7 @@ export class BotWaveBot {
       },
       logger,
       ...(browserConfig ? { browser: browserConfig } : {}),
+      ...(proxyAgent ? { agent: proxyAgent, fetchAgent: proxyAgent } : {}),
       syncFullHistory: false,
       markOnlineOnConnect: false,
       connectTimeoutMs: 30_000,
