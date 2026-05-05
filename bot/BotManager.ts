@@ -118,6 +118,14 @@ export class BotWaveBot {
   async start(): Promise<void> {
     console.log(`[${this.sessionId}] start() called. Phone: ${this.phoneNumber}`);
 
+    // Mark pairing start IMMEDIATELY — before any async calls — so the
+    // sync loop (which runs every 5s) sees this bot as "starting" and
+    // doesn't create a duplicate. Without this, the async gap between
+    // activeBots.set() and the first await allows a concurrent sync
+    // cycle to see pairingStartedAt=0 and start another bot.
+    // Cleared below if the session turns out to be already registered.
+    this.pairingStartedAt = Date.now();
+
     // Register session for warmup tracking (advanced anti-ban)
     registerSessionStart(this.sessionId);
 
@@ -125,11 +133,11 @@ export class BotWaveBot {
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
     console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}`);
 
-    // Mark pairing start EARLY — before the WebSocket opens — so the
-    // queue in syncSessionsWithDb blocks other sessions immediately.
-    // Only for unregistered sessions that will need to pair.
-    if (!state.creds.registered) {
-      this.pairingStartedAt = Date.now();
+    // Session is already registered — no pairing needed. Clear the
+    // early pairingStartedAt so the sync loop doesn't treat this as
+    // a pairing-in-progress session (which would block other sessions).
+    if (state.creds.registered) {
+      this.pairingStartedAt = 0;
     }
 
     let version: [number, number, number];
@@ -911,7 +919,21 @@ export function initializeBot() {
  * Sessions already pairing for >3 minutes are considered stale and
  * don't block new pairings.
  */
+let isSyncing = false;
 export async function syncSessionsWithDb(isWorker?: boolean) {
+  // Prevent overlapping sync cycles. setInterval fires every 5s but
+  // this function can take longer due to stagger delays (5s per session).
+  // Without this guard, concurrent cycles can race on activeBots state.
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    await _syncSessionsWithDbInner(isWorker);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function _syncSessionsWithDbInner(isWorker?: boolean) {
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
 
   // Check if any in-memory bot is actively pairing (started <3 min ago).
