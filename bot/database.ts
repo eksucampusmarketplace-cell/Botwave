@@ -986,3 +986,181 @@ export async function trackMessage(
     console.error('[DB] Error tracking message:', error);
   }
 }
+
+// ─── Health Event Tracking ────────────────────────────────────────────────────
+
+export type HealthEventType = 'connected' | 'disconnected' | 'reconnecting' | 'error' | 'message_sent' | 'message_failed' | 'webhook_retry' | 'webhook_dead_letter';
+
+export async function logHealthEvent(
+  sessionId: string,
+  eventType: HealthEventType,
+  details?: string,
+): Promise<void> {
+  try {
+    await supabase.from('bot_health_events').insert({
+      session_id: sessionId,
+      event_type: eventType,
+      details: details ? details.substring(0, 500) : null,
+    });
+  } catch (error) {
+    console.error('[DB] Error logging health event:', error);
+  }
+}
+
+export async function getHealthEvents(sessionId: string, limit = 50) {
+  const { data, error } = await supabase
+    .from('bot_health_events')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[DB] Error fetching health events:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getHealthSummary(sessionIds: string[]) {
+  if (!sessionIds.length) return { totalErrors: 0, totalReconnects: 0, recentEvents: [] };
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const [errResult, reconnResult, recentResult] = await Promise.all([
+    supabase
+      .from('bot_health_events')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds)
+      .eq('event_type', 'error')
+      .gte('created_at', since),
+    supabase
+      .from('bot_health_events')
+      .select('id', { count: 'exact', head: true })
+      .in('session_id', sessionIds)
+      .eq('event_type', 'reconnecting')
+      .gte('created_at', since),
+    supabase
+      .from('bot_health_events')
+      .select('*')
+      .in('session_id', sessionIds)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ]);
+
+  return {
+    totalErrors: errResult.count || 0,
+    totalReconnects: reconnResult.count || 0,
+    recentEvents: recentResult.data || [],
+  };
+}
+
+// ─── Webhook Retry Queue ──────────────────────────────────────────────────────
+
+export async function enqueueWebhookRetry(
+  sessionId: string,
+  event: string,
+  payload: unknown,
+  errorMessage?: string,
+): Promise<void> {
+  try {
+    await supabase.from('webhook_retry_queue').insert({
+      session_id: sessionId,
+      event,
+      payload,
+      error_message: errorMessage || null,
+      next_retry_at: new Date(Date.now() + 5000).toISOString(),
+    });
+  } catch (error) {
+    console.error('[DB] Error enqueuing webhook retry:', error);
+  }
+}
+
+export async function getPendingWebhookRetries(limit = 10) {
+  const { data, error } = await supabase
+    .from('webhook_retry_queue')
+    .select('*')
+    .eq('status', 'pending')
+    .lte('next_retry_at', new Date().toISOString())
+    .order('next_retry_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error('[DB] Error fetching webhook retries:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function markWebhookRetryProcessing(id: string): Promise<void> {
+  await supabase.from('webhook_retry_queue')
+    .update({ status: 'processing', updated_at: new Date().toISOString() })
+    .eq('id', id);
+}
+
+export async function markWebhookRetryCompleted(id: string): Promise<void> {
+  await supabase.from('webhook_retry_queue')
+    .update({ status: 'completed', updated_at: new Date().toISOString() })
+    .eq('id', id);
+}
+
+export async function markWebhookRetryFailed(id: string, errorMessage: string, attempts: number, maxAttempts: number): Promise<void> {
+  const isDeadLetter = attempts >= maxAttempts;
+  const backoffMs = Math.min(1000 * Math.pow(2, attempts), 300000);
+
+  await supabase.from('webhook_retry_queue')
+    .update({
+      status: isDeadLetter ? 'dead_letter' : 'pending',
+      attempts,
+      error_message: errorMessage,
+      next_retry_at: isDeadLetter ? null : new Date(Date.now() + backoffMs).toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+}
+
+// ─── Bot Settings (per-session, for !settings command) ────────────────────────
+
+export async function getSessionSettings(sessionId: string) {
+  const { data: session } = await supabase
+    .from('bot_sessions')
+    .select('user_id')
+    .eq('id', sessionId)
+    .single();
+
+  if (!session) return null;
+
+  const { data } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', session.user_id)
+    .single();
+
+  return data || null;
+}
+
+export async function updateSessionSettings(sessionId: string, updates: Record<string, unknown>) {
+  const { data: session } = await supabase
+    .from('bot_sessions')
+    .select('user_id')
+    .eq('id', sessionId)
+    .single();
+
+  if (!session) return null;
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .upsert(
+      { user_id: session.user_id, ...updates, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[DB] Error updating session settings:', error);
+    return null;
+  }
+  return data;
+}

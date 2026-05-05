@@ -18,7 +18,7 @@ import mammoth from 'mammoth';
 const execFileAsync = promisify(execFile);
 const dnsResolve = promisify(dns.resolve);
 const botStartTime = Date.now();
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage, getSessionSettings, updateSessionSettings } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -994,6 +994,23 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'compress':
       await handleCompress(context, sock);
       break;
+    case 'settings':
+    case 'config':
+    case 'set':
+      await handleSettings(context, args, sock);
+      break;
+    case 'kick':
+    case 'remove':
+      await handleKick(context, args, sock);
+      break;
+    case 'promote':
+    case 'mod':
+      await handlePromote(context, args, sock);
+      break;
+    case 'demote':
+    case 'unmod':
+      await handleDemote(context, args, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -1193,9 +1210,10 @@ async function sendHelp(
 !crypto / !ud / !ip / !npm / !whois
 !headers / !country / !emoji
 
-*SOCIAL*
+*SOCIAL & ADMIN*
 !download / !save / !savestatus / !tagall
-!afk / !group / !purge
+!afk / !group / !purge / !settings
+!kick / !promote / !demote
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -1486,6 +1504,26 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!group',
             usage: '!group',
             description: 'Displays detailed group information including the group name, description, creation date, participant count, and admin list. Only works in group chats.',
+          },
+          {
+            name: '!kick',
+            usage: '!kick @mention  or  reply with !kick',
+            description: 'Removes a member from the group. Bot must be admin. Reply to their message or mention them.',
+          },
+          {
+            name: '!promote',
+            usage: '!promote @mention  or  reply with !promote',
+            description: 'Promotes a member to group admin. Bot must be admin.',
+          },
+          {
+            name: '!demote',
+            usage: '!demote @mention  or  reply with !demote',
+            description: 'Removes admin status from a member. Bot must be admin.',
+          },
+          {
+            name: '!settings',
+            usage: '!settings [option] [value]',
+            description: 'Configure bot settings via WhatsApp. Options: afk on/off, afk msg [text], name [name], status.',
           },
         ],
       },
@@ -3635,6 +3673,212 @@ async function handleGroupInfo(context: MessageContext, sock: any): Promise<void
   } catch (error) {
     console.error('[GROUP] Error:', error);
     await sendReply(context.chatJid, 'Failed to fetch group info.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Settings Command (configure bot via WhatsApp) ──────────────────────────
+
+async function handleSettings(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.sessionId) {
+    await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const sub = args[0]?.toLowerCase();
+
+  if (!sub) {
+    const settings = await getSessionSettings(context.sessionId);
+    const afkEnabled = settings?.afk_enabled ? 'ON' : 'OFF';
+    const afkMsg = settings?.afk_message || 'I am currently away';
+    const botName = settings?.bot_name || 'BotWave';
+
+    await sendReply(
+      context.chatJid,
+      `*BOT SETTINGS*\n\n` +
+      `*Bot Name:* ${botName}\n` +
+      `*AFK:* ${afkEnabled}\n` +
+      `*AFK Message:* ${afkMsg}\n\n` +
+      `*Commands:*\n` +
+      `!settings afk on/off — Toggle AFK\n` +
+      `!settings afk msg [text] — Set AFK message\n` +
+      `!settings name [name] — Set bot name\n` +
+      `!settings status — Show current settings`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  if (sub === 'status') {
+    const settings = await getSessionSettings(context.sessionId);
+    const afkEnabled = settings?.afk_enabled ? 'ON' : 'OFF';
+    const afkMsg = settings?.afk_message || 'I am currently away';
+    const botName = settings?.bot_name || 'BotWave';
+
+    await sendReply(
+      context.chatJid,
+      `*Current Settings:*\n` +
+      `Bot Name: ${botName}\n` +
+      `AFK: ${afkEnabled}\n` +
+      `AFK Message: ${afkMsg}`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  if (sub === 'afk') {
+    const action = args[1]?.toLowerCase();
+    if (action === 'on' || action === 'enable') {
+      await updateSessionSettings(context.sessionId, { afk_enabled: true });
+      await sendReply(context.chatJid, 'AFK auto-reply *enabled*.', sock, context.rawMessage.key, context.queue);
+    } else if (action === 'off' || action === 'disable') {
+      await updateSessionSettings(context.sessionId, { afk_enabled: false });
+      await sendReply(context.chatJid, 'AFK auto-reply *disabled*.', sock, context.rawMessage.key, context.queue);
+    } else if (action === 'msg' || action === 'message') {
+      const msg = args.slice(2).join(' ');
+      if (!msg) {
+        await sendReply(context.chatJid, 'Usage: !settings afk msg [your message]', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      await updateSessionSettings(context.sessionId, { afk_message: msg });
+      await sendReply(context.chatJid, `AFK message set to: _${msg}_`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Usage: !settings afk on/off/msg [text]', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (sub === 'name' || sub === 'botname') {
+    const name = args.slice(1).join(' ');
+    if (!name) {
+      await sendReply(context.chatJid, 'Usage: !settings name [bot name]', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    await updateSessionSettings(context.sessionId, { bot_name: name });
+    await sendReply(context.chatJid, `Bot name set to: *${name}*`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await sendReply(
+    context.chatJid,
+    'Unknown setting. Use !settings to see available options.',
+    sock, context.rawMessage.key, context.queue,
+  );
+}
+
+// ─── Group Admin Tools ──────────────────────────────────────────────────────
+
+async function handleKick(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const metadata = await sock.groupMetadata(context.chatJid);
+    const botJid = (sock as any).user?.id;
+    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    if (!botParticipant?.admin) {
+      await sendReply(context.chatJid, 'Bot must be a group admin to kick members.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // Get target from mentioned user or quoted message
+    const quotedMsg = getQuotedMessage(context.rawMessage);
+    const mentioned = context.rawMessage.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let targetJid = mentioned[0] || quotedMsg?.participant || null;
+
+    if (!targetJid && args.length > 0) {
+      const number = args[0].replace(/[^0-9]/g, '');
+      if (number) targetJid = `${number}@s.whatsapp.net`;
+    }
+
+    if (!targetJid) {
+      await sendReply(context.chatJid, '*!kick* — Remove a member from the group\n\nUsage:\n- Reply to their message with !kick\n- Or: !kick @mention\n- Or: !kick 2348012345678', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sock.groupParticipantsUpdate(context.chatJid, [targetJid], 'remove');
+    const number = targetJid.split('@')[0];
+    await sendReply(context.chatJid, `Removed @${number} from the group.`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[KICK] Error:', error);
+    await sendReply(context.chatJid, 'Failed to kick member. Make sure the bot is an admin.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handlePromote(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const metadata = await sock.groupMetadata(context.chatJid);
+    const botJid = (sock as any).user?.id;
+    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    if (!botParticipant?.admin) {
+      await sendReply(context.chatJid, 'Bot must be a group admin to promote members.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const quotedMsg = getQuotedMessage(context.rawMessage);
+    const mentioned = context.rawMessage.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let targetJid = mentioned[0] || quotedMsg?.participant || null;
+
+    if (!targetJid && args.length > 0) {
+      const number = args[0].replace(/[^0-9]/g, '');
+      if (number) targetJid = `${number}@s.whatsapp.net`;
+    }
+
+    if (!targetJid) {
+      await sendReply(context.chatJid, '*!promote* — Make a member admin\n\nUsage:\n- Reply to their message with !promote\n- Or: !promote @mention\n- Or: !promote 2348012345678', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sock.groupParticipantsUpdate(context.chatJid, [targetJid], 'promote');
+    const number = targetJid.split('@')[0];
+    await sendReply(context.chatJid, `Promoted @${number} to admin.`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[PROMOTE] Error:', error);
+    await sendReply(context.chatJid, 'Failed to promote member. Make sure the bot is an admin.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleDemote(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!context.isGroup) {
+    await sendReply(context.chatJid, 'This command only works in groups.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  try {
+    const metadata = await sock.groupMetadata(context.chatJid);
+    const botJid = (sock as any).user?.id;
+    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    if (!botParticipant?.admin) {
+      await sendReply(context.chatJid, 'Bot must be a group admin to demote members.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const quotedMsg = getQuotedMessage(context.rawMessage);
+    const mentioned = context.rawMessage.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let targetJid = mentioned[0] || quotedMsg?.participant || null;
+
+    if (!targetJid && args.length > 0) {
+      const number = args[0].replace(/[^0-9]/g, '');
+      if (number) targetJid = `${number}@s.whatsapp.net`;
+    }
+
+    if (!targetJid) {
+      await sendReply(context.chatJid, '*!demote* — Remove admin from a member\n\nUsage:\n- Reply to their message with !demote\n- Or: !demote @mention\n- Or: !demote 2348012345678', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sock.groupParticipantsUpdate(context.chatJid, [targetJid], 'demote');
+    const number = targetJid.split('@')[0];
+    await sendReply(context.chatJid, `Demoted @${number} from admin.`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[DEMOTE] Error:', error);
+    await sendReply(context.chatJid, 'Failed to demote member. Make sure the bot is an admin.', sock, context.rawMessage.key, context.queue);
   }
 }
 
