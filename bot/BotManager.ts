@@ -10,7 +10,7 @@ import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPair
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
-import { startPresenceSimulation, stopPresenceSimulation, registerSessionStart, getBrowserConfigForSession } from './utils/advancedAntiban';
+import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
@@ -125,9 +125,6 @@ export class BotWaveBot {
     // cycle to see pairingStartedAt=0 and start another bot.
     // Cleared below if the session turns out to be already registered.
     this.pairingStartedAt = Date.now();
-
-    // Register session for warmup tracking (advanced anti-ban)
-    registerSessionStart(this.sessionId);
 
     console.log(`[${this.sessionId}] Loading auth state from Supabase...`);
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
@@ -644,9 +641,6 @@ class EvolutionBot {
     if (this.previousDbState === 'qr_pending') {
       this.pairingStartedAt = Date.now();
     }
-
-    // Register for warmup tracking (advanced anti-ban)
-    registerSessionStart(this.sessionId);
 
     try {
       // If the session was previously active or mid-pairing, try to reconnect

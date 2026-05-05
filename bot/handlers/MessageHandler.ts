@@ -50,8 +50,6 @@ import {
 } from '../utils/responsePools';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
 import {
-  isDailyCapReached,
-  trackMessageSent,
   shouldSkipResponse,
   isGroupOnCooldown,
   markGroupReplied,
@@ -291,12 +289,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
-    // Daily cap + warmup check (advanced anti-ban)
-    if (sessionId && isDailyCapReached(sessionId)) {
-      console.log(`Daily cap reached for session: ${sessionId}`);
-      return;
-    }
-
     // Smart reply filtering — skip ultra-short msgs, emoji-only, etc in groups
     if (!isCommand && shouldSilentlyIgnore(isGroup, content, senderJid)) {
       try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
@@ -403,24 +395,26 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     // Private chat AFK auto-response: if someone DMs the bot owner and
     // the owner has AFK enabled, respond with the AFK message.
+    // Checks BOTH afk_states table (!afk command) AND user_settings (dashboard toggle).
     // ONLY for non-command messages — commands should get their normal response.
     if (!isGroup && !isCommand && sessionId) {
       const ownerJid = (sock as any).user?.id;
       if (ownerJid && senderJid !== ownerJid) {
-        // Check afk_states table (not user_settings) for the owner's AFK status
         try {
           const ownerAfk = await getAfkState(sessionId, ownerJid);
-          if (ownerAfk?.is_afk) {
-            // Per-user cooldown — don't spam the same person
+          const isAfkViaCommand = ownerAfk?.is_afk;
+          const isAfkViaDashboard = ownerSettings?.afk_enabled;
+
+          if (isAfkViaCommand || isAfkViaDashboard) {
             const cooldownKey = `${sessionId}:${senderJid}`;
             const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
             if (Date.now() - lastReply > AFK_COOLDOWN_MS) {
               afkReplyCooldown.set(cooldownKey, Date.now());
-              const afkMsg = ownerAfk.afk_reason || 'I am currently away';
+              const reason = ownerAfk?.afk_reason || ownerSettings?.afk_message || undefined;
               const response = pickResponse(afkReplies, { name: pushName || 'User', time: currentTimeStr() });
               await sendReply(
                 chatJid,
-                `${response}${ownerAfk.afk_reason ? `\n_Reason: ${ownerAfk.afk_reason}_` : ''}`,
+                `${response}${reason ? `\n_Reason: ${reason}_` : ''}`,
                 sock,
                 message.key,
                 queue,
@@ -456,8 +450,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       await processAutoReply(context, sock);
     }
 
-    // Track for daily cap + mark group replied + contact frequency (advanced anti-ban)
-    if (sessionId) trackMessageSent(sessionId);
+    // Mark group replied + contact frequency (advanced anti-ban)
     if (isGroup) markGroupReplied(chatJid);
     trackContactReply(senderJid);
     trackWhoSentLast(chatJid, true); // Track that bot was last to send
@@ -1082,9 +1075,10 @@ async function sendReply(
     }
   }
 
-  // Always show typing indicator before sending — even when using queue
+  // Show typing or recording indicator before sending
+  const isAudioContent = processedContent?.audio || processedContent?.mimetype?.includes('audio');
   try {
-    await sock.sendPresenceUpdate('composing', jid);
+    await sock.sendPresenceUpdate(isAudioContent ? 'recording' : 'composing', jid);
   } catch { /* non-critical */ }
 
   if (queue) {
@@ -2819,14 +2813,9 @@ async function handleStats(context: MessageContext, sock: any): Promise<void> {
     const uptimeMins = Math.floor((uptimeMs % 3600000) / 60000);
     const uptimeStr = uptimeHrs > 0 ? `${uptimeHrs}h ${uptimeMins}m` : `${uptimeMins}m`;
 
-    // Get daily message count from anti-ban tracking
-    const { isDailyCapReached } = await import('../utils/advancedAntiban');
-    const dailyCapInfo = isDailyCapReached(context.sessionId) ? 'Limit reached' : 'Active';
-
     let msg = `*BOT STATUS*\n\n`;
     msg += `Status: Online\n`;
     msg += `Uptime: ${uptimeStr}\n`;
-    msg += `Daily Sending: ${dailyCapInfo}\n`;
 
     if (stats.session) {
       msg += `\n*SESSION*\n`;
@@ -3611,12 +3600,10 @@ async function handleRiddle(context: MessageContext, sock: any): Promise<void> {
     sock, context.rawMessage.key, context.queue,
   );
 
-  // Reveal answer after 30 seconds (with daily cap check)
+  // Reveal answer after 30 seconds
   setTimeout(async () => {
     try {
-      if (context.sessionId && isDailyCapReached(context.sessionId)) return;
       await sendReply(context.chatJid, `*ANSWER:* ${riddle.a}`, sock, context.rawMessage.key, context.queue);
-      if (context.sessionId) trackMessageSent(context.sessionId);
     } catch {
       // Ignore errors in delayed sends
     }

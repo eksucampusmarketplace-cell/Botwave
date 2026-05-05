@@ -46,7 +46,8 @@ export class EvolutionSocketAdapter {
 
     // Text message
     if (content.text && typeof content.text === 'string') {
-      return sendText(this.instanceName, to, content.text);
+      const mentioned = Array.isArray(content.mentions) ? content.mentions as string[] : undefined;
+      return sendText(this.instanceName, to, content.text, mentioned);
     }
 
     // Sticker

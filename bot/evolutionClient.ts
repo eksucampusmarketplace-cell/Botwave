@@ -378,11 +378,15 @@ export async function setWebhook(instanceName: string) {
 }
 
 // Send a text message through an instance
-export async function sendText(instanceName: string, to: string, text: string) {
+export async function sendText(instanceName: string, to: string, text: string, mentioned?: string[]) {
+  const payload: Record<string, unknown> = { number: to, text, delay: 0 };
+  if (mentioned && mentioned.length > 0) {
+    payload.mentioned = mentioned;
+  }
   const res = await apiFetch(`${BASE}/message/sendText/${instanceName}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ number: to, text, delay: 0 }),
+    body: JSON.stringify(payload),
   });
   return res.json();
 }
