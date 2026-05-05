@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -281,6 +281,25 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       incrementLeaderboard(sessionId, senderJid, pushName).catch(() => {});
     }
 
+    // Track all incoming messages for stats (non-blocking)
+    if (sessionId) {
+      const msgType = message.message?.imageMessage ? 'image'
+        : message.message?.videoMessage ? 'video'
+        : message.message?.audioMessage ? 'audio'
+        : message.message?.stickerMessage ? 'sticker'
+        : message.message?.documentMessage ? 'document'
+        : 'text';
+      trackMessage(
+        sessionId,
+        senderJid,
+        pushName || null,
+        content ? content.substring(0, 500) : null,
+        msgType,
+        isGroup,
+        isGroup ? chatJid : null,
+      ).catch(() => {});
+    }
+
     // Check if sender mentioned an AFK user (groups)
     await checkAfkMentions(context, sock);
 
@@ -412,6 +431,11 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   const args = parts.slice(1);
 
   console.log(`Command: !${commandName} from ${context.senderJid}`);
+
+  // Track all commands for stats (non-blocking)
+  if (context.sessionId && context.userId) {
+    trackCommand(context.sessionId, context.userId, context.senderJid, commandName);
+  }
 
   // Small jitter before processing
   await delay(500 + Math.random() * 1500);

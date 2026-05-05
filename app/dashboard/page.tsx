@@ -9,6 +9,9 @@ import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
 
 import { createClient } from '@/lib/supabase/client';
+import ParticleBackground from '@/components/ui/ParticleBackground';
+import OnboardingTour from '@/components/ui/OnboardingTour';
+import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
 
 const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
@@ -23,18 +26,18 @@ const defaultFeatures = [
 ];
 
 export default function DashboardPage() {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<BotSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFeatures, setActiveFeatures] = useState<string[]>([]);
   const [showQR, setShowQR] = useState(false);
-  const [activeSession, setActiveSession] = useState<any>(null);
+  const [activeSession, setActiveSession] = useState<BotSession | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
-  const [stats, setStats] = useState({ totalMessages: 0, totalCommands: 0, uptimePercent: 0 });
+  const [stats, setStats] = useState<DashboardStats>({ totalMessages: 0, totalCommands: 0, uptimePercent: 0, activeSessions: 0, totalSessions: 0 });
 
-  const activeSessionRef = useRef<any>(null);
+  const activeSessionRef = useRef<BotSession | null>(null);
 
   const fetchDashboardData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -46,7 +49,7 @@ export default function DashboardPage() {
         
         const currentActive = activeSessionRef.current;
         if (currentActive) {
-          const updated = sessData.data.find((s: any) => s.id === currentActive.id);
+          const updated = sessData.data.find((s: BotSession) => s.id === currentActive.id);
           if (updated) {
             setActiveSession(updated);
             activeSessionRef.current = updated;
@@ -60,7 +63,7 @@ export default function DashboardPage() {
       ]);
       const featData = await featRes.json();
       if (featData.success) {
-        setActiveFeatures(featData.data.filter((f: any) => f.enabled).map((f: any) => f.feature_name));
+        setActiveFeatures(featData.data.filter((f: BotFeature) => f.enabled).map((f: BotFeature) => f.feature_name));
       }
       const statsData = await statsRes.json();
       if (statsData.success) {
@@ -68,6 +71,8 @@ export default function DashboardPage() {
           totalMessages: statsData.data.totalMessages || 0,
           totalCommands: statsData.data.totalCommands || 0,
           uptimePercent: statsData.data.uptimePercent || 0,
+          activeSessions: statsData.data.activeSessions || 0,
+          totalSessions: statsData.data.totalSessions || 0,
         });
       }
     } catch (err) {
@@ -103,7 +108,7 @@ export default function DashboardPage() {
           const data = await res.json();
           if (data.success) {
             setSessions(data.data);
-            const refreshed = data.data.find((s: any) => s.id === activeSessionRef.current?.id);
+            const refreshed = data.data.find((s: BotSession) => s.id === activeSessionRef.current?.id);
             if (refreshed) {
               setActiveSession(refreshed);
               activeSessionRef.current = refreshed;
@@ -181,7 +186,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleConnect = async (session: any) => {
+  const handleConnect = async (session: BotSession) => {
     // For disconnected sessions, reset state so the worker generates a fresh pairing code
     if (session.state === 'needs_reauth' || session.state === 'inactive') {
       try {
@@ -204,8 +209,9 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-dark relative">
-      <canvas id="bg-canvas" className="fixed inset-0 z-0 pointer-events-none" />
+      <ParticleBackground />
       <DashboardNav />
+      <OnboardingTour />
       <div className="pt-24 px-4 md:px-8 max-w-7xl mx-auto relative z-10 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -236,6 +242,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           <div className="lg:col-span-2 space-y-4 sm:space-y-8">
             <motion.section
+              data-tour="sessions"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -260,7 +267,8 @@ export default function DashboardPage() {
                   />
                 ))}
 
-                <button 
+                <button
+                  data-tour="add-session"
                   onClick={() => setShowAddModal(true)}
                   className="w-full border-2 border-dashed border-green/20 p-4 text-center font-mono text-xs text-[#5a9a7a] hover:border-green/40 hover:text-green transition-all tracking-[2px]"
                 >
@@ -270,6 +278,7 @@ export default function DashboardPage() {
             </motion.section>
 
             <motion.section
+              data-tour="features"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -323,7 +332,7 @@ export default function DashboardPage() {
               <div className="absolute bottom-0 left-0 w-5 h-5 border-l-2 border-b-2 border-green/30" />
               <div className="absolute bottom-0 right-0 w-5 h-5 border-r-2 border-b-2 border-green/30" />
 
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-6">
+              <h2 className="font-display text-sm tracking-[3px] text-green mb-6" data-tour="stats">
                 QUICK STATS
               </h2>
 
@@ -421,45 +430,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            const canvas = document.getElementById('bg-canvas');
-            if (canvas) {
-              const ctx = canvas.getContext('2d');
-              let W, H, particles = [];
-              function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-              function Particle() {
-                this.x = Math.random() * W; this.y = Math.random() * H;
-                this.vx = (Math.random() - 0.5) * 0.4; this.vy = (Math.random() - 0.5) * 0.4;
-                this.r = Math.random() * 1.5; this.alpha = Math.random() * 0.4 + 0.1;
-              }
-              Particle.prototype.update = function() {
-                this.x += this.vx; this.y += this.vy;
-                if (this.x < 0) this.x = W; if (this.x > W) this.x = 0;
-                if (this.y < 0) this.y = H; if (this.y > H) this.y = 0;
-              };
-              function initParticles() { particles = []; const count = Math.floor((W * H) / 8000); for (let i = 0; i < count; i++) particles.push(new Particle()); }
-              function drawParticles() {
-                ctx.clearRect(0, 0, W, H);
-                ctx.strokeStyle = 'rgba(0,255,136,0.04)'; ctx.lineWidth = 1;
-                for (let x = 0; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-                for (let y = 0; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-                for (let i = 0; i < particles.length; i++) {
-                  for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x; const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 120) { ctx.strokeStyle = 'rgba(0,255,136,' + (0.08 * (1 - dist/120)) + ')'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke(); }
-                  }
-                }
-                particles.forEach(p => { p.update(); ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,255,136,' + p.alpha + ')'; ctx.fill(); });
-                requestAnimationFrame(drawParticles);
-              }
-              resize(); initParticles(); drawParticles(); window.addEventListener('resize', () => { resize(); initParticles(); });
-            }
-          `,
-        }}
-      />
+
     </main>
   );
 }

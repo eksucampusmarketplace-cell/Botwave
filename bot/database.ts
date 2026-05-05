@@ -758,3 +758,62 @@ export async function getSessionStats(sessionId: string) {
     session: sessionResult.data,
   };
 }
+
+// ─── Command & Message Tracking ───────────────────────────────────────────────
+
+export async function trackCommand(
+  sessionId: string,
+  userId: string,
+  senderJid: string,
+  commandName: string,
+): Promise<void> {
+  try {
+    const { data: existing } = await supabase
+      .from('user_stats')
+      .select('id, total_commands')
+      .eq('session_id', sessionId)
+      .eq('sender_jid', senderJid)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('user_stats')
+        .update({ total_commands: (existing.total_commands || 0) + 1 })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('user_stats').insert({
+        user_id: userId,
+        session_id: sessionId,
+        sender_jid: senderJid,
+        total_commands: 1,
+      });
+    }
+  } catch (error) {
+    // Non-critical: don't crash the bot over stats
+    console.error('[DB] Error tracking command:', error);
+  }
+}
+
+export async function trackMessage(
+  sessionId: string,
+  senderJid: string,
+  senderName: string | null,
+  content: string | null,
+  messageType: string,
+  isGroup: boolean,
+  groupJid: string | null,
+): Promise<void> {
+  try {
+    await supabase.from('messages').insert({
+      session_id: sessionId,
+      sender_jid: senderJid,
+      sender_name: senderName,
+      content: content ? content.substring(0, 500) : null,
+      message_type: messageType,
+      is_group: isGroup,
+      group_jid: groupJid,
+    });
+  } catch (error) {
+    console.error('[DB] Error tracking message:', error);
+  }
+}
