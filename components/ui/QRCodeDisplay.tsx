@@ -9,6 +9,7 @@ interface QRCodeDisplayProps {
   qrGeneratedAt?: string;
   pairingCode?: string;
   sessionState?: string;
+  queuePosition?: number | null;
 }
 
 const CONNECTION_STEPS = [
@@ -59,7 +60,7 @@ function SpinnerChar() {
   return <span className="text-cyan font-mono">{frames[frame]}</span>;
 }
 
-export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, sessionState }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, sessionState, queuePosition }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(180);
   const [copied, setCopied] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
@@ -208,6 +209,25 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Queue position feedback — shown when another user is pairing */}
+          {isLoading && !isConnected && queuePosition && queuePosition > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-cyan/5 border border-cyan/20 p-4 mb-5 text-center"
+            >
+              <div className="font-mono text-xs text-cyan tracking-[2px] mb-1">
+                QUEUED FOR PAIRING
+              </div>
+              <div className="font-mono text-[10px] text-[#5a9a7a]">
+                Another user is pairing right now. You&apos;re next in line.
+              </div>
+              <div className="font-mono text-[10px] text-[#5a9a7a] mt-1">
+                Estimated wait: ~3 minutes
+              </div>
+            </motion.div>
+          )}
 
           {/* Connection success state */}
           {isConnected && (

@@ -305,6 +305,7 @@ export default function SessionsPage() {
           qrGeneratedAt={activeSession?.qr_generated_at}
           pairingCode={activeSession?.pairing_code}
           sessionState={activeSession?.state}
+          queuePosition={activeSession?.queue_position}
         />
       )}
     </main>

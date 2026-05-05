@@ -292,6 +292,133 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
   return recovered;
 }
 
+/**
+ * Count active pairing sessions per worker_url.
+ * Used by assignWorkerAsync to pick the least-loaded worker.
+ */
+export async function getPairingCountsByWorker(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .select('worker_url')
+    .in('state', ['qr_pending', 'pairing_sent']);
+
+  if (error || !data) return {};
+
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    const key = row.worker_url || '__main__';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Log a pairing event to the pairing_events table for audit trail.
+ */
+export async function logPairingEvent(
+  sessionId: string,
+  eventType: string,
+  workerUrl: string | null,
+  statusCode?: number,
+  details?: Record<string, unknown>,
+) {
+  const { error } = await supabase
+    .from('pairing_events')
+    .insert({
+      session_id: sessionId,
+      event_type: eventType,
+      worker_url: workerUrl,
+      status_code: statusCode ?? null,
+      details: details ?? null,
+    });
+
+  if (error) {
+    // Non-critical — don't block pairing flow on audit logging failures.
+    // The table may not exist yet if the migration hasn't been run.
+    if (error.code !== 'PGRST205' && error.code !== '42P01') {
+      console.error(`[AUDIT] Failed to log pairing event ${eventType} for ${sessionId}:`, error.message);
+    }
+  }
+}
+
+/**
+ * Acquire a DB-level pairing lock for a session.
+ * Sets pairing_lock_acquired_at = NOW() so other workers can see
+ * that a pairing is in progress on this worker.
+ */
+export async function acquirePairingLock(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      pairing_lock_acquired_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId);
+
+  if (error && error.code !== 'PGRST205') {
+    console.error(`[DB] Failed to acquire pairing lock for ${sessionId}:`, error);
+  }
+}
+
+/**
+ * Release the DB-level pairing lock for a session.
+ */
+export async function releasePairingLock(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      pairing_lock_acquired_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId);
+
+  if (error && error.code !== 'PGRST205') {
+    console.error(`[DB] Failed to release pairing lock for ${sessionId}:`, error);
+  }
+}
+
+/**
+ * Check if any session on a given worker_url has a DB-level pairing lock
+ * that is less than 3 minutes old (the pairing code TTL).
+ */
+export async function isWorkerPairingLocked(workerUrl: string | null): Promise<boolean> {
+  const cutoff = new Date(Date.now() - 180_000).toISOString();
+
+  let query = supabase
+    .from('bot_sessions')
+    .select('id')
+    .gt('pairing_lock_acquired_at', cutoff)
+    .limit(1);
+
+  if (workerUrl) {
+    query = query.eq('worker_url', workerUrl);
+  } else {
+    query = query.is('worker_url', null);
+  }
+
+  const { data, error } = await query;
+  if (error) return false;
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Update the queue_position for a session so the dashboard can show
+ * the user where they are in the pairing queue.
+ */
+export async function updateQueuePosition(sessionId: string, position: number | null): Promise<void> {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      queue_position: position,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId);
+
+  if (error && error.code !== 'PGRST205') {
+    console.error(`[DB] Failed to update queue position for ${sessionId}:`, error);
+  }
+}
+
 export async function savePoll(sessionId: string, chatJid: string, question: string, options: string[], createdByJid: string) {
   const { data, error } = await supabase
     .from('polls')

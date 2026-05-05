@@ -34,6 +34,7 @@ export interface BotSession {
   qr_code?: string;
   qr_generated_at?: string;
   pairing_code?: string;
+  queue_position?: number | null;
 }
 
 // ─── Feature Types ────────────────────────────────────────────────────────────
