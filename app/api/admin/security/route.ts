@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/admin-auth';
-import { getRecentLoginAttempts, getAuditLog } from '@/lib/admin-security';
+import { getRecentLoginAttempts, getAuditLogPersisted } from '@/lib/admin-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const loginAttempts = getRecentLoginAttempts(50);
-    const auditLog = getAuditLog(50);
+    const auditLog = await getAuditLogPersisted(50);
 
     return NextResponse.json({
       success: true,

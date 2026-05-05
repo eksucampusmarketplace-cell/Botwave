@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { PWARegister } from '@/components/pwa/PWARegister';
+import ThemeProvider from '@/components/ui/ThemeProvider';
 
 export const viewport: Viewport = {
   themeColor: '#00ff88',
@@ -39,7 +40,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <PWARegister />
       </body>
     </html>

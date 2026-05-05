@@ -1,8 +1,9 @@
 /**
  * Admin security utilities: login rate limiting, audit logging, IP tracking.
- * All state is in-memory — acceptable because admin login is low-traffic
- * and the rate limiter resets on deploy (which is fine for brute-force protection).
+ * Audit log is persisted to Supabase when available, with in-memory fallback.
  */
+
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 // ─── Login Rate Limiting ──────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ export function getRecentLoginAttempts(limit = 50): LoginAttempt[] {
   return loginAttempts.slice(-limit).reverse();
 }
 
-// ─── Audit Logging ────────────────────────────────────────────────────────────
+// ─── Audit Logging (Persistent via Supabase) ─────────────────────────────────
 
 interface AuditEntry {
   timestamp: number;
@@ -76,10 +77,18 @@ interface AuditEntry {
   ip: string;
 }
 
-const auditLog: AuditEntry[] = [];
+const auditLogCache: AuditEntry[] = [];
+
+function getServiceSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createServiceClient(url, key);
+}
 
 /**
  * Log an admin action for the audit trail.
+ * Persists to Supabase if available, falls back to in-memory.
  */
 export function logAdminAction(
   admin: string,
@@ -88,17 +97,60 @@ export function logAdminAction(
   details: string,
   ip: string,
 ): void {
-  auditLog.push({ timestamp: Date.now(), admin, action, target, details, ip });
-  if (auditLog.length > MAX_AUDIT_ENTRIES) {
-    auditLog.splice(0, auditLog.length - MAX_AUDIT_ENTRIES);
+  const entry: AuditEntry = { timestamp: Date.now(), admin, action, target, details, ip };
+  auditLogCache.push(entry);
+  if (auditLogCache.length > MAX_AUDIT_ENTRIES) {
+    auditLogCache.splice(0, auditLogCache.length - MAX_AUDIT_ENTRIES);
+  }
+
+  const supabase = getServiceSupabase();
+  if (supabase) {
+    Promise.resolve(
+      supabase
+        .from('admin_audit_log')
+        .insert({
+          admin_username: admin,
+          action,
+          target,
+          details,
+          ip_address: ip,
+        })
+    ).catch(() => {});
   }
 }
 
 /**
  * Get the audit log for display in admin panel.
+ * Reads from Supabase if available, falls back to in-memory cache.
+ */
+export async function getAuditLogPersisted(limit = 50): Promise<AuditEntry[]> {
+  const supabase = getServiceSupabase();
+  if (supabase) {
+    const { data } = await supabase
+      .from('admin_audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (data && data.length > 0) {
+      return data.map(row => ({
+        timestamp: new Date(row.created_at).getTime(),
+        admin: row.admin_username,
+        action: row.action,
+        target: row.target,
+        details: row.details,
+        ip: row.ip_address,
+      }));
+    }
+  }
+  return auditLogCache.slice(-limit).reverse();
+}
+
+/**
+ * Sync getter for backward compatibility.
  */
 export function getAuditLog(limit = 50): AuditEntry[] {
-  return auditLog.slice(-limit).reverse();
+  return auditLogCache.slice(-limit).reverse();
 }
 
 // ─── IP Extraction ────────────────────────────────────────────────────────────

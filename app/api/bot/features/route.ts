@@ -11,7 +11,7 @@ const updateFeatureSchema = z.object({
   config: z.record(z.unknown()).optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -23,10 +23,19 @@ export async function GET() {
       );
     }
 
-    const { data: features, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+
+    let query = supabase
       .from('bot_features')
       .select('*')
       .eq('user_id', user.id);
+
+    if (sessionId) {
+      query = query.eq('session_id', sessionId);
+    }
+
+    const { data: features, error } = await query;
 
     if (error) {
       if (error.code === 'PGRST205') {

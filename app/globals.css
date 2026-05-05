@@ -12,6 +12,19 @@
   --font-display: 'Orbitron', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
   --font-body: 'Exo 2', sans-serif;
+  --text-primary: #c8f0e0;
+  --text-muted: #5a9a7a;
+}
+
+[data-theme='light'] {
+  --green: #059669;
+  --cyan: #0891b2;
+  --dark: #f8fafc;
+  --card: #ffffff;
+  --border: rgba(5, 150, 105, 0.2);
+  --glow: 0 0 20px rgba(5, 150, 105, 0.15);
+  --text-primary: #1e293b;
+  --text-muted: #64748b;
 }
 
 * {
@@ -26,7 +39,7 @@ html {
 
 body {
   background: var(--dark);
-  color: #c8f0e0;
+  color: var(--text-primary);
   font-family: var(--font-body);
   overflow-x: hidden;
   cursor: crosshair;
@@ -62,7 +75,11 @@ button {
   color: #fff;
 }
 
-/* Scanlines effect */
+/* Scanlines effect — disabled in light mode */
+[data-theme='light'] body::after {
+  display: none;
+}
+
 body::after {
   content: '';
   position: fixed;

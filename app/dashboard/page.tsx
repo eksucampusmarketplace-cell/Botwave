@@ -13,6 +13,7 @@ import ParticleBackground from '@/components/ui/ParticleBackground';
 import OnboardingTour from '@/components/ui/OnboardingTour';
 import SessionAlerts from '@/components/ui/SessionAlerts';
 import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
+import { useSSE } from '@/lib/useSSE';
 
 const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFeatures, setActiveFeatures] = useState<string[]>([]);
+  const [selectedFeatureSession, setSelectedFeatureSession] = useState<string>('');
   const [showQR, setShowQR] = useState(false);
   const [activeSession, setActiveSession] = useState<BotSession | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -39,6 +41,36 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({ totalMessages: 0, totalCommands: 0, uptimePercent: 0, activeSessions: 0, totalSessions: 0 });
 
   const activeSessionRef = useRef<BotSession | null>(null);
+  const [sseConnected, setSSEConnected] = useState(false);
+
+  useSSE({
+    onUpdate: (data) => {
+      setSSEConnected(true);
+      const mappedSessions = data.sessions.map((s) => ({
+        ...s,
+        user_id: '',
+        created_at: '',
+        updated_at: '',
+      })) as BotSession[];
+      setSessions(mappedSessions);
+
+      const current = activeSessionRef.current;
+      if (current) {
+        const updated = mappedSessions.find((s) => s.id === current.id);
+        if (updated) {
+          setActiveSession(updated);
+          activeSessionRef.current = updated;
+        }
+      }
+
+      setStats((prev) => ({
+        ...prev,
+        totalMessages: data.stats.total_messages || prev.totalMessages,
+        totalCommands: data.stats.total_commands || prev.totalCommands,
+      }));
+    },
+    enabled: !showQR,
+  });
 
   const fetchDashboardData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -58,8 +90,11 @@ export default function DashboardPage() {
         }
       }
 
+      const featUrl = selectedFeatureSession
+        ? `/api/bot/features?sessionId=${selectedFeatureSession}`
+        : '/api/bot/features';
       const [featRes, statsRes] = await Promise.all([
-        fetch('/api/bot/features'),
+        fetch(featUrl),
         fetch('/api/bot/stats'),
       ]);
       const featData = await featRes.json();
@@ -81,6 +116,7 @@ export default function DashboardPage() {
     } finally {
       if (!silent) setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -126,6 +162,25 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [showQR]);
 
+  useEffect(() => {
+    if (sessions.length > 0 && !selectedFeatureSession) {
+      setSelectedFeatureSession(sessions[0].id);
+    }
+  }, [sessions, selectedFeatureSession]);
+
+  useEffect(() => {
+    if (selectedFeatureSession) {
+      fetch(`/api/bot/features?sessionId=${selectedFeatureSession}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setActiveFeatures(data.data.filter((f: BotFeature) => f.enabled).map((f: BotFeature) => f.feature_name));
+          }
+        })
+        .catch(err => console.error('Error fetching session features:', err));
+    }
+  }, [selectedFeatureSession]);
+
   const toggleFeature = async (featureId: string) => {
     const isEnabled = activeFeatures.includes(featureId);
     const newEnabled = !isEnabled;
@@ -135,18 +190,17 @@ export default function DashboardPage() {
       return;
     }
 
-    // Update locally
     setActiveFeatures((prev) =>
       isEnabled ? prev.filter((f) => f !== featureId) : [...prev, featureId]
     );
 
-    // Update on server for the first session (as a simple default)
+    const targetSession = selectedFeatureSession || sessions[0].id;
     try {
       await fetch('/api/bot/features', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: sessions[0].id,
+          sessionId: targetSession,
           featureName: featureId,
           enabled: newEnabled,
         }),
@@ -230,9 +284,17 @@ export default function DashboardPage() {
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
             CONTROL <span className="text-green">PANEL</span>
           </h1>
-          <p className="font-mono text-sm text-[#5a9a7a] mt-2">
-            Manage your WhatsApp sessions and bot features
-          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="font-mono text-sm text-[#5a9a7a]">
+              Manage your WhatsApp sessions and bot features
+            </p>
+            {sseConnected && (
+              <span className="flex items-center gap-1 font-mono text-[10px] text-cyan tracking-[1px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+                LIVE
+              </span>
+            )}
+          </div>
         </motion.div>
 
         <div className="bg-card border border-cyan/20 p-4 mb-6">
@@ -289,9 +351,24 @@ export default function DashboardPage() {
               <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
               <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
 
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-6">
-                FEATURE TOGGLES
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display text-sm tracking-[3px] text-green">
+                  FEATURE TOGGLES
+                </h2>
+                {sessions.length > 1 && (
+                  <select
+                    value={selectedFeatureSession}
+                    onChange={(e) => setSelectedFeatureSession(e.target.value)}
+                    className="bg-dark border border-green/20 px-3 py-1.5 text-white font-mono text-xs focus:border-green focus:outline-none"
+                  >
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.session_name} ({s.phone_number})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {defaultFeatures.map((feature, index) => (

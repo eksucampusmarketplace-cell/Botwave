@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '@/components/ui/ThemeProvider';
 
 export default function DashboardNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -47,12 +49,22 @@ export default function DashboardNav() {
           <Link href="/dashboard/analytics" data-tour="nav-analytics" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             ANALYTICS
           </Link>
+          <Link href="/dashboard/scheduled" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+            SCHEDULED
+          </Link>
           <Link href="/dashboard/settings" data-tour="nav-settings" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SETTINGS
           </Link>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={toggleTheme}
+            className="hidden md:flex w-8 h-8 rounded-full bg-green/20 border border-green/30 items-center justify-center hover:bg-green/30 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <span className="text-sm">{theme === 'dark' ? '\u2600' : '\u263E'}</span>
+          </button>
           <div className="hidden sm:flex w-8 h-8 rounded-full bg-green/20 border border-green items-center justify-center">
             <span className="font-mono text-xs text-green">U</span>
           </div>
@@ -115,12 +127,25 @@ export default function DashboardNav() {
                 ANALYTICS
               </Link>
               <Link
+                href="/dashboard/scheduled"
+                onClick={() => setMenuOpen(false)}
+                className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
+              >
+                SCHEDULED
+              </Link>
+              <Link
                 href="/dashboard/settings"
                 onClick={() => setMenuOpen(false)}
                 className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
               >
                 SETTINGS
               </Link>
+              <button
+                onClick={() => { setMenuOpen(false); toggleTheme(); }}
+                className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10 text-left"
+              >
+                {theme === 'dark' ? '\u2600 LIGHT MODE' : '\u263E DARK MODE'}
+              </button>
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}
                 className="font-mono text-xs tracking-[2px] text-red-400 py-3 text-left"
