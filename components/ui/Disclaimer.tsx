@@ -23,8 +23,10 @@ const disclaimerItems = [
     result in immediate termination of your account.
   </>,
   <>
-    BotWave does <strong className="text-[#ff9090]">not store, read, or sell</strong> your WhatsApp messages. Your
-    data privacy is taken seriously.
+    BotWave does <strong className="text-[#ff9090]">not store, read, or sell</strong> your WhatsApp messages.
+    The bot owner <strong className="text-[#ff9090]">cannot see, access, or read</strong> your private chats.
+    BotWave only processes messages that contain bot commands — all other messages are ignored.
+    Your data privacy is taken seriously.
   </>,
   <>
     This service is provided <strong className="text-[#ff9090]">&quot;as is&quot;</strong> with no guarantees of

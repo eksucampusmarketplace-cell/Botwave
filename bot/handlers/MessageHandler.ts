@@ -398,8 +398,9 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Checks BOTH afk_states table (!afk command) AND user_settings (dashboard toggle).
     // ONLY for non-command messages — commands should get their normal response.
     if (!isGroup && !isCommand && sessionId) {
-      const ownerJid = (sock as any).user?.id;
-      if (ownerJid && senderJid !== ownerJid) {
+      const rawOwnerJid = (sock as any).user?.id;
+      const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : undefined;
+      if (ownerJid && normalizeJid(senderJid) !== ownerJid) {
         try {
           const ownerAfk = await getAfkState(sessionId, ownerJid);
           const isAfkViaCommand = ownerAfk?.is_afk;
@@ -994,7 +995,7 @@ async function checkAfkMentions(context: MessageContext, sock: any): Promise<voi
   const mentioned = context.rawMessage.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
   for (const jid of mentioned) {
     try {
-      const afkState = await getAfkState(context.sessionId, jid);
+      const afkState = await getAfkState(context.sessionId, normalizeJid(jid));
       if (afkState && afkState.is_afk) {
         const afkName = jid.split('@')[0];
         const vars = { name: afkName, time: currentTimeStr() };
@@ -1189,7 +1190,9 @@ async function sendHelp(
 !truth / !dare / !ship / !fortune / !fact
 
 _Send *!help* for the full .docx guide._
-_Only the bot owner can use commands._`;
+_Only the bot owner can use commands._
+
+_Your chats are private — the bot owner cannot read or access your messages._`;
     await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
     return;
   }
@@ -1681,6 +1684,16 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
       }
     }
+
+    // Privacy notice
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({
+        text: 'Privacy: Your chats are private. The bot owner cannot read or access your messages. BotWave only responds to commands — it does not store, read, or share any chat content.',
+        size: 20, italics: true, font: 'Calibri',
+      })],
+      alignment: AlignmentType.CENTER,
+    }));
 
     // Footer
     children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
@@ -2353,8 +2366,10 @@ async function handleAfk(
   const subcommand = args[0]?.toLowerCase();
   const reason = args.slice(1).join(' ') || args.join(' ');
 
+  const normalizedJid = normalizeJid(context.senderJid);
+
   if (subcommand === 'off') {
-    await setAfkState(context.sessionId, context.senderJid, false);
+    await setAfkState(context.sessionId, normalizedJid, false);
     await sendReply(
       context.chatJid,
       `Welcome back, ${vars.name}! AFK mode disabled.`,
@@ -2367,7 +2382,7 @@ async function handleAfk(
 
   // Default: turn on
   const afkReason = subcommand === 'on' ? args.slice(1).join(' ') || undefined : reason || undefined;
-  await setAfkState(context.sessionId, context.senderJid, true, afkReason);
+  await setAfkState(context.sessionId, normalizedJid, true, afkReason);
   await sendReply(
     context.chatJid,
     `${vars.name} is now AFK.${afkReason ? ` Reason: ${afkReason}` : ''}`,
@@ -5075,13 +5090,26 @@ export async function handleGroupParticipantsUpdate(
     const isEnabled = await getFeatureEnabled(userId, 'welcome');
     if (!isEnabled) return;
 
+    // Fetch group metadata once to resolve display names
+    let groupName = groupJid.split('@')[0];
+    let memberMap: Map<string, string> = new Map();
+    try {
+      const metadata = await sock.groupMetadata(groupJid);
+      if (metadata?.subject) groupName = metadata.subject;
+      for (const p of metadata?.participants || []) {
+        if (p.name || p.notify) {
+          memberMap.set(p.id, p.name || p.notify);
+        }
+      }
+    } catch { /* use fallback names */ }
+
     for (const jid of participants) {
-      const name = jid.split('@')[0];
+      const displayName = memberMap.get(jid) || jid.split('@')[0];
       const vars = {
-        name,
+        name: displayName,
         time: currentTimeStr(),
         date: currentDateStr(),
-        group: groupJid.split('@')[0],
+        group: groupName,
       };
 
       const welcome = pickResponse(welcomeReplies, vars);
