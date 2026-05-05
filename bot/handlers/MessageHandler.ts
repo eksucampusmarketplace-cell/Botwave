@@ -84,6 +84,65 @@ function getQuotedMessage(rawMessage: any): any {
     || null;
 }
 
+/**
+ * Humanized help hints — randomly picked to avoid repetitive bot-like responses.
+ * Each includes usage info + a casual nudge to try again.
+ */
+const helpHints: Record<string, string[]> = {
+  currency: [
+    'hey! for currency conversion do it like this:\n\n!currency 100 USD NGN\n\nor\n!currency 50 EUR GBP\n\njust send it again with the amount and currencies 🙂',
+    'ooh you need the amount and currency codes!\n\ntry: *!currency 100 USD NGN*\n\nor: *!currency 1000 NGN USD*\n\nsend it again with those details',
+    'currency converter needs 3 things — amount, from, to\n\nlike: !currency 100 USD NGN\n\ntry again with that format!',
+  ],
+  weather: [
+    'need a city name for weather!\n\ntry: *!weather Lagos* or *!weather London*\n\nsend it again with the city',
+    'which city? just add it after the command\n\nlike: *!weather Lagos*\n\ntry again!',
+    'hey drop the city name too\n\nexample: *!weather New York*\n\nresend with the city 🌤',
+  ],
+  define: [
+    'what word do you want defined?\n\ntry: *!define serendipity*\n\nsend again with the word!',
+    'drop the word after the command\n\nlike: *!define philosophy*\n\ntry again 📖',
+    'need a word to look up!\n\nexample: *!define resilience*\n\nresend with the word',
+  ],
+  translate: [
+    'for translation you need the language + text\n\ntry: *!translate es Hello world*\n\nlanguages: es, fr, de, pt, ja, ko, zh, ar\n\nsend again!',
+    'translation needs a target language and text\n\nlike: *!tr fr Good morning*\n\ntry again with those details',
+    'hey add the language code and text!\n\nexample: *!translate de How are you*\n\nresend with that format 🌍',
+  ],
+  download: [
+    'drop the link after the command!\n\ntry: *!download [paste URL here]*\n\nworks with YouTube, TikTok, Instagram, Twitter\n\nsend again with the link',
+    'need a URL to download from\n\nlike: *!download https://...*\n\ntry again with the link!',
+    'just paste the link after !download\n\nsupported: YouTube, TikTok, IG, Twitter/X\n\nresend with the URL 🔗',
+  ],
+  horoscope: [
+    'which zodiac sign?\n\ntry: *!horoscope aries* or *!horoscope leo*\n\nsend again with your sign! ♈',
+    'need your zodiac sign!\n\nlike: *!horoscope scorpio*\n\ntry again with the sign ✨',
+    'drop your sign after the command\n\nexample: *!horoscope pisces*\n\nresend with your zodiac!',
+  ],
+  qr: [
+    'what do you want in the QR code?\n\ntry: *!qr https://google.com*\n\nor: *!qr Hello world*\n\nsend again with the text or URL',
+    'need text or a URL to generate!\n\nlike: *!qr https://example.com*\n\ntry again!',
+  ],
+  tts: [
+    'what should I say?\n\ntry: *!tts Hello how are you*\n\nsend again with the text!',
+    'need some text to convert to voice\n\nlike: *!tts Good morning everyone*\n\ntry again! 🎙',
+  ],
+  wiki: [
+    'what topic?\n\ntry: *!wiki artificial intelligence*\n\nsend again with the topic!',
+    'need a topic to look up\n\nlike: *!wiki Nigeria*\n\ntry again! 📚',
+  ],
+  lyrics: [
+    'which song?\n\ntry: *!lyrics Bohemian Rhapsody*\n\nsend again with the song name!',
+    'need a song title\n\nlike: *!lyrics Shape of You*\n\ntry again! 🎵',
+  ],
+};
+
+function getHelpHint(command: string): string {
+  const hints = helpHints[command];
+  if (!hints || hints.length === 0) return '';
+  return hints[Math.floor(Math.random() * hints.length)];
+}
+
 function normalizeJid(jid: string): string {
   // Remove the device suffix (:XX) from JIDs for comparison
   // e.g. "1234567890:12@s.whatsapp.net" → "1234567890@s.whatsapp.net"
@@ -1083,13 +1142,7 @@ async function handleWeatherCommand(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   if (!args.length) {
-    await sendReply(
-      context.chatJid,
-      'Usage: *!weather [city]*\n\nExample: !weather London',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('weather'), sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -1424,13 +1477,7 @@ async function showLeaderboard(context: MessageContext, sock: any): Promise<void
 
 async function handleDownload(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendReply(
-      context.chatJid,
-      'Usage: *!download [url]*\n\nSupported: YouTube, TikTok, Instagram, Twitter/X links\n\n_Note: Due to platform restrictions, some links may not work. We use a free API._',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('download'), sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -1523,13 +1570,7 @@ async function handleDefine(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   if (!args.length) {
-    await sendReply(
-      context.chatJid,
-      'Usage: *!define [word]*\n\nExample: !define serendipity',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('define'), sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -1577,16 +1618,7 @@ async function handleHoroscope(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   if (!args.length) {
-    const signs = Object.entries(horoscopeSigns)
-      .map(([name, info]) => `${info.emoji} ${name}`)
-      .join('\n');
-    await sendReply(
-      context.chatJid,
-      `*HOROSCOPE*\n\nUsage: !horoscope [sign]\n\n${signs}`,
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('horoscope'), sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -1622,13 +1654,7 @@ async function handleTranslate(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   if (args.length < 2) {
-    await sendReply(
-      context.chatJid,
-      'Usage: *!translate [lang] [text]*\n\nExample: !translate es Hello world\n\nLanguages: es, fr, de, pt, it, ja, ko, zh, ar, hi, ru',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('translate'), sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -2290,7 +2316,7 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
 
 async function handleQR(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendReply(context.chatJid, '*QR CODE GENERATOR*\n\n!qr [text or URL]\n\nExample: !qr https://google.com', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, getHelpHint('qr'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
@@ -2309,7 +2335,7 @@ async function handleQR(context: MessageContext, args: string[], sock: any): Pro
 
 async function handleTTS(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendReply(context.chatJid, '*TEXT TO SPEECH*\n\n!tts [text]\n\nConverts text to a voice note.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, getHelpHint('tts'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
@@ -2337,7 +2363,7 @@ async function handleTTS(context: MessageContext, args: string[], sock: any): Pr
 
 async function handleWiki(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendReply(context.chatJid, '*WIKIPEDIA*\n\n!wiki [topic]\n\nExample: !wiki Albert Einstein', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, getHelpHint('wiki'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
@@ -2371,7 +2397,7 @@ async function handleWiki(context: MessageContext, args: string[], sock: any): P
 
 async function handleLyrics(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
-    await sendReply(context.chatJid, '*LYRICS FINDER*\n\n!lyrics [song name]\n!lyrics [artist] - [song]\n\nExample: !lyrics Bohemian Rhapsody', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, getHelpHint('lyrics'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
@@ -2434,11 +2460,7 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
 
 async function handleCurrency(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (args.length < 3) {
-    await sendReply(
-      context.chatJid,
-      '*CURRENCY CONVERTER*\n\n!currency [amount] [FROM] [TO]\n\nExamples:\n!currency 100 USD NGN\n!currency 50 EUR GBP\n!currency 1000 NGN USD',
-      sock, context.rawMessage.key, context.queue,
-    );
+    await sendReply(context.chatJid, getHelpHint('currency'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
