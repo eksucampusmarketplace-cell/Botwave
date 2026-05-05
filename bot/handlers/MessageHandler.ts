@@ -1656,14 +1656,21 @@ async function handleDoc(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  if (!args.length) {
+  // Check for quoted/replied message first — works even with no args
+  const quotedText = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
+    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text ||
+    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage?.caption ||
+    '';
+
+  // Show help only if no args AND no quoted message
+  if (!args.length && !quotedText) {
     await sendReply(
       context.chatJid,
       `*DOCUMENT MAKER*\n\n` +
       `*Option 1 — Title + Content:*\n` +
       `!doc My Title | Your content goes here exactly as you type it\n\n` +
       `*Option 2 — Reply to a message:*\n` +
-      `Reply to any message with *!doc My Title* and the replied message becomes the content\n\n` +
+      `Reply to any message with *!doc* or *!doc My Title* and the replied message becomes the content\n\n` +
       `*Option 3 — Content only:*\n` +
       `!doc Just type your content here and the title will be "Document"\n\n` +
       `_Your formatting, line breaks, and spacing are preserved exactly._`,
@@ -1677,15 +1684,12 @@ async function handleDoc(
   // Use the raw message text (preserves newlines, spacing, formatting exactly)
   const rawText = context.message.replace(/^!doc(ument)?\s*/i, '');
 
-  // Check if replying to a message — use that as content
-  const quotedText = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
-    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text || '';
-
   let title: string;
   let content: string;
 
   if (quotedText) {
     // Replying to a message: what you type = title, quoted message = content
+    // If no title given (just "!doc" as reply), auto-title as "Document"
     title = rawText.trim() || 'Document';
     content = quotedText;
   } else if (rawText.includes('|')) {
