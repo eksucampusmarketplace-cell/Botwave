@@ -1142,6 +1142,30 @@ export const welcomeReplies: string[] = [
   'Ahoy {name}! Welcome aboard!',
 ];
 
+// ─── Goodbye Replies ──────────────────────────────────────────────────────────
+export const goodbyeReplies: string[] = [
+  '{name} has left the group. Goodbye!',
+  'See you later, {name}!',
+  '{name} just left {group}. Take care!',
+  'Bye bye {name}! You\'ll be missed',
+  '{name} has departed. Farewell!',
+  'Until next time, {name}!',
+  '{name} left the chat. Catch you later!',
+  'Sad to see you go, {name}!',
+  '{name} has left {group}. Peace out!',
+  '{name} is gone. Goodbye friend!',
+  'We\'ll miss you, {name}!',
+  '{name} waved goodbye. See ya!',
+  'Farewell {name}, come back anytime!',
+  '{name} has exited. Take care out there!',
+  'Goodbye {name}! Hope to see you again',
+  '{name} just left. Until we meet again!',
+  'So long, {name}! Best wishes',
+  '{name} bounced. Bye!',
+  'Catch you on the flip side, {name}!',
+  '{name} has left the building!',
+];
+
 // ─── Anti-Spam Warnings ───────────────────────────────────────────────────────
 export const spamWarnings: string[] = [
   'Slow down, {name}! Too many messages',
