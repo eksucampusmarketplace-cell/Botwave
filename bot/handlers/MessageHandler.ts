@@ -64,6 +64,26 @@ const COMMAND_PREFIX = '!';
 const RATE_LIMIT_WINDOW = 60000;
 const MAX_MESSAGES_PER_WINDOW = 10;
 
+/**
+ * Extract quoted/replied message from various possible paths.
+ * WhatsApp status replies, image replies, and normal text replies
+ * each store contextInfo in a different message wrapper.
+ */
+function getQuotedMessage(rawMessage: any): any {
+  const msg = rawMessage?.message;
+  if (!msg) return null;
+  return msg.extendedTextMessage?.contextInfo?.quotedMessage
+    || msg.imageMessage?.contextInfo?.quotedMessage
+    || msg.videoMessage?.contextInfo?.quotedMessage
+    || msg.audioMessage?.contextInfo?.quotedMessage
+    || msg.documentMessage?.contextInfo?.quotedMessage
+    || msg.stickerMessage?.contextInfo?.quotedMessage
+    || msg.contactMessage?.contextInfo?.quotedMessage
+    || msg.locationMessage?.contextInfo?.quotedMessage
+    || msg.protocolMessage?.contextInfo?.quotedMessage
+    || null;
+}
+
 function normalizeJid(jid: string): string {
   // Remove the device suffix (:XX) from JIDs for comparison
   // e.g. "1234567890:12@s.whatsapp.net" → "1234567890@s.whatsapp.net"
@@ -897,7 +917,7 @@ async function createSticker(
     const subcommand = args[0]?.toLowerCase() || '';
 
     // Determine media message — direct image/video or quoted
-    const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const quotedMsg = getQuotedMessage(context.rawMessage);
     const hasImage = !!(context.rawMessage.message?.imageMessage || quotedMsg?.imageMessage);
     const hasVideo = !!(context.rawMessage.message?.videoMessage || quotedMsg?.videoMessage);
     const hasStickerMedia = !!(context.rawMessage.message?.stickerMessage || quotedMsg?.stickerMessage);
@@ -1657,10 +1677,11 @@ async function handleDoc(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   // Check for quoted/replied message first — works even with no args
-  const quotedText = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
-    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.extendedTextMessage?.text ||
-    context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage?.caption ||
-    '';
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedText = quotedMsg?.conversation
+    || quotedMsg?.extendedTextMessage?.text
+    || quotedMsg?.imageMessage?.caption
+    || '';
 
   // Show help only if no args AND no quoted message
   if (!args.length && !quotedText) {
@@ -2103,7 +2124,7 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
 // ─── Save Command — Forward to self ──────────────────────────────────────────
 
 async function handleSave(context: MessageContext, sock: any): Promise<void> {
-  const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+  const quotedMsg = getQuotedMessage(context.rawMessage);
 
   if (!quotedMsg) {
     await sendReply(
@@ -2197,7 +2218,7 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
 // ─── Repost Command — Repost to WhatsApp Status ─────────────────────────────
 
 async function handleRepost(context: MessageContext, sock: any): Promise<void> {
-  const quotedMsg = context.rawMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+  const quotedMsg = getQuotedMessage(context.rawMessage);
 
   if (!quotedMsg) {
     await sendReply(
