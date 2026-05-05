@@ -242,6 +242,28 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
 
   let recovered = 0;
   for (const session of stuck) {
+    // needs_reauth = the worker already gave up and released the lock.
+    // Clear the worker assignment so the session isn't stuck assigned to
+    // a worker that's no longer managing it. The user can retry from the
+    // dashboard, and the session will be assigned to any available worker.
+    if (session.state === 'needs_reauth') {
+      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} is needs_reauth on ${session.worker_url} — clearing worker assignment so user can retry`);
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          worker_url: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+
+      if (!updateErr) {
+        recovered++;
+      } else {
+        console.error(`[RECOVERY] Failed to clear worker for session ${session.id.slice(0, 8)}:`, updateErr);
+      }
+      continue;
+    }
+
     const healthy = await isWorkerHealthy(session.worker_url);
     if (!healthy) {
       console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} stuck on dead worker ${session.worker_url} (state=${session.state}, stale since ${session.updated_at}). Clearing auth and reassigning to main service.`);
