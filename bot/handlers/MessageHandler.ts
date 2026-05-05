@@ -302,8 +302,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
-    // Per-group cooldown (advanced anti-ban)
-    if (isGroup && isGroupOnCooldown(chatJid)) {
+    // Per-group cooldown (advanced anti-ban) — never skip commands
+    if (isGroup && !isCommand && isGroupOnCooldown(chatJid)) {
       return; // Silently skip — don't even warn, just act like a human who's busy
     }
 
