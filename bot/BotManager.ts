@@ -478,6 +478,11 @@ export class BotWaveBot {
         releasePairingLock(this.sessionId).catch(() => {});
         logPairingEvent(this.sessionId, 'pairing_success', this.workerUrl).catch(() => {});
 
+        // Mark device as online so WhatsApp linked devices shows "online"
+        // instead of "last seen". Per-chat composing/recording in humanSend
+        // also keeps the device active when handling messages.
+        try { await this.socket.sendPresenceUpdate('available'); } catch { /* non-critical */ }
+
         // Start presence simulation (advanced anti-ban)
         startPresenceSimulation(this.socket, this.sessionId);
       }

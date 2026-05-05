@@ -347,6 +347,47 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
+    // Private chat AFK auto-response — checked BEFORE anti-ban delays so the
+    // sender gets a prompt reply instead of waiting 15-120s for naturalDelay.
+    // Uses a quick send (brief typing indicator) instead of full humanSend.
+    if (!isGroup && !isCommand && sessionId) {
+      const rawOwnerJid = (sock as any).user?.id;
+      const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : undefined;
+      if (ownerJid && normalizeJid(senderJid) !== ownerJid) {
+        try {
+          const ownerAfk = await getAfkState(sessionId, ownerJid);
+          const isAfkViaCommand = ownerAfk?.is_afk;
+          const isAfkViaDashboard = ownerSettings?.afk_enabled;
+
+          if (isAfkViaCommand || isAfkViaDashboard) {
+            const cooldownKey = `${sessionId}:${senderJid}`;
+            const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
+            if (Date.now() - lastReply > AFK_COOLDOWN_MS) {
+              afkReplyCooldown.set(cooldownKey, Date.now());
+              const reason = ownerAfk?.afk_reason || ownerSettings?.afk_message || undefined;
+              const response = pickResponse(afkReplies, { name: pushName || 'User', time: currentTimeStr() });
+              const afkText = `${response}${reason ? `\n_Reason: ${reason}_` : ''}`;
+
+              // Quick send: brief typing then reply — no full humanSend delays
+              try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+              await delay(500 + Math.random() * 1000);
+              try { await sock.sendPresenceUpdate('composing', chatJid); } catch { /* non-critical */ }
+              await delay(800 + Math.random() * 1200);
+              const afkContent = { text: addMessageJitter(afkText) };
+              if (queue) {
+                await queue.enqueue(chatJid, afkContent);
+              } else {
+                await sock.sendMessage(chatJid, afkContent);
+              }
+              try { await sock.sendPresenceUpdate('paused', chatJid); } catch { /* non-critical */ }
+            }
+            // AFK reply sent (or on cooldown) — don't process further
+            return;
+          }
+        } catch { /* afk check non-critical */ }
+      }
+    }
+
     // Natural delay variation (advanced anti-ban)
     if (sessionId) {
       await naturalDelay(sessionId);
@@ -392,39 +433,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     // Check if sender mentioned an AFK user (groups)
     await checkAfkMentions(context, sock);
-
-    // Private chat AFK auto-response: if someone DMs the bot owner and
-    // the owner has AFK enabled, respond with the AFK message.
-    // Checks BOTH afk_states table (!afk command) AND user_settings (dashboard toggle).
-    // ONLY for non-command messages — commands should get their normal response.
-    if (!isGroup && !isCommand && sessionId) {
-      const rawOwnerJid = (sock as any).user?.id;
-      const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : undefined;
-      if (ownerJid && normalizeJid(senderJid) !== ownerJid) {
-        try {
-          const ownerAfk = await getAfkState(sessionId, ownerJid);
-          const isAfkViaCommand = ownerAfk?.is_afk;
-          const isAfkViaDashboard = ownerSettings?.afk_enabled;
-
-          if (isAfkViaCommand || isAfkViaDashboard) {
-            const cooldownKey = `${sessionId}:${senderJid}`;
-            const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
-            if (Date.now() - lastReply > AFK_COOLDOWN_MS) {
-              afkReplyCooldown.set(cooldownKey, Date.now());
-              const reason = ownerAfk?.afk_reason || ownerSettings?.afk_message || undefined;
-              const response = pickResponse(afkReplies, { name: pushName || 'User', time: currentTimeStr() });
-              await sendReply(
-                chatJid,
-                `${response}${reason ? `\n_Reason: ${reason}_` : ''}`,
-                sock,
-                message.key,
-                queue,
-              );
-            }
-          }
-        } catch { /* afk check non-critical */ }
-      }
-    }
 
     // Owner-only command restriction:
     // Only the bot owner (the WhatsApp account linked to this session) can use ! commands.
