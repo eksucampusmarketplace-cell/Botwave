@@ -7,11 +7,14 @@ import { promisify } from 'util';
 import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import dns from 'dns';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 
 const execFileAsync = promisify(execFile);
+const dnsResolve = promisify(dns.resolve);
+const botStartTime = Date.now();
 import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
@@ -801,6 +804,189 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'hex':
       await handleColor(context, args, sock);
       break;
+    // ── Productivity ──
+    case 'purge':
+    case 'del':
+      await handlePurge(context, args, sock);
+      break;
+    case 'calc':
+    case 'math':
+      await handleCalc(context, args, sock);
+      break;
+    case 'countdown':
+      await handleCountdown(context, args, sock);
+      break;
+    case 'cal':
+    case 'calendar':
+      await handleCalendar(context, sock);
+      break;
+    case 'timezone':
+    case 'tz':
+    case 'time':
+      await handleTimezone(context, args, sock);
+      break;
+    case 'uptime':
+      await handleUptime(context, sock);
+      break;
+    case 'id':
+    case 'chatid':
+      await handleId(context, sock);
+      break;
+    case 'paste':
+    case 'pastebin':
+      await handlePaste(context, args, sock);
+      break;
+    // ── Info Lookup ──
+    case 'crypto':
+    case 'coin':
+      await handleCrypto(context, args, sock);
+      break;
+    case 'ud':
+    case 'urban':
+      await handleUrbanDictionary(context, args, sock);
+      break;
+    case 'ip':
+    case 'dns':
+    case 'nslookup':
+      await handleIpLookup(context, args, sock);
+      break;
+    // ── Fun & Creative ──
+    case 'font':
+    case 'fancy':
+      await handleFont(context, args, sock);
+      break;
+    case 'wallpaper':
+    case 'wp':
+      await handleWallpaper(context, args, sock);
+      break;
+    case 'qrread':
+    case 'scanqr':
+      await handleQRRead(context, sock);
+      break;
+    // ── Text & Writing ──
+    case 'reverse':
+    case 'rev':
+      await handleReverse(context, args, sock);
+      break;
+    case 'upper':
+    case 'uppercase':
+      await handleUpper(context, args, sock);
+      break;
+    case 'lower':
+    case 'lowercase':
+      await handleLower(context, args, sock);
+      break;
+    case 'mock':
+    case 'spongebob':
+      await handleMock(context, args, sock);
+      break;
+    case 'clap':
+      await handleClap(context, args, sock);
+      break;
+    case 'tiny':
+    case 'superscript':
+      await handleTiny(context, args, sock);
+      break;
+    case 'fliptext':
+    case 'upsidedown':
+      await handleFlipText(context, args, sock);
+      break;
+    case 'morse':
+      await handleMorse(context, args, sock);
+      break;
+    case 'braille':
+      await handleBraille(context, args, sock);
+      break;
+    case 'ascii':
+    case 'bigtext':
+      await handleAsciiArt(context, args, sock);
+      break;
+    // ── Utilities ──
+    case 'pick':
+    case 'choose':
+      await handlePick(context, args, sock);
+      break;
+    case 'coinflip':
+    case 'flip':
+      await handleCoinFlip(context, sock);
+      break;
+    case 'dice':
+    case 'roll':
+      await handleDice(context, args, sock);
+      break;
+    case 'password':
+    case 'genpass':
+      await handlePassword(context, args, sock);
+      break;
+    case 'uuid':
+      await handleUUID(context, sock);
+      break;
+    case 'epoch':
+    case 'timestamp':
+      await handleEpoch(context, sock);
+      break;
+    case 'bmi':
+      await handleBMI(context, args, sock);
+      break;
+    case 'age':
+      await handleAge(context, args, sock);
+      break;
+    case 'unit':
+    case 'convert':
+      await handleUnit(context, args, sock);
+      break;
+    // ── More Info Lookup ──
+    case 'npm':
+      await handleNpm(context, args, sock);
+      break;
+    case 'whois':
+      await handleWhois(context, args, sock);
+      break;
+    case 'headers':
+    case 'httpheaders':
+      await handleHeaders(context, args, sock);
+      break;
+    case 'country':
+      await handleCountry(context, args, sock);
+      break;
+    case 'emoji':
+    case 'emojisearch':
+      await handleEmojiSearch(context, args, sock);
+      break;
+    case 'palette':
+      await handlePalette(context, args, sock);
+      break;
+    // ── Media Editing ──
+    case 'blur':
+      await handleBlur(context, args, sock);
+      break;
+    case 'grayscale':
+    case 'greyscale':
+    case 'bw':
+      await handleGrayscale(context, sock);
+      break;
+    case 'rotate':
+      await handleRotate(context, args, sock);
+      break;
+    case 'resize':
+      await handleResize(context, args, sock);
+      break;
+    case 'invert':
+    case 'negative':
+      await handleInvert(context, sock);
+      break;
+    case 'brightness':
+      await handleBrightness(context, args, sock);
+      break;
+    case 'contrast':
+      await handleContrast(context, args, sock);
+      break;
+    case 'crop':
+      await handleCrop(context, args, sock);
+      break;
+    case 'compress':
+      await handleCompress(context, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -923,99 +1109,65 @@ async function sendHelp(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  // If user types "!help doc", send a detailed .docx guide
-  if (args.length > 0 && (args[0].toLowerCase() === 'doc' || args[0].toLowerCase() === 'docx' || args[0].toLowerCase() === 'full')) {
-    await sendHelpDocx(context, sock);
+  // If user types "!help text", show quick text menu; otherwise default to docx
+  if (args.length > 0 && (args[0].toLowerCase() === 'text' || args[0].toLowerCase() === 'quick' || args[0].toLowerCase() === 'menu')) {
+    const intro = pickResponse(helpIntros, vars, false);
+    const helpMessage = `${intro}
+
+*GENERAL*
+!help — Full guide (.docx)
+!help text — Quick text menu
+!ping — Bot status
+!sticker — Make sticker
+!joke / !quote / !meme — Fun
+
+*TOOLS*
+!ai / !weather / !define / !wiki
+!translate / !lyrics / !tts
+!doc / !qr / !currency / !short / !img
+!calc / !countdown / !cal / !timezone
+
+*MEDIA*
+!viewonce / !toimg / !togif / !toaudio
+!removebg / !carbon / !screenshot / !ocr
+!blur / !grayscale / !rotate / !resize
+!invert / !brightness / !contrast
+!crop / !compress / !wallpaper / !qrread
+
+*TEXT*
+!reverse / !upper / !lower / !mock
+!clap / !tiny / !fliptext / !morse
+!braille / !ascii / !font
+
+*PROFILE*
+!bio / !setpp / !read
+
+*UTILITIES*
+!forward / !base64 / !hash / !color
+!palette / !pick / !coinflip / !dice
+!password / !uuid / !epoch / !bmi / !age
+!unit / !paste / !uptime / !id
+
+*INFO*
+!crypto / !ud / !ip / !npm / !whois
+!headers / !country / !emoji
+
+*SOCIAL*
+!download / !save / !repost / !tagall
+!afk / !group / !purge
+
+*GAMES*
+!trivia / !hangman / !wordchain / !8ball
+!truth / !dare / !ship / !fortune / !fact
+
+_Send *!help* for the full .docx guide._
+_Only the bot owner can use commands._`;
+    await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
     return;
   }
 
-  const intro = pickResponse(helpIntros, vars, false);
-  const helpMessage = `${intro}
-
-*GENERAL*
-!help — Show this menu
-!help doc — Full guide as .docx file
-!ping — Check bot status
-!sticker — Image/video/GIF to sticker
-!sticker crop/circle/rounded — Crop modes
-!joke — Random joke
-!quote — Inspirational quote
-!meme — Random meme from Reddit
-
-*TOOLS*
-!ai [msg] — AI chat (Groq)
-!weather [city] — Weather info
-!define [word] — Dictionary lookup
-!horoscope [sign] — Daily horoscope
-!translate [lang] [text] — Translate text
-!doc [title] | [content] — Create .docx file
-!calc [expr] — Calculator
-!note save/list/view/delete — Notes
-!qr [text/url] — Generate QR code
-!tts [text] — Text to voice note
-!wiki [topic] — Wikipedia summary
-!lyrics [song] — Song lyrics
-!currency [amt] [FROM] [TO] — Convert currency
-!short [url] — Shorten a URL
-!img [prompt] — AI image generation
-
-*PRODUCTIVITY*
-!remind [time] [msg] — Set reminder
-!schedule [time] [msg] — Schedule message
-!stats — Bot status & session info
-
-*GAMES & FUN*
-!play numberguess — Guess the number
-!trivia — Multiple choice trivia
-!hangman — Guess the word
-!wordchain — Chain words by last letter
-!answer [text] — Answer active game
-!poll [q] | [opts] — Create poll
-!vote [n] — Vote on poll
-!leaderboard — Top active users
-!8ball [question] — Magic 8-Ball
-!truth — Truth question
-!dare — Dare challenge
-!ship [name1] [name2] — Love calculator
-!compliment [name] — Random compliment
-!fortune — Fortune cookie
-!fact — Random fun fact
-!riddle — Random riddle (answer in 30s)
-
-*SOCIAL*
-!afk [reason] — Set AFK (auto-reply)
-!afk off — Disable AFK
-!download [url] — Download media
-!save — Reply to save msg to your chat
-!repost [caption] — Reply to post as Status
-!tagall [msg] — Mention all group members
-!group — View group info
-
-*MEDIA & CONVERSION*
-!viewonce — Save view-once media
-!toimg — Sticker to image
-!togif — Animated sticker/video to GIF
-!toaudio — Extract audio from video
-!removebg — Remove image background
-!carbon [code] — Code screenshot
-!screenshot [url] — Website screenshot
-!ocr — Extract text from image
-
-*PROFILE*
-!bio [text] — Update WhatsApp bio
-!setpp — Set profile picture (reply to image)
-!read — Mark messages as read
-
-*UTILITIES*
-!forward [number] — Forward replied message
-!base64 encode/decode [text] — Base64
-!hash [text] — MD5 + SHA-256 hash
-!color [hex] — Color swatch generator
-
-_Type *!help doc* for a full guide with deep explanations._
-_Only the bot owner can use commands._`;
-
-  await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
+  // Default: send docx guide
+  await sendHelpDocx(context, sock);
 }
 
 /**
@@ -1367,6 +1519,84 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             usage: '!color [hex code]',
             description: 'Generates a visual color swatch from a hex color code. Shows the color as an image with the hex code and RGB values. Supports 3-digit and 6-digit hex codes.\n\nExamples: "!color #FF5733" or "!color 3498DB"\n\nAliases: !colour, !hex',
           },
+        ],
+      },
+      {
+        title: 'PRODUCTIVITY',
+        commands: [
+          { name: '!calc', usage: '!calc [expression]', description: 'Evaluate math expressions. Supports: +, -, *, /, ^ (power), sqrt(), sin(), cos(), tan(), log(), ln(), abs(), pi.\n\nExamples: "!calc 2^10 + sqrt(144)", "!calc sin(45)"\n\nAliases: !math' },
+          { name: '!countdown', usage: '!countdown [YYYY-MM-DD]', description: 'Shows how many days until (or since) a given date.\n\nExample: "!countdown 2025-12-25" → "X days until 2025-12-25"' },
+          { name: '!cal', usage: '!cal', description: 'Shows the current month calendar with today\'s date highlighted.\n\nAliases: !calendar' },
+          { name: '!timezone', usage: '!timezone [city]', description: 'Shows the current time and date in any city/timezone.\n\nExamples: "!timezone London", "!timezone Tokyo"\n\nAliases: !tz, !time' },
+          { name: '!uptime', usage: '!uptime', description: 'Shows how long the bot has been running since last restart.' },
+          { name: '!id', usage: '!id', description: 'Shows chat information: Chat JID, your JID, message ID, chat type (group/private). Useful for debugging.\n\nAliases: !chatid' },
+          { name: '!paste', usage: '!paste [text]', description: 'Creates a paste on paste.rs and returns a shareable link. You can also reply to a message with "!paste" to paste its content.\n\nAliases: !pastebin' },
+          { name: '!purge', usage: '!purge [n]', description: 'Request to delete your own last N messages (1-100). Note: Full message deletion requires Baileys direct connection.\n\nAliases: !del' },
+        ],
+      },
+      {
+        title: 'INFO LOOKUP',
+        commands: [
+          { name: '!crypto', usage: '!crypto [coin name]', description: 'Shows live cryptocurrency prices from CoinGecko (free, no key). Shows USD, EUR, GBP, NGN prices, 24h change, market cap, and rank.\n\nExamples: "!crypto bitcoin", "!crypto ethereum", "!crypto dogecoin"\n\nAliases: !coin' },
+          { name: '!ud', usage: '!ud [word or phrase]', description: 'Looks up definitions on Urban Dictionary. Shows the top-voted definition with example and vote counts.\n\nExample: "!ud yeet"\n\nAliases: !urban' },
+          { name: '!ip', usage: '!ip [domain]', description: 'Performs a DNS lookup and shows all IP addresses for a domain.\n\nExample: "!ip google.com"\n\nAliases: !dns, !nslookup' },
+          { name: '!npm', usage: '!npm [package name]', description: 'Shows information about an npm package: latest version, description, license, and direct link.\n\nExample: "!npm express"' },
+          { name: '!whois', usage: '!whois [domain]', description: 'Performs a WHOIS lookup on a domain showing registrar, creation date, expiry, and name servers.\n\nExample: "!whois google.com"' },
+          { name: '!headers', usage: '!headers [url]', description: 'Shows the HTTP response headers of any URL. Useful for debugging websites.\n\nExample: "!headers https://google.com"\n\nAliases: !httpheaders' },
+          { name: '!country', usage: '!country [name]', description: 'Shows detailed information about a country: capital, population, region, currency, languages, timezone, and calling code.\n\nExample: "!country Nigeria"' },
+          { name: '!emoji', usage: '!emoji [name]', description: 'Search for emojis by name. Shows matching emojis from a built-in database.\n\nExample: "!emoji fire" → 🔥 fire\n\nAliases: !emojisearch' },
+          { name: '!palette', usage: '!palette [hex color]', description: 'Generates a color palette image from a base hex color, showing darker, lighter, and complementary colors.\n\nExample: "!palette FF5733"' },
+        ],
+      },
+      {
+        title: 'TEXT & WRITING',
+        commands: [
+          { name: '!reverse', usage: '!reverse [text]', description: 'Reverses the text. Can also reply to a message.\n\nExample: "!reverse Hello World" → "dlroW olleH"\n\nAliases: !rev' },
+          { name: '!upper', usage: '!upper [text]', description: 'Converts text to UPPERCASE. Can also reply to a message.\n\nAliases: !uppercase' },
+          { name: '!lower', usage: '!lower [text]', description: 'Converts text to lowercase. Can also reply to a message.\n\nAliases: !lowercase' },
+          { name: '!mock', usage: '!mock [text]', description: 'Converts text to SpOnGeBoB mOcKiNg style (alternating case).\n\nAliases: !spongebob' },
+          { name: '!clap', usage: '!clap [text]', description: 'Inserts 👏 between every word.\n\nExample: "!clap do it now" → "do 👏 it 👏 now"' },
+          { name: '!tiny', usage: '!tiny [text]', description: 'Converts text to ᵗⁱⁿʸ superscript Unicode characters.\n\nAliases: !superscript' },
+          { name: '!fliptext', usage: '!fliptext [text]', description: 'Flips text upside down using Unicode characters.\n\nExample: "!fliptext hello" → "ollǝɥ"\n\nAliases: !upsidedown' },
+          { name: '!morse', usage: '!morse [text or morse code]', description: 'Encodes text to Morse code, or decodes Morse code back to text. Auto-detects the direction.\n\nExamples:\n"!morse hello" → ".... . .-.. .-.. ---"\n"!morse .... .-.." → "hi"' },
+          { name: '!braille', usage: '!braille [text]', description: 'Converts text to Braille Unicode characters.\n\nExample: "!braille hello" → "⠓⠑⠇⠇⠕"' },
+          { name: '!ascii', usage: '!ascii [text]', description: 'Generates ASCII art text using block characters (max 15 characters).\n\nAliases: !bigtext' },
+          { name: '!font', usage: '!font [style] [text]', description: 'Converts text to fancy Unicode font styles.\n\nAvailable styles: bold, italic, bolditalic, monospace, double, script, fraktur, vaporwave, smallcaps\n\nExample: "!font bold Hello World" → "𝐇𝐞𝐥𝐥𝐨 𝐖𝐨𝐫𝐥𝐝"\n\nAliases: !fancy' },
+        ],
+      },
+      {
+        title: 'QUICK UTILITIES',
+        commands: [
+          { name: '!pick', usage: '!pick [option1, option2, ...]', description: 'Randomly picks one option from a comma-separated list. Needs at least 2 options.\n\nExample: "!pick pizza, burger, sushi"\n\nAliases: !choose' },
+          { name: '!coinflip', usage: '!coinflip', description: 'Flips a coin — Heads or Tails.\n\nAliases: !flip' },
+          { name: '!dice', usage: '!dice [sides]', description: 'Rolls a dice with the specified number of sides (default 6).\n\nExample: "!dice 20" → Rolled a 14 (d20)\n\nAliases: !roll' },
+          { name: '!password', usage: '!password [length]', description: 'Generates a secure random password (4-128 characters, default 16). Includes letters, numbers, and symbols.\n\nAliases: !genpass' },
+          { name: '!uuid', usage: '!uuid', description: 'Generates a random UUID v4.' },
+          { name: '!epoch', usage: '!epoch', description: 'Shows the current Unix timestamp in seconds, milliseconds, and ISO format.\n\nAliases: !timestamp' },
+          { name: '!bmi', usage: '!bmi [weight kg] [height cm]', description: 'Calculates Body Mass Index and category.\n\nExample: "!bmi 70 175" → BMI: 22.9 (Normal weight)' },
+          { name: '!age', usage: '!age [YYYY-MM-DD]', description: 'Calculates exact age from a birthdate.\n\nExample: "!age 2000-05-15" → 25 years, 11 months, 20 days' },
+          { name: '!unit', usage: '!unit [value] [from] [to]', description: 'Converts between units. Supports: km, mi, m, ft, cm, in, kg, lb, g, oz, l, gal, c (Celsius), f (Fahrenheit), k (Kelvin).\n\nExamples: "!unit 100 km mi", "!unit 37 c f"\n\nAliases: !convert' },
+        ],
+      },
+      {
+        title: 'FUN & CREATIVE',
+        commands: [
+          { name: '!wallpaper', usage: '!wallpaper [optional query]', description: 'Sends a random HD wallpaper (1920x1080). Optionally specify a search query for themed wallpapers.\n\nExamples: "!wallpaper" (random), "!wallpaper nature"\n\nAliases: !wp' },
+          { name: '!qrread', usage: '!qrread (reply to image)', description: 'Scans a QR code from an image and shows its content. Reply to an image containing a QR code.\n\nAliases: !scanqr' },
+        ],
+      },
+      {
+        title: 'IMAGE EDITING',
+        commands: [
+          { name: '!blur', usage: '!blur [amount] (reply to image)', description: 'Applies Gaussian blur to an image. Amount range: 1-100 (default 5).\n\nExample: "!blur 10"' },
+          { name: '!grayscale', usage: '!grayscale (reply to image)', description: 'Converts an image to black and white.\n\nAliases: !greyscale, !bw' },
+          { name: '!rotate', usage: '!rotate [degrees] (reply to image)', description: 'Rotates an image by the specified degrees (default 90).\n\nExample: "!rotate 180"' },
+          { name: '!resize', usage: '!resize [width] [height] (reply to image)', description: 'Resizes an image. If only width is given, height scales proportionally. Max 4096px.\n\nExample: "!resize 800 600"' },
+          { name: '!invert', usage: '!invert (reply to image)', description: 'Inverts (negates) all colors in the image.\n\nAliases: !negative' },
+          { name: '!brightness', usage: '!brightness [factor] (reply to image)', description: 'Adjusts image brightness. Factor range: 0.1-3.0 (1.0 = no change, higher = brighter).\n\nExample: "!brightness 1.5"' },
+          { name: '!contrast', usage: '!contrast [factor] (reply to image)', description: 'Adjusts image contrast. Factor range: 0.1-3.0 (1.0 = no change, higher = more contrast).\n\nExample: "!contrast 1.5"' },
+          { name: '!crop', usage: '!crop [x] [y] [width] [height] (reply to image)', description: 'Crops an image to the specified region. Use "!crop center" for a square crop from the center.\n\nExamples: "!crop center", "!crop 50 50 300 200"' },
+          { name: '!compress', usage: '!compress (reply to image)', description: 'Compresses an image to reduce file size. Shows the before/after size and percentage saved.' },
         ],
       },
     ];
@@ -2556,54 +2786,7 @@ async function handleNote(context: MessageContext, args: string[], sock: any): P
   await sendReply(context.chatJid, 'Usage: !note save <title> | <content>, !note list, !note view <n>, !note delete <n>', sock, context.rawMessage.key, context.queue);
 }
 
-// ─── Calc Command ────────────────────────────────────────────────────────────
-
-async function handleCalc(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (args.length === 0) {
-    await sendReply(context.chatJid, 'Usage: !calc 2+2, !calc 100/3, !calc sqrt(144)', sock, context.rawMessage.key, context.queue);
-    return;
-  }
-
-  const expression = args.join(' ');
-
-  // Sanitize: only allow digits, operators, parentheses, decimal points, and math words
-  const sanitized = expression.replace(/[^0-9+\-*/().%^, a-z]/gi, '');
-  if (!sanitized || sanitized.length > 100) {
-    await sendReply(context.chatJid, 'Invalid expression. Only basic math is supported.', sock, context.rawMessage.key, context.queue);
-    return;
-  }
-
-  try {
-    // Replace common math functions with JS equivalents
-    let jsExpr = sanitized
-      .replace(/\bsqrt\b/gi, 'Math.sqrt')
-      .replace(/\babs\b/gi, 'Math.abs')
-      .replace(/\bround\b/gi, 'Math.round')
-      .replace(/\bfloor\b/gi, 'Math.floor')
-      .replace(/\bceil\b/gi, 'Math.ceil')
-      .replace(/\bpi\b/gi, 'Math.PI')
-      .replace(/\^/g, '**');
-
-    // Block dangerous patterns
-    if (/[a-z]/i.test(jsExpr.replace(/Math\.(sqrt|abs|round|floor|ceil|PI)/g, ''))) {
-      await sendReply(context.chatJid, 'Invalid expression. Only numbers and basic operators allowed.', sock, context.rawMessage.key, context.queue);
-      return;
-    }
-
-    const fn = new Function(`return (${jsExpr})`);
-    const result = fn();
-
-    if (typeof result !== 'number' || !isFinite(result)) {
-      await sendReply(context.chatJid, `Result: undefined (check your expression)`, sock, context.rawMessage.key, context.queue);
-      return;
-    }
-
-    const formatted = Number.isInteger(result) ? result.toString() : result.toFixed(6).replace(/\.?0+$/, '');
-    await sendReply(context.chatJid, `${expression} = *${formatted}*`, sock, context.rawMessage.key, context.queue);
-  } catch {
-    await sendReply(context.chatJid, 'Could not evaluate that expression. Try something like: !calc 2 * (3 + 4)', sock, context.rawMessage.key, context.queue);
-  }
-}
+// Old handleCalc removed — replaced by new version in Productivity Commands section below
 
 // ─── Stats Command ───────────────────────────────────────────────────────────
 
@@ -2855,43 +3038,49 @@ async function handleRepost(context: MessageContext, args: string[], sock: any):
       // If can't get contacts, try without the list
     }
 
+    let mediaBuffer: Buffer | null = null;
+    let mediaType: 'text' | 'image' | 'video' = 'text';
+    let caption = customCaption;
+    let statusContent: Record<string, unknown> = {};
+
     if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
       const text = customCaption || quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
-      await sock.sendMessage(statusJid, {
-        text,
-        font: 0,
-        backgroundColor: '#000000',
-      }, { statusJidList });
+      statusContent = { text, font: 0, backgroundColor: '#000000' };
+      mediaType = 'text';
     } else if (quotedMsg.imageMessage) {
-      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
-      if (buffer) {
-        const caption = customCaption || quotedMsg.imageMessage.caption || '';
-        await sock.sendMessage(statusJid, {
-          image: buffer,
-          caption,
-        }, { statusJidList });
-      } else {
-        await sendReply(context.chatJid, 'Could not download the image to repost.', sock, context.rawMessage.key, context.queue);
-        return;
-      }
+      mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the image to repost.', sock, context.rawMessage.key, context.queue); return; }
+      caption = customCaption || quotedMsg.imageMessage.caption || '';
+      statusContent = { image: mediaBuffer, caption };
+      mediaType = 'image';
     } else if (quotedMsg.videoMessage) {
-      const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
-      if (buffer) {
-        const caption = customCaption || quotedMsg.videoMessage.caption || '';
-        await sock.sendMessage(statusJid, {
-          video: buffer,
-          caption,
-        }, { statusJidList });
-      } else {
-        await sendReply(context.chatJid, 'Could not download the video to repost.', sock, context.rawMessage.key, context.queue);
-        return;
-      }
+      mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the video to repost.', sock, context.rawMessage.key, context.queue); return; }
+      caption = customCaption || quotedMsg.videoMessage.caption || '';
+      statusContent = { video: mediaBuffer, caption };
+      mediaType = 'video';
     } else {
       await sendReply(context.chatJid, 'This message type cannot be reposted to status. Only text, images, and videos are supported.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
-    await sendReply(context.chatJid, 'Posted to your WhatsApp Status!', sock, context.rawMessage.key, context.queue);
+    // Try posting to status
+    try {
+      await sock.sendMessage(statusJid, statusContent, { statusJidList });
+      await sendReply(context.chatJid, 'Posted to your WhatsApp Status!', sock, context.rawMessage.key, context.queue);
+    } catch (statusError: any) {
+      console.error('[REPOST] Status post failed, saving to private chat:', statusError?.message || statusError);
+      // Fallback: send to user's private chat so they can manually repost
+      const userJid = context.senderJid;
+      if (mediaType === 'text') {
+        await sock.sendMessage(userJid, { text: `📋 *Status Repost (saved)*\n\n${(statusContent.text as string) || ''}` });
+      } else if (mediaType === 'image' && mediaBuffer) {
+        await sock.sendMessage(userJid, { image: mediaBuffer, caption: `📋 *Status Repost (saved)*\n${caption}\n\n_Status posting failed. Save this and post manually via WhatsApp._` });
+      } else if (mediaType === 'video' && mediaBuffer) {
+        await sock.sendMessage(userJid, { video: mediaBuffer, caption: `📋 *Status Repost (saved)*\n${caption}\n\n_Status posting failed. Save this and post manually via WhatsApp._` });
+      }
+      await sendReply(context.chatJid, 'Status posting timed out. Saved the media to your private chat — you can post it manually from there.', sock, context.rawMessage.key, context.queue);
+    }
   } catch (error) {
     console.error('[REPOST] Error:', error);
     await sendReply(context.chatJid, 'Failed to repost to status. This feature depends on your WhatsApp version.', sock, context.rawMessage.key, context.queue);
@@ -4059,6 +4248,765 @@ async function handleColor(context: MessageContext, args: string[], sock: any): 
     console.error('[COLOR] Error:', error);
     await sendReply(context.chatJid, 'Failed to generate color swatch.', sock, context.rawMessage.key, context.queue);
   }
+}
+
+// ─── Productivity Commands ──────────────────────────────────────────────────
+
+async function handlePurge(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const count = parseInt(args[0]) || 5;
+  if (count < 1 || count > 100) {
+    await sendReply(context.chatJid, '!purge [1-100] — Delete your own last N messages', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  await sendReply(context.chatJid, `Purging is a Baileys-direct feature. With Evolution API, message deletion is limited.\nRequested: ${count} messages.`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleCalc(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*CALCULATOR*\n\n!calc [expression]\n\nExamples:\n!calc 2^10 + sqrt(144)\n!calc (5+3) * 2\n!calc sin(45)', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    let expr = args.join(' ')
+      .replace(/sqrt\(([^)]+)\)/gi, 'Math.sqrt($1)')
+      .replace(/sin\(([^)]+)\)/gi, 'Math.sin($1*Math.PI/180)')
+      .replace(/cos\(([^)]+)\)/gi, 'Math.cos($1*Math.PI/180)')
+      .replace(/tan\(([^)]+)\)/gi, 'Math.tan($1*Math.PI/180)')
+      .replace(/log\(([^)]+)\)/gi, 'Math.log10($1)')
+      .replace(/ln\(([^)]+)\)/gi, 'Math.log($1)')
+      .replace(/abs\(([^)]+)\)/gi, 'Math.abs($1)')
+      .replace(/pi/gi, 'Math.PI')
+      .replace(/\^/g, '**');
+    // Security: only allow math characters
+    if (/[^0-9+\-*/().%\s,Mathesincoqrtlgabp]/.test(expr.replace(/Math\.\w+/g, ''))) {
+      throw new Error('Invalid characters');
+    }
+    const fn = new Function(`"use strict"; return (${expr})`);
+    const result = fn();
+    await sendReply(context.chatJid, `*RESULT*\n\n${args.join(' ')} = *${result}*`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Invalid expression. Use numbers and operators (+, -, *, /, ^, sqrt, sin, cos, tan).', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleCountdown(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*COUNTDOWN*\n\n!countdown [YYYY-MM-DD]\n\nExample: !countdown 2025-12-25', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const target = new Date(args[0]);
+  if (isNaN(target.getTime())) {
+    await sendReply(context.chatJid, 'Invalid date format. Use YYYY-MM-DD', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const now = new Date();
+  const diff = target.getTime() - now.getTime();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days < 0) {
+    await sendReply(context.chatJid, `*COUNTDOWN*\n\n${args[0]} was *${Math.abs(days)}* days ago.`, sock, context.rawMessage.key, context.queue);
+  } else if (days === 0) {
+    await sendReply(context.chatJid, `*COUNTDOWN*\n\n${args[0]} is *today*!`, sock, context.rawMessage.key, context.queue);
+  } else {
+    await sendReply(context.chatJid, `*COUNTDOWN*\n\n*${days}* days until ${args[0]}`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleCalendar(context: MessageContext, sock: any): Promise<void> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const monthName = now.toLocaleString('en', { month: 'long' });
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = now.getDate();
+
+  let cal = `*${monthName} ${year}*\n\n`;
+  cal += '` Su  Mo  Tu  We  Th  Fr  Sa `\n`';
+  let dayCount = 0;
+  for (let i = 0; i < firstDay; i++) { cal += '    '; dayCount++; }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const marker = d === today ? `*${d.toString().padStart(2)}*` : d.toString().padStart(3) + ' ';
+    cal += d === today ? ` ${marker}` : marker;
+    dayCount++;
+    if (dayCount % 7 === 0 && d < daysInMonth) cal += ' `\n`';
+  }
+  cal += ' `';
+  await sendReply(context.chatJid, cal, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleTimezone(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*TIMEZONE*\n\n!timezone [city]\n\nExample: !timezone London\nExample: !timezone Tokyo', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const city = args.join(' ');
+    const response = await axios.get(`https://worldtimeapi.org/api/timezone`, { timeout: 10000 });
+    const zones: string[] = response.data;
+    const match = zones.find((z: string) => z.toLowerCase().includes(city.toLowerCase()));
+    if (!match) {
+      await sendReply(context.chatJid, `No timezone found for "${city}". Try a major city name.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const timeRes = await axios.get(`https://worldtimeapi.org/api/timezone/${match}`, { timeout: 10000 });
+    const dt = new Date(timeRes.data.datetime);
+    await sendReply(context.chatJid, `*TIMEZONE*\n\n*${match}*\nTime: ${dt.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}\nDate: ${dt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\nUTC Offset: ${timeRes.data.utc_offset}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Failed to fetch timezone info.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleUptime(context: MessageContext, sock: any): Promise<void> {
+  const uptime = Date.now() - botStartTime;
+  const days = Math.floor(uptime / 86400000);
+  const hours = Math.floor((uptime % 86400000) / 3600000);
+  const minutes = Math.floor((uptime % 3600000) / 60000);
+  const seconds = Math.floor((uptime % 60000) / 1000);
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  parts.push(`${seconds}s`);
+  await sendReply(context.chatJid, `*BOT UPTIME*\n\n${parts.join(' ')}`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleId(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedParticipant = context.rawMessage?.message?.extendedTextMessage?.contextInfo?.participant;
+  let info = `*CHAT INFO*\n\n*Chat JID:* ${context.chatJid}\n*Your JID:* ${context.senderJid}`;
+  if (context.isGroup) info += `\n*Type:* Group`;
+  else info += `\n*Type:* Private`;
+  if (quotedParticipant) info += `\n*Quoted user:* ${quotedParticipant}`;
+  if (context.rawMessage.key?.id) info += `\n*Message ID:* ${context.rawMessage.key.id}`;
+  await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
+}
+
+async function handlePaste(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '';
+  const text = args.length > 0 ? args.join(' ') : quotedText;
+  if (!text) {
+    await sendReply(context.chatJid, '*PASTE*\n\n!paste [text]\nor reply to a message with !paste', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const response = await axios.post('https://paste.rs/', text, {
+      headers: { 'Content-Type': 'text/plain' },
+      timeout: 10000,
+    });
+    await sendReply(context.chatJid, `*PASTE CREATED*\n\n${response.data}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Failed to create paste.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Info Lookup Commands ───────────────────────────────────────────────────
+
+async function handleCrypto(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*CRYPTO PRICE*\n\n!crypto [coin]\n\nExamples:\n!crypto bitcoin\n!crypto ethereum\n!crypto dogecoin', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const coin = args[0].toLowerCase();
+    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin}`, {
+      params: { localization: false, tickers: false, community_data: false, developer_data: false },
+      timeout: 10000,
+    });
+    const d = response.data;
+    const price = d.market_data.current_price;
+    const change24h = d.market_data.price_change_percentage_24h;
+    const arrow = change24h >= 0 ? '📈' : '📉';
+    await sendReply(context.chatJid, `*${d.name} (${d.symbol.toUpperCase()})* ${arrow}\n\n*USD:* $${price.usd?.toLocaleString()}\n*EUR:* €${price.eur?.toLocaleString()}\n*GBP:* £${price.gbp?.toLocaleString()}\n*NGN:* ₦${price.ngn?.toLocaleString()}\n\n*24h Change:* ${change24h?.toFixed(2)}%\n*Market Cap:* $${d.market_data.market_cap.usd?.toLocaleString()}\n*Rank:* #${d.market_cap_rank}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Coin not found. Use the full name (e.g., bitcoin, ethereum, dogecoin).', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleUrbanDictionary(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*URBAN DICTIONARY*\n\n!ud [word or phrase]\n\nExample: !ud yeet', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const term = args.join(' ');
+    const response = await axios.get(`https://api.urbandictionary.com/v0/define`, {
+      params: { term },
+      timeout: 10000,
+    });
+    if (!response.data.list?.length) {
+      await sendReply(context.chatJid, `No definition found for "${term}".`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const def = response.data.list[0];
+    const clean = (s: string) => s.replace(/\[|\]/g, '').slice(0, 1000);
+    await sendReply(context.chatJid, `*${term.toUpperCase()}*\n\n*Definition:*\n${clean(def.definition)}\n\n*Example:*\n${clean(def.example || 'N/A')}\n\n👍 ${def.thumbs_up}  👎 ${def.thumbs_down}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Failed to look up definition.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleIpLookup(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(context.chatJid, '*DNS/IP LOOKUP*\n\n!ip [domain]\n\nExample: !ip google.com', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
+    const addresses = await dnsResolve(domain);
+    await sendReply(context.chatJid, `*DNS LOOKUP: ${domain}*\n\n${(addresses as string[]).map((ip: string) => `• ${ip}`).join('\n')}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Could not resolve that domain.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Fun & Creative Commands ────────────────────────────────────────────────
+
+const fontMaps: Record<string, Record<string, string>> = {
+  bold: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D41A + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D400 + i)])).concat('0123456789'.split('').map((c, i) => [c, String.fromCodePoint(0x1D7CE + i)]))),
+  italic: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D44E + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D434 + i)]))),
+  bolditalic: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D482 + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D468 + i)]))),
+  monospace: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D68A + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D670 + i)])).concat('0123456789'.split('').map((c, i) => [c, String.fromCodePoint(0x1D7F6 + i)]))),
+  double: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D552 + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D538 + i)])).concat('0123456789'.split('').map((c, i) => [c, String.fromCodePoint(0x1D7D8 + i)]))),
+  script: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D4B6 + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D49C + i)]))),
+  fraktur: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0x1D51E + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0x1D504 + i)]))),
+  vaporwave: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, String.fromCodePoint(0xFF41 + i)]).concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, String.fromCodePoint(0xFF21 + i)])).concat('0123456789'.split('').map((c, i) => [c, String.fromCodePoint(0xFF10 + i)]))),
+  smallcaps: Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ'[i]])),
+};
+
+async function handleFont(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const styles = Object.keys(fontMaps);
+  if (args.length < 2) {
+    await sendReply(context.chatJid, `*FANCY FONT*\n\n!font [style] [text]\n\nStyles: ${styles.join(', ')}\n\nExample: !font bold Hello World`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const style = args[0].toLowerCase();
+  const text = args.slice(1).join(' ');
+  const map = fontMaps[style];
+  if (!map) {
+    await sendReply(context.chatJid, `Unknown style. Available: ${styles.join(', ')}`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const converted = text.split('').map(c => map[c] || c).join('');
+  await sendReply(context.chatJid, converted, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleWallpaper(context: MessageContext, args: string[], sock: any): Promise<void> {
+  try {
+    const seed = Date.now();
+    let url: string;
+    if (args.length > 0) {
+      const query = args.join('+');
+      url = `https://source.unsplash.com/1920x1080/?${query}&sig=${seed}`;
+    } else {
+      url = `https://picsum.photos/1920/1080?random=${seed}`;
+    }
+    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000, maxRedirects: 5 });
+    const buffer = Buffer.from(response.data);
+    await sock.sendMessage(context.chatJid, { image: buffer, caption: 'Random HD Wallpaper' }, { quoted: context.rawMessage });
+  } catch {
+    await sendReply(context.chatJid, 'Failed to fetch wallpaper.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleQRRead(context: MessageContext, sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
+  if (!hasImage) {
+    await sendReply(context.chatJid, '*QR CODE READER*\n\nReply to an image containing a QR code with *!qrread* to scan it.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  try {
+    const msgForDownload = quotedMsg?.imageMessage ? { ...context.rawMessage, message: quotedMsg } : context.rawMessage;
+    const buffer = await downloadMedia(msgForDownload, sock);
+    if (!buffer) {
+      await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const jsQR = (await import('jsqr')).default;
+    const code = jsQR(new Uint8ClampedArray(data), info.width, info.height);
+    if (code) {
+      await sendReply(context.chatJid, `*QR CODE CONTENT*\n\n${code.data}`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'No QR code found in the image.', sock, context.rawMessage.key, context.queue);
+    }
+  } catch (error) {
+    console.error('[QRREAD] Error:', error);
+    await sendReply(context.chatJid, 'Failed to scan QR code.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Text & Writing Commands ────────────────────────────────────────────────
+
+async function handleReverse(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!reverse [text]', sock, context.rawMessage.key, context.queue); return; }
+  await sendReply(context.chatJid, text.split('').reverse().join(''), sock, context.rawMessage.key, context.queue);
+}
+
+async function handleUpper(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!upper [text]', sock, context.rawMessage.key, context.queue); return; }
+  await sendReply(context.chatJid, text.toUpperCase(), sock, context.rawMessage.key, context.queue);
+}
+
+async function handleLower(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!lower [text]', sock, context.rawMessage.key, context.queue); return; }
+  await sendReply(context.chatJid, text.toLowerCase(), sock, context.rawMessage.key, context.queue);
+}
+
+async function handleMock(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!mock [text]', sock, context.rawMessage.key, context.queue); return; }
+  const mocked = text.split('').map((c: string, i: number) => i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()).join('');
+  await sendReply(context.chatJid, mocked, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleClap(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!clap [text]', sock, context.rawMessage.key, context.queue); return; }
+  await sendReply(context.chatJid, text.split(/\s+/).join(' 👏 '), sock, context.rawMessage.key, context.queue);
+}
+
+const tinyMap: Record<string, string> = Object.fromEntries('abcdefghijklmnopqrstuvwxyz0123456789'.split('').map((c, i) => {
+  if (i < 26) return [c, 'ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖᑫʳˢᵗᵘᵛʷˣʸᶻ'[i]];
+  return [c, '⁰¹²³⁴⁵⁶⁷⁸⁹'[i - 26]];
+}));
+
+async function handleTiny(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!tiny [text]', sock, context.rawMessage.key, context.queue); return; }
+  const tiny = text.toLowerCase().split('').map((c: string) => tinyMap[c] || c).join('');
+  await sendReply(context.chatJid, tiny, sock, context.rawMessage.key, context.queue);
+}
+
+const flipMap: Record<string, string> = Object.fromEntries(
+  'abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, 'ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz'[i]])
+    .concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => [c, '∀qƆpƎℲפHIſʞ˥WNOԀQɹS┴∩ΛMX⅄Z'[i]]))
+    .concat([['1','Ɩ'],['2','ᄅ'],['3','Ɛ'],['4','ㄣ'],['5','ϛ'],['6','9'],['7','ㄥ'],['8','8'],['9','6'],['0','0'],['.','\u02D9'],['!','¡'],['?','¿'],['\'',','],['(',')'],[')','('],['[',']'],[']','['],['<','>'],['>',' <'],['&','⅋']])
+);
+
+async function handleFlipText(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!fliptext [text]', sock, context.rawMessage.key, context.queue); return; }
+  const flipped = text.split('').map((c: string) => flipMap[c] || c).reverse().join('');
+  await sendReply(context.chatJid, flipped, sock, context.rawMessage.key, context.queue);
+}
+
+const morseCode: Record<string, string> = {
+  'a':'.-','b':'-...','c':'-.-.','d':'-..','e':'.','f':'..-.','g':'--.','h':'....','i':'..','j':'.---',
+  'k':'-.-','l':'.-..','m':'--','n':'-.','o':'---','p':'.--.','q':'--.-','r':'.-.','s':'...','t':'-',
+  'u':'..-','v':'...-','w':'.--','x':'-..-','y':'-.--','z':'--..','0':'-----','1':'.----','2':'..---',
+  '3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.', ' ':' / ',
+  '.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--'
+};
+const morseReverse: Record<string, string> = Object.fromEntries(Object.entries(morseCode).map(([k, v]) => [v, k]));
+
+async function handleMorse(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!morse [text or morse code]', sock, context.rawMessage.key, context.queue); return; }
+  if (text.match(/^[.\-/ ]+$/)) {
+    // Decode morse
+    const decoded = text.split(' / ').map((word: string) => word.split(' ').map((c: string) => morseReverse[c] || '?').join('')).join(' ');
+    await sendReply(context.chatJid, `*DECODED*\n\n${decoded}`, sock, context.rawMessage.key, context.queue);
+  } else {
+    const encoded = text.toLowerCase().split('').map((c: string) => morseCode[c] || c).join(' ');
+    await sendReply(context.chatJid, `*MORSE CODE*\n\n${encoded}`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+const brailleMap: Record<string, string> = Object.fromEntries(
+  'abcdefghijklmnopqrstuvwxyz'.split('').map((c, i) => [c, '⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚⠅⠇⠍⠝⠕⠏⠟⠗⠎⠞⠥⠧⠺⠭⠽⠵'[i]])
+    .concat('0123456789'.split('').map((c, i) => [c, '⠚⠁⠃⠉⠙⠑⠋⠛⠓⠊'[i]]))
+    .concat([[' ', ' ']])
+);
+
+async function handleBraille(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!braille [text]', sock, context.rawMessage.key, context.queue); return; }
+  const result = text.toLowerCase().split('').map((c: string) => brailleMap[c] || c).join('');
+  await sendReply(context.chatJid, result, sock, context.rawMessage.key, context.queue);
+}
+
+const asciiLetters: Record<string, string[]> = {
+  'A': ['  █  ','█   █','█████','█   █','█   █'],'B': ['████ ','█   █','████ ','█   █','████ '],
+  'C': [' ████','█    ','█    ','█    ',' ████'],'D': ['████ ','█   █','█   █','█   █','████ '],
+  'E': ['█████','█    ','███  ','█    ','█████'],'F': ['█████','█    ','███  ','█    ','█    '],
+  'G': [' ████','█    ','█  ██','█   █',' ████'],'H': ['█   █','█   █','█████','█   █','█   █'],
+  'I': ['█████','  █  ','  █  ','  █  ','█████'],'J': ['█████','   █ ','   █ ','█  █ ',' ██  '],
+  'K': ['█   █','█  █ ','███  ','█  █ ','█   █'],'L': ['█    ','█    ','█    ','█    ','█████'],
+  'M': ['█   █','██ ██','█ █ █','█   █','█   █'],'N': ['█   █','██  █','█ █ █','█  ██','█   █'],
+  'O': [' ███ ','█   █','█   █','█   █',' ███ '],'P': ['████ ','█   █','████ ','█    ','█    '],
+  'Q': [' ███ ','█   █','█ █ █','█  █ ',' ██ █'],'R': ['████ ','█   █','████ ','█  █ ','█   █'],
+  'S': [' ████','█    ',' ███ ','    █','████ '],'T': ['█████','  █  ','  █  ','  █  ','  █  '],
+  'U': ['█   █','█   █','█   █','█   █',' ███ '],'V': ['█   █','█   █','█   █',' █ █ ','  █  '],
+  'W': ['█   █','█   █','█ █ █','██ ██','█   █'],'X': ['█   █',' █ █ ','  █  ',' █ █ ','█   █'],
+  'Y': ['█   █',' █ █ ','  █  ','  █  ','  █  '],'Z': ['█████','   █ ','  █  ',' █   ','█████'],
+  ' ': ['     ','     ','     ','     ','     '],
+};
+
+async function handleAsciiArt(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const text = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!text) { await sendReply(context.chatJid, '!ascii [text]', sock, context.rawMessage.key, context.queue); return; }
+  const upper = text.toUpperCase().slice(0, 15);
+  const lines = [0, 1, 2, 3, 4].map(row =>
+    upper.split('').map((c: string) => (asciiLetters[c] || asciiLetters[' '])[row]).join(' ')
+  );
+  await sendReply(context.chatJid, '```\n' + lines.join('\n') + '\n```', sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Utility Commands ───────────────────────────────────────────────────────
+
+async function handlePick(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!pick [option1, option2, ...]\n\nExample: !pick pizza, burger, sushi', sock, context.rawMessage.key, context.queue); return; }
+  const options = args.join(' ').split(',').map(o => o.trim()).filter(Boolean);
+  if (options.length < 2) { await sendReply(context.chatJid, 'Need at least 2 options separated by commas.', sock, context.rawMessage.key, context.queue); return; }
+  const choice = options[Math.floor(Math.random() * options.length)];
+  await sendReply(context.chatJid, `🎯 I pick: *${choice}*`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleCoinFlip(context: MessageContext, sock: any): Promise<void> {
+  const result = Math.random() < 0.5 ? 'Heads' : 'Tails';
+  await sendReply(context.chatJid, `🪙 *${result}!*`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleDice(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const sides = parseInt(args[0]) || 6;
+  const result = Math.floor(Math.random() * sides) + 1;
+  await sendReply(context.chatJid, `🎲 Rolled a *${result}* (d${sides})`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handlePassword(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const length = Math.min(Math.max(parseInt(args[0]) || 16, 4), 128);
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
+  const bytes = crypto.randomBytes(length);
+  const password = Array.from(bytes).map(b => chars[b % chars.length]).join('');
+  await sendReply(context.chatJid, `🔐 *Generated Password (${length} chars)*\n\n\`${password}\``, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleUUID(context: MessageContext, sock: any): Promise<void> {
+  const uuid = crypto.randomUUID();
+  await sendReply(context.chatJid, `*UUID*\n\n${uuid}`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleEpoch(context: MessageContext, sock: any): Promise<void> {
+  const now = Date.now();
+  const secs = Math.floor(now / 1000);
+  await sendReply(context.chatJid, `*EPOCH / UNIX TIMESTAMP*\n\n*Seconds:* ${secs}\n*Milliseconds:* ${now}\n*ISO:* ${new Date(now).toISOString()}`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleBMI(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length < 2) { await sendReply(context.chatJid, '*BMI CALCULATOR*\n\n!bmi [weight kg] [height cm]\n\nExample: !bmi 70 175', sock, context.rawMessage.key, context.queue); return; }
+  const weight = parseFloat(args[0]);
+  const heightCm = parseFloat(args[1]);
+  if (isNaN(weight) || isNaN(heightCm) || weight <= 0 || heightCm <= 0) {
+    await sendReply(context.chatJid, 'Invalid values. Use: !bmi [weight in kg] [height in cm]', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const heightM = heightCm / 100;
+  const bmi = weight / (heightM * heightM);
+  let category = '';
+  if (bmi < 18.5) category = 'Underweight';
+  else if (bmi < 25) category = 'Normal weight';
+  else if (bmi < 30) category = 'Overweight';
+  else category = 'Obese';
+  await sendReply(context.chatJid, `*BMI RESULT*\n\n*BMI:* ${bmi.toFixed(1)}\n*Category:* ${category}\n\nWeight: ${weight}kg | Height: ${heightCm}cm`, sock, context.rawMessage.key, context.queue);
+}
+
+async function handleAge(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '*AGE CALCULATOR*\n\n!age [YYYY-MM-DD]\n\nExample: !age 2000-05-15', sock, context.rawMessage.key, context.queue); return; }
+  const birth = new Date(args[0]);
+  if (isNaN(birth.getTime())) { await sendReply(context.chatJid, 'Invalid date format. Use YYYY-MM-DD', sock, context.rawMessage.key, context.queue); return; }
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  let days = now.getDate() - birth.getDate();
+  if (days < 0) { months--; days += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+  if (months < 0) { years--; months += 12; }
+  const totalDays = Math.floor((now.getTime() - birth.getTime()) / 86400000);
+  await sendReply(context.chatJid, `*AGE*\n\n*${years}* years, *${months}* months, *${days}* days\n\nTotal: ${totalDays.toLocaleString()} days`, sock, context.rawMessage.key, context.queue);
+}
+
+const unitConversions: Record<string, Record<string, number>> = {
+  km: { mi: 0.621371, m: 1000, ft: 3280.84, yd: 1093.61 },
+  mi: { km: 1.60934, m: 1609.34, ft: 5280, yd: 1760 },
+  m: { km: 0.001, mi: 0.000621371, ft: 3.28084, cm: 100, in: 39.3701 },
+  ft: { m: 0.3048, cm: 30.48, in: 12, km: 0.0003048, mi: 0.000189394 },
+  kg: { lb: 2.20462, g: 1000, oz: 35.274, st: 0.157473 },
+  lb: { kg: 0.453592, g: 453.592, oz: 16, st: 0.0714286 },
+  g: { kg: 0.001, lb: 0.00220462, oz: 0.035274 },
+  oz: { g: 28.3495, kg: 0.0283495, lb: 0.0625 },
+  c: { f: -1, k: -2 }, // special handling
+  f: { c: -1, k: -2 },
+  k: { c: -1, f: -2 },
+  l: { gal: 0.264172, ml: 1000, pt: 2.11338, qt: 1.05669 },
+  gal: { l: 3.78541, ml: 3785.41, pt: 8, qt: 4 },
+  cm: { in: 0.393701, m: 0.01, ft: 0.0328084, mm: 10 },
+  in: { cm: 2.54, m: 0.0254, ft: 0.0833333, mm: 25.4 },
+};
+
+async function handleUnit(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (args.length < 3) {
+    await sendReply(context.chatJid, '*UNIT CONVERTER*\n\n!unit [value] [from] [to]\n\nExamples:\n!unit 100 km mi\n!unit 72 kg lb\n!unit 37 c f\n!unit 5 l gal', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const value = parseFloat(args[0]);
+  const from = args[1].toLowerCase();
+  const to = args[2].toLowerCase();
+  if (isNaN(value)) { await sendReply(context.chatJid, 'Invalid number.', sock, context.rawMessage.key, context.queue); return; }
+
+  // Temperature special handling
+  if ((from === 'c' || from === 'f' || from === 'k') && (to === 'c' || to === 'f' || to === 'k')) {
+    let result: number;
+    if (from === to) result = value;
+    else if (from === 'c' && to === 'f') result = value * 9/5 + 32;
+    else if (from === 'f' && to === 'c') result = (value - 32) * 5/9;
+    else if (from === 'c' && to === 'k') result = value + 273.15;
+    else if (from === 'k' && to === 'c') result = value - 273.15;
+    else if (from === 'f' && to === 'k') result = (value - 32) * 5/9 + 273.15;
+    else result = (value - 273.15) * 9/5 + 32;
+    await sendReply(context.chatJid, `*CONVERT*\n\n${value} ${from.toUpperCase()} = *${result.toFixed(2)} ${to.toUpperCase()}*`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const conversions = unitConversions[from];
+  if (!conversions || !conversions[to]) {
+    await sendReply(context.chatJid, `Unknown conversion: ${from} → ${to}\n\nSupported: km, mi, m, ft, cm, in, kg, lb, g, oz, l, gal, c, f, k`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+  const result = value * conversions[to];
+  await sendReply(context.chatJid, `*CONVERT*\n\n${value} ${from} = *${result.toFixed(4)} ${to}*`, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── More Info Lookup Commands ──────────────────────────────────────────────
+
+async function handleNpm(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!npm [package name]', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const pkg = args[0].toLowerCase();
+    const response = await axios.get(`https://registry.npmjs.org/${pkg}`, { timeout: 10000 });
+    const d = response.data;
+    const latest = d['dist-tags']?.latest || 'unknown';
+    const desc = d.description || 'No description';
+    const license = d.license || 'Unknown';
+    await sendReply(context.chatJid, `*NPM: ${d.name}*\n\n*Version:* ${latest}\n*Description:* ${desc}\n*License:* ${license}\n*Link:* https://npmjs.com/package/${d.name}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Package not found on npm.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleWhois(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!whois [domain]', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
+    const { stdout } = await execFileAsync('whois', [domain], { timeout: 10000 });
+    const lines = stdout.split('\n').filter((l: string) => l.match(/domain name|registrar|creation|expir|name server|updated/i)).slice(0, 10);
+    await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\n${lines.join('\n') || 'No WHOIS data available.'}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'WHOIS lookup failed. whois tool may not be installed.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleHeaders(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!headers [url]', sock, context.rawMessage.key, context.queue); return; }
+  let url = args[0];
+  if (!url.startsWith('http')) url = 'https://' + url;
+  try {
+    const response = await axios.head(url, { timeout: 10000, maxRedirects: 3 });
+    const hdrs = Object.entries(response.headers).map(([k, v]) => `*${k}:* ${v}`).join('\n');
+    await sendReply(context.chatJid, `*HTTP HEADERS*\n*Status:* ${response.status}\n\n${hdrs}`, sock, context.rawMessage.key, context.queue);
+  } catch (error: any) {
+    await sendReply(context.chatJid, `Failed: ${error?.message || 'Unknown error'}`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handleCountry(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!country [name]\n\nExample: !country Nigeria', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const name = args.join(' ');
+    const response = await axios.get(`https://restcountries.com/v3.1/name/${encodeURIComponent(name)}`, { timeout: 10000 });
+    const c = response.data[0];
+    const currencies = c.currencies ? Object.values(c.currencies).map((v: any) => `${v.name} (${v.symbol})`).join(', ') : 'N/A';
+    const languages = c.languages ? Object.values(c.languages).join(', ') : 'N/A';
+    await sendReply(context.chatJid, `*${c.flag} ${c.name.common}*\n\n*Official:* ${c.name.official}\n*Capital:* ${c.capital?.join(', ') || 'N/A'}\n*Population:* ${c.population?.toLocaleString()}\n*Region:* ${c.region} (${c.subregion || ''})\n*Currency:* ${currencies}\n*Languages:* ${languages}\n*Timezone:* ${c.timezones?.[0] || 'N/A'}\n*Calling Code:* ${c.idd?.root || ''}${c.idd?.suffixes?.[0] || ''}`, sock, context.rawMessage.key, context.queue);
+  } catch {
+    await sendReply(context.chatJid, 'Country not found.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+const emojiData: Record<string, string> = {
+  smile:'😊',grin:'😁',laugh:'😂',cry:'😢',sad:'😞',angry:'😠',love:'❤️',heart:'❤️',fire:'🔥',
+  star:'⭐',sun:'☀️',moon:'🌙',rain:'🌧️',snow:'❄️',thunder:'⚡',cloud:'☁️',rainbow:'🌈',
+  dog:'🐕',cat:'🐈',bird:'🐦',fish:'🐟',monkey:'🐒',lion:'🦁',tiger:'🐯',bear:'🐻',
+  pizza:'🍕',burger:'🍔',fries:'🍟',cake:'🎂',coffee:'☕',beer:'🍺',wine:'🍷',water:'💧',
+  car:'🚗',bus:'🚌',plane:'✈️',rocket:'🚀',ship:'🚢',bike:'🚲',train:'🚆',taxi:'🚕',
+  phone:'📱',computer:'💻',music:'🎵',camera:'📷',book:'📚',pen:'✏️',clock:'⏰',money:'💰',
+  thumbsup:'👍',thumbsdown:'👎',clap:'👏',wave:'👋',pray:'🙏',flex:'💪',eyes:'👀',brain:'🧠',
+  check:'✅',cross:'❌',warning:'⚠️',question:'❓',exclamation:'❗',hundred:'💯',
+  party:'🎉',gift:'🎁',trophy:'🏆',medal:'🥇',crown:'👑',gem:'💎',
+  skull:'💀',ghost:'👻',alien:'👽',robot:'🤖',poop:'💩',clown:'🤡',
+  peace:'✌️',ok:'👌',fist:'✊',point:'👉',think:'🤔',shrug:'🤷',
+};
+
+async function handleEmojiSearch(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!emoji [name]\n\nExample: !emoji fire\n!emoji heart', sock, context.rawMessage.key, context.queue); return; }
+  const query = args[0].toLowerCase();
+  const matches = Object.entries(emojiData).filter(([k]) => k.includes(query));
+  if (matches.length) {
+    await sendReply(context.chatJid, matches.map(([k, v]) => `${v} ${k}`).join('\n'), sock, context.rawMessage.key, context.queue);
+  } else {
+    await sendReply(context.chatJid, `No emoji found for "${query}".`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function handlePalette(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) { await sendReply(context.chatJid, '!palette [hex color]\n\nExample: !palette FF5733', sock, context.rawMessage.key, context.queue); return; }
+  let hex = args[0].replace('#', '').toUpperCase();
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  if (!/^[0-9A-F]{6}$/.test(hex)) { await sendReply(context.chatJid, 'Invalid hex color.', sock, context.rawMessage.key, context.queue); return; }
+
+  const r = parseInt(hex.slice(0,2), 16), g = parseInt(hex.slice(2,4), 16), b = parseInt(hex.slice(4,6), 16);
+  // Generate complementary, analogous, and triadic
+  const comp = [255-r, 255-g, 255-b].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  const lighter = [Math.min(255,r+50), Math.min(255,g+50), Math.min(255,b+50)].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  const darker = [Math.max(0,r-50), Math.max(0,g-50), Math.max(0,b-50)].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
+
+  const colors = [darker, hex, lighter, comp];
+  const blockW = 150, h = 120;
+  const svg = `<svg width="${blockW * colors.length}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    ${colors.map((c, i) => `<rect x="${i*blockW}" width="${blockW}" height="${h}" fill="#${c}"/><text x="${i*blockW+blockW/2}" y="${h-10}" font-family="Arial" font-size="14" fill="white" text-anchor="middle" font-weight="bold">#${c}</text>`).join('')}
+  </svg>`;
+  try {
+    const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    await sock.sendMessage(context.chatJid, { image: buffer, caption: `*COLOR PALETTE*\n\nBase: #${hex}\nDarker: #${darker}\nLighter: #${lighter}\nComplementary: #${comp}` }, { quoted: context.rawMessage });
+  } catch {
+    await sendReply(context.chatJid, `*COLOR PALETTE*\n\nBase: #${hex}\nDarker: #${darker}\nLighter: #${lighter}\nComplementary: #${comp}`, sock, context.rawMessage.key, context.queue);
+  }
+}
+
+// ─── Media Editing Commands ─────────────────────────────────────────────────
+
+async function getImageFromContext(context: MessageContext, sock: any): Promise<Buffer | null> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
+  if (!hasImage) return null;
+  const msgForDownload = quotedMsg?.imageMessage ? { ...context.rawMessage, message: quotedMsg } : context.rawMessage;
+  return downloadMedia(msgForDownload, sock);
+}
+
+async function handleBlur(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*BLUR*\n\nReply to an image with !blur [amount 1-100]', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const amount = Math.min(Math.max(parseInt(args[0]) || 5, 1), 100);
+    const result = await sharp(buffer).blur(amount).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Blur: ${amount}` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to blur image.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleGrayscale(context: MessageContext, sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*GRAYSCALE*\n\nReply to an image with !grayscale', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const result = await sharp(buffer).grayscale().toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: 'Grayscale' }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to convert image.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleRotate(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*ROTATE*\n\nReply to an image with !rotate [degrees]', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const degrees = parseInt(args[0]) || 90;
+    const result = await sharp(buffer).rotate(degrees).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Rotated ${degrees}°` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to rotate image.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleResize(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*RESIZE*\n\nReply to an image with !resize [width] [height]', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const width = parseInt(args[0]) || 500;
+    const height = parseInt(args[1]) || undefined;
+    const result = await sharp(buffer).resize(Math.min(width, 4096), height ? Math.min(height, 4096) : undefined).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Resized to ${width}${height ? 'x'+height : ''}` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to resize image.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleInvert(context: MessageContext, sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*INVERT*\n\nReply to an image with !invert', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const result = await sharp(buffer).negate({ alpha: false }).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: 'Inverted colors' }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to invert image.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleBrightness(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*BRIGHTNESS*\n\nReply to an image with !brightness [0.1-3.0]\nDefault: 1.0, higher = brighter', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const factor = Math.min(Math.max(parseFloat(args[0]) || 1.5, 0.1), 3.0);
+    const result = await sharp(buffer).modulate({ brightness: factor }).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Brightness: ${factor}x` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to adjust brightness.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleContrast(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*CONTRAST*\n\nReply to an image with !contrast [0.1-3.0]\nDefault: 1.0, higher = more contrast', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const factor = Math.min(Math.max(parseFloat(args[0]) || 1.5, 0.1), 3.0);
+    const result = await sharp(buffer).linear(factor, -(128 * factor) + 128).toBuffer();
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Contrast: ${factor}x` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to adjust contrast.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleCrop(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*CROP*\n\nReply to an image with !crop [x] [y] [width] [height]\nor !crop center (square crop from center)', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    if (args[0] === 'center' || !args.length) {
+      const meta = await sharp(buffer).metadata();
+      const size = Math.min(meta.width || 500, meta.height || 500);
+      const left = Math.floor(((meta.width || 500) - size) / 2);
+      const top = Math.floor(((meta.height || 500) - size) / 2);
+      const result = await sharp(buffer).extract({ left, top, width: size, height: size }).toBuffer();
+      await sock.sendMessage(context.chatJid, { image: result, caption: 'Center cropped' }, { quoted: context.rawMessage });
+    } else {
+      const left = parseInt(args[0]) || 0;
+      const top = parseInt(args[1]) || 0;
+      const width = parseInt(args[2]) || 200;
+      const height = parseInt(args[3]) || 200;
+      const result = await sharp(buffer).extract({ left, top, width, height }).toBuffer();
+      await sock.sendMessage(context.chatJid, { image: result, caption: `Cropped: ${left},${top} ${width}x${height}` }, { quoted: context.rawMessage });
+    }
+  } catch { await sendReply(context.chatJid, 'Failed to crop image. Check dimensions.', sock, context.rawMessage.key, context.queue); }
+}
+
+async function handleCompress(context: MessageContext, sock: any): Promise<void> {
+  const buffer = await getImageFromContext(context, sock);
+  if (!buffer) { await sendReply(context.chatJid, '*COMPRESS*\n\nReply to an image with !compress', sock, context.rawMessage.key, context.queue); return; }
+  try {
+    const original = buffer.length;
+    const result = await sharp(buffer).jpeg({ quality: 60 }).toBuffer();
+    const compressed = result.length;
+    const saved = Math.round((1 - compressed / original) * 100);
+    await sock.sendMessage(context.chatJid, { image: result, caption: `Compressed: ${(original/1024).toFixed(0)}KB → ${(compressed/1024).toFixed(0)}KB (${saved}% smaller)` }, { quoted: context.rawMessage });
+  } catch { await sendReply(context.chatJid, 'Failed to compress image.', sock, context.rawMessage.key, context.queue); }
 }
 
 // ─── Welcome Bot — New Group Members ─────────────────────────────────────────
