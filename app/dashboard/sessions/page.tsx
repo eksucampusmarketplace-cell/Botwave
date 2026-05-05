@@ -6,19 +6,20 @@ import DashboardNav from '@/components/layout/DashboardNav';
 import SessionCard from '@/components/ui/SessionCard';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import { createClient } from '@/lib/supabase/client';
+import type { BotSession } from '@/lib/types';
 
 export default function SessionsPage() {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<BotSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
-  const [activeSession, setActiveSession] = useState<any>(null);
+  const [activeSession, setActiveSession] = useState<BotSession | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
 
   const supabase = useRef(createClient()).current;
-  const activeSessionRef = useRef<any>(null);
+  const activeSessionRef = useRef<BotSession | null>(null);
 
   const fetchSessions = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -30,7 +31,7 @@ export default function SessionsPage() {
         
         const currentActive = activeSessionRef.current;
         if (currentActive) {
-          const updated = data.data.find((s: any) => s.id === currentActive.id);
+          const updated = data.data.find((s: BotSession) => s.id === currentActive.id);
           if (updated) {
             setActiveSession(updated);
             activeSessionRef.current = updated;
@@ -72,7 +73,7 @@ export default function SessionsPage() {
           const data = await response.json();
           if (data.success) {
             setSessions(data.data);
-            const refreshed = data.data.find((s: any) => s.id === activeSessionRef.current?.id);
+            const refreshed = data.data.find((s: BotSession) => s.id === activeSessionRef.current?.id);
             if (refreshed) {
               setActiveSession(refreshed);
               activeSessionRef.current = refreshed;
@@ -117,7 +118,7 @@ export default function SessionsPage() {
     }
   };
 
-  const handleConnect = async (session: any) => {
+  const handleConnect = async (session: BotSession) => {
     // For disconnected sessions, reset state so the worker generates a fresh pairing code
     if (session.state === 'needs_reauth' || session.state === 'inactive') {
       try {

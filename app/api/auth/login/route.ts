@@ -1,8 +1,21 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isLockedOut, recordLoginAttempt, getClientIp } from '@/lib/admin-security';
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request.headers);
+
+    // Brute-force protection
+    const lockout = isLockedOut(clientIp);
+    if (lockout.locked) {
+      const remainingMin = Math.ceil(lockout.remainingMs / 60_000);
+      return NextResponse.json(
+        { error: `Too many failed attempts. Try again in ${remainingMin} minute(s).` },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -36,7 +49,6 @@ export async function POST(request: NextRequest) {
     // Check if input is email or username
     let loginEmail = email;
     if (!email.includes('@')) {
-      // User entered a username — look up their email
       const { createClient } = await import('@supabase/supabase-js');
       const adminSupabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,15 +61,16 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!profile) {
+        recordLoginAttempt(clientIp, email, false);
         return NextResponse.json(
           { error: 'Invalid email/username or password' },
           { status: 401 },
         );
       }
 
-      // Get user email from auth.users via admin API
       const { data: userData } = await adminSupabase.auth.admin.getUserById(profile.id);
       if (!userData?.user?.email) {
+        recordLoginAttempt(clientIp, email, false);
         return NextResponse.json(
           { error: 'Invalid email/username or password' },
           { status: 401 },
@@ -72,6 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
+      recordLoginAttempt(clientIp, email, false);
       if (error.message.includes('Invalid login credentials')) {
         return NextResponse.json(
           { error: 'Invalid email/username or password' },
@@ -85,6 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    recordLoginAttempt(clientIp, email, true);
     return response;
   } catch (err) {
     console.error('[AUTH] Login exception:', err);

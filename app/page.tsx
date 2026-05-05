@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import FeatureCard from '@/components/ui/FeatureCard';
 import HowItWorks from '@/components/ui/HowItWorks';
 import Disclaimer from '@/components/ui/Disclaimer';
+import ParticleBackground from '@/components/ui/ParticleBackground';
 
 const features = [
   {
@@ -85,7 +86,7 @@ const tickerItems = [
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-dark relative">
-      <canvas id="bg-canvas" className="fixed inset-0 z-0 pointer-events-none" />
+      <ParticleBackground />
 
       <Navbar />
 
@@ -215,95 +216,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            // Particle Canvas Background
-            const canvas = document.getElementById('bg-canvas');
-            const ctx = canvas.getContext('2d');
-            let W, H, particles = [];
 
-            function resize() {
-              W = canvas.width = window.innerWidth;
-              H = canvas.height = window.innerHeight;
-            }
-
-            function Particle() {
-              this.x = Math.random() * W;
-              this.y = Math.random() * H;
-              this.vx = (Math.random() - 0.5) * 0.4;
-              this.vy = (Math.random() - 0.5) * 0.4;
-              this.r = Math.random() * 1.5;
-              this.alpha = Math.random() * 0.4 + 0.1;
-            }
-
-            Particle.prototype.update = function() {
-              this.x += this.vx;
-              this.y += this.vy;
-              if (this.x < 0) this.x = W;
-              if (this.x > W) this.x = 0;
-              if (this.y < 0) this.y = H;
-              if (this.y > H) this.y = 0;
-            };
-
-            function initParticles() {
-              particles = [];
-              const count = Math.floor((W * H) / 8000);
-              for (let i = 0; i < count; i++) particles.push(new Particle());
-            }
-
-            function drawParticles() {
-              ctx.clearRect(0, 0, W, H);
-
-              ctx.strokeStyle = 'rgba(0,255,136,0.04)';
-              ctx.lineWidth = 1;
-              for (let x = 0; x < W; x += 80) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, H);
-                ctx.stroke();
-              }
-              for (let y = 0; y < H; y += 80) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(W, y);
-                ctx.stroke();
-              }
-
-              for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                  const dx = particles[i].x - particles[j].x;
-                  const dy = particles[i].y - particles[j].y;
-                  const dist = Math.sqrt(dx*dx + dy*dy);
-                  if (dist < 120) {
-                    ctx.strokeStyle = 'rgba(0,255,136,' + (0.08 * (1 - dist/120)) + ')';
-                    ctx.lineWidth = 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.stroke();
-                  }
-                }
-              }
-
-              particles.forEach(p => {
-                p.update();
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(0,255,136,' + p.alpha + ')';
-                ctx.fill();
-              });
-
-              requestAnimationFrame(drawParticles);
-            }
-
-            resize();
-            initParticles();
-            drawParticles();
-            window.addEventListener('resize', () => { resize(); initParticles(); });
-          `,
-        }}
-      />
     </main>
   );
 }

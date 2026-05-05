@@ -38,10 +38,10 @@ export default function DashboardNav() {
           <Link href="/dashboard" className="font-mono text-xs tracking-[2px] text-green hover:text-cyan transition-colors">
             DASHBOARD
           </Link>
-          <Link href="/dashboard/sessions" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+          <Link href="/dashboard/sessions" data-tour="nav-sessions" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SESSIONS
           </Link>
-          <Link href="/dashboard/settings" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+          <Link href="/dashboard/settings" data-tour="nav-settings" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SETTINGS
           </Link>
         </div>
