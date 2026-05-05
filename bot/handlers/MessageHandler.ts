@@ -66,10 +66,17 @@ const MAX_MESSAGES_PER_WINDOW = 10;
 
 /**
  * Extract quoted/replied message from various possible paths.
- * WhatsApp status replies, image replies, and normal text replies
- * each store contextInfo in a different message wrapper.
+ * - Baileys nests contextInfo inside the message type wrapper
+ *   (e.g. msg.message.extendedTextMessage.contextInfo.quotedMessage)
+ * - Evolution API puts contextInfo at the top level of the message object
+ *   (e.g. msg.contextInfo.quotedMessage)
+ * Both paths are checked.
  */
 function getQuotedMessage(rawMessage: any): any {
+  // Evolution API top-level contextInfo (status replies, etc.)
+  if (rawMessage?.contextInfo?.quotedMessage) {
+    return rawMessage.contextInfo.quotedMessage;
+  }
   const msg = rawMessage?.message;
   if (!msg) return null;
   return msg.extendedTextMessage?.contextInfo?.quotedMessage
@@ -2247,6 +2254,13 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
 
   if (!quotedMsg) {
+    // Debug: log raw message keys so we can find where the quoted status lives
+    console.log('[REPOST] No quoted message found. Raw message keys:', JSON.stringify({
+      topKeys: Object.keys(context.rawMessage || {}),
+      messageKeys: Object.keys(context.rawMessage?.message || {}),
+      hasContextInfo: !!context.rawMessage?.contextInfo,
+      contextInfoKeys: Object.keys(context.rawMessage?.contextInfo || {}),
+    }));
     await sendReply(
       context.chatJid,
       `*STATUS REPOST*\n\nReply to any message with *!repost* to post it as your WhatsApp Status.\n\nWorks with: text, images, videos.\n\n_Note: Status posting depends on your WhatsApp version and linked device support._`,
