@@ -3,7 +3,7 @@ import axios from 'axios';
 import sharp from 'sharp';
 import { downloadMediaMessage as baileysDownloadMedia } from '@whiskeysockets/baileys';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
@@ -537,7 +537,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'help':
     case 'h':
     case 'commands':
-      await sendHelp(context, sock, vars);
+      await sendHelp(context, args, sock, vars);
       break;
     case 'ping':
     case 'pong':
@@ -656,7 +656,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'repost':
     case 'rp':
     case 'repoststatus':
-      await handleRepost(context, sock);
+      await handleRepost(context, args, sock);
       break;
     case 'qr':
     case 'qrcode':
@@ -849,14 +849,22 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<voi
 
 async function sendHelp(
   context: MessageContext,
+  args: string[],
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
+  // If user types "!help doc", send a detailed .docx guide
+  if (args.length > 0 && (args[0].toLowerCase() === 'doc' || args[0].toLowerCase() === 'docx' || args[0].toLowerCase() === 'full')) {
+    await sendHelpDocx(context, sock);
+    return;
+  }
+
   const intro = pickResponse(helpIntros, vars, false);
   const helpMessage = `${intro}
 
 *GENERAL*
 !help — Show this menu
+!help doc — Full guide as .docx file
 !ping — Check bot status
 !sticker — Image/video/GIF to sticker
 !sticker crop/circle/rounded — Crop modes
@@ -909,13 +917,362 @@ async function sendHelp(
 !afk off — Disable AFK
 !download [url] — Download media
 !save — Reply to save msg to your chat
-!repost — Reply to post as Status
+!repost [caption] — Reply to post as Status
 !tagall [msg] — Mention all group members
 !group — View group info
 
+_Type *!help doc* for a full guide with deep explanations._
 _Only the bot owner can use commands._`;
 
   await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
+}
+
+/**
+ * Generate a comprehensive .docx help guide with deep explanations.
+ */
+async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
+  try {
+    const sections = [
+      {
+        title: 'GENERAL COMMANDS',
+        commands: [
+          {
+            name: '!help',
+            usage: '!help  or  !help doc',
+            description: 'Shows the full command menu in chat. Use "!help doc" to receive this comprehensive .docx guide with deep explanations of every command, usage examples, and tips.',
+          },
+          {
+            name: '!ping',
+            usage: '!ping',
+            description: 'Checks if the bot is online and responsive. Replies with a quick status message confirming the bot is alive and running. Useful for verifying your connection.',
+          },
+          {
+            name: '!sticker',
+            usage: '!sticker  |  !sticker crop  |  !sticker circle  |  !sticker rounded',
+            description: 'Converts an image, video, or GIF into a WhatsApp sticker. Send or reply to a media file with "!sticker" to create a default full-size sticker. Append "crop" to auto-crop to a square, "circle" for a circular mask, or "rounded" for rounded corners.',
+          },
+          {
+            name: '!joke',
+            usage: '!joke',
+            description: 'Sends a random joke from a curated collection. Every response is unique — the bot uses an anti-repeat system so you will not see the same joke twice in a row.',
+          },
+          {
+            name: '!quote',
+            usage: '!quote',
+            description: 'Sends a random inspirational or motivational quote. Great for daily motivation or sharing with friends.',
+          },
+          {
+            name: '!meme',
+            usage: '!meme',
+            description: 'Fetches a random trending meme image from Reddit and sends it directly in chat. The meme is sourced from popular subreddits for fresh content.',
+          },
+        ],
+      },
+      {
+        title: 'TOOLS',
+        commands: [
+          {
+            name: '!ai',
+            usage: '!ai [your message]',
+            description: 'Chat with an AI assistant powered by Groq. Send any question, request, or prompt and get an intelligent response. Requires your Groq API key to be configured in your bot settings. Supports multi-turn conversation context.',
+          },
+          {
+            name: '!weather',
+            usage: '!weather [city name]',
+            description: 'Gets current weather information for any city worldwide. Shows temperature, conditions, humidity, and wind speed. Example: "!weather Lagos" or "!weather New York".',
+          },
+          {
+            name: '!define',
+            usage: '!define [word]',
+            description: 'Looks up the dictionary definition of any English word. Returns the meaning, part of speech, and example usage. Example: "!define serendipity".',
+          },
+          {
+            name: '!horoscope',
+            usage: '!horoscope [zodiac sign]',
+            description: 'Gets your daily horoscope for any zodiac sign. Supported signs: aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces. Example: "!horoscope leo".',
+          },
+          {
+            name: '!translate',
+            usage: '!translate [language code] [text]',
+            description: 'Translates text to another language. Common language codes: es (Spanish), fr (French), de (German), pt (Portuguese), ja (Japanese), ko (Korean), zh (Chinese), ar (Arabic), hi (Hindi). Example: "!translate fr Good morning everyone".',
+          },
+          {
+            name: '!doc',
+            usage: '!doc [title] | [content]  or  reply with !doc [title]',
+            description: 'Creates a formatted .docx Word document. Three ways to use:\n1. Title + Content: "!doc My Essay | Your content here"\n2. Reply mode: Reply to any message with "!doc My Title" — the replied text becomes the document content.\n3. Content only: "!doc Just type content" — auto-titled as "Document".\nAll formatting, line breaks, and spacing are preserved exactly as typed.',
+          },
+          {
+            name: '!calc',
+            usage: '!calc [expression]',
+            description: 'Evaluates a mathematical expression. Supports basic arithmetic (+, -, *, /), parentheses, percentages, and more. Example: "!calc (25 * 4) + 10".',
+          },
+          {
+            name: '!note',
+            usage: '!note save [text]  |  !note list  |  !note view [id]  |  !note delete [id]',
+            description: 'Personal note-taking system. Save quick notes, list all saved notes, view a specific note by ID, or delete notes you no longer need. Notes are stored per user and persist across sessions.',
+          },
+          {
+            name: '!qr',
+            usage: '!qr [text or URL]',
+            description: 'Generates a QR code image from any text or URL. The QR code is sent as an image you can scan with any QR reader. Example: "!qr https://google.com" or "!qr Hello World".',
+          },
+          {
+            name: '!tts',
+            usage: '!tts [text]',
+            description: 'Converts text to a voice note (Text-to-Speech). The bot generates an audio message that plays like a regular WhatsApp voice note. Example: "!tts Good morning everyone".',
+          },
+          {
+            name: '!wiki',
+            usage: '!wiki [topic]',
+            description: 'Fetches a Wikipedia summary for any topic. Returns a concise overview with key facts. Example: "!wiki artificial intelligence" or "!wiki Nigeria".',
+          },
+          {
+            name: '!lyrics',
+            usage: '!lyrics [song name]',
+            description: 'Searches for and displays song lyrics. Example: "!lyrics Bohemian Rhapsody" or "!lyrics Shape of You Ed Sheeran". Returns the full lyrics text.',
+          },
+          {
+            name: '!currency',
+            usage: '!currency [amount] [FROM] [TO]',
+            description: 'Converts currency between any two supported currencies using live exchange rates. Example: "!currency 100 USD NGN" converts 100 US Dollars to Nigerian Naira. "!currency 50 EUR GBP" converts 50 Euros to British Pounds.',
+          },
+          {
+            name: '!short',
+            usage: '!short [url]',
+            description: 'Shortens a long URL into a compact, shareable link. Useful for cleaning up long URLs before sharing. Example: "!short https://very-long-website-url.com/path/to/page".',
+          },
+          {
+            name: '!img',
+            usage: '!img [prompt]',
+            description: 'Generates an AI image from a text description. Describe what you want to see and the bot creates an image using AI. Example: "!img a sunset over mountains" or "!img anatomy textbook cover".',
+          },
+        ],
+      },
+      {
+        title: 'PRODUCTIVITY',
+        commands: [
+          {
+            name: '!remind',
+            usage: '!remind [time] [message]',
+            description: 'Sets a personal reminder. The bot will message you back after the specified time with your reminder. Time format: "5m" (minutes), "2h" (hours), "1d" (days). Example: "!remind 30m Check the oven" or "!remind 2h Call mom".',
+          },
+          {
+            name: '!schedule',
+            usage: '!schedule [time] [message]',
+            description: 'Schedules a message to be sent at a specific time. Similar to reminders but designed for scheduled messaging. Example: "!schedule 1h Good night everyone".',
+          },
+          {
+            name: '!stats',
+            usage: '!stats',
+            description: 'Shows bot statistics and session information including uptime, messages processed, active session details, and system health metrics.',
+          },
+        ],
+      },
+      {
+        title: 'GAMES & FUN',
+        commands: [
+          {
+            name: '!play',
+            usage: '!play numberguess',
+            description: 'Starts a number guessing game. The bot picks a random number and you try to guess it. The bot tells you if your guess is too high or too low. Use "!answer [number]" to submit guesses.',
+          },
+          {
+            name: '!trivia',
+            usage: '!trivia',
+            description: 'Starts a multiple-choice trivia question. Answer with "!answer [letter]" (A, B, C, or D). Correct answers earn points on the leaderboard. Questions span various categories.',
+          },
+          {
+            name: '!hangman',
+            usage: '!hangman',
+            description: 'Starts a hangman word-guessing game. Guess letters one at a time with "!answer [letter]". You have limited wrong guesses before the game ends. The word is revealed on completion.',
+          },
+          {
+            name: '!wordchain',
+            usage: '!wordchain',
+            description: 'Starts a word chain game. Each player must say a word that starts with the last letter of the previous word. Use "!answer [word]" to continue the chain. Great for group fun.',
+          },
+          {
+            name: '!answer',
+            usage: '!answer [text]',
+            description: 'Submits your answer for any active game (trivia, hangman, wordchain, numberguess). The response format depends on the active game type.',
+          },
+          {
+            name: '!poll',
+            usage: '!poll [question] | [option1] | [option2] | ...',
+            description: 'Creates a poll with multiple options. Separate the question and options with the pipe character "|". Example: "!poll Best color? | Red | Blue | Green". Others vote with "!vote [number]".',
+          },
+          {
+            name: '!vote',
+            usage: '!vote [option number]',
+            description: 'Casts your vote on the active poll. Use the number corresponding to your choice. Example: "!vote 2" votes for the second option.',
+          },
+          {
+            name: '!leaderboard',
+            usage: '!leaderboard',
+            description: 'Shows the top active users ranked by points. Points are earned by playing games, answering trivia correctly, and participating in activities.',
+          },
+          {
+            name: '!8ball',
+            usage: '!8ball [question]',
+            description: 'Ask the Magic 8-Ball a yes/no question and receive a mystical answer. Example: "!8ball Will I pass my exam?".',
+          },
+          {
+            name: '!truth',
+            usage: '!truth',
+            description: 'Gives you a random "Truth" question from the classic Truth or Dare game. Great for group conversations and getting to know each other.',
+          },
+          {
+            name: '!dare',
+            usage: '!dare',
+            description: 'Gives you a random dare challenge. Fun and often silly challenges to liven up group chats.',
+          },
+          {
+            name: '!ship',
+            usage: '!ship [name1] [name2]',
+            description: 'Calculates a fun "love compatibility" percentage between two names. Example: "!ship Alice Bob". Just for fun — not real relationship advice!',
+          },
+          {
+            name: '!compliment',
+            usage: '!compliment [name]',
+            description: 'Generates a random, wholesome compliment for the named person. Example: "!compliment Sarah". Brightens someone\'s day!',
+          },
+          {
+            name: '!fortune',
+            usage: '!fortune',
+            description: 'Opens a virtual fortune cookie with a random fortune or piece of wisdom inside.',
+          },
+          {
+            name: '!fact',
+            usage: '!fact',
+            description: 'Shares a random fun fact. Learn something new every time — facts cover science, history, nature, and more.',
+          },
+          {
+            name: '!riddle',
+            usage: '!riddle',
+            description: 'Sends a random riddle. You have 30 seconds to think, then the answer is revealed. Test your brain!',
+          },
+        ],
+      },
+      {
+        title: 'SOCIAL',
+        commands: [
+          {
+            name: '!afk',
+            usage: '!afk [reason]  |  !afk off',
+            description: 'Sets your AFK (Away From Keyboard) status. When enabled, anyone who messages or tags you will get an automatic reply with your AFK reason. Use "!afk off" to disable. Example: "!afk sleeping" or "!afk in class".',
+          },
+          {
+            name: '!download',
+            usage: '!download [URL]',
+            description: 'Downloads media from supported platforms including YouTube, TikTok, Instagram, and Twitter/X. Paste the link after the command and the bot will fetch and send the media. Example: "!download https://youtube.com/watch?v=...".',
+          },
+          {
+            name: '!save',
+            usage: '!save (reply to a message)',
+            description: 'Saves a message to your personal chat. Reply to any message with "!save" and the bot will forward that message to your DM for safekeeping. Great for bookmarking important messages.',
+          },
+          {
+            name: '!repost',
+            usage: '!repost  |  !repost [custom caption]',
+            description: 'Reposts a message as your WhatsApp Status (story). Reply to any message — text, image, or video — with "!repost" to instantly post it to your WhatsApp Status for all your contacts to see.\n\nCaption Support:\nFor images and videos, you can add a custom caption by typing text after the command. Example: "!repost Check this out!" will use "Check this out!" as the status caption instead of the original caption.\n\nIf no custom caption is provided, the original caption (if any) is preserved.\n\nFor text messages, you can override the text by adding your own text after the command.\n\nSupported Media Types:\n- Text messages — posted as a text status with black background\n- Images — posted as an image status with optional caption\n- Videos — posted as a video status with optional caption\n\nAliases: !rp, !repoststatus',
+          },
+          {
+            name: '!tagall',
+            usage: '!tagall [message]',
+            description: 'Mentions all members of the current group in a single message. Only works in group chats. You can add an optional message that appears with the mentions. Example: "!tagall Meeting at 3pm today".',
+          },
+          {
+            name: '!group',
+            usage: '!group',
+            description: 'Displays detailed group information including the group name, description, creation date, participant count, and admin list. Only works in group chats.',
+          },
+        ],
+      },
+    ];
+
+    const children: Paragraph[] = [];
+
+    // Title
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'BotWave Command Guide', bold: true, size: 48, font: 'Calibri' })],
+      heading: HeadingLevel.TITLE,
+      alignment: AlignmentType.CENTER,
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'Complete reference with deep explanations for every command', italics: true, size: 24, font: 'Calibri' })],
+      alignment: AlignmentType.CENTER,
+    }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'All commands start with the "!" prefix. Only the bot owner can use commands.', size: 22, font: 'Calibri' })],
+    }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+
+    for (const section of sections) {
+      // Section heading
+      children.push(new Paragraph({
+        children: [new TextRun({ text: section.title, bold: true, size: 32, font: 'Calibri' })],
+        heading: HeadingLevel.HEADING_1,
+      }));
+      children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+
+      for (const cmd of section.commands) {
+        // Command name
+        children.push(new Paragraph({
+          children: [new TextRun({ text: cmd.name, bold: true, size: 26, font: 'Calibri' })],
+          heading: HeadingLevel.HEADING_2,
+        }));
+
+        // Usage
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Usage: ', bold: true, size: 22, font: 'Calibri' }),
+            new TextRun({ text: cmd.usage, size: 22, font: 'Courier New' }),
+          ],
+        }));
+
+        // Description (preserve newlines)
+        const descLines = cmd.description.split('\n');
+        for (const line of descLines) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: line, size: 22, font: 'Calibri' })],
+          }));
+        }
+
+        children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+      }
+    }
+
+    // Footer
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({
+        text: `Generated by BotWave at ${currentTimeStr()} on ${currentDateStr()}`,
+        size: 18, italics: true, font: 'Calibri',
+      })],
+      alignment: AlignmentType.CENTER,
+    }));
+
+    const doc = new Document({ sections: [{ children }] });
+    const buffer = await Packer.toBuffer(doc);
+
+    await sendReply(
+      context.chatJid,
+      {
+        document: buffer,
+        mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        fileName: 'BotWave_Command_Guide.docx',
+      },
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+
+    await sendReply(context.chatJid, 'Here\'s the full command guide with detailed explanations!', sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('[HELP-DOC] Error generating help docx:', error);
+    await sendReply(context.chatJid, 'Failed to generate the help document. Try !help for the text version.', sock, context.rawMessage.key, context.queue);
+  }
 }
 
 async function sendPing(
@@ -2250,11 +2607,10 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
 
 // ─── Repost Command — Repost to WhatsApp Status ─────────────────────────────
 
-async function handleRepost(context: MessageContext, sock: any): Promise<void> {
+async function handleRepost(context: MessageContext, args: string[], sock: any): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
 
   if (!quotedMsg) {
-    // Debug: log raw message keys so we can find where the quoted status lives
     console.log('[REPOST] No quoted message found. Raw message keys:', JSON.stringify({
       topKeys: Object.keys(context.rawMessage || {}),
       messageKeys: Object.keys(context.rawMessage?.message || {}),
@@ -2263,13 +2619,16 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
     }));
     await sendReply(
       context.chatJid,
-      `*STATUS REPOST*\n\nReply to any message with *!repost* to post it as your WhatsApp Status.\n\nWorks with: text, images, videos.\n\n_Note: Status posting depends on your WhatsApp version and linked device support._`,
+      `*STATUS REPOST*\n\nReply to any message with *!repost* to post it as your WhatsApp Status.\n\nYou can add a custom caption:\n*!repost Your caption here*\n\nWorks with: text, images, videos.\n\n_Note: Status posting depends on your WhatsApp version and linked device support._`,
       sock,
       context.rawMessage.key,
       context.queue,
     );
     return;
   }
+
+  // Custom caption from args, falls back to original caption if none provided
+  const customCaption = args.length > 0 ? args.join(' ') : '';
 
   try {
     const statusJid = 'status@broadcast';
@@ -2286,7 +2645,7 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
     }
 
     if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
-      const text = quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
+      const text = customCaption || quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
       await sock.sendMessage(statusJid, {
         text,
         font: 0,
@@ -2295,9 +2654,10 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
     } else if (quotedMsg.imageMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
       if (buffer) {
+        const caption = customCaption || quotedMsg.imageMessage.caption || '';
         await sock.sendMessage(statusJid, {
           image: buffer,
-          caption: quotedMsg.imageMessage.caption || '',
+          caption,
         }, { statusJidList });
       } else {
         await sendReply(context.chatJid, 'Could not download the image to repost.', sock, context.rawMessage.key, context.queue);
@@ -2306,9 +2666,10 @@ async function handleRepost(context: MessageContext, sock: any): Promise<void> {
     } else if (quotedMsg.videoMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
       if (buffer) {
+        const caption = customCaption || quotedMsg.videoMessage.caption || '';
         await sock.sendMessage(statusJid, {
           video: buffer,
-          caption: quotedMsg.videoMessage.caption || '',
+          caption,
         }, { statusJidList });
       } else {
         await sendReply(context.chatJid, 'Could not download the video to repost.', sock, context.rawMessage.key, context.queue);

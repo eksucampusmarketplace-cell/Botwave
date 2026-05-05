@@ -324,6 +324,41 @@ export async function sendMedia(
   return res.json();
 }
 
+// Post a status (story) through an instance
+export async function sendStatus(
+  instanceName: string,
+  type: 'text' | 'image' | 'video' | 'audio',
+  contentBase64OrUrl: string,
+  options?: {
+    caption?: string;
+    statusJidList?: string[];
+    allContacts?: boolean;
+    backgroundColor?: string;
+    font?: number;
+  },
+) {
+  const payload: Record<string, unknown> = {
+    type,
+    content: type === 'text' ? contentBase64OrUrl : stripDataUri(contentBase64OrUrl),
+    ...(options?.caption ? { caption: options.caption } : {}),
+    ...(options?.backgroundColor ? { backgroundColor: options.backgroundColor } : {}),
+    ...(options?.font !== undefined ? { font: options.font } : {}),
+  };
+
+  if (options?.statusJidList?.length) {
+    payload.statusJidList = options.statusJidList;
+  } else {
+    payload.allContacts = true;
+  }
+
+  const res = await apiFetch(`${BASE}/message/sendStatus/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
 // Send a sticker through an instance
 export async function sendSticker(instanceName: string, to: string, stickerBase64: string) {
   const res = await apiFetch(`${BASE}/message/sendSticker/${instanceName}`, {
