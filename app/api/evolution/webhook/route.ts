@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
       console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: state=${state} statusCode=${statusCode}`);
 
       if (state === 'open') {
+        // Check if this is a first-time connection (pairing just completed)
+        const { data: current } = await supabase
+          .from('bot_sessions')
+          .select('state, phone_number')
+          .eq('id', sessionId)
+          .single();
+
         await supabase.from('bot_sessions')
           .update({
             state: 'active',
@@ -59,6 +66,45 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', sessionId);
+
+        // Send one-time welcome message when pairing completes for the first time
+        if (current?.state === 'pairing_sent' && current?.phone_number) {
+          const welcomeMessages = [
+            `Hey there! 👋 BotWave is now connected to your WhatsApp.\n\n` +
+            `Here are a few things to get started:\n` +
+            `• Type *!help* in any chat to see all commands\n` +
+            `• Add BotWave to your homescreen for quick access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `⚠️ *Important — Please use responsibly:*\n` +
+            `Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss — use wisely!\n\n` +
+            `_Created by Decisive Analyst_`,
+
+            `Welcome to BotWave! 🚀 Your WhatsApp bot is live.\n\n` +
+            `Quick start:\n` +
+            `• Send *!help* anywhere to explore commands\n` +
+            `• Bookmark the dashboard: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `⚠️ *A word of caution:*\n` +
+            `Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions — please use the bot wisely.\n\n` +
+            `_Powered by Decisive Analyst_`,
+
+            `You're all set! ✨ BotWave is connected and ready.\n\n` +
+            `Get started:\n` +
+            `• Try *!help* to see everything your bot can do\n` +
+            `• Save the dashboard for easy access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `⚠️ *Please be mindful:*\n` +
+            `Don't overuse or spam automated messages — if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n\n` +
+            `_Built by Decisive Analyst_`,
+          ];
+          const welcomeText = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+          const selfJid = current.phone_number.replace(/\D/g, '');
+
+          try {
+            const { sendText } = await import('@/bot/evolutionClient');
+            await sendText(sessionId, selfJid, welcomeText);
+            console.log(`[EVO-WEBHOOK] Sent welcome message to ${selfJid} for session ${sessionId}`);
+          } catch (err) {
+            console.error(`[EVO-WEBHOOK] Failed to send welcome message for ${sessionId}:`, err);
+          }
+        }
       } else if (state === 'close' || state === 'refused') {
         // Only set needs_reauth if the session was previously active.
         // During pairing/connecting, 'close' events are normal reconnection
