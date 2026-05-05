@@ -395,24 +395,26 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     // Private chat AFK auto-response: if someone DMs the bot owner and
     // the owner has AFK enabled, respond with the AFK message.
+    // Checks BOTH afk_states table (!afk command) AND user_settings (dashboard toggle).
     // ONLY for non-command messages — commands should get their normal response.
     if (!isGroup && !isCommand && sessionId) {
       const ownerJid = (sock as any).user?.id;
       if (ownerJid && senderJid !== ownerJid) {
-        // Check afk_states table (not user_settings) for the owner's AFK status
         try {
           const ownerAfk = await getAfkState(sessionId, ownerJid);
-          if (ownerAfk?.is_afk) {
-            // Per-user cooldown — don't spam the same person
+          const isAfkViaCommand = ownerAfk?.is_afk;
+          const isAfkViaDashboard = ownerSettings?.afk_enabled;
+
+          if (isAfkViaCommand || isAfkViaDashboard) {
             const cooldownKey = `${sessionId}:${senderJid}`;
             const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
             if (Date.now() - lastReply > AFK_COOLDOWN_MS) {
               afkReplyCooldown.set(cooldownKey, Date.now());
-              const afkMsg = ownerAfk.afk_reason || 'I am currently away';
+              const reason = ownerAfk?.afk_reason || ownerSettings?.afk_message || undefined;
               const response = pickResponse(afkReplies, { name: pushName || 'User', time: currentTimeStr() });
               await sendReply(
                 chatJid,
-                `${response}${ownerAfk.afk_reason ? `\n_Reason: ${ownerAfk.afk_reason}_` : ''}`,
+                `${response}${reason ? `\n_Reason: ${reason}_` : ''}`,
                 sock,
                 message.key,
                 queue,
@@ -1073,9 +1075,10 @@ async function sendReply(
     }
   }
 
-  // Always show typing indicator before sending — even when using queue
+  // Show typing or recording indicator before sending
+  const isAudioContent = processedContent?.audio || processedContent?.mimetype?.includes('audio');
   try {
-    await sock.sendPresenceUpdate('composing', jid);
+    await sock.sendPresenceUpdate(isAudioContent ? 'recording' : 'composing', jid);
   } catch { /* non-critical */ }
 
   if (queue) {

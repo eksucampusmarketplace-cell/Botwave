@@ -56,9 +56,11 @@ export async function humanSend(
   const thinkTime = 500 + Math.random() * 1500;
   await delay(thinkTime);
 
-  // Step 4 – show typing indicator ("composing")
+  // Step 4 – show typing or recording indicator
+  const isAudio = content?.audio || content?.mimetype?.includes('audio');
+  const presenceType = isAudio ? 'recording' : 'composing';
   try {
-    await sock.sendPresenceUpdate('composing', jid);
+    await sock.sendPresenceUpdate(presenceType, jid);
   } catch {
     // non-critical
   }
@@ -78,9 +80,8 @@ export async function humanSend(
       await sock.sendPresenceUpdate('paused', jid);
     } catch { /* non-critical */ }
     await delay(800 + Math.random() * 1200);
-    // Resume typing briefly
     try {
-      await sock.sendPresenceUpdate('composing', jid);
+      await sock.sendPresenceUpdate(presenceType, jid);
     } catch { /* non-critical */ }
     await delay(300 + Math.random() * 500);
   }
