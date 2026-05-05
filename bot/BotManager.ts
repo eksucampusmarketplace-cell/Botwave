@@ -755,10 +755,23 @@ export function initializeBot() {
 
 /**
  * Sync sessions from DB — starts new bots and stops removed ones.
+ * Only one session pairs at a time per worker to avoid WhatsApp rate limiting.
  * Sessions are staggered by 2 seconds to avoid suspicious simultaneous connections.
  */
 export async function syncSessionsWithDb(isWorker?: boolean) {
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
+
+  // Only allow one session to be in the pairing phase at a time per worker.
+  // Multiple simultaneous WebSocket connections requesting pairing codes from
+  // the same IP can trigger WhatsApp rate limiting / rejection.
+  let pairingInProgress = false;
+  for (const [, bot] of activeBots) {
+    const status = bot.getStatus();
+    if (!status.isReady && (status.isQrPending || status.isPairingSent)) {
+      pairingInProgress = true;
+      break;
+    }
+  }
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
@@ -780,6 +793,14 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
+      // Queue pairing: only start one new session at a time while pairing.
+      // Already-active sessions are not affected; only new pairing attempts
+      // are serialized to avoid WhatsApp rejecting concurrent pairings.
+      if (pairingInProgress && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
+        console.log(`[SYNC] Session ${session.id.slice(0, 8)} queued — another session is already pairing`);
+        continue;
+      }
+
       // Check for conflicts — another instance may already be running this session
       const conflict = await detectConflict(session.id);
       if (conflict) {
@@ -828,6 +849,10 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
           });
       activeBots.set(session.id, newBot);
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
+
+      // Mark pairing in progress so subsequent sessions in this sync cycle
+      // are queued until this one finishes pairing.
+      pairingInProgress = true;
 
       // Stagger: wait 2 seconds between each session start
       await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
