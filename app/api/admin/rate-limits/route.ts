@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     // Verify admin token
     const adminToken = request.cookies.get('admin_token');
-    const tokenValidation = verifyAdminToken(adminToken?.value);
+    const tokenValidation = await verifyAdminToken(adminToken?.value);
     
     if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest) {
   try {
     // Verify admin token
     const adminToken = request.cookies.get('admin_token');
-    const tokenValidation = verifyAdminToken(adminToken?.value);
+    const tokenValidation = await verifyAdminToken(adminToken?.value);
     
     if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

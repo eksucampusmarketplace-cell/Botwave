@@ -37,7 +37,7 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      className="bg-dark border border-green/10 p-4 flex items-center justify-between gap-4 relative overflow-hidden"
+      className="bg-dark border border-green/10 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden"
     >
       <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-green/20" />
       <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green/20" />

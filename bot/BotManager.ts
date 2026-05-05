@@ -398,43 +398,37 @@ class EvolutionBot {
 
   /**
    * Try to reconnect to an existing Evolution API instance.
+   * Retries with backoff because the Evolution API may still be loading
+   * instances from its database after a concurrent restart.
    * Returns true if the instance was found and is now connected/connecting.
    */
   private async tryReconnectExisting(): Promise<boolean> {
-    console.log(`[EVO] Attempting to reconnect existing instance ${this.sessionId}...`);
+    const MAX_RECONNECT_RETRIES = 4;
+    const BASE_DELAY_MS = 3000;
 
-    // Check if the instance still exists on Evolution API
-    const state = await getInstanceStatus(this.sessionId);
-    console.log(`[EVO] Existing instance state for ${this.sessionId}: ${state}`);
+    for (let attempt = 1; attempt <= MAX_RECONNECT_RETRIES; attempt++) {
+      console.log(`[EVO] Reconnect attempt ${attempt}/${MAX_RECONNECT_RETRIES} for ${this.sessionId}...`);
 
-    if (state === 'unknown') {
-      console.log(`[EVO] Instance ${this.sessionId} does not exist on Evolution API — cannot reconnect`);
-      return false;
-    }
+      const state = await getInstanceStatus(this.sessionId);
+      console.log(`[EVO] Instance state for ${this.sessionId}: ${state}`);
 
-    // Ensure webhook is pointing to this deploy's URL
-    await setWebhook(this.sessionId);
-    trackInstance(this.sessionId);
+      if (state === 'unknown') {
+        if (attempt < MAX_RECONNECT_RETRIES) {
+          const waitMs = BASE_DELAY_MS * attempt;
+          console.log(`[EVO] Instance ${this.sessionId} not found yet — Evolution API may still be loading. Retrying in ${waitMs}ms...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+        console.log(`[EVO] Instance ${this.sessionId} not found after ${MAX_RECONNECT_RETRIES} attempts — cannot reconnect`);
+        return false;
+      }
 
-    if (state === 'open') {
-      // Already connected — just mark as active
-      console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
-      this.isReady = true;
-      this.isReconnecting = false;
-      this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
-      await updateSessionStatus(this.sessionId, 'active');
-      this.startPresenceLoop();
-      return true;
-    }
+      // Instance exists — ensure webhook points to this deploy's URL
+      await setWebhook(this.sessionId);
+      trackInstance(this.sessionId);
 
-    if (state === 'close' || state === 'connecting') {
-      // Instance exists but connection is closed — try to reconnect
-      console.log(`[EVO] Instance ${this.sessionId} is ${state} — attempting reconnect via connect endpoint`);
-      const connectState = await connectInstance(this.sessionId);
-      console.log(`[EVO] connectInstance result for ${this.sessionId}: ${connectState}`);
-
-      // If connect returned open, we're done
-      if (connectState === 'open') {
+      if (state === 'open') {
+        console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
         this.isReady = true;
         this.isReconnecting = false;
         this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
@@ -443,13 +437,36 @@ class EvolutionBot {
         return true;
       }
 
-      // If connecting, the poll loop will pick up the state change
-      if (connectState === 'connecting') {
-        return true;
+      if (state === 'close' || state === 'connecting') {
+        console.log(`[EVO] Instance ${this.sessionId} is ${state} — attempting reconnect via connect endpoint`);
+        const connectState = await connectInstance(this.sessionId);
+        console.log(`[EVO] connectInstance result for ${this.sessionId}: ${connectState}`);
+
+        if (connectState === 'open') {
+          this.isReady = true;
+          this.isReconnecting = false;
+          this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
+          await updateSessionStatus(this.sessionId, 'active');
+          this.startPresenceLoop();
+          return true;
+        }
+
+        if (connectState === 'connecting') {
+          console.log(`[EVO] Instance ${this.sessionId} is connecting — poll loop will track state`);
+          return true;
+        }
+
+        // Connection attempt didn't succeed — retry if attempts remain
+        if (attempt < MAX_RECONNECT_RETRIES) {
+          const waitMs = BASE_DELAY_MS * attempt;
+          console.log(`[EVO] Connect returned ${connectState} for ${this.sessionId} — retrying in ${waitMs}ms...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
       }
     }
 
-    console.log(`[EVO] Reconnect attempt failed for ${this.sessionId} — will fall through to fresh pairing`);
+    console.log(`[EVO] All reconnect attempts exhausted for ${this.sessionId} — will fall through to fresh pairing`);
     return false;
   }
 
@@ -461,14 +478,15 @@ class EvolutionBot {
     registerSessionStart(this.sessionId);
 
     try {
-      // If the session was previously active, try to reconnect to the
-      // existing Evolution API instance instead of deleting and recreating.
+      // If the session was previously active or mid-pairing, try to reconnect
+      // to the existing Evolution API instance instead of deleting and recreating.
       // This preserves the WhatsApp linked device across redeploys.
-      if (this.previousDbState === 'active') {
+      // For pairing_sent: the pairing may have completed on Evolution API's side
+      // even though Botwave restarted before seeing the connection.update webhook.
+      if (this.previousDbState === 'active' || this.previousDbState === 'pairing_sent') {
         const reconnected = await this.tryReconnectExisting();
         if (reconnected) {
           console.log(`[EVO] Successfully reconnected session ${this.sessionId} — skipping fresh pairing`);
-          // Start poll loop to monitor connection state
           this.startPollLoop();
           return;
         }
@@ -526,6 +544,7 @@ class EvolutionBot {
   /**
    * Poll Evolution API every 5 seconds to detect connection state changes.
    * Handles transitions between connecting, open, close, and unknown states.
+   * Tracks both pairing and reconnection lifecycles with proper timeouts.
    */
   private startPollLoop(): void {
     if (this.pollHandle) {
@@ -534,7 +553,9 @@ class EvolutionBot {
     }
 
     let pairingWaitStart = Date.now();
-    const PAIRING_TIMEOUT_MS = 180_000;
+    const PAIRING_TIMEOUT_MS = 180_000; // 3 min for pairing
+    const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
+    const reconnectStart = Date.now();
     let unknownStateCount = 0;
     const MAX_UNKNOWN_BEFORE_RECREATE = 3;
     let isRecreating = false;
@@ -555,11 +576,25 @@ class EvolutionBot {
 
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
           this.startPresenceLoop();
-        } else if (state === 'connecting' && this.isPairingSent) {
+        } else if (state === 'connecting') {
           unknownStateCount = 0;
+          // Waiting for connection — applies to both pairing and reconnect.
+          // Check for timeouts so we don't wait forever.
+          if (this.isPairingSent) {
+            // Pairing in progress — use pairing timeout
+          } else if (this.isReconnecting && Date.now() - reconnectStart > RECONNECT_TIMEOUT_MS) {
+            console.log(`[EVO] Reconnect timed out for ${this.sessionId} — stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
+            if (this.pollHandle) {
+              clearInterval(this.pollHandle);
+              this.pollHandle = null;
+            }
+          }
         } else if (state === 'close' || state === 'refused') {
           unknownStateCount = 0;
           if (this.isReady) {
+            // Was connected, now disconnected
             this.isReady = false;
             this.isPairingSent = false;
             await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -582,6 +617,17 @@ class EvolutionBot {
             console.log(`[EVO] Pairing timed out for ${this.sessionId}`);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.isPairingSent = false;
+            if (this.pollHandle) {
+              clearInterval(this.pollHandle);
+              this.pollHandle = null;
+            }
+          } else if (this.isReconnecting && !this.isPairingSent) {
+            // Reconnect attempt ended with close/refused — the session is
+            // genuinely disconnected. Update DB immediately to avoid stale
+            // "active" state in the dashboard.
+            console.log(`[EVO] Reconnect ended with ${state} for ${this.sessionId} — marking needs_reauth`);
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
             if (this.pollHandle) {
               clearInterval(this.pollHandle);
               this.pollHandle = null;
@@ -748,14 +794,22 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
       }
 
       // If the session is in pairing_sent but we have no active bot for it,
-      // it means the process restarted mid-pairing. The old pairing code is
-      // dead (WebSocket gone), so reset to qr_pending with fresh auth to
-      // avoid a 401 from WhatsApp seeing two connections with the same creds.
+      // the process restarted mid-pairing.
       if (session.state === 'pairing_sent') {
-        console.log(`[SYNC] Session ${session.id} is pairing_sent but no active bot — process likely restarted. Resetting to qr_pending with fresh auth.`);
-        await clearAuthState(session.id);
-        await updateSessionStatus(session.id, 'qr_pending');
-        session.state = 'qr_pending';
+        if (USE_EVOLUTION) {
+          // In Evolution API mode, the pairing may have completed on the
+          // Evolution API side. Pass the state through so EvolutionBot can
+          // check the actual instance status before deciding to re-pair.
+          console.log(`[SYNC] Session ${session.id} is pairing_sent (Evolution mode) — will check instance status before re-pairing`);
+        } else {
+          // In direct Baileys mode, the old pairing code is dead (WebSocket
+          // gone). Reset to qr_pending with fresh auth to avoid a 401 from
+          // WhatsApp seeing two connections with the same creds.
+          console.log(`[SYNC] Session ${session.id} is pairing_sent but no active bot — process likely restarted. Resetting to qr_pending with fresh auth.`);
+          await clearAuthState(session.id);
+          await updateSessionStatus(session.id, 'qr_pending');
+          session.state = 'qr_pending';
+        }
       }
 
       console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);

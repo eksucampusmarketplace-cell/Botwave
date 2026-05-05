@@ -91,20 +91,25 @@ export async function POST(request: NextRequest) {
         // If state is qr_pending/pairing_sent/connecting, leave it alone —
         // the BotManager sync loop handles reconnection during pairing.
       } else if (state === 'connecting') {
-        // Only update to qr_pending if not already in a pairing state
+        // Only update to qr_pending if not already in a pairing or active state.
+        // "active" is preserved because the bot may be auto-reconnecting after a
+        // redeploy — changing to qr_pending would trigger the sync loop to
+        // create a duplicate bot and force a fresh pairing code.
         const { data: current } = await supabase
           .from('bot_sessions')
           .select('state')
           .eq('id', sessionId)
           .single();
 
-        if (current?.state !== 'pairing_sent') {
+        if (current?.state !== 'pairing_sent' && current?.state !== 'active') {
           await supabase.from('bot_sessions')
             .update({
               state: 'qr_pending',
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
+        } else {
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting — preserving state (reconnect in progress)`);
         }
       }
 

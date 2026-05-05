@@ -219,8 +219,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-8">
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -330,7 +330,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-green/20 p-8 max-w-md w-full relative"
+            className="bg-card border border-green/20 p-5 sm:p-8 max-w-md w-full relative"
           >
             <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
             <form onSubmit={handleAddSession} className="space-y-4">

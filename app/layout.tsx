@@ -7,7 +7,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'BotWave — WhatsApp Automation',
+  title: 'BotWave',
   description: 'Next-gen WhatsApp bot automation service. Connect your number and automate with AI.',
   keywords: ['whatsapp', 'bot', 'automation', 'ai', 'sticker', 'download'],
   authors: [{ name: 'Decisive Analyst' }],

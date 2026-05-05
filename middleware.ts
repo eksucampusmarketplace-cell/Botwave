@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
   // This makes the admin panel invisible to unauthorized users
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
     const adminToken = request.cookies.get('admin_token');
-    const tokenValidation = verifyAdminToken(adminToken?.value);
+    const tokenValidation = await verifyAdminToken(adminToken?.value);
     
     if (!tokenValidation) {
       // Return 404 instead of 401 to hide the existence of admin panel
