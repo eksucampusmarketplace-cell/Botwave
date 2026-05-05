@@ -39,6 +39,20 @@ async function processQueue() {
   processing = false;
 }
 
+/**
+ * Cancel all pending (queued but not yet processing) link jobs for a session.
+ * In-flight jobs (already calling requestPairingCode) cannot be cancelled here;
+ * the caller must guard against stale results via a socket/state check.
+ */
+export function cancelPendingLinks(sessionId: string): void {
+  for (let i = queue.length - 1; i >= 0; i--) {
+    if (queue[i].sessionId === sessionId) {
+      const job = queue.splice(i, 1)[0];
+      job.reject(new Error('SESSION_TERMINATED'));
+    }
+  }
+}
+
 export function getQueuePosition(sessionId: string): { position: number; estimatedWaitMinutes: number } | null {
   const pos = queue.findIndex(j => j.sessionId === sessionId);
   if (pos === -1) return null;

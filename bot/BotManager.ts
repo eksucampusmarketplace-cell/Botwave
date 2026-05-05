@@ -15,7 +15,7 @@ import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
-import { queueLink } from './linkQueue';
+import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -232,6 +232,14 @@ export class BotWaveBot {
                 return this.socket.requestPairingCode(phone);
               });
               console.log(`[${this.sessionId}] <<< requestPairingCode returned: "${code}"`);
+              // Guard: if a terminal handler (428, loggedOut, max-retries) ran
+              // while this request was in-flight, the session is already in
+              // needs_reauth. Do NOT overwrite that state with pairing_sent.
+              // pairingStartedAt === -1 is the sentinel for "terminated".
+              if (this.pairingStartedAt === -1 || !this.socket) {
+                console.log(`[${this.sessionId}] Pairing code "${code}" received but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) — discarding`);
+                return;
+              }
               await updateSessionPairingCode(this.sessionId, code);
               await updateSessionStatus(this.sessionId, 'pairing_sent');
               this.isPairingSent = true;
@@ -258,8 +266,8 @@ export class BotWaveBot {
           // moved the session to needs_reauth and cleared the socket, do NOT
           // overwrite that state. The timer was scheduled before the error
           // occurred and is now stale.
-          if (this.pairingStartedAt === 0 && !this.socket) {
-            console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=0, socket=null) — skipping restart`);
+          if (this.pairingStartedAt <= 0 || !this.socket) {
+            console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) — skipping restart`);
             return;
           }
           if (!this.isReady && this.qrCode === qr) {
@@ -293,7 +301,12 @@ export class BotWaveBot {
 
         // Baileys can fire duplicate close events (e.g. stream error + websocket close).
         // If we already handled a close and are mid-reconnect with no active socket,
-        // ignore the stale event to prevent overwriting the DB state.
+        // or the session was already terminated (pairingStartedAt === -1), ignore
+        // the stale event to prevent overwriting the DB state.
+        if (this.pairingStartedAt === -1) {
+          console.log(`Session ${this.sessionId}: ignoring close event — session already terminated`);
+          return;
+        }
         if (this.isReconnecting && !this.socket) {
           console.log(`Session ${this.sessionId}: ignoring duplicate close event (already reconnecting)`);
           return;
@@ -308,6 +321,7 @@ export class BotWaveBot {
         if (statusCode === 401) {
           this.isPairingSent = false;
           this.socket = null;
+          cancelPendingLinks(this.sessionId);
 
           console.log(`[${this.sessionId}] 401 auth failure on worker ${this.workerUrl ?? 'main'}. Clearing stale auth and retrying fresh pairing...`);
           await clearAuthState(this.sessionId);
@@ -367,6 +381,9 @@ export class BotWaveBot {
         if (statusCode === 428 && !this.isReady) {
           console.log(`[ERR_428] [${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
           logPairingEvent(this.sessionId, '428_received', this.workerUrl, 428).catch(() => {});
+          // Cancel queued pairing code requests so they don't resolve after
+          // cleanup and overwrite needs_reauth back to pairing_sent.
+          cancelPendingLinks(this.sessionId);
           // Cancel the QR expiry timer to prevent it from overwriting
           // needs_reauth back to qr_pending after this handler finishes.
           if (this.reconnectTimeout) {
@@ -374,7 +391,7 @@ export class BotWaveBot {
             this.reconnectTimeout = null;
           }
           this.isReconnecting = false;
-          this.pairingStartedAt = 0;
+          this.pairingStartedAt = -1;
           this.isPairingSent = false;
           this.socket = null;
           await clearAuthState(this.sessionId);
@@ -386,11 +403,14 @@ export class BotWaveBot {
 
         if (!shouldReconnect) {
           console.log(`[${this.sessionId}] Logged out by WhatsApp (statusCode=${statusCode}). Clearing auth, releasing lock, setting needs_reauth.`);
+          cancelPendingLinks(this.sessionId);
           if (this.reconnectTimeout) {
             clearTimeout(this.reconnectTimeout);
             this.reconnectTimeout = null;
           }
           this.isReconnecting = false;
+          this.pairingStartedAt = -1;
+          this.socket = null;
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -411,11 +431,13 @@ export class BotWaveBot {
           // Hard limit: max 3 reconnect attempts
           if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Clearing auth, releasing lock, stopping.`);
+            cancelPendingLinks(this.sessionId);
             if (this.reconnectTimeout) {
               clearTimeout(this.reconnectTimeout);
               this.reconnectTimeout = null;
             }
             this.isReconnecting = false;
+            this.pairingStartedAt = -1;
             await clearAuthState(this.sessionId);
             await releaseLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -487,6 +509,8 @@ export class BotWaveBot {
 
   async stop(): Promise<void> {
     stopPresenceSimulation(this.sessionId);
+    cancelPendingLinks(this.sessionId);
+    this.pairingStartedAt = -1;
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
