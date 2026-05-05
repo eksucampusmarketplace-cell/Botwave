@@ -398,7 +398,7 @@ export async function getAutoReplies(sessionId: string) {
     .from('auto_replies')
     .select('*')
     .eq('session_id', sessionId)
-    .eq('is_active', true);
+    .eq('enabled', true);
 
   if (error) {
     if (error.code !== 'PGRST205' && error.code !== 'PGRST116') {
