@@ -409,6 +409,22 @@ function ensureKeepAlive(): void {
   }, KEEPALIVE_INTERVAL);
 }
 
+// Fetch group metadata (info + participants) via Evolution API
+export async function fetchGroupInfo(instanceName: string, groupJid: string) {
+  const jid = groupJid.includes('@') ? groupJid : `${groupJid}@g.us`;
+  try {
+    const res = await apiFetch(`${BASE}/group/findGroupInfos/${instanceName}?groupJid=${jid}`, {
+      method: 'GET',
+      headers,
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error(`[EVO-CLIENT] fetchGroupInfo ${instanceName} ${jid} failed:`, err);
+    return null;
+  }
+}
+
 // Fetch instance info (includes user JID)
 export async function fetchInstanceInfo(instanceName: string) {
   try {
