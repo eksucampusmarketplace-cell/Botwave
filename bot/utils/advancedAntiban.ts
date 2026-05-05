@@ -5,110 +5,15 @@
  * undetectable by WhatsApp's automated systems. These are the techniques
  * that separate a bot that lasts months from one that gets banned in a week.
  *
- * 1. Session Warmup — new sessions start slow, gradually increase activity
- * 2. Daily Message Cap — prevents exceeding WhatsApp's invisible thresholds
- * 3. Read-But-Skip — sometimes reads but doesn't respond (like a real person)
- * 4. Group Cooldown — per-group rate limiting to avoid dominating conversations
- * 5. Media Fingerprint Jitter — randomize sticker/image bytes for uniqueness
- * 6. Presence Simulation — randomly toggle online/offline throughout the day
- * 7. Message Length Jitter — invisible byte-level variations in every message
- * 8. Activity Hours — quiet hours where bot responds minimally
+ * 1. Read-But-Skip — sometimes reads but doesn't respond (like a real person)
+ * 2. Group Cooldown — per-group rate limiting to avoid dominating conversations
+ * 3. Media Fingerprint Jitter — randomize sticker/image bytes for uniqueness
+ * 4. Presence Simulation — randomly toggle online/offline throughout the day
+ * 5. Message Length Jitter — invisible byte-level variations in every message
+ * 6. Activity Hours — quiet hours where bot responds minimally
  */
 
 import { delay } from '../../lib/utils';
-
-// ─── Session Warmup ───────────────────────────────────────────────────────────
-/**
- * New sessions are suspicious to WhatsApp. A bot that immediately starts
- * sending 100+ messages on day 1 gets flagged. This system gradually
- * increases the allowed message count over the first 7 days:
- *
- *  Day 0-1: 50 messages max
- *  Day 1-2: 100 messages max
- *  Day 2-3: 200 messages max
- *  Day 3-5: 350 messages max
- *  Day 5-7: 500 messages max
- *  Day 7+:  500 messages max (full capacity)
- */
-
-const WARMUP_SCHEDULE: { maxDays: number; maxMessages: number }[] = [
-  { maxDays: 1, maxMessages: 50 },
-  { maxDays: 2, maxMessages: 100 },
-  { maxDays: 3, maxMessages: 200 },
-  { maxDays: 5, maxMessages: 350 },
-  { maxDays: 7, maxMessages: 500 },
-  { maxDays: Infinity, maxMessages: 500 },
-];
-
-// Track session creation timestamps and daily message counts
-const sessionCreatedAt: Map<string, number> = new Map();
-const dailyMessageCount: Map<string, { date: string; count: number }> = new Map();
-
-export function registerSessionStart(sessionId: string, createdAt?: Date): void {
-  sessionCreatedAt.set(sessionId, (createdAt || new Date()).getTime());
-}
-
-function getSessionAgeDays(sessionId: string): number {
-  const created = sessionCreatedAt.get(sessionId);
-  if (!created) return 30; // Unknown sessions treated as mature
-  return (Date.now() - created) / (1000 * 60 * 60 * 24);
-}
-
-function getWarmupLimit(sessionId: string): number {
-  const ageDays = getSessionAgeDays(sessionId);
-  for (const tier of WARMUP_SCHEDULE) {
-    if (ageDays < tier.maxDays) return tier.maxMessages;
-  }
-  return WARMUP_SCHEDULE[WARMUP_SCHEDULE.length - 1].maxMessages;
-}
-
-// ─── Daily Message Cap ────────────────────────────────────────────────────────
-/**
- * Hard daily limit per session. Combined with warmup, this ensures
- * no session ever sends an unnatural volume of messages.
- */
-
-const ABSOLUTE_DAILY_CAP = 500;
-
-function getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-}
-
-function getDailyCount(sessionId: string): number {
-  const entry = dailyMessageCount.get(sessionId);
-  const today = getTodayKey();
-  if (!entry || entry.date !== today) return 0;
-  return entry.count;
-}
-
-function incrementDailyCount(sessionId: string): void {
-  const today = getTodayKey();
-  const entry = dailyMessageCount.get(sessionId);
-  if (!entry || entry.date !== today) {
-    dailyMessageCount.set(sessionId, { date: today, count: 1 });
-  } else {
-    entry.count++;
-  }
-}
-
-/**
- * Check if a session is allowed to send another message today.
- * Combines warmup limit with absolute daily cap.
- * Returns true if the message should be BLOCKED.
- */
-export function isDailyCapReached(sessionId: string): boolean {
-  const count = getDailyCount(sessionId);
-  const warmupLimit = getWarmupLimit(sessionId);
-  const effectiveLimit = Math.min(warmupLimit, ABSOLUTE_DAILY_CAP);
-  return count >= effectiveLimit;
-}
-
-/**
- * Call this after every message is sent to track the count.
- */
-export function trackMessageSent(sessionId: string): void {
-  incrementDailyCount(sessionId);
-}
 
 // ─── Read-But-Skip (Ghost Read) ───────────────────────────────────────────────
 /**
