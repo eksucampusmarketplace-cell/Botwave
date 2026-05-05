@@ -16,7 +16,8 @@ import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from '.
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
 import { queueLink } from './linkQueue';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { HttpsProxyAgent } = require('https-proxy-agent');
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -36,7 +37,7 @@ const PROXY_LIST = (process.env.PROXY_LIST || '')
   .filter(Boolean);
 let baileysProxyCounter = 0;
 
-function getNextBaileysProxy(): HttpsProxyAgent<string> | undefined {
+function getNextBaileysProxy(): any | undefined {
   if (PROXY_LIST.length === 0) return undefined;
   const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
   baileysProxyCounter++;
