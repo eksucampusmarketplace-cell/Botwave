@@ -9,6 +9,18 @@ export const WORKER_URLS = (process.env.WORKER_URLS || '')
 
 let counter = 0;
 
+// Log worker config at startup
+if (IS_WORKER) {
+  console.log(`[WORKER-CONFIG] Running as WORKER | SELF_URL=${SELF_URL}`);
+} else if (WORKER_URLS.length > 0) {
+  console.log(`[WORKER-CONFIG] Running as MAIN | ${WORKER_URLS.length} workers configured:`);
+  WORKER_URLS.forEach((url, i) => {
+    console.log(`[WORKER-CONFIG]   Worker #${i + 1}: ${url}`);
+  });
+} else {
+  console.log('[WORKER-CONFIG] Running as STANDALONE (no workers configured)');
+}
+
 const HEALTH_CHECK_TIMEOUT = 5_000;
 
 /**

@@ -932,7 +932,7 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
         }
       }
 
-      console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker_url: ${session.worker_url}`);
+      console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker: ${session.worker_url || 'main'} | will_pair: ${session.state === 'qr_pending' || session.state === 'pairing_sent'}`);
       const newBot = USE_EVOLUTION
         ? new EvolutionBot({
             sessionId: session.id,
