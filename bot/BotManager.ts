@@ -17,7 +17,14 @@ import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
 import { queueLink } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { HttpsProxyAgent } = require('https-proxy-agent');
+let HttpsProxyAgent: any;
+try {
+  HttpsProxyAgent = require('https-proxy-agent').HttpsProxyAgent;
+  console.log('[PROXY] https-proxy-agent loaded successfully');
+} catch (err) {
+  console.error('[PROXY] FAILED to load https-proxy-agent:', err);
+  HttpsProxyAgent = null;
+}
 import P from 'pino';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -37,12 +44,26 @@ const PROXY_LIST = (process.env.PROXY_LIST || '')
   .filter(Boolean);
 let baileysProxyCounter = 0;
 
+// Log proxy pool status at startup
+if (PROXY_LIST.length > 0) {
+  console.log(`[PROXY] Baileys proxy pool: ${PROXY_LIST.length} proxies loaded`);
+  PROXY_LIST.forEach((p, i) => {
+    const parts = p.split(':');
+    console.log(`[PROXY]   #${i + 1}: ${parts[0]}:${parts[1]} (user: ${parts[2] || 'none'})`);
+  });
+} else {
+  console.log('[PROXY] No PROXY_LIST env var — Baileys will connect with server IP directly');
+}
+
 function getNextBaileysProxy(): any | undefined {
-  if (PROXY_LIST.length === 0) return undefined;
+  if (PROXY_LIST.length === 0 || !HttpsProxyAgent) return undefined;
   const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
   baileysProxyCounter++;
   const parts = entry.split(':');
-  if (parts.length < 4) return undefined;
+  if (parts.length < 4) {
+    console.warn(`[PROXY] Invalid proxy entry (expected host:port:user:pass): ${entry}`);
+    return undefined;
+  }
   const [host, port, user, pass] = parts;
   const proxyUrl = `http://${user}:${pass}@${host}:${port}`;
   const proxyIndex = ((baileysProxyCounter - 1) % PROXY_LIST.length) + 1;
