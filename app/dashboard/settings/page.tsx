@@ -8,6 +8,10 @@ import { createClient } from '@/lib/supabase/client';
 export default function SettingsPage() {
   const [groqKey, setGroqKey] = useState('');
   const [skipProbability, setSkipProbability] = useState(15);
+  const [botName, setBotName] = useState('BotWave');
+  const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [commandPrefix, setCommandPrefix] = useState('!');
+  const [timezone, setTimezone] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,10 @@ export default function SettingsPage() {
         if (data.skipProbability !== undefined) {
           setSkipProbability(Math.round(data.skipProbability * 100));
         }
+        if (data.botName) setBotName(data.botName);
+        if (data.welcomeMessage) setWelcomeMessage(data.welcomeMessage);
+        if (data.commandPrefix) setCommandPrefix(data.commandPrefix);
+        if (data.timezone) setTimezone(data.timezone);
       } catch {
         // ignore
       }
@@ -52,6 +60,10 @@ export default function SettingsPage() {
         body: JSON.stringify({
           groqApiKey: groqKey,
           skipProbability: skipProbability / 100,
+          botName,
+          welcomeMessage,
+          commandPrefix,
+          timezone,
         }),
       });
 
@@ -62,8 +74,8 @@ export default function SettingsPage() {
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSaving(false);
     }
@@ -95,8 +107,8 @@ export default function SettingsPage() {
 
       alert('All sessions have been deleted successfully.');
       window.location.reload();
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -136,6 +148,80 @@ export default function SettingsPage() {
                     className="w-full bg-dark/50 border border-green/10 p-3 text-white font-mono text-sm"
                     placeholder="User"
                   />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">BOT CUSTOMIZATION</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">BOT NAME</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Customize how your bot identifies itself in responses.
+                  </p>
+                  <input
+                    type="text"
+                    value={botName}
+                    onChange={(e) => setBotName(e.target.value)}
+                    className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
+                    placeholder="BotWave"
+                    maxLength={30}
+                  />
+                </div>
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">WELCOME MESSAGE TEMPLATE</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Message sent when a new member joins a group. Use {'{name}'} for the member&apos;s name and {'{group}'} for the group name.
+                  </p>
+                  <textarea
+                    value={welcomeMessage}
+                    onChange={(e) => setWelcomeMessage(e.target.value)}
+                    className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors min-h-[80px] resize-y"
+                    placeholder="Welcome {name} to {group}! Type !help to see what I can do."
+                    maxLength={500}
+                  />
+                </div>
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">COMMAND PREFIX</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Character used to trigger bot commands. Default is ! (e.g. !help, !sticker).
+                  </p>
+                  <input
+                    type="text"
+                    value={commandPrefix}
+                    onChange={(e) => setCommandPrefix(e.target.value.slice(0, 3))}
+                    className="w-32 bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
+                    placeholder="!"
+                    maxLength={3}
+                  />
+                </div>
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">TIMEZONE</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Used for activity hours and scheduled messages.
+                  </p>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none"
+                  >
+                    <option value="">Auto-detect</option>
+                    <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+                    <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+                    <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
+                    <option value="America/New_York">America/New York (EST)</option>
+                    <option value="America/Chicago">America/Chicago (CST)</option>
+                    <option value="America/Los_Angeles">America/Los Angeles (PST)</option>
+                    <option value="America/Sao_Paulo">America/Sao Paulo (BRT)</option>
+                    <option value="Europe/London">Europe/London (GMT)</option>
+                    <option value="Europe/Paris">Europe/Paris (CET)</option>
+                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                    <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                    <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                  </select>
                 </div>
               </div>
             </div>

@@ -11,6 +11,7 @@ import BotStatus from '@/components/ui/BotStatus';
 import { createClient } from '@/lib/supabase/client';
 import ParticleBackground from '@/components/ui/ParticleBackground';
 import OnboardingTour from '@/components/ui/OnboardingTour';
+import SessionAlerts from '@/components/ui/SessionAlerts';
 import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
 
 const defaultFeatures = [
@@ -212,6 +213,7 @@ export default function DashboardPage() {
       <ParticleBackground />
       <DashboardNav />
       <OnboardingTour />
+      <SessionAlerts />
       <div className="pt-24 px-4 md:px-8 max-w-7xl mx-auto relative z-10 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
