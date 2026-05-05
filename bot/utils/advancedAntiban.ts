@@ -23,21 +23,21 @@ import { delay } from '../../lib/utils';
  * sending 100+ messages on day 1 gets flagged. This system gradually
  * increases the allowed message count over the first 7 days:
  *
- *  Day 0-1: 15 messages max
- *  Day 1-2: 30 messages max
- *  Day 2-3: 50 messages max
- *  Day 3-5: 80 messages max
- *  Day 5-7: 120 messages max
- *  Day 7+:  200 messages max (full capacity)
+ *  Day 0-1: 50 messages max
+ *  Day 1-2: 100 messages max
+ *  Day 2-3: 200 messages max
+ *  Day 3-5: 350 messages max
+ *  Day 5-7: 500 messages max
+ *  Day 7+:  500 messages max (full capacity)
  */
 
 const WARMUP_SCHEDULE: { maxDays: number; maxMessages: number }[] = [
-  { maxDays: 1, maxMessages: 15 },
-  { maxDays: 2, maxMessages: 30 },
-  { maxDays: 3, maxMessages: 50 },
-  { maxDays: 5, maxMessages: 80 },
-  { maxDays: 7, maxMessages: 120 },
-  { maxDays: Infinity, maxMessages: 200 },
+  { maxDays: 1, maxMessages: 50 },
+  { maxDays: 2, maxMessages: 100 },
+  { maxDays: 3, maxMessages: 200 },
+  { maxDays: 5, maxMessages: 350 },
+  { maxDays: 7, maxMessages: 500 },
+  { maxDays: Infinity, maxMessages: 500 },
 ];
 
 // Track session creation timestamps and daily message counts
@@ -68,7 +68,7 @@ function getWarmupLimit(sessionId: string): number {
  * no session ever sends an unnatural volume of messages.
  */
 
-const ABSOLUTE_DAILY_CAP = 200;
+const ABSOLUTE_DAILY_CAP = 500;
 
 function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
