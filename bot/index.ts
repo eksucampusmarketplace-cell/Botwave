@@ -124,6 +124,16 @@ async function start() {
   }
 }
 
+// Prevent Baileys internal errors (e.g. 428 inside relayMessage/sendRetryRequest)
+// from crashing the entire Node process. These are non-fatal — the connection
+// close handler in BotManager will handle reconnection/cleanup.
+process.on('uncaughtException', (err) => {
+  console.error('[BOT] Uncaught exception (process kept alive):', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[BOT] Unhandled rejection (process kept alive):', reason);
+});
+
 console.log('[BOT] Bot process starting...');
 start().catch((error) => {
   console.error('[BOT] FATAL: Bot startup failed:', error);
