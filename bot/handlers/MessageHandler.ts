@@ -431,19 +431,15 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    // Owner-only command restriction:
-    // Only the bot owner (the WhatsApp account linked to this session) can use ! commands.
-    // Other users' command messages are silently ignored (they still get AFK/auto-replies above).
-    const ownerJid = (sock as any).user?.id;
-    const isOwner = fromMe || (ownerJid && normalizeJid(senderJid) === normalizeJid(ownerJid));
-
-    if (isCommand && !isOwner) {
-      // Non-owner tried to use a command — silently ignore
-      // They already got AFK auto-reply above if applicable
-      return;
-    }
-
     if (isCommand && !isUserRateLimited(senderJid)) {
+      // Delete the command message so group members only see the bot's response.
+      // This works if bot is group admin or the message is fromMe.
+      // Fail silently if bot lacks permission.
+      if (!fromMe) {
+        try {
+          await sock.sendMessage(chatJid, { delete: message.key });
+        } catch { /* Not admin or deletion not supported — proceed normally */ }
+      }
       await processCommand(context, sock);
     } else if (isCommand) {
       console.log(`User rate limited: ${senderJid}`);
