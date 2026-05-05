@@ -131,15 +131,15 @@ start().catch((error) => {
 });
 
 process.on('SIGINT', async () => {
-  console.log('[BOT] Received SIGINT — shutting down gracefully...');
+  console.log('[BOT] Received SIGINT — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
-  await bot.stop();
+  await bot.stop(true);
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('[BOT] Received SIGTERM — shutting down gracefully...');
+  console.log('[BOT] Received SIGTERM — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
-  await bot.stop();
+  await bot.stop(true);
   process.exit(0);
 });

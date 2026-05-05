@@ -201,6 +201,45 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
   }
 }
 
+// Restart an existing instance (reconnects without deleting auth state).
+// Uses the Evolution API restart endpoint which closes the current WebSocket
+// and re-establishes the connection using persisted auth credentials.
+export async function restartInstance(instanceName: string): Promise<boolean> {
+  console.log(`[EVO-CLIENT] restartInstance: ${instanceName}`);
+  try {
+    const res = await apiFetch(`${BASE}/instance/restart`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ instanceName }),
+    });
+    const ok = res.ok;
+    console.log(`[EVO-CLIENT] restartInstance ${instanceName}: status=${res.status} ok=${ok}`);
+    return ok;
+  } catch (err) {
+    console.warn(`[EVO-CLIENT] restartInstance ${instanceName} failed:`, err);
+    return false;
+  }
+}
+
+// Connect to an existing instance without requesting a new pairing code.
+// This triggers Baileys to reconnect using saved auth credentials.
+export async function connectInstance(instanceName: string): Promise<string> {
+  console.log(`[EVO-CLIENT] connectInstance: ${instanceName}`);
+  try {
+    const res = await apiFetch(`${BASE}/instance/connect/${instanceName}`, {
+      method: 'GET',
+      headers,
+    });
+    const data: any = await res.json();
+    const state = data?.state || data?.instance?.state || 'unknown';
+    console.log(`[EVO-CLIENT] connectInstance ${instanceName}: status=${res.status} state=${state}`);
+    return state;
+  } catch (err) {
+    console.warn(`[EVO-CLIENT] connectInstance ${instanceName} failed:`, err);
+    return 'unknown';
+  }
+}
+
 // Delete an instance (used when session is removed)
 export async function deleteInstance(instanceName: string) {
   console.log(`[EVO-CLIENT] deleteInstance: ${instanceName}`);
