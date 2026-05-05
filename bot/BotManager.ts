@@ -44,6 +44,7 @@ export class BotWaveBot {
   private isReconnecting: boolean = false;
   private isPairingSent: boolean = false;
   private workerUrl: string | null = null;
+  private pairingStartedAt: number = 0;
 
   public getSocket(): any { return this.isReady ? this.socket : null; }
 
@@ -149,6 +150,7 @@ export class BotWaveBot {
               await updateSessionPairingCode(this.sessionId, code);
               await updateSessionStatus(this.sessionId, 'pairing_sent');
               this.isPairingSent = true;
+              this.pairingStartedAt = Date.now();
               pairingCodeRequested = true;
               console.log(`[${this.sessionId}] Pairing code saved to DB!`);
             } catch (err: any) {
@@ -249,6 +251,22 @@ export class BotWaveBot {
               }
             }
           }
+          return;
+        }
+
+        // 428 = "Connection Terminated by Server" during pairing.
+        // WhatsApp sends this when multiple unregistered WebSocket connections
+        // open from the same IP. Reconnecting is harmful: each attempt creates
+        // a NEW pairing code (invalidating the one the user entered) and opens
+        // yet another WebSocket that will also be terminated.
+        // Fail fast so the user can retry from a clean state.
+        if (statusCode === 428 && !this.isReady) {
+          console.log(`[${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
+          this.isReconnecting = false;
+          this.socket = null;
+          await clearAuthState(this.sessionId);
+          await releaseLock(this.sessionId);
+          await updateSessionStatus(this.sessionId, 'needs_reauth');
           return;
         }
 
@@ -362,6 +380,7 @@ export class BotWaveBot {
       isReconnecting: this.isReconnecting,
       isQrPending: !!this.qrCode,
       isPairingSent: this.isPairingSent,
+      pairingStartedAt: this.pairingStartedAt,
     };
   }
 }
@@ -378,6 +397,7 @@ class EvolutionBot {
   private isReady: boolean = false;
   private isPairingSent: boolean = false;
   private isReconnecting: boolean = false;
+  private pairingStartedAt: number = 0;
   private pollHandle: NodeJS.Timeout | null = null;
   private presenceHandle: NodeJS.Timeout | null = null;
   private socketAdapter: EvolutionSocketAdapter | null = null;
@@ -519,6 +539,7 @@ class EvolutionBot {
         await updateSessionPairingCode(this.sessionId, code);
         await updateSessionStatus(this.sessionId, 'pairing_sent');
         this.isPairingSent = true;
+        this.pairingStartedAt = Date.now();
         this.isReconnecting = false;
       } else {
         console.warn(`[EVO] No pairing code returned for ${this.sessionId}`);
@@ -645,6 +666,7 @@ class EvolutionBot {
                 await updateSessionPairingCode(this.sessionId, freshCode);
                 await updateSessionStatus(this.sessionId, 'pairing_sent');
                 this.isPairingSent = true;
+                this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
                 console.log(`[EVO] Instance recreated for ${this.sessionId}, new code: ${freshCode}`);
               } else {
@@ -714,6 +736,7 @@ class EvolutionBot {
       isReconnecting: this.isReconnecting,
       isQrPending: false,
       isPairingSent: this.isPairingSent,
+      pairingStartedAt: this.pairingStartedAt,
     };
   }
 }
@@ -755,10 +778,29 @@ export function initializeBot() {
 
 /**
  * Sync sessions from DB — starts new bots and stops removed ones.
- * Sessions are staggered by 2 seconds to avoid suspicious simultaneous connections.
+ * Only one session pairs at a time per worker to avoid WhatsApp 428
+ * ("Connection Terminated by Server") when multiple unregistered
+ * WebSocket connections open from the same IP simultaneously.
+ * Sessions already pairing for >3 minutes are considered stale and
+ * don't block new pairings.
  */
 export async function syncSessionsWithDb(isWorker?: boolean) {
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
+
+  // Check if any in-memory bot is actively pairing (started <3 min ago).
+  // Only checks bots this worker process owns — not DB state from other workers.
+  const PAIRING_TIMEOUT_MS = 180_000; // 3 min (matches pairing code expiry)
+  let pairingInProgress = false;
+  for (const [, bot] of activeBots) {
+    const status = bot.getStatus();
+    if (!status.isReady && (status.isQrPending || status.isPairingSent)) {
+      const elapsed = Date.now() - (status.pairingStartedAt || 0);
+      if (status.pairingStartedAt > 0 && elapsed < PAIRING_TIMEOUT_MS) {
+        pairingInProgress = true;
+        break;
+      }
+    }
+  }
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
@@ -780,6 +822,14 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
+      // Queue pairing: skip starting new sessions while another is actively
+      // pairing on this worker. The session stays in the DB and will be
+      // picked up on the next sync cycle (5s) once the current pairing
+      // completes or its 3-minute timeout expires.
+      if (pairingInProgress && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
+        console.log(`[SYNC] Session ${session.id.slice(0, 8)} queued — another session is pairing on this worker`);
+        continue;
+      }
       // Check for conflicts — another instance may already be running this session
       const conflict = await detectConflict(session.id);
       if (conflict) {
@@ -828,6 +878,11 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
           });
       activeBots.set(session.id, newBot);
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
+
+      // Mark pairing in progress so subsequent sessions in this cycle are queued
+      if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
+        pairingInProgress = true;
+      }
 
       // Stagger: wait 2 seconds between each session start
       await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
