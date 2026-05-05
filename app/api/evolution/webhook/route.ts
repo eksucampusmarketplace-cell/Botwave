@@ -1,6 +1,8 @@
 // app/api/evolution/webhook/route.ts
 // Receives webhooks from Evolution API and routes them through the existing
 // MessageHandler + anti-ban pipeline.
+// Includes a retry queue: if message processing fails, the webhook payload is
+// enqueued for later retry with exponential backoff.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -293,6 +295,12 @@ export async function POST(request: NextRequest) {
               await handleMessage(msg, sock, queue);
             } catch (err) {
               console.error(`[EVO-WEBHOOK] Error handling message for ${sessionId}:`, err);
+              // Enqueue for retry so the message isn't lost
+              try {
+                const { enqueueWebhookRetry, logHealthEvent } = await import('@/bot/database');
+                await enqueueWebhookRetry(session.id, 'messages.upsert', msg, String(err));
+                await logHealthEvent(session.id, 'webhook_retry', `Message processing failed: ${String(err).slice(0, 200)}`);
+              } catch { /* retry enqueue itself is non-critical */ }
             }
           }
         })();

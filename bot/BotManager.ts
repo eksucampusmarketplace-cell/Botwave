@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { MessageQueue } from './utils/MessageQueue';
@@ -411,6 +411,7 @@ export class BotWaveBot {
           await clearAuthState(this.sessionId);
           await releaseLock(this.sessionId);
           await updateSessionStatus(this.sessionId, 'needs_reauth');
+          logHealthEvent(this.sessionId, 'disconnected', `Logged out (statusCode=${statusCode})`).catch(() => {});
 
           const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
           if (appUrl) {
@@ -448,6 +449,7 @@ export class BotWaveBot {
           }
 
           this.isReconnecting = true;
+          logHealthEvent(this.sessionId, 'reconnecting', `Attempt ${this.reconnectAttempts + 1}, statusCode=${statusCode}`).catch(() => {});
           // Keep state as qr_pending during pairing restart (515)
           // so syncSessionsWithDb doesn't kill the bot mid-handshake
           if (statusCode !== 515) {
@@ -481,6 +483,8 @@ export class BotWaveBot {
         // Release DB pairing lock and log success
         releasePairingLock(this.sessionId).catch(() => {});
         logPairingEvent(this.sessionId, 'pairing_success', this.workerUrl).catch(() => {});
+
+        logHealthEvent(this.sessionId, 'connected', 'Connection established').catch(() => {});
 
         // Send 'available' on connect so WhatsApp shows the device as online
         // instead of "last seen" — prevents the linked device appearing inactive.

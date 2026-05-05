@@ -49,6 +49,9 @@ export default function DashboardNav() {
           <Link href="/dashboard/analytics" data-tour="nav-analytics" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             ANALYTICS
           </Link>
+          <Link href="/dashboard/health" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
+            HEALTH
+          </Link>
           <Link href="/dashboard/scheduled" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SCHEDULED
           </Link>
@@ -125,6 +128,13 @@ export default function DashboardNav() {
                 className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
               >
                 ANALYTICS
+              </Link>
+              <Link
+                href="/dashboard/health"
+                onClick={() => setMenuOpen(false)}
+                className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
+              >
+                HEALTH
               </Link>
               <Link
                 href="/dashboard/scheduled"
