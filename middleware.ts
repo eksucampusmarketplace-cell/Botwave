@@ -67,15 +67,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Protect admin routes - return 404 if not authenticated
-  // This makes the admin panel invisible to unauthorized users
+  // Protect admin routes
   if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/login')) {
     const adminToken = request.cookies.get('admin_token');
     const tokenValidation = await verifyAdminToken(adminToken?.value);
     
     if (!tokenValidation) {
-      // Return 404 instead of 401 to hide the existence of admin panel
-      return NextResponse.json({ notFound: true }, { status: 404 });
+      return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
 

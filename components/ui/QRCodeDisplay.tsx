@@ -130,7 +130,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="bg-[#0a0f0a] border border-green/30 max-w-lg w-full mx-2 sm:mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="bg-[#0a0f0a] border border-green/30 max-w-sm sm:max-w-md w-full mx-2 sm:mx-3 relative overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scan line effect */}
@@ -236,7 +236,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                   ENTER THIS CODE ON YOUR PHONE
                 </div>
                 <motion.div
-                  className="bg-[#050a05] border-2 border-green/50 p-3 sm:p-5 inline-block relative cursor-pointer group"
+                  className="bg-[#050a05] border-2 border-green/50 px-3 py-2 sm:px-4 sm:py-3 inline-block relative cursor-pointer group"
                   onClick={handleCopy}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -249,7 +249,7 @@ export default function QRCodeDisplay({ onClose, qrGeneratedAt, pairingCode, ses
                   />
                   <div className="relative z-10 flex items-center gap-3">
                     <span
-                      className="font-mono text-2xl sm:text-4xl md:text-5xl text-white font-black tracking-[4px] sm:tracking-[10px] md:tracking-[14px] select-all"
+                      className="font-mono text-xl sm:text-3xl md:text-4xl text-white font-black tracking-[3px] sm:tracking-[6px] md:tracking-[8px] select-all"
                       style={{ textShadow: '0 0 20px rgba(0,255,128,0.3)' }}
                     >
                       {pairingCode}
