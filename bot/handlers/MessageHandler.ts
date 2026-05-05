@@ -664,10 +664,10 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'sv':
       await handleSave(context, sock);
       break;
-    case 'repost':
-    case 'rp':
-    case 'repoststatus':
-      await handleRepost(context, args, sock);
+    case 'savestatus':
+    case 'ss':
+    case 'savest':
+      await handleSaveStatus(context, args, sock);
       break;
     case 'qr':
     case 'qrcode':
@@ -1153,7 +1153,7 @@ async function sendHelp(
 !headers / !country / !emoji
 
 *SOCIAL*
-!download / !save / !repost / !tagall
+!download / !save / !savestatus / !tagall
 !afk / !group / !purge
 
 *GAMES*
@@ -1415,9 +1415,9 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             description: 'Saves a message to your personal chat. Reply to any message with "!save" and the bot will forward that message to your DM for safekeeping. Great for bookmarking important messages.',
           },
           {
-            name: '!repost',
-            usage: '!repost  |  !repost [custom caption]',
-            description: 'Reposts a message as your WhatsApp Status (story). Reply to any message — text, image, or video — with "!repost" to instantly post it to your WhatsApp Status for all your contacts to see.\n\nCaption Support:\nFor images and videos, you can add a custom caption by typing text after the command. Example: "!repost Check this out!" will use "Check this out!" as the status caption instead of the original caption.\n\nIf no custom caption is provided, the original caption (if any) is preserved.\n\nFor text messages, you can override the text by adding your own text after the command.\n\nSupported Media Types:\n- Text messages — posted as a text status with black background\n- Images — posted as an image status with optional caption\n- Videos — posted as a video status with optional caption\n\nAliases: !rp, !repoststatus',
+            name: '!savestatus',
+            usage: '!savestatus  |  !savestatus [custom caption]',
+            description: 'Saves a status and sends it to the status poster\'s chat. Reply to someone\'s status — text, image, or video — with "!savestatus" and the media will be downloaded and sent to that person\'s chat directly.\n\nCaption Support:\nYou can add a custom caption: "!savestatus Nice pic!" will send the media with your caption.\n\nIf no custom caption is provided, the original caption (if any) is preserved.\n\nSupported Media Types:\n- Text messages\n- Images with optional caption\n- Videos with optional caption\n\nAliases: !ss, !savest',
           },
           {
             name: '!tagall',
@@ -3001,19 +3001,13 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
 
 // ─── Repost Command — Repost to WhatsApp Status ─────────────────────────────
 
-async function handleRepost(context: MessageContext, args: string[], sock: any): Promise<void> {
+async function handleSaveStatus(context: MessageContext, args: string[], sock: any): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
 
   if (!quotedMsg) {
-    console.log('[REPOST] No quoted message found. Raw message keys:', JSON.stringify({
-      topKeys: Object.keys(context.rawMessage || {}),
-      messageKeys: Object.keys(context.rawMessage?.message || {}),
-      hasContextInfo: !!context.rawMessage?.contextInfo,
-      contextInfoKeys: Object.keys(context.rawMessage?.contextInfo || {}),
-    }));
     await sendReply(
       context.chatJid,
-      `*STATUS REPOST*\n\nReply to any message with *!repost* to post it as your WhatsApp Status.\n\nYou can add a custom caption:\n*!repost Your caption here*\n\nWorks with: text, images, videos.\n\n_Note: Status posting depends on your WhatsApp version and linked device support._`,
+      `*SAVE STATUS*\n\nReply to someone's status with *!savestatus* to save the media and send it to their chat.\n\nYou can add a custom caption:\n*!savestatus Nice pic!*\n\nAliases: !ss, !savest`,
       sock,
       context.rawMessage.key,
       context.queue,
@@ -3021,69 +3015,46 @@ async function handleRepost(context: MessageContext, args: string[], sock: any):
     return;
   }
 
-  // Custom caption from args, falls back to original caption if none provided
   const customCaption = args.length > 0 ? args.join(' ') : '';
 
   try {
-    const statusJid = 'status@broadcast';
+    // Determine target: the status poster's JID (from contextInfo.participant or rawMessage.key.participant)
+    const msg = context.rawMessage?.message || context.rawMessage;
+    const contextInfo = context.rawMessage?.contextInfo
+      || msg?.extendedTextMessage?.contextInfo
+      || msg?.imageMessage?.contextInfo
+      || msg?.videoMessage?.contextInfo;
+    const statusPosterJid = contextInfo?.participant
+      || context.rawMessage?.key?.participant
+      || context.senderJid;
 
-    // Get contact list for statusJidList (required by Baileys)
-    let statusJidList: string[] = [];
-    try {
-      const contacts = await sock.getContacts?.() || [];
-      statusJidList = Array.isArray(contacts)
-        ? contacts.filter((c: any) => c?.id?.endsWith('@s.whatsapp.net')).map((c: any) => c.id).slice(0, 500)
-        : [];
-    } catch {
-      // If can't get contacts, try without the list
-    }
-
-    let mediaBuffer: Buffer | null = null;
-    let mediaType: 'text' | 'image' | 'video' = 'text';
-    let caption = customCaption;
-    let statusContent: Record<string, unknown> = {};
+    // Use the status poster's chat as the target
+    const targetJid = statusPosterJid.endsWith('@s.whatsapp.net')
+      ? statusPosterJid
+      : context.senderJid;
 
     if (quotedMsg.conversation || quotedMsg.extendedTextMessage?.text) {
       const text = customCaption || quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || '';
-      statusContent = { text, font: 0, backgroundColor: '#000000' };
-      mediaType = 'text';
+      await sock.sendMessage(targetJid, { text });
     } else if (quotedMsg.imageMessage) {
-      mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
-      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the image to repost.', sock, context.rawMessage.key, context.queue); return; }
-      caption = customCaption || quotedMsg.imageMessage.caption || '';
-      statusContent = { image: mediaBuffer, caption };
-      mediaType = 'image';
+      const mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the image.', sock, context.rawMessage.key, context.queue); return; }
+      const caption = customCaption || quotedMsg.imageMessage.caption || '';
+      await sock.sendMessage(targetJid, { image: mediaBuffer, caption: caption || undefined });
     } else if (quotedMsg.videoMessage) {
-      mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
-      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the video to repost.', sock, context.rawMessage.key, context.queue); return; }
-      caption = customCaption || quotedMsg.videoMessage.caption || '';
-      statusContent = { video: mediaBuffer, caption };
-      mediaType = 'video';
+      const mediaBuffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
+      if (!mediaBuffer) { await sendReply(context.chatJid, 'Could not download the video.', sock, context.rawMessage.key, context.queue); return; }
+      const caption = customCaption || quotedMsg.videoMessage.caption || '';
+      await sock.sendMessage(targetJid, { video: mediaBuffer, caption: caption || undefined });
     } else {
-      await sendReply(context.chatJid, 'This message type cannot be reposted to status. Only text, images, and videos are supported.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'This message type is not supported. Only text, images, and videos can be saved.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
-    // Try posting to status
-    try {
-      await sock.sendMessage(statusJid, statusContent, { statusJidList });
-      await sendReply(context.chatJid, 'Posted to your WhatsApp Status!', sock, context.rawMessage.key, context.queue);
-    } catch (statusError: any) {
-      console.error('[REPOST] Status post failed, saving to private chat:', statusError?.message || statusError);
-      // Fallback: send to user's private chat so they can manually repost
-      const userJid = context.senderJid;
-      if (mediaType === 'text') {
-        await sock.sendMessage(userJid, { text: `📋 *Status Repost (saved)*\n\n${(statusContent.text as string) || ''}` });
-      } else if (mediaType === 'image' && mediaBuffer) {
-        await sock.sendMessage(userJid, { image: mediaBuffer, caption: `📋 *Status Repost (saved)*\n${caption}\n\n_Status posting failed. Save this and post manually via WhatsApp._` });
-      } else if (mediaType === 'video' && mediaBuffer) {
-        await sock.sendMessage(userJid, { video: mediaBuffer, caption: `📋 *Status Repost (saved)*\n${caption}\n\n_Status posting failed. Save this and post manually via WhatsApp._` });
-      }
-      await sendReply(context.chatJid, 'Status posting timed out. Saved the media to your private chat — you can post it manually from there.', sock, context.rawMessage.key, context.queue);
-    }
+    await sendReply(context.chatJid, `Saved and sent to ${targetJid.replace('@s.whatsapp.net', '')}!`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
-    console.error('[REPOST] Error:', error);
-    await sendReply(context.chatJid, 'Failed to repost to status. This feature depends on your WhatsApp version.', sock, context.rawMessage.key, context.queue);
+    console.error('[SAVESTATUS] Error:', error);
+    await sendReply(context.chatJid, 'Failed to save status. Try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
