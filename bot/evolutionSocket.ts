@@ -13,6 +13,8 @@ import {
   markAsRead,
   sendPresence,
   fetchGroupInfo,
+  updateProfileStatus,
+  updateProfilePicture,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -263,5 +265,15 @@ export class EvolutionSocketAdapter {
       }
     }
     return null;
+  }
+
+  /** Update the WhatsApp profile bio / about text. */
+  async updateProfileStatus(status: string) {
+    return updateProfileStatus(this.instanceName, status);
+  }
+
+  /** Update the WhatsApp profile picture from a base64-encoded image. */
+  async updateProfilePicture(pictureBase64: string) {
+    return updateProfilePicture(this.instanceName, pictureBase64);
   }
 }
