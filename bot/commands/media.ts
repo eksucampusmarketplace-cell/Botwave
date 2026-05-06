@@ -24,50 +24,12 @@ async function findYtDlp(): Promise<string> {
   return 'yt-dlp'; // fall back to PATH lookup
 }
 
-const COBALT_INSTANCES = [
-  'https://cobalt-backend.canine.tools',
-  'https://cobalt-api.meowing.de',
-];
+function isYouTubeUrl(url: string): boolean {
+  return /(?:youtube\.com|youtu\.be)\//i.test(url);
+}
 
-async function downloadViaCobalt(url: string): Promise<Buffer | null> {
-  for (const instance of COBALT_INSTANCES) {
-    try {
-      const res = await axios.post(instance + '/', {
-        url,
-        videoQuality: '720',
-        youtubeVideoCodec: 'h264',
-      }, {
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        timeout: 30000,
-      });
-
-      const data = res.data;
-      if (data.status === 'error') {
-        console.error(`[DOWNLOAD] cobalt ${instance} error:`, data.error?.code || data);
-        continue;
-      }
-
-      let mediaUrl: string | undefined;
-      if (data.status === 'tunnel' || data.status === 'redirect') {
-        mediaUrl = data.url;
-      } else if (data.status === 'picker' && data.picker?.length) {
-        mediaUrl = data.picker[0].url;
-      }
-
-      if (!mediaUrl) continue;
-
-      const mediaRes = await axios.get(mediaUrl, {
-        responseType: 'arraybuffer',
-        timeout: 60000,
-        maxContentLength: 50 * 1024 * 1024,
-      });
-      console.log(`[DOWNLOAD] cobalt ${instance} success`);
-      return Buffer.from(mediaRes.data);
-    } catch (err: any) {
-      console.error(`[DOWNLOAD] cobalt ${instance} failed:`, err?.message || err);
-    }
-  }
-  return null;
+function isPlaylistUrl(url: string): boolean {
+  return /[?&]list=|youtube\.com\/playlist/i.test(url);
 }
 
 function normalizeJid(jid: string): string {
@@ -161,6 +123,11 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     return;
   }
 
+  if (isPlaylistUrl(url)) {
+    await sendReply(context.chatJid, 'Playlists are not supported. Please send a single video URL instead (e.g. youtube.com/watch?v=xxxxx).', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
   try {
     await sendReply(context.chatJid, 'Fetching media... this may take a moment.', sock, context.rawMessage.key, context.queue);
 
@@ -169,15 +136,19 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     try {
       const tmpFile = path.join(os.tmpdir(), `botwave_dl_${Date.now()}`);
       const ytdlpBin = await findYtDlp();
-      await execFileAsync(ytdlpBin, [
+      const ytdlpArgs = [
         '-f', 'best[ext=mp4][filesize<50M]/best[ext=mp4]/best[filesize<50M]/best',
         '--merge-output-format', 'mp4',
         '--no-playlist',
         '--max-filesize', '50M',
         '-o', tmpFile + '.%(ext)s',
         '--no-warnings',
-        url,
-      ], { timeout: 90000 });
+      ];
+      if (isYouTubeUrl(url)) {
+        ytdlpArgs.push('--extractor-args', 'youtube:player_client=mediaconnect');
+      }
+      ytdlpArgs.push(url);
+      await execFileAsync(ytdlpBin, ytdlpArgs, { timeout: 90000 });
 
       // Find the output file
       const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
@@ -202,20 +173,7 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       console.error('[DOWNLOAD] yt-dlp failed:', dlErr?.message || dlErr);
     }
 
-    // Fallback 2: try cobalt API (works for YouTube, TikTok, Instagram, etc.)
-    if (!downloaded) {
-      try {
-        const cobaltBuffer = await downloadViaCobalt(url);
-        if (cobaltBuffer) {
-          await sendReply(context.chatJid, { video: cobaltBuffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
-          downloaded = true;
-        }
-      } catch (cobaltErr: any) {
-        console.error('[DOWNLOAD] cobalt fallback failed:', cobaltErr?.message || cobaltErr);
-      }
-    }
-
-    // Fallback 3: direct HTTP download (works for direct media links only)
+    // Fallback: direct HTTP download (works for direct media links only)
     if (!downloaded) {
       const mediaResponse = await axios.get(url, {
         responseType: 'arraybuffer',
