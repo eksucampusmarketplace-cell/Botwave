@@ -289,7 +289,7 @@ export class EvolutionSocketAdapter {
   /** Fetch profile picture URL for a JID/number. */
   async fetchProfilePictureUrl(jid: string) {
     try {
-      const result = await fetchProfilePictureUrl(this.instanceName, jid);
+      const result = await fetchProfilePictureUrl(this.instanceName, jid) as Record<string, string> | null;
       return result?.profilePictureUrl || result?.profilePicUrl || result?.url || null;
     } catch {
       return null;
