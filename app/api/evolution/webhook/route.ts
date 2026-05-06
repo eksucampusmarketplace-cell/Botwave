@@ -261,6 +261,7 @@ export async function POST(request: NextRequest) {
       // the handler to be killed before processCommand is reached.
       const commandMsgs: any[] = [];
       const statusMsgs: any[] = [];
+      const cacheMsgs: any[] = [];
       for (const msg of messages) {
         const from = msg.key?.remoteJid || 'unknown';
         const fromMe = msg.key?.fromMe;
@@ -278,6 +279,9 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
+        // Cache every non-status message for anti-delete recovery
+        cacheMsgs.push(msg);
+
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
         if (fromMe && !text.trimStart().startsWith('!')) continue;
@@ -287,18 +291,24 @@ export async function POST(request: NextRequest) {
       // Fire-and-forget: process messages in the background so the webhook
       // response is returned immediately (avoids Render 30 s timeout killing
       // the handler mid-delay).
-      if (commandMsgs.length > 0 || statusMsgs.length > 0) {
+      if (commandMsgs.length > 0 || statusMsgs.length > 0 || cacheMsgs.length > 0) {
         // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
         const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
         const { handleMessage } = await import('@/bot/handlers/MessageHandler');
         const { handleStatusUpdate } = await import('@/bot/handlers/StatusViewer');
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
+        const { cacheMessage } = await import('@/bot/handlers/AntiDeleteHandler');
 
         const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id, session.phone_number);
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
         // Use void to fire-and-forget — do NOT await
         void (async () => {
+          // Cache messages for anti-delete recovery (non-blocking)
+          for (const msg of cacheMsgs) {
+            cacheMessage(session.id, msg).catch(() => {});
+          }
+
           // Process status broadcasts via StatusViewer (checks autoview toggle)
           for (const msg of statusMsgs) {
             try {
@@ -322,6 +332,100 @@ export async function POST(request: NextRequest) {
             }
           }
         })();
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // --- Deleted messages (anti-delete) ---
+    // Evolution API fires 'messages.delete' when a message is revoked/deleted.
+    // The payload contains the message key with status 'DELETED'.
+    if (event === 'messages.delete') {
+      const deletedKey = data;
+      if (deletedKey?.id && deletedKey?.remoteJid) {
+        const { data: session } = await supabase
+          .from('bot_sessions')
+          .select('id, user_id')
+          .eq('id', sessionId)
+          .single();
+
+        if (session) {
+          // Build a synthetic revoke message matching the Baileys protocolMessage format
+          // so handleMessageRevoke can process it uniformly.
+          const revokeMsg = {
+            key: {
+              remoteJid: deletedKey.remoteJid,
+              fromMe: deletedKey.fromMe ?? false,
+              id: `revoke_${deletedKey.id}`,
+              participant: deletedKey.participant,
+            },
+            message: {
+              protocolMessage: {
+                type: 0,
+                key: {
+                  remoteJid: deletedKey.remoteJid,
+                  fromMe: deletedKey.fromMe ?? false,
+                  id: deletedKey.id,
+                  participant: deletedKey.participant,
+                },
+              },
+            },
+          };
+
+          void (async () => {
+            try {
+              const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
+              await handleMessageRevoke(revokeMsg, session.id, session.user_id);
+              console.log(`[EVO-WEBHOOK] Processed message delete for ${sessionId}: msgId=${deletedKey.id}`);
+            } catch (err) {
+              console.error(`[EVO-WEBHOOK] Error handling message delete for ${sessionId}:`, err);
+            }
+          })();
+        }
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // --- Edited messages (may include revoke protocolMessages) ---
+    // Evolution API fires 'messages.edited' for protocolMessages, which
+    // includes both edits and revokes (type 0). Handle revokes here as
+    // a belt-and-suspenders alongside messages.delete.
+    if (event === 'messages.edited') {
+      const editedMsg = data;
+      if (editedMsg?.type === 0 && editedMsg?.key?.id) {
+        const { data: session } = await supabase
+          .from('bot_sessions')
+          .select('id, user_id')
+          .eq('id', sessionId)
+          .single();
+
+        if (session) {
+          const revokeMsg = {
+            key: {
+              remoteJid: editedMsg.key.remoteJid,
+              fromMe: editedMsg.key.fromMe ?? false,
+              id: `revoke_edited_${editedMsg.key.id}`,
+              participant: editedMsg.key.participant,
+            },
+            message: {
+              protocolMessage: {
+                type: 0,
+                key: editedMsg.key,
+              },
+            },
+          };
+
+          void (async () => {
+            try {
+              const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
+              await handleMessageRevoke(revokeMsg, session.id, session.user_id);
+              console.log(`[EVO-WEBHOOK] Processed edited/revoke for ${sessionId}: msgId=${editedMsg.key.id}`);
+            } catch (err) {
+              console.error(`[EVO-WEBHOOK] Error handling edited/revoke for ${sessionId}:`, err);
+            }
+          })();
+        }
       }
 
       return NextResponse.json({ ok: true });

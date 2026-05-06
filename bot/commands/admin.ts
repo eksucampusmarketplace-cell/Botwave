@@ -657,7 +657,11 @@ async function handleAntiDelete(
   }
 
   const enable = action === 'on' || action === 'enable';
-  await setFeatureEnabled(context.userId, context.sessionId, 'anti_delete', enable);
+  const saved = await setFeatureEnabled(context.userId, context.sessionId, 'anti_delete', enable);
+  if (!saved) {
+    await sendReply(context.chatJid, 'Failed to update anti-delete setting. Please try again.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
   await sendReply(
     context.chatJid,
     enable

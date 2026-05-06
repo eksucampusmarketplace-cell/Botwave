@@ -1185,7 +1185,7 @@ export async function setFeatureEnabled(userId: string, sessionId: string, featu
     .from('bot_features')
     .upsert(
       { user_id: userId, session_id: sessionId, feature_name: featureName, enabled },
-      { onConflict: 'user_id,feature_name' },
+      { onConflict: 'user_id,session_id,feature_name' },
     );
 
   if (error) {
