@@ -161,7 +161,7 @@ async function sendNotification(
 }
 
 function getDowngradeMessage(): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
   return (
     `📉 *Plan Downgraded*\n\n` +
     `Your subscription has been downgraded to the Free plan due to payment failure.\n\n` +

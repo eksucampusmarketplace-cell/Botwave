@@ -780,7 +780,7 @@ async function handleRefer(context: MessageContext, sock: any): Promise<void> {
     return;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
   const referralLink = `${appUrl}/signup?ref=${referral.code}`;
 
   const msg =
