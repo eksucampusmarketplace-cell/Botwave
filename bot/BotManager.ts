@@ -370,14 +370,14 @@ export class BotWaveBot {
           return;
         }
 
-        // 428 = "Connection Terminated by Server" during pairing.
-        // WhatsApp sends this when multiple unregistered WebSocket connections
-        // open from the same IP. Reconnecting is harmful: each attempt creates
-        // a NEW pairing code (invalidating the one the user entered) and opens
-        // yet another WebSocket that will also be terminated.
-        // Fail fast so the user can retry from a clean state.
-        if (statusCode === 428 && !this.isReady) {
-          console.log(`[ERR_428] [${this.sessionId}] 428 during pairing — WhatsApp rejected concurrent connection. Not reconnecting.`);
+        // 428 = "Connection Terminated by Server".
+        // During pairing: WhatsApp rejected concurrent unregistered connections.
+        // On established session: WhatsApp force-closed the connection (IP conflict,
+        // auth drift, or anti-spam). Either way, don't retry — clear auth and let
+        // user re-pair from a clean state.
+        if (statusCode === 428) {
+          const wasEstablished = this.reconnectAttempts > 0 || this.pairingStartedAt === 0;
+          console.log(`[ERR_428] [${this.sessionId}] 428 connection terminated (established=${wasEstablished}). Not reconnecting.`);
           logPairingEvent(this.sessionId, '428_received', this.workerUrl, 428).catch(() => {});
           // Cancel queued pairing code requests so they don't resolve after
           // cleanup and overwrite needs_reauth back to pairing_sent.

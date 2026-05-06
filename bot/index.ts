@@ -3,6 +3,7 @@ import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotMana
 import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
 import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId } from './sessionCoordinator';
+import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 
 const bot = initializeBot();
 
@@ -106,6 +107,11 @@ async function start() {
     }
   }, 15_000);
 
+  // Monetization: dunning + trial notifications (main only, every 30min)
+  if (!IS_WORKER) {
+    startMonetizationScheduler();
+  }
+
   // Keep-alive pings: main service pings all workers every 2 minutes
   // to prevent Render free tier from spinning them down
   if (!IS_WORKER && WORKER_URLS.length > 0) {
@@ -133,6 +139,7 @@ start().catch((error) => {
 process.on('SIGINT', async () => {
   console.log('[BOT] Received SIGINT — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
+  stopMonetizationScheduler();
   await bot.stop(true);
   process.exit(0);
 });
@@ -140,6 +147,7 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('[BOT] Received SIGTERM — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
+  stopMonetizationScheduler();
   await bot.stop(true);
   process.exit(0);
 });

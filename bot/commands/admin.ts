@@ -262,7 +262,7 @@ async function handlePlan(context: MessageContext, sock: any): Promise<void> {
     `Messages used: ${quotaDisplay}\n` +
     `Sessions: ${sub.sessionLimit}\n` +
     `AI queries: ${aiDisplay}\n\n` +
-    `_Upgrade your plan from the dashboard to unlock more features!_`;
+    `_Send *!upgrade* to see plans and pay directly here, or visit your dashboard._`;
 
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
 }
