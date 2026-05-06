@@ -9,7 +9,7 @@ services:
     name: botwave
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npm run build:bot
+    buildCommand: npm install && npm run build && npm run build:bot && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o node_modules/.bin/yt-dlp && chmod +x node_modules/.bin/yt-dlp
     startCommand: bash scripts/start-all.sh
     envVars:
       - key: NODE_ENV
