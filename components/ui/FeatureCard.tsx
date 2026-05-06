@@ -18,11 +18,14 @@ export default function FeatureCard({ feature, index }: FeatureCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.08 }}
+      transition={{ duration: 0.5, delay: index * 0.06 }}
       viewport={{ once: true }}
-      className="group bg-[var(--surface)] border border-[var(--border)] p-6 rounded-xl transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1"
+      className="group glass-card p-6 rounded-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
     >
-      <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
+      {/* Gradient accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/15 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300">
         {feature.icon}
       </div>
 

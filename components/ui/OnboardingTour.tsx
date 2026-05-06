@@ -57,7 +57,8 @@ export default function OnboardingTour() {
   }, []);
 
   const handleEvent = (data: EventData, _controls: Controls) => {
-    if (data.type === 'tour:end') {
+    const { status, action } = data;
+    if (status === 'finished' || status === 'skipped' || action === 'close') {
       setRun(false);
       localStorage.setItem(TOUR_KEY, 'true');
     }
@@ -72,19 +73,42 @@ export default function OnboardingTour() {
       continuous
       onEvent={handleEvent}
       options={{
-        backgroundColor: '#1a1a2e',
-        textColor: '#e0e0e0',
-        primaryColor: '#00ff88',
-        overlayColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: '#16161f',
+        textColor: '#e2e8f0',
+        primaryColor: '#10b981',
+        overlayColor: 'rgba(0, 0, 0, 0.75)',
         zIndex: 10000,
         showProgress: true,
+        buttons: ['back', 'primary', 'skip', 'close'],
+      }}
+      styles={{
+        tooltip: {
+          borderRadius: '12px',
+          border: '1px solid #1e293b',
+          fontSize: '14px',
+        },
+        buttonPrimary: {
+          backgroundColor: '#10b981',
+          borderRadius: '8px',
+          fontSize: '12px',
+          fontWeight: 600,
+          padding: '8px 16px',
+        },
+        buttonBack: {
+          color: '#94a3b8',
+          fontSize: '12px',
+        },
+        buttonSkip: {
+          color: '#64748b',
+          fontSize: '12px',
+        },
       }}
       locale={{
-        back: 'BACK',
-        close: 'CLOSE',
-        last: 'DONE',
-        next: 'NEXT',
-        skip: 'SKIP TOUR',
+        back: 'Back',
+        close: 'Close',
+        last: 'Done',
+        next: 'Next',
+        skip: 'Skip Tour',
       }}
     />
   );

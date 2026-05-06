@@ -4,7 +4,7 @@ import { PWARegister } from '@/components/pwa/PWARegister';
 import ThemeProvider from '@/components/ui/ThemeProvider';
 
 export const viewport: Viewport = {
-  themeColor: '#059669',
+  themeColor: '#0a0a0f',
 };
 
 export const metadata: Metadata = {
@@ -30,10 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />

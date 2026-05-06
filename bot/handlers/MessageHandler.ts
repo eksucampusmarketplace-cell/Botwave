@@ -238,7 +238,7 @@ function isDuplicateMessage(msgId: string): boolean {
 // AFK auto-reply cooldown per user — don't spam the same person
 // Key: `${sessionId}:${senderJid}` → last reply timestamp
 const afkReplyCooldown: Map<string, number> = new Map();
-const AFK_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour default
+const AFK_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function handleMessage(message: any, sock: any, queue?: MessageQueue): Promise<void> {
   try {
@@ -256,6 +256,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
       message.message?.imageMessage?.caption ||
+      message.message?.videoMessage?.caption ||
       '';
 
     // Allow fromMe commands (userbot mode: bot owner can use !help etc.)
@@ -1070,11 +1071,25 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
 async function checkAfkMentions(context: MessageContext, sock: any): Promise<void> {
   if (!context.sessionId) return;
 
-  const mentioned = context.rawMessage.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-  for (const jid of mentioned) {
+  const contextInfo = context.rawMessage.message?.extendedTextMessage?.contextInfo;
+  const jidsToCheck = new Set<string>(contextInfo?.mentionedJid || []);
+
+  // Also check if this message is a reply to an AFK user
+  const quotedParticipant = contextInfo?.participant;
+  if (quotedParticipant) {
+    jidsToCheck.add(quotedParticipant);
+  }
+
+  for (const jid of jidsToCheck) {
     try {
-      const afkState = await getAfkState(context.sessionId, normalizeJid(jid));
+      const normalizedJid = normalizeJid(jid);
+      const cooldownKey = `afk:${context.sessionId}:${normalizedJid}:${context.chatJid}`;
+      const lastReply = afkReplyCooldown.get(cooldownKey) || 0;
+      if (Date.now() - lastReply < AFK_COOLDOWN_MS) continue;
+
+      const afkState = await getAfkState(context.sessionId, normalizedJid);
       if (afkState && afkState.is_afk) {
+        afkReplyCooldown.set(cooldownKey, Date.now());
         const afkName = jid.split('@')[0];
         const vars = { name: afkName, time: currentTimeStr() };
         const response = pickResponse(afkReplies, vars);
@@ -1256,7 +1271,8 @@ async function sendHelp(
 !unit / !paste / !uptime / !id
 
 *INFO*
-!crypto / !ud / !ip / !npm / !whois
+!crypto / !ud / !ip / !npm / !whois [domain]
+!whois (reply) — user lookup (name, number, about)
 !headers / !country / !emoji
 
 *SOCIAL & ADMIN*
@@ -3494,7 +3510,19 @@ async function handleSaveStatus(context: MessageContext, args: string[], sock: a
       return;
     }
 
-    await sendReply(context.chatJid, `Saved and sent to ${targetJid.replace('@s.whatsapp.net', '')}!`, sock, context.rawMessage.key, context.queue);
+    // Use display name if available, fall back to formatted phone number
+    let displayName = targetJid.replace('@s.whatsapp.net', '');
+    try {
+      const contact = await sock.onWhatsApp(targetJid);
+      if (contact?.[0]?.exists) {
+        // Try to get contact name from store or use the poster's pushName
+        const statusPosterPush = contextInfo?.pushName || context.pushName;
+        if (statusPosterPush && statusPosterPush !== 'User') {
+          displayName = statusPosterPush;
+        }
+      }
+    } catch { /* non-critical, use phone number fallback */ }
+    await sendReply(context.chatJid, `Saved and sent to *${displayName}*!`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('[SAVESTATUS] Error:', error);
     await sendReply(context.chatJid, 'Failed to save status. Try again.', sock, context.rawMessage.key, context.queue);
@@ -5675,7 +5703,55 @@ async function handleNpm(context: MessageContext, args: string[], sock: any): Pr
 }
 
 async function handleWhois(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) { await sendReply(context.chatJid, '!whois [domain]', sock, context.rawMessage.key, context.queue); return; }
+  // If replying to someone's message → show user info (Sangmata-like)
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const msg = context.rawMessage?.message || context.rawMessage;
+  const contextInfoPath = msg?.extendedTextMessage?.contextInfo
+    || msg?.imageMessage?.contextInfo
+    || msg?.videoMessage?.contextInfo
+    || context.rawMessage?.contextInfo;
+  const quotedParticipant = contextInfoPath?.participant;
+
+  if (quotedMsg && quotedParticipant) {
+    try {
+      const targetJid = quotedParticipant.endsWith('@s.whatsapp.net')
+        ? quotedParticipant
+        : quotedParticipant + '@s.whatsapp.net';
+      const phoneNumber = targetJid.replace('@s.whatsapp.net', '');
+      const pushName = contextInfoPath?.pushName || context.pushName || 'Unknown';
+
+      let profilePicUrl = '';
+      try {
+        profilePicUrl = await sock.profilePictureUrl(targetJid, 'image');
+      } catch { /* no profile pic or privacy settings */ }
+
+      let aboutText = '';
+      try {
+        const status = await sock.fetchStatus(targetJid);
+        aboutText = status?.status || '';
+      } catch { /* privacy settings */ }
+
+      let info = `*WHO IS THIS?*\n\n`;
+      info += `*Name:* ${pushName}\n`;
+      info += `*Number:* +${phoneNumber}\n`;
+      info += `*JID:* ${targetJid}\n`;
+      if (aboutText) info += `*About:* ${aboutText}\n`;
+      if (profilePicUrl) info += `*Profile Pic:* ${profilePicUrl}\n`;
+      info += `\n_Reply to any message with !whois to look up the sender._`;
+
+      await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
+    } catch (error) {
+      console.error('[WHOIS-USER] Error:', error);
+      await sendReply(context.chatJid, 'Could not fetch user info. They may have privacy settings enabled.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // Domain WHOIS lookup (original behavior)
+  if (!args.length) {
+    await sendReply(context.chatJid, `*WHOIS*\n\n*User lookup:* Reply to someone's message with !whois\n*Domain lookup:* !whois [domain.com]`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
   try {
     const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
     const { stdout } = await execFileAsync('whois', [domain], { timeout: 10000 });

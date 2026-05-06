@@ -39,28 +39,29 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-4 relative">
+      <div className="absolute inset-0 tech-grid opacity-30" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold text-white">
-            Bot<span className="text-red-500">Wave</span>
+            Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">Wave</span>
           </Link>
-          <span className="ml-2 text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded">
+          <span className="ml-2 text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded font-mono tracking-wider">
             ADMIN
           </span>
-          <p className="text-sm text-slate-400 mt-3">
-            Authorized personnel only
+          <p className="text-xs text-slate-500 mt-3 font-mono">
+            // authorized personnel only
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl border border-slate-700 p-8">
+        <form onSubmit={handleSubmit} className="bg-[var(--surface)] border border-red-500/10 rounded-xl p-8">
           <h2 className="text-2xl font-bold text-white mb-8 text-center">
-            Admin Login
+            Admin Access
           </h2>
 
           {error && (
@@ -75,46 +76,42 @@ export default function AdminLoginPage() {
 
           <div className="space-y-5">
             <div>
-              <label className="text-sm font-medium text-slate-300 block mb-1.5">
-                Username
-              </label>
+              <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">USERNAME</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full bg-slate-900 border border-slate-600 px-4 py-3 rounded-lg text-white text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none transition-all"
+                className="w-full bg-[#0d1117] border border-[#1e293b] px-4 py-3 rounded-lg text-slate-200 text-sm focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none transition-all placeholder:text-slate-600 font-mono"
                 placeholder="admin"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-300 block mb-1.5">
-                Password
-              </label>
+              <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">PASSWORD</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-slate-900 border border-slate-600 px-4 py-3 rounded-lg text-white text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none transition-all"
-                placeholder="Enter admin password"
+                className="w-full bg-[#0d1117] border border-[#1e293b] px-4 py-3 rounded-lg text-slate-200 text-sm focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none transition-all placeholder:text-slate-600 font-mono"
+                placeholder="••••••••"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-500/10"
             >
-              {loading ? 'Verifying...' : 'Access Control Panel'}
+              {loading ? 'Verifying...' : 'Access Control Panel →'}
             </button>
           </div>
         </form>
 
         <p className="text-center mt-6">
-          <Link href="/login" className="text-sm text-slate-400 hover:text-red-400 transition-colors">
-            &larr; Back to member login
+          <Link href="/login" className="text-sm text-slate-500 hover:text-red-400 transition-colors">
+            ← Back to member login
           </Link>
         </p>
       </motion.div>
