@@ -1,0 +1,703 @@
+import { registerCommand, type MessageContext, type TemplateVars } from './registry';
+import { sendReply, pickResponse, getHelpHint, botStartTime } from './helpers';
+import { helpIntros, pingReplies, unknownCommandReplies } from '../utils/responsePools';
+import { currentTimeStr, currentDateStr } from '../utils/antiban';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { getAllCommands } from './registry';
+
+async function sendHelp(
+  context: MessageContext,
+  args: string[],
+  sock: any,
+  vars: { name?: string; time?: string; date?: string; group?: string },
+): Promise<void> {
+  // If user types "!help text", show quick text menu; otherwise default to docx
+  if (args.length > 0 && (args[0].toLowerCase() === 'text' || args[0].toLowerCase() === 'quick' || args[0].toLowerCase() === 'menu')) {
+    const intro = pickResponse(helpIntros, vars, false);
+    const helpMessage = `${intro}
+
+*GENERAL*
+!help — Full guide (.docx)
+!help text — Quick text menu
+!ping — Bot status
+!sticker — Make sticker
+!joke / !quote / !meme — Fun
+
+*TOOLS*
+!ai / !weather / !define / !wiki
+!translate / !lyrics / !tts
+!doc / !qr / !currency / !short / !img
+!calc / !countdown / !cal / !timezone
+
+*MEDIA*
+!viewonce / !toimg / !togif / !toaudio
+!removebg / !carbon / !screenshot / !ocr
+!blur / !grayscale / !rotate / !resize
+!invert / !brightness / !contrast
+!crop / !compress / !wallpaper / !qrread
+
+*TEXT*
+!reverse / !upper / !lower / !mock
+!clap / !tiny / !fliptext / !morse
+!braille / !ascii / !font
+
+*PROFILE*
+!bio / !setpp / !read
+
+*UTILITIES*
+!forward / !base64 / !hash / !color
+!palette / !pick / !coinflip / !dice
+!password / !uuid / !epoch / !bmi / !age
+!unit / !paste / !uptime / !id
+
+*INFO*
+!crypto / !ud / !ip / !npm / !whois [domain]
+!whois (reply) — user lookup (name, number, about)
+!headers / !country / !emoji
+
+*SOCIAL & ADMIN*
+!download / !save / !savestatus / !tagall
+!afk / !group / !purge / !settings
+!kick / !promote / !demote
+!welcome / !goodbye / !autoview
+
+*GAMES*
+!trivia / !hangman / !wordchain / !8ball
+!truth / !dare / !ship / !fortune / !fact
+
+_Send *!help* for the full .docx guide._
+_Only the bot owner can use commands._
+
+_Your chats are private — the bot owner cannot read or access your messages._`;
+    await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // Default: send docx guide
+  await sendHelpDocx(context, sock);
+}
+
+/**
+ * Generate a comprehensive .docx help guide with deep explanations.
+ */
+async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
+  try {
+    const sections = [
+      {
+        title: 'GENERAL COMMANDS',
+        commands: [
+          {
+            name: '!help',
+            usage: '!help  or  !help doc',
+            description: 'Shows the full command menu in chat. Use "!help doc" to receive this comprehensive .docx guide with deep explanations of every command, usage examples, and tips.',
+          },
+          {
+            name: '!ping',
+            usage: '!ping',
+            description: 'Checks if the bot is online and responsive. Replies with a quick status message confirming the bot is alive and running. Useful for verifying your connection.',
+          },
+          {
+            name: '!sticker',
+            usage: '!sticker  |  !sticker crop  |  !sticker circle  |  !sticker rounded',
+            description: 'Converts an image, video, or GIF into a WhatsApp sticker. Send or reply to a media file with "!sticker" to create a default full-size sticker. Append "crop" to auto-crop to a square, "circle" for a circular mask, or "rounded" for rounded corners.',
+          },
+          {
+            name: '!joke',
+            usage: '!joke',
+            description: 'Sends a random joke from a curated collection. Every response is unique — the bot uses an anti-repeat system so you will not see the same joke twice in a row.',
+          },
+          {
+            name: '!quote',
+            usage: '!quote',
+            description: 'Sends a random inspirational or motivational quote. Great for daily motivation or sharing with friends.',
+          },
+          {
+            name: '!meme',
+            usage: '!meme',
+            description: 'Fetches a random trending meme image from Reddit and sends it directly in chat. The meme is sourced from popular subreddits for fresh content.',
+          },
+        ],
+      },
+      {
+        title: 'TOOLS',
+        commands: [
+          {
+            name: '!ai',
+            usage: '!ai [your message]',
+            description: 'Chat with an AI assistant powered by Groq. Send any question, request, or prompt and get an intelligent response. Requires your Groq API key to be configured in your bot settings. Supports multi-turn conversation context.',
+          },
+          {
+            name: '!weather',
+            usage: '!weather [city name]',
+            description: 'Gets current weather information for any city worldwide. Shows temperature, conditions, humidity, and wind speed. Example: "!weather Lagos" or "!weather New York".',
+          },
+          {
+            name: '!define',
+            usage: '!define [word]',
+            description: 'Looks up the dictionary definition of any English word. Returns the meaning, part of speech, and example usage. Example: "!define serendipity".',
+          },
+          {
+            name: '!horoscope',
+            usage: '!horoscope [zodiac sign]',
+            description: 'Gets your daily horoscope for any zodiac sign. Supported signs: aries, taurus, gemini, cancer, leo, virgo, libra, scorpio, sagittarius, capricorn, aquarius, pisces. Example: "!horoscope leo".',
+          },
+          {
+            name: '!translate',
+            usage: '!translate [language code] [text]',
+            description: 'Translates text to another language. Common language codes: es (Spanish), fr (French), de (German), pt (Portuguese), ja (Japanese), ko (Korean), zh (Chinese), ar (Arabic), hi (Hindi). Example: "!translate fr Good morning everyone".',
+          },
+          {
+            name: '!doc',
+            usage: '!doc [title] | [content]  or  reply with !doc [title]',
+            description: 'Creates a formatted .docx Word document. Supports images — send an image with caption "!doc Title" to embed it. Three ways to use:\n1. Title + Content: "!doc My Essay | Your content here"\n2. Reply mode: Reply to any message with "!doc My Title"\n3. Content only: "!doc Just type content" — auto-titled as "Document".',
+          },
+          {
+            name: '!topdf',
+            usage: 'Reply to a .docx/.txt with !topdf',
+            description: 'Converts a .docx or .txt file to PDF.',
+          },
+          {
+            name: '!todoc',
+            usage: 'Reply to a .txt/.pdf with !todoc',
+            description: 'Converts a .txt or .pdf file to .docx (Word).',
+          },
+          {
+            name: '!totxt',
+            usage: 'Reply to a .docx/.pdf with !totxt',
+            description: 'Extracts plain text from a .docx or .pdf file.',
+          },
+          {
+            name: '!calc',
+            usage: '!calc [expression]',
+            description: 'Evaluates a mathematical expression. Supports basic arithmetic (+, -, *, /), parentheses, percentages, and more. Example: "!calc (25 * 4) + 10".',
+          },
+          {
+            name: '!note',
+            usage: '!note save [text]  |  !note list  |  !note view [id]  |  !note delete [id]',
+            description: 'Personal note-taking system. Save quick notes, list all saved notes, view a specific note by ID, or delete notes you no longer need. Notes are stored per user and persist across sessions.',
+          },
+          {
+            name: '!qr',
+            usage: '!qr [text or URL]',
+            description: 'Generates a QR code image from any text or URL. The QR code is sent as an image you can scan with any QR reader. Example: "!qr https://google.com" or "!qr Hello World".',
+          },
+          {
+            name: '!tts',
+            usage: '!tts [text]',
+            description: 'Converts text to a voice note (Text-to-Speech). The bot generates an audio message that plays like a regular WhatsApp voice note. Example: "!tts Good morning everyone".',
+          },
+          {
+            name: '!wiki',
+            usage: '!wiki [topic]',
+            description: 'Fetches a Wikipedia summary for any topic. Returns a concise overview with key facts. Example: "!wiki artificial intelligence" or "!wiki Nigeria".',
+          },
+          {
+            name: '!lyrics',
+            usage: '!lyrics [song name]',
+            description: 'Searches for and displays song lyrics. Example: "!lyrics Bohemian Rhapsody" or "!lyrics Shape of You Ed Sheeran". Returns the full lyrics text.',
+          },
+          {
+            name: '!currency',
+            usage: '!currency [amount] [FROM] [TO]',
+            description: 'Converts currency between any two supported currencies using live exchange rates. Example: "!currency 100 USD NGN" converts 100 US Dollars to Nigerian Naira. "!currency 50 EUR GBP" converts 50 Euros to British Pounds.',
+          },
+          {
+            name: '!short',
+            usage: '!short [url]',
+            description: 'Shortens a long URL into a compact, shareable link. Useful for cleaning up long URLs before sharing. Example: "!short https://very-long-website-url.com/path/to/page".',
+          },
+          {
+            name: '!img',
+            usage: '!img [prompt]',
+            description: 'Generates an AI image from a text description. Describe what you want to see and the bot creates an image using AI. Example: "!img a sunset over mountains" or "!img anatomy textbook cover".',
+          },
+        ],
+      },
+      {
+        title: 'PRODUCTIVITY',
+        commands: [
+          {
+            name: '!remind',
+            usage: '!remind [time] [message]',
+            description: 'Sets a personal reminder. The bot will message you back after the specified time with your reminder. Time format: "5m" (minutes), "2h" (hours), "1d" (days). Example: "!remind 30m Check the oven" or "!remind 2h Call mom".',
+          },
+          {
+            name: '!schedule',
+            usage: '!schedule [time] [message]',
+            description: 'Schedules a message to be sent at a specific time. Similar to reminders but designed for scheduled messaging. Example: "!schedule 1h Good night everyone".',
+          },
+          {
+            name: '!stats',
+            usage: '!stats',
+            description: 'Shows bot statistics and session information including uptime, messages processed, active session details, and system health metrics.',
+          },
+        ],
+      },
+      {
+        title: 'GAMES & FUN',
+        commands: [
+          {
+            name: '!play',
+            usage: '!play numberguess',
+            description: 'Starts a number guessing game. The bot picks a random number and you try to guess it. The bot tells you if your guess is too high or too low. Use "!answer [number]" to submit guesses.',
+          },
+          {
+            name: '!trivia',
+            usage: '!trivia',
+            description: 'Starts a multiple-choice trivia question. Answer with "!answer [letter]" (A, B, C, or D). Correct answers earn points on the leaderboard. Questions span various categories.',
+          },
+          {
+            name: '!hangman',
+            usage: '!hangman',
+            description: 'Starts a hangman word-guessing game. Guess letters one at a time with "!answer [letter]". You have limited wrong guesses before the game ends. The word is revealed on completion.',
+          },
+          {
+            name: '!wordchain',
+            usage: '!wordchain',
+            description: 'Starts a word chain game. Each player must say a word that starts with the last letter of the previous word. Use "!answer [word]" to continue the chain. Great for group fun.',
+          },
+          {
+            name: '!answer',
+            usage: '!answer [text]',
+            description: 'Submits your answer for any active game (trivia, hangman, wordchain, numberguess). The response format depends on the active game type.',
+          },
+          {
+            name: '!poll',
+            usage: '!poll [question] | [option1] | [option2] | ...',
+            description: 'Creates a poll with multiple options. Separate the question and options with the pipe character "|". Example: "!poll Best color? | Red | Blue | Green". Others vote with "!vote [number]".',
+          },
+          {
+            name: '!vote',
+            usage: '!vote [option number]',
+            description: 'Casts your vote on the active poll. Use the number corresponding to your choice. Example: "!vote 2" votes for the second option.',
+          },
+          {
+            name: '!leaderboard',
+            usage: '!leaderboard',
+            description: 'Shows the top active users ranked by points. Points are earned by playing games, answering trivia correctly, and participating in activities.',
+          },
+          {
+            name: '!8ball',
+            usage: '!8ball [question]',
+            description: 'Ask the Magic 8-Ball a yes/no question and receive a mystical answer. Example: "!8ball Will I pass my exam?".',
+          },
+          {
+            name: '!truth',
+            usage: '!truth',
+            description: 'Gives you a random "Truth" question from the classic Truth or Dare game. Great for group conversations and getting to know each other.',
+          },
+          {
+            name: '!dare',
+            usage: '!dare',
+            description: 'Gives you a random dare challenge. Fun and often silly challenges to liven up group chats.',
+          },
+          {
+            name: '!ship',
+            usage: '!ship [name1] [name2]',
+            description: 'Calculates a fun "love compatibility" percentage between two names. Example: "!ship Alice Bob". Just for fun — not real relationship advice!',
+          },
+          {
+            name: '!compliment',
+            usage: '!compliment [name]',
+            description: 'Generates a random, wholesome compliment for the named person. Example: "!compliment Sarah". Brightens someone\'s day!',
+          },
+          {
+            name: '!fortune',
+            usage: '!fortune',
+            description: 'Opens a virtual fortune cookie with a random fortune or piece of wisdom inside.',
+          },
+          {
+            name: '!fact',
+            usage: '!fact',
+            description: 'Shares a random fun fact. Learn something new every time — facts cover science, history, nature, and more.',
+          },
+          {
+            name: '!riddle',
+            usage: '!riddle',
+            description: 'Sends a random riddle. You have 30 seconds to think, then the answer is revealed. Test your brain!',
+          },
+        ],
+      },
+      {
+        title: 'SOCIAL',
+        commands: [
+          {
+            name: '!afk',
+            usage: '!afk [reason]  |  !afk off',
+            description: 'Sets your AFK (Away From Keyboard) status. When enabled, anyone who messages or tags you will get an automatic reply with your AFK reason. Use "!afk off" to disable. Example: "!afk sleeping" or "!afk in class".',
+          },
+          {
+            name: '!download',
+            usage: '!download [URL]',
+            description: 'Downloads media from supported platforms including YouTube, TikTok, Instagram, and Twitter/X. Paste the link after the command and the bot will fetch and send the media. Example: "!download https://youtube.com/watch?v=...".',
+          },
+          {
+            name: '!save',
+            usage: '!save (reply to a message)',
+            description: 'Saves a message to your personal chat. Reply to any message with "!save" and the bot will forward that message to your DM for safekeeping. Great for bookmarking important messages.',
+          },
+          {
+            name: '!savestatus',
+            usage: '!savestatus  |  !savestatus [custom caption]',
+            description: 'Saves a status and sends it to the status poster\'s chat. Reply to someone\'s status — text, image, or video — with "!savestatus" and the media will be downloaded and sent to that person\'s chat directly.\n\nCaption Support:\nYou can add a custom caption: "!savestatus Nice pic!" will send the media with your caption.\n\nIf no custom caption is provided, the original caption (if any) is preserved.\n\nSupported Media Types:\n- Text messages\n- Images with optional caption\n- Videos with optional caption\n\nAliases: !ss, !savest',
+          },
+          {
+            name: '!tagall',
+            usage: '!tagall [message]',
+            description: 'Mentions all members of the current group in a single message. Only works in group chats. You can add an optional message that appears with the mentions. Example: "!tagall Meeting at 3pm today".',
+          },
+          {
+            name: '!group',
+            usage: '!group',
+            description: 'Displays detailed group information including the group name, description, creation date, participant count, and admin list. Only works in group chats.',
+          },
+          {
+            name: '!kick',
+            usage: '!kick @mention  or  reply with !kick',
+            description: 'Removes a member from the group. Bot must be admin. Reply to their message or mention them.',
+          },
+          {
+            name: '!promote',
+            usage: '!promote @mention  or  reply with !promote',
+            description: 'Promotes a member to group admin. Bot must be admin.',
+          },
+          {
+            name: '!demote',
+            usage: '!demote @mention  or  reply with !demote',
+            description: 'Removes admin status from a member. Bot must be admin.',
+          },
+          {
+            name: '!settings',
+            usage: '!settings [option] [value]',
+            description: 'Configure bot settings via WhatsApp. Options: afk on/off, afk msg [text], name [name], welcome on/off, status.',
+          },
+          {
+            name: '!welcome',
+            usage: '!welcome [message]  or  !welcome reset',
+            description: 'Set a custom welcome message for new group members. Use {name}, {group}, {time}, {date}, {count} as placeholders. Must enable with !settings welcome on first.',
+          },
+          {
+            name: '!goodbye',
+            usage: '!goodbye [message]  or  !goodbye reset',
+            description: 'Set a custom goodbye message when members leave the group. Same placeholders as !welcome.',
+          },
+          {
+            name: '!autoview',
+            usage: '!autoview on/off',
+            description: 'Auto-view and react (❤️) to contacts\' WhatsApp statuses. Processes one by one with 5-15s delays, skips ~15%, max 50/day. Ban-safe.',
+          },
+          {
+            name: '!balance',
+            usage: '!balance',
+            description: 'Check your reward balance and progress toward free airtime cashout at ₦100.',
+          },
+          {
+            name: '!plan',
+            usage: '!plan',
+            description: 'Check your current subscription plan, message quota usage, and session limits.',
+          },
+        ],
+      },
+      {
+        title: 'MEDIA & CONVERSION',
+        commands: [
+          {
+            name: '!viewonce',
+            usage: '!viewonce (reply to view-once message)',
+            description: 'Saves a "view once" image, video, or audio and resends it as a normal message in the same chat. Reply to any view-once media with "!viewonce" to save it before it disappears.\n\nAliases: !vo',
+          },
+          {
+            name: '!toimg',
+            usage: '!toimg (reply to sticker)',
+            description: 'Converts a WhatsApp sticker back to a PNG image. Reply to any sticker with "!toimg" to get the original image. Works with both static and animated stickers (first frame for animated).\n\nAliases: !toimage',
+          },
+          {
+            name: '!togif',
+            usage: '!togif (reply to animated sticker or video)',
+            description: 'Converts an animated sticker or short video into a GIF-style looping video. Reply to an animated sticker or video with "!togif". Requires ffmpeg on the server.',
+          },
+          {
+            name: '!toaudio',
+            usage: '!toaudio (reply to video)',
+            description: 'Extracts the audio track from a video and sends it as an MP3 file. Reply to any video with "!toaudio" to get just the sound. Requires ffmpeg on the server.\n\nAliases: !tomp3',
+          },
+          {
+            name: '!removebg',
+            usage: '!removebg (reply to image)',
+            description: 'Removes the background from an image using edge-based color detection. Works best with solid-colored backgrounds (white, green screen, etc.). Reply to an image with "!removebg" to get a transparent PNG.\n\nAliases: !rbg',
+          },
+          {
+            name: '!carbon',
+            usage: '!carbon [code]  or  reply to text with !carbon',
+            description: 'Generates a beautiful code screenshot. Type your code after the command, or reply to a text message with "!carbon". The screenshot uses a dark theme with syntax-style formatting.\n\nAliases: !code',
+          },
+          {
+            name: '!screenshot',
+            usage: '!screenshot [url]',
+            description: 'Takes a screenshot of any website and sends it as an image. Provide the full URL after the command. Example: "!screenshot https://google.com". The screenshot is captured at 1280px width.\n\nAliases: !ss',
+          },
+          {
+            name: '!ocr',
+            usage: '!ocr (reply to image)',
+            description: 'Extracts text from an image using Optical Character Recognition (OCR). Reply to any image with "!ocr" to read the text in it. Supports English text. Uses Tesseract.js for local processing — no API key needed.\n\nAliases: !readtext',
+          },
+        ],
+      },
+      {
+        title: 'PROFILE',
+        commands: [
+          {
+            name: '!bio',
+            usage: '!bio [text]',
+            description: 'Updates your WhatsApp bio (About section). Maximum 139 characters. Example: "!bio Living my best life". Your bio is visible to all your contacts.\n\nAliases: !about',
+          },
+          {
+            name: '!setpp',
+            usage: '!setpp (reply to image)',
+            description: 'Sets your WhatsApp profile picture. Reply to an image with "!setpp" and the bot will resize it to a 640x640 square and set it as your profile picture.\n\nAliases: !setpfp, !profilepic',
+          },
+          {
+            name: '!read',
+            usage: '!read',
+            description: 'Marks messages in the current chat as read. Useful for quickly clearing unread indicators without manually reading each message.\n\nAliases: !markread',
+          },
+        ],
+      },
+      {
+        title: 'UTILITIES',
+        commands: [
+          {
+            name: '!forward',
+            usage: '!forward [phone number] (reply to message)',
+            description: 'Forwards a replied message to another contact. Reply to any message (text, image, video, audio, document) and use "!forward" followed by the phone number. Example: "!forward 2348012345678".\n\nAliases: !fwd',
+          },
+          {
+            name: '!base64',
+            usage: '!base64 encode [text]  |  !base64 decode [encoded]',
+            description: 'Encodes text to Base64 or decodes Base64 back to text. Useful for encoding data or decoding encoded strings.\n\nExamples:\n"!base64 encode Hello World" → SGVsbG8gV29ybGQ=\n"!base64 decode SGVsbG8gV29ybGQ=" → Hello World\n\nAliases: !b64',
+          },
+          {
+            name: '!hash',
+            usage: '!hash [text]  |  !md5 [text]  |  !sha256 [text]',
+            description: 'Generates cryptographic hashes of text. "!hash" shows both MD5 and SHA-256, while "!md5" and "!sha256" show only the specific hash. Useful for checksums and verification.\n\nExample: "!hash Hello World"',
+          },
+          {
+            name: '!color',
+            usage: '!color [hex code]',
+            description: 'Generates a visual color swatch from a hex color code. Shows the color as an image with the hex code and RGB values. Supports 3-digit and 6-digit hex codes.\n\nExamples: "!color #FF5733" or "!color 3498DB"\n\nAliases: !colour, !hex',
+          },
+        ],
+      },
+      {
+        title: 'PRODUCTIVITY',
+        commands: [
+          { name: '!calc', usage: '!calc [expression]', description: 'Evaluate math expressions. Supports: +, -, *, /, ^ (power), sqrt(), sin(), cos(), tan(), log(), ln(), abs(), pi.\n\nExamples: "!calc 2^10 + sqrt(144)", "!calc sin(45)"\n\nAliases: !math' },
+          { name: '!countdown', usage: '!countdown [YYYY-MM-DD]', description: 'Shows how many days until (or since) a given date.\n\nExample: "!countdown 2025-12-25" → "X days until 2025-12-25"' },
+          { name: '!cal', usage: '!cal', description: 'Shows the current month calendar with today\'s date highlighted.\n\nAliases: !calendar' },
+          { name: '!timezone', usage: '!timezone [city]', description: 'Shows the current time and date in any city/timezone.\n\nExamples: "!timezone London", "!timezone Tokyo"\n\nAliases: !tz, !time' },
+          { name: '!uptime', usage: '!uptime', description: 'Shows how long the bot has been running since last restart.' },
+          { name: '!id', usage: '!id', description: 'Shows chat information: Chat JID, your JID, message ID, chat type (group/private). Useful for debugging.\n\nAliases: !chatid' },
+          { name: '!paste', usage: '!paste [text]', description: 'Creates a paste on paste.rs and returns a shareable link. You can also reply to a message with "!paste" to paste its content.\n\nAliases: !pastebin' },
+          { name: '!purge', usage: '!purge [n]', description: 'Request to delete your own last N messages (1-100). Note: Full message deletion requires Baileys direct connection.\n\nAliases: !del' },
+        ],
+      },
+      {
+        title: 'INFO LOOKUP',
+        commands: [
+          { name: '!crypto', usage: '!crypto [coin name]', description: 'Shows live cryptocurrency prices from CoinGecko (free, no key). Shows USD, EUR, GBP, NGN prices, 24h change, market cap, and rank.\n\nExamples: "!crypto bitcoin", "!crypto ethereum", "!crypto dogecoin"\n\nAliases: !coin' },
+          { name: '!ud', usage: '!ud [word or phrase]', description: 'Looks up definitions on Urban Dictionary. Shows the top-voted definition with example and vote counts.\n\nExample: "!ud yeet"\n\nAliases: !urban' },
+          { name: '!ip', usage: '!ip [domain]', description: 'Performs a DNS lookup and shows all IP addresses for a domain.\n\nExample: "!ip google.com"\n\nAliases: !dns, !nslookup' },
+          { name: '!npm', usage: '!npm [package name]', description: 'Shows information about an npm package: latest version, description, license, and direct link.\n\nExample: "!npm express"' },
+          { name: '!whois', usage: '!whois [domain]', description: 'Performs a WHOIS lookup on a domain showing registrar, creation date, expiry, and name servers.\n\nExample: "!whois google.com"' },
+          { name: '!headers', usage: '!headers [url]', description: 'Shows the HTTP response headers of any URL. Useful for debugging websites.\n\nExample: "!headers https://google.com"\n\nAliases: !httpheaders' },
+          { name: '!country', usage: '!country [name]', description: 'Shows detailed information about a country: capital, population, region, currency, languages, timezone, and calling code.\n\nExample: "!country Nigeria"' },
+          { name: '!emoji', usage: '!emoji [name]', description: 'Search for emojis by name. Shows matching emojis from a built-in database.\n\nExample: "!emoji fire" → 🔥 fire\n\nAliases: !emojisearch' },
+          { name: '!palette', usage: '!palette [hex color]', description: 'Generates a color palette image from a base hex color, showing darker, lighter, and complementary colors.\n\nExample: "!palette FF5733"' },
+        ],
+      },
+      {
+        title: 'TEXT & WRITING',
+        commands: [
+          { name: '!reverse', usage: '!reverse [text]', description: 'Reverses the text. Can also reply to a message.\n\nExample: "!reverse Hello World" → "dlroW olleH"\n\nAliases: !rev' },
+          { name: '!upper', usage: '!upper [text]', description: 'Converts text to UPPERCASE. Can also reply to a message.\n\nAliases: !uppercase' },
+          { name: '!lower', usage: '!lower [text]', description: 'Converts text to lowercase. Can also reply to a message.\n\nAliases: !lowercase' },
+          { name: '!mock', usage: '!mock [text]', description: 'Converts text to SpOnGeBoB mOcKiNg style (alternating case).\n\nAliases: !spongebob' },
+          { name: '!clap', usage: '!clap [text]', description: 'Inserts 👏 between every word.\n\nExample: "!clap do it now" → "do 👏 it 👏 now"' },
+          { name: '!tiny', usage: '!tiny [text]', description: 'Converts text to ᵗⁱⁿʸ superscript Unicode characters.\n\nAliases: !superscript' },
+          { name: '!fliptext', usage: '!fliptext [text]', description: 'Flips text upside down using Unicode characters.\n\nExample: "!fliptext hello" → "ollǝɥ"\n\nAliases: !upsidedown' },
+          { name: '!morse', usage: '!morse [text or morse code]', description: 'Encodes text to Morse code, or decodes Morse code back to text. Auto-detects the direction.\n\nExamples:\n"!morse hello" → ".... . .-.. .-.. ---"\n"!morse .... .-.." → "hi"' },
+          { name: '!braille', usage: '!braille [text]', description: 'Converts text to Braille Unicode characters.\n\nExample: "!braille hello" → "⠓⠑⠇⠇⠕"' },
+          { name: '!ascii', usage: '!ascii [text]', description: 'Generates ASCII art text using block characters (max 15 characters).\n\nAliases: !bigtext' },
+          { name: '!font', usage: '!font [style] [text]', description: 'Converts text to fancy Unicode font styles.\n\nAvailable styles: bold, italic, bolditalic, monospace, double, script, fraktur, vaporwave, smallcaps\n\nExample: "!font bold Hello World" → "𝐇𝐞𝐥𝐥𝐨 𝐖𝐨𝐫𝐥𝐝"\n\nAliases: !fancy' },
+        ],
+      },
+      {
+        title: 'QUICK UTILITIES',
+        commands: [
+          { name: '!pick', usage: '!pick [option1, option2, ...]', description: 'Randomly picks one option from a comma-separated list. Needs at least 2 options.\n\nExample: "!pick pizza, burger, sushi"\n\nAliases: !choose' },
+          { name: '!coinflip', usage: '!coinflip', description: 'Flips a coin — Heads or Tails.\n\nAliases: !flip' },
+          { name: '!dice', usage: '!dice [sides]', description: 'Rolls a dice with the specified number of sides (default 6).\n\nExample: "!dice 20" → Rolled a 14 (d20)\n\nAliases: !roll' },
+          { name: '!password', usage: '!password [length]', description: 'Generates a secure random password (4-128 characters, default 16). Includes letters, numbers, and symbols.\n\nAliases: !genpass' },
+          { name: '!uuid', usage: '!uuid', description: 'Generates a random UUID v4.' },
+          { name: '!epoch', usage: '!epoch', description: 'Shows the current Unix timestamp in seconds, milliseconds, and ISO format.\n\nAliases: !timestamp' },
+          { name: '!bmi', usage: '!bmi [weight kg] [height cm]', description: 'Calculates Body Mass Index and category.\n\nExample: "!bmi 70 175" → BMI: 22.9 (Normal weight)' },
+          { name: '!age', usage: '!age [YYYY-MM-DD]', description: 'Calculates exact age from a birthdate.\n\nExample: "!age 2000-05-15" → 25 years, 11 months, 20 days' },
+          { name: '!unit', usage: '!unit [value] [from] [to]', description: 'Converts between units. Supports: km, mi, m, ft, cm, in, kg, lb, g, oz, l, gal, c (Celsius), f (Fahrenheit), k (Kelvin).\n\nExamples: "!unit 100 km mi", "!unit 37 c f"\n\nAliases: !convert' },
+        ],
+      },
+      {
+        title: 'FUN & CREATIVE',
+        commands: [
+          { name: '!wallpaper', usage: '!wallpaper [optional query]', description: 'Sends a random HD wallpaper (1920x1080). Optionally specify a search query for themed wallpapers.\n\nExamples: "!wallpaper" (random), "!wallpaper nature"\n\nAliases: !wp' },
+          { name: '!qrread', usage: '!qrread (reply to image)', description: 'Scans a QR code from an image and shows its content. Reply to an image containing a QR code.\n\nAliases: !scanqr' },
+        ],
+      },
+      {
+        title: 'IMAGE EDITING',
+        commands: [
+          { name: '!blur', usage: '!blur [amount] (reply to image)', description: 'Applies Gaussian blur to an image. Amount range: 1-100 (default 5).\n\nExample: "!blur 10"' },
+          { name: '!grayscale', usage: '!grayscale (reply to image)', description: 'Converts an image to black and white.\n\nAliases: !greyscale, !bw' },
+          { name: '!rotate', usage: '!rotate [degrees] (reply to image)', description: 'Rotates an image by the specified degrees (default 90).\n\nExample: "!rotate 180"' },
+          { name: '!resize', usage: '!resize [width] [height] (reply to image)', description: 'Resizes an image. If only width is given, height scales proportionally. Max 4096px.\n\nExample: "!resize 800 600"' },
+          { name: '!invert', usage: '!invert (reply to image)', description: 'Inverts (negates) all colors in the image.\n\nAliases: !negative' },
+          { name: '!brightness', usage: '!brightness [factor] (reply to image)', description: 'Adjusts image brightness. Factor range: 0.1-3.0 (1.0 = no change, higher = brighter).\n\nExample: "!brightness 1.5"' },
+          { name: '!contrast', usage: '!contrast [factor] (reply to image)', description: 'Adjusts image contrast. Factor range: 0.1-3.0 (1.0 = no change, higher = more contrast).\n\nExample: "!contrast 1.5"' },
+          { name: '!crop', usage: '!crop [x] [y] [width] [height] (reply to image)', description: 'Crops an image to the specified region. Use "!crop center" for a square crop from the center.\n\nExamples: "!crop center", "!crop 50 50 300 200"' },
+          { name: '!compress', usage: '!compress (reply to image)', description: 'Compresses an image to reduce file size. Shows the before/after size and percentage saved.' },
+        ],
+      },
+    ];
+
+    const children: Paragraph[] = [];
+
+    // Title
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'BotWave Command Guide', bold: true, size: 48, font: 'Calibri' })],
+      heading: HeadingLevel.TITLE,
+      alignment: AlignmentType.CENTER,
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'Complete reference with deep explanations for every command', italics: true, size: 24, font: 'Calibri' })],
+      alignment: AlignmentType.CENTER,
+    }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'All commands start with the "!" prefix. Only the bot owner can use commands.', size: 22, font: 'Calibri' })],
+    }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+
+    for (const section of sections) {
+      // Section heading
+      children.push(new Paragraph({
+        children: [new TextRun({ text: section.title, bold: true, size: 32, font: 'Calibri' })],
+        heading: HeadingLevel.HEADING_1,
+      }));
+      children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+
+      for (const cmd of section.commands) {
+        // Command name
+        children.push(new Paragraph({
+          children: [new TextRun({ text: cmd.name, bold: true, size: 26, font: 'Calibri' })],
+          heading: HeadingLevel.HEADING_2,
+        }));
+
+        // Usage
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Usage: ', bold: true, size: 22, font: 'Calibri' }),
+            new TextRun({ text: cmd.usage, size: 22, font: 'Courier New' }),
+          ],
+        }));
+
+        // Description (preserve newlines)
+        const descLines = cmd.description.split('\n');
+        for (const line of descLines) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: line, size: 22, font: 'Calibri' })],
+          }));
+        }
+
+        children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+      }
+    }
+
+    // Privacy notice
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({
+        text: 'Privacy: Your chats are private. The bot owner cannot read or access your messages. BotWave only responds to commands — it does not store, read, or share any chat content.',
+        size: 20, italics: true, font: 'Calibri',
+      })],
+      alignment: AlignmentType.CENTER,
+    }));
+
+    // Footer
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
+    children.push(new Paragraph({
+      children: [new TextRun({
+        text: `Generated by BotWave at ${currentTimeStr()} on ${currentDateStr()}`,
+        size: 18, italics: true, font: 'Calibri',
+      })],
+      alignment: AlignmentType.CENTER,
+    }));
+
+    const doc = new Document({ sections: [{ children }] });
+    const buffer = await Packer.toBuffer(doc);
+
+    const intro = pickResponse(helpIntros, { name: context.pushName || 'User', time: currentTimeStr() }, false);
+    await sendReply(
+      context.chatJid,
+      {
+        document: buffer,
+        mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        fileName: 'BotWave_Command_Guide.docx',
+        caption: `${intro}\n\n_Full command guide with detailed explanations._`,
+      },
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+  } catch (error) {
+    console.error('[HELP-DOC] Error generating help docx:', error);
+    await sendReply(context.chatJid, 'Failed to generate the help document. Try !help for the text version.', sock, context.rawMessage.key, context.queue);
+  }
+}
+
+async function sendPing(
+  context: MessageContext,
+  sock: any,
+  vars: { name?: string; time?: string; date?: string; group?: string },
+): Promise<void> {
+  const response = pickResponse(pingReplies, vars);
+  await sendReply(context.chatJid, response, sock, context.rawMessage.key, context.queue);
+}
+
+async function sendUnknownCommand(
+  context: MessageContext,
+  sock: any,
+  vars: { name?: string; time?: string; date?: string; group?: string },
+): Promise<void> {
+  const response = pickResponse(unknownCommandReplies, vars, false);
+  await sendReply(context.chatJid, response, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Register General Commands ───────────────────────────────────────────────
+
+registerCommand({
+  name: 'help',
+  aliases: ['help', 'h', 'commands'],
+  category: 'general',
+  description: 'Show all available commands',
+  execute: (ctx, args, sock, vars) => sendHelp(ctx, args, sock, vars),
+});
+
+registerCommand({
+  name: 'ping',
+  aliases: ['ping', 'pong', 'alive'],
+  category: 'general',
+  description: 'Check if the bot is alive',
+  execute: (ctx, _args, sock, vars) => sendPing(ctx, sock, vars),
+});
+
+// sendUnknownCommand is exported for use by the dispatcher, not registered as a command
+export { sendUnknownCommand };
