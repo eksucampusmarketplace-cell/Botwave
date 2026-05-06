@@ -58,6 +58,9 @@ export default function DashboardNav() {
           <Link href="/dashboard/settings" data-tour="nav-settings" className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green transition-colors">
             SETTINGS
           </Link>
+          <Link href="/dashboard/rewards" className="font-mono text-xs tracking-[2px] text-cyan hover:text-green transition-colors">
+            REWARDS
+          </Link>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4">
@@ -149,6 +152,13 @@ export default function DashboardNav() {
                 className="font-mono text-xs tracking-[2px] text-[#7abfa0] hover:text-green py-3 border-b border-green/10"
               >
                 SETTINGS
+              </Link>
+              <Link
+                href="/dashboard/rewards"
+                onClick={() => setMenuOpen(false)}
+                className="font-mono text-xs tracking-[2px] text-cyan hover:text-green py-3 border-b border-green/10"
+              >
+                REWARDS
               </Link>
               <button
                 onClick={() => { setMenuOpen(false); toggleTheme(); }}

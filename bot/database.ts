@@ -1223,3 +1223,235 @@ export async function setWelcomeMessage(
   }
   return true;
 }
+
+// ─── Monetization: Subscriptions ─────────────────────────────────────────────
+
+const PLAN_CONFIGS: Record<string, { quotaLimit: number; sessionLimit: number; aiDailyLimit: number }> = {
+  free: { quotaLimit: 300, sessionLimit: 1, aiDailyLimit: 10 },
+  lite: { quotaLimit: 2000, sessionLimit: 1, aiDailyLimit: 50 },
+  standard: { quotaLimit: 10000, sessionLimit: 3, aiDailyLimit: 200 },
+  boss: { quotaLimit: -1, sessionLimit: 5, aiDailyLimit: -1 },
+};
+
+export interface SubscriptionInfo {
+  plan: string;
+  status: string;
+  quotaLimit: number;
+  quotaUsed: number;
+  sessionLimit: number;
+  aiDailyLimit: number;
+}
+
+export async function getUserSubscription(userId: string): Promise<SubscriptionInfo> {
+  const defaults: SubscriptionInfo = {
+    plan: 'free', status: 'active',
+    quotaLimit: 300, quotaUsed: 0,
+    sessionLimit: 1, aiDailyLimit: 10,
+  };
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, next_renewal')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) return defaults;
+
+  // Auto-expire if past renewal date
+  if (data.plan !== 'free' && data.next_renewal) {
+    const renewal = new Date(data.next_renewal);
+    if (renewal < new Date()) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          plan: 'free', status: 'expired',
+          quota_limit: 300, quota_used: 0,
+          session_limit: 1, ai_daily_limit: 10,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+      return defaults;
+    }
+  }
+
+  return {
+    plan: data.plan,
+    status: data.status,
+    quotaLimit: data.quota_limit,
+    quotaUsed: data.quota_used,
+    sessionLimit: data.session_limit,
+    aiDailyLimit: data.ai_daily_limit,
+  };
+}
+
+/**
+ * Increment quota usage. Returns false if quota exceeded.
+ */
+export async function incrementQuotaUsage(userId: string): Promise<boolean> {
+  const sub = await getUserSubscription(userId);
+
+  // Unlimited plan
+  if (sub.quotaLimit === -1) return true;
+
+  if (sub.quotaUsed >= sub.quotaLimit) return false;
+
+  await supabase
+    .from('subscriptions')
+    .update({
+      quota_used: sub.quotaUsed + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  return true;
+}
+
+/**
+ * Reset monthly quota for all subscriptions (call from cron/scheduler).
+ */
+export async function resetMonthlyQuotas(): Promise<void> {
+  await supabase
+    .from('subscriptions')
+    .update({ quota_used: 0, updated_at: new Date().toISOString() })
+    .neq('plan', ''); // update all
+}
+
+// ─── Monetization: Rewards ───────────────────────────────────────────────────
+
+const REWARD_ACTIONS: Record<string, { amount: number; dailyLimit: number; once?: boolean }> = {
+  'first_session': { amount: 10, dailyLimit: 1, once: true },
+  'command_use': { amount: 1, dailyLimit: 10 },
+  'daily_active': { amount: 3, dailyLimit: 1 },
+  'referral': { amount: 15, dailyLimit: 100 },
+  'plan_upgrade': { amount: 30, dailyLimit: 1, once: true },
+  'weekly_streak': { amount: 10, dailyLimit: 1 },
+};
+
+const CASHOUT_THRESHOLD = 100;
+
+export interface RewardBalance {
+  balance: number;
+  totalEarned: number;
+  totalCashedOut: number;
+}
+
+export async function getRewardBalance(userId: string): Promise<RewardBalance> {
+  const { data } = await supabase
+    .from('reward_balances')
+    .select('balance, total_earned, total_cashed_out')
+    .eq('user_id', userId)
+    .single();
+
+  if (!data) {
+    return { balance: 0, totalEarned: 0, totalCashedOut: 0 };
+  }
+
+  return {
+    balance: data.balance,
+    totalEarned: data.total_earned,
+    totalCashedOut: data.total_cashed_out,
+  };
+}
+
+/**
+ * Credit reward to user. Handles daily limits and one-time actions.
+ * Returns the amount credited (0 if limit reached).
+ */
+export async function creditReward(
+  userId: string,
+  action: string,
+  description?: string,
+): Promise<number> {
+  const config = REWARD_ACTIONS[action];
+  if (!config) return 0;
+
+  // Check one-time actions
+  if (config.once) {
+    const { count } = await supabase
+      .from('reward_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action', action);
+    if ((count || 0) > 0) return 0;
+  }
+
+  // Check daily limit
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { count: todayCount } = await supabase
+    .from('reward_transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('action', action)
+    .gte('created_at', todayStart.toISOString());
+
+  if ((todayCount || 0) >= config.dailyLimit) return 0;
+
+  const amount = config.amount;
+
+  // Insert transaction
+  await supabase.from('reward_transactions').insert({
+    user_id: userId,
+    action,
+    amount,
+    description: description || action,
+  });
+
+  // Upsert balance
+  const current = await getRewardBalance(userId);
+  const newBalance = current.balance + amount;
+  const newTotalEarned = current.totalEarned + amount;
+
+  await supabase.from('reward_balances').upsert({
+    user_id: userId,
+    balance: newBalance,
+    total_earned: newTotalEarned,
+    total_cashed_out: current.totalCashedOut,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+
+  return amount;
+}
+
+/**
+ * Check if balance meets cashout threshold. If so, initiate airtime cashout.
+ * Returns true if cashout was triggered.
+ */
+export async function checkAndCashout(userId: string, phoneNumber: string): Promise<boolean> {
+  const balance = await getRewardBalance(userId);
+  if (balance.balance < CASHOUT_THRESHOLD) return false;
+
+  // Import Inlomax client
+  const { sendAirtime, detectNetwork } = await import('@/bot/utils/inlomax');
+
+  const networkInfo = detectNetwork(phoneNumber);
+  const result = await sendAirtime(phoneNumber, CASHOUT_THRESHOLD);
+
+  // Record the cashout attempt
+  await supabase.from('airtime_cashouts').insert({
+    user_id: userId,
+    phone_number: phoneNumber,
+    amount: CASHOUT_THRESHOLD,
+    network: networkInfo?.network || 'UNKNOWN',
+    status: result.success ? 'success' : 'failed',
+    inlomax_reference: result.reference,
+    error_message: result.error,
+  });
+
+  if (result.success) {
+    // Deduct from balance
+    await supabase.from('reward_balances').update({
+      balance: balance.balance - CASHOUT_THRESHOLD,
+      total_cashed_out: balance.totalCashedOut + CASHOUT_THRESHOLD,
+      last_cashout_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId);
+
+    return true;
+  }
+
+  return false;
+}
+
+export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };

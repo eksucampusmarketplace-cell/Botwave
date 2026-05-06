@@ -59,7 +59,7 @@ interface SecurityData {
   security: Record<string, string>;
 }
 
-type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health';
+type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health' | 'monetization';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -83,6 +83,8 @@ export default function AdminDashboard() {
   const [healthData, setHealthData] = useState<any>(null);
   const [fetchingHealth, setFetchingHealth] = useState(false);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [monetizationData, setMonetizationData] = useState<any>(null);
+  const [fetchingMonetization, setFetchingMonetization] = useState(false);
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -128,6 +130,8 @@ export default function AdminDashboard() {
       fetchUsers();
     } else if (activeTab === 'security') {
       fetchSecurityData();
+    } else if (activeTab === 'monetization') {
+      fetchMonetizationData();
     }
   }, [activeTab]);
 
@@ -175,6 +179,21 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error('Error fetching rate limits:', err);
+    }
+  };
+
+  const fetchMonetizationData = async () => {
+    setFetchingMonetization(true);
+    try {
+      const res = await fetch('/api/admin/monetization');
+      const data = await res.json();
+      if (data.success) {
+        setMonetizationData(data);
+      }
+    } catch (err) {
+      console.error('Error fetching monetization data:', err);
+    } finally {
+      setFetchingMonetization(false);
     }
   };
 
@@ -239,6 +258,7 @@ export default function AdminDashboard() {
     { id: 'settings', label: 'RATE LIMITS' },
     { id: 'security', label: 'SECURITY' },
     { id: 'health', label: 'SYSTEM HEALTH' },
+    { id: 'monetization', label: 'MONETIZATION' },
   ];
 
   return (
@@ -673,6 +693,119 @@ export default function AdminDashboard() {
                     The database schema is correctly initialized. All required tables were found.
                   </p>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Monetization Tab */}
+          {activeTab === 'monetization' && (
+            <div className="p-4 sm:p-6">
+              {fetchingMonetization ? (
+                <div className="text-center py-12">
+                  <p className="text-zinc-500 font-mono text-sm animate-pulse">Loading monetization data...</p>
+                </div>
+              ) : monetizationData ? (
+                <div className="space-y-8">
+                  {/* Subscription Stats */}
+                  <div>
+                    <h3 className="text-green-500 font-bold mb-4 tracking-widest text-sm">SUBSCRIPTIONS</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {Object.entries(monetizationData.subscriptions || {}).map(([plan, count]) => (
+                        <div key={plan} className="bg-zinc-900/50 border border-zinc-800 p-4">
+                          <p className="font-mono text-xs text-zinc-500 uppercase">{plan}</p>
+                          <p className="font-bold text-2xl text-white">{String(count)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Revenue Stats */}
+                  <div>
+                    <h3 className="text-green-500 font-bold mb-4 tracking-widest text-sm">REVENUE</h3>
+                    <div className="bg-zinc-900/50 border border-zinc-800 p-4 inline-block">
+                      <p className="font-mono text-xs text-zinc-500">Total Revenue</p>
+                      <p className="font-bold text-3xl text-green-400">₦{(monetizationData.revenue?.total || 0).toLocaleString()}</p>
+                    </div>
+                    {monetizationData.revenue?.recentPayments?.length > 0 && (
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="w-full text-xs font-mono">
+                          <thead>
+                            <tr className="text-zinc-500 border-b border-zinc-800">
+                              <th className="text-left py-2 px-3">Plan</th>
+                              <th className="text-left py-2 px-3">Amount</th>
+                              <th className="text-left py-2 px-3">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {monetizationData.revenue.recentPayments.slice(0, 10).map((p: any, i: number) => (
+                              <tr key={i} className="border-b border-zinc-800/50">
+                                <td className="py-2 px-3 text-zinc-300">{p.plan}</td>
+                                <td className="py-2 px-3 text-green-400">₦{p.amount}</td>
+                                <td className="py-2 px-3 text-zinc-500">{new Date(p.created_at).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reward Stats */}
+                  <div>
+                    <h3 className="text-green-500 font-bold mb-4 tracking-widest text-sm">REWARDS</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-zinc-900/50 border border-zinc-800 p-4">
+                        <p className="font-mono text-xs text-zinc-500">Total Earned</p>
+                        <p className="font-bold text-xl text-white">₦{(monetizationData.rewards?.totalEarned || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-zinc-900/50 border border-zinc-800 p-4">
+                        <p className="font-mono text-xs text-zinc-500">Cashed Out</p>
+                        <p className="font-bold text-xl text-orange-400">₦{(monetizationData.rewards?.totalCashedOut || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-zinc-900/50 border border-zinc-800 p-4">
+                        <p className="font-mono text-xs text-zinc-500">Pending Balance</p>
+                        <p className="font-bold text-xl text-cyan-400">₦{(monetizationData.rewards?.totalPendingBalance || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-zinc-900/50 border border-zinc-800 p-4">
+                        <p className="font-mono text-xs text-zinc-500">Users Earning</p>
+                        <p className="font-bold text-xl text-white">{monetizationData.rewards?.usersWithBalance || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Cashouts */}
+                  {monetizationData.cashouts?.length > 0 && (
+                    <div>
+                      <h3 className="text-green-500 font-bold mb-4 tracking-widest text-sm">RECENT CASHOUTS</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs font-mono">
+                          <thead>
+                            <tr className="text-zinc-500 border-b border-zinc-800">
+                              <th className="text-left py-2 px-3">Phone</th>
+                              <th className="text-left py-2 px-3">Amount</th>
+                              <th className="text-left py-2 px-3">Network</th>
+                              <th className="text-left py-2 px-3">Status</th>
+                              <th className="text-left py-2 px-3">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {monetizationData.cashouts.map((c: any, i: number) => (
+                              <tr key={i} className="border-b border-zinc-800/50">
+                                <td className="py-2 px-3 text-zinc-300">{c.phone_number}</td>
+                                <td className="py-2 px-3 text-green-400">₦{c.amount}</td>
+                                <td className="py-2 px-3 text-zinc-300">{c.network}</td>
+                                <td className={`py-2 px-3 ${c.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>{c.status}</td>
+                                <td className="py-2 px-3 text-zinc-500">{new Date(c.created_at).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-zinc-500 font-mono text-sm text-center py-12">No monetization data available.</p>
               )}
             </div>
           )}
