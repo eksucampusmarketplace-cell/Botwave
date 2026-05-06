@@ -96,6 +96,22 @@ export async function POST(request: NextRequest) {
 
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
 
+        // Resolve any active dunning
+        await supabase
+          .from('subscriptions')
+          .update({
+            dunning_status: null,
+            failed_payment_count: 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', payment.user_id);
+
+        await supabase
+          .from('dunning_attempts')
+          .update({ status: 'recovered', resolved_at: new Date().toISOString() })
+          .eq('user_id', payment.user_id)
+          .in('status', ['notified', 'retry_scheduled']);
+
         // Credit reward for plan upgrade
         try {
           const { data: rewardBal } = await supabase
@@ -136,7 +152,45 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', payment.id);
-      console.log(`[SQUAD-WEBHOOK] Payment failed: ref=${transactionRef} user=${payment.user_id}`);
+
+      // Start/continue dunning sequence
+      const { data: existingDunning } = await supabase
+        .from('dunning_attempts')
+        .select('attempt_number')
+        .eq('user_id', payment.user_id)
+        .eq('payment_id', payment.id)
+        .order('attempt_number', { ascending: false })
+        .limit(1)
+        .single();
+
+      const attemptNumber = existingDunning ? existingDunning.attempt_number + 1 : 1;
+      const retryDays = [0, 3, 7];
+      const nextRetryDay = retryDays[attemptNumber] || null;
+      const nextRetryAt = nextRetryDay
+        ? new Date(Date.now() + nextRetryDay * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      await supabase.from('dunning_attempts').insert({
+        user_id: payment.user_id,
+        payment_id: payment.id,
+        attempt_number: attemptNumber,
+        status: nextRetryAt ? 'retry_scheduled' : 'notified',
+        notification_type: attemptNumber >= 3 ? 'final_warning' : attemptNumber === 1 ? 'payment_failed' : 'retry_reminder',
+        notified_via: 'whatsapp',
+        next_retry_at: nextRetryAt,
+      });
+
+      await supabase
+        .from('subscriptions')
+        .update({
+          dunning_status: 'active',
+          failed_payment_count: attemptNumber,
+          last_payment_attempt_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', payment.user_id);
+
+      console.log(`[SQUAD-WEBHOOK] Payment failed + dunning started: ref=${transactionRef} user=${payment.user_id} attempt=${attemptNumber}`);
     }
 
     return NextResponse.json({ ok: true });
