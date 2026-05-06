@@ -70,16 +70,26 @@ export async function POST(request: NextRequest) {
         callbackUrl,
         metadata: { user_id: user.id, plan },
       });
-      console.log(`[PAYMENT-INIT] Re-initialized existing pending payment: ref=${existing.squad_transaction_ref}`);
-      return NextResponse.json({
-        success: true,
-        transactionRef: existing.squad_transaction_ref,
-        checkoutUrl: reResult.checkoutUrl || null,
-        publicKey: getPublicKey(),
-        amount: planConfig.price,
-        email: user.email,
-        plan,
-      });
+
+      if (!reResult.success) {
+        // Old pending payment's ref may be expired — mark it failed and create a fresh one below
+        console.warn(`[PAYMENT-INIT] Re-init failed for ref=${existing.squad_transaction_ref}: ${reResult.error}`);
+        await supabase
+          .from('payments')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        console.log(`[PAYMENT-INIT] Re-initialized existing pending payment: ref=${existing.squad_transaction_ref}`);
+        return NextResponse.json({
+          success: true,
+          transactionRef: existing.squad_transaction_ref,
+          checkoutUrl: reResult.checkoutUrl || null,
+          publicKey: getPublicKey(),
+          amount: planConfig.price,
+          email: user.email,
+          plan,
+        });
+      }
     }
 
     // Create payment record

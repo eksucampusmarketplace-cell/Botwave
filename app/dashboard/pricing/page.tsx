@@ -163,12 +163,30 @@ export default function PricingPage() {
     setMessage(null);
 
     try {
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ plan: planKey }),
-      });
+      // Add 20s timeout to handle Render cold starts / slow responses
+      const controller = new AbortController();
+      const fetchTimeout = setTimeout(() => controller.abort(), 20000);
+
+      let res: Response;
+      try {
+        res = await fetch('/api/payments/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ plan: planKey }),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        clearTimeout(fetchTimeout);
+        if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') {
+          setMessage({ type: 'error', text: 'Server is taking too long. Please try again in a moment.' });
+        } else {
+          setMessage({ type: 'error', text: 'Network error. Check your connection and try again.' });
+        }
+        setLoading(null);
+        return;
+      }
+      clearTimeout(fetchTimeout);
 
       if (res.status === 401) {
         setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
@@ -193,7 +211,7 @@ export default function PricingPage() {
           let callbackFired = false;
           const safetyTimeout = setTimeout(() => {
             if (!callbackFired) {
-              console.warn('[PAYMENT] Squad widget timed out — no callback fired in 15s');
+              console.warn('[PAYMENT] Squad widget timed out — no callback fired in 10s');
               setLoading(null);
               if (data.checkoutUrl) {
                 setMessage({ type: 'success', text: 'Opening payment page...' });
@@ -202,7 +220,7 @@ export default function PricingPage() {
                 setMessage({ type: 'error', text: 'Payment widget timed out. Please try again.' });
               }
             }
-          }, 15000);
+          }, 10000);
 
           const squadInstance = new window.squad({
             onClose: () => {
@@ -238,26 +256,18 @@ export default function PricingPage() {
 
       // Strategy 2: Redirect to Squad checkout URL
       if (data.checkoutUrl) {
-        setMessage({ type: 'success', text: 'Opening payment page...' });
-        // Try window.open first, then window.location as fallback
-        const popup = window.open(data.checkoutUrl, '_blank');
-        if (!popup || popup.closed) {
-          // Popup was blocked, redirect in same tab
-          window.location.href = data.checkoutUrl;
-        }
+        setMessage({ type: 'success', text: 'Redirecting to payment page...' });
         setLoading(null);
+        window.location.href = data.checkoutUrl;
         return;
       }
 
       // Strategy 3: Build Squad checkout URL manually from transaction ref
       if (data.transactionRef) {
         const manualUrl = `https://checkout.squadco.com/${data.transactionRef}`;
-        setMessage({ type: 'success', text: 'Opening payment page...' });
-        const popup = window.open(manualUrl, '_blank');
-        if (!popup || popup.closed) {
-          window.location.href = manualUrl;
-        }
+        setMessage({ type: 'success', text: 'Redirecting to payment page...' });
         setLoading(null);
+        window.location.href = manualUrl;
         return;
       }
 
