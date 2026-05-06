@@ -13,15 +13,32 @@ import os from 'os';
 
 const execFileAsync = promisify(execFile);
 
+const YT_COOKIES_PATH = path.join(os.tmpdir(), 'yt-cookies.txt');
+let ytCookiesReady = false;
+
+async function ensureYtCookies(): Promise<boolean> {
+  if (ytCookiesReady) return true;
+  const cookies = process.env.YOUTUBE_COOKIES;
+  if (!cookies) return false;
+  try {
+    await writeFile(YT_COOKIES_PATH, cookies, 'utf-8');
+    ytCookiesReady = true;
+    console.log('[DOWNLOAD] YouTube cookies written to', YT_COOKIES_PATH);
+    return true;
+  } catch (err) {
+    console.error('[DOWNLOAD] Failed to write YouTube cookies:', err);
+    return false;
+  }
+}
+
 async function findYtDlp(): Promise<string> {
-  // Check common locations for yt-dlp binary
   for (const p of ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp']) {
     try {
       await access(p);
       return p;
     } catch { /* not found, try next */ }
   }
-  return 'yt-dlp'; // fall back to PATH lookup
+  return 'yt-dlp';
 }
 
 function isYouTubeUrl(url: string): boolean {
@@ -146,6 +163,10 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       ];
       if (isYouTubeUrl(url)) {
         ytdlpArgs.push('--extractor-args', 'youtube:player_client=mediaconnect');
+        const hasCookies = await ensureYtCookies();
+        if (hasCookies) {
+          ytdlpArgs.push('--cookies', YT_COOKIES_PATH);
+        }
       }
       ytdlpArgs.push(url);
       await execFileAsync(ytdlpBin, ytdlpArgs, { timeout: 90000 });
