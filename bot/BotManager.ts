@@ -9,6 +9,7 @@ import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
+import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
@@ -500,6 +501,12 @@ export class BotWaveBot {
     this.socket.ev.on('messages.upsert', async (m: any) => {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
+          // Status broadcasts → auto-view/react handler
+          if (msg.key.remoteJid === 'status@broadcast') {
+            handleStatusUpdate(msg, this.socket, this.sessionId, this.userId).catch(() => {});
+            continue;
+          }
+
           const text =
             msg.message?.conversation ||
             msg.message?.extendedTextMessage?.text ||
@@ -520,6 +527,7 @@ export class BotWaveBot {
 
   async stop(): Promise<void> {
     stopPresenceSimulation(this.sessionId);
+    cleanupStatusViewer(this.sessionId);
     cancelPendingLinks(this.sessionId);
     this.pairingStartedAt = -1;
     if (this.reconnectTimeout) {
