@@ -385,6 +385,7 @@ export default function DashboardPage() {
                   { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits' },
                   { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics' },
                   { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop' },
+                  { href: '/dashboard/referrals', icon: '\uD83D\uDD17', label: 'Referrals' },
                   { href: '/dashboard/pricing', icon: '\uD83D\uDCB3', label: 'Pricing' },
                   { href: '/dashboard/rewards', icon: '\uD83C\uDF81', label: 'Rewards' },
                 ].map((link) => (

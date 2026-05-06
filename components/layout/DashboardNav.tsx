@@ -15,6 +15,7 @@ const navLinks = [
   { href: '/dashboard/templates', label: 'Templates' },
   { href: '/dashboard/flows', label: 'Flows' },
   { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
+  { href: '/dashboard/referrals', label: 'Referrals' },
   { href: '/dashboard/rewards', label: 'Rewards', accent: true },
 ];
 
