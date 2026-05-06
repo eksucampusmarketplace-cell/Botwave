@@ -97,13 +97,10 @@ export async function POST(request: NextRequest) {
             created_at: new Date().toISOString(),
           });
 
-          await supabase
-            .from('referrals')
-            .update({
-              total_referred: (await supabase.from('referrals').select('total_referred').eq('user_id', referral.user_id).single()).data?.total_referred + 1 || 1,
-              total_earned: (await supabase.from('referrals').select('total_earned').eq('user_id', referral.user_id).single()).data?.total_earned + REFERRAL_REWARD || REFERRAL_REWARD,
-            })
-            .eq('user_id', referral.user_id);
+          await supabase.rpc('increment_referral_stats', {
+            p_user_id: referral.user_id,
+            p_earned: REFERRAL_REWARD,
+          });
 
           // Credit referrer reward
           const { error: rpcErr1 } = await supabase.rpc('increment_reward_balance', { p_user_id: referral.user_id, p_amount: REFERRAL_REWARD });

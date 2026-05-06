@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
             `Hey there! 👋 BotWave is now connected to your WhatsApp.\n\n` +
             `Here are a few things to get started:\n` +
             `• Type *!help* in any chat to see all commands\n` +
-            `• Add BotWave to your homescreen for quick access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `• Add BotWave to your homescreen for quick access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com'}\n\n` +
             `⚠️ *Important — Please use responsibly:*\n` +
             `Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss — use wisely!\n\n` +
             `_Created by Decisive Analyst_`,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             `Welcome to BotWave! 🚀 Your WhatsApp bot is live.\n\n` +
             `Quick start:\n` +
             `• Send *!help* anywhere to explore commands\n` +
-            `• Bookmark the dashboard: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `• Bookmark the dashboard: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com'}\n\n` +
             `⚠️ *A word of caution:*\n` +
             `Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions — please use the bot wisely.\n\n` +
             `_Powered by Decisive Analyst_`,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
             `You're all set! ✨ BotWave is connected and ready.\n\n` +
             `Get started:\n` +
             `• Try *!help* to see everything your bot can do\n` +
-            `• Save the dashboard for easy access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app'}\n\n` +
+            `• Save the dashboard for easy access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com'}\n\n` +
             `⚠️ *Please be mindful:*\n` +
             `Don't overuse or spam automated messages — if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n\n` +
             `_Built by Decisive Analyst_`,
