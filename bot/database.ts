@@ -507,7 +507,7 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
 // ─── Feature Toggle Check ─────────────────────────────────────────────────────
 
 // Features that default to OFF when no toggle row exists
-const FEATURES_DEFAULT_OFF = new Set(['welcome']);
+const FEATURES_DEFAULT_OFF = new Set(['welcome', 'autoview']);
 
 export async function getFeatureEnabled(userId: string, featureName: string): Promise<boolean> {
   const { data, error } = await supabase

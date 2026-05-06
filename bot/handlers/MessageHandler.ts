@@ -1000,6 +1000,10 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'set':
       await handleSettings(context, args, sock);
       break;
+    case 'autoview':
+    case 'statusview':
+      await handleAutoView(context, args, sock);
+      break;
     case 'welcome':
       await handleWelcomeCmd(context, args, sock);
       break;
@@ -1222,7 +1226,7 @@ async function sendHelp(
 !download / !save / !savestatus / !tagall
 !afk / !group / !purge / !settings
 !kick / !promote / !demote
-!welcome / !goodbye
+!welcome / !goodbye / !autoview
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -1543,6 +1547,11 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!goodbye',
             usage: '!goodbye [message]  or  !goodbye reset',
             description: 'Set a custom goodbye message when members leave the group. Same placeholders as !welcome.',
+          },
+          {
+            name: '!autoview',
+            usage: '!autoview on/off',
+            description: 'Auto-view and react (❤️) to contacts\' WhatsApp statuses. Processes one by one with 5-15s delays, skips ~15%, max 50/day. Ban-safe.',
           },
         ],
       },
@@ -3801,6 +3810,50 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
     'Unknown setting. Use !settings to see available options.',
     sock, context.rawMessage.key, context.queue,
   );
+}
+
+// ─── Auto Status Viewer Command ─────────────────────────────────────────────
+
+async function handleAutoView(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!context.sessionId || !userId) {
+    await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const sub = args[0]?.toLowerCase();
+
+  if (!sub || sub === 'status') {
+    const enabled = await getFeatureEnabled(userId, 'autoview');
+    await sendReply(
+      context.chatJid,
+      `*AUTO STATUS VIEWER*\n\n` +
+      `*Status:* ${enabled ? 'ON' : 'OFF'}\n` +
+      `*Reaction:* ❤️\n` +
+      `*Daily cap:* 50 statuses\n` +
+      `*Skip rate:* ~15% (anti-ban)\n\n` +
+      `*Commands:*\n` +
+      `!autoview on — Enable auto-view + react\n` +
+      `!autoview off — Disable\n\n` +
+      `Bot will automatically view and react to your contacts' statuses one by one with random delays (5-15s) to stay ban-safe.`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  if (sub === 'on' || sub === 'enable') {
+    await setFeatureEnabled(userId, context.sessionId, 'autoview', true);
+    await sendReply(context.chatJid, 'Auto status viewer *enabled*. Bot will view + react to statuses with ❤️ (max 50/day, with random delays).', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (sub === 'off' || sub === 'disable') {
+    await setFeatureEnabled(userId, context.sessionId, 'autoview', false);
+    await sendReply(context.chatJid, 'Auto status viewer *disabled*.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await sendReply(context.chatJid, 'Usage: !autoview on/off', sock, context.rawMessage.key, context.queue);
 }
 
 // ─── Welcome / Goodbye Custom Message Commands ──────────────────────────────
