@@ -99,7 +99,7 @@ export default function HealthPage() {
             BOT <span className="text-green">HEALTH</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
-            Real-time monitoring &bull; Last 24 hours
+            Live monitoring &bull; Last 24 hours
           </p>
         </motion.div>
 

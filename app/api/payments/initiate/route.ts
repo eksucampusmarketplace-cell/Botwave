@@ -27,10 +27,12 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    const { data: { user } } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.warn('[PAYMENT-INIT] Auth failed:', authError?.message || 'No user session');
+      return NextResponse.json({ error: 'Unauthorized — please log in again' }, { status: 401 });
     }
+    console.log(`[PAYMENT-INIT] User ${user.id} (${user.email}) requesting upgrade`);
 
     const body = await request.json() as { plan?: string };
     const plan = body.plan;
@@ -67,13 +69,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment record
-    await supabase.from('payments').insert({
+    const { error: insertError } = await supabase.from('payments').insert({
       user_id: user.id,
       amount: planConfig.price,
       plan,
       status: 'pending',
       squad_transaction_ref: transactionRef,
     });
+    if (insertError) {
+      console.error('[PAYMENT-INIT] DB insert failed:', insertError.message);
+    }
+    console.log(`[PAYMENT-INIT] Payment created: ref=${transactionRef} plan=${plan} amount=₦${planConfig.price}`);
 
     // Initialize Squad payment
     const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard?payment=success`;
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      // Mark payment as failed
+      console.error(`[PAYMENT-INIT] Squad API failed: ${result.error}`);
       await supabase
         .from('payments')
         .update({ status: 'failed', updated_at: new Date().toISOString() })
@@ -95,6 +101,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ error: result.error || 'Payment init failed' }, { status: 500 });
     }
+    console.log(`[PAYMENT-INIT] Squad payment initialized: ref=${transactionRef}`);
 
     return NextResponse.json({
       success: true,

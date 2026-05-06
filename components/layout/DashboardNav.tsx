@@ -41,11 +41,11 @@ export default function DashboardNav() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="fixed top-0 left-0 right-0 z-[1000] bg-white/80 backdrop-blur-lg border-b border-slate-200/60"
+        className="fixed top-0 left-0 right-0 z-[1000] bg-[var(--bg)]/80 backdrop-blur-lg border-b border-[var(--border)]/60"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
-          <Link href="/" className="text-lg font-bold text-slate-900">
-            Bot<span className="text-emerald-600">Wave</span>
+          <Link href="/" className="text-lg font-bold text-[var(--text-primary)]">
+            Bot<span className="text-[var(--primary)]">Wave</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -56,8 +56,8 @@ export default function DashboardNav() {
                 data-tour={link.tour}
                 className={`text-sm px-3 py-2 rounded-lg transition-colors font-medium ${
                   link.accent
-                    ? 'text-emerald-600 hover:bg-emerald-50'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
                 }`}
               >
                 {link.label}
@@ -68,17 +68,17 @@ export default function DashboardNav() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="hidden md:flex w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 items-center justify-center transition-colors"
+              className="hidden md:flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <span className="text-sm">{theme === 'dark' ? '\u2600' : '\u263E'}</span>
+              <span className="text-sm">{theme === 'dark' ? '\u2600\uFE0F' : '\u{1F319}'}</span>
             </button>
-            <div className="hidden sm:flex w-9 h-9 rounded-full bg-emerald-100 items-center justify-center">
-              <span className="text-sm font-semibold text-emerald-700">U</span>
+            <div className="hidden sm:flex w-9 h-9 rounded-full bg-[var(--primary)]/15 items-center justify-center">
+              <span className="text-sm font-semibold text-[var(--primary)]">U</span>
             </div>
             <button
               onClick={handleLogout}
-              className="hidden md:block text-sm text-slate-500 hover:text-red-500 transition-colors font-medium px-3 py-2"
+              className="hidden md:block text-sm text-[var(--text-muted)] hover:text-red-500 transition-colors font-medium px-3 py-2"
             >
               Logout
             </button>
@@ -88,9 +88,9 @@ export default function DashboardNav() {
               className="md:hidden flex flex-col gap-1.5 p-2"
               aria-label="Toggle menu"
             >
-              <span className={`block w-5 h-0.5 bg-slate-700 transition-transform ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`block w-5 h-0.5 bg-slate-700 transition-opacity ${menuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block w-5 h-0.5 bg-slate-700 transition-transform ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-opacity ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
             </button>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function DashboardNav() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-[57px] left-0 right-0 z-[999] bg-white border-b border-slate-200 md:hidden"
+            className="fixed top-[57px] left-0 right-0 z-[999] bg-[var(--surface)] border-b border-[var(--border)] md:hidden"
           >
             <div className="flex flex-col px-4 py-2">
               {navLinks.map((link) => (
@@ -112,10 +112,10 @@ export default function DashboardNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className={`text-sm py-3 border-b border-slate-100 font-medium ${
+                  className={`text-sm py-3 border-b border-[var(--border)] font-medium ${
                     link.accent
-                      ? 'text-emerald-600'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'text-[var(--primary)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   {link.label}
@@ -123,9 +123,9 @@ export default function DashboardNav() {
               ))}
               <button
                 onClick={() => { setMenuOpen(false); toggleTheme(); }}
-                className="text-sm text-slate-600 hover:text-slate-900 py-3 border-b border-slate-100 text-left font-medium"
+                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] py-3 border-b border-[var(--border)] text-left font-medium"
               >
-                {theme === 'dark' ? '\u2600 Light Mode' : '\u263E Dark Mode'}
+                {theme === 'dark' ? '\u2600\uFE0F Light Mode' : '\u{1F319} Dark Mode'}
               </button>
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}

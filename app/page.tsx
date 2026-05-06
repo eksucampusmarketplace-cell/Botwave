@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
@@ -10,10 +10,10 @@ import Disclaimer from '@/components/ui/Disclaimer';
 
 const features = [
   { icon: '🎴', title: 'Sticker Maker', description: 'Convert any image or video into a WhatsApp sticker instantly with a simple command.' },
-  { icon: '🤖', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI-powered replies. Ask anything, get smart answers.' },
+  { icon: '🤖', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.' },
   { icon: '📥', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.' },
   { icon: '👋', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.' },
-  { icon: '🛡️', title: 'Anti-Spam Protection', description: 'Automatically detects and removes spam or flood messages to keep your group clean.' },
+  { icon: '🛡️', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.' },
   { icon: '🎮', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess — play fun games right inside your group.' },
   { icon: '📊', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.' },
   { icon: '🌤️', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes — all accessible with simple commands.' },
@@ -49,7 +49,7 @@ const stats = [
 
 const testimonials = [
   { text: 'BotWave transformed how we manage our WhatsApp group. The sticker maker and AI chat features are incredibly useful.', name: 'Group Admin', role: 'Community Manager' },
-  { text: 'Setting up was so easy — just scan the QR code and everything works. The anti-spam feature alone is worth it.', name: 'Business Owner', role: 'Small Business' },
+  { text: 'Setting up was so easy — just scan the QR code and everything works. The spam protection feature alone is worth it.', name: 'Business Owner', role: 'Small Business' },
   { text: 'My group members love the trivia games and the media downloader. BotWave keeps everyone engaged.', name: 'Tech Enthusiast', role: 'Group Owner' },
 ];
 
@@ -155,10 +155,27 @@ function ChatPreview() {
 }
 
 function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
-  const [display, setDisplay] = useState(target);
+  const [display, setDisplay] = useState('0');
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
   const numMatch = target.match(/^(\d+)/);
 
   useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [hasStarted]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
     if (!numMatch) { setDisplay(target); return; }
     const end = parseInt(numMatch[1]);
     let current = 0;
@@ -172,9 +189,9 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
       setDisplay(current + target.slice(numMatch[1].length));
     }, 50);
     return () => clearInterval(interval);
-  }, [target, numMatch]);
+  }, [hasStarted, target, numMatch]);
 
-  return <span>{display}{suffix}</span>;
+  return <span ref={ref}>{display}{suffix}</span>;
 }
 
 const fadeUp = {
@@ -224,7 +241,7 @@ export default function HomePage() {
               </h1>
 
               <p className="text-lg text-slate-400 max-w-xl mb-8 leading-relaxed">
-                BotWave is your all-in-one platform for powerful WhatsApp bot features.
+                BotWave is your complete platform for powerful WhatsApp bot features.
                 Stickers, AI chat, media downloads, games, and group management — all delivered
                 instantly with zero setup.
               </p>
@@ -307,7 +324,7 @@ export default function HomePage() {
               Everything You Need in a WhatsApp Bot
             </h2>
             <p className="text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">
-              From sticker creation to AI-powered conversations, BotWave has all the tools to supercharge your WhatsApp groups.
+              From sticker creation to AI conversations, BotWave has all the tools to supercharge your WhatsApp groups.
             </p>
           </motion.div>
 
@@ -340,12 +357,12 @@ export default function HomePage() {
                 See BotWave in Action
               </h2>
               <p className="text-slate-400 mb-6 leading-relaxed">
-                Watch how BotWave responds to commands in real-time. From creating stickers to answering questions with AI — every command is processed instantly.
+                Watch how BotWave responds to commands live. From creating stickers to answering questions with AI, every command is processed instantly.
               </p>
               <div className="space-y-4">
                 {[
                   { cmd: '!sticker', desc: 'Convert images to WhatsApp stickers' },
-                  { cmd: '!ai [question]', desc: 'Get AI-powered answers to anything' },
+                  { cmd: '!ai [question]', desc: 'Get AI answers to anything' },
                   { cmd: '!whois (reply)', desc: 'Look up user info like Sangmata' },
                   { cmd: '!trivia', desc: 'Start a trivia game in your group' },
                 ].map((item) => (

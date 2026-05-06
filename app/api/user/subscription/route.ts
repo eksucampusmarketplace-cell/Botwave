@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
       },
     );
 
-    const { data: { user } } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (!user) {
+      console.warn('[SUBSCRIPTION] Auth failed:', authError?.message || 'No session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -86,12 +87,17 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!rewards) {
-      const { data: newRewards } = await supabase
+      const { data: newRewards, error: rewardError } = await supabase
         .from('reward_balances')
         .insert({ user_id: user.id, balance: 0, total_earned: 0, total_cashed_out: 0 })
         .select()
         .single();
-      rewards = newRewards;
+      if (rewardError) {
+        console.warn('[SUBSCRIPTION] Reward balance creation failed:', rewardError.message);
+        rewards = { balance: 0, total_earned: 0, total_cashed_out: 0 };
+      } else {
+        rewards = newRewards;
+      }
     }
 
     const planConfig = PLANS[subscription?.plan || 'free'] || PLANS.free;

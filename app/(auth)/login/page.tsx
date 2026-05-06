@@ -14,10 +14,10 @@ const terminalLines = [
   { cls: 'blank', text: '' },
   { cls: 'comment', text: '# Session capabilities:' },
   { cls: 'flag', text: '  → WhatsApp automation' },
-  { cls: 'flag', text: '  → AI-powered responses' },
+  { cls: 'flag', text: '  → AI responses' },
   { cls: 'flag', text: '  → 50+ bot commands' },
   { cls: 'flag', text: '  → Anti-ban protection' },
-  { cls: 'flag', text: '  → Real-time dashboard' },
+  { cls: 'flag', text: '  → Live dashboard' },
   { cls: 'blank', text: '' },
   { cls: 'success', text: '→ Ready. Enter credentials to continue.' },
 ];
