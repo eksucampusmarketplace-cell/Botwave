@@ -4,6 +4,16 @@
 
 echo "=== BotWave Starting (web + bot) ==="
 
+# Ensure yt-dlp is available for !download command
+if ! command -v yt-dlp &>/dev/null; then
+  echo "[start-all] Installing yt-dlp..."
+  curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /tmp/yt-dlp && chmod +x /tmp/yt-dlp
+  export PATH="/tmp:$PATH"
+  echo "[start-all] yt-dlp installed to /tmp/yt-dlp"
+else
+  echo "[start-all] yt-dlp already available: $(which yt-dlp)"
+fi
+
 # Start the bot process in the background, redirect stderr to stdout
 echo "[start-all] Starting bot process..."
 node dist/bot/bot/index.js 2>&1 &
