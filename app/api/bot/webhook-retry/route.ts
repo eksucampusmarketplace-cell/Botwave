@@ -50,7 +50,7 @@ export async function GET() {
             const { handleMessage } = await import('@/bot/handlers/MessageHandler');
             const { MessageQueue } = await import('@/bot/utils/MessageQueue');
 
-            const sock = new EvolutionSocketAdapter(item.session_id, session.id, session.user_id);
+            const sock = new EvolutionSocketAdapter(item.session_id, session.id, session.user_id, session.phone_number);
             const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, item.session_id);
 
             await handleMessage(item.payload, sock, queue);
