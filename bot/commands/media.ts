@@ -559,7 +559,7 @@ async function handleViewOnce(context: MessageContext, sock: any, args: string[]
         await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
         return;
       }
-      await sendReply(context.chatJid, '_View-once saved to your private chat._', sock, context.rawMessage.key, context.queue);
+      await sock.sendMessage(targetJid, { text: '_View-once saved from ' + (context.isGroup ? context.chatJid.split('@')[0] : context.senderJid.split('@')[0]) + '._' });
     } else {
       if (restored.imageMessage) {
         const origCaption = restored.imageMessage.caption || '';
