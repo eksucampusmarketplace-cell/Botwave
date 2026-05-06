@@ -112,13 +112,14 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     try {
       const tmpFile = path.join(os.tmpdir(), `botwave_dl_${Date.now()}`);
       await execFileAsync('yt-dlp', [
-        '-f', 'best[filesize<50M]/best',
+        '-f', 'best[ext=mp4][filesize<50M]/best[ext=mp4]/best[filesize<50M]/best',
+        '--merge-output-format', 'mp4',
         '--no-playlist',
         '--max-filesize', '50M',
         '-o', tmpFile + '.%(ext)s',
-        '--print', 'filename',
+        '--no-warnings',
         url,
-      ], { timeout: 60000 });
+      ], { timeout: 90000 });
 
       // Find the output file
       const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
@@ -128,7 +129,7 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
         const buffer = await readFile(outFile);
         const ext = path.extname(outFile).toLowerCase();
         if (['.mp4', '.webm', '.mkv', '.mov'].includes(ext)) {
-          await sendReply(context.chatJid, { video: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+          await sendReply(context.chatJid, { video: buffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
         } else if (['.mp3', '.m4a', '.ogg', '.opus', '.wav'].includes(ext)) {
           await sendReply(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
         } else if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
@@ -139,12 +140,12 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
         await unlink(outFile).catch(() => {});
         downloaded = true;
       }
-    } catch {
-      // yt-dlp not available or failed, try direct download
+    } catch (dlErr: any) {
+      console.error('[DOWNLOAD] yt-dlp failed:', dlErr?.message || dlErr);
     }
 
     if (!downloaded) {
-      // Fallback: direct HTTP download (works for direct media links)
+      // Fallback: direct HTTP download (works for direct media links only)
       const mediaResponse = await axios.get(url, {
         responseType: 'arraybuffer',
         timeout: 30000,
@@ -154,8 +155,14 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       const buffer = Buffer.from(mediaResponse.data);
       const contentType = String(mediaResponse.headers['content-type'] || '');
 
+      // Reject HTML/text responses — these are web pages, not actual media
+      if (contentType.includes('text/html') || contentType.includes('text/plain') || contentType.includes('application/json')) {
+        await sendReply(context.chatJid, 'Download failed. This URL requires yt-dlp which is not available. Try a direct media link instead, or install yt-dlp on the server.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+
       if (contentType.includes('video')) {
-        await sendReply(context.chatJid, { video: buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        await sendReply(context.chatJid, { video: buffer, mimetype: contentType || 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
       } else if (contentType.includes('audio')) {
         await sendReply(context.chatJid, { audio: buffer, mimetype: contentType || 'audio/mpeg' }, sock, context.rawMessage.key, context.queue);
       } else if (contentType.includes('image')) {
