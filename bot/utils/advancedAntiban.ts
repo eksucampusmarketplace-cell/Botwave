@@ -51,13 +51,13 @@ export function shouldSkipResponse(
  * After responding in a group, enforces a minimum gap before the next response
  * in that same group.
  *
- * Cooldown: 3-8 seconds (randomized to avoid pattern detection).
- * This means in a fast-moving group chat, the bot won't machine-gun replies.
+ * Cooldown: 1-2 seconds (randomized to avoid pattern detection).
+ * Fast enough for active groups while still preventing machine-gun replies.
  */
 
 const groupLastReply: Map<string, number> = new Map();
-const GROUP_COOLDOWN_MIN = 3000;
-const GROUP_COOLDOWN_MAX = 8000;
+const GROUP_COOLDOWN_MIN = 1000;
+const GROUP_COOLDOWN_MAX = 2000;
 
 export function isGroupOnCooldown(groupJid: string): boolean {
   const lastReply = groupLastReply.get(groupJid);

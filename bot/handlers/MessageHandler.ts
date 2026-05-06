@@ -61,7 +61,7 @@ function isUserRateLimited(userId: string): boolean {
   const timestamps = userMessageTracker.get(userId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 20) {
+  if (recentTimestamps.length >= 60) {
     return true;
   }
 
@@ -75,7 +75,7 @@ function isSessionRateLimited(sessionId: string): boolean {
   const timestamps = sessionMessageTracker.get(sessionId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 10) {
+  if (recentTimestamps.length >= 30) {
     return true;
   }
 
