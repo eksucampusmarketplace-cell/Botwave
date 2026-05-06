@@ -508,6 +508,39 @@ export async function updateProfilePicture(instanceName: string, pictureBase64: 
   return res.json();
 }
 
+// Fetch profile picture URL for a number
+export async function fetchProfilePictureUrl(instanceName: string, number: string) {
+  const cleanNumber = number.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '') || number;
+  const res = await apiFetch(`${BASE}/chat/fetchProfilePictureUrl/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ number: cleanNumber }),
+  });
+  return res.json();
+}
+
+// Fetch full profile (name, about/status, picture) for a number
+export async function fetchProfile(instanceName: string, number: string) {
+  const cleanNumber = number.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '') || number;
+  const res = await apiFetch(`${BASE}/chat/fetchProfile/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ number: cleanNumber }),
+  });
+  return res.json();
+}
+
+// Check if a number is on WhatsApp
+export async function checkOnWhatsApp(instanceName: string, numbers: string[]) {
+  const cleanNumbers = numbers.map(n => n.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, ''));
+  const res = await apiFetch(`${BASE}/chat/whatsappNumbers/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ numbers: cleanNumbers }),
+  });
+  return res.json();
+}
+
 // Send presence update (composing, paused, available, unavailable)
 export async function sendPresence(instanceName: string, jid: string, presence: string) {
   // Strip JID suffix — Evolution API expects plain number

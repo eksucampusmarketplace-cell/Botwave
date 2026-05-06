@@ -15,6 +15,9 @@ import {
   fetchGroupInfo,
   updateProfileStatus,
   updateProfilePicture,
+  fetchProfilePictureUrl,
+  fetchProfile,
+  checkOnWhatsApp,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -281,5 +284,33 @@ export class EvolutionSocketAdapter {
   /** Update the WhatsApp profile picture from a base64-encoded image. */
   async updateProfilePicture(pictureBase64: string) {
     return updateProfilePicture(this.instanceName, pictureBase64);
+  }
+
+  /** Fetch profile picture URL for a JID/number. */
+  async fetchProfilePictureUrl(jid: string) {
+    try {
+      const result = await fetchProfilePictureUrl(this.instanceName, jid);
+      return result?.profilePictureUrl || result?.profilePicUrl || result?.url || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Fetch full profile (name, about, picture) for a JID/number. */
+  async fetchProfile(jid: string) {
+    try {
+      return await fetchProfile(this.instanceName, jid);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Check if numbers are on WhatsApp. */
+  async onWhatsApp(numbers: string[]) {
+    try {
+      return await checkOnWhatsApp(this.instanceName, numbers);
+    } catch {
+      return [];
+    }
   }
 }
