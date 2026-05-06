@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
@@ -158,7 +158,10 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
   const [display, setDisplay] = useState('0');
   const [hasStarted, setHasStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
-  const numMatch = target.match(/^(\d+)/);
+  const numericPrefix = useMemo(() => {
+    const m = target.match(/^(\d+)/);
+    return m ? m[1] : null;
+  }, [target]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -176,8 +179,9 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
 
   useEffect(() => {
     if (!hasStarted) return;
-    if (!numMatch) { setDisplay(target); return; }
-    const end = parseInt(numMatch[1]);
+    if (!numericPrefix) { setDisplay(target); return; }
+    const end = parseInt(numericPrefix);
+    const suffixPart = target.slice(numericPrefix.length);
     let current = 0;
     const step = Math.max(1, Math.floor(end / 30));
     const interval = setInterval(() => {
@@ -186,10 +190,10 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
         current = end;
         clearInterval(interval);
       }
-      setDisplay(current + target.slice(numMatch[1].length));
+      setDisplay(current + suffixPart);
     }, 50);
     return () => clearInterval(interval);
-  }, [hasStarted, target, numMatch]);
+  }, [hasStarted, target, numericPrefix]);
 
   return <span ref={ref}>{display}{suffix}</span>;
 }
