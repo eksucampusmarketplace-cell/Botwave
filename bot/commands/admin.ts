@@ -787,7 +787,7 @@ async function handleRecover(
   clearRecoveredMessages(context.sessionId, context.chatJid);
 
   if (isPrivate) {
-    await sendReply(context.chatJid, `_${deleted.length} deleted message(s) sent to your private chat._`, sock, context.rawMessage.key, context.queue);
+    await sock.sendMessage(targetJid, { text: `_${deleted.length} deleted message(s) recovered from ${chatName}._` });
   }
 }
 
