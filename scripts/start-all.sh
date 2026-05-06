@@ -14,6 +14,15 @@ else
   echo "[start-all] yt-dlp already available: $(which yt-dlp)"
 fi
 
+# Write YouTube cookies file from env var (for yt-dlp authentication)
+if [ -n "$YOUTUBE_COOKIES" ]; then
+  echo "[start-all] YOUTUBE_COOKIES env var found (${#YOUTUBE_COOKIES} chars), writing cookies file..."
+  printf '%b' "$YOUTUBE_COOKIES" | sed 's/^"//;s/"$//' > /tmp/yt-cookies.txt
+  echo "[start-all] YouTube cookies written to /tmp/yt-cookies.txt ($(wc -l < /tmp/yt-cookies.txt) lines)"
+else
+  echo "[start-all] WARNING: YOUTUBE_COOKIES env var not set — YouTube downloads may fail"
+fi
+
 # Start the bot process in the background, redirect stderr to stdout
 echo "[start-all] Starting bot process..."
 node dist/bot/bot/index.js 2>&1 &
