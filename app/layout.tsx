@@ -9,10 +9,10 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'BotWave - Free WhatsApp Bot Automation Platform | Nigeria',
+    default: 'BotWave - Free WhatsApp Bot That Actually Works (2025) | Stop Paying for Bots',
     template: '%s | BotWave',
   },
-  description: 'Free WhatsApp bot for automation in Nigeria. Create stickers, AI chat, media downloads, group management, anti-spam, games and more. No coding needed — just scan QR and go.',
+  description: 'Everyone is paying $20/mo for WhatsApp bots that barely work. BotWave is 100% free with 50+ commands — stickers, AI chat, games, anti-spam, media downloads. No coding. No catch. Works in Nigeria & worldwide. Why is nobody talking about this?',
   keywords: [
     'whatsapp bot',
     'whatsapp automation',
@@ -29,6 +29,27 @@ export const metadata: Metadata = {
     'whatsapp games bot',
     'automate whatsapp',
     'whatsapp bot platform',
+    'telegram bot alternative',
+    'free telegram bot',
+    'telegram automation',
+    'twitter bot',
+    'twitter automation bot',
+    'tiktok bot',
+    'tiktok automation',
+    'github bot',
+    'github automation bot',
+    'social media bot',
+    'social media automation',
+    'free bot platform',
+    'best free bot 2025',
+    'chat bot free',
+    'messaging bot',
+    'bot maker free',
+    'no code bot builder',
+    'whatsapp bot africa',
+    'whatsapp bot for business',
+    'whatsapp group management bot',
+    'free ai chatbot whatsapp',
   ],
   authors: [{ name: 'Decisive Analyst' }],
   creator: 'Decisive Analyst',
@@ -43,8 +64,8 @@ export const metadata: Metadata = {
     locale: 'en_NG',
     url: 'https://www.botwave.online',
     siteName: 'BotWave',
-    title: 'BotWave - Free WhatsApp Bot Automation Platform',
-    description: 'Automate your WhatsApp with powerful bot features. Sticker maker, AI chat, media downloads, group management, games and more. Free forever, no coding needed.',
+    title: 'BotWave - The Free Bot Platform Everyone is Switching To',
+    description: 'Why pay for Telegram bots, Twitter bots, or TikTok automation when BotWave gives you 50+ WhatsApp commands for FREE? AI chat, stickers, games, anti-spam. No coding. No catch.',
     images: [
       {
         url: '/og-image.png',
@@ -56,8 +77,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BotWave - Free WhatsApp Bot Automation',
-    description: 'Automate your WhatsApp with 50+ commands. Stickers, AI chat, media downloads, games, group tools. Free forever.',
+    title: 'BotWave - Free WhatsApp Bot That Puts Paid Bots to Shame',
+    description: 'I replaced my $20/mo Telegram bot with this FREE WhatsApp bot. 50+ commands, AI chat, stickers, games. No coding needed. Why is nobody talking about this?',
     images: ['/og-image.png'],
   },
   robots: {
@@ -119,6 +140,121 @@ export default function RootLayout({
                 '@type': 'Person',
                 name: 'Decisive Analyst',
               },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'What is BotWave?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave is a free WhatsApp bot automation platform. You connect your own WhatsApp number by scanning a QR code, and the bot adds powerful features like sticker creation, AI chat, media downloads, games, polls, and group management — all through simple commands.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is BotWave free to use?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just ₦500/month for more messages and features.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How do I set up a WhatsApp bot with BotWave?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Sign up at www.botwave.online, go to your dashboard, and click "Connect WhatsApp". Scan the QR code with your phone and your bot is live — no coding needed. The whole process takes under 2 minutes.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Will my WhatsApp number get banned?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What commands does the WhatsApp bot support?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave supports 50+ commands including !sticker (create stickers), !ai (AI chat), !download (media downloader), !trivia (games), !poll (polls), !weather, !translate, !joke, !quote, and many more. Type !help in any chat to see the full list.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Can I use BotWave for my business?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Absolutely. BotWave works great for businesses — use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Does BotWave work in Nigeria?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (₦) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How is BotWave different from other WhatsApp bots?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Groq, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is BotWave better than Telegram bots?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp — where your audience already is.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Can I use BotWave instead of paying for a Twitter/X bot?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'If you are paying for social media automation tools for Twitter or TikTok, BotWave is a free alternative for WhatsApp automation. Many users use BotWave to manage their WhatsApp communities, customer support, and engagement — which often drives more direct conversions than Twitter bots.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Why is BotWave free when other bot platforms charge $20-50/month?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different — your WhatsApp session runs from your own device via QR code, so there is no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms cannot match.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Does BotWave have an API like GitHub bots?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave currently works through WhatsApp commands and a web dashboard. While it does not have a public API like GitHub Actions or GitHub bots yet, the platform supports custom commands, scheduled messages, and webhook integrations for automation workflows.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Can BotWave help me grow my TikTok or social media following?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave helps you build an engaged WhatsApp community, which is one of the best ways to grow any social media following. Use the bot to manage fan groups, share content links, run polls, and engage followers. Many Nigerian creators use WhatsApp groups as their primary community — BotWave makes managing those groups effortless.',
+                  },
+                },
+              ],
             }),
           }}
         />

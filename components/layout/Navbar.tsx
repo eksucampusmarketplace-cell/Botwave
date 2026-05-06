@@ -32,7 +32,7 @@ export default function Navbar() {
             { href: '#features', label: 'Features' },
             { href: '#how', label: 'How it Works' },
             { href: '#install', label: 'Install' },
-            { href: '#disclaimer', label: 'Disclaimer' },
+            { href: '#faq', label: 'FAQ' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -93,7 +93,7 @@ export default function Navbar() {
                 { href: '#features', label: 'Features' },
                 { href: '#how', label: 'How it Works' },
                 { href: '#install', label: 'Install' },
-                { href: '#disclaimer', label: 'Disclaimer' },
+                { href: '#faq', label: 'FAQ' },
               ].map((link) => (
                 <Link
                   key={link.href}
