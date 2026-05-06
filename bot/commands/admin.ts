@@ -1,6 +1,7 @@
 import { registerCommand, type MessageContext } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, pickResponse } from './helpers';
 import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId } from '../database';
+import { getDeletedMessages, clearRecoveredMessages } from '../handlers/AntiDeleteHandler';
 
 const CASHOUT_THRESHOLD = 100;
 import { afkReplies, welcomeReplies, goodbyeReplies } from '../utils/responsePools';
@@ -623,6 +624,143 @@ async function handleForward(context: MessageContext, args: string[], sock: any)
   }
 }
 
+// ─── Anti-Delete Toggle ─────────────────────────────────────────────────────
+
+async function handleAntiDelete(
+  context: MessageContext,
+  args: string[],
+  sock: any,
+): Promise<void> {
+  if (!context.userId || !context.sessionId) {
+    await sendReply(context.chatJid, 'Anti-delete requires an active session.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const action = args[0]?.toLowerCase();
+
+  if (!action || (action !== 'on' && action !== 'off' && action !== 'enable' && action !== 'disable' && action !== 'status')) {
+    const current = await getFeatureEnabled(context.userId, 'anti_delete');
+    await sendReply(
+      context.chatJid,
+      `*Anti-Delete* is currently *${current ? 'ON' : 'OFF'}*\n\nUsage:\n!antidelete on — recover deleted messages\n!antidelete off — disable recovery`,
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+    return;
+  }
+
+  if (action === 'status') {
+    const current = await getFeatureEnabled(context.userId, 'anti_delete');
+    await sendReply(context.chatJid, `Anti-Delete is *${current ? 'ON' : 'OFF'}*`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const enable = action === 'on' || action === 'enable';
+  await setFeatureEnabled(context.userId, context.sessionId, 'anti_delete', enable);
+  await sendReply(
+    context.chatJid,
+    enable
+      ? 'Anti-Delete *enabled*. Messages will be cached silently. Use *!recover* to view deleted messages.'
+      : 'Anti-Delete *disabled*. Message caching stopped.',
+    sock,
+    context.rawMessage.key,
+    context.queue,
+  );
+}
+
+// ─── Recover Deleted Messages ───────────────────────────────────────────────
+
+async function handleRecover(
+  context: MessageContext,
+  _args: string[],
+  sock: any,
+): Promise<void> {
+  if (!context.userId || !context.sessionId) {
+    await sendReply(context.chatJid, 'Recover requires an active session.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const enabled = await getFeatureEnabled(context.userId, 'anti_delete');
+  if (!enabled) {
+    await sendReply(context.chatJid, 'Anti-delete is not enabled. Use *!antidelete on* first.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const deleted = getDeletedMessages(context.sessionId, context.chatJid);
+  if (deleted.length === 0) {
+    await sendReply(context.chatJid, 'No deleted messages found in the last 10 minutes.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  for (const msg of deleted) {
+    const tag = context.isGroup ? `@${msg.deleterJid.replace(/@.*/, '')}` : msg.deleterName;
+    const ago = Math.round((Date.now() - msg.deletedAt) / 1000);
+    const timeLabel = ago < 60 ? `${ago}s ago` : `${Math.round(ago / 60)}m ago`;
+
+    try {
+      if (msg.mediaBuffer && msg.mediaType) {
+        const caption = `_${tag} deleted a ${msg.mediaType} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
+        const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
+
+        if (needsSeparate) {
+          const mentions = context.isGroup ? [msg.deleterJid] : undefined;
+          await sendReply(context.chatJid, { text: caption, mentions }, sock, context.rawMessage.key, context.queue);
+        }
+
+        const payload = buildMediaPayload(
+          msg.mediaBuffer,
+          msg.mediaType,
+          msg.mediaMimetype,
+          needsSeparate ? '' : caption,
+          context.isGroup ? [msg.deleterJid] : undefined,
+        );
+
+        if (context.queue) {
+          context.queue.enqueue(context.chatJid, payload);
+        } else {
+          await sock.sendMessage(context.chatJid, payload);
+        }
+      } else if (msg.content) {
+        const text = `_${tag} deleted (${timeLabel}):_\n\n${msg.content}`;
+        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
+        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
+      } else if (msg.mediaType) {
+        const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
+        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
+      }
+    } catch (err) {
+      console.error('[RECOVER] Error sending recovered message:', err);
+    }
+  }
+
+  clearRecoveredMessages(context.sessionId, context.chatJid);
+}
+
+function buildMediaPayload(
+  buffer: Buffer,
+  mediaType: string,
+  mimetype: string | null,
+  caption: string,
+  mentions?: string[],
+): Record<string, unknown> {
+  switch (mediaType) {
+    case 'image':
+      return { image: buffer, caption, mimetype: mimetype || 'image/jpeg', mentions };
+    case 'video':
+      return { video: buffer, caption, mimetype: mimetype || 'video/mp4', mentions };
+    case 'audio':
+      return { audio: buffer, mimetype: mimetype || 'audio/ogg; codecs=opus', ptt: true };
+    case 'sticker':
+      return { sticker: buffer, mimetype: mimetype || 'image/webp' };
+    case 'document':
+      return { document: buffer, caption, mimetype: mimetype || 'application/octet-stream', fileName: 'recovered_file', mentions };
+    default:
+      return { text: caption, mentions };
+  }
+}
+
 // ─── Register Admin Commands ────────────────────────────────────────────────
 
 registerCommand({ name: 'afk', aliases: ['afk'], category: 'admin', description: 'Set AFK status', execute: (ctx, args, sock, vars) => handleAfk(ctx, args, sock, vars) });
@@ -641,3 +779,5 @@ registerCommand({ name: 'bio', aliases: ['bio', 'about'], category: 'admin', des
 registerCommand({ name: 'setpp', aliases: ['setpp', 'setpfp', 'profilepic'], category: 'admin', description: 'Set profile picture', execute: (ctx, _a, sock) => handleSetPP(ctx, sock) });
 registerCommand({ name: 'markread', aliases: ['markread', 'read'], category: 'admin', description: 'Mark messages read', execute: (ctx, _a, sock) => handleMarkRead(ctx, sock) });
 registerCommand({ name: 'forward', aliases: ['forward', 'fwd'], category: 'admin', description: 'Forward a message', execute: (ctx, args, sock) => handleForward(ctx, args, sock) });
+registerCommand({ name: 'antidelete', aliases: ['antidelete', 'antidel'], category: 'admin', description: 'Toggle deleted message recovery', execute: (ctx, args, sock) => handleAntiDelete(ctx, args, sock) });
+registerCommand({ name: 'recover', aliases: ['recover', 'deleted'], category: 'admin', description: 'View deleted messages (last 10 min)', execute: (ctx, args, sock) => handleRecover(ctx, args, sock) });

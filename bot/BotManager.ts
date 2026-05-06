@@ -10,6 +10,7 @@ import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPair
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
+import { cacheMessage, handleMessageRevoke, cleanupSessionCache } from './handlers/AntiDeleteHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
@@ -507,6 +508,18 @@ export class BotWaveBot {
             continue;
           }
 
+          // Anti-delete: detect protocolMessage REVOKE (type 0)
+          const proto = msg.message?.protocolMessage;
+          if (proto && proto.type === 0 && proto.key) {
+            handleMessageRevoke(msg, this.sessionId, this.userId).catch((err: any) => {
+              console.error('[ANTI-DELETE] revoke handler error:', err);
+            });
+            continue;
+          }
+
+          // Cache every message for anti-delete recovery
+          cacheMessage(this.sessionId, msg).catch(() => {});
+
           const text =
             msg.message?.conversation ||
             msg.message?.extendedTextMessage?.text ||
@@ -528,6 +541,7 @@ export class BotWaveBot {
   async stop(): Promise<void> {
     stopPresenceSimulation(this.sessionId);
     cleanupStatusViewer(this.sessionId);
+    cleanupSessionCache(this.sessionId);
     cancelPendingLinks(this.sessionId);
     this.pairingStartedAt = -1;
     if (this.reconnectTimeout) {

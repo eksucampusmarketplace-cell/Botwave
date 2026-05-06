@@ -60,6 +60,7 @@ async function sendHelp(
 !afk / !group / !purge / !settings
 !kick / !promote / !demote
 !welcome / !goodbye / !autoview
+!antidelete / !recover
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -385,6 +386,16 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!autoview',
             usage: '!autoview on/off',
             description: 'Auto-view and react (❤️) to contacts\' WhatsApp statuses. Processes one by one with 5-15s delays, skips ~15%, max 50/day. Ban-safe.',
+          },
+          {
+            name: '!antidelete',
+            usage: '!antidelete on/off',
+            description: 'Toggle deleted message recovery. When enabled, the bot silently caches messages. If someone deletes a message, use !recover to view it. Supports text, images, videos, stickers, audio, and documents.\n\nAliases: !antidel',
+          },
+          {
+            name: '!recover',
+            usage: '!recover',
+            description: 'Shows messages deleted in the last 10 minutes in this chat. In groups, tags the person who deleted each message. Requires !antidelete to be enabled first. Re-sends the actual media (images, videos, stickers) not just a description.',
           },
           {
             name: '!balance',
