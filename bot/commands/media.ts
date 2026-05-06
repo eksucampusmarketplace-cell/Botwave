@@ -18,14 +18,24 @@ let ytCookiesReady = false;
 
 async function ensureYtCookies(): Promise<boolean> {
   if (ytCookiesReady) return true;
-  const raw = process.env.YOUTUBE_COOKIES;
-  if (!raw) return false;
+  // Check if cookies file was already written by start-all.sh
   try {
-    // Render stores multi-line env vars with literal \n — convert to real newlines
+    await access(YT_COOKIES_PATH);
+    ytCookiesReady = true;
+    console.log('[DOWNLOAD] YouTube cookies file found at', YT_COOKIES_PATH);
+    return true;
+  } catch { /* file doesn't exist yet */ }
+  // Fall back to writing from env var
+  const raw = process.env.YOUTUBE_COOKIES;
+  if (!raw) {
+    console.log('[DOWNLOAD] No YOUTUBE_COOKIES env var and no cookies file at', YT_COOKIES_PATH);
+    return false;
+  }
+  try {
     const cookies = raw.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
     await writeFile(YT_COOKIES_PATH, cookies, 'utf-8');
     ytCookiesReady = true;
-    console.log('[DOWNLOAD] YouTube cookies written to', YT_COOKIES_PATH);
+    console.log('[DOWNLOAD] YouTube cookies written from env var to', YT_COOKIES_PATH);
     return true;
   } catch (err) {
     console.error('[DOWNLOAD] Failed to write YouTube cookies:', err);
