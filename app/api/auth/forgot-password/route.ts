@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     );
 
     await anonSupabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-bib7.onrender.com'}/reset-password`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com'}/reset-password`,
     });
 
     // Always return success to avoid email enumeration

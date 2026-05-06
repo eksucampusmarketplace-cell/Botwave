@@ -233,7 +233,7 @@ async function getActiveSessionForUser(userId: string): Promise<{ id: string; ph
 }
 
 function getDunningMessage(type: string, attempt: number): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.ng';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com';
 
   switch (type) {
     case 'payment_failed':

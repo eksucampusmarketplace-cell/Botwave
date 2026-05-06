@@ -392,17 +392,19 @@ export const horoscopeReadings: string[] = [
 ];
 
 // ─── Promo Messages ───────────────────────────────────────────────────────────
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com';
+
 export const promoMessages: string[] = [
-  '\n─────────────────────────────\nWant your own WhatsApp bot?\nCreate yours FREE at botwave.com/start',
-  '\n─────────────────────────────\nLove this feature?\nGet your own bot FREE at botwave.com/start',
-  '\n─────────────────────────────\nPowered by BotWave\nCreate yours FREE at botwave.com/start',
-  '\n─────────────────────────────\nMade with BotWave\nGet your own bot at botwave.com/start',
-  '\n─────────────────────────────\nBotWave — Free WhatsApp Bot\nStart yours at botwave.com/start',
-  '\n─────────────────────────────\nImpressed? Build your own!\nFREE at botwave.com/start',
-  '\n─────────────────────────────\nThis bot runs on BotWave\nMake yours: botwave.com/start',
-  '\n─────────────────────────────\nBotWave powers this bot\nYour own bot: botwave.com/start',
-  '\n─────────────────────────────\nAutomate WhatsApp for free\nbotwave.com/start',
-  '\n─────────────────────────────\nBotWave — by Decisive Analyst\nGet started: botwave.com/start',
+  `\n─────────────────────────────\nWant your own WhatsApp bot?\nCreate yours FREE at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nLove this feature?\nGet your own bot FREE at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nPowered by BotWave\nCreate yours FREE at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nMade with BotWave\nGet your own bot at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nBotWave — Free WhatsApp Bot\nStart yours at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nImpressed? Build your own!\nFREE at ${APP_URL}/signup`,
+  `\n─────────────────────────────\nThis bot runs on BotWave\nMake yours: ${APP_URL}/signup`,
+  `\n─────────────────────────────\nBotWave powers this bot\nYour own bot: ${APP_URL}/signup`,
+  `\n─────────────────────────────\nAutomate WhatsApp for free\n${APP_URL}/signup`,
+  `\n─────────────────────────────\nBotWave — by Decisive Analyst\nGet started: ${APP_URL}/signup`,
 ];
 
 // ─── Ping Replies ─────────────────────────────────────────────────────────────
