@@ -59,7 +59,28 @@ interface SecurityData {
   security: Record<string, string>;
 }
 
-type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health' | 'monetization';
+interface SupportTicket {
+  id: string;
+  user_id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+  username: string;
+  last_message: { message: string; sender_type: string; created_at: string } | null;
+}
+
+interface SupportMessage {
+  id: string;
+  ticket_id: string;
+  sender_type: 'user' | 'admin';
+  sender_id: string;
+  message: string;
+  created_at: string;
+}
+
+type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health' | 'monetization' | 'support';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -85,6 +106,21 @@ export default function AdminDashboard() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [monetizationData, setMonetizationData] = useState<any>(null);
   const [fetchingMonetization, setFetchingMonetization] = useState(false);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [supportStats, setSupportStats] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0 });
+  const [supportFilter, setSupportFilter] = useState('all');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [ticketMessages, setTicketMessages] = useState<SupportMessage[]>([]);
+  const [adminReply, setAdminReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [quickReplies] = useState([
+    'Thanks for reaching out! We\'re looking into this now.',
+    'This issue has been resolved. Please let us know if you need further help.',
+    'Could you provide more details about the issue?',
+    'We\'ve escalated this to our technical team. We\'ll update you shortly.',
+    'This is a known issue and we\'re working on a fix. Stay tuned!',
+  ]);
   
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -132,6 +168,8 @@ export default function AdminDashboard() {
       fetchSecurityData();
     } else if (activeTab === 'monetization') {
       fetchMonetizationData();
+    } else if (activeTab === 'support') {
+      fetchSupportTickets();
     }
   }, [activeTab]);
 
@@ -197,6 +235,92 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchSupportTickets = async (filter?: string) => {
+    setSupportLoading(true);
+    try {
+      const status = filter || supportFilter;
+      const res = await fetch(`/api/admin/support?status=${status}`);
+      const data = await res.json();
+      if (data.success) {
+        setSupportTickets(data.data);
+        if (data.stats) setSupportStats(data.stats);
+      }
+    } catch (err) {
+      console.error('Error fetching support tickets:', err);
+    } finally {
+      setSupportLoading(false);
+    }
+  };
+
+  const fetchTicketMessages = async (ticketId: string) => {
+    try {
+      const res = await fetch(`/api/admin/support?ticketId=${ticketId}`);
+      const data = await res.json();
+      if (data.success) {
+        setTicketMessages(data.data.messages);
+        setSelectedTicket(data.data.ticket);
+      }
+    } catch (err) {
+      console.error('Error fetching ticket messages:', err);
+    }
+  };
+
+  const handleAdminReply = async () => {
+    if (!adminReply.trim() || !selectedTicket || sendingReply) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch('/api/admin/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId: selectedTicket.id, message: adminReply.trim() }),
+      });
+      if (res.ok) {
+        setAdminReply('');
+        await fetchTicketMessages(selectedTicket.id);
+        setMessage({ type: 'success', text: 'Reply sent' });
+        setTimeout(() => setMessage(null), 2000);
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to send reply' });
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const updateTicketStatus = async (ticketId: string, status: string) => {
+    try {
+      await fetch('/api/admin/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, status }),
+      });
+      fetchSupportTickets();
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket({ ...selectedTicket, status });
+      }
+      setMessage({ type: 'success', text: `Ticket marked as ${status}` });
+      setTimeout(() => setMessage(null), 2000);
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to update ticket' });
+    }
+  };
+
+  const updateTicketPriority = async (ticketId: string, priority: string) => {
+    try {
+      await fetch('/api/admin/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, priority }),
+      });
+      fetchSupportTickets();
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket({ ...selectedTicket, priority });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to update priority' });
+    }
+  };
+
   const handleSaveRateLimits = async () => {
     setSavingRateLimits(true);
     try {
@@ -259,6 +383,7 @@ export default function AdminDashboard() {
     { id: 'security', label: 'SECURITY' },
     { id: 'health', label: 'SYSTEM HEALTH' },
     { id: 'monetization', label: 'MONETIZATION' },
+    { id: 'support', label: `SUPPORT${supportStats.open > 0 ? ` (${supportStats.open})` : ''}` },
   ];
 
   return (
@@ -806,6 +931,207 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <p className="text-zinc-500 font-mono text-sm text-center py-12">No monetization data available.</p>
+              )}
+            </div>
+          )}
+
+          {/* Support Tab */}
+          {activeTab === 'support' && (
+            <div className="p-4 sm:p-6">
+              {/* Support Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                {[
+                  { label: 'TOTAL', value: supportStats.total, color: 'text-white' },
+                  { label: 'OPEN', value: supportStats.open, color: 'text-yellow-400' },
+                  { label: 'IN PROGRESS', value: supportStats.in_progress, color: 'text-cyan-400' },
+                  { label: 'RESOLVED', value: supportStats.resolved, color: 'text-green-400' },
+                ].map((s, i) => (
+                  <div key={i} className="bg-zinc-800/50 border border-zinc-800 p-3 text-center">
+                    <p className="text-zinc-500 font-mono text-[9px] tracking-widest">{s.label}</p>
+                    <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Filter buttons */}
+              <div className="flex gap-2 mb-4">
+                {['all', 'open', 'in_progress', 'resolved', 'closed'].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => { setSupportFilter(f); fetchSupportTickets(f); }}
+                    className={`text-[10px] font-mono px-3 py-1.5 transition-colors ${
+                      supportFilter === f
+                        ? 'bg-red-600/20 text-red-400 border border-red-600/50'
+                        : 'text-zinc-500 border border-zinc-800 hover:text-white'
+                    }`}
+                  >
+                    {f.toUpperCase().replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              {supportLoading ? (
+                <div className="text-center py-12">
+                  <p className="text-zinc-500 font-mono text-sm animate-pulse">Loading tickets...</p>
+                </div>
+              ) : selectedTicket ? (
+                /* Ticket Detail View */
+                <div>
+                  <button
+                    onClick={() => { setSelectedTicket(null); setTicketMessages([]); setAdminReply(''); }}
+                    className="text-zinc-400 hover:text-white font-mono text-xs mb-4 flex items-center gap-1"
+                  >
+                    &larr; BACK TO TICKETS
+                  </button>
+
+                  <div className="bg-zinc-800/30 border border-zinc-800 p-4 mb-4">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div>
+                        <h3 className="text-white font-bold text-sm">{selectedTicket.subject}</h3>
+                        <p className="text-zinc-500 font-mono text-[10px] mt-1">
+                          From: {selectedTicket.username} &middot; {new Date(selectedTicket.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Priority selector */}
+                        <select
+                          value={selectedTicket.priority}
+                          onChange={(e) => updateTicketPriority(selectedTicket.id, e.target.value)}
+                          className="bg-zinc-900 border border-zinc-700 text-xs font-mono px-2 py-1 text-white"
+                        >
+                          <option value="low">LOW</option>
+                          <option value="normal">NORMAL</option>
+                          <option value="high">HIGH</option>
+                          <option value="urgent">URGENT</option>
+                        </select>
+                        {/* Status buttons */}
+                        {['in_progress', 'resolved', 'closed'].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => updateTicketStatus(selectedTicket.id, s)}
+                            className={`text-[9px] font-mono px-2 py-1 border transition-colors ${
+                              selectedTicket.status === s
+                                ? (s === 'resolved' ? 'bg-green-500/20 text-green-400 border-green-500/50'
+                                  : s === 'closed' ? 'bg-zinc-600/20 text-zinc-400 border-zinc-600/50'
+                                  : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50')
+                                : 'text-zinc-500 border-zinc-700 hover:text-white'
+                            }`}
+                          >
+                            {s.toUpperCase().replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages Thread */}
+                  <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
+                    {ticketMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-3 border ${
+                          msg.sender_type === 'admin'
+                            ? 'bg-red-950/20 border-red-900/50 ml-8'
+                            : 'bg-zinc-800/30 border-zinc-800 mr-8'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`font-mono text-[10px] font-bold ${
+                            msg.sender_type === 'admin' ? 'text-red-400' : 'text-cyan-400'
+                          }`}>
+                            {msg.sender_type === 'admin' ? `ADMIN (${msg.sender_id})` : 'USER'}
+                          </span>
+                          <span className="font-mono text-[9px] text-zinc-600">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-zinc-300 whitespace-pre-wrap break-words">{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Quick Replies */}
+                  <div className="mb-3">
+                    <p className="text-zinc-600 font-mono text-[9px] tracking-widest mb-2">QUICK REPLIES</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {quickReplies.map((qr, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setAdminReply(qr)}
+                          className="text-[10px] font-mono text-zinc-400 border border-zinc-800 px-2 py-1 hover:text-white hover:border-zinc-600 transition-colors truncate max-w-[200px]"
+                          title={qr}
+                        >
+                          {qr.slice(0, 40)}{qr.length > 40 ? '...' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Reply Input */}
+                  <div className="flex gap-2">
+                    <textarea
+                      value={adminReply}
+                      onChange={(e) => setAdminReply(e.target.value)}
+                      placeholder="Type your reply..."
+                      rows={3}
+                      className="flex-1 bg-zinc-900 border border-zinc-700 text-sm text-white px-3 py-2 font-mono focus:outline-none focus:border-red-600 resize-none placeholder:text-zinc-600"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleAdminReply(); } }}
+                    />
+                    <button
+                      onClick={handleAdminReply}
+                      disabled={!adminReply.trim() || sendingReply}
+                      className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-mono text-xs px-4 transition-colors self-end h-10"
+                    >
+                      {sendingReply ? 'SENDING...' : 'REPLY'}
+                    </button>
+                  </div>
+                  <p className="text-zinc-600 font-mono text-[9px] mt-1">Ctrl+Enter to send</p>
+                </div>
+              ) : (
+                /* Ticket List */
+                <div className="space-y-2">
+                  {supportTickets.length === 0 ? (
+                    <p className="text-zinc-600 font-mono text-xs text-center py-12">No support tickets found.</p>
+                  ) : (
+                    supportTickets.map((ticket) => (
+                      <button
+                        key={ticket.id}
+                        onClick={() => fetchTicketMessages(ticket.id)}
+                        className="w-full text-left bg-zinc-800/30 border border-zinc-800 p-4 hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px]">
+                                {ticket.priority === 'urgent' ? '\uD83D\uDD34' : ticket.priority === 'high' ? '\uD83D\uDFE0' : ticket.priority === 'normal' ? '\uD83D\uDFE2' : '\u26AA'}
+                              </span>
+                              <span className="font-bold text-sm text-white truncate">{ticket.subject}</span>
+                            </div>
+                            <p className="text-zinc-500 font-mono text-[10px] mt-1">
+                              {ticket.username} &middot; {new Date(ticket.created_at).toLocaleDateString()}
+                            </p>
+                            {ticket.last_message && (
+                              <p className="text-zinc-400 text-xs mt-1 truncate">
+                                <span className={ticket.last_message.sender_type === 'admin' ? 'text-red-400' : 'text-cyan-400'}>
+                                  {ticket.last_message.sender_type === 'admin' ? 'You: ' : 'User: '}
+                                </span>
+                                {ticket.last_message.message}
+                              </p>
+                            )}
+                          </div>
+                          <span className={`text-[9px] font-mono px-2 py-1 shrink-0 ${
+                            ticket.status === 'open' ? 'bg-yellow-500/10 text-yellow-400'
+                            : ticket.status === 'in_progress' ? 'bg-cyan-500/10 text-cyan-400'
+                            : ticket.status === 'resolved' ? 'bg-green-500/10 text-green-400'
+                            : 'bg-zinc-600/10 text-zinc-500'
+                          }`}>
+                            {ticket.status.toUpperCase().replace('_', ' ')}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )}

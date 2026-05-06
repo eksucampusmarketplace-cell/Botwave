@@ -70,24 +70,40 @@ self.addEventListener('sync', (event) => {
 
 
 
-// Push notification support (future use)
+// Push notification support
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
   const data = event.data.json();
+  const tag = data.tag || 'botwave-notification';
+  const url = data.url || '/dashboard';
+
   event.waitUntil(
     self.registration.showNotification(data.title || 'BotWave', {
       body: data.body || 'New notification',
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
-      tag: 'botwave-notification',
+      tag: tag,
+      data: { url },
+      vibrate: [200, 100, 200],
+      actions: data.actions || [],
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const url = event.notification.data?.url || '/dashboard';
+
   event.waitUntil(
-    self.clients.openWindow('/dashboard')
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // Focus existing tab if already open
+      for (const client of clients) {
+        if (client.url.includes(url) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
   );
 });
