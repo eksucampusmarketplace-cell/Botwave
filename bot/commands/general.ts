@@ -60,7 +60,7 @@ async function sendHelp(
 !afk / !group / !purge / !settings
 !kick / !promote / !demote
 !welcome / !goodbye / !autoview
-!antidelete / !recover
+!antidelete / !recover / !refer
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -406,6 +406,11 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!plan',
             usage: '!plan',
             description: 'Check your current subscription plan, message quota usage, and session limits.',
+          },
+          {
+            name: '!refer',
+            usage: '!refer',
+            description: 'Get your unique referral code and shareable signup link. Share with friends to earn ₦20 per signup — they get ₦10 too. Shows your code, link, and referral stats.\n\nAliases: !referral, !invite',
           },
         ],
       },
