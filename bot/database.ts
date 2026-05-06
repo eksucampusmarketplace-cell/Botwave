@@ -1423,7 +1423,7 @@ export async function checkAndCashout(userId: string, phoneNumber: string): Prom
   if (balance.balance < CASHOUT_THRESHOLD) return false;
 
   // Import Inlomax client
-  const { sendAirtime, detectNetwork } = await import('@/bot/utils/inlomax');
+  const { sendAirtime, detectNetwork } = await import('./utils/inlomax');
 
   const networkInfo = detectNetwork(phoneNumber);
   const result = await sendAirtime(phoneNumber, CASHOUT_THRESHOLD);

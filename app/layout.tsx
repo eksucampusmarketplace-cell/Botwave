@@ -4,12 +4,12 @@ import { PWARegister } from '@/components/pwa/PWARegister';
 import ThemeProvider from '@/components/ui/ThemeProvider';
 
 export const viewport: Viewport = {
-  themeColor: '#00ff88',
+  themeColor: '#059669',
 };
 
 export const metadata: Metadata = {
-  title: 'BotWave',
-  description: 'Next-gen WhatsApp bot automation service. Connect your number and automate with AI.',
+  title: 'BotWave - WhatsApp Automation Platform',
+  description: 'Automate your WhatsApp with powerful bot features. Sticker maker, AI chat, media downloader, group tools and more. Free to use.',
   keywords: ['whatsapp', 'bot', 'automation', 'ai', 'sticker', 'download'],
   authors: [{ name: 'Decisive Analyst' }],
   manifest: '/manifest.json',
@@ -33,13 +33,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-sans antialiased">
         <ThemeProvider>
           {children}
         </ThemeProvider>

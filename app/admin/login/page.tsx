@@ -30,7 +30,6 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Store admin session info if needed, or just redirect
       router.push('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -40,81 +39,82 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/10 via-black to-black z-0" />
-      
+    <main className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md relative z-10"
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
       >
-        <div className="text-center mb-12">
-          <Link href="/" className="font-display text-3xl font-black text-red-600 tracking-[4px] drop-shadow-[0_0_20px_rgba(220,38,38,0.3)]">
-            BOT<span className="text-white">WAVE</span> <span className="text-sm border border-red-600 px-2 py-0.5 ml-2">ADMIN</span>
+        <div className="text-center mb-8">
+          <Link href="/" className="text-3xl font-bold text-white">
+            Bot<span className="text-red-500">Wave</span>
           </Link>
-          <p className="font-mono text-xs text-gray-500 tracking-[3px] mt-4">
-            {"// AUTHORIZED PERSONNEL ONLY"}
+          <span className="ml-2 text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded">
+            ADMIN
+          </span>
+          <p className="text-sm text-slate-400 mt-3">
+            Authorized personnel only
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-zinc-900/50 border border-red-600/20 p-8 backdrop-blur-xl">
-          <h2 className="font-display text-lg font-bold text-white tracking-[3px] mb-8 text-center">
-            ADMIN LOGIN
+        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl border border-slate-700 p-8">
+          <h2 className="text-2xl font-bold text-white mb-8 text-center">
+            Admin Login
           </h2>
 
           {error && (
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-red-500/10 border border-red-600/30 text-red-500 font-mono text-xs p-3 mb-6"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
             >
               {error}
             </motion.div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <label className="font-mono text-xs text-gray-400 tracking-[2px] block mb-2">
-                USERNAME
+              <label className="text-sm font-medium text-slate-300 block mb-1.5">
+                Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full bg-black border border-red-600/20 px-4 py-3 text-white font-mono text-sm focus:border-red-600 focus:outline-none transition-colors"
+                className="w-full bg-slate-900 border border-slate-600 px-4 py-3 rounded-lg text-white text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none transition-all"
                 placeholder="admin"
               />
             </div>
 
             <div>
-              <label className="font-mono text-xs text-gray-400 tracking-[2px] block mb-2">
-                PASSWORD
+              <label className="text-sm font-medium text-slate-300 block mb-1.5">
+                Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-black border border-red-600/20 px-4 py-3 text-white font-mono text-sm focus:border-red-600 focus:outline-none transition-colors"
-                placeholder="••••••••"
+                className="w-full bg-slate-900 border border-slate-600 px-4 py-3 rounded-lg text-white text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none transition-all"
+                placeholder="Enter admin password"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full font-display text-xs tracking-[3px] px-6 py-4 bg-red-600 text-white font-bold hover:bg-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'VERIFYING...' : 'ACCESS CONTROL PANEL'}
+              {loading ? 'Verifying...' : 'Access Control Panel'}
             </button>
           </div>
         </form>
 
-        <p className="text-center mt-8 font-mono text-[11px] text-gray-600 tracking-[2px]">
-          <Link href="/login" className="hover:text-red-500 transition-colors">
-            ← BACK TO MEMBER LOGIN
+        <p className="text-center mt-6">
+          <Link href="/login" className="text-sm text-slate-400 hover:text-red-400 transition-colors">
+            &larr; Back to member login
           </Link>
         </p>
       </motion.div>
