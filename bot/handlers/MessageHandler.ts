@@ -163,9 +163,10 @@ function getHelpHint(command: string): string {
 }
 
 function normalizeJid(jid: string): string {
+  if (!jid) return jid;
   // Remove the device suffix (:XX) from JIDs for comparison
   // e.g. "1234567890:12@s.whatsapp.net" → "1234567890@s.whatsapp.net"
-  return jid.replace(/:\d+@/, '@');
+  return jid.replace(/:\d+@/, '@').trim();
 }
 
 interface MessageContext {
@@ -265,7 +266,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     if (!content) return;
 
-    const senderJid = message.key.participant || chatJid;
+    const senderJid = normalizeJid(message.key.participant || chatJid);
     const isGroup = chatJid.endsWith('@g.us');
     const isCommand = content.startsWith(COMMAND_PREFIX);
     const pushName = message.pushName || 'User';
@@ -433,8 +434,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Owner-only command restriction:
     // Only the bot owner (the WhatsApp account linked to this session) can use ! commands.
     // Other users' command messages are silently ignored (they still get AFK/auto-replies above).
-    const ownerJid = (sock as any).user?.id;
-    const isOwner = fromMe || (ownerJid && normalizeJid(senderJid) === normalizeJid(ownerJid));
+    const ownerJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
+    const isOwner = fromMe || (ownerJid && senderJid === ownerJid);
 
     if (isCommand && !isOwner) {
       // Non-owner tried to use a command — silently ignore
@@ -570,6 +571,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     group: context.isGroup ? context.chatJid.split('@')[0] : undefined,
   };
 
+  try {
   switch (commandName) {
     case 'help':
     case 'h':
@@ -701,7 +703,6 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       await handleSave(context, sock);
       break;
     case 'savestatus':
-    case 'ss':
     case 'savest':
       await handleSaveStatus(context, args, sock);
       break;
@@ -1063,6 +1064,18 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       break;
     default:
       await sendUnknownCommand(context, sock, vars);
+  }
+  } catch (err) {
+    console.error(`Command !${commandName} failed:`, err);
+    try {
+      await sendReply(
+        context.chatJid,
+        `Something went wrong running !${commandName}. Try again later.`,
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+    } catch { /* reply itself failed — nothing more we can do */ }
   }
 }
 
@@ -2562,7 +2575,7 @@ async function handleDefine(
   const word = args.join(' ');
 
   try {
-    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { timeout: 10000 });
     const entry = response.data[0];
 
     if (!entry) {
@@ -2650,6 +2663,7 @@ async function handleTranslate(
     // Using a free translation API
     const response = await axios.get(
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`,
+      { timeout: 10000 },
     );
 
     const translated = response.data?.responseData?.translatedText;
@@ -5153,7 +5167,22 @@ async function handlePurge(context: MessageContext, args: string[], sock: any): 
     await sendReply(context.chatJid, '!purge [1-100] — Delete your own last N messages', sock, context.rawMessage.key, context.queue);
     return;
   }
-  await sendReply(context.chatJid, `Purging is a Baileys-direct feature. With Evolution API, message deletion is limited.\nRequested: ${count} messages.`, sock, context.rawMessage.key, context.queue);
+
+  // Attempt to delete the bot's own recent messages via Baileys chatModify
+  if (typeof sock.chatModify === 'function') {
+    try {
+      await sock.chatModify(
+        { clear: { messages: [{ id: context.rawMessage.key.id, fromMe: true, timestamp: Date.now() }] } },
+        context.chatJid,
+      );
+      await sendReply(context.chatJid, `Purge requested for ${count} message(s). Deletion is best-effort — WhatsApp may not remove all.`, sock, context.rawMessage.key, context.queue);
+    } catch (err) {
+      console.error('Purge failed:', err);
+      await sendReply(context.chatJid, `Purge failed. Message deletion requires Baileys-direct mode and is not supported through all connection methods.`, sock, context.rawMessage.key, context.queue);
+    }
+  } else {
+    await sendReply(context.chatJid, `Purge is not available in this connection mode. Message deletion requires Baileys-direct (not Evolution API).`, sock, context.rawMessage.key, context.queue);
+  }
 }
 
 async function handleCalc(context: MessageContext, args: string[], sock: any): Promise<void> {
