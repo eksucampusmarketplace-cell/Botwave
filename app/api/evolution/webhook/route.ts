@@ -69,31 +69,38 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', sessionId);
 
-        // Send one-time welcome message when pairing completes for the first time
-        if (current?.state === 'pairing_sent' && current?.phone_number) {
+        // Send one-time welcome message when pairing/QR scan completes for the first time.
+        // Triggers on any pre-active state (pairing_sent, qr_pending, connecting) — not
+        // on reconnections from 'inactive' (those are auto-reconnects, not first time).
+        const isFirstConnection = current?.state && ['pairing_sent', 'qr_pending', 'connecting'].includes(current.state);
+        if (isFirstConnection && current?.phone_number) {
+          const dashUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
           const welcomeMessages = [
             `Hey there! 👋 BotWave is now connected to your WhatsApp.\n\n` +
             `Here are a few things to get started:\n` +
             `• Type *!help* in any chat to see all commands\n` +
-            `• Add BotWave to your homescreen for quick access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online'}\n\n` +
-            `⚠️ *Important — Please use responsibly:*\n` +
-            `Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss — use wisely!\n\n` +
+            `• Add BotWave to your homescreen for quick access: ${dashUrl}\n\n` +
+            `⚠️ *Important — Please read:*\n` +
+            `1. Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss — use wisely!\n` +
+            `2. *Your bot can disconnect* if WhatsApp drops the session or if our server restarts. If your bot stops responding, go to your dashboard at ${dashUrl} and reconnect. You are in control of your session.\n\n` +
             `_Created by Decisive Analyst_`,
 
             `Welcome to BotWave! 🚀 Your WhatsApp bot is live.\n\n` +
             `Quick start:\n` +
             `• Send *!help* anywhere to explore commands\n` +
-            `• Bookmark the dashboard: ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online'}\n\n` +
-            `⚠️ *A word of caution:*\n` +
-            `Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions — please use the bot wisely.\n\n` +
+            `• Bookmark the dashboard: ${dashUrl}\n\n` +
+            `⚠️ *Things you should know:*\n` +
+            `1. Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions.\n` +
+            `2. *Disconnections can happen* — if the bot stops working, visit ${dashUrl} and reconnect your session. The bot doesn't stay online forever on its own.\n\n` +
             `_Powered by Decisive Analyst_`,
 
             `You're all set! ✨ BotWave is connected and ready.\n\n` +
             `Get started:\n` +
             `• Try *!help* to see everything your bot can do\n` +
-            `• Save the dashboard for easy access: ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online'}\n\n` +
-            `⚠️ *Please be mindful:*\n` +
-            `Don't overuse or spam automated messages — if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n\n` +
+            `• Save the dashboard for easy access: ${dashUrl}\n\n` +
+            `⚠️ *Keep in mind:*\n` +
+            `1. Don't overuse or spam automated messages — if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
+            `2. *Your bot session may disconnect* sometimes. When it does, just go to ${dashUrl} and click reconnect. You're always in control.\n\n` +
             `_Built by Decisive Analyst_`,
           ];
           const welcomeText = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];

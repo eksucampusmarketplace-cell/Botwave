@@ -526,25 +526,56 @@ async function handleNpm(context: MessageContext, args: string[], sock: any): Pr
 }
 
 async function handleWhois(context: MessageContext, args: string[], sock: any): Promise<void> {
+  // Helper to extract a clean phone number from any JID format
+  function extractPhoneNumber(jid: string): string | null {
+    // Standard format: 2348012345678@s.whatsapp.net
+    const standard = jid.replace(/@s\.whatsapp\.net$|@g\.us$/, '');
+    if (/^\d{7,15}$/.test(standard)) return standard;
+    // LID or other format — can't extract number
+    return null;
+  }
+
   // Helper to build user info card
   async function buildUserCard(targetJid: string, displayName: string): Promise<string> {
-    const phoneNumber = targetJid.replace('@s.whatsapp.net', '');
+    const phoneNumber = extractPhoneNumber(targetJid);
 
-    let profilePicUrl = '';
-    try {
-
-    } catch { /* no profile pic or privacy settings */ }
-
+    // Try to fetch full profile via Evolution API
+    let profileName = displayName;
     let aboutText = '';
+    let profilePicUrl = '';
+
     try {
-      const status = await sock.fetchStatus(targetJid);
-      aboutText = status?.status || '';
-    } catch { /* privacy settings */ }
+      if (typeof sock.fetchProfile === 'function') {
+        const profile = await sock.fetchProfile(targetJid);
+        if (profile) {
+          if (profile.name || profile.pushName || profile.verifiedName) {
+            profileName = profile.name || profile.pushName || profile.verifiedName || displayName;
+          }
+          if (profile.status || profile.about) {
+            aboutText = profile.status || profile.about || '';
+          }
+          if (profile.picture || profile.profilePictureUrl || profile.imgUrl) {
+            profilePicUrl = profile.picture || profile.profilePictureUrl || profile.imgUrl || '';
+          }
+        }
+      }
+    } catch { /* profile fetch failed — privacy settings or API unavailable */ }
+
+    // Fallback: try to get profile pic separately
+    if (!profilePicUrl) {
+      try {
+        if (typeof sock.fetchProfilePictureUrl === 'function') {
+          const picUrl = await sock.fetchProfilePictureUrl(targetJid);
+          if (picUrl) profilePicUrl = picUrl;
+        }
+      } catch { /* no profile pic or privacy settings */ }
+    }
 
     let info = `*WHO IS THIS?*\n\n`;
-    info += `*Name:* ${displayName}\n`;
-    info += `*Number:* +${phoneNumber}\n`;
-    info += `*JID:* ${targetJid}\n`;
+    info += `*Name:* ${profileName}\n`;
+    if (phoneNumber) {
+      info += `*Number:* +${phoneNumber}\n`;
+    }
     if (aboutText) info += `*About:* ${aboutText}\n`;
     if (profilePicUrl) info += `*Profile Pic:* ${profilePicUrl}\n`;
     info += `\n_Reply to any message with !whois to look up the sender._`;
@@ -571,7 +602,10 @@ async function handleWhois(context: MessageContext, args: string[], sock: any): 
       const targetJid = quotedParticipant.includes('@')
         ? quotedParticipant
         : quotedParticipant + '@s.whatsapp.net';
-      const displayName = contextInfoPath?.pushName || 'Unknown';
+      // pushName may be on contextInfo or on the quoted message's key
+      const displayName = contextInfoPath?.pushName
+        || context.rawMessage?.pushName
+        || 'Unknown';
       const info = await buildUserCard(targetJid, displayName);
       await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
     } catch (error) {

@@ -207,6 +207,69 @@ const fadeUp = {
   }),
 };
 
+const faqs = [
+  {
+    q: 'What is BotWave?',
+    a: 'BotWave is a free WhatsApp bot automation platform. You connect your own WhatsApp number by scanning a QR code, and the bot adds powerful features like sticker creation, AI chat, media downloads, games, polls, and group management — all through simple commands.',
+  },
+  {
+    q: 'Is BotWave free to use?',
+    a: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just ₦500/month for more messages and features.',
+  },
+  {
+    q: 'How do I set up a WhatsApp bot with BotWave?',
+    a: 'Sign up at www.botwave.online, go to your dashboard, and click "Connect WhatsApp". Scan the QR code with your phone and your bot is live — no coding needed. The whole process takes under 2 minutes.',
+  },
+  {
+    q: 'Will my WhatsApp number get banned?',
+    a: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.',
+  },
+  {
+    q: 'What commands does the WhatsApp bot support?',
+    a: 'BotWave supports 50+ commands including !sticker (create stickers), !ai (AI chat), !download (media downloader), !trivia (games), !poll (polls), !weather, !translate, !joke, !quote, and many more. Type !help in any chat to see the full list.',
+  },
+  {
+    q: 'Can I use BotWave for my business?',
+    a: 'Absolutely. BotWave works great for businesses — use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.',
+  },
+  {
+    q: 'Does BotWave work in Nigeria?',
+    a: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (₦) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.',
+  },
+  {
+    q: 'How is BotWave different from other WhatsApp bots?',
+    a: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Groq, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
+  },
+  {
+    q: 'Is BotWave better than Telegram bots?',
+    a: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp — where your audience already is. No need to move people to Telegram.',
+  },
+  {
+    q: 'Why is BotWave free when other bot platforms charge $20-50/month?',
+    a: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different — your WhatsApp session runs from your own device via QR code, so there\'s no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms can\'t match.',
+  },
+  {
+    q: 'What is the difference between BotWave and Evolution API?',
+    a: 'Evolution API is a powerful open-source WhatsApp API platform designed for developers — it requires technical setup, server management, and coding knowledge. BotWave is built on top of Evolution API but wraps it in a simple web dashboard that anyone can use. Think of Evolution API as the engine and BotWave as the car — you get all the power without needing to be a mechanic. No coding, no server setup, just scan QR and go.',
+  },
+  {
+    q: 'Is BotWave safe to use? Will my data be secure?',
+    a: 'Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp\'s automated detection.',
+  },
+  {
+    q: 'How does BotWave protect my WhatsApp account from bans?',
+    a: 'BotWave has the most advanced anti-ban system of any WhatsApp bot. It includes: session warmup (gradual message increase over 7 days), human-like typing delays and read receipts, message variation (never sends identical messages), rate limiting (prevents spam patterns), activity hours simulation (quiet at night like a real person), and media fingerprint jittering. Your session also runs from your own device IP, not a shared server.',
+  },
+  {
+    q: 'Do I need to be a developer to use BotWave?',
+    a: 'No! Unlike tools like Evolution API, Baileys, or other WhatsApp libraries that require coding knowledge, BotWave is 100% no-code. Sign up, scan QR code, and your bot is live. All configuration happens through a web dashboard. Even setting up AI chat just requires pasting a free Groq API key — no programming needed.',
+  },
+  {
+    q: 'Can BotWave help me grow my community?',
+    a: 'Absolutely. BotWave is built for community management. Use polls for engagement, trivia games to keep groups active, anti-spam to keep groups clean, and the built-in referral system to grow organically. Many campus group admins and small business owners use BotWave to manage groups of hundreds of members effortlessly.',
+  },
+];
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-[var(--bg)]">
@@ -233,20 +296,20 @@ export default function HomePage() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
                 <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-emerald-400 text-xs font-mono tracking-wide">SYSTEM ONLINE</span>
+                <span className="text-emerald-400 text-xs font-mono tracking-wide">FREE FOREVER — NO CATCH</span>
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6">
-                Free WhatsApp Bot
+                Stop Paying for Bots.
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 typing-cursor">
-                  Automation Platform
+                  BotWave is Free.
                 </span>
               </h1>
 
               <p className="text-lg text-slate-400 max-w-xl mb-8 leading-relaxed">
-                BotWave is a free WhatsApp automation tool — create stickers, AI chat, download media,
-                manage groups, play games, and more. No coding needed. Just scan a QR code and your bot is live.
+                Why pay $20/mo for Telegram bots or Twitter automation when BotWave gives you 50+ WhatsApp commands for free?
+                Stickers, AI chat, media downloads, games, group management — no coding, no credit card. Just scan a QR code.
               </p>
 
               <div className="flex gap-4 flex-wrap mb-8">
@@ -518,6 +581,209 @@ export default function HomePage() {
                 ))}
               </ol>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security & Safety Section */}
+      <section id="security" className="py-24 px-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
+              SECURITY
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+              Your WhatsApp Account is Safe With BotWave
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+              We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: '🛡️',
+                title: 'Your Device, Your IP',
+                desc: 'Your WhatsApp session runs from your own device via QR code — not from a shared server. This means your real IP is used, drastically reducing ban risk compared to server-based bots.',
+              },
+              {
+                icon: '🔒',
+                title: 'Zero Message Storage',
+                desc: 'BotWave never reads, stores, or logs your WhatsApp messages. All message processing happens in memory and is discarded immediately. Your chats stay private.',
+              },
+              {
+                icon: '🤖',
+                title: 'Advanced Anti-Ban System',
+                desc: 'Session warmup over 7 days, human-like typing delays, message variation (never identical messages), rate limiting, activity hours simulation, and media fingerprint jittering.',
+              },
+              {
+                icon: '⏱️',
+                title: 'Smart Rate Limiting',
+                desc: 'Hard 200 messages/day cap, 10 msgs/min session limit, 20 msgs/min per user. Anti-spam flood detection warns after 5 messages in 10 seconds. Your account stays safe.',
+              },
+              {
+                icon: '🌙',
+                title: 'Human-Like Behavior',
+                desc: 'The bot simulates real human patterns — quiet at night (12am-6am), random "distracted" delays, read-but-skip in groups (15% chance), and presence toggling based on time of day.',
+              },
+              {
+                icon: '🔐',
+                title: 'Secure Infrastructure',
+                desc: 'Credentials stored in Supabase with row-level security. API communication encrypted. No plain-text secrets. Your login and session data is protected at every layer.',
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl p-6"
+              >
+                <div className="text-3xl mb-4">{item.icon}</div>
+                <h3 className="font-bold text-[var(--text-primary)] mb-2">{item.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section — targets "vs" and "alternative" search queries */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-xs font-mono tracking-wide mb-4">
+              HONEST COMPARISON
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+              Why People Are Switching to BotWave
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+              Other bot platforms charge you monthly for features BotWave gives away free. Here&apos;s the truth nobody tells you.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                platform: 'Paid WhatsApp Bots',
+                price: '$15-50/mo',
+                cons: ['Shared server = ban risk', 'Limited commands', 'No anti-ban protection', 'No free tier'],
+                verdict: 'Overpriced',
+              },
+              {
+                platform: 'Telegram Bots',
+                price: 'Free-$30/mo',
+                cons: ['Only works on Telegram', 'Low reach in Africa', 'Complex API setup', 'No WhatsApp support'],
+                verdict: 'Wrong platform',
+              },
+              {
+                platform: 'Evolution API (DIY)',
+                price: 'Free (self-hosted)',
+                cons: ['Requires coding skills', 'Server setup needed', 'No dashboard UI', 'No built-in commands'],
+                verdict: 'For developers only',
+              },
+              {
+                platform: 'BotWave',
+                price: 'FREE',
+                cons: ['50+ commands included', 'Built-in anti-ban', 'Your own number', 'AI chat + games + tools'],
+                verdict: 'Best choice',
+                highlight: true,
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className={`rounded-xl p-6 ${
+                  item.highlight
+                    ? 'bg-emerald-500/10 border-2 border-emerald-500/30 ring-1 ring-emerald-500/10'
+                    : 'glass-card border border-[var(--border)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-[var(--text-primary)]">{item.platform}</h3>
+                  <span className={`text-sm font-mono font-bold ${item.highlight ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {item.price}
+                  </span>
+                </div>
+                <ul className="space-y-2 mb-4">
+                  {item.cons.map((con, j) => (
+                    <li key={j} className="flex items-center gap-2 text-sm text-slate-400">
+                      <span className={item.highlight ? 'text-emerald-400' : 'text-red-400'}>
+                        {item.highlight ? '✓' : '✗'}
+                      </span>
+                      {con}
+                    </li>
+                  ))}
+                </ul>
+                <div className={`text-xs font-mono font-bold uppercase tracking-wide ${
+                  item.highlight ? 'text-emerald-400' : 'text-slate-600'
+                }`}>
+                  {item.verdict}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section — SEO rich snippets */}
+      <section id="faq" className="py-24 px-6 bg-[var(--bg)] relative">
+        <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="max-w-3xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
+              FAQ
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+              Frequently Asked Questions About WhatsApp Bots
+            </h2>
+          </motion.div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <motion.details
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl group"
+              >
+                <summary className="px-6 py-5 cursor-pointer flex items-center justify-between text-[var(--text-primary)] font-semibold text-sm md:text-base hover:text-emerald-400 transition-colors list-none">
+                  {faq.q}
+                  <span className="text-emerald-400 ml-4 group-open:rotate-45 transition-transform text-xl">+</span>
+                </summary>
+                <div className="px-6 pb-5 text-sm text-slate-400 leading-relaxed border-t border-[var(--border)] pt-4">
+                  {faq.a}
+                </div>
+              </motion.details>
+            ))}
           </div>
         </div>
       </section>
