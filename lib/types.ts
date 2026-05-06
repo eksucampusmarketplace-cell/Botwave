@@ -126,3 +126,71 @@ export interface RateLimitSetting {
   enabled: boolean;
   description: string;
 }
+
+// ─── Subscription Types ───────────────────────────────────────────────────────
+
+export type SubscriptionPlan = 'free' | 'lite' | 'standard' | 'boss';
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  quota_limit: number;
+  quota_used: number;
+  session_limit: number;
+  ai_daily_limit: number;
+  billing_start: string | null;
+  next_renewal: string | null;
+  squad_transaction_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Payment Types ────────────────────────────────────────────────────────────
+
+export interface Payment {
+  id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  plan: string;
+  status: 'pending' | 'success' | 'failed';
+  squad_transaction_ref: string | null;
+  squad_gateway_ref: string | null;
+  payment_channel: string | null;
+  created_at: string;
+}
+
+// ─── Reward Types ─────────────────────────────────────────────────────────────
+
+export interface RewardBalance {
+  id: string;
+  user_id: string;
+  balance: number;
+  total_earned: number;
+  total_cashed_out: number;
+  last_cashout_at: string | null;
+}
+
+export interface RewardTransaction {
+  id: string;
+  user_id: string;
+  action: string;
+  amount: number;
+  description: string | null;
+  created_at: string;
+}
+
+export interface AirtimeCashout {
+  id: string;
+  user_id: string;
+  phone_number: string;
+  amount: number;
+  network: string | null;
+  status: 'pending' | 'success' | 'failed';
+  inlomax_reference: string | null;
+  error_message: string | null;
+  created_at: string;
+}

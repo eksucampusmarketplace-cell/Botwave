@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
@@ -761,6 +761,9 @@ class EvolutionBot {
           this.isReconnecting = false;
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
+
+          // Credit first-session reward (₦10, one-time, non-blocking)
+          void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
 
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           this.startPresenceLoop();

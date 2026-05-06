@@ -18,7 +18,7 @@ import mammoth from 'mammoth';
 const execFileAsync = promisify(execFile);
 const dnsResolve = promisify(dns.resolve);
 const botStartTime = Date.now();
-import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, setFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage } from '../database';
+import { savePoll, recordVote, getLeaderboard, getUserSettings, getAfkState, setAfkState, getAutoReplies, getActivePoll, incrementLeaderboard, getFeatureEnabled, setFeatureEnabled, getSessionUserId, createReminder, getUserReminders, deleteReminder, createNote, getUserNotes, deleteNote, createScheduledMessage, getUserScheduledMessages, deleteScheduledMessage, getSessionStats, trackCommand, trackMessage, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, incrementQuotaUsage, getRewardBalance, creditReward, checkAndCashout, CASHOUT_THRESHOLD } from '../database';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   humanSend,
@@ -441,6 +441,22 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
+    // Quota enforcement: check subscription limits before processing commands
+    if (isCommand && userId) {
+      const quotaOk = await incrementQuotaUsage(userId);
+      if (!quotaOk) {
+        const sub = await getUserSubscription(userId);
+        const upgradeMsg = sub.plan === 'free'
+          ? `You've hit your monthly message limit (${sub.quotaLimit}). Upgrade your plan at the dashboard to continue using commands!`
+          : `You've reached your ${sub.plan} plan limit (${sub.quotaLimit} messages). Upgrade for more or wait for your next billing cycle.`;
+        await sendReply(chatJid, upgradeMsg, sock, message.key, queue);
+        return;
+      }
+
+      // Credit reward for command usage (non-blocking)
+      void creditReward(userId, 'command_use', content.split(' ')[0]).catch(() => {});
+    }
+
     if (isCommand && !isUserRateLimited(senderJid)) {
       await processCommand(context, sock);
     } else if (isCommand) {
@@ -458,6 +474,17 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     if (isGroup) markGroupReplied(chatJid);
     trackContactReply(senderJid);
     trackWhoSentLast(chatJid, true); // Track that bot was last to send
+
+    // Credit daily active reward + check auto-cashout (non-blocking)
+    if (userId) {
+      void (async () => {
+        try {
+          await creditReward(userId, 'daily_active', 'Daily active usage');
+          const phoneNumber = senderJid.replace(/@s\.whatsapp\.net$/, '');
+          await checkAndCashout(userId, phoneNumber);
+        } catch { /* non-critical */ }
+      })();
+    }
   } catch (error) {
     console.error('Error handling message:', error);
   }
@@ -1023,6 +1050,16 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     case 'unmod':
       await handleDemote(context, args, sock);
       break;
+    case 'balance':
+    case 'bal':
+    case 'rewards':
+      await handleBalance(context, sock);
+      break;
+    case 'plan':
+    case 'subscription':
+    case 'sub':
+      await handlePlan(context, sock);
+      break;
     default:
       await sendUnknownCommand(context, sock, vars);
   }
@@ -1552,6 +1589,16 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!autoview',
             usage: '!autoview on/off',
             description: 'Auto-view and react (❤️) to contacts\' WhatsApp statuses. Processes one by one with 5-15s delays, skips ~15%, max 50/day. Ban-safe.',
+          },
+          {
+            name: '!balance',
+            usage: '!balance',
+            description: 'Check your reward balance and progress toward free airtime cashout at ₦100.',
+          },
+          {
+            name: '!plan',
+            usage: '!plan',
+            description: 'Check your current subscription plan, message quota usage, and session limits.',
           },
         ],
       },
@@ -3810,6 +3857,55 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
     'Unknown setting. Use !settings to see available options.',
     sock, context.rawMessage.key, context.queue,
   );
+}
+
+// ─── Balance & Plan Commands ────────────────────────────────────────────────
+
+async function handleBalance(context: MessageContext, sock: any): Promise<void> {
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!userId) {
+    await sendReply(context.chatJid, 'Could not determine your account.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const balance = await getRewardBalance(userId);
+  const progress = Math.min(100, Math.round((balance.balance / CASHOUT_THRESHOLD) * 100));
+  const progressBar = '█'.repeat(Math.floor(progress / 10)) + '░'.repeat(10 - Math.floor(progress / 10));
+
+  const msg =
+    `*REWARD BALANCE*\n\n` +
+    `Balance: ₦${balance.balance}\n` +
+    `Total earned: ₦${balance.totalEarned}\n` +
+    `Total cashed out: ₦${balance.totalCashedOut}\n\n` +
+    `Progress to ₦${CASHOUT_THRESHOLD} cashout:\n` +
+    `[${progressBar}] ${progress}%\n\n` +
+    `_Earn rewards by using commands, staying active daily, and referring friends!_`;
+
+  await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+}
+
+async function handlePlan(context: MessageContext, sock: any): Promise<void> {
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!userId) {
+    await sendReply(context.chatJid, 'Could not determine your account.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const sub = await getUserSubscription(userId);
+  const planNames: Record<string, string> = { free: 'Free', lite: 'Lite (₦500/mo)', standard: 'Standard (₦1,000/mo)', boss: 'Boss (₦2,000/mo)' };
+  const quotaDisplay = sub.quotaLimit === -1 ? 'Unlimited' : `${sub.quotaUsed}/${sub.quotaLimit}`;
+  const aiDisplay = sub.aiDailyLimit === -1 ? 'Unlimited' : `${sub.aiDailyLimit}/day`;
+
+  const msg =
+    `*YOUR PLAN*\n\n` +
+    `Plan: ${planNames[sub.plan] || sub.plan}\n` +
+    `Status: ${sub.status}\n` +
+    `Messages used: ${quotaDisplay}\n` +
+    `Sessions: ${sub.sessionLimit}\n` +
+    `AI queries: ${aiDisplay}\n\n` +
+    `_Upgrade your plan from the dashboard to unlock more features!_`;
+
+  await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
 }
 
 // ─── Auto Status Viewer Command ─────────────────────────────────────────────
