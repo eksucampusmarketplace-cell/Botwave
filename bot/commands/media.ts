@@ -466,7 +466,9 @@ function restoreBufferFields(obj: unknown): unknown {
   return out;
 }
 
-async function handleViewOnce(context: MessageContext, sock: any): Promise<void> {
+async function handleViewOnce(context: MessageContext, sock: any, args: string[] = []): Promise<void> {
+  const isPrivate = args[0]?.toLowerCase() === 'pr';
+
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const viewOnce = quotedMsg?.viewOnceMessage?.message
     || quotedMsg?.viewOnceMessageV2?.message
@@ -500,10 +502,22 @@ async function handleViewOnce(context: MessageContext, sock: any): Promise<void>
   if (!inner) {
     await sendReply(
       context.chatJid,
-      '*VIEW ONCE*\n\nReply to a view-once message with *!viewonce* to save and resend it as a normal message.',
+      '*VIEW ONCE*\n\nReply to a view-once message with:\n• *!viewonce* — resend as normal message in this chat\n• *!viewonce pr* — save to your private chat silently',
       sock, context.rawMessage.key, context.queue,
     );
     return;
+  }
+
+  // For !viewonce pr, resolve the owner's private JID
+  let targetJid = context.chatJid;
+  if (isPrivate) {
+    const rawOwnerJid = (sock as any).user?.id;
+    const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : '';
+    if (!ownerJid) {
+      await sendReply(context.chatJid, 'Could not determine your account. Try again after reconnecting.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    targetJid = ownerJid;
   }
 
   try {
@@ -525,19 +539,42 @@ async function handleViewOnce(context: MessageContext, sock: any): Promise<void>
       return;
     }
 
-    if (restored.imageMessage) {
-      const origCaption = restored.imageMessage.caption || '';
-      const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
-      await sock.sendMessage(context.chatJid, { image: buffer, caption }, { quoted: context.rawMessage });
-    } else if (restored.videoMessage) {
-      const origCaption = restored.videoMessage.caption || '';
-      const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
-      await sock.sendMessage(context.chatJid, { video: buffer, caption }, { quoted: context.rawMessage });
-    } else if (restored.audioMessage) {
-      await sock.sendMessage(context.chatJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true }, { quoted: context.rawMessage });
+    if (isPrivate) {
+      const chatName = context.isGroup ? context.chatJid.split('@')[0] : context.senderJid.split('@')[0];
+      const senderName = context.pushName || context.senderJid.split('@')[0];
+      const header = `_View-once from ${senderName} in ${chatName}_`;
+
+      if (restored.imageMessage) {
+        const origCaption = restored.imageMessage.caption || '';
+        const caption = origCaption ? `${header}\n\n${origCaption}` : header;
+        await sock.sendMessage(targetJid, { image: buffer, caption });
+      } else if (restored.videoMessage) {
+        const origCaption = restored.videoMessage.caption || '';
+        const caption = origCaption ? `${header}\n\n${origCaption}` : header;
+        await sock.sendMessage(targetJid, { video: buffer, caption });
+      } else if (restored.audioMessage) {
+        await sock.sendMessage(targetJid, { text: header });
+        await sock.sendMessage(targetJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true });
+      } else {
+        await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
+      await sendReply(context.chatJid, '_View-once saved to your private chat._', sock, context.rawMessage.key, context.queue);
     } else {
-      await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
-      return;
+      if (restored.imageMessage) {
+        const origCaption = restored.imageMessage.caption || '';
+        const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
+        await sock.sendMessage(targetJid, { image: buffer, caption }, { quoted: context.rawMessage });
+      } else if (restored.videoMessage) {
+        const origCaption = restored.videoMessage.caption || '';
+        const caption = origCaption ? `${origCaption}\n\n_View-once saved_` : '_View-once saved_';
+        await sock.sendMessage(targetJid, { video: buffer, caption }, { quoted: context.rawMessage });
+      } else if (restored.audioMessage) {
+        await sock.sendMessage(targetJid, { audio: buffer, mimetype: 'audio/mpeg', ptt: true }, { quoted: context.rawMessage });
+      } else {
+        await sendReply(context.chatJid, 'Unsupported view-once media type.', sock, context.rawMessage.key, context.queue);
+        return;
+      }
     }
   } catch (error) {
     console.error('[VIEWONCE] Error:', error);
@@ -907,7 +944,7 @@ registerCommand({ name: 'tts', aliases: ['tts', 'speak', 'say'], category: 'medi
 registerCommand({ name: 'qr', aliases: ['qr', 'qrcode'], category: 'media', description: 'Generate QR code', execute: (ctx, args, sock) => handleQR(ctx, args, sock) });
 registerCommand({ name: 'img', aliases: ['img', 'imagine', 'image', 'draw', 'generate'], category: 'media', description: 'Generate AI image', execute: (ctx, args, sock) => handleImg(ctx, args, sock) });
 registerCommand({ name: 'short', aliases: ['short', 'shorten'], category: 'media', description: 'Shorten URL', execute: (ctx, args, sock) => handleShorten(ctx, args, sock) });
-registerCommand({ name: 'viewonce', aliases: ['viewonce', 'vo'], category: 'media', description: 'View once-only media', execute: (ctx, _a, sock) => handleViewOnce(ctx, sock) });
+registerCommand({ name: 'viewonce', aliases: ['viewonce', 'vo'], category: 'media', description: 'View once-only media', execute: (ctx, args, sock) => handleViewOnce(ctx, sock, args) });
 registerCommand({ name: 'toimg', aliases: ['toimg', 'toimage', 'stickertoimg'], category: 'media', description: 'Convert sticker to image', execute: (ctx, _a, sock) => handleToImg(ctx, sock) });
 registerCommand({ name: 'togif', aliases: ['togif', 'stickertogif'], category: 'media', description: 'Convert sticker to GIF', execute: (ctx, _a, sock) => handleToGif(ctx, sock) });
 registerCommand({ name: 'toaudio', aliases: ['toaudio', 'tomp3', 'mp3'], category: 'media', description: 'Convert to audio', execute: (ctx, _a, sock) => handleToAudio(ctx, sock) });
