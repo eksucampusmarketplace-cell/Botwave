@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const terminalLines = [
   { cls: 'comment', text: '# BotWave — New Account Setup' },
@@ -54,12 +54,19 @@ function SignupTerminal() {
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     username: '',
+    referralCode: '',
   });
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) setFormData((prev) => ({ ...prev, referralCode: ref.toUpperCase() }));
+  }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -92,6 +99,7 @@ export default function SignupPage() {
           email: formData.email,
           password: formData.password,
           username: formData.username,
+          referralCode: formData.referralCode || undefined,
         }),
       });
 
@@ -196,6 +204,18 @@ export default function SignupPage() {
                   required
                   className={inputClass}
                   placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">REFERRAL CODE <span className="text-slate-600">(optional)</span></label>
+                <input
+                  type="text"
+                  name="referralCode"
+                  value={formData.referralCode}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="BW-XXXXXX"
                 />
               </div>
 

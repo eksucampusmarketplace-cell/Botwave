@@ -1454,4 +1454,36 @@ export async function checkAndCashout(userId: string, phoneNumber: string): Prom
   return false;
 }
 
+// ─── Referral Code ───────────────────────────────────────────────────────────
+
+function generateReferralCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'BW-';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+export async function getUserReferralCode(userId: string): Promise<{ code: string; totalReferred: number; totalEarned: number } | null> {
+  const { data: referral } = await supabase
+    .from('referrals')
+    .select('code, total_referred, total_earned')
+    .eq('user_id', userId)
+    .single();
+
+  if (referral) {
+    return { code: referral.code, totalReferred: referral.total_referred || 0, totalEarned: referral.total_earned || 0 };
+  }
+
+  // Auto-create referral code
+  const code = generateReferralCode();
+  const { data: newRef, error } = await supabase
+    .from('referrals')
+    .insert({ user_id: userId, code, total_referred: 0, total_earned: 0, is_frozen: false, created_at: new Date().toISOString() })
+    .select('code, total_referred, total_earned')
+    .single();
+
+  if (error || !newRef) return null;
+  return { code: newRef.code, totalReferred: 0, totalEarned: 0 };
+}
+
 export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };
