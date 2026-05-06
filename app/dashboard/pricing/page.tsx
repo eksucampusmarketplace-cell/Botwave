@@ -187,17 +187,35 @@ export default function PricingPage() {
 
       console.log('[PAYMENT] Response:', JSON.stringify({ checkoutUrl: data.checkoutUrl, publicKey: !!data.publicKey, squadReady }));
 
-      // Strategy 1: Try Squad inline modal
+      // Strategy 1: Try Squad inline modal (with timeout safety)
       if (squadReady && window.squad && data.publicKey) {
         try {
+          let callbackFired = false;
+          const safetyTimeout = setTimeout(() => {
+            if (!callbackFired) {
+              console.warn('[PAYMENT] Squad widget timed out — no callback fired in 15s');
+              setLoading(null);
+              if (data.checkoutUrl) {
+                setMessage({ type: 'success', text: 'Opening payment page...' });
+                window.open(data.checkoutUrl, '_blank') || (window.location.href = data.checkoutUrl);
+              } else {
+                setMessage({ type: 'error', text: 'Payment widget timed out. Please try again.' });
+              }
+            }
+          }, 15000);
+
           const squadInstance = new window.squad({
             onClose: () => {
+              callbackFired = true;
+              clearTimeout(safetyTimeout);
               setLoading(null);
             },
             onLoad: () => {
               console.log('[PAYMENT] Squad widget loaded');
             },
             onSuccess: () => {
+              callbackFired = true;
+              clearTimeout(safetyTimeout);
               setMessage({ type: 'success', text: 'Payment successful! Your plan will be activated shortly.' });
               setCurrentPlan(planKey);
               setLoading(null);
