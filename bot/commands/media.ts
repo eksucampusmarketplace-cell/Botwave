@@ -18,9 +18,11 @@ let ytCookiesReady = false;
 
 async function ensureYtCookies(): Promise<boolean> {
   if (ytCookiesReady) return true;
-  const cookies = process.env.YOUTUBE_COOKIES;
-  if (!cookies) return false;
+  const raw = process.env.YOUTUBE_COOKIES;
+  if (!raw) return false;
   try {
+    // Render stores multi-line env vars with literal \n — convert to real newlines
+    const cookies = raw.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
     await writeFile(YT_COOKIES_PATH, cookies, 'utf-8');
     ytCookiesReady = true;
     console.log('[DOWNLOAD] YouTube cookies written to', YT_COOKIES_PATH);
