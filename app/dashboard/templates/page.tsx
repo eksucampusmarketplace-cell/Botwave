@@ -13,14 +13,51 @@ interface Template {
 }
 
 const AVAILABLE_VARIABLES = [
-  { name: 'name', desc: 'Sender display name' },
-  { name: 'phone', desc: 'Sender phone number' },
-  { name: 'date', desc: 'Current date' },
-  { name: 'time', desc: 'Current time' },
-  { name: 'order_id', desc: 'Order ID (for e-commerce)' },
-  { name: 'group', desc: 'Group name' },
-  { name: 'amount', desc: 'Payment amount' },
-  { name: 'product', desc: 'Product name' },
+  { name: 'name', desc: 'Sender display name', category: 'User' },
+  { name: 'phone', desc: 'Sender phone number', category: 'User' },
+  { name: 'date', desc: 'Current date (e.g. May 6, 2026)', category: 'Date/Time' },
+  { name: 'time', desc: 'Current time (e.g. 3:35 PM)', category: 'Date/Time' },
+  { name: 'day', desc: 'Day of the week (e.g. Tuesday)', category: 'Date/Time' },
+  { name: 'month', desc: 'Current month name (e.g. May)', category: 'Date/Time' },
+  { name: 'year', desc: 'Current year (e.g. 2026)', category: 'Date/Time' },
+  { name: 'order_id', desc: 'Order reference number', category: 'E-commerce' },
+  { name: 'amount', desc: 'Payment or order amount', category: 'E-commerce' },
+  { name: 'product', desc: 'Product name', category: 'E-commerce' },
+  { name: 'group', desc: 'Group name (in group chats)', category: 'Chat' },
+  { name: 'bot_name', desc: 'Your bot display name', category: 'Chat' },
+  { name: 'greeting', desc: 'Time-based greeting (Good morning/afternoon/evening)', category: 'Smart' },
+  { name: 'random_emoji', desc: 'Random emoji from a curated set', category: 'Smart' },
+  { name: 'count', desc: 'Total messages or interaction count', category: 'Smart' },
+];
+
+const VARIABLE_CATEGORIES = ['User', 'Date/Time', 'E-commerce', 'Chat', 'Smart'];
+
+const TEMPLATE_PRESETS = [
+  {
+    name: 'welcome',
+    label: 'Welcome Message',
+    content: '{greeting} {name}! Welcome to our community. Feel free to ask anything or type !help to see available commands. {random_emoji}',
+  },
+  {
+    name: 'order_confirmation',
+    label: 'Order Confirmation',
+    content: 'Hi {name}, your order #{order_id} for {product} ({amount}) has been confirmed! We will notify you when it ships. Thank you for shopping with us.',
+  },
+  {
+    name: 'daily_greeting',
+    label: 'Daily Greeting',
+    content: '{greeting} everyone! Happy {day}. Hope you all have a productive {day}. {random_emoji}',
+  },
+  {
+    name: 'payment_received',
+    label: 'Payment Received',
+    content: 'Payment of {amount} received from {name} ({phone}) on {date} at {time}. Reference: #{order_id}. Thank you!',
+  },
+  {
+    name: 'out_of_stock',
+    label: 'Out of Stock Notice',
+    content: 'Sorry {name}, {product} is currently out of stock. We will notify you when it is available again. Check other products with !shop.',
+  },
 ];
 
 export default function TemplatesPage() {
@@ -46,8 +83,17 @@ export default function TemplatesPage() {
     return [...new Set(matches.map((m: string) => m.slice(1, -1)))];
   };
 
+  const [activeCategory, setActiveCategory] = useState('User');
+  const [showPresets, setShowPresets] = useState(false);
+
   const insertVariable = (varName: string) => {
     setContent((prev) => prev + `{${varName}}`);
+  };
+
+  const applyPreset = (preset: typeof TEMPLATE_PRESETS[0]) => {
+    setName(preset.name);
+    setContent(preset.content);
+    setShowPresets(false);
   };
 
   const handleCreate = async () => {
@@ -185,13 +231,55 @@ export default function TemplatesPage() {
                   )}
                 </div>
 
-                {/* Variable quick-insert buttons */}
+                {/* Variable quick-insert by category */}
                 <div>
-                  <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Click to insert variable:
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      Click to insert variable:
+                    </label>
+                    <button
+                      onClick={() => setShowPresets(!showPresets)}
+                      className="text-[10px] px-2 py-1 rounded border transition-colors hover:border-emerald-500/30"
+                      style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+                    >
+                      {showPresets ? 'Hide Presets' : 'Use a Preset'}
+                    </button>
+                  </div>
+
+                  {showPresets && (
+                    <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {TEMPLATE_PRESETS.map((p) => (
+                        <button
+                          key={p.name}
+                          onClick={() => applyPreset(p)}
+                          className="text-left p-3 rounded-lg border transition-colors hover:border-emerald-500/30"
+                          style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}
+                        >
+                          <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{p.label}</span>
+                          <p className="text-[10px] mt-0.5 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{p.content}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-1.5 mb-2 flex-wrap">
+                    {VARIABLE_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${
+                          activeCategory === cat
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : ''
+                        }`}
+                        style={activeCategory !== cat ? { color: 'var(--text-muted)', borderColor: 'var(--border)' } : undefined}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {AVAILABLE_VARIABLES.map((v) => (
+                    {AVAILABLE_VARIABLES.filter((v) => v.category === activeCategory).map((v) => (
                       <button
                         key={v.name}
                         onClick={() => insertVariable(v.name)}

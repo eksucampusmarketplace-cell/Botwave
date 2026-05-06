@@ -10,6 +10,9 @@ interface CustomCommand {
   response: string;
   match_type: string;
   enabled: boolean;
+  image_url: string;
+  cooldown: number;
+  responses: string[];
   created_at: string;
 }
 
@@ -27,6 +30,10 @@ export default function CustomCommandsPage() {
   const [command, setCommand] = useState('');
   const [response, setResponse] = useState('');
   const [matchType, setMatchType] = useState('exact');
+  const [imageUrl, setImageUrl] = useState('');
+  const [cooldown, setCooldown] = useState('');
+  const [extraResponses, setExtraResponses] = useState<string[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState('');
 
   const fetchCommands = useCallback(async () => {
@@ -46,7 +53,14 @@ export default function CustomCommandsPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ command, response, match_type: matchType }),
+      body: JSON.stringify({
+        command,
+        response,
+        match_type: matchType,
+        image_url: imageUrl || undefined,
+        cooldown: cooldown ? Number(cooldown) : 0,
+        responses: extraResponses.length > 0 ? [response, ...extraResponses].filter(Boolean) : undefined,
+      }),
     });
 
     const data = await res.json();
@@ -55,6 +69,10 @@ export default function CustomCommandsPage() {
     setCommands([data.data, ...commands]);
     setCommand('');
     setResponse('');
+    setImageUrl('');
+    setCooldown('');
+    setExtraResponses([]);
+    setShowAdvanced(false);
     setShowForm(false);
   };
 
@@ -200,6 +218,99 @@ export default function CustomCommandsPage() {
                   />
                 </div>
 
+                {/* Advanced options */}
+                <div>
+                  <button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-[10px] font-medium transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    {showAdvanced ? '▲ Hide Advanced' : '▼ Advanced Options (image, random responses, cooldown)'}
+                  </button>
+
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 space-y-4"
+                    >
+                      <div>
+                        <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
+                          Image URL <span style={{ color: 'var(--text-muted)' }}>(optional, bot sends this image with the response)</span>
+                        </label>
+                        <input
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://example.com/image.jpg"
+                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                          style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                        />
+                        {imageUrl && (
+                          <img
+                            src={imageUrl}
+                            alt="Preview"
+                            className="mt-2 max-h-24 rounded-lg object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
+                          Cooldown (seconds) <span style={{ color: 'var(--text-muted)' }}>(optional, prevent spam triggering)</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={cooldown}
+                          onChange={(e) => setCooldown(e.target.value)}
+                          placeholder="0 (no cooldown)"
+                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                          style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
+                          Random Responses <span style={{ color: 'var(--text-muted)' }}>(bot picks one at random each time)</span>
+                        </label>
+                        {extraResponses.map((r, i) => (
+                          <div key={i} className="flex gap-2 mb-2">
+                            <input
+                              value={r}
+                              onChange={(e) => {
+                                const updated = [...extraResponses];
+                                updated[i] = e.target.value;
+                                setExtraResponses(updated);
+                              }}
+                              placeholder={`Alternative response ${i + 2}`}
+                              className="flex-1 px-4 py-2 rounded-lg text-sm border focus:outline-none font-mono"
+                              style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                            />
+                            <button
+                              onClick={() => setExtraResponses(extraResponses.filter((_, j) => j !== i))}
+                              className="px-2 text-xs text-red-400 hover:text-red-300"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setExtraResponses([...extraResponses, ''])}
+                          className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:border-emerald-500/30"
+                          style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+                        >
+                          + Add Alternative Response
+                        </button>
+                        {extraResponses.length > 0 && (
+                          <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                            Bot will randomly pick from {extraResponses.length + 1} responses (the main one + {extraResponses.length} alternatives)
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
                 {/* Preview */}
                 {command && response && (
                   <div className="p-3 rounded-lg border" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
@@ -208,6 +319,13 @@ export default function CustomCommandsPage() {
                       When someone types <code className="text-cyan-400">{command}</code> ({matchType}), bot responds:
                     </p>
                     <pre className="text-xs mt-1 whitespace-pre-wrap font-mono text-emerald-400">{response.replace(/\{name\}/g, 'User')}</pre>
+                    {imageUrl && <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>+ image attached</p>}
+                    {extraResponses.filter(Boolean).length > 0 && (
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>+ {extraResponses.filter(Boolean).length} random alternative(s)</p>
+                    )}
+                    {cooldown && Number(cooldown) > 0 && (
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Cooldown: {cooldown}s between triggers</p>
+                    )}
                   </div>
                 )}
 
@@ -256,6 +374,23 @@ export default function CustomCommandsPage() {
                         </span>
                       </div>
                       <pre className="text-xs mt-2 whitespace-pre-wrap font-mono" style={{ color: 'var(--text-secondary)' }}>{c.response}</pre>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {c.image_url && (
+                          <span className="px-2 py-0.5 text-[10px] rounded-full border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                            + image
+                          </span>
+                        )}
+                        {c.responses && c.responses.length > 1 && (
+                          <span className="px-2 py-0.5 text-[10px] rounded-full border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                            {c.responses.length} random responses
+                          </span>
+                        )}
+                        {c.cooldown > 0 && (
+                          <span className="px-2 py-0.5 text-[10px] rounded-full border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                            {c.cooldown}s cooldown
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <button

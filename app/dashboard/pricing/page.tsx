@@ -185,7 +185,9 @@ export default function PricingPage() {
         return;
       }
 
-      // Try Squad inline modal first
+      console.log('[PAYMENT] Response:', JSON.stringify({ checkoutUrl: data.checkoutUrl, publicKey: !!data.publicKey, squadReady }));
+
+      // Strategy 1: Try Squad inline modal
       if (squadReady && window.squad && data.publicKey) {
         try {
           const squadInstance = new window.squad({
@@ -212,25 +214,40 @@ export default function PricingPage() {
           squadInstance.setup();
           return;
         } catch (err) {
-          console.warn('[PAYMENT] Squad widget failed, falling back to checkout URL:', err);
+          console.warn('[PAYMENT] Squad widget error, trying checkout URL:', err);
         }
       }
 
-      // Fallback: redirect to Squad checkout URL
+      // Strategy 2: Redirect to Squad checkout URL
       if (data.checkoutUrl) {
-        setMessage({ type: 'success', text: 'Redirecting to payment page...' });
-        setTimeout(() => {
-          window.open(data.checkoutUrl, '_blank');
-          setLoading(null);
-        }, 500);
+        setMessage({ type: 'success', text: 'Opening payment page...' });
+        // Try window.open first, then window.location as fallback
+        const popup = window.open(data.checkoutUrl, '_blank');
+        if (!popup || popup.closed) {
+          // Popup was blocked, redirect in same tab
+          window.location.href = data.checkoutUrl;
+        }
+        setLoading(null);
         return;
       }
 
-      // Neither worked
-      setMessage({ type: 'error', text: 'Payment gateway not available right now. Please try again later or contact support.' });
+      // Strategy 3: Build Squad checkout URL manually from transaction ref
+      if (data.transactionRef) {
+        const manualUrl = `https://checkout.squadco.com/${data.transactionRef}`;
+        setMessage({ type: 'success', text: 'Opening payment page...' });
+        const popup = window.open(manualUrl, '_blank');
+        if (!popup || popup.closed) {
+          window.location.href = manualUrl;
+        }
+        setLoading(null);
+        return;
+      }
+
+      // Nothing worked
+      setMessage({ type: 'error', text: 'Payment gateway is not responding. Please try again or contact support.' });
+      setLoading(null);
     } catch {
       setMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
-    } finally {
       setLoading(null);
     }
   };

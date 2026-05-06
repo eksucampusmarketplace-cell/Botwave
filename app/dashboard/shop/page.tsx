@@ -25,6 +25,8 @@ export default function ShopPage() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [category, setCategory] = useState('');
 
   const fetchProducts = useCallback(async () => {
     const res = await fetch('/api/user/products', { credentials: 'include' });
@@ -52,6 +54,8 @@ export default function ShopPage() {
         description,
         price: Number(price),
         stock: stock ? Number(stock) : -1,
+        image_url: imageUrl || '',
+        category: category || '',
       }),
     });
 
@@ -63,6 +67,8 @@ export default function ShopPage() {
     setDescription('');
     setPrice('');
     setStock('');
+    setImageUrl('');
+    setCategory('');
     setShowForm(false);
   };
 
@@ -216,6 +222,44 @@ export default function ShopPage() {
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      Image URL <span style={{ color: 'var(--text-muted)' }}>(product photo shown in !shop)</span>
+                    </label>
+                    <input
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/product.jpg"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                    />
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Paste a direct image link. Customers see this photo when browsing your shop.</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      Category <span style={{ color: 'var(--text-muted)' }}>(optional, for organizing products)</span>
+                    </label>
+                    <input
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="e.g. Clothing, Electronics, Food"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                    />
+                  </div>
+                </div>
+                {imageUrl && (
+                  <div className="p-3 rounded-lg border" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
+                    <p className="text-[10px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Image Preview</p>
+                    <img
+                      src={imageUrl}
+                      alt="Product preview"
+                      className="max-h-32 rounded-lg object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
                     Stock <span style={{ color: 'var(--text-muted)' }}>(leave empty for unlimited, or enter a number)</span>
@@ -262,12 +306,31 @@ export default function ShopPage() {
                   className="p-5 rounded-xl border"
                   style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{p.name}</h3>
-                      <p className="text-xl font-bold text-emerald-400 mt-1">
-                        {'\u20A6'}{p.price.toLocaleString()}
-                      </p>
+                  <div className="flex gap-4">
+                    {p.image_url && (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        className="w-20 h-20 rounded-lg object-cover shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{p.name}</h3>
+                          <p className="text-xl font-bold text-emerald-400 mt-1">
+                            {'\u20A6'}{p.price.toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:text-red-400 hover:border-red-500/30 shrink-0"
+                          style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                       {p.description && (
                         <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>{p.description}</p>
                       )}
@@ -280,13 +343,6 @@ export default function ShopPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:text-red-400 hover:border-red-500/30 shrink-0"
-                      style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
-                    >
-                      Delete
-                    </button>
                   </div>
                 </motion.div>
               ))}

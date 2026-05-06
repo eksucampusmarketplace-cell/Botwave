@@ -60,10 +60,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      // Return existing pending payment
+      // Re-initialize Squad for existing pending payment so we get a fresh checkout URL
+      const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard?payment=success`;
+      const reResult = await initializePayment({
+        email: user.email || '',
+        amount: planConfig.price,
+        transactionRef: existing.squad_transaction_ref,
+        customerName: user.user_metadata?.username,
+        callbackUrl,
+        metadata: { user_id: user.id, plan },
+      });
+      console.log(`[PAYMENT-INIT] Re-initialized existing pending payment: ref=${existing.squad_transaction_ref}`);
       return NextResponse.json({
         success: true,
         transactionRef: existing.squad_transaction_ref,
+        checkoutUrl: reResult.checkoutUrl || null,
         publicKey: getPublicKey(),
         amount: planConfig.price,
         email: user.email,
