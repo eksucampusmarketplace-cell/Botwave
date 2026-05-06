@@ -677,7 +677,7 @@ async function handleAntiDelete(
 
 async function handleRecover(
   context: MessageContext,
-  _args: string[],
+  args: string[],
   sock: any,
 ): Promise<void> {
   if (!context.userId || !context.sessionId) {
@@ -697,42 +697,87 @@ async function handleRecover(
     return;
   }
 
+  const isPrivate = args[0]?.toLowerCase() === 'pr';
+
+  // For !recover pr, resolve owner JID and send there silently
+  let targetJid = context.chatJid;
+  if (isPrivate) {
+    const rawOwnerJid = (sock as any).user?.id;
+    const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : '';
+    if (!ownerJid) {
+      await sendReply(context.chatJid, 'Could not determine your account. Try again after reconnecting.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    targetJid = ownerJid;
+  }
+
+  const chatName = context.isGroup ? context.chatJid.split('@')[0] : context.senderJid.split('@')[0];
+
   for (const msg of deleted) {
-    const tag = context.isGroup ? `@${msg.deleterJid.replace(/@.*/, '')}` : msg.deleterName;
+    const tag = isPrivate
+      ? (msg.deleterName || msg.deleterJid.split('@')[0])
+      : (context.isGroup ? `@${msg.deleterJid.replace(/@.*/, '')}` : msg.deleterName);
     const ago = Math.round((Date.now() - msg.deletedAt) / 1000);
     const timeLabel = ago < 60 ? `${ago}s ago` : `${Math.round(ago / 60)}m ago`;
 
     try {
-      if (msg.mediaBuffer && msg.mediaType) {
-        const caption = `_${tag} deleted a ${msg.mediaType} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
-        const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
+      if (isPrivate) {
+        // Send to private chat — no mentions, include chat context
+        if (msg.mediaBuffer && msg.mediaType) {
+          const caption = `_${tag} deleted a ${msg.mediaType} in ${chatName} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
+          const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
 
-        if (needsSeparate) {
+          if (needsSeparate) {
+            await sock.sendMessage(targetJid, { text: caption });
+          }
+
+          const payload = buildMediaPayload(
+            msg.mediaBuffer,
+            msg.mediaType,
+            msg.mediaMimetype,
+            needsSeparate ? '' : caption,
+          );
+          await sock.sendMessage(targetJid, payload);
+        } else if (msg.content) {
+          const text = `_${tag} deleted in ${chatName} (${timeLabel}):_\n\n${msg.content}`;
+          await sock.sendMessage(targetJid, { text });
+        } else if (msg.mediaType) {
+          const text = `_${tag} deleted a ${msg.mediaType} in ${chatName} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+          await sock.sendMessage(targetJid, { text });
+        }
+      } else {
+        // Original behavior — send in same chat with mentions
+        if (msg.mediaBuffer && msg.mediaType) {
+          const caption = `_${tag} deleted a ${msg.mediaType} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
+          const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
+
+          if (needsSeparate) {
+            const mentions = context.isGroup ? [msg.deleterJid] : undefined;
+            await sendReply(context.chatJid, { text: caption, mentions }, sock, context.rawMessage.key, context.queue);
+          }
+
+          const payload = buildMediaPayload(
+            msg.mediaBuffer,
+            msg.mediaType,
+            msg.mediaMimetype,
+            needsSeparate ? '' : caption,
+            context.isGroup ? [msg.deleterJid] : undefined,
+          );
+
+          if (context.queue) {
+            context.queue.enqueue(context.chatJid, payload);
+          } else {
+            await sock.sendMessage(context.chatJid, payload);
+          }
+        } else if (msg.content) {
+          const text = `_${tag} deleted (${timeLabel}):_\n\n${msg.content}`;
           const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-          await sendReply(context.chatJid, { text: caption, mentions }, sock, context.rawMessage.key, context.queue);
+          await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
+        } else if (msg.mediaType) {
+          const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+          const mentions = context.isGroup ? [msg.deleterJid] : undefined;
+          await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
         }
-
-        const payload = buildMediaPayload(
-          msg.mediaBuffer,
-          msg.mediaType,
-          msg.mediaMimetype,
-          needsSeparate ? '' : caption,
-          context.isGroup ? [msg.deleterJid] : undefined,
-        );
-
-        if (context.queue) {
-          context.queue.enqueue(context.chatJid, payload);
-        } else {
-          await sock.sendMessage(context.chatJid, payload);
-        }
-      } else if (msg.content) {
-        const text = `_${tag} deleted (${timeLabel}):_\n\n${msg.content}`;
-        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
-      } else if (msg.mediaType) {
-        const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
-        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
       }
     } catch (err) {
       console.error('[RECOVER] Error sending recovered message:', err);
@@ -740,6 +785,10 @@ async function handleRecover(
   }
 
   clearRecoveredMessages(context.sessionId, context.chatJid);
+
+  if (isPrivate) {
+    await sendReply(context.chatJid, `_${deleted.length} deleted message(s) sent to your private chat._`, sock, context.rawMessage.key, context.queue);
+  }
 }
 
 function buildMediaPayload(
