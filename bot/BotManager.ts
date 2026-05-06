@@ -14,7 +14,7 @@ import { cacheMessage, handleMessageRevoke, cleanupSessionCache } from './handle
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
 import { SELF_URL, getNextWorker } from './workerConfig';
-import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict } from './sessionCoordinator';
+import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
@@ -482,6 +482,7 @@ export class BotWaveBot {
           this.reconnectTimeout = null;
         }
         await updateSessionStatus(this.sessionId, 'active');
+        resetAutoRecovery(this.sessionId);
         // Release DB pairing lock and log success
         releasePairingLock(this.sessionId).catch(() => {});
         logPairingEvent(this.sessionId, 'pairing_success', this.workerUrl).catch(() => {});

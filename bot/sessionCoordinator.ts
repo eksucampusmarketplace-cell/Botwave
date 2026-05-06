@@ -26,8 +26,12 @@ const supabase = createClient(
 const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
 const LOCK_EXPIRY_MS = 90_000; // 90s without heartbeat = stale lock
 const HEARTBEAT_INTERVAL = 30_000; // heartbeat every 30s
+const AUTO_RECOVERY_COOLDOWN_MS = 120_000; // wait 2 min before auto-retry
+const AUTO_RECOVERY_MAX_ATTEMPTS = 3; // max auto-recovery tries per session
 
 let heartbeatHandle: NodeJS.Timeout | null = null;
+// Track auto-recovery attempts per session (in-memory, resets on restart)
+const autoRecoveryAttempts = new Map<string, number>();
 const ownedSessions: Set<string> = new Set();
 
 // ─── Lock Acquisition ─────────────────────────────────────────────────────────
@@ -308,6 +312,99 @@ export async function cleanupOnStartup(): Promise<void> {
   } else {
     console.log('[COORD] No stale locks to clean up');
   }
+}
+
+// ─── Auto-Recovery for needs_reauth ──────────────────────────────────────────
+
+/**
+ * Automatically recover sessions stuck in needs_reauth.
+ * 
+ * For sessions that were previously active (have last_active), reset them to
+ * qr_pending so the sync loop picks them up and tries to reconnect. If the
+ * WhatsApp session is still linked on the user's phone, the bot may reconnect
+ * automatically. If not, a new pairing code is generated and the user is
+ * notified via push notification / email.
+ * 
+ * Safeguards:
+ *  - Only recovers sessions that have been in needs_reauth for > 2 minutes
+ *  - Max 3 auto-recovery attempts per session (resets on process restart)
+ *  - Only runs on the main service (not workers)
+ *  - Skips sessions that never had a successful connection (no last_active)
+ */
+export async function autoRecoverNeedsReauth(): Promise<number> {
+  if (IS_WORKER) return 0;
+
+  const cooldownCutoff = new Date(Date.now() - AUTO_RECOVERY_COOLDOWN_MS).toISOString();
+
+  const { data: stale, error } = await supabase
+    .from('bot_sessions')
+    .select('id, user_id, last_active, updated_at, phone_number, session_name')
+    .eq('state', 'needs_reauth')
+    .lt('updated_at', cooldownCutoff)
+    .not('last_active', 'is', null); // only recover sessions that were previously connected
+
+  if (error || !stale || stale.length === 0) return 0;
+
+  let recovered = 0;
+  for (const session of stale) {
+    const attempts = autoRecoveryAttempts.get(session.id) || 0;
+    if (attempts >= AUTO_RECOVERY_MAX_ATTEMPTS) {
+      continue; // exhausted auto-recovery for this session
+    }
+
+    const sid = session.id.slice(0, 8);
+    const newAttempt = attempts + 1;
+    autoRecoveryAttempts.set(session.id, newAttempt);
+
+    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Resetting to qr_pending for reconnection...`);
+
+    const { error: updateErr } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'qr_pending',
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        worker_url: null,
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.id)
+      .eq('state', 'needs_reauth'); // conditional: only if still needs_reauth
+
+    if (!updateErr) {
+      recovered++;
+      console.log(`[AUTO-RECOVERY] Session ${sid} reset to qr_pending (attempt ${newAttempt}). Sync loop will attempt reconnection.`);
+
+      // Send push notification to user about auto-recovery attempt
+      if (newAttempt >= AUTO_RECOVERY_MAX_ATTEMPTS) {
+        console.log(`[AUTO-RECOVERY] Session ${sid} exhausted auto-recovery (${AUTO_RECOVERY_MAX_ATTEMPTS} attempts). User must re-pair manually.`);
+        // Try to notify via session-down endpoint
+        const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+        if (appUrl && session.user_id) {
+          fetch(`${appUrl}/api/notify/session-down`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session.id, userId: session.user_id }),
+          }).catch(() => {});
+        }
+      }
+    } else {
+      console.error(`[AUTO-RECOVERY] Failed to reset session ${sid}:`, updateErr);
+    }
+  }
+
+  return recovered;
+}
+
+/**
+ * Reset auto-recovery attempts for a session (call when session becomes active).
+ */
+export function resetAutoRecovery(sessionId: string): void {
+  autoRecoveryAttempts.delete(sessionId);
 }
 
 // ─── Conflict Detection ──────────────────────────────────────────────────────
