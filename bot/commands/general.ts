@@ -395,7 +395,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           {
             name: '!recover',
             usage: '!recover',
-            description: 'Shows messages deleted in the last 10 minutes in this chat. In groups, tags the person who deleted each message. Requires !antidelete to be enabled first. Re-sends the actual media (images, videos, stickers) not just a description.',
+            description: 'Recovers messages deleted in the last 10 minutes and sends them to your private chat silently — the deleter won\'t be alerted. Shows who deleted each message and when. Requires !antidelete to be enabled first. Re-sends the actual media (images, videos, stickers) not just a description.',
           },
           {
             name: '!balance',
@@ -420,7 +420,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           {
             name: '!viewonce',
             usage: '!viewonce (reply to view-once message)',
-            description: 'Saves a "view once" image, video, or audio and resends it as a normal message in the same chat. Reply to any view-once media with "!viewonce" to save it before it disappears.\n\nAliases: !vo',
+            description: 'Saves a "view once" image, video, or audio and forwards it to your private chat silently — the sender won\'t be alerted. Reply to any view-once media with "!viewonce" to save it before it disappears.\n\nAliases: !vo',
           },
           {
             name: '!toimg',

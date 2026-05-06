@@ -697,19 +697,28 @@ async function handleRecover(
     return;
   }
 
+  // Send recovered messages to private chat silently
+  const rawOwnerJid = (sock as any).user?.id;
+  const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : '';
+  if (!ownerJid) {
+    await sendReply(context.chatJid, 'Could not determine your account. Try again after reconnecting.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const chatName = context.isGroup ? context.chatJid.split('@')[0] : context.senderJid.split('@')[0];
+
   for (const msg of deleted) {
-    const tag = context.isGroup ? `@${msg.deleterJid.replace(/@.*/, '')}` : msg.deleterName;
+    const deleterName = msg.deleterName || msg.deleterJid.split('@')[0];
     const ago = Math.round((Date.now() - msg.deletedAt) / 1000);
     const timeLabel = ago < 60 ? `${ago}s ago` : `${Math.round(ago / 60)}m ago`;
 
     try {
       if (msg.mediaBuffer && msg.mediaType) {
-        const caption = `_${tag} deleted a ${msg.mediaType} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
+        const caption = `_${deleterName} deleted a ${msg.mediaType} in ${chatName} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
         const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
 
         if (needsSeparate) {
-          const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-          await sendReply(context.chatJid, { text: caption, mentions }, sock, context.rawMessage.key, context.queue);
+          await sock.sendMessage(ownerJid, { text: caption });
         }
 
         const payload = buildMediaPayload(
@@ -717,22 +726,15 @@ async function handleRecover(
           msg.mediaType,
           msg.mediaMimetype,
           needsSeparate ? '' : caption,
-          context.isGroup ? [msg.deleterJid] : undefined,
         );
 
-        if (context.queue) {
-          context.queue.enqueue(context.chatJid, payload);
-        } else {
-          await sock.sendMessage(context.chatJid, payload);
-        }
+        await sock.sendMessage(ownerJid, payload);
       } else if (msg.content) {
-        const text = `_${tag} deleted (${timeLabel}):_\n\n${msg.content}`;
-        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
+        const text = `_${deleterName} deleted in ${chatName} (${timeLabel}):_\n\n${msg.content}`;
+        await sock.sendMessage(ownerJid, { text });
       } else if (msg.mediaType) {
-        const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
-        const mentions = context.isGroup ? [msg.deleterJid] : undefined;
-        await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
+        const text = `_${deleterName} deleted a ${msg.mediaType} in ${chatName} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+        await sock.sendMessage(ownerJid, { text });
       }
     } catch (err) {
       console.error('[RECOVER] Error sending recovered message:', err);
@@ -740,6 +742,7 @@ async function handleRecover(
   }
 
   clearRecoveredMessages(context.sessionId, context.chatJid);
+  await sendReply(context.chatJid, `_${deleted.length} deleted message(s) sent to your private chat._`, sock, context.rawMessage.key, context.queue);
 }
 
 function buildMediaPayload(
@@ -817,5 +820,5 @@ registerCommand({ name: 'setpp', aliases: ['setpp', 'setpfp', 'profilepic'], cat
 registerCommand({ name: 'markread', aliases: ['markread', 'read'], category: 'admin', description: 'Mark messages read', execute: (ctx, _a, sock) => handleMarkRead(ctx, sock) });
 registerCommand({ name: 'forward', aliases: ['forward', 'fwd'], category: 'admin', description: 'Forward a message', execute: (ctx, args, sock) => handleForward(ctx, args, sock) });
 registerCommand({ name: 'antidelete', aliases: ['antidelete', 'antidel'], category: 'admin', description: 'Toggle deleted message recovery', execute: (ctx, args, sock) => handleAntiDelete(ctx, args, sock) });
-registerCommand({ name: 'recover', aliases: ['recover', 'deleted'], category: 'admin', description: 'View deleted messages (last 10 min)', execute: (ctx, args, sock) => handleRecover(ctx, args, sock) });
+registerCommand({ name: 'recover', aliases: ['recover', 'deleted'], category: 'admin', description: 'Recover deleted messages to private chat', execute: (ctx, args, sock) => handleRecover(ctx, args, sock) });
 registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, _a, sock) => handleRefer(ctx, sock) });
