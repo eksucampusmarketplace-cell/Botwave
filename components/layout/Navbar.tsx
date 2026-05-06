@@ -31,8 +31,9 @@ export default function Navbar() {
           {[
             { href: '#features', label: 'Features' },
             { href: '#how', label: 'How it Works' },
-            { href: '#install', label: 'Install' },
+            { href: '#security', label: 'Security' },
             { href: '#faq', label: 'FAQ' },
+            { href: '/blog', label: 'Blog' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -92,8 +93,9 @@ export default function Navbar() {
               {[
                 { href: '#features', label: 'Features' },
                 { href: '#how', label: 'How it Works' },
-                { href: '#install', label: 'Install' },
+                { href: '#security', label: 'Security' },
                 { href: '#faq', label: 'FAQ' },
+                { href: '/blog', label: 'Blog' },
               ].map((link) => (
                 <Link
                   key={link.href}

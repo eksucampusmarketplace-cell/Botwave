@@ -245,20 +245,28 @@ const faqs = [
     a: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp — where your audience already is. No need to move people to Telegram.',
   },
   {
-    q: 'Can I use BotWave instead of paying for a Twitter/X bot?',
-    a: 'If you\'re paying for social media automation tools for Twitter or TikTok, BotWave is a free alternative for WhatsApp automation. While it doesn\'t post to Twitter directly, many users use BotWave to manage their WhatsApp communities, customer support, and engagement — which often drives more direct conversions than Twitter bots.',
-  },
-  {
     q: 'Why is BotWave free when other bot platforms charge $20-50/month?',
     a: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different — your WhatsApp session runs from your own device via QR code, so there\'s no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms can\'t match.',
   },
   {
-    q: 'Does BotWave have an API like GitHub bots?',
-    a: 'BotWave currently works through WhatsApp commands and a web dashboard. While it doesn\'t have a public API like GitHub Actions or GitHub bots yet, the platform supports custom commands, scheduled messages, and webhook integrations for automation workflows.',
+    q: 'What is the difference between BotWave and Evolution API?',
+    a: 'Evolution API is a powerful open-source WhatsApp API platform designed for developers — it requires technical setup, server management, and coding knowledge. BotWave is built on top of Evolution API but wraps it in a simple web dashboard that anyone can use. Think of Evolution API as the engine and BotWave as the car — you get all the power without needing to be a mechanic. No coding, no server setup, just scan QR and go.',
   },
   {
-    q: 'Can BotWave help me grow my TikTok or social media following?',
-    a: 'BotWave helps you build an engaged WhatsApp community, which is one of the best ways to grow any social media following. Use the bot to manage fan groups, share content links, run polls, and engage followers. Many Nigerian creators use WhatsApp groups as their primary community — BotWave makes managing those groups effortless.',
+    q: 'Is BotWave safe to use? Will my data be secure?',
+    a: 'Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp\'s automated detection.',
+  },
+  {
+    q: 'How does BotWave protect my WhatsApp account from bans?',
+    a: 'BotWave has the most advanced anti-ban system of any WhatsApp bot. It includes: session warmup (gradual message increase over 7 days), human-like typing delays and read receipts, message variation (never sends identical messages), rate limiting (prevents spam patterns), activity hours simulation (quiet at night like a real person), and media fingerprint jittering. Your session also runs from your own device IP, not a shared server.',
+  },
+  {
+    q: 'Do I need to be a developer to use BotWave?',
+    a: 'No! Unlike tools like Evolution API, Baileys, or other WhatsApp libraries that require coding knowledge, BotWave is 100% no-code. Sign up, scan QR code, and your bot is live. All configuration happens through a web dashboard. Even setting up AI chat just requires pasting a free Groq API key — no programming needed.',
+  },
+  {
+    q: 'Can BotWave help me grow my community?',
+    a: 'Absolutely. BotWave is built for community management. Use polls for engagement, trivia games to keep groups active, anti-spam to keep groups clean, and the built-in referral system to grow organically. Many campus group admins and small business owners use BotWave to manage groups of hundreds of members effortlessly.',
   },
 ];
 
@@ -577,6 +585,78 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Security & Safety Section */}
+      <section id="security" className="py-24 px-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
+              SECURITY
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+              Your WhatsApp Account is Safe With BotWave
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+              We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: '🛡️',
+                title: 'Your Device, Your IP',
+                desc: 'Your WhatsApp session runs from your own device via QR code — not from a shared server. This means your real IP is used, drastically reducing ban risk compared to server-based bots.',
+              },
+              {
+                icon: '🔒',
+                title: 'Zero Message Storage',
+                desc: 'BotWave never reads, stores, or logs your WhatsApp messages. All message processing happens in memory and is discarded immediately. Your chats stay private.',
+              },
+              {
+                icon: '🤖',
+                title: 'Advanced Anti-Ban System',
+                desc: 'Session warmup over 7 days, human-like typing delays, message variation (never identical messages), rate limiting, activity hours simulation, and media fingerprint jittering.',
+              },
+              {
+                icon: '⏱️',
+                title: 'Smart Rate Limiting',
+                desc: 'Hard 200 messages/day cap, 10 msgs/min session limit, 20 msgs/min per user. Anti-spam flood detection warns after 5 messages in 10 seconds. Your account stays safe.',
+              },
+              {
+                icon: '🌙',
+                title: 'Human-Like Behavior',
+                desc: 'The bot simulates real human patterns — quiet at night (12am-6am), random "distracted" delays, read-but-skip in groups (15% chance), and presence toggling based on time of day.',
+              },
+              {
+                icon: '🔐',
+                title: 'Secure Infrastructure',
+                desc: 'Credentials stored in Supabase with row-level security. API communication encrypted. No plain-text secrets. Your login and session data is protected at every layer.',
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                viewport={{ once: true }}
+                className="glass-card rounded-xl p-6"
+              >
+                <div className="text-3xl mb-4">{item.icon}</div>
+                <h3 className="font-bold text-[var(--text-primary)] mb-2">{item.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Comparison Section — targets "vs" and "alternative" search queries */}
       <section className="py-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
@@ -599,7 +679,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 platform: 'Paid WhatsApp Bots',
@@ -612,6 +692,12 @@ export default function HomePage() {
                 price: 'Free-$30/mo',
                 cons: ['Only works on Telegram', 'Low reach in Africa', 'Complex API setup', 'No WhatsApp support'],
                 verdict: 'Wrong platform',
+              },
+              {
+                platform: 'Evolution API (DIY)',
+                price: 'Free (self-hosted)',
+                cons: ['Requires coding skills', 'Server setup needed', 'No dashboard UI', 'No built-in commands'],
+                verdict: 'For developers only',
               },
               {
                 platform: 'BotWave',
