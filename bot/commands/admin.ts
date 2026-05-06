@@ -1,6 +1,6 @@
 import { registerCommand, type MessageContext } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, pickResponse } from './helpers';
-import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId } from '../database';
+import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId, getUserReferralCode } from '../database';
 import { getDeletedMessages, clearRecoveredMessages } from '../handlers/AntiDeleteHandler';
 
 const CASHOUT_THRESHOLD = 100;
@@ -765,6 +765,39 @@ function buildMediaPayload(
   }
 }
 
+// ─── Refer Command ──────────────────────────────────────────────────────────
+
+async function handleRefer(context: MessageContext, sock: any): Promise<void> {
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!userId) {
+    await sendReply(context.chatJid, 'Could not determine your account.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const referral = await getUserReferralCode(userId);
+  if (!referral) {
+    await sendReply(context.chatJid, '⚠️ Could not generate your referral code. Try again later.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave.app';
+  const referralLink = `${appUrl}/signup?ref=${referral.code}`;
+
+  const msg =
+    `🎁 *YOUR REFERRAL*\n\n` +
+    `━━━━━━━━━━━━━━━━━\n` +
+    `*Code:* \`\`\`${referral.code}\`\`\`\n\n` +
+    `*Link:* ${referralLink}\n` +
+    `━━━━━━━━━━━━━━━━━\n\n` +
+    `*Stats:*\n` +
+    `• Friends referred: *${referral.totalReferred}*\n` +
+    `• Total earned: *₦${referral.totalEarned}*\n\n` +
+    `Share your code or link with friends. You earn *₦20* for each friend who joins, and they get *₦10* too!\n\n` +
+    `_Cash out at ₦100 for free airtime via !cashout_`;
+
+  await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+}
+
 // ─── Register Admin Commands ────────────────────────────────────────────────
 
 registerCommand({ name: 'afk', aliases: ['afk'], category: 'admin', description: 'Set AFK status', execute: (ctx, args, sock, vars) => handleAfk(ctx, args, sock, vars) });
@@ -785,3 +818,4 @@ registerCommand({ name: 'markread', aliases: ['markread', 'read'], category: 'ad
 registerCommand({ name: 'forward', aliases: ['forward', 'fwd'], category: 'admin', description: 'Forward a message', execute: (ctx, args, sock) => handleForward(ctx, args, sock) });
 registerCommand({ name: 'antidelete', aliases: ['antidelete', 'antidel'], category: 'admin', description: 'Toggle deleted message recovery', execute: (ctx, args, sock) => handleAntiDelete(ctx, args, sock) });
 registerCommand({ name: 'recover', aliases: ['recover', 'deleted'], category: 'admin', description: 'View deleted messages (last 10 min)', execute: (ctx, args, sock) => handleRecover(ctx, args, sock) });
+registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, _a, sock) => handleRefer(ctx, sock) });

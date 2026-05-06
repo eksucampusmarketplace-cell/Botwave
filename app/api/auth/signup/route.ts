@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, username } = body;
+    const { email, password, username, referralCode } = body;
 
     if (!email || !password || !username) {
       return NextResponse.json(
@@ -71,6 +71,65 @@ export async function POST(request: NextRequest) {
         { error: error.message },
         { status: 400 },
       );
+    }
+
+    // Auto-apply referral code if provided
+    if (referralCode && data.user?.id) {
+      try {
+        const code = (referralCode as string).trim().toUpperCase();
+        const { data: referral } = await supabase
+          .from('referrals')
+          .select('user_id, code, is_frozen')
+          .eq('code', code)
+          .single();
+
+        if (referral && !referral.is_frozen && referral.user_id !== data.user.id) {
+          const REFERRAL_REWARD = 20;
+          const REFERRED_REWARD = 10;
+
+          await supabase.from('referral_history').insert({
+            referrer_id: referral.user_id,
+            referred_user_id: data.user.id,
+            referred_email: email,
+            referral_code: code,
+            reward_amount: REFERRAL_REWARD,
+            status: 'credited',
+            created_at: new Date().toISOString(),
+          });
+
+          await supabase
+            .from('referrals')
+            .update({
+              total_referred: (await supabase.from('referrals').select('total_referred').eq('user_id', referral.user_id).single()).data?.total_referred + 1 || 1,
+              total_earned: (await supabase.from('referrals').select('total_earned').eq('user_id', referral.user_id).single()).data?.total_earned + REFERRAL_REWARD || REFERRAL_REWARD,
+            })
+            .eq('user_id', referral.user_id);
+
+          // Credit referrer reward
+          const { error: rpcErr1 } = await supabase.rpc('increment_reward_balance', { p_user_id: referral.user_id, p_amount: REFERRAL_REWARD });
+          if (rpcErr1) {
+            await supabase.from('reward_balances').upsert({
+              user_id: referral.user_id,
+              balance: REFERRAL_REWARD,
+              total_earned: REFERRAL_REWARD,
+            }, { onConflict: 'user_id' });
+          }
+
+          // Credit referred user reward
+          const { error: rpcErr2 } = await supabase.rpc('increment_reward_balance', { p_user_id: data.user.id, p_amount: REFERRED_REWARD });
+          if (rpcErr2) {
+            await supabase.from('reward_balances').upsert({
+              user_id: data.user.id,
+              balance: REFERRED_REWARD,
+              total_earned: REFERRED_REWARD,
+            }, { onConflict: 'user_id' });
+          }
+
+          console.log(`[AUTH] Referral applied: code=${code} referrer=${referral.user_id} new_user=${data.user.id}`);
+        }
+      } catch (refErr) {
+        console.warn('[AUTH] Referral application failed (non-blocking):', refErr);
+      }
     }
 
     return NextResponse.json(
