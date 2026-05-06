@@ -2,7 +2,7 @@ import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
 import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
 import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId } from './sessionCoordinator';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 
 const bot = initializeBot();
@@ -63,6 +63,18 @@ async function start() {
         console.error('[COORD] Audit error:', err);
       }
     }, 120_000);
+
+    // Auto-recovery: retry needs_reauth sessions every 90s
+    setInterval(async () => {
+      try {
+        const recovered = await autoRecoverNeedsReauth();
+        if (recovered > 0) {
+          console.log(`[AUTO-RECOVERY] Auto-recovered ${recovered} session(s) from needs_reauth`);
+        }
+      } catch (err) {
+        console.error('[AUTO-RECOVERY] Error:', err);
+      }
+    }, 90_000);
   }
 
   // Reminder + Scheduled Message delivery loop (every 15s)
