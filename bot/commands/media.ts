@@ -7,11 +7,22 @@ import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import sharp from 'sharp';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, unlink, access } from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
 const execFileAsync = promisify(execFile);
+
+async function findYtDlp(): Promise<string> {
+  // Check common locations for yt-dlp binary
+  for (const p of ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp']) {
+    try {
+      await access(p);
+      return p;
+    } catch { /* not found, try next */ }
+  }
+  return 'yt-dlp'; // fall back to PATH lookup
+}
 
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
@@ -111,7 +122,8 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     let downloaded = false;
     try {
       const tmpFile = path.join(os.tmpdir(), `botwave_dl_${Date.now()}`);
-      await execFileAsync('yt-dlp', [
+      const ytdlpBin = await findYtDlp();
+      await execFileAsync(ytdlpBin, [
         '-f', 'best[ext=mp4][filesize<50M]/best[ext=mp4]/best[filesize<50M]/best',
         '--merge-output-format', 'mp4',
         '--no-playlist',
