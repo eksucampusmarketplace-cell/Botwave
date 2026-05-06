@@ -5703,42 +5703,53 @@ async function handleNpm(context: MessageContext, args: string[], sock: any): Pr
 }
 
 async function handleWhois(context: MessageContext, args: string[], sock: any): Promise<void> {
-  // If replying to someone's message → show user info (Sangmata-like)
+  // Helper to build user info card
+  async function buildUserCard(targetJid: string, displayName: string): Promise<string> {
+    const phoneNumber = targetJid.replace('@s.whatsapp.net', '');
+
+    let profilePicUrl = '';
+    try {
+      profilePicUrl = await sock.profilePictureUrl(targetJid, 'image');
+    } catch { /* no profile pic or privacy settings */ }
+
+    let aboutText = '';
+    try {
+      const status = await sock.fetchStatus(targetJid);
+      aboutText = status?.status || '';
+    } catch { /* privacy settings */ }
+
+    let info = `*WHO IS THIS?*\n\n`;
+    info += `*Name:* ${displayName}\n`;
+    info += `*Number:* +${phoneNumber}\n`;
+    info += `*JID:* ${targetJid}\n`;
+    if (aboutText) info += `*About:* ${aboutText}\n`;
+    if (profilePicUrl) info += `*Profile Pic:* ${profilePicUrl}\n`;
+    info += `\n_Reply to any message with !whois to look up the sender._`;
+    return info;
+  }
+
+  // ── 1. Replying to someone's message → show that user's info ──
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const msg = context.rawMessage?.message || context.rawMessage;
-  const contextInfoPath = msg?.extendedTextMessage?.contextInfo
+  // Check all message types for contextInfo
+  const contextInfoPath = context.rawMessage?.contextInfo
+    || msg?.extendedTextMessage?.contextInfo
     || msg?.imageMessage?.contextInfo
     || msg?.videoMessage?.contextInfo
-    || context.rawMessage?.contextInfo;
+    || msg?.audioMessage?.contextInfo
+    || msg?.documentMessage?.contextInfo
+    || msg?.stickerMessage?.contextInfo
+    || msg?.contactMessage?.contextInfo
+    || msg?.locationMessage?.contextInfo;
   const quotedParticipant = contextInfoPath?.participant;
 
   if (quotedMsg && quotedParticipant) {
     try {
-      const targetJid = quotedParticipant.endsWith('@s.whatsapp.net')
+      const targetJid = quotedParticipant.includes('@')
         ? quotedParticipant
         : quotedParticipant + '@s.whatsapp.net';
-      const phoneNumber = targetJid.replace('@s.whatsapp.net', '');
-      const pushName = contextInfoPath?.pushName || context.pushName || 'Unknown';
-
-      let profilePicUrl = '';
-      try {
-        profilePicUrl = await sock.profilePictureUrl(targetJid, 'image');
-      } catch { /* no profile pic or privacy settings */ }
-
-      let aboutText = '';
-      try {
-        const status = await sock.fetchStatus(targetJid);
-        aboutText = status?.status || '';
-      } catch { /* privacy settings */ }
-
-      let info = `*WHO IS THIS?*\n\n`;
-      info += `*Name:* ${pushName}\n`;
-      info += `*Number:* +${phoneNumber}\n`;
-      info += `*JID:* ${targetJid}\n`;
-      if (aboutText) info += `*About:* ${aboutText}\n`;
-      if (profilePicUrl) info += `*Profile Pic:* ${profilePicUrl}\n`;
-      info += `\n_Reply to any message with !whois to look up the sender._`;
-
+      const displayName = contextInfoPath?.pushName || 'Unknown';
+      const info = await buildUserCard(targetJid, displayName);
       await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
     } catch (error) {
       console.error('[WHOIS-USER] Error:', error);
@@ -5747,18 +5758,54 @@ async function handleWhois(context: MessageContext, args: string[], sock: any): 
     return;
   }
 
-  // Domain WHOIS lookup (original behavior)
-  if (!args.length) {
-    await sendReply(context.chatJid, `*WHOIS*\n\n*User lookup:* Reply to someone's message with !whois\n*Domain lookup:* !whois [domain.com]`, sock, context.rawMessage.key, context.queue);
+  // ── 2. @mention lookup: !whois @someone ──
+  const mentionedJids = contextInfoPath?.mentionedJid || [];
+  if (mentionedJids.length > 0) {
+    try {
+      const targetJid = mentionedJids[0];
+      const info = await buildUserCard(targetJid, 'Mentioned User');
+      await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
+    } catch (error) {
+      console.error('[WHOIS-MENTION] Error:', error);
+      await sendReply(context.chatJid, 'Could not fetch mentioned user info.', sock, context.rawMessage.key, context.queue);
+    }
     return;
   }
+
+  // ── 3. Phone number lookup: !whois 2348012345678 ──
+  if (args.length && args[0].match(/^\+?\d{7,15}$/)) {
+    try {
+      const phone = args[0].replace(/^\+/, '');
+      const targetJid = phone + '@s.whatsapp.net';
+      const info = await buildUserCard(targetJid, 'Phone Lookup');
+      await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
+    } catch (error) {
+      console.error('[WHOIS-PHONE] Error:', error);
+      await sendReply(context.chatJid, 'Could not fetch info for that number.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // ── 4. Self lookup: !whois with no args ──
+  if (!args.length) {
+    try {
+      const info = await buildUserCard(context.senderJid, context.pushName || 'You');
+      await sendReply(context.chatJid, info, sock, context.rawMessage.key, context.queue);
+    } catch (error) {
+      console.error('[WHOIS-SELF] Error:', error);
+      await sendReply(context.chatJid, `*WHOIS*\n\n*Self lookup:* !whois\n*User lookup:* Reply to someone's message with !whois\n*Mention:* !whois @someone\n*Phone:* !whois 2348012345678\n*Domain:* !whois google.com`, sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // ── 5. Domain WHOIS lookup: !whois google.com ──
   try {
     const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
     const { stdout } = await execFileAsync('whois', [domain], { timeout: 10000 });
     const lines = stdout.split('\n').filter((l: string) => l.match(/domain name|registrar|creation|expir|name server|updated/i)).slice(0, 10);
     await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\n${lines.join('\n') || 'No WHOIS data available.'}`, sock, context.rawMessage.key, context.queue);
   } catch {
-    await sendReply(context.chatJid, 'WHOIS lookup failed. whois tool may not be installed.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'WHOIS lookup failed. The whois tool may not be installed on this server.', sock, context.rawMessage.key, context.queue);
   }
 }
 
