@@ -6,7 +6,6 @@ interface Feature {
   icon: string;
   title: string;
   description: string;
-  code: string;
 }
 
 interface FeatureCardProps {
@@ -19,28 +18,24 @@ export default function FeatureCard({ feature, index }: FeatureCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.5, delay: index * 0.06 }}
       viewport={{ once: true }}
-      className="group relative bg-card border border-green/10 p-8 overflow-hidden transition-all duration-400 hover:border-green/30 hover:translate-y-[-4px] hover:shadow-[0_20px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(0,255,136,0.3)]"
+      className="group glass-card p-6 rounded-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
     >
-      <div className="absolute top-0 left-0 w-[3px] h-full bg-green origin-bottom scale-y-0 transition-transform duration-400 group-hover:scale-y-100" />
+      {/* Gradient accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-      <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-      <div className="absolute bottom-0 right-0 w-5 h-5 border-r-2 border-b-2 border-green/30" />
+      <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/15 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300">
+        {feature.icon}
+      </div>
 
-      <span className="text-3xl mb-4 block">{feature.icon}</span>
-
-      <h3 className="font-display text-sm font-bold tracking-[2px] text-green mb-3">
+      <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">
         {feature.title}
       </h3>
 
-      <p className="text-sm text-[#5a9a7a] leading-relaxed font-light">
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
         {feature.description}
       </p>
-
-      <span className="absolute bottom-4 right-4 font-mono text-[11px] text-green/20 tracking-[1px]">
-        {feature.code}
-      </span>
     </motion.div>
   );
 }

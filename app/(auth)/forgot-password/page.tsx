@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import ParticleBackground from '@/components/ui/ParticleBackground';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -38,100 +37,81 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-dark flex items-center justify-center px-4 relative overflow-hidden">
-      <ParticleBackground />
-
+    <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-4 relative">
+      <div className="absolute inset-0 tech-grid opacity-30" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="text-center mb-12">
-          <Link href="/" className="font-display text-3xl font-black text-green tracking-[4px] drop-shadow-[0_0_20px_rgba(0,255,136,0.3)]">
-            BOT<span className="text-cyan">WAVE</span>
+        <div className="text-center mb-8">
+          <Link href="/" className="text-3xl font-bold text-white">
+            Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Wave</span>
           </Link>
-          <p className="font-mono text-xs text-[#5a9a7a] tracking-[3px] mt-4">
-            {"// PASSWORD RECOVERY"}
-          </p>
         </div>
 
-        <div className="bg-card border border-green/10 p-8 relative">
-          <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-          <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-          <div className="absolute bottom-0 left-0 w-5 h-5 border-l-2 border-b-2 border-green/30" />
-          <div className="absolute bottom-0 right-0 w-5 h-5 border-r-2 border-b-2 border-green/30" />
-
-          <h2 className="font-display text-lg font-bold text-white tracking-[3px] mb-6 text-center">
-            RESET PASSWORD
+        <div className="glass-card rounded-xl p-8">
+          <h2 className="text-2xl font-bold text-white mb-1 text-center">
+            Reset Password
           </h2>
+          <p className="text-sm text-slate-500 text-center mb-8 font-mono">
+            // recover your account
+          </p>
 
           {sent ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center"
-            >
-              <div className="bg-green/10 border border-green/30 p-4 mb-6">
-                <p className="font-mono text-xs text-green">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-6">
+                <p className="text-sm text-emerald-400">
                   If an account with that email exists, a password reset link has been sent. Check your inbox.
                 </p>
               </div>
-              <Link
-                href="/login"
-                className="font-mono text-xs text-[#5a9a7a] hover:text-green transition-colors tracking-[2px]"
-              >
-                BACK TO LOGIN
+              <Link href="/login" className="text-sm text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                Back to login
               </Link>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit}>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-red-500/10 border border-red-400/30 text-red-400 font-mono text-xs p-3 mb-6"
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
                 >
                   {error}
                 </motion.div>
               )}
 
-              <p className="font-mono text-[11px] text-[#5a9a7a] mb-6">
-                Enter your email or username and we&apos;ll send you a link to reset your password.
-              </p>
-
               <div className="mb-6">
-                <label className="font-mono text-xs text-[#5a9a7a] tracking-[2px] block mb-2">
-                  EMAIL OR USERNAME
+                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">
+                  EMAIL / USERNAME
                 </label>
                 <input
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
-                  placeholder="user@example.com or username"
+                  className="w-full bg-[#0d1117] border border-[#1e293b] px-4 py-3 rounded-lg text-slate-200 text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none transition-all placeholder:text-slate-600 font-mono"
+                  placeholder="user@example.com"
                 />
               </div>
 
-              <motion.button
+              <button
                 type="submit"
                 disabled={loading}
-                whileHover={{ scale: loading ? 1 : 1.02 }}
-                whileTap={{ scale: loading ? 1 : 0.98 }}
-                className="w-full font-display text-xs tracking-[3px] px-6 py-4 bg-green text-dark font-bold clip-path-button hover:bg-cyan transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
               >
-                {loading ? 'SENDING...' : 'SEND RESET LINK'}
-              </motion.button>
+                {loading ? 'Sending...' : 'Send Reset Link →'}
+              </button>
             </form>
           )}
         </div>
 
-        <p className="text-center mt-8 font-mono text-[11px] text-[#3a7a5a] tracking-[2px]">
-          <Link href="/login" className="hover:text-green transition-colors">
-            ← BACK TO LOGIN
+        <div className="mt-6 text-center">
+          <Link href="/login" className="text-sm text-slate-500 hover:text-emerald-400 transition-colors">
+            ← Back to login
           </Link>
-        </p>
+        </div>
       </motion.div>
     </main>
   );

@@ -4,7 +4,52 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ParticleBackground from '@/components/ui/ParticleBackground';
+
+const terminalLines = [
+  { cls: 'comment', text: '# BotWave Authentication' },
+  { cls: 'cmd', text: '$ botwave auth --login' },
+  { cls: 'output', text: '→ Initializing secure connection...' },
+  { cls: 'success', text: '→ TLS 1.3 handshake complete' },
+  { cls: 'output', text: '→ Awaiting credentials...' },
+  { cls: 'blank', text: '' },
+  { cls: 'comment', text: '# Session capabilities:' },
+  { cls: 'flag', text: '  → WhatsApp automation' },
+  { cls: 'flag', text: '  → AI-powered responses' },
+  { cls: 'flag', text: '  → 50+ bot commands' },
+  { cls: 'flag', text: '  → Anti-ban protection' },
+  { cls: 'flag', text: '  → Real-time dashboard' },
+  { cls: 'blank', text: '' },
+  { cls: 'success', text: '→ Ready. Enter credentials to continue.' },
+];
+
+function AuthTerminal() {
+  const [lines, setLines] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLines((p) => (p >= terminalLines.length ? p : p + 1));
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="terminal h-full">
+      <div className="terminal-header">
+        <div className="terminal-dot" style={{ background: '#ff5f57' }} />
+        <div className="terminal-dot" style={{ background: '#febc2e' }} />
+        <div className="terminal-dot" style={{ background: '#28c840' }} />
+        <span className="text-xs text-slate-500 ml-3 font-mono">auth — botwave</span>
+      </div>
+      <div className="terminal-body">
+        {terminalLines.slice(0, lines).map((l, i) => (
+          <div key={i} className={l.cls === 'blank' ? 'h-3' : ''}>
+            <span className={l.cls}>{l.text}</span>
+          </div>
+        ))}
+        {lines < terminalLines.length && <span className="cmd">█</span>}
+      </div>
+    </div>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -49,21 +94,19 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card border border-green/10 p-8 relative">
-      <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-      <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-      <div className="absolute bottom-0 left-0 w-5 h-5 border-l-2 border-b-2 border-green/30" />
-      <div className="absolute bottom-0 right-0 w-5 h-5 border-r-2 border-b-2 border-green/30" />
-
-      <h2 className="font-display text-lg font-bold text-white tracking-[3px] mb-8 text-center">
-        LOGIN
+    <form onSubmit={handleSubmit} className="glass-card rounded-xl p-8">
+      <h2 className="text-2xl font-bold text-white mb-1">
+        Welcome Back
       </h2>
+      <p className="text-sm text-slate-500 font-mono mb-8">
+        // sign in to continue
+      </p>
 
       {error && (
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-red-500/10 border border-red-400/30 text-red-400 font-mono text-xs p-3 mb-6"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
         >
           {error}
         </motion.div>
@@ -71,31 +114,31 @@ function LoginForm() {
 
       {success && (
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-green-500/10 border border-green-400/30 text-green-400 font-mono text-xs p-3 mb-6"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm rounded-lg p-3 mb-6"
         >
           {success}
         </motion.div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div>
-          <label className="font-mono text-xs text-[#5a9a7a] tracking-[2px] block mb-2">
-            EMAIL OR USERNAME
+          <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">
+            EMAIL / USERNAME
           </label>
           <input
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
-            placeholder="user@example.com or username"
+            className="w-full bg-[#0d1117] border border-[#1e293b] px-4 py-3 rounded-lg text-slate-200 text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none transition-all placeholder:text-slate-600 font-mono"
+            placeholder="user@example.com"
           />
         </div>
 
         <div>
-          <label className="font-mono text-xs text-[#5a9a7a] tracking-[2px] block mb-2">
+          <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">
             PASSWORD
           </label>
           <input
@@ -103,33 +146,38 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
+            className="w-full bg-[#0d1117] border border-[#1e293b] px-4 py-3 rounded-lg text-slate-200 text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none transition-all placeholder:text-slate-600 font-mono"
             placeholder="••••••••"
           />
         </div>
 
-        <motion.button
+        <button
           type="submit"
           disabled={loading}
-          whileHover={{ scale: loading ? 1 : 1.02 }}
-          whileTap={{ scale: loading ? 1 : 0.98 }}
-          className="w-full font-display text-xs tracking-[3px] px-6 py-4 bg-green text-dark font-bold clip-path-button hover:bg-cyan transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+          className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
         >
-          {loading ? 'AUTHENTICATING...' : 'LOGIN'}
-        </motion.button>
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Authenticating...
+            </span>
+          ) : (
+            'Sign In →'
+          )}
+        </button>
       </div>
 
-      <div className="mt-6 text-center">
-        <Link href="/forgot-password" className="font-mono text-[11px] text-[#5a9a7a] hover:text-cyan transition-colors tracking-[1px]">
-          FORGOT PASSWORD?
+      <div className="mt-5 text-center">
+        <Link href="/forgot-password" className="text-sm text-emerald-400/70 hover:text-emerald-400 font-medium transition-colors">
+          Forgot password?
         </Link>
       </div>
 
       <div className="mt-4 text-center">
-        <p className="font-mono text-xs text-[#5a9a7a]">
-          DON&apos;T HAVE AN ACCOUNT?{' '}
-          <Link href="/signup" className="text-green hover:text-cyan transition-colors">
-            SIGN UP
+        <p className="text-sm text-slate-500">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+            Sign up
           </Link>
         </p>
       </div>
@@ -139,40 +187,41 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-dark flex items-center justify-center px-4 relative overflow-hidden">
-      <ParticleBackground />
+    <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-4 relative">
+      <div className="absolute inset-0 tech-grid opacity-30" />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <div className="text-center mb-12">
-          <Link href="/" className="font-display text-3xl font-black text-green tracking-[4px] drop-shadow-[0_0_20px_rgba(0,255,136,0.3)]">
-            BOT<span className="text-cyan">WAVE</span>
-          </Link>
-          <p className="font-mono text-xs text-[#5a9a7a] tracking-[3px] mt-4">
-            {"// MEMBER ACCESS PORTAL"}
-          </p>
-        </div>
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+        {/* Left — Form */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="mb-8">
+            <Link href="/" className="text-3xl font-bold text-white">
+              Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Wave</span>
+            </Link>
+          </div>
 
-        <Suspense fallback={<div className="bg-card border border-green/10 p-8 text-center font-mono text-green">LOADING PORTAL...</div>}>
-          <LoginForm />
-        </Suspense>
+          <Suspense fallback={
+            <div className="glass-card rounded-xl p-8 text-center">
+              <p className="text-slate-500">Loading...</p>
+            </div>
+          }>
+            <LoginForm />
+          </Suspense>
+        </motion.div>
 
-        <p className="text-center mt-8 font-mono text-[11px] text-[#3a7a5a] tracking-[2px]">
-          <Link href="/" className="hover:text-green transition-colors">
-            ← BACK TO HOME
-          </Link>
-          <span className="mx-2">|</span>
-          <Link href="/admin/login" className="hover:text-green transition-colors">
-            ADMIN ACCESS →
-          </Link>
-        </p>
-      </motion.div>
-
-
+        {/* Right — Terminal */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="hidden lg:block"
+        >
+          <AuthTerminal />
+        </motion.div>
+      </div>
     </main>
   );
 }

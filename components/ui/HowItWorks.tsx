@@ -1,58 +1,37 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
 
 const steps = [
   {
     number: '01',
-    title: 'CREATE YOUR ACCOUNT',
-    description:
-      'Sign up on the BotWave dashboard with just your email. No credit card, no payment — completely free to start.',
+    title: 'Create Account',
+    cmd: '$ botwave signup --email you@mail.com',
+    description: 'Sign up on the BotWave dashboard with just your email. No credit card, no payment — completely free to start.',
   },
   {
     number: '02',
-    title: 'SCAN THE QR CODE',
-    description:
-      'Open your WhatsApp, go to Linked Devices, and scan the QR code shown on your dashboard. Your session connects from your own device and IP.',
+    title: 'Scan the QR Code',
+    cmd: '$ botwave pair --method qr',
+    description: 'Open your WhatsApp, go to Linked Devices, and scan the QR code shown on your dashboard. Your session connects from your own device.',
   },
   {
     number: '03',
-    title: 'CHOOSE YOUR FEATURES',
-    description:
-      'Toggle on the features you want from your dashboard. Enable sticker maker, AI replies, games, anti-spam — whatever fits your group.',
+    title: 'Choose Your Features',
+    cmd: '$ botwave enable --all',
+    description: 'Toggle on the features you want from your dashboard. Enable sticker maker, AI replies, games, anti-spam — whatever fits your group.',
   },
   {
     number: '04',
-    title: 'BOT IS LIVE',
-    description:
-      "That's it. Your bot is active. Use commands in your WhatsApp group and BotWave handles the rest in real-time.",
+    title: 'Bot is Live',
+    cmd: '→ status: online | commands: ready',
+    description: "That's it. Your bot is active. Use commands in your WhatsApp group and BotWave handles the rest in real-time.",
   },
 ];
 
 export default function HowItWorks() {
-  const stepsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    const stepElements = document.querySelectorAll('.step');
-    stepElements.forEach((step) => observer.observe(step));
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section id="how" className="py-28 px-8 bg-green/5 border-t border-b border-green/10 relative z-10">
+    <section id="how" className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0 }}
@@ -61,30 +40,37 @@ export default function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="font-mono text-xs tracking-[4px] text-cyan block mb-4">{"// GETTING STARTED"}</span>
-          <h2 className="font-display text-[clamp(1.8rem,4vw,3rem)] font-bold text-white">
-            HOW IT <span className="text-green">WORKS</span>
+          <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
+            GETTING STARTED
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+            How It Works
           </h2>
+          <p className="text-[var(--text-secondary)] mt-4 max-w-xl mx-auto">
+            Get your WhatsApp bot running in under 2 minutes. No technical skills needed.
+          </p>
         </motion.div>
 
-        <div ref={stepsRef} className="flex flex-col gap-0 mt-12 relative">
-          <div className="absolute left-[2.25rem] top-0 bottom-0 w-px bg-gradient-to-b from-green to-transparent" />
+        <div className="flex flex-col gap-6 relative">
+          {/* Vertical line */}
+          <div className="absolute left-[1.75rem] top-8 bottom-8 w-px bg-gradient-to-b from-emerald-500/40 via-cyan-500/40 to-emerald-500/0 hidden md:block" />
 
           {steps.map((step, index) => (
             <motion.div
               key={step.number}
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.15 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="step flex gap-8 items-start py-6 opacity-0"
+              className="flex gap-6 items-start"
             >
-              <div className="w-[4.5rem] h-[4.5rem] border-2 border-green flex items-center justify-center font-display text-xl font-black text-green shrink-0 bg-dark relative z-10 clip-path-step">
+              <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold font-mono shrink-0 relative z-10">
                 {step.number}
               </div>
-              <div className="flex-1 pt-2">
-                <h3 className="font-display text-sm tracking-[2px] text-white mb-2">{step.title}</h3>
-                <p className="text-sm text-[#5a9a7a] leading-relaxed">{step.description}</p>
+              <div className="flex-1 glass-card p-6 rounded-xl">
+                <h3 className="font-semibold text-[var(--text-primary)] text-lg mb-1">{step.title}</h3>
+                <code className="text-xs text-emerald-400/70 font-mono block mb-3">{step.cmd}</code>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{step.description}</p>
               </div>
             </motion.div>
           ))}

@@ -9,29 +9,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        primary: {
+          DEFAULT: 'var(--primary)',
+          light: 'var(--primary-light)',
+          dark: 'var(--primary-dark)',
+        },
+        accent: 'var(--accent)',
+        surface: 'var(--surface)',
+        // Backward-compatible aliases for dashboard pages
         green: 'var(--green)',
         cyan: 'var(--cyan)',
         dark: 'var(--dark)',
         card: 'var(--card)',
       },
       fontFamily: {
-        display: ['Orbitron', 'sans-serif'],
-        mono: ['Share Tech Mono', 'monospace'],
-        body: ['Exo 2', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        display: ['Inter', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+        body: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
-        glow: '0 0 20px rgba(0, 255, 136, 0.3)',
-        'glow-cyan': '0 0 20px rgba(0, 229, 255, 0.3)',
+        card: 'var(--card-shadow)',
+        'card-hover': 'var(--card-shadow-hover)',
+        glow: 'none',
+        'glow-cyan': 'none',
       },
       animation: {
-        'pulse-border': 'pulse-border 2s infinite',
+        'fade-in-up': 'fadeInUp 0.6s ease both',
+        'fade-in': 'fadeIn 0.6s ease both',
         'fade-in-down': 'fadeInDown 0.8s ease both',
+        'float': 'float 3s ease-in-out infinite',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'pulse-border': 'pulse-border 2s infinite',
         'ticker': 'ticker 30s linear infinite',
       },
       keyframes: {
         'pulse-border': {
-          '0%, 100%': { borderColor: '#00ff88', boxShadow: 'none' },
-          '50%': { borderColor: '#00e5ff', boxShadow: '0 0 12px rgba(0, 229, 255, 0.4)' },
+          '0%, 100%': { borderColor: 'var(--green)', boxShadow: 'none' },
+          '50%': { borderColor: 'var(--cyan)', boxShadow: '0 0 8px rgba(8, 145, 178, 0.2)' },
         },
         'fadeInDown': {
           from: { opacity: '0', transform: 'translateY(-20px)' },
