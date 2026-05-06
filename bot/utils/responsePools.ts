@@ -392,7 +392,7 @@ export const horoscopeReadings: string[] = [
 ];
 
 // ─── Promo Messages ───────────────────────────────────────────────────────────
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://botwave-tx86.onrender.com';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
 export const promoMessages: string[] = [
   `\n─────────────────────────────\nWant your own WhatsApp bot?\nCreate yours FREE at ${APP_URL}/signup`,
