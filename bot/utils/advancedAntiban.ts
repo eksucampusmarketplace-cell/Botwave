@@ -138,14 +138,11 @@ export function startPresenceSimulation(sock: any, sessionId: string): void {
 
   const simulate = async () => {
     try {
-      // Only send 'unavailable' to go offline. Never send 'available' from
-      // this loop — the bot naturally appears online when handling messages
-      // (via composing/recording in humanSend). Sending 'available' here
-      // causes WhatsApp to show a "syncing" notification on the user's phone
-      // every cycle, which is disruptive.
       const shouldGoOffline = Math.random() < getUnavailableProbability();
       if (shouldGoOffline) {
         await sock.sendPresenceUpdate('unavailable');
+      } else {
+        await sock.sendPresenceUpdate('available');
       }
     } catch {
       // non-critical
@@ -429,14 +426,11 @@ export function getGroupReplyDelay(groupJid: string): number {
  */
 
 const BROWSER_CONFIGS: [string, string, string][] = [
-  ['Mac OS', 'Chrome', '14.4.1'],
-  ['Mac OS', 'Chrome', '14.5.0'],
-  ['Mac OS', 'Safari', '18.3.1'],
-  ['Windows', 'Chrome', '131.0.0'],
-  ['Windows', 'Edge', '131.0.0'],
-  ['Windows', 'Firefox', '133.0'],
-  ['Ubuntu', 'Chrome', '131.0.0'],
-  ['Ubuntu', 'Firefox', '133.0'],
+  ['WhatsApp Web', 'Chrome', '10.0'],
+  ['WhatsApp Web', 'Chrome', '10.1'],
+  ['WhatsApp Web', 'Safari', '10.0'],
+  ['WhatsApp Web', 'Edge', '10.0'],
+  ['WhatsApp Web', 'Firefox', '10.0'],
 ];
 
 export function getRandomBrowserConfig(): [string, string, string] {
