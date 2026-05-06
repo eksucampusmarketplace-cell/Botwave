@@ -246,7 +246,7 @@ const faqs = [
   },
   {
     q: 'Why is BotWave free when other bot platforms charge $20-50/month?',
-    a: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different — your WhatsApp session runs from your own device via QR code, so there\'s no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms can\'t match.',
+    a: 'BotWave is built by a small team that believes bot automation should be accessible to everyone — especially in Nigeria and across Africa where $20-50/month subscriptions are unrealistic. We keep costs low by using efficient open-source technology (Baileys + Evolution API) and smart resource sharing. The free tier covers most users, and optional paid plans help fund the platform for everyone.',
   },
   {
     q: 'What is the difference between BotWave and Evolution API?',
