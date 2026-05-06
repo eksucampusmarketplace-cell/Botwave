@@ -367,6 +367,40 @@ export default function DashboardPage() {
               </div>
             </motion.section>
 
+            {/* Quick links to new features */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="bg-card border border-green/10 p-6 relative"
+            >
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">TOOLS</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates' },
+                  { href: '/dashboard/custom-commands', icon: '\uD83E\uDD16', label: 'Commands' },
+                  { href: '/dashboard/flows', icon: '\uD83D\uDD00', label: 'Flows' },
+                  { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits' },
+                  { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics' },
+                  { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop' },
+                  { href: '/dashboard/pricing', icon: '\uD83D\uDCB3', label: 'Pricing' },
+                  { href: '/dashboard/rewards', icon: '\uD83C\uDF81', label: 'Rewards' },
+                ].map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-2 p-3 border border-green/10 hover:border-green/30 transition-colors font-mono text-xs"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <span className="text-base">{link.icon}</span>
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            </motion.section>
+
             <motion.section
               data-tour="features"
               initial={{ opacity: 0, y: 20 }}
