@@ -237,17 +237,16 @@ export default function HomePage() {
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6">
-                Automate Your
+                Free WhatsApp Bot
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 typing-cursor">
-                  WhatsApp
+                  Automation Platform
                 </span>
               </h1>
 
               <p className="text-lg text-slate-400 max-w-xl mb-8 leading-relaxed">
-                BotWave is your complete platform for powerful WhatsApp bot features.
-                Stickers, AI chat, media downloads, games, and group management — all delivered
-                instantly with zero setup.
+                BotWave is a free WhatsApp automation tool — create stickers, AI chat, download media,
+                manage groups, play games, and more. No coding needed. Just scan a QR code and your bot is live.
               </p>
 
               <div className="flex gap-4 flex-wrap mb-8">
@@ -325,10 +324,10 @@ export default function HomePage() {
               CAPABILITIES
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Everything You Need in a WhatsApp Bot
+              50+ WhatsApp Bot Commands — All Free
             </h2>
             <p className="text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">
-              From sticker creation to AI conversations, BotWave has all the tools to supercharge your WhatsApp groups.
+              From WhatsApp sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp groups.
             </p>
           </motion.div>
 
@@ -358,10 +357,10 @@ export default function HomePage() {
                 LIVE PREVIEW
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                See BotWave in Action
+                See the WhatsApp Bot in Action
               </h2>
               <p className="text-slate-400 mb-6 leading-relaxed">
-                Watch how BotWave responds to commands live. From creating stickers to answering questions with AI, every command is processed instantly.
+                Watch how BotWave responds to WhatsApp commands instantly. Create stickers, get AI answers, play games — all inside your chat.
               </p>
               <div className="space-y-4">
                 {[
@@ -538,10 +537,10 @@ export default function HomePage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Ready to Supercharge Your WhatsApp?
+              Start Automating Your WhatsApp — Free Forever
             </h2>
             <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-              Join thousands of users who trust BotWave for their WhatsApp automation needs. Free to start, no credit card required.
+              Join users across Nigeria who automate their WhatsApp with BotWave. No credit card, no coding, no downloads. Sign up and scan a QR code.
             </p>
             <Link
               href="/signup"
