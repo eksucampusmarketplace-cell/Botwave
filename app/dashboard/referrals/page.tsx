@@ -8,8 +8,10 @@ interface ReferralData {
   code: string | null;
   totalReferred: number;
   totalEarned: number;
+  isFrozen?: boolean;
+  frozenReason?: string | null;
   notSetup?: boolean;
-  referrals: { id: string; referred_email: string; reward_amount: number; created_at: string }[];
+  referrals: { id: string; referred_email: string; reward_amount: number; status: string; flagged_reason?: string; created_at: string }[];
 }
 
 export default function ReferralsPage() {
@@ -83,6 +85,14 @@ export default function ReferralsPage() {
             <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>Failed to load</div>
           ) : (
             <div className="space-y-6">
+              {/* Frozen warning */}
+              {data.isFrozen && (
+                <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-center">
+                  <p className="text-sm font-medium text-red-400">Your referral code has been frozen</p>
+                  <p className="text-xs text-red-400/70 mt-1">{data.frozenReason || 'Suspicious activity detected. Contact support if you believe this is an error.'}</p>
+                </div>
+              )}
+
               {/* Referral code card */}
               <div className="p-6 rounded-xl border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Your Referral Code</p>
@@ -183,7 +193,17 @@ export default function ReferralsPage() {
                             {new Date(r.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <span className="text-sm font-mono text-emerald-400">+{'\u20A6'}{r.reward_amount}</span>
+                        <div className="flex items-center gap-2">
+                          {r.status === 'flagged' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400">Flagged</span>
+                          )}
+                          {r.status === 'revoked' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">Revoked</span>
+                          )}
+                          <span className={`text-sm font-mono ${r.status === 'revoked' ? 'text-red-400 line-through' : 'text-emerald-400'}`}>
+                            +{'\u20A6'}{r.reward_amount}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
