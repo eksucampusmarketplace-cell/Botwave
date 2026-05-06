@@ -24,12 +24,16 @@ export class EvolutionSocketAdapter {
   // Mimics Baileys sock.user — used by MessageQueue to check connection
   public user: { id: string } | null = null;
 
-  constructor(instanceName: string, sessionId: string, userId: string) {
+  constructor(instanceName: string, sessionId: string, userId: string, phoneNumber?: string) {
     this.instanceName = instanceName;
     this.sessionId = sessionId;
     this.userId = userId;
-    // Set user to signal "connected" — MessageQueue checks sock.user
-    this.user = { id: `${instanceName}@s.whatsapp.net` };
+    // Set user.id to the real phone JID when available so that the owner
+    // check in MessageHandler (normalizeJid comparison) works correctly in
+    // group chats where fromMe may be false. Falls back to instanceName
+    // for backward compatibility.
+    const cleanPhone = phoneNumber?.replace(/\D/g, '');
+    this.user = { id: cleanPhone ? `${cleanPhone}@s.whatsapp.net` : `${instanceName}@s.whatsapp.net` };
   }
 
   /**

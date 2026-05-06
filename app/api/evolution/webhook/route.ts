@@ -260,6 +260,7 @@ export async function POST(request: NextRequest) {
       // 30-120 s, which exceeds Render's 30 s request timeout and causes
       // the handler to be killed before processCommand is reached.
       const commandMsgs: any[] = [];
+      const statusMsgs: any[] = [];
       for (const msg of messages) {
         const from = msg.key?.remoteJid || 'unknown';
         const fromMe = msg.key?.fromMe;
@@ -270,6 +271,13 @@ export async function POST(request: NextRequest) {
           '';
         console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} text="${text.slice(0, 80)}"`);
 
+        // Route status broadcasts to the StatusViewer handler (respects
+        // the autoview toggle which defaults to OFF).
+        if (from === 'status@broadcast') {
+          statusMsgs.push(msg);
+          continue;
+        }
+
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
         if (fromMe && !text.trimStart().startsWith('!')) continue;
@@ -279,17 +287,27 @@ export async function POST(request: NextRequest) {
       // Fire-and-forget: process messages in the background so the webhook
       // response is returned immediately (avoids Render 30 s timeout killing
       // the handler mid-delay).
-      if (commandMsgs.length > 0) {
+      if (commandMsgs.length > 0 || statusMsgs.length > 0) {
         // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
         const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
         const { handleMessage } = await import('@/bot/handlers/MessageHandler');
+        const { handleStatusUpdate } = await import('@/bot/handlers/StatusViewer');
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
 
-        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id);
+        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id, session.phone_number);
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
         // Use void to fire-and-forget — do NOT await
         void (async () => {
+          // Process status broadcasts via StatusViewer (checks autoview toggle)
+          for (const msg of statusMsgs) {
+            try {
+              await handleStatusUpdate(msg, sock, session.id, session.user_id);
+            } catch (err) {
+              console.error(`[EVO-WEBHOOK] Error handling status for ${sessionId}:`, err);
+            }
+          }
+
           for (const msg of commandMsgs) {
             try {
               await handleMessage(msg, sock, queue);
@@ -322,7 +340,7 @@ export async function POST(request: NextRequest) {
         const { handleGroupParticipantsUpdate } = await import('@/bot/handlers/MessageHandler');
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
 
-        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id);
+        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id, session.phone_number);
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
         try {

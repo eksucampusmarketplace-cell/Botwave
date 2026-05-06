@@ -615,7 +615,7 @@ class EvolutionBot {
         console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
         this.isReady = true;
         this.isReconnecting = false;
-        this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
+        this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
         await updateSessionStatus(this.sessionId, 'active');
         this.startPresenceLoop();
         return true;
@@ -629,7 +629,7 @@ class EvolutionBot {
         if (connectState === 'open') {
           this.isReady = true;
           this.isReconnecting = false;
-          this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
+          this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           await updateSessionStatus(this.sessionId, 'active');
           this.startPresenceLoop();
           return true;
@@ -762,7 +762,7 @@ class EvolutionBot {
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
 
-          this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId);
+          this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           this.startPresenceLoop();
         } else if (state === 'connecting') {
           unknownStateCount = 0;
