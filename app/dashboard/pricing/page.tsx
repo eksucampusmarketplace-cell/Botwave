@@ -20,7 +20,14 @@ const PLANS: Record<string, PlanInfo> = {
     quotaLimit: 300,
     sessionLimit: 1,
     aiDailyLimit: 10,
-    features: ['Basic commands', '300 messages/month', '1 session', '10 AI queries/day'],
+    features: [
+      'Basic commands',
+      '300 messages/month',
+      '1 session',
+      '10 AI queries/day',
+      'Message templates (3)',
+      'Rate limit dashboard',
+    ],
   },
   lite: {
     name: 'Lite',
@@ -28,7 +35,17 @@ const PLANS: Record<string, PlanInfo> = {
     quotaLimit: 2000,
     sessionLimit: 1,
     aiDailyLimit: 50,
-    features: ['All commands', '2,000 messages/month', '1 session', '50 AI queries/day', 'Auto-reply'],
+    features: [
+      'All commands',
+      '2,000 messages/month',
+      '1 session',
+      '50 AI queries/day',
+      'Auto reply',
+      'Message templates (10)',
+      'Custom commands (5)',
+      'Rate limit dashboard',
+      'QR expiry alerts (email)',
+    ],
   },
   standard: {
     name: 'Standard',
@@ -36,7 +53,21 @@ const PLANS: Record<string, PlanInfo> = {
     quotaLimit: 10000,
     sessionLimit: 3,
     aiDailyLimit: 200,
-    features: ['All commands', '10,000 messages/month', '3 sessions', '200 AI queries/day', 'Auto-reply', 'Status viewer', 'Priority support'],
+    features: [
+      'All commands',
+      '10,000 messages/month',
+      '3 sessions',
+      '200 AI queries/day',
+      'Auto reply',
+      'Status viewer',
+      'Priority support',
+      'Message templates (50)',
+      'Custom commands (20)',
+      'Group analytics',
+      'Chatbot flow builder (3 flows)',
+      'Rate limit dashboard',
+      'QR expiry alerts (email + WhatsApp)',
+    ],
   },
   boss: {
     name: 'Boss',
@@ -44,7 +75,22 @@ const PLANS: Record<string, PlanInfo> = {
     quotaLimit: -1,
     sessionLimit: 5,
     aiDailyLimit: -1,
-    features: ['Everything included', 'Unlimited messages', '5 sessions', 'Unlimited AI queries', 'API access', 'Custom branding'],
+    features: [
+      'Everything unlimited',
+      'Unlimited messages',
+      '5 sessions',
+      'Unlimited AI queries',
+      'API access',
+      'Custom branding',
+      'Priority support',
+      'Unlimited templates',
+      'Unlimited custom commands',
+      'Group analytics + export',
+      'Chatbot flow builder (unlimited)',
+      'E-commerce integration',
+      'Rate limit dashboard',
+      'QR expiry alerts (all channels)',
+    ],
   },
 };
 
@@ -90,8 +136,16 @@ export default function PricingPage() {
       const res = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ plan: planKey }),
       });
+
+      if (res.status === 401) {
+        setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
+        setLoading(null);
+        setTimeout(() => { window.location.href = '/login'; }, 1500);
+        return;
+      }
 
       const data = await res.json();
 

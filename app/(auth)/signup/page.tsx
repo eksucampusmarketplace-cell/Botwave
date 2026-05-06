@@ -13,7 +13,7 @@ const terminalLines = [
   { cls: 'comment', text: '# What you get:' },
   { cls: 'flag', text: '  → Unlimited WhatsApp sessions' },
   { cls: 'flag', text: '  → 50+ automation commands' },
-  { cls: 'flag', text: '  → AI-powered chatbot (BYOK)' },
+  { cls: 'flag', text: '  → AI chatbot (BYOK)' },
   { cls: 'flag', text: '  → Sticker maker & media tools' },
   { cls: 'flag', text: '  → Anti-ban protection system' },
   { cls: 'flag', text: '  → Group management toolkit' },

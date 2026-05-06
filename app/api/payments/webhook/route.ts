@@ -95,6 +95,37 @@ export async function POST(request: NextRequest) {
           }, { onConflict: 'user_id' });
 
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
+
+        // Credit reward for plan upgrade
+        try {
+          const { data: rewardBal } = await supabase
+            .from('reward_balances')
+            .select('*')
+            .eq('user_id', payment.user_id)
+            .single();
+
+          if (rewardBal) {
+            await supabase
+              .from('reward_balances')
+              .update({
+                balance: (rewardBal.balance || 0) + 30,
+                total_earned: (rewardBal.total_earned || 0) + 30,
+                updated_at: now.toISOString(),
+              })
+              .eq('user_id', payment.user_id);
+
+            await supabase.from('reward_transactions').insert({
+              user_id: payment.user_id,
+              amount: 30,
+              type: 'earn',
+              reason: `Upgraded to ${plan} plan`,
+              created_at: now.toISOString(),
+            });
+            console.log(`[SQUAD-WEBHOOK] Reward credited: user=${payment.user_id} +\u20a630`);
+          }
+        } catch (rewardErr) {
+          console.error('[SQUAD-WEBHOOK] Reward credit failed:', rewardErr);
+        }
       }
     } else if (transactionStatus === 'failed') {
       await supabase
@@ -105,6 +136,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', payment.id);
+      console.log(`[SQUAD-WEBHOOK] Payment failed: ref=${transactionRef} user=${payment.user_id}`);
     }
 
     return NextResponse.json({ ok: true });

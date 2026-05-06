@@ -19,13 +19,13 @@ const steps = [
     number: '03',
     title: 'Choose Your Features',
     cmd: '$ botwave enable --all',
-    description: 'Toggle on the features you want from your dashboard. Enable sticker maker, AI replies, games, anti-spam — whatever fits your group.',
+    description: 'Toggle on the features you want from your dashboard. Enable sticker maker, AI replies, games, spam protection, whatever fits your group.',
   },
   {
     number: '04',
     title: 'Bot is Live',
     cmd: '→ status: online | commands: ready',
-    description: "That's it. Your bot is active. Use commands in your WhatsApp group and BotWave handles the rest in real-time.",
+    description: "That's it. Your bot is active. Use commands in your WhatsApp group and BotWave handles the rest instantly.",
   },
 ];
 

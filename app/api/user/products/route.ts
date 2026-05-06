@@ -1,0 +1,114 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getPlanLimits } from '@/lib/planGating';
+
+export const dynamic = 'force-dynamic';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+async function getUser(request: NextRequest) {
+  const { createServerClient } = await import('@supabase/ssr');
+  const authClient = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => request.cookies.getAll().map((c) => ({ name: c.name, value: c.value })) } },
+  );
+  const { data: { user } } = await authClient.auth.getUser();
+  return user;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getUser(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    return NextResponse.json({ success: true, data: data || [] });
+  } catch (err) {
+    console.error('[PRODUCTS] GET error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUser(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan')
+      .eq('user_id', user.id)
+      .single();
+
+    const limits = getPlanLimits(sub?.plan || 'free');
+    if (!limits.hasEcommerce) {
+      return NextResponse.json({
+        error: 'E-commerce requires Boss plan. Upgrade to unlock.',
+      }, { status: 403 });
+    }
+
+    const body = await request.json() as {
+      name?: string;
+      description?: string;
+      price?: number;
+      stock?: number;
+      image_url?: string;
+    };
+
+    if (!body.name || body.price === undefined) {
+      return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        user_id: user.id,
+        name: body.name,
+        description: body.description || '',
+        price: body.price,
+        stock: body.stock ?? -1,
+        image_url: body.image_url || '',
+        active: true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[PRODUCTS] Insert error:', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error('[PRODUCTS] POST error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUser(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await supabase.from('products').delete().eq('id', id).eq('user_id', user.id);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[PRODUCTS] DELETE error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

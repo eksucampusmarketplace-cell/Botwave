@@ -52,6 +52,34 @@
   --card: #16161f;
 }
 
+[data-theme='light'] {
+  --primary: #059669;
+  --primary-light: #10b981;
+  --primary-dark: #047857;
+  --accent: #0891b2;
+  --bg: #f8fafc;
+  --bg-alt: #f1f5f9;
+  --surface: #ffffff;
+  --surface-light: #f8fafc;
+  --hero-from: #f8fafc;
+  --hero-to: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #cbd5e1;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --glow-green: 0 0 12px rgba(5, 150, 105, 0.1);
+  --glow-cyan: 0 0 12px rgba(8, 145, 178, 0.1);
+
+  --green: #059669;
+  --cyan: #0891b2;
+  --dark: #f8fafc;
+  --card: #ffffff;
+  --glow: var(--glow-green);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -133,6 +161,17 @@ body {
 .glass-card:hover {
   border-color: rgba(16, 185, 129, 0.2);
   box-shadow: var(--glow-green);
+}
+
+[data-theme='light'] .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+}
+
+[data-theme='light'] .glass-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow-hover);
 }
 
 /* Gradient border */
