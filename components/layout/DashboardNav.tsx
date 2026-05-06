@@ -12,7 +12,8 @@ const navLinks = [
   { href: '/dashboard/messages', label: 'Messages' },
   { href: '/dashboard/analytics', label: 'Analytics', tour: 'nav-analytics' },
   { href: '/dashboard/health', label: 'Health' },
-  { href: '/dashboard/scheduled', label: 'Scheduled' },
+  { href: '/dashboard/templates', label: 'Templates' },
+  { href: '/dashboard/flows', label: 'Flows' },
   { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
   { href: '/dashboard/rewards', label: 'Rewards', accent: true },
 ];
