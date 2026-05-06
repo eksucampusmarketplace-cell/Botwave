@@ -24,6 +24,52 @@ async function findYtDlp(): Promise<string> {
   return 'yt-dlp'; // fall back to PATH lookup
 }
 
+const COBALT_INSTANCES = [
+  'https://cobalt-backend.canine.tools',
+  'https://cobalt-api.meowing.de',
+];
+
+async function downloadViaCobalt(url: string): Promise<Buffer | null> {
+  for (const instance of COBALT_INSTANCES) {
+    try {
+      const res = await axios.post(instance + '/', {
+        url,
+        videoQuality: '720',
+        youtubeVideoCodec: 'h264',
+      }, {
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        timeout: 30000,
+      });
+
+      const data = res.data;
+      if (data.status === 'error') {
+        console.error(`[DOWNLOAD] cobalt ${instance} error:`, data.error?.code || data);
+        continue;
+      }
+
+      let mediaUrl: string | undefined;
+      if (data.status === 'tunnel' || data.status === 'redirect') {
+        mediaUrl = data.url;
+      } else if (data.status === 'picker' && data.picker?.length) {
+        mediaUrl = data.picker[0].url;
+      }
+
+      if (!mediaUrl) continue;
+
+      const mediaRes = await axios.get(mediaUrl, {
+        responseType: 'arraybuffer',
+        timeout: 60000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      console.log(`[DOWNLOAD] cobalt ${instance} success`);
+      return Buffer.from(mediaRes.data);
+    } catch (err: any) {
+      console.error(`[DOWNLOAD] cobalt ${instance} failed:`, err?.message || err);
+    }
+  }
+  return null;
+}
+
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
   return jid.replace(/:\d+@/, '@').trim();
@@ -156,8 +202,21 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       console.error('[DOWNLOAD] yt-dlp failed:', dlErr?.message || dlErr);
     }
 
+    // Fallback 2: try cobalt API (works for YouTube, TikTok, Instagram, etc.)
     if (!downloaded) {
-      // Fallback: direct HTTP download (works for direct media links only)
+      try {
+        const cobaltBuffer = await downloadViaCobalt(url);
+        if (cobaltBuffer) {
+          await sendReply(context.chatJid, { video: cobaltBuffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+          downloaded = true;
+        }
+      } catch (cobaltErr: any) {
+        console.error('[DOWNLOAD] cobalt fallback failed:', cobaltErr?.message || cobaltErr);
+      }
+    }
+
+    // Fallback 3: direct HTTP download (works for direct media links only)
+    if (!downloaded) {
       const mediaResponse = await axios.get(url, {
         responseType: 'arraybuffer',
         timeout: 30000,
@@ -169,7 +228,7 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
 
       // Reject HTML/text responses — these are web pages, not actual media
       if (contentType.includes('text/html') || contentType.includes('text/plain') || contentType.includes('application/json')) {
-        await sendReply(context.chatJid, 'Download failed. This URL requires yt-dlp which is not available. Try a direct media link instead, or install yt-dlp on the server.', sock, context.rawMessage.key, context.queue);
+        await sendReply(context.chatJid, 'Download failed. The URL may not be supported or the service is temporarily unavailable.', sock, context.rawMessage.key, context.queue);
         return;
       }
 
