@@ -106,6 +106,35 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await getUser(request);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await request.json() as { id?: string; enabled?: boolean };
+    if (!body.id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data, error } = await supabase
+      .from('custom_commands')
+      .update({ enabled: body.enabled ?? true, updated_at: new Date().toISOString() })
+      .eq('id', body.id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[CUSTOM-CMD] Update error:', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    console.error('[CUSTOM-CMD] PUT error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getUser(request);
