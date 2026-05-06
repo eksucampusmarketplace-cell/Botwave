@@ -13,6 +13,15 @@ interface PlanInfo {
   features: string[];
 }
 
+interface PaymentRecord {
+  id: string;
+  plan: string;
+  amount: number;
+  status: string;
+  squad_transaction_ref: string;
+  created_at: string;
+}
+
 const PLANS: Record<string, PlanInfo> = {
   free: {
     name: 'Free',
@@ -104,10 +113,12 @@ export default function PricingPage() {
   const [currentPlan, setCurrentPlan] = useState<string>('free');
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [squadReady, setSquadReady] = useState(false);
 
   useEffect(() => {
-    // Load current subscription
-    fetch('/api/user/subscription')
+    fetch('/api/user/subscription', { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
         if (data.subscription?.plan) {
@@ -120,12 +131,31 @@ export default function PricingPage() {
     const script = document.createElement('script');
     script.src = 'https://checkout.squadco.com/widget/squad.min.js';
     script.async = true;
+    script.onload = () => setSquadReady(true);
+    script.onerror = () => {
+      console.warn('[PAYMENT] Squad widget failed to load, will use checkout URL redirect');
+      setSquadReady(false);
+    };
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
+
+  const fetchPaymentHistory = async () => {
+    try {
+      const res = await fetch('/api/payments/history', { credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        setPayments(data.payments || []);
+      }
+    } catch {
+      // payments table may not exist yet
+    }
+  };
 
   const handleUpgrade = async (planKey: string) => {
     if (planKey === 'free' || planKey === currentPlan) return;
@@ -155,35 +185,49 @@ export default function PricingPage() {
         return;
       }
 
-      // Open Squad payment modal
-      if (window.squad && data.publicKey) {
-        const squadInstance = new window.squad({
-          onClose: () => {
-            setLoading(null);
-          },
-          onLoad: () => {
-            console.log('Squad widget loaded');
-          },
-          onSuccess: () => {
-            setMessage({ type: 'success', text: 'Payment successful! Your plan will be activated shortly.' });
-            setCurrentPlan(planKey);
-            setLoading(null);
-          },
-          key: data.publicKey,
-          email: data.email,
-          amount: data.amount * 100, // kobo
-          currency_code: 'NGN',
-          transaction_ref: data.transactionRef,
-          payment_channels: ['bank', 'transfer'],
-          customer_name: '',
-          metadata: { plan: planKey },
-        });
-        squadInstance.setup();
-      } else if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        setMessage({ type: 'error', text: 'Payment gateway not available. Please try again.' });
+      // Try Squad inline modal first
+      if (squadReady && window.squad && data.publicKey) {
+        try {
+          const squadInstance = new window.squad({
+            onClose: () => {
+              setLoading(null);
+            },
+            onLoad: () => {
+              console.log('[PAYMENT] Squad widget loaded');
+            },
+            onSuccess: () => {
+              setMessage({ type: 'success', text: 'Payment successful! Your plan will be activated shortly.' });
+              setCurrentPlan(planKey);
+              setLoading(null);
+            },
+            key: data.publicKey,
+            email: data.email,
+            amount: data.amount * 100,
+            currency_code: 'NGN',
+            transaction_ref: data.transactionRef,
+            payment_channels: ['bank', 'transfer'],
+            customer_name: '',
+            metadata: { plan: planKey },
+          });
+          squadInstance.setup();
+          return;
+        } catch (err) {
+          console.warn('[PAYMENT] Squad widget failed, falling back to checkout URL:', err);
+        }
       }
+
+      // Fallback: redirect to Squad checkout URL
+      if (data.checkoutUrl) {
+        setMessage({ type: 'success', text: 'Redirecting to payment page...' });
+        setTimeout(() => {
+          window.open(data.checkoutUrl, '_blank');
+          setLoading(null);
+        }, 500);
+        return;
+      }
+
+      // Neither worked
+      setMessage({ type: 'error', text: 'Payment gateway not available right now. Please try again later or contact support.' });
     } catch {
       setMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
     } finally {
@@ -294,9 +338,50 @@ export default function PricingPage() {
           })}
         </div>
 
-        <div className="mt-12 text-center">
+        {/* Payment history */}
+        <div className="mt-12 max-w-2xl mx-auto">
+          <button
+            onClick={() => { setShowHistory(!showHistory); if (!showHistory) fetchPaymentHistory(); }}
+            className="w-full text-center font-mono text-xs text-[#5a9a7a] tracking-[1px] hover:text-green transition-colors py-2"
+          >
+            {showHistory ? '▲ HIDE PAYMENT HISTORY' : '▼ VIEW PAYMENT HISTORY'}
+          </button>
+
+          {showHistory && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-4 space-y-2"
+            >
+              {payments.length === 0 ? (
+                <p className="font-mono text-xs text-[#5a9a7a] text-center py-4">No payment history yet</p>
+              ) : (
+                payments.map((p) => (
+                  <div key={p.id} className="flex justify-between items-center p-3 border border-green/10 bg-card font-mono text-xs">
+                    <div>
+                      <span className="text-white capitalize">{p.plan}</span>
+                      <span className="text-[#5a9a7a] ml-2">{new Date(p.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-green">₦{p.amount?.toLocaleString()}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] ${
+                        p.status === 'completed' ? 'bg-green/10 text-green' :
+                        p.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                        'bg-red-500/10 text-red-400'
+                      }`}>
+                        {p.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </div>
+
+        <div className="mt-8 text-center">
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[1px]">
-            All payments are processed securely via Squad. Bank transfer only.
+            All payments are processed securely via Squad. Bank transfer supported.
           </p>
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[1px] mt-2">
             Plans renew monthly. Cancel anytime from the dashboard.
