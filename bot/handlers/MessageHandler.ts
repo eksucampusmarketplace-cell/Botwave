@@ -162,12 +162,24 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     if (!content) return;
 
-    const senderJid = normalizeJid(message.key.participant || chatJid);
+    // In groups, participant may be a LID (e.g. 94270639878349@lid).
+    // participantPn gives the phone number JID even when participant is a LID.
+    const rawParticipant = message.key.participant;
+    const participantPn = (message.key as any).participantPn;
+    const senderJid = normalizeJid(participantPn || rawParticipant || chatJid);
     const isGroup = chatJid.endsWith('@g.us');
     const isCommand = content.startsWith(COMMAND_PREFIX);
     const pushName = message.pushName || 'User';
     const sessionId = (sock as any).sessionId || queue?.['sessionId'];
     const userId = (sock as any).userId;
+
+    // Owner detection: compare phone JID and also LID (WhatsApp's new format)
+    const ownerJidEarly = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
+    const ownerLidEarly = (sock as any).user?.lid ? normalizeJid((sock as any).user.lid) : null;
+    const senderLidEarly = rawParticipant && rawParticipant.endsWith('@lid') ? normalizeJid(rawParticipant) : null;
+    const isOwnerEarly = fromMe ||
+      (ownerJidEarly && senderJid === ownerJidEarly) ||
+      (ownerLidEarly && senderLidEarly && senderLidEarly === ownerLidEarly);
 
     const context: MessageContext = {
       senderJid,
@@ -175,6 +187,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       message: content,
       rawMessage: message,
       isGroup,
+      isOwner: !!isOwnerEarly,
       pushName,
       sessionId,
       userId,
@@ -304,10 +317,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    const ownerJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
-    const isOwner = fromMe || (ownerJid && senderJid === ownerJid);
-
-    if (isCommand && !isOwner) {
+    if (isCommand && !isOwnerEarly) {
       return;
     }
 

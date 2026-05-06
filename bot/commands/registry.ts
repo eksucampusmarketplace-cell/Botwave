@@ -6,6 +6,7 @@ export interface MessageContext {
   message: string;
   rawMessage: any;
   isGroup: boolean;
+  isOwner: boolean;
   pushName?: string;
   sessionId?: string;
   userId?: string;
@@ -28,6 +29,8 @@ export interface CommandHandler {
   category: CommandCategory;
   /** Short description shown in !help */
   description: string;
+  /** If true, only the bot owner (session linked account) can run this command */
+  ownerOnly?: boolean;
   /** Execute the command */
   execute: (
     context: MessageContext,
