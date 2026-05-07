@@ -695,6 +695,30 @@ export async function fetchGroupInfo(instanceName: string, groupJid: string) {
   }
 }
 
+/**
+ * Verify that Evolution API has data persistence enabled.
+ * Queries the fetchInstances endpoint and checks if instances survive.
+ * Called on startup to warn operators if sessions will be lost on redeploy.
+ */
+export async function verifyEvolutionDataPersistence(): Promise<{ persisted: boolean; instanceCount: number }> {
+  if (!BASE) return { persisted: false, instanceCount: 0 };
+  try {
+    const res = await apiFetch(`${BASE}/instance/fetchInstances`, {
+      method: 'GET',
+      headers,
+      skipHealthCount: true,
+    });
+    if (!res.ok) return { persisted: false, instanceCount: 0 };
+    const data: any = await res.json();
+    const instances = Array.isArray(data) ? data : [];
+    // If Evolution API returned instances, it means DATABASE_SAVE_DATA_INSTANCE=true
+    // is working (instances survived the last restart).
+    return { persisted: instances.length > 0, instanceCount: instances.length };
+  } catch {
+    return { persisted: false, instanceCount: 0 };
+  }
+}
+
 // Fetch instance info (includes user JID)
 export async function fetchInstanceInfo(instanceName: string) {
   try {

@@ -4,7 +4,7 @@ import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueSch
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
-import { waitForEvolutionReady, resetEvolutionHealth } from './evolutionClient';
+import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
 
 const bot = initializeBot();
 
@@ -25,6 +25,15 @@ async function start() {
     if (ready) {
       console.log('[BOT] Evolution API is ready — proceeding with session sync');
       resetEvolutionHealth();
+
+      // Verify data persistence — warn loudly if instances won't survive restarts
+      const { persisted, instanceCount } = await verifyEvolutionDataPersistence();
+      if (instanceCount > 0) {
+        console.log(`[BOT] Evolution API has ${instanceCount} persisted instance(s) — DATABASE_SAVE_DATA_INSTANCE=true is working`);
+      } else {
+        console.warn('[BOT] ⚠ Evolution API has 0 persisted instances. If you have active sessions, DATABASE_SAVE_DATA_INSTANCE may not be set to true on your Evolution API service. Sessions will be lost on Evolution API restart and users will need to re-pair.');
+        console.warn('[BOT] ⚠ To fix: set DATABASE_SAVE_DATA_INSTANCE=true in your Evolution API environment variables');
+      }
     } else {
       console.warn('[BOT] Evolution API did not become ready — sessions will retry during sync loop');
     }

@@ -649,20 +649,28 @@ class EvolutionBot {
    * Retries with backoff because the Evolution API may still be loading
    * instances from its database after a concurrent restart.
    * Returns true if the instance was found and is now connected/connecting.
+   *
+   * For previously-active sessions, uses more retries and longer backoff
+   * to give Evolution API time to fully restore instances from its database.
    */
   private async tryReconnectExisting(): Promise<boolean> {
-    const MAX_RECONNECT_RETRIES = 8;
-    const BASE_DELAY_MS = 3000;
+    // Previously-active sessions get more patience — the Evolution API may
+    // need 30-60s+ to fully load and reconnect instances from its DB after
+    // a restart. Quick giveup causes unnecessary re-pairing.
+    const wasActive = this.previousDbState === 'active' || this.previousDbState === 'inactive';
+    const MAX_RECONNECT_RETRIES = wasActive ? 15 : 8;
+    const BASE_DELAY_MS = wasActive ? 4000 : 3000;
+    const MAX_DELAY_MS = wasActive ? 15000 : 12000;
 
     for (let attempt = 1; attempt <= MAX_RECONNECT_RETRIES; attempt++) {
-      console.log(`[EVO] Reconnect attempt ${attempt}/${MAX_RECONNECT_RETRIES} for ${this.sessionId}...`);
+      console.log(`[EVO] Reconnect attempt ${attempt}/${MAX_RECONNECT_RETRIES} for ${this.sessionId} (wasActive=${wasActive})...`);
 
       const state = await getInstanceStatus(this.sessionId);
       console.log(`[EVO] Instance state for ${this.sessionId}: ${state}`);
 
       if (state === 'unknown') {
         if (attempt < MAX_RECONNECT_RETRIES) {
-          const waitMs = BASE_DELAY_MS * attempt;
+          const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
           console.log(`[EVO] Instance ${this.sessionId} not found yet — Evolution API may still be loading. Retrying in ${waitMs}ms...`);
           await new Promise(r => setTimeout(r, waitMs));
           continue;
@@ -706,7 +714,7 @@ class EvolutionBot {
 
         // Connection attempt didn't succeed — retry if attempts remain
         if (attempt < MAX_RECONNECT_RETRIES) {
-          const waitMs = BASE_DELAY_MS * attempt;
+          const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
           console.log(`[EVO] Connect returned ${connectState} for ${this.sessionId} — retrying in ${waitMs}ms...`);
           await new Promise(r => setTimeout(r, waitMs));
           continue;
@@ -714,8 +722,77 @@ class EvolutionBot {
       }
     }
 
-    console.log(`[EVO] All reconnect attempts exhausted for ${this.sessionId} — will fall through to fresh pairing`);
+    console.log(`[EVO] All reconnect attempts exhausted for ${this.sessionId} — will fall through to soft reconnect / fresh pairing`);
     return false;
+  }
+
+  /**
+   * Try to reconnect by creating a new instance WITHOUT requesting a pairing code.
+   * If Evolution API has auth credentials in its database (DATABASE_SAVE_DATA_INSTANCE=true),
+   * the instance may auto-connect using the saved auth state — no user action needed.
+   * Returns true if auto-connect succeeded or is in progress.
+   */
+  private async trySoftReconnect(): Promise<boolean> {
+    console.log(`[EVO] Attempting soft reconnect for ${this.sessionId} — creating instance without pairing code`);
+
+    try {
+      // Create the instance — this registers it with Evolution API.
+      // If Evolution API has auth data in its Prisma DB, the Baileys
+      // connection may restore automatically using saved credentials.
+      const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
+      if (createResult?.status === 403 || createResult?.error) {
+        console.log(`[EVO] Soft reconnect: instance creation failed for ${this.sessionId}:`, JSON.stringify(createResult));
+        return false;
+      }
+
+      await setWebhook(this.sessionId);
+      trackInstance(this.sessionId);
+
+      // Try to connect the instance — this triggers Baileys to reconnect
+      // using saved auth credentials if they exist.
+      const connectState = await connectInstance(this.sessionId);
+      console.log(`[EVO] Soft reconnect: connectInstance result for ${this.sessionId}: ${connectState}`);
+
+      if (connectState === 'open') {
+        console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — auto-connected without re-pairing!`);
+        this.isReady = true;
+        this.isReconnecting = false;
+        this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
+        await updateSessionStatus(this.sessionId, 'active');
+        this.startPresenceLoop();
+        return true;
+      }
+
+      // Give it a few seconds for the connection to establish
+      if (connectState === 'connecting') {
+        console.log(`[EVO] Soft reconnect: instance ${this.sessionId} is connecting — waiting up to 30s for connection...`);
+        for (let i = 0; i < 6; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const state = await getInstanceStatus(this.sessionId);
+          console.log(`[EVO] Soft reconnect poll ${i + 1}/6: state=${state} for ${this.sessionId}`);
+          if (state === 'open') {
+            console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — connected after ${(i + 1) * 5}s!`);
+            this.isReady = true;
+            this.isReconnecting = false;
+            this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
+            await updateSessionStatus(this.sessionId, 'active');
+            this.startPresenceLoop();
+            return true;
+          }
+          if (state === 'unknown') break; // Instance gone — no point waiting
+        }
+      }
+
+      // Soft reconnect didn't work — clean up the instance so fresh pairing
+      // can start with a clean slate.
+      console.log(`[EVO] Soft reconnect FAILED for ${this.sessionId} — auth data likely not persisted in Evolution API`);
+      await deleteInstance(this.sessionId);
+      return false;
+    } catch (err) {
+      console.error(`[EVO] Soft reconnect error for ${this.sessionId}:`, err);
+      try { await deleteInstance(this.sessionId); } catch { /* non-critical */ }
+      return false;
+    }
   }
 
   async start(): Promise<void> {
@@ -741,7 +818,21 @@ class EvolutionBot {
           this.startPollLoop();
           return;
         }
-        console.log(`[EVO] Reconnect failed for ${this.sessionId} — falling through to fresh instance creation`);
+        console.log(`[EVO] Reconnect failed for ${this.sessionId} — trying soft reconnect before fresh pairing`);
+
+        // For previously-active sessions, try soft reconnect: create instance
+        // and let Evolution API use saved auth data to reconnect without a
+        // new pairing code. This avoids forcing users to re-pair after every
+        // redeploy when Evolution API has DATABASE_SAVE_DATA_INSTANCE=true.
+        if (this.previousDbState === 'active' || this.previousDbState === 'inactive') {
+          const softReconnected = await this.trySoftReconnect();
+          if (softReconnected) {
+            console.log(`[EVO] Soft reconnect succeeded for ${this.sessionId} — no re-pairing needed!`);
+            this.startPollLoop();
+            return;
+          }
+          console.log(`[EVO] Soft reconnect also failed for ${this.sessionId} — falling through to fresh pairing`);
+        }
       }
 
       // Clean up any stale instance before creating a new one
