@@ -353,7 +353,13 @@ export class BotWaveBot {
         }
 
         this.isReady = false;
-        this.isPairingSent = false;
+        // Preserve isPairingSent during pairing handshake reconnects (e.g. 515).
+        // Only clear it on terminal events (401, 428, logout) or connection open.
+        // Clearing it here caused the QR timeout to misfire during normal
+        // pairing handshake cycles, leaving sessions stuck in pairing_sent.
+        if (statusCode !== 515 && !this.socket?.authState?.creds?.registered) {
+          this.isPairingSent = false;
+        }
 
         // 401 = credentials rejected by WhatsApp (stale/invalid auth state).
         // Following Evolution API's pattern: clear stale creds and retry with
@@ -871,13 +877,42 @@ class EvolutionBot {
               }
             }
           } else if (this.isPairingSent && Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
-            console.log(`[EVO] Pairing timed out for ${this.sessionId}`);
-            await updateSessionStatus(this.sessionId, 'needs_reauth');
-            this.isPairingSent = false;
-            if (this.pollHandle) {
-              clearInterval(this.pollHandle);
-              this.pollHandle = null;
+            // Pairing timed out — auto-retry with a fresh code instead of
+            // going straight to needs_reauth. This gives users another chance
+            // without requiring manual reconnection from the dashboard.
+            console.log(`[EVO] Pairing timed out for ${this.sessionId} — auto-retrying with fresh code`);
+            isRecreating = true;
+            try {
+              await deleteInstance(this.sessionId);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              await createInstance(this.sessionId, this.phoneNumber);
+              await setWebhook(this.sessionId);
+              const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+              if (freshCode) {
+                await updateSessionPairingCode(this.sessionId, freshCode);
+                await updateSessionStatus(this.sessionId, 'pairing_sent');
+                this.pairingStartedAt = Date.now();
+                pairingWaitStart = Date.now();
+                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshCode}`);
+              } else {
+                console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} — setting needs_reauth`);
+                await updateSessionStatus(this.sessionId, 'needs_reauth');
+                this.isPairingSent = false;
+                if (this.pollHandle) {
+                  clearInterval(this.pollHandle);
+                  this.pollHandle = null;
+                }
+              }
+            } catch (retryErr) {
+              console.error(`[EVO] Auto-retry error for ${this.sessionId}:`, retryErr);
+              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              this.isPairingSent = false;
+              if (this.pollHandle) {
+                clearInterval(this.pollHandle);
+                this.pollHandle = null;
+              }
             }
+            isRecreating = false;
           } else if (this.isReconnecting && !this.isPairingSent) {
             // Reconnect attempt ended with close/refused — the session is
             // genuinely disconnected. Update DB immediately to avoid stale

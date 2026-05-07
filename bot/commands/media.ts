@@ -61,6 +61,156 @@ function isPlaylistUrl(url: string): boolean {
   return /[?&]list=|youtube\.com\/playlist/i.test(url);
 }
 
+function isTwitterUrl(url: string): boolean {
+  return /(?:twitter\.com|x\.com)\/\w+\/status\/\d+/i.test(url);
+}
+
+function isInstagramUrl(url: string): boolean {
+  return /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv|reels)\/[\w-]+/i.test(url);
+}
+
+function extractTwitterStatusId(url: string): string | null {
+  const match = url.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i);
+  return match ? match[2] : null;
+}
+
+function extractInstagramShortcode(url: string): string | null {
+  const match = url.match(/(?:instagram\.com|instagr\.am)\/(?:p|reel|tv|reels)\/([\w-]+)/i);
+  return match ? match[1] : null;
+}
+
+async function downloadTwitterMedia(url: string): Promise<{ buffer: Buffer; type: 'video' | 'image' } | null> {
+  const statusId = extractTwitterStatusId(url);
+  if (!statusId) return null;
+
+  try {
+    const apiUrl = `https://api.fxtwitter.com/i/status/${statusId}`;
+    const resp = await axios.get(apiUrl, {
+      timeout: 15000,
+      headers: { 'User-Agent': 'BotWave/1.0' },
+    });
+
+    const tweet = resp.data?.tweet;
+    if (!tweet) return null;
+
+    // Check for video first
+    const videos = tweet.media?.videos;
+    if (videos && videos.length > 0) {
+      const videoUrl = videos[0].url;
+      if (videoUrl) {
+        const mediaResp = await axios.get(videoUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+        });
+        return { buffer: Buffer.from(mediaResp.data), type: 'video' };
+      }
+    }
+
+    // Fall back to images
+    const photos = tweet.media?.photos;
+    if (photos && photos.length > 0) {
+      const imageUrl = photos[0].url;
+      if (imageUrl) {
+        const mediaResp = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+        });
+        return { buffer: Buffer.from(mediaResp.data), type: 'image' };
+      }
+    }
+
+    // Check for external media (e.g. gif as video)
+    const allMedia = tweet.media?.all;
+    if (allMedia) {
+      for (const m of Object.values(allMedia) as any[]) {
+        if (m?.type === 'video' || m?.type === 'gif') {
+          const vUrl = m.url || m.thumbnail_url;
+          if (vUrl) {
+            const mediaResp = await axios.get(vUrl, {
+              responseType: 'arraybuffer',
+              timeout: 30000,
+              maxContentLength: 50 * 1024 * 1024,
+            });
+            return { buffer: Buffer.from(mediaResp.data), type: 'video' };
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('[DOWNLOAD-TWITTER] fxtwitter API failed:', err?.message || err);
+  }
+
+  return null;
+}
+
+async function downloadInstagramMedia(url: string): Promise<{ buffer: Buffer; type: 'video' | 'image' } | null> {
+  const shortcode = extractInstagramShortcode(url);
+  if (!shortcode) return null;
+
+  // Method 1: Instagram GraphQL endpoint (works for public posts without auth)
+  try {
+    const graphqlUrl = `https://www.instagram.com/p/${shortcode}/?__a=1&__d=dis`;
+    const resp = await axios.get(graphqlUrl, {
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'X-IG-App-ID': '936619743392459',
+      },
+    });
+
+    const item = resp.data?.graphql?.shortcode_media || resp.data?.items?.[0];
+    if (item) {
+      // Video
+      const videoUrl = item.video_url;
+      if (videoUrl) {
+        const mediaResp = await axios.get(videoUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+        });
+        return { buffer: Buffer.from(mediaResp.data), type: 'video' };
+      }
+      // Image
+      const imageUrl = item.display_url || item.thumbnail_src;
+      if (imageUrl) {
+        const mediaResp = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+        });
+        return { buffer: Buffer.from(mediaResp.data), type: 'image' };
+      }
+    }
+  } catch (err: any) {
+    console.error('[DOWNLOAD-IG] GraphQL method failed:', err?.message || err);
+  }
+
+  // Method 2: Instagram oEmbed API (gets thumbnail for reels/videos)
+  try {
+    const oembedUrl = `https://api.instagram.com/oembed/?url=${encodeURIComponent(url)}`;
+    const resp = await axios.get(oembedUrl, {
+      timeout: 10000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BotWave/1.0)' },
+    });
+    const thumbUrl = resp.data?.thumbnail_url;
+    if (thumbUrl) {
+      const mediaResp = await axios.get(thumbUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      return { buffer: Buffer.from(mediaResp.data), type: 'image' };
+    }
+  } catch (err: any) {
+    console.error('[DOWNLOAD-IG] oEmbed fallback failed:', err?.message || err);
+  }
+
+  return null;
+}
+
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
   return jid.replace(/:\d+@/, '@').trim();
@@ -159,6 +309,33 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
 
   try {
     await sendReply(context.chatJid, 'Fetching media... this may take a moment.', sock, context.rawMessage.key, context.queue);
+
+    // Platform-specific fast paths (faster and more reliable than yt-dlp for these)
+    if (isTwitterUrl(url)) {
+      const result = await downloadTwitterMedia(url);
+      if (result) {
+        if (result.type === 'video') {
+          await sendReply(context.chatJid, { video: result.buffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        } else {
+          await sendReply(context.chatJid, { image: result.buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        }
+        return;
+      }
+      console.log('[DOWNLOAD] Twitter fast path failed, falling through to yt-dlp');
+    }
+
+    if (isInstagramUrl(url)) {
+      const result = await downloadInstagramMedia(url);
+      if (result) {
+        if (result.type === 'video') {
+          await sendReply(context.chatJid, { video: result.buffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        } else {
+          await sendReply(context.chatJid, { image: result.buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        }
+        return;
+      }
+      console.log('[DOWNLOAD] Instagram fast path failed, falling through to yt-dlp');
+    }
 
     // Try yt-dlp binary first (supports 1000+ sites)
     let downloaded = false;
@@ -1006,7 +1183,7 @@ async function handleCompress(context: MessageContext, sock: any): Promise<void>
 // ─── Register Media Commands ────────────────────────────────────────────────
 
 registerCommand({ name: 'sticker', aliases: ['sticker', 's', 'stick'], category: 'media', description: 'Create sticker from image', execute: (ctx, _a, sock, vars) => createSticker(ctx, sock, vars) });
-registerCommand({ name: 'download', aliases: ['download', 'yt', 'tiktok'], category: 'media', description: 'Download media', execute: (ctx, args, sock) => handleDownload(ctx, args, sock) });
+registerCommand({ name: 'download', aliases: ['download', 'yt', 'tiktok', 'twitter', 'ig', 'insta'], category: 'media', description: 'Download media', execute: (ctx, args, sock) => handleDownload(ctx, args, sock) });
 registerCommand({ name: 'save', aliases: ['save', 'sv'], category: 'media', description: 'Save media', execute: (ctx, _a, sock) => handleSave(ctx, sock) });
 registerCommand({ name: 'savestatus', aliases: ['savestatus', 'savest'], category: 'media', description: 'Save WhatsApp status', execute: (ctx, args, sock) => handleSaveStatus(ctx, args, sock) });
 registerCommand({ name: 'tts', aliases: ['tts', 'speak', 'say'], category: 'media', description: 'Text to speech', execute: (ctx, args, sock) => handleTTS(ctx, args, sock) });
