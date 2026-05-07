@@ -116,7 +116,8 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       updated_at: new Date().toISOString()
     })
     .eq('id', sessionId)
-    .neq('state', 'pairing_sent');  // never overwrite pairing_sent
+    .neq('state', 'pairing_sent')  // never overwrite pairing_sent
+    .neq('state', 'active');       // never overwrite an active session
 
   if (error) {
     if (error.code !== 'PGRST205') {
@@ -136,7 +137,8 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
       state: 'qr_pending',
       updated_at: new Date().toISOString()
     })
-    .eq('id', sessionId);
+    .eq('id', sessionId)
+    .neq('state', 'active');  // never overwrite an active session
 
   if (error) {
     console.error(`[DB] ERROR saving pairing code for ${sessionId}:`, error);
@@ -146,6 +148,13 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
+  // Defense-in-depth: never regress an active session to pairing_sent or
+  // qr_pending. Stale webhooks or race conditions can attempt this; the
+  // Supabase filter ensures the update is silently skipped in those cases.
+  const PROTECTED_STATES = ['active'];
+  const REGRESSIVE_STATUSES = ['pairing_sent', 'qr_pending'];
+  const isRegression = REGRESSIVE_STATUSES.includes(status);
+
   const updatePayload: Record<string, any> = {
     state: status,
     updated_at: new Date().toISOString()
@@ -171,15 +180,27 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     clearedFields.push('qr_code', 'pairing_code', 'auth_state');
   }
 
-  const { error } = await supabase
+  let query = supabase
     .from('bot_sessions')
     .update(updatePayload)
     .eq('id', sessionId);
+
+  // When setting a regressive state, add a filter so the update only applies
+  // if the session is NOT already in a protected (higher) state.
+  if (isRegression) {
+    for (const ps of PROTECTED_STATES) {
+      query = query.neq('state', ps);
+    }
+  }
+
+  const { error, count } = await query;
 
   if (error) {
     if (error.code !== 'PGRST205') {
       console.error(`[DB] Error updating status for ${sessionId} to ${status}:`, error);
     }
+  } else if (isRegression && count === 0) {
+    console.warn(`[DB] Blocked state regression for ${sessionId}: attempted ${status} but session is in a protected state`);
   } else {
     const extra = clearedFields.length ? ` (cleared: ${clearedFields.join(', ')})` : '';
     console.log(`[DB] Status updated for ${sessionId}: ${status}${extra}`);
