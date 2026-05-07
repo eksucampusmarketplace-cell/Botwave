@@ -77,7 +77,9 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
   // Only fetch actionable states. needs_reauth sessions require user
   // interaction (re-pair from the dashboard) — workers can't do anything
   // with them and including them just pollutes sync logs.
-  const actionableStates = ['qr_pending', 'pairing_sent', 'active'];
+  // inactive = temporary disconnect (auth preserved) — sync loop should
+  // create a bot that tries tryReconnectExisting() before fresh pairing.
+  const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'inactive'];
 
   let query = supabase
     .from('bot_sessions')

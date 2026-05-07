@@ -734,7 +734,7 @@ class EvolutionBot {
       // This preserves the WhatsApp linked device across redeploys.
       // For pairing_sent: the pairing may have completed on Evolution API's side
       // even though Botwave restarted before seeing the connection.update webhook.
-      if (this.previousDbState === 'active' || this.previousDbState === 'pairing_sent') {
+      if (this.previousDbState === 'active' || this.previousDbState === 'inactive' || this.previousDbState === 'pairing_sent') {
         const reconnected = await this.tryReconnectExisting();
         if (reconnected) {
           console.log(`[EVO] Successfully reconnected session ${this.sessionId} — skipping fresh pairing`);
@@ -857,12 +857,32 @@ class EvolutionBot {
         } else if (state === 'close' || state === 'refused') {
           unknownStateCount = 0;
           if (this.isReady) {
-            // Was connected, now disconnected
+            // Was connected, now disconnected — try to auto-reconnect before
+            // giving up. This handles temporary disconnects (network blip,
+            // Evolution API restart) without forcing users to re-pair.
             this.isReady = false;
             this.isPairingSent = false;
-            await updateSessionStatus(this.sessionId, 'needs_reauth');
             this.stopPresenceLoop();
-            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth`);
+            console.log(`[EVO] Session ${this.sessionId} closed/refused — attempting auto-reconnect before needs_reauth`);
+
+            // Stop polling while we attempt reconnection
+            if (this.pollHandle) {
+              clearInterval(this.pollHandle);
+              this.pollHandle = null;
+            }
+
+            this.isReconnecting = true;
+            const reconnected = await this.tryReconnectExisting();
+            if (reconnected) {
+              console.log(`[EVO] Session ${this.sessionId} auto-reconnected after temporary disconnect`);
+              this.startPollLoop(); // Resume monitoring
+              return; // Exit this (now-dead) interval callback
+            }
+
+            // Reconnection failed — now set needs_reauth
+            this.isReconnecting = false;
+            await updateSessionStatus(this.sessionId, 'needs_reauth');
+            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth (reconnect failed)`);
 
             const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
             if (appUrl) {
@@ -876,6 +896,7 @@ class EvolutionBot {
                 console.error('[EVO] Failed to send session-down notification:', err);
               }
             }
+            return; // Poll handle already cleared
           } else if (this.isPairingSent && Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
             // Pairing timed out — auto-retry with a fresh code instead of
             // going straight to needs_reauth. This gives users another chance
@@ -1136,7 +1157,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
 
-    if (session.state === 'active' && bot) {
+    if ((session.state === 'active' || session.state === 'inactive') && bot) {
       continue;
     }
 
