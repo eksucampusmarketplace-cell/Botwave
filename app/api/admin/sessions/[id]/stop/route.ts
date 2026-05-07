@@ -27,21 +27,54 @@ export async function POST(
 
     const supabase = await createAdminClient();
 
-    // Fetch session info for audit log before stopping
+    // Fetch session info for audit log and worker notification
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('phone_number, session_name, state')
+      .select('phone_number, session_name, state, worker_url')
       .eq('id', id)
       .single();
 
+    // Full cleanup: set inactive AND clear locks, auth state, pairing data.
+    // Without clearing locks, the bot process on the worker keeps running
+    // and can revert the state back to active/pairing_sent.
     const { error } = await supabase
       .from('bot_sessions')
-      .update({ state: 'inactive' })
+      .update({
+        state: 'inactive',
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        auth_state: null,
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id);
 
     if (error) {
       console.error('Error stopping session:', error);
       return NextResponse.json({ error: 'Failed to stop session' }, { status: 500 });
+    }
+
+    // Notify the worker (or self) to stop the bot process in memory.
+    // The sync loop will also detect the inactive state, but this is faster.
+    const workerUrl = session?.worker_url || process.env.SELF_URL || process.env.NEXT_PUBLIC_APP_URL;
+    const internalSecret = process.env.INTERNAL_SECRET;
+    if (workerUrl && internalSecret) {
+      try {
+        await fetch(`${workerUrl}/api/internal/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': internalSecret,
+          },
+          body: JSON.stringify({ action: 'disconnect', sessionId: id }),
+        });
+      } catch {
+        // Non-critical — sync loop will handle cleanup
+      }
     }
 
     // Also clean up Evolution API instance
