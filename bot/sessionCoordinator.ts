@@ -16,7 +16,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { SELF_URL, IS_WORKER, isWorkerHealthy } from './workerConfig';
+import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync } from './workerConfig';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -237,27 +237,46 @@ export async function recoverOrphanedSessions(): Promise<number> {
       }
     }
 
-    // Reset the session
-    console.log(`[COORD] Recovering orphaned session ${session.id.slice(0, 8)} (was ${session.state}, locked_by=${session.locked_by ?? 'none'})`);
+    // Smart redistribution: if the session is on main (no worker_url) and
+    // healthy workers exist, reassign it to a worker instead of resetting
+    // it on the same congested main service.
+    let newWorkerUrl: string | null = null;
+    if (!session.worker_url) {
+      try {
+        newWorkerUrl = await assignWorkerAsync();
+        if (newWorkerUrl) {
+          console.log(`[COORD] Orphan ${session.id.slice(0, 8)} on main — reassigning to healthy worker ${newWorkerUrl}`);
+        }
+      } catch {
+        // Fall back to resetting on main
+      }
+    }
+
+    console.log(`[COORD] Recovering orphaned session ${session.id.slice(0, 8)} (was ${session.state}, locked_by=${session.locked_by ?? 'none'}${newWorkerUrl ? `, reassigning to ${newWorkerUrl}` : ''})`);
+    const updateFields: Record<string, unknown> = {
+      state: 'qr_pending',
+      locked_by: null,
+      locked_at: null,
+      heartbeat_at: null,
+      auth_state: null,
+      pairing_code: null,
+      qr_code: null,
+      qr_expires_at: null,
+      qr_generated_at: null,
+      updated_at: new Date().toISOString(),
+    };
+    if (newWorkerUrl) {
+      updateFields.worker_url = newWorkerUrl;
+    }
+
     const { error: updateErr } = await supabase
       .from('bot_sessions')
-      .update({
-        state: 'qr_pending',
-        locked_by: null,
-        locked_at: null,
-        heartbeat_at: null,
-        auth_state: null,
-        pairing_code: null,
-        qr_code: null,
-        qr_expires_at: null,
-        qr_generated_at: null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateFields)
       .eq('id', session.id);
 
     if (!updateErr) {
       recovered++;
-      console.log(`[COORD] Session ${session.id.slice(0, 8)} recovered — reset to qr_pending with clean state`);
+      console.log(`[COORD] Session ${session.id.slice(0, 8)} recovered — reset to qr_pending${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ' with clean state'}`);
     } else {
       console.error(`[COORD] Failed to recover session ${session.id.slice(0, 8)}:`, updateErr);
     }
