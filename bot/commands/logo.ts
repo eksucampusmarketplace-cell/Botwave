@@ -1,6 +1,7 @@
 import { registerCommand, type MessageContext } from './registry';
 import { sendReply } from './helpers';
 import sharp from 'sharp';
+import { getUserSubscription } from '../database';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BOTWAVE LOGO GENERATOR — !logo command
@@ -90,8 +91,14 @@ function defsNoise(id: string): string {
 interface LogoStyle {
   name: string;
   description: string;
-  generate: (text: string, w: number, h: number) => string;
+  generate: (text: string, w: number, h: number, tagline?: string, customColor?: string | null) => string;
 }
+
+// Free-tier styles (10). Remaining 22+ require premium subscription.
+const FREE_STYLES = new Set([
+  'gradient', 'minimalist', 'neon', 'retro', 'watercolor',
+  'pixel', 'gaming', 'fire', 'ocean', 'nature',
+]);
 
 const STYLES: LogoStyle[] = [
 
@@ -99,10 +106,10 @@ const STYLES: LogoStyle[] = [
   {
     name: 'techy',
     description: 'Circuit board with glowing lines',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const lines: string[] = [];
       const colors = ['#00ff41', '#00d4ff', '#ff00ff', '#ffff00'];
-      const mainColor = randomFromArray(colors);
+      const mainColor = customColor || randomFromArray(colors);
       // Circuit traces
       for (let i = 0; i < 40; i++) {
         const x1 = randomBetween(0, w);
@@ -138,9 +145,9 @@ const STYLES: LogoStyle[] = [
   {
     name: 'neon',
     description: 'Vibrant neon sign on dark wall',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const neonColors = ['#ff006e', '#00f5d4', '#fee440', '#9b5de5', '#f15bb5', '#00bbf9'];
-      const color = randomFromArray(neonColors);
+      const color = customColor || randomFromArray(neonColors);
       const { r, g, b } = hexToRgb(color);
       const bricks: string[] = [];
       // Brick wall
@@ -171,7 +178,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'galaxy',
     description: 'Deep space galaxy with stars',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const stars: string[] = [];
       for (let i = 0; i < 200; i++) {
         const sx = randomBetween(0, w);
@@ -203,7 +210,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'minimalist',
     description: 'Clean, simple, elegant design',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const palettes = [
         { bg: '#ffffff', fg: '#1a1a1a', accent: '#e63946' },
         { bg: '#f8f9fa', fg: '#212529', accent: '#0077b6' },
@@ -226,7 +233,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'retro',
     description: 'Retro 80s synthwave sunset',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const sunGrad: string[] = [];
       const sunColors = ['#ff6b6b', '#ff8e53', '#ffd93d', '#ff6b9d'];
       for (let i = 0; i < sunColors.length; i++) {
@@ -264,7 +271,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'gradient',
     description: 'Beautiful color gradients',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const gradients = [
         ['#667eea', '#764ba2'], ['#f093fb', '#f5576c'], ['#4facfe', '#00f2fe'],
         ['#43e97b', '#38f9d7'], ['#fa709a', '#fee140'], ['#a18cd1', '#fbc2eb'],
@@ -290,7 +297,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'watercolor',
     description: 'Soft watercolor paint splash',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const blobs: string[] = [];
       const waterColors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff'];
       for (let i = 0; i < 12; i++) {
@@ -316,7 +323,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'vintage',
     description: 'Aged paper with ornate border',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const corners: string[] = [];
       const m = 30;
       // Ornate double border
@@ -348,7 +355,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'graffiti',
     description: 'Street art graffiti style',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const sprayCans: string[] = [];
       const graffitiColors = ['#ff0000', '#ff6600', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff69b4'];
       // Paint drips and splatters
@@ -365,7 +372,7 @@ const STYLES: LogoStyle[] = [
         const dh = randomBetween(30, 100);
         sprayCans.push(`<line x1="${dx}" y1="${dy}" x2="${dx + randomBetween(-5, 5)}" y2="${dy + dh}" stroke="${randomFromArray(graffitiColors)}" stroke-width="${randomBetween(2, 5)}" stroke-linecap="round" opacity="0.4"/>`);
       }
-      const mainColor = randomFromArray(graffitiColors);
+      const mainColor = customColor || randomFromArray(graffitiColors);
       return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           ${defsShadow('grafShadow', 4, 4, 2, '#000')}
@@ -384,7 +391,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'elegant',
     description: 'Gold foil on dark background',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const ornaments: string[] = [];
       // Diamond shapes
       for (let i = 0; i < 6; i++) {
@@ -412,9 +419,9 @@ const STYLES: LogoStyle[] = [
   {
     name: 'gaming',
     description: 'Esports / gaming team logo',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const colors = ['#ff4655', '#00d4aa', '#ff6b00', '#7b61ff', '#00b4d8'];
-      const accent = randomFromArray(colors);
+      const accent = customColor || randomFromArray(colors);
       // Shield shape
       const shieldW = w * 0.5;
       const shieldH = h * 0.7;
@@ -444,7 +451,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'sports',
     description: 'Athletic sports team badge',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const combos = [
         { primary: '#1d428a', secondary: '#c8102e', bg: '#ffffff' },
         { primary: '#006847', secondary: '#ffd700', bg: '#ffffff' },
@@ -470,7 +477,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'geometric',
     description: 'Modern geometric patterns',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const shapes: string[] = [];
       const geoColors = ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'];
       // Triangles and polygons
@@ -499,7 +506,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'cyberpunk',
     description: 'Cyberpunk 2077-style glitch',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const glitches: string[] = [];
       // Glitch bars
       for (let i = 0; i < 15; i++) {
@@ -528,7 +535,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'vaporwave',
     description: 'Aesthetic vaporwave vibes',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const columns: string[] = [];
       for (let i = 0; i < 5; i++) {
         const cx = randomBetween(w * 0.1, w * 0.9);
@@ -552,7 +559,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'ocean',
     description: 'Deep ocean underwater theme',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const bubbles: string[] = [];
       for (let i = 0; i < 30; i++) {
         const bx = randomBetween(10, w - 10);
@@ -583,7 +590,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'fire',
     description: 'Blazing fire and flames',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const flames: string[] = [];
       const fireColors = ['#ff0000', '#ff4500', '#ff6600', '#ff8c00', '#ffd700', '#ffff00'];
       for (let i = 0; i < 25; i++) {
@@ -611,7 +618,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'marble',
     description: 'Luxurious marble texture',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const veins: string[] = [];
       for (let i = 0; i < 8; i++) {
         const points = Array.from({ length: 5 }, () => `${randomBetween(0, w)},${randomBetween(0, h)}`).join(' ');
@@ -634,7 +641,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'tribal',
     description: 'Bold tribal patterns',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const patterns: string[] = [];
       // Zigzag borders
       for (let row = 0; row < 2; row++) {
@@ -661,7 +668,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'african',
     description: 'Bold African kente-inspired patterns',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const kenteColors = ['#c0392b', '#f39c12', '#27ae60', '#2c3e50', '#8e44ad'];
       const strips: string[] = [];
       const stripW = 30;
@@ -689,7 +696,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'luxury',
     description: 'Black and gold luxury brand',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="luxGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#BF953F"/><stop offset="25%" stop-color="#FCF6BA"/><stop offset="50%" stop-color="#B38728"/><stop offset="75%" stop-color="#FBF5B7"/><stop offset="100%" stop-color="#AA771C"/></linearGradient>
@@ -710,7 +717,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'music',
     description: 'Music notes and sound waves',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const waves: string[] = [];
       // Sound wave bars
       const barCount = 40;
@@ -740,7 +747,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'anime',
     description: 'Anime/manga style with speed lines',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const lines: string[] = [];
       // Speed/action lines from center
       for (let i = 0; i < 60; i++) {
@@ -768,7 +775,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'matrix',
     description: 'The Matrix green rain',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const chars: string[] = [];
       const matrixChars = 'ｱｲｳｴｵｶｷｸｹｺ01234567890ABCDEF';
       for (let col = 0; col < w; col += 18) {
@@ -797,7 +804,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'holographic',
     description: 'Iridescent holographic foil',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const bands: string[] = [];
       const holoColors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#9b59b6', '#ff6b9d'];
       for (let i = 0; i < 30; i++) {
@@ -825,7 +832,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'aurora',
     description: 'Northern lights aurora borealis',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const auroraWaves: string[] = [];
       const auroraColors = ['#00ff87', '#60efff', '#0061ff', '#ff00e5'];
       for (let i = 0; i < 8; i++) {
@@ -859,7 +866,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'floral',
     description: 'Soft flowers and botanical elements',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const flowers: string[] = [];
       const petalColors = ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e8baff'];
       for (let i = 0; i < 15; i++) {
@@ -893,7 +900,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'cosmic',
     description: 'Cosmic nebula with swirling colors',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const nebulae: string[] = [];
       const cosmicColors = ['#6366f1', '#a855f7', '#ec4899', '#f43f5e', '#8b5cf6'];
       for (let i = 0; i < 10; i++) {
@@ -922,7 +929,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'pixel',
     description: '8-bit pixel art retro gaming',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const pixels: string[] = [];
       const pixSize = 12;
       const pixelColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
@@ -953,7 +960,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'nature',
     description: 'Green forest and leaves',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const trees: string[] = [];
       const greens = ['#1b5e20', '#2e7d32', '#388e3c', '#43a047', '#4caf50', '#66bb6a', '#81c784'];
       // Tree canopies
@@ -987,7 +994,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'abstract',
     description: 'Modern abstract art composition',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const elements: string[] = [];
       const abstractColors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#9b59b6', '#ff8a5c', '#ea8685'];
       // Random shapes
@@ -1018,7 +1025,7 @@ const STYLES: LogoStyle[] = [
   {
     name: 'dark',
     description: 'Dark moody atmospheric',
-    generate: (text, w, h) => {
+    generate: (text, w, h, tagline?, customColor?) => {
       const fog: string[] = [];
       for (let i = 0; i < 6; i++) {
         fog.push(`<ellipse cx="${randomBetween(0, w)}" cy="${randomBetween(h * 0.3, h)}" rx="${randomBetween(100, 300)}" ry="${randomBetween(30, 80)}" fill="rgba(50,50,70,${randomFloat(0.1, 0.25)})"/>`);
@@ -1035,6 +1042,370 @@ const STYLES: LogoStyle[] = [
       </svg>`;
     },
   },
+
+  // ═══ 33. STEAMPUNK ═══
+  {
+    name: 'steampunk',
+    description: 'Victorian steampunk gears and brass',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const elements: string[] = [];
+      const brassColor = customColor || '#c8a23c';
+      for (let i = 0; i < 12; i++) {
+        const cx = randomBetween(20, w - 20);
+        const cy = randomBetween(20, h - 20);
+        const r = randomBetween(20, 70);
+        const teeth = randomBetween(8, 16);
+        let gearPath = '';
+        for (let t = 0; t < teeth; t++) {
+          const angle = (t / teeth) * Math.PI * 2;
+          const inner = r * 0.7;
+          const outer = r;
+          gearPath += `${t === 0 ? 'M' : 'L'}${cx + Math.cos(angle) * outer},${cy + Math.sin(angle) * outer} `;
+          gearPath += `L${cx + Math.cos(angle + 0.15) * inner},${cy + Math.sin(angle + 0.15) * inner} `;
+        }
+        gearPath += 'Z';
+        elements.push(`<path d="${gearPath}" fill="none" stroke="${brassColor}" stroke-width="1.5" opacity="${randomFloat(0.15, 0.4)}"/>`);
+        elements.push(`<circle cx="${cx}" cy="${cy}" r="${r * 0.2}" fill="none" stroke="${brassColor}" stroke-width="1" opacity="${randomFloat(0.2, 0.5)}"/>`);
+      }
+      for (let i = 0; i < 6; i++) {
+        const x1 = randomBetween(0, w); const y1 = randomBetween(0, h);
+        elements.push(`<line x1="${x1}" y1="${y1}" x2="${x1 + randomBetween(-80, 80)}" y2="${y1 + randomBetween(-80, 80)}" stroke="${brassColor}" stroke-width="1" opacity="0.15"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsGlow('steamGlow', brassColor, 4)}${defsShadow('steamShadow', 2, 2, 4, 'rgba(0,0,0,0.6)')}</defs>
+        <rect width="${w}" height="${h}" fill="#1a1209"/>
+        <rect width="${w}" height="${h}" fill="rgba(60,40,10,0.15)"/>
+        ${elements.join('')}
+        <rect x="${w * 0.08}" y="${h * 0.3}" width="${w * 0.84}" height="${h * 0.4}" rx="8" fill="rgba(10,8,4,0.7)" stroke="${brassColor}" stroke-width="2" opacity="0.8"/>
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.6), h * 0.18), brassColor, { filter: 'steamGlow', fontFamily: 'Georgia, serif', letterSpacing: 5 })}
+        <text x="${w / 2}" y="${h * 0.78}" font-family="Georgia, serif" font-size="13" fill="${brassColor}" text-anchor="middle" opacity="0.5" letter-spacing="4">⚙ STEAM POWERED ⚙</text>
+      </svg>`;
+    },
+  },
+
+  // ═══ 34. JAPANESE / ZEN ═══
+  {
+    name: 'zen',
+    description: 'Japanese zen minimalist ink wash',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const inkColor = customColor || '#2c2c2c';
+      const strokes: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        const x = randomBetween(w * 0.1, w * 0.9);
+        const y = randomBetween(h * 0.6, h * 0.95);
+        strokes.push(`<ellipse cx="${x}" cy="${y}" rx="${randomBetween(30, 100)}" ry="${randomBetween(5, 20)}" fill="${inkColor}" opacity="${randomFloat(0.03, 0.08)}" transform="rotate(${randomBetween(-10, 10)} ${x} ${y})"/>`);
+      }
+      const bambooX = w * 0.85;
+      for (let i = 0; i < 5; i++) {
+        const segY = h * 0.1 + i * (h * 0.18);
+        strokes.push(`<line x1="${bambooX}" y1="${segY}" x2="${bambooX}" y2="${segY + h * 0.16}" stroke="${inkColor}" stroke-width="3" opacity="0.15"/>`);
+        strokes.push(`<line x1="${bambooX}" y1="${segY + h * 0.16}" x2="${bambooX}" y2="${segY + h * 0.165}" stroke="${inkColor}" stroke-width="5" opacity="0.1"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsShadow('inkShadow', 1, 1, 2, 'rgba(0,0,0,0.15)')}</defs>
+        <rect width="${w}" height="${h}" fill="#f5f0e8"/>
+        ${strokes.join('')}
+        <circle cx="${w * 0.15}" cy="${h * 0.2}" r="${Math.min(w, h) * 0.1}" fill="none" stroke="#c0392b" stroke-width="2" opacity="0.2"/>
+        ${textSvg(text, w / 2, h * 0.45, Math.min(w / (text.length * 0.6), h * 0.18), inkColor, { filter: 'inkShadow', fontFamily: 'Georgia, serif', letterSpacing: 6, fontWeight: '300' })}
+        <line x1="${w * 0.35}" y1="${h * 0.58}" x2="${w * 0.65}" y2="${h * 0.58}" stroke="${inkColor}" stroke-width="0.5" opacity="0.3"/>
+      </svg>`;
+    },
+  },
+
+  // ═══ 35. ICE / FROST ═══
+  {
+    name: 'ice',
+    description: 'Frozen ice crystal theme',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const iceColor = customColor || '#a8d8ea';
+      const crystals: string[] = [];
+      for (let i = 0; i < 30; i++) {
+        const cx = randomBetween(0, w);
+        const cy = randomBetween(0, h);
+        const size = randomBetween(10, 50);
+        const arms = 6;
+        for (let a = 0; a < arms; a++) {
+          const angle = (a / arms) * Math.PI * 2;
+          const ex = cx + Math.cos(angle) * size;
+          const ey = cy + Math.sin(angle) * size;
+          crystals.push(`<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="${iceColor}" stroke-width="0.8" opacity="${randomFloat(0.1, 0.35)}"/>`);
+        }
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="iceBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4f8"/><stop offset="100%" stop-color="#b8d4e3"/></linearGradient>
+          ${defsGlow('iceGlow', iceColor, 6)}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#iceBg)"/>
+        ${crystals.join('')}
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), '#1a5276', { filter: 'iceGlow', fontFamily: 'Arial, sans-serif', letterSpacing: 5 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 36. LAVA ═══
+  {
+    name: 'lava',
+    description: 'Molten lava volcanic eruption',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const lavaColor = customColor || '#ff4500';
+      const flows: string[] = [];
+      for (let i = 0; i < 15; i++) {
+        const cx = randomBetween(w * 0.05, w * 0.95);
+        const cy = randomBetween(h * 0.2, h);
+        flows.push(`<ellipse cx="${cx}" cy="${cy}" rx="${randomBetween(30, 120)}" ry="${randomBetween(15, 60)}" fill="${randomFromArray(['#ff0000', '#ff4500', '#ff6600', '#ff8c00'])}" opacity="${randomFloat(0.1, 0.3)}" transform="rotate(${randomBetween(-20, 20)} ${cx} ${cy})"/>`);
+      }
+      for (let i = 0; i < 8; i++) {
+        const cx = randomBetween(0, w); const cy = randomBetween(0, h);
+        flows.push(`<circle cx="${cx}" cy="${cy}" r="${randomBetween(1, 4)}" fill="#ffff00" opacity="${randomFloat(0.3, 0.8)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lavaBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a0000"/><stop offset="50%" stop-color="#2d0000"/><stop offset="100%" stop-color="#4a0000"/></linearGradient>
+          ${defsGlow('lavaGlow', lavaColor, 8)}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#lavaBg)"/>
+        ${flows.join('')}
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), lavaColor, { filter: 'lavaGlow', fontFamily: 'Impact, sans-serif', letterSpacing: 4 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 37. DIAMOND ═══
+  {
+    name: 'diamond',
+    description: 'Sparkling diamond luxury facets',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const sparkleColor = customColor || '#e0e0e0';
+      const facets: string[] = [];
+      for (let i = 0; i < 20; i++) {
+        const cx = randomBetween(0, w); const cy = randomBetween(0, h);
+        const size = randomBetween(15, 60);
+        facets.push(`<polygon points="${cx},${cy - size} ${cx + size * 0.6},${cy} ${cx},${cy + size * 0.4} ${cx - size * 0.6},${cy}" fill="none" stroke="${sparkleColor}" stroke-width="0.8" opacity="${randomFloat(0.1, 0.3)}"/>`);
+      }
+      for (let i = 0; i < 15; i++) {
+        const sx = randomBetween(0, w); const sy = randomBetween(0, h);
+        facets.push(`<circle cx="${sx}" cy="${sy}" r="${randomFloat(0.5, 2)}" fill="#ffffff" opacity="${randomFloat(0.4, 1)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="diamBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a0a12"/><stop offset="100%" stop-color="#1a1a2e"/></linearGradient>
+          ${defsGlow('diamGlow', '#ffffff', 5)}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#diamBg)"/>
+        ${facets.join('')}
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.6), h * 0.18), sparkleColor, { filter: 'diamGlow', fontFamily: 'Georgia, serif', letterSpacing: 6 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 38. RAINBOW ═══
+  {
+    name: 'rainbow',
+    description: 'Vibrant rainbow color spectrum',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const rainbowColors = ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0000ff', '#8b00ff'];
+      const arcs: string[] = [];
+      for (let i = 0; i < rainbowColors.length; i++) {
+        const r = Math.min(w, h) * (0.5 + i * 0.05);
+        arcs.push(`<circle cx="${w / 2}" cy="${h * 0.8}" r="${r}" fill="none" stroke="${rainbowColors[i]}" stroke-width="${Math.min(w, h) * 0.03}" opacity="0.25"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsShadow('rbShadow', 2, 2, 5, 'rgba(0,0,0,0.3)')}</defs>
+        <rect width="${w}" height="${h}" fill="#fafafa"/>
+        ${arcs.join('')}
+        ${textSvg(text, w / 2, h * 0.45, Math.min(w / (text.length * 0.55), h * 0.2), customColor || '#333333', { filter: 'rbShadow', fontFamily: 'Arial, sans-serif', letterSpacing: 4 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 39. GOTHIC ═══
+  {
+    name: 'gothic',
+    description: 'Dark gothic cathedral style',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const gothColor = customColor || '#8b0000';
+      const elements: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        const ax = w * 0.15 + i * (w * 0.175);
+        const aw = w * 0.08;
+        elements.push(`<path d="M${ax} ${h * 0.8} L${ax} ${h * 0.2} Q${ax + aw / 2} ${h * 0.12} ${ax + aw} ${h * 0.2} L${ax + aw} ${h * 0.8}" fill="none" stroke="${gothColor}" stroke-width="1.5" opacity="0.2"/>`);
+      }
+      for (let i = 0; i < 8; i++) {
+        const cx = randomBetween(w * 0.1, w * 0.9); const cy = randomBetween(h * 0.1, h * 0.9);
+        elements.push(`<circle cx="${cx}" cy="${cy}" r="${randomBetween(2, 6)}" fill="${gothColor}" opacity="${randomFloat(0.05, 0.15)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsGlow('gothGlow', gothColor, 4)}</defs>
+        <rect width="${w}" height="${h}" fill="#0d0d0d"/>
+        <rect width="${w}" height="${h}" fill="rgba(40,0,0,0.1)"/>
+        ${elements.join('')}
+        <line x1="${w * 0.2}" y1="${h * 0.38}" x2="${w * 0.8}" y2="${h * 0.38}" stroke="${gothColor}" stroke-width="1" opacity="0.3"/>
+        <line x1="${w * 0.2}" y1="${h * 0.62}" x2="${w * 0.8}" y2="${h * 0.62}" stroke="${gothColor}" stroke-width="1" opacity="0.3"/>
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.6), h * 0.18), gothColor, { filter: 'gothGlow', fontFamily: 'Georgia, Times New Roman, serif', letterSpacing: 6 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 40. SAFARI ═══
+  {
+    name: 'safari',
+    description: 'African safari sunset landscape',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const sunsetColors = ['#ff6b35', '#f7c59f', '#efa00b', '#d63230'];
+      const elements: string[] = [];
+      elements.push(`<circle cx="${w * 0.7}" cy="${h * 0.45}" r="${Math.min(w, h) * 0.15}" fill="#ff6b35" opacity="0.7"/>`);
+      for (let i = 0; i < 6; i++) {
+        const tx = randomBetween(w * 0.05, w * 0.95);
+        const trunkH = randomBetween(40, 80);
+        const canopyR = randomBetween(20, 50);
+        elements.push(`<line x1="${tx}" y1="${h * 0.65}" x2="${tx}" y2="${h * 0.65 - trunkH}" stroke="#2d1810" stroke-width="3" opacity="0.6"/>`);
+        elements.push(`<ellipse cx="${tx}" cy="${h * 0.65 - trunkH}" rx="${canopyR}" ry="${canopyR * 0.4}" fill="#2d1810" opacity="0.5"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="safariBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff9a56"/><stop offset="40%" stop-color="#ff6b35"/><stop offset="70%" stop-color="#d63230"/><stop offset="100%" stop-color="#1a0a00"/></linearGradient>
+          ${defsShadow('safShadow', 2, 2, 4, 'rgba(0,0,0,0.4)')}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#safariBg)"/>
+        <rect x="0" y="${h * 0.65}" width="${w}" height="${h * 0.35}" fill="#1a0a00" opacity="0.9"/>
+        ${elements.join('')}
+        ${textSvg(text, w / 2, h * 0.4, Math.min(w / (text.length * 0.55), h * 0.18), customColor || '#ffffff', { filter: 'safShadow', fontFamily: 'Georgia, serif', letterSpacing: 5 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 41. NEON CITY ═══
+  {
+    name: 'neoncity',
+    description: 'Neon-lit cybercity skyline',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const neonPink = customColor || '#ff2d95';
+      const buildings: string[] = [];
+      for (let i = 0; i < 20; i++) {
+        const bx = (i / 20) * w;
+        const bw = w / 20 - 2;
+        const bh = randomBetween(h * 0.15, h * 0.5);
+        buildings.push(`<rect x="${bx}" y="${h * 0.6 - bh}" width="${bw}" height="${bh + h * 0.4}" fill="#0a0a1a" stroke="${randomFromArray([neonPink, '#00f0ff', '#ff00ff'])}" stroke-width="0.5" opacity="0.7"/>`);
+        for (let wy = 0; wy < bh; wy += 12) {
+          if (Math.random() > 0.5) {
+            buildings.push(`<rect x="${bx + 3}" y="${h * 0.6 - bh + wy}" width="4" height="4" fill="${randomFromArray(['#ffff00', '#00f0ff', neonPink])}" opacity="${randomFloat(0.2, 0.6)}"/>`);
+          }
+        }
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cityBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a001a"/><stop offset="100%" stop-color="#1a0033"/></linearGradient>
+          ${defsGlow('cityGlow', neonPink, 8)}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#cityBg)"/>
+        ${buildings.join('')}
+        <rect x="0" y="${h * 0.6}" width="${w}" height="2" fill="${neonPink}" opacity="0.3"/>
+        ${textSvg(text, w / 2, h * 0.3, Math.min(w / (text.length * 0.55), h * 0.2), neonPink, { filter: 'cityGlow', fontFamily: 'Impact, sans-serif', letterSpacing: 5 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 42. GLITCH ART ═══
+  {
+    name: 'glitch',
+    description: 'Digital glitch distortion art',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const glitchColor = customColor || '#00ff41';
+      const bands: string[] = [];
+      for (let i = 0; i < 25; i++) {
+        const gy = randomBetween(0, h);
+        const gw = randomBetween(w * 0.1, w);
+        const gx = randomBetween(-50, w - gw);
+        bands.push(`<rect x="${gx}" y="${gy}" width="${gw}" height="${randomBetween(1, 8)}" fill="${randomFromArray([glitchColor, '#ff0000', '#0000ff'])}" opacity="${randomFloat(0.05, 0.2)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsGlow('glitchGlow', glitchColor, 4)}</defs>
+        <rect width="${w}" height="${h}" fill="#0a0a0a"/>
+        ${bands.join('')}
+        ${textSvg(text, w / 2 - 4, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), '#ff0000', { fontFamily: 'Courier New, monospace', letterSpacing: 3, opacity: 0.5 })}
+        ${textSvg(text, w / 2 + 4, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), '#0000ff', { fontFamily: 'Courier New, monospace', letterSpacing: 3, opacity: 0.5 })}
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), glitchColor, { filter: 'glitchGlow', fontFamily: 'Courier New, monospace', letterSpacing: 3 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 43. PASTEL ═══
+  {
+    name: 'pastel',
+    description: 'Soft pastel dreamy aesthetic',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const pastels = ['#ffd1dc', '#c1e1c5', '#c4d7f2', '#fae3d9', '#d4a5ff', '#ffe0ac'];
+      const shapes: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        shapes.push(`<circle cx="${randomBetween(0, w)}" cy="${randomBetween(0, h)}" r="${randomBetween(40, 150)}" fill="${randomFromArray(pastels)}" opacity="${randomFloat(0.15, 0.35)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="pastelBlur"><feGaussianBlur stdDeviation="20"/></filter>
+          ${defsShadow('pastelShadow', 1, 1, 3, 'rgba(0,0,0,0.1)')}
+        </defs>
+        <rect width="${w}" height="${h}" fill="#fef9f4"/>
+        <g filter="url(#pastelBlur)">${shapes.join('')}</g>
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.55), h * 0.2), customColor || '#5a5a5a', { filter: 'pastelShadow', fontFamily: 'Georgia, serif', letterSpacing: 4, fontWeight: '300' })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 44. ROYAL ═══
+  {
+    name: 'royal',
+    description: 'Regal purple and gold crown motif',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const royalPurple = customColor || '#4a0080';
+      const goldColor = '#d4af37';
+      const ornaments: string[] = [];
+      const crownY = h * 0.18;
+      const crownW = w * 0.25;
+      ornaments.push(`<path d="M${w / 2 - crownW / 2} ${crownY + 30} L${w / 2 - crownW / 2} ${crownY} L${w / 2 - crownW / 4} ${crownY + 15} L${w / 2} ${crownY - 5} L${w / 2 + crownW / 4} ${crownY + 15} L${w / 2 + crownW / 2} ${crownY} L${w / 2 + crownW / 2} ${crownY + 30} Z" fill="${goldColor}" opacity="0.5"/>`);
+      for (let i = 0; i < 4; i++) {
+        const ox = randomBetween(w * 0.1, w * 0.9);
+        const oy = randomBetween(h * 0.1, h * 0.9);
+        ornaments.push(`<circle cx="${ox}" cy="${oy}" r="${randomBetween(3, 8)}" fill="${goldColor}" opacity="${randomFloat(0.05, 0.15)}"/>`);
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="royalBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${royalPurple}"/><stop offset="100%" stop-color="#1a0033"/></linearGradient>
+          ${defsGlow('royalGlow', goldColor, 4)}
+        </defs>
+        <rect width="${w}" height="${h}" fill="url(#royalBg)"/>
+        ${ornaments.join('')}
+        <line x1="${w * 0.2}" y1="${h * 0.38}" x2="${w * 0.8}" y2="${h * 0.38}" stroke="${goldColor}" stroke-width="1" opacity="0.3"/>
+        <line x1="${w * 0.2}" y1="${h * 0.65}" x2="${w * 0.8}" y2="${h * 0.65}" stroke="${goldColor}" stroke-width="1" opacity="0.3"/>
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.6), h * 0.18), goldColor, { filter: 'royalGlow', fontFamily: 'Georgia, serif', letterSpacing: 6 })}
+      </svg>`;
+    },
+  },
+
+  // ═══ 45. COMIC ═══
+  {
+    name: 'comic',
+    description: 'Comic book pop art halftone',
+    generate: (text, w, h, tagline?, customColor?) => {
+      const comicColor = customColor || '#ff0000';
+      const dots: string[] = [];
+      for (let dx = 0; dx < w; dx += 20) {
+        for (let dy = 0; dy < h; dy += 20) {
+          const dist = Math.sqrt(Math.pow(dx - w / 2, 2) + Math.pow(dy - h / 2, 2));
+          const maxDist = Math.sqrt(Math.pow(w / 2, 2) + Math.pow(h / 2, 2));
+          const r = (1 - dist / maxDist) * 4;
+          if (r > 0.5) dots.push(`<circle cx="${dx}" cy="${dy}" r="${r}" fill="${comicColor}" opacity="0.15"/>`);
+        }
+      }
+      return `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>${defsShadow('comicShadow', 4, 4, 0, '#000')}</defs>
+        <rect width="${w}" height="${h}" fill="#ffeb3b"/>
+        ${dots.join('')}
+        <rect x="${w * 0.08}" y="${h * 0.3}" width="${w * 0.84}" height="${h * 0.4}" fill="#ffffff" stroke="#000000" stroke-width="4" rx="10"/>
+        ${textSvg(text, w / 2, h / 2, Math.min(w / (text.length * 0.5), h * 0.22), comicColor, { filter: 'comicShadow', fontFamily: 'Impact, Arial Black, sans-serif', letterSpacing: 3, stroke: '#000000', strokeWidth: 2 })}
+      </svg>`;
+    },
+  },
 ];
 
 // ─── Style Index ─────────────────────────────────────────────────────────────
@@ -1046,53 +1417,179 @@ for (const style of STYLES) {
 
 const STYLE_LIST = STYLES.map(s => s.name).join(', ');
 
+// ─── Size Presets ────────────────────────────────────────────────────────────
+
+const SIZE_PRESETS: Record<string, [number, number]> = {
+  '--square': [1080, 1080],
+  '--status': [1080, 1920],
+  '--banner': [1600, 400],
+  '--card': [800, 800],
+  '--wide': [1920, 1080],
+};
+
+// ─── Humanized Delay ─────────────────────────────────────────────────────────
+
+const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+const GENERATING_MESSAGES = [
+  '🎨 Crafting your logo...',
+  '✨ Working some magic...',
+  '🖌️ Designing something special...',
+  '⚡ Generating your masterpiece...',
+  '🔥 Cooking up your design...',
+  '💎 Polishing your logo...',
+  '🎯 Putting the finishing touches...',
+  '🚀 Almost there...',
+];
+
+// ─── SVG Post-Processing Helpers ────────────────────────────────────────────
+
+function injectTagline(svg: string, tagline: string, w: number, h: number): string {
+  if (!tagline) return svg;
+  const taglineSize = Math.min(w / (tagline.length * 0.7), h * 0.07);
+  const taglineSvg = `<text x="${w / 2}" y="${h * 0.72}" font-family="Arial, Helvetica, sans-serif" font-size="${taglineSize}" fill="#ffffff" text-anchor="middle" opacity="0.65" letter-spacing="2" font-weight="300">${escapeXml(tagline)}</text>`;
+  return svg.replace('</svg>', `${taglineSvg}</svg>`);
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 async function handleLogo(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
     const styleGroups = [
-      { label: 'TECH & DIGITAL', styles: 'techy, neon, cyberpunk, matrix, pixel, holographic' },
-      { label: 'NATURE & ELEMENTS', styles: 'galaxy, ocean, fire, aurora, nature, floral, cosmic' },
-      { label: 'ART & CREATIVE', styles: 'watercolor, graffiti, abstract, anime, vaporwave' },
-      { label: 'CLASSIC & ELEGANT', styles: 'minimalist, vintage, elegant, luxury, marble' },
+      { label: 'TECH & DIGITAL', styles: 'techy, neon, cyberpunk, matrix, pixel, holographic, glitch, neoncity' },
+      { label: 'NATURE & ELEMENTS', styles: 'galaxy, ocean, fire, aurora, nature, floral, cosmic, ice, lava, safari' },
+      { label: 'ART & CREATIVE', styles: 'watercolor, graffiti, abstract, anime, vaporwave, comic, pastel, steampunk' },
+      { label: 'CLASSIC & ELEGANT', styles: 'minimalist, vintage, elegant, luxury, marble, zen, royal, diamond' },
       { label: 'CULTURE & SPORT', styles: 'tribal, african, sports, gaming, music' },
-      { label: 'COLOR & MOOD', styles: 'gradient, retro, geometric, dark' },
+      { label: 'COLOR & MOOD', styles: 'gradient, retro, geometric, dark, rainbow, gothic' },
     ];
 
-    let helpMsg = `*LOGO GENERATOR*\n\n`;
-    helpMsg += `Create stunning logos with 32 unique styles!\n\n`;
+    let helpMsg = `*🎨 BOTWAVE LOGO GENERATOR*\n\n`;
+    helpMsg += `Create stunning logos with ${STYLES.length} unique styles!\n\n`;
     helpMsg += `*Usage:*\n`;
-    helpMsg += `!logo [style] [text]\n`;
-    helpMsg += `!logo random [text]\n`;
-    helpMsg += `!logo [text] _(random style)_\n\n`;
+    helpMsg += `  !logo [style] [text]\n`;
+    helpMsg += `  !logo [style] [text] | [tagline]\n`;
+    helpMsg += `  !logo [style] [text] #FF5733\n`;
+    helpMsg += `  !logo [style] [text] --square\n`;
+    helpMsg += `  !logo preview\n`;
+    helpMsg += `  !logo random [text]\n\n`;
     helpMsg += `*Styles:*\n`;
     for (const group of styleGroups) {
       helpMsg += `\n*${group.label}*\n${group.styles}\n`;
     }
+    helpMsg += `\n*Size Options:*\n`;
+    helpMsg += `--square (1080×1080) • --banner (1600×400)\n`;
+    helpMsg += `--status (1080×1920) • --wide (1920×1080)\n`;
+    helpMsg += `--card (800×800)\n`;
+    helpMsg += `\n*Modifiers:*\n`;
+    helpMsg += `--upper (FORCE UPPERCASE)\n`;
+    helpMsg += `--lower (force lowercase)\n`;
+    helpMsg += `#hex (custom color, e.g. #FF5733)\n`;
+    helpMsg += `| tagline (add subtitle)\n`;
     helpMsg += `\n*Examples:*\n`;
     helpMsg += `!logo neon MyBrand\n`;
-    helpMsg += `!logo galaxy STARLIGHT\n`;
-    helpMsg += `!logo cyberpunk NEXUS\n`;
-    helpMsg += `!logo african UBUNTU\n`;
-    helpMsg += `!logo random CoolName`;
+    helpMsg += `!logo galaxy STARLIGHT | Among the Stars\n`;
+    helpMsg += `!logo cyberpunk NEXUS #00ff41 --wide\n`;
+    helpMsg += `!logo zen HARMONY --upper\n`;
+    helpMsg += `!logo random CoolName\n`;
+    helpMsg += `!logo preview\n`;
+    helpMsg += `\n_Free styles: ${[...FREE_STYLES].join(', ')}_\n`;
+    helpMsg += `_Premium styles unlock with BotWave Pro!_`;
 
     await sendReply(context.chatJid, helpMsg, sock, context.rawMessage.key, context.queue);
     return;
   }
 
-  // Parse style and text
-  let styleName = args[0].toLowerCase();
+  // ── Handle preview command ──
+  const firstArg = args[0].toLowerCase();
+  if (firstArg === 'preview' || firstArg === 'styles') {
+    await sendReply(context.chatJid, randomFromArray(GENERATING_MESSAGES), sock, context.rawMessage.key, context.queue);
+    await delay(800);
+    try {
+      const cellW = 300;
+      const cellH = 170;
+      const cols = 8;
+      const rows = Math.ceil(STYLES.length / cols);
+      const gridW = cols * cellW;
+      const gridH = rows * cellH;
+      const previews: { input: Buffer; left: number; top: number }[] = [];
+
+      for (let i = 0; i < STYLES.length; i++) {
+        const s = STYLES[i];
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const svg = s.generate(s.name.toUpperCase(), cellW, cellH);
+        const buf = await sharp(Buffer.from(svg)).png().toBuffer();
+        previews.push({ input: buf, left: col * cellW, top: row * cellH });
+      }
+
+      const gridBuffer = await sharp({
+        create: { width: gridW, height: gridH, channels: 4, background: { r: 20, g: 20, b: 20, alpha: 1 } },
+      }).composite(previews).png({ quality: 90 }).toBuffer();
+
+      const freeList = [...FREE_STYLES].join(', ');
+      await sendReply(
+        context.chatJid,
+        {
+          image: gridBuffer,
+          caption: `*🎨 ALL ${STYLES.length} LOGO STYLES*\n\nFree: ${freeList}\nOthers require BotWave Pro\n\nUse: !logo [style] [your text]`,
+        },
+        sock, context.rawMessage.key, context.queue,
+      );
+    } catch (err) {
+      console.error('[LOGO] Preview error:', err);
+      await sendReply(context.chatJid, `Here are all ${STYLES.length} styles:\n\n${STYLE_LIST}\n\nUse: !logo [style] [text]`, sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // ── Parse raw args into tokens ──
+  const rawText = args.join(' ');
+
+  // Extract flags
+  let forceUpper = false;
+  let forceLower = false;
+  let sizePreset: [number, number] | null = null;
+  let customColor: string | null = null;
+  let tagline: string | undefined;
+
+  // Extract tagline (everything after |)
+  let textPart = rawText;
+  const pipeIdx = rawText.indexOf('|');
+  if (pipeIdx !== -1) {
+    tagline = rawText.slice(pipeIdx + 1).trim() || undefined;
+    textPart = rawText.slice(0, pipeIdx).trim();
+  }
+
+  // Re-split textPart into tokens for flag parsing
+  const tokens = textPart.split(/\s+/);
+  const cleanTokens: string[] = [];
+
+  for (const tok of tokens) {
+    const low = tok.toLowerCase();
+    if (low === '--upper') { forceUpper = true; continue; }
+    if (low === '--lower') { forceLower = true; continue; }
+    if (SIZE_PRESETS[low]) { sizePreset = SIZE_PRESETS[low]; continue; }
+    // Hex color: #RRGGBB or RRGGBB
+    if (/^#?[0-9A-Fa-f]{6}$/.test(tok)) {
+      customColor = tok.startsWith('#') ? tok : `#${tok}`;
+      continue;
+    }
+    cleanTokens.push(tok);
+  }
+
+  // Parse style and text from cleanTokens
+  let styleName = cleanTokens[0]?.toLowerCase() || '';
   let logoText: string;
 
   if (styleName === 'random') {
     styleName = randomFromArray(STYLES).name;
-    logoText = args.slice(1).join(' ') || context.pushName || 'LOGO';
+    logoText = cleanTokens.slice(1).join(' ') || context.pushName || 'LOGO';
   } else if (STYLE_MAP.has(styleName)) {
-    logoText = args.slice(1).join(' ') || context.pushName || 'LOGO';
+    logoText = cleanTokens.slice(1).join(' ') || context.pushName || 'LOGO';
   } else {
-    // No recognized style — use full args as text, random style
     styleName = randomFromArray(STYLES).name;
-    logoText = args.join(' ');
+    logoText = cleanTokens.join(' ') || context.pushName || 'LOGO';
   }
 
   const style = STYLE_MAP.get(styleName);
@@ -1101,44 +1598,83 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
     return;
   }
 
-  // Limit text length
-  if (logoText.length > 30) {
-    logoText = logoText.slice(0, 30);
+  // ── Tier gating ──
+  if (!FREE_STYLES.has(style.name)) {
+    try {
+      const userId = context.chatJid.split('@')[0];
+      const sub = await getUserSubscription(userId);
+      if (sub.plan === 'free') {
+        const freeList = [...FREE_STYLES].join(', ');
+        await sendReply(
+          context.chatJid,
+          `✨ *"${style.name}"* is a premium style!\n\nFree styles: ${freeList}\n\nUpgrade to BotWave Pro for all ${STYLES.length} styles:\n!upgrade`,
+          sock, context.rawMessage.key, context.queue,
+        );
+        return;
+      }
+    } catch {
+      // If subscription check fails, allow the request
+    }
   }
 
+  // ── Apply casing ──
+  if (logoText.length > 30) logoText = logoText.slice(0, 30);
+  if (forceUpper) logoText = logoText.toUpperCase();
+  else if (forceLower) logoText = logoText.toLowerCase();
+  // else: preserve user's original casing
+
+  // ── Humanized delay ──
+  const genMsg = randomFromArray(GENERATING_MESSAGES);
+  await sendReply(context.chatJid, genMsg, sock, context.rawMessage.key, context.queue);
+  await delay(randomBetween(800, 1500));
+
   try {
-    // Generate at high resolution
-    const width = 1200;
-    const height = 675;
-    const svg = style.generate(logoText.toUpperCase(), width, height);
+    // ── Size ──
+    const [width, height] = sizePreset || [1200, 675];
+
+    // ── Generate SVG ──
+    let svg = style.generate(logoText, width, height, tagline, customColor);
+
+    // ── Post-process: inject tagline ──
+    if (tagline) {
+      svg = injectTagline(svg, tagline, width, height);
+    }
 
     const pngBuffer = await sharp(Buffer.from(svg))
       .png({ quality: 95 })
       .toBuffer();
 
+    // ── Build caption ──
+    const sizeLabel = sizePreset ? ` • ${width}×${height}` : '';
+    const taglineLabel = tagline ? `\n_"${tagline}"_` : '';
+    const colorLabel = customColor ? ` • ${customColor}` : '';
+    const tierLabel = FREE_STYLES.has(style.name) ? '🆓' : '⭐';
+
+    let caption = `*${logoText}*${taglineLabel}\n`;
+    caption += `${tierLabel} Style: *${style.name}* — ${style.description}${sizeLabel}${colorLabel}\n\n`;
+    caption += `_🎨 BotWave Logo Generator_\n`;
+    caption += `_Try: !logo preview • !logo for help_`;
+
     await sendReply(
       context.chatJid,
-      {
-        image: pngBuffer,
-        caption: `*${logoText.toUpperCase()}*\nStyle: ${style.name} — ${style.description}\n\n_Generated by BotWave Logo Generator_\n_Try: !logo for all ${STYLES.length} styles_`,
-      },
+      { image: pngBuffer, caption },
       sock,
       context.rawMessage.key,
       context.queue,
     );
   } catch (error) {
     console.error('[LOGO] Error generating logo:', error);
-    await sendReply(context.chatJid, 'Failed to generate logo. Try a different style or shorter text.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '❌ Failed to generate logo. Try a different style or shorter text.', sock, context.rawMessage.key, context.queue);
   }
 }
 
-// ─── Wallpaper Generator (bonus — high-res backgrounds without text) ─────────
+// ─── Wallpaper Generator ─────────────────────────────────────────────────────
 
 async function handleLogoWallpaper(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
     await sendReply(
       context.chatJid,
-      `*WALLPAPER GENERATOR*\n\nGenerate beautiful wallpapers!\n\n!wallpaper [style]\n\nStyles: ${STYLE_LIST}\n\nExample: !wallpaper galaxy`,
+      `*🖼️ WALLPAPER GENERATOR*\n\nGenerate beautiful wallpapers!\n\n!wallpaper [style]\n\nStyles: ${STYLE_LIST}\n\nExample: !wallpaper galaxy`,
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -1154,11 +1690,12 @@ async function handleLogoWallpaper(context: MessageContext, args: string[], sock
     return;
   }
 
+  await sendReply(context.chatJid, '🖼️ Creating your wallpaper...', sock, context.rawMessage.key, context.queue);
+  await delay(randomBetween(600, 1200));
+
   try {
-    // Phone wallpaper resolution
     const width = 1080;
     const height = 1920;
-    // Generate with minimal text
     const svg = style.generate('', width, height);
 
     const pngBuffer = await sharp(Buffer.from(svg))
@@ -1177,8 +1714,96 @@ async function handleLogoWallpaper(context: MessageContext, args: string[], sock
     );
   } catch (error) {
     console.error('[WALLPAPER] Error:', error);
-    await sendReply(context.chatJid, 'Failed to generate wallpaper.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '❌ Failed to generate wallpaper.', sock, context.rawMessage.key, context.queue);
   }
+}
+
+// ─── Brand Kit Generator ─────────────────────────────────────────────────────
+
+async function handleBrandKit(context: MessageContext, args: string[], sock: any): Promise<void> {
+  if (!args.length) {
+    await sendReply(
+      context.chatJid,
+      `*📦 BRAND KIT GENERATOR*\n\nGenerate a complete brand kit (3 images):\n• Square logo (1080×1080)\n• Banner (1600×400)\n• Status/story (1080×1920)\n\n*Usage:*\n!brandkit [name]\n!brandkit [name] #hex\n\n*Example:*\n!brandkit NEXUS #FF5733`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  // ── Tier gating (premium only) ──
+  try {
+    const userId = context.chatJid.split('@')[0];
+    const sub = await getUserSubscription(userId);
+    if (sub.plan === 'free') {
+      await sendReply(
+        context.chatJid,
+        `✨ *Brand Kit* is a premium feature!\n\nUpgrade to BotWave Pro to generate complete brand kits:\n!upgrade`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+  } catch {
+    // If subscription check fails, allow the request
+  }
+
+  // ── Parse brand name and optional hex color ──
+  let customColor: string | null = null;
+  const cleanArgs: string[] = [];
+
+  for (const tok of args) {
+    if (/^#?[0-9A-Fa-f]{6}$/.test(tok)) {
+      customColor = tok.startsWith('#') ? tok : `#${tok}`;
+    } else {
+      cleanArgs.push(tok);
+    }
+  }
+
+  const brandName = cleanArgs.join(' ') || context.pushName || 'BRAND';
+  if (brandName.length > 20) {
+    await sendReply(context.chatJid, 'Brand name too long (max 20 characters).', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await sendReply(context.chatJid, '📦 Building your brand kit... This takes a moment.', sock, context.rawMessage.key, context.queue);
+  await delay(1000);
+
+  const formats: { label: string; w: number; h: number; style: string; desc: string }[] = [
+    { label: 'Square Logo', w: 1080, h: 1080, style: 'elegant', desc: 'Profile picture / app icon' },
+    { label: 'Banner', w: 1600, h: 400, style: 'minimalist', desc: 'Website header / social cover' },
+    { label: 'Status / Story', w: 1080, h: 1920, style: 'gradient', desc: 'WhatsApp status / IG story' },
+  ];
+
+  for (let i = 0; i < formats.length; i++) {
+    const fmt = formats[i];
+    try {
+      const style = STYLE_MAP.get(fmt.style);
+      if (!style) continue;
+
+      const svg = style.generate(brandName, fmt.w, fmt.h, undefined, customColor);
+      const pngBuffer = await sharp(Buffer.from(svg)).png({ quality: 95 }).toBuffer();
+
+      await sendReply(
+        context.chatJid,
+        {
+          image: pngBuffer,
+          caption: `*${fmt.label}* (${fmt.w}×${fmt.h})\n${fmt.desc}\n\n_${i + 1}/${formats.length} — ${brandName} Brand Kit_`,
+        },
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+
+      if (i < formats.length - 1) await delay(1500);
+    } catch (err) {
+      console.error(`[BRANDKIT] Error generating ${fmt.label}:`, err);
+    }
+  }
+
+  await sendReply(
+    context.chatJid,
+    `✅ *${brandName}* brand kit complete!\n\n3 formats delivered:\n• Square (1080×1080) — profile pic\n• Banner (1600×400) — cover\n• Status (1080×1920) — stories\n\n_Generated by BotWave Pro_`,
+    sock, context.rawMessage.key, context.queue,
+  );
 }
 
 // ─── Register Commands ───────────────────────────────────────────────────────
@@ -1187,7 +1812,7 @@ registerCommand({
   name: 'logo',
   aliases: ['logo', 'logogen', 'logocreate', 'logomaker'],
   category: 'creative',
-  description: 'Generate logos with 32 styles',
+  description: `Generate logos with ${STYLES.length} styles`,
   execute: (ctx, args, sock) => handleLogo(ctx, args, sock),
 });
 
@@ -1197,4 +1822,12 @@ registerCommand({
   category: 'creative',
   description: 'Generate wallpapers',
   execute: (ctx, args, sock) => handleLogoWallpaper(ctx, args, sock),
+});
+
+registerCommand({
+  name: 'brandkit',
+  aliases: ['brandkit', 'brand', 'brandpack'],
+  category: 'creative',
+  description: 'Generate a complete brand kit (3 formats)',
+  execute: (ctx, args, sock) => handleBrandKit(ctx, args, sock),
 });
