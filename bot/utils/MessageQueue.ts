@@ -1,9 +1,5 @@
 import { WASocket, proto } from '@whiskeysockets/baileys';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { updateSessionStatus } from '../database';
 
 interface QueuedMessage {
   jid: string;
@@ -121,16 +117,14 @@ export class MessageQueue {
   }
 
   private markSessionNeedsReauth() {
-    supabase
-      .from('bot_sessions')
-      .update({ state: 'needs_reauth', updated_at: new Date().toISOString() })
-      .eq('id', this.sessionId)
-      .then(({ error }) => {
-        if (error) {
-          console.error(`[QUEUE] Failed to mark session ${this.sessionId.slice(0, 8)} needs_reauth:`, error);
-        } else {
-          console.log(`[QUEUE] Session ${this.sessionId.slice(0, 8)} marked needs_reauth due to connection failure`);
-        }
+    // Use updateSessionStatus for proper regression protection (won't
+    // downgrade an active session) and consistent auth_state clearing.
+    updateSessionStatus(this.sessionId, 'needs_reauth')
+      .then(() => {
+        console.log(`[QUEUE] Session ${this.sessionId.slice(0, 8)} marked needs_reauth due to connection failure`);
+      })
+      .catch((error) => {
+        console.error(`[QUEUE] Failed to mark session ${this.sessionId.slice(0, 8)} needs_reauth:`, error);
       });
   }
 

@@ -341,19 +341,28 @@ export async function cleanupOnStartup(): Promise<void> {
   if (data && data.length > 0) {
     console.log(`[COORD] Released ${data.length} stale lock(s) from previous run: ${data.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
 
-    // Reset pairing_sent sessions to qr_pending (old pairing code is dead)
+    // Reset pairing_sent sessions to qr_pending (old pairing code is dead).
+    // In Evolution mode, skip the reset — the pairing may have completed on the
+    // Evolution API side even though Botwave restarted before seeing the
+    // connection.update webhook. The sync loop will check instance status via
+    // tryReconnectExisting() before deciding to re-pair.
+    const useEvolution = !!process.env.EVOLUTION_API_URL;
     for (const session of data) {
       if (session.state === 'pairing_sent') {
-        await supabase
-          .from('bot_sessions')
-          .update({
-            state: 'qr_pending',
-            auth_state: null,
-            pairing_code: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', session.id);
-        console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart — reset to qr_pending`);
+        if (useEvolution) {
+          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Evolution mode) — preserving state for instance status check`);
+        } else {
+          await supabase
+            .from('bot_sessions')
+            .update({
+              state: 'qr_pending',
+              auth_state: null,
+              pairing_code: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', session.id);
+          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Baileys mode) — reset to qr_pending`);
+        }
       }
     }
   } else {
