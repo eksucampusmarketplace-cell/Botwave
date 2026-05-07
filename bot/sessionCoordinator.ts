@@ -253,6 +253,34 @@ export async function recoverOrphanedSessions(): Promise<number> {
     }
 
     console.log(`[COORD] Recovering orphaned session ${session.id.slice(0, 8)} (was ${session.state}, locked_by=${session.locked_by ?? 'none'}${newWorkerUrl ? `, reassigning to ${newWorkerUrl}` : ''})`);
+
+    // For active sessions, preserve auth_state and keep state as 'active'
+    // so the sync loop can reconnect via tryReconnectExisting() instead of
+    // forcing a fresh pairing. This prevents redeploys from nuking connected
+    // sessions. Only qr_pending/pairing_sent sessions get fully reset.
+    if (session.state === 'active') {
+      const activeUpdateFields: Record<string, unknown> = {
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        updated_at: new Date().toISOString(),
+      };
+      if (newWorkerUrl) {
+        activeUpdateFields.worker_url = newWorkerUrl;
+      }
+      const { error: activeUpdateErr } = await supabase
+        .from('bot_sessions')
+        .update(activeUpdateFields)
+        .eq('id', session.id);
+      if (!activeUpdateErr) {
+        recovered++;
+        console.log(`[COORD] Active session ${session.id.slice(0, 8)} recovered — lock released, auth preserved for reconnect${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ''}`);
+      } else {
+        console.error(`[COORD] Failed to recover active session ${session.id.slice(0, 8)}:`, activeUpdateErr);
+      }
+      continue;
+    }
+
     const updateFields: Record<string, unknown> = {
       state: 'qr_pending',
       locked_by: null,
