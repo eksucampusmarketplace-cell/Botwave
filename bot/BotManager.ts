@@ -651,7 +651,7 @@ class EvolutionBot {
    * Returns true if the instance was found and is now connected/connecting.
    */
   private async tryReconnectExisting(): Promise<boolean> {
-    const MAX_RECONNECT_RETRIES = 4;
+    const MAX_RECONNECT_RETRIES = 8;
     const BASE_DELAY_MS = 3000;
 
     for (let attempt = 1; attempt <= MAX_RECONNECT_RETRIES; attempt++) {

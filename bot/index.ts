@@ -1,9 +1,10 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
 import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
-import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from './workerConfig';
+import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
+import { waitForEvolutionReady, resetEvolutionHealth } from './evolutionClient';
 
 const bot = initializeBot();
 
@@ -15,6 +16,20 @@ async function start() {
   await cleanupOnStartup();
   startHeartbeatLoop();
   
+  // Wait for Evolution API to be reachable before syncing sessions.
+  // This prevents the cascade where 404s during loading poison the health counter.
+  const USE_EVOLUTION = !!(process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY);
+  if (USE_EVOLUTION) {
+    console.log('[BOT] Waiting for Evolution API to become ready...');
+    const ready = await waitForEvolutionReady(15, 2000);
+    if (ready) {
+      console.log('[BOT] Evolution API is ready — proceeding with session sync');
+      resetEvolutionHealth();
+    } else {
+      console.warn('[BOT] Evolution API did not become ready — sessions will retry during sync loop');
+    }
+  }
+
   // Initial sync
   console.log('[BOT] Running initial session sync...');
   await syncSessionsWithDb(IS_WORKER);
@@ -124,21 +139,53 @@ async function start() {
     startMonetizationScheduler();
   }
 
-  // Keep-alive pings: main service pings all workers every 2 minutes
-  // to prevent Render free tier from spinning them down
-  if (!IS_WORKER && WORKER_URLS.length > 0) {
-    const pingWorkers = async () => {
-      for (const url of WORKER_URLS) {
-        try {
-          const res = await fetch(`${url}/api/health`);
-          console.log(`[KEEPALIVE] Worker ${url}: status=${res.status}`);
-        } catch (err: any) {
-          console.warn(`[KEEPALIVE] Worker ${url} UNREACHABLE: ${err.message}`);
-        }
-      }
+  // ── Keepalive cron: every service pings all others + itself every 10s ──
+  // Prevents Render free tier from spinning down ANY service.
+  const KEEPALIVE_INTERVAL = 10_000; // 10 seconds
+  const KEEPALIVE_TIMEOUT = 5_000;
+
+  // Build the list of all URLs to keep alive
+  const keepAliveTargets: { name: string; url: string }[] = [];
+
+  // Self
+  if (SELF_URL) {
+    keepAliveTargets.push({ name: 'self', url: `${SELF_URL}/api/health` });
+  }
+
+  // All workers
+  for (const wUrl of WORKER_URLS) {
+    keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
+  }
+
+  // Evolution API
+  const evoUrl = process.env.EVOLUTION_API_URL;
+  if (evoUrl) {
+    keepAliveTargets.push({ name: 'evolution-api', url: evoUrl });
+  }
+
+  if (keepAliveTargets.length > 0) {
+    const pingAll = async () => {
+      await Promise.allSettled(
+        keepAliveTargets.map(async (target) => {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), KEEPALIVE_TIMEOUT);
+            const res = await fetch(target.url, { signal: controller.signal });
+            clearTimeout(timeout);
+            // Only log failures or first success to avoid log spam
+            if (!res.ok) {
+              console.warn(`[KEEPALIVE] ${target.name} (${target.url}): status=${res.status}`);
+            }
+          } catch (err: any) {
+            console.warn(`[KEEPALIVE] ${target.name} UNREACHABLE: ${err.message}`);
+          }
+        }),
+      );
     };
-    setInterval(pingWorkers, 2 * 60 * 1000);
-    console.log(`[BOT] Keeping ${WORKER_URLS.length} worker(s) alive with pings every 2min: ${WORKER_URLS.join(', ')}`);
+    // Ping immediately on startup, then every KEEPALIVE_INTERVAL
+    pingAll();
+    setInterval(pingAll, KEEPALIVE_INTERVAL);
+    console.log(`[KEEPALIVE] Pinging ${keepAliveTargets.length} target(s) every ${KEEPALIVE_INTERVAL / 1000}s: ${keepAliveTargets.map(t => t.name).join(', ')}`);
   }
 }
 

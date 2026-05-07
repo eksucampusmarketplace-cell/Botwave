@@ -25,7 +25,10 @@ if (PROXY_LIST.length > 0) {
   console.log('[PROXY] No PROXY_LIST configured — all connections will use server IP directly');
 }
 
-// Track consecutive Evolution API failures for health gating
+// Track consecutive Evolution API failures for health gating.
+// Only counts failures from instance-creation and message-sending endpoints.
+// Reconnection 404s (connectionState, delete) are expected after a restart
+// and must NOT poison this counter.
 let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
 
@@ -35,6 +38,11 @@ const MAX_CONSECUTIVE_FAILURES = 5;
  */
 export function isEvolutionHealthy(): boolean {
   return consecutiveFailures < MAX_CONSECUTIVE_FAILURES;
+}
+
+/** Reset the failure counter. Called after any successful API response. */
+export function resetEvolutionHealth(): void {
+  consecutiveFailures = 0;
 }
 
 /**
@@ -86,21 +94,27 @@ function stripDataUri(input: string): string {
 /**
  * Wrapper around fetch with timeout and basic error checking.
  */
-async function apiFetch(url: string, options: RequestInit): Promise<Response> {
+async function apiFetch(url: string, options: RequestInit & { skipHealthCount?: boolean } = {}): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  const { skipHealthCount, ...fetchOptions } = options;
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, { ...fetchOptions, signal: controller.signal });
     if (!res.ok) {
       // Clone before reading so the original body stays usable for callers
       const text = await res.clone().text().catch(() => '');
       console.error(`[EVO-CLIENT] ${options.method || 'GET'} ${url} -> ${res.status}: ${text.slice(0, 300)}`);
-      consecutiveFailures++;
+      // Only count failures that indicate the API itself is broken (5xx, auth errors).
+      // 404s during reconnection are expected — Evolution API may still be loading.
+      if (!skipHealthCount && res.status >= 500) {
+        consecutiveFailures++;
+      }
     } else {
       consecutiveFailures = 0;
     }
     return res;
   } catch (err) {
+    // Network errors always count — the API is unreachable
     consecutiveFailures++;
     throw err;
   } finally {
@@ -125,6 +139,42 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay = 1000
     }
   }
   throw lastError;
+}
+
+/**
+ * Wait for Evolution API to become reachable before starting session sync.
+ * Polls the fetchInstances endpoint (lightweight, no side effects) with
+ * increasing delays. Returns true if the API responded, false if all
+ * attempts were exhausted.
+ */
+export async function waitForEvolutionReady(maxAttempts = 10, baseDelayMs = 3000): Promise<boolean> {
+  if (!BASE) return false;
+  for (let i = 1; i <= maxAttempts; i++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+      const res = await fetch(`${BASE}/instance/fetchInstances`, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        console.log(`[EVO-CLIENT] Evolution API ready (attempt ${i}/${maxAttempts})`);
+        consecutiveFailures = 0;
+        return true;
+      }
+      console.warn(`[EVO-CLIENT] Evolution API not ready: status=${res.status} (attempt ${i}/${maxAttempts})`);
+    } catch (err: any) {
+      console.warn(`[EVO-CLIENT] Evolution API unreachable: ${err.message} (attempt ${i}/${maxAttempts})`);
+    }
+    if (i < maxAttempts) {
+      const delay = Math.min(baseDelayMs * i, 15000);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  console.error(`[EVO-CLIENT] Evolution API did not become ready after ${maxAttempts} attempts`);
+  return false;
 }
 
 // Create a new WhatsApp instance for a session, including webhook config.
@@ -285,12 +335,14 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
   }
 }
 
-// Get connection status of an instance
+// Get connection status of an instance.
+// 404s are expected during reconnection (Evolution API still loading) — don't count them as failures.
 export async function getInstanceStatus(instanceName: string): Promise<string> {
   try {
     const res = await apiFetch(`${BASE}/instance/connectionState/${instanceName}`, {
       method: 'GET',
       headers,
+      skipHealthCount: true,
     });
     const data: any = await res.json();
     const state = data?.instance?.state || 'unknown';
@@ -344,13 +396,15 @@ export async function connectInstance(instanceName: string): Promise<string> {
   }
 }
 
-// Delete an instance (used when session is removed)
+// Delete an instance (used when session is removed).
+// 404s are expected (instance already gone) — don't count them as failures.
 export async function deleteInstance(instanceName: string) {
   console.log(`[EVO-CLIENT] deleteInstance: ${instanceName}`);
   try {
     const res = await apiFetch(`${BASE}/instance/delete/${instanceName}`, {
       method: 'DELETE',
       headers,
+      skipHealthCount: true,
     });
     console.log(`[EVO-CLIENT] deleteInstance ${instanceName}: status=${res.status}`);
   } catch (err) {
