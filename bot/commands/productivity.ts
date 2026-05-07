@@ -257,24 +257,90 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
 async function handlePurge(context: MessageContext, args: string[], sock: any): Promise<void> {
   const count = parseInt(args[0]) || 5;
   if (count < 1 || count > 100) {
-    await sendReply(context.chatJid, '!purge [1-100] — Delete your own last N messages', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '!purge [1-100] — Delete your own last N messages\n\nExample: !purge 10', sock, context.rawMessage.key, context.queue);
     return;
   }
 
-  // Attempt to delete the bot's own recent messages via Baileys chatModify
-  if (typeof sock.chatModify === 'function') {
+  // Method 1: Use sendMessage with delete protocol (works on Baileys direct)
+  if (typeof sock.sendMessage === 'function') {
     try {
-      await sock.chatModify(
-        { clear: { messages: [{ id: context.rawMessage.key.id, fromMe: true, timestamp: Date.now() }] } },
-        context.chatJid,
-      );
-      await sendReply(context.chatJid, `Purge requested for ${count} message(s). Deletion is best-effort — WhatsApp may not remove all.`, sock, context.rawMessage.key, context.queue);
+      // Delete the command message itself first
+      try {
+        await sock.sendMessage(context.chatJid, { delete: context.rawMessage.key });
+      } catch {
+        // command msg delete failed, continue
+      }
+
+      // Fetch recent messages from this chat to find bot's own messages
+      let deleted = 0;
+      const botJid = (sock as any).user?.id;
+      const normalizedBotJid = botJid ? botJid.replace(/:\d+@/, '@').trim() : '';
+
+      // Try to use store/fetchMessageHistory if available
+      if (typeof sock.fetchMessageHistory === 'function') {
+        try {
+          const messages = await sock.fetchMessageHistory(context.chatJid, count * 3);
+          if (Array.isArray(messages)) {
+            for (const msg of messages) {
+              if (deleted >= count) break;
+              const key = msg?.key;
+              if (!key) continue;
+              const isFromBot = key.fromMe || key.participant === normalizedBotJid || key.participant === botJid;
+              if (isFromBot) {
+                try {
+                  await sock.sendMessage(context.chatJid, { delete: key });
+                  deleted++;
+                } catch {
+                  // individual delete failed
+                }
+              }
+            }
+          }
+        } catch {
+          // fetchMessageHistory not available
+        }
+      }
+
+      // Try chatModify clear approach as well
+      if (deleted === 0 && typeof sock.chatModify === 'function') {
+        try {
+          await sock.chatModify(
+            { clear: { messages: [{ id: context.rawMessage.key.id, fromMe: true, timestamp: Date.now() }] } },
+            context.chatJid,
+          );
+          deleted = 1;
+        } catch {
+          // chatModify failed
+        }
+      }
+
+      if (deleted > 0) {
+        const confirmMsg = await sendReply(
+          context.chatJid,
+          `Purged ${deleted} message(s).`,
+          sock, context.rawMessage.key, context.queue,
+        );
+        // Auto-delete the confirmation after 3 seconds
+        setTimeout(async () => {
+          try {
+            if (confirmMsg?.key) {
+              await sock.sendMessage(context.chatJid, { delete: confirmMsg.key });
+            }
+          } catch { /* ignore */ }
+        }, 3000);
+      } else {
+        await sendReply(
+          context.chatJid,
+          `Purge attempted for ${count} message(s). Note: The bot can only delete its own messages. In groups, the bot needs admin rights to delete others' messages.`,
+          sock, context.rawMessage.key, context.queue,
+        );
+      }
     } catch (err) {
-      console.error('Purge failed:', err);
-      await sendReply(context.chatJid, `Purge failed. Message deletion requires Baileys-direct mode and is not supported through all connection methods.`, sock, context.rawMessage.key, context.queue);
+      console.error('[PURGE] Error:', err);
+      await sendReply(context.chatJid, 'Purge failed. Make sure the bot has admin rights in groups.', sock, context.rawMessage.key, context.queue);
     }
   } else {
-    await sendReply(context.chatJid, `Purge is not available in this connection mode. Message deletion requires Baileys-direct (not Evolution API).`, sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Purge is not available in this connection mode.', sock, context.rawMessage.key, context.queue);
   }
 }
 

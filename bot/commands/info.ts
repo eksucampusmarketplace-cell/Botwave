@@ -322,7 +322,6 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
   }
   try {
     const query = args.join(' ');
-    // Use lyricsovh free API
     let artist = '';
     let title = query;
     if (query.includes(' - ')) {
@@ -332,27 +331,48 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
     }
 
     let lyrics = '';
-    if (artist) {
+
+    // Method 1: lrclib.net (free, no auth, large database)
+    if (!lyrics) {
       try {
-        const response = await axios.get(
-          `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`,
-          { timeout: 15000 },
-        );
-        lyrics = response.data?.lyrics || '';
-      } catch {
-        // Try fallback below
+        const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
+        const resp = await axios.get(searchUrl, {
+          timeout: 10000,
+          headers: { 'User-Agent': 'BotWave/1.0' },
+        });
+        const results = resp.data;
+        if (Array.isArray(results) && results.length > 0) {
+          // Find best match — prefer plain lyrics over synced
+          const best = results.find((r: any) => r.plainLyrics) || results[0];
+          lyrics = best?.plainLyrics || best?.syncedLyrics?.replace(/\[\d+:\d+\.\d+\]\s*/g, '') || '';
+        }
+      } catch (err: any) {
+        console.log('[LYRICS] lrclib.net failed:', err?.message);
       }
     }
 
+    // Method 2: lyrics.ovh (original, may be flaky)
+    if (!lyrics && artist) {
+      try {
+        const response = await axios.get(
+          `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`,
+          { timeout: 10000 },
+        );
+        lyrics = response.data?.lyrics || '';
+      } catch {
+        // Try next
+      }
+    }
+
+    // Method 3: lyrics.ovh with guessed artist/title split
     if (!lyrics) {
-      // Fallback: try with just the title as artist search
       try {
         const searchParts = query.split(' ');
         const guessArtist = searchParts[0];
         const guessTitle = searchParts.slice(1).join(' ') || searchParts[0];
         const response = await axios.get(
           `https://api.lyrics.ovh/v1/${encodeURIComponent(guessArtist)}/${encodeURIComponent(guessTitle)}`,
-          { timeout: 15000 },
+          { timeout: 10000 },
         );
         lyrics = response.data?.lyrics || '';
       } catch {
@@ -360,16 +380,36 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
       }
     }
 
+    // Method 4: Netease/other via lrclib artist+title search
+    if (!lyrics && artist) {
+      try {
+        const resp = await axios.get(
+          `https://lrclib.net/api/search?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`,
+          { timeout: 10000, headers: { 'User-Agent': 'BotWave/1.0' } },
+        );
+        const results = resp.data;
+        if (Array.isArray(results) && results.length > 0) {
+          const best = results.find((r: any) => r.plainLyrics) || results[0];
+          lyrics = best?.plainLyrics || best?.syncedLyrics?.replace(/\[\d+:\d+\.\d+\]\s*/g, '') || '';
+        }
+      } catch {
+        // exhausted
+      }
+    }
+
     if (!lyrics) {
-      await sendReply(context.chatJid, `No lyrics found for "${query}".\n\nTry: !lyrics Artist - Song Title`, sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `No lyrics found for "${query}".\n\nTry: !lyrics Artist - Song Title\nExample: !lyrics Ed Sheeran - Shape of You`, sock, context.rawMessage.key, context.queue);
       return;
     }
+
+    // Clean up lyrics
+    lyrics = lyrics.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 
     // Truncate if too long for WhatsApp
     if (lyrics.length > 4000) {
       lyrics = lyrics.slice(0, 4000) + '\n\n... (truncated)';
     }
-    await sendReply(context.chatJid, `*${query.toUpperCase()}*\n\n${lyrics.trim()}`, sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, `*${query.toUpperCase()}*\n\n${lyrics}`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('[LYRICS] Error:', error);
     await sendReply(context.chatJid, 'Lyrics lookup failed. Try: !lyrics Artist - Song Title', sock, context.rawMessage.key, context.queue);
