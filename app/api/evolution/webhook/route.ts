@@ -202,6 +202,20 @@ export async function POST(request: NextRequest) {
 
       console.log(`[EVO-WEBHOOK] qrcode.updated for ${sessionId}: pairing=${!!pairingCode} qr=${!!qrCode}`);
 
+      // Check current state — never regress an active session back to pairing_sent.
+      // Evolution API may deliver stale qrcode.updated events after the connection
+      // has already opened; honoring them would kill a working session.
+      const { data: current } = await supabase
+        .from('bot_sessions')
+        .select('state')
+        .eq('id', sessionId)
+        .single();
+
+      if (current?.state === 'active') {
+        console.log(`[EVO-WEBHOOK] Session ${sessionId} is already active — ignoring stale qrcode.updated`);
+        return NextResponse.json({ ok: true });
+      }
+
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
       if (pairingCode) {
