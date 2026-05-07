@@ -139,28 +139,29 @@ async function start() {
     startMonetizationScheduler();
   }
 
-  // ── Keepalive cron: every service pings all others + itself every 10s ──
-  // Prevents Render free tier from spinning down ANY service.
-  const KEEPALIVE_INTERVAL = 10_000; // 10 seconds
+  // ── Keepalive cron ──
+  // Main: pings self + all workers + Evolution API every 30s (~100 MB/month)
+  // Workers: ping only themselves every 30s (~13 MB/month each)
+  // Uses HEAD requests to minimise response body bandwidth.
+  const KEEPALIVE_INTERVAL = 30_000; // 30 seconds
   const KEEPALIVE_TIMEOUT = 5_000;
 
-  // Build the list of all URLs to keep alive
   const keepAliveTargets: { name: string; url: string }[] = [];
 
-  // Self
+  // Every service pings itself to stay warm
   if (SELF_URL) {
     keepAliveTargets.push({ name: 'self', url: `${SELF_URL}/api/health` });
   }
 
-  // All workers
-  for (const wUrl of WORKER_URLS) {
-    keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
-  }
-
-  // Evolution API
-  const evoUrl = process.env.EVOLUTION_API_URL;
-  if (evoUrl) {
-    keepAliveTargets.push({ name: 'evolution-api', url: evoUrl });
+  // Only main pings workers + Evolution API (saves worker bandwidth)
+  if (!IS_WORKER) {
+    for (const wUrl of WORKER_URLS) {
+      keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
+    }
+    const evoUrl = process.env.EVOLUTION_API_URL;
+    if (evoUrl) {
+      keepAliveTargets.push({ name: 'evolution-api', url: evoUrl });
+    }
   }
 
   if (keepAliveTargets.length > 0) {
@@ -170,9 +171,8 @@ async function start() {
           try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), KEEPALIVE_TIMEOUT);
-            const res = await fetch(target.url, { signal: controller.signal });
+            const res = await fetch(target.url, { method: 'HEAD', signal: controller.signal });
             clearTimeout(timeout);
-            // Only log failures or first success to avoid log spam
             if (!res.ok) {
               console.warn(`[KEEPALIVE] ${target.name} (${target.url}): status=${res.status}`);
             }
@@ -182,7 +182,6 @@ async function start() {
         }),
       );
     };
-    // Ping immediately on startup, then every KEEPALIVE_INTERVAL
     pingAll();
     setInterval(pingAll, KEEPALIVE_INTERVAL);
     console.log(`[KEEPALIVE] Pinging ${keepAliveTargets.length} target(s) every ${KEEPALIVE_INTERVAL / 1000}s: ${keepAliveTargets.map(t => t.name).join(', ')}`);
