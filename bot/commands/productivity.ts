@@ -315,19 +315,24 @@ async function handlePurge(context: MessageContext, args: string[], sock: any): 
       }
 
       if (deleted > 0) {
-        const confirmMsg = await sendReply(
-          context.chatJid,
-          `Purged ${deleted} message(s).`,
-          sock, context.rawMessage.key, context.queue,
-        );
+        // Send confirmation directly via sock to get the message key for auto-delete
+        let confirmKey: any = null;
+        try {
+          const sent = await sock.sendMessage(context.chatJid, {
+            text: `Purged ${deleted} message(s).`,
+          });
+          confirmKey = sent?.key;
+        } catch {
+          await sendReply(context.chatJid, `Purged ${deleted} message(s).`, sock, context.rawMessage.key, context.queue);
+        }
         // Auto-delete the confirmation after 3 seconds
-        setTimeout(async () => {
-          try {
-            if (confirmMsg?.key) {
-              await sock.sendMessage(context.chatJid, { delete: confirmMsg.key });
-            }
-          } catch { /* ignore */ }
-        }, 3000);
+        if (confirmKey) {
+          setTimeout(async () => {
+            try {
+              await sock.sendMessage(context.chatJid, { delete: confirmKey });
+            } catch { /* ignore */ }
+          }, 3000);
+        }
       } else {
         await sendReply(
           context.chatJid,
