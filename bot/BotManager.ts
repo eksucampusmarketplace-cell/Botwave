@@ -612,6 +612,7 @@ class EvolutionBot {
   private presenceHandle: NodeJS.Timeout | null = null;
   private socketAdapter: EvolutionSocketAdapter | null = null;
   private previousDbState: string;
+  private workerUrl: string | null = null;
 
   public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
 
@@ -620,6 +621,7 @@ class EvolutionBot {
     this.userId = config.userId;
     this.phoneNumber = config.phoneNumber;
     this.previousDbState = config.previousDbState || 'qr_pending';
+    this.workerUrl = SELF_URL || null;
   }
 
   /**
