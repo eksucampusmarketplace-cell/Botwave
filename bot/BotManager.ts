@@ -203,6 +203,20 @@ export class BotWaveBot {
       // isNewLogin = true means WhatsApp accepted the pairing code
       if (isNewLogin) {
         console.log(`[${this.sessionId}] PAIRING SUCCESS — WhatsApp accepted the pairing code! Connection will restart to complete handshake.`);
+        if (this.reconnectTimeout) {
+          clearTimeout(this.reconnectTimeout);
+          this.reconnectTimeout = null;
+          console.log(`[${this.sessionId}] Cleared QR timeout — pairing accepted`);
+        }
+      }
+
+      // When creds become registered (phone accepted pairing), cancel the
+      // QR-expiry timeout so it doesn't clear auth state after a successful
+      // pairing. Baileys sets registered=true before connection='open'.
+      if (this.socket?.authState?.creds?.registered && this.reconnectTimeout && !this.isReady) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
+        console.log(`[${this.sessionId}] Cleared QR timeout — creds registered`);
       }
 
       // When we receive a QR, the WebSocket IS connected and ready.
@@ -296,7 +310,7 @@ export class BotWaveBot {
             console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) — skipping restart`);
             return;
           }
-          if (!this.isReady && this.qrCode === qr) {
+          if (!this.isReady && this.qrCode === qr && !this.socket?.authState?.creds?.registered) {
             console.log(`[PAIRING] Code EXPIRED for session ${this.sessionId} after ${PAIRING_TIMEOUT_MS / 1000}s. Clearing stale code and restarting...`);
             // Reset pairingStartedAt BEFORE closing so syncSessionsWithDb
             // sees this session as "pairing in progress" and doesn't start
