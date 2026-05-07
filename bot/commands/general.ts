@@ -28,6 +28,7 @@ async function sendHelp(
 !translate / !lyrics / !tts
 !doc / !qr / !currency / !short / !img
 !calc / !countdown / !cal / !timezone
+!ask [question] — Smart FAQ
 
 *MEDIA*
 !viewonce / !viewonce pr / !toimg / !togif / !toaudio
@@ -66,6 +67,7 @@ async function sendHelp(
 !kick / !promote / !demote
 !welcome / !goodbye / !autoview
 !antidelete / !recover / !recover pr / !refer
+!diagnose — System health report (owner)
 
 *GAMES*
 !trivia / !hangman / !wordchain / !8ball
@@ -578,6 +580,13 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         commands: [
           { name: '!logo', usage: '!logo [style] [name] | [tagline] #hex --size', description: 'Generate professional logos with 45+ styles. Supports taglines (use | separator), custom hex colors (#FF5733), and size presets (--square, --wide, --tall, --banner, --story).\n\nExamples:\n"!logo neon MyBrand"\n"!logo gradient CoolApp | Your Tagline #3498DB --wide"\n"!logo preview" — View all available styles in a grid\n"!logo styles" — List all style names\n\n10 styles are free; remaining styles require BotWave Pro.\n\nAliases: !logogen, !logocreate, !logomaker' },
           { name: '!brandkit', usage: '!brandkit [name] #hex', description: 'Generate a complete brand kit with 3 image formats:\n• Square logo (1080×1080) — profile picture / app icon\n• Banner (1600×400) — website header / social cover\n• Status / Story (1080×1920) — WhatsApp status / IG story\n\nOptionally provide a hex color to customize the palette.\n\nExamples:\n"!brandkit NEXUS"\n"!brandkit NEXUS #FF5733"\n\nRequires BotWave Pro.\n\nAliases: !brand, !brandpack' },
+        ],
+      },
+      {
+        title: 'SMART FAQ & DIAGNOSTICS',
+        commands: [
+          { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
+          { name: '!diagnose', usage: '!diagnose', description: 'Runs a full system health check and reports: bot uptime, memory usage, Evolution API status and latency, worker health (online/offline count), and keepalive configuration. Owner only.\n\nAliases: !diag, !health, !sysinfo' },
         ],
       },
       {
