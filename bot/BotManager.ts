@@ -215,44 +215,71 @@ export class BotWaveBot {
         this.qrCode = qr;
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 180 * 1000);
+        console.log(`[PAIRING] ======= QR received, starting pairing code flow =======`);
+        console.log(`[PAIRING] session=${this.sessionId} timestamp=${now.toISOString()} qrLen=${qr.length}`);
         await updateSessionQR(this.sessionId, qr, expiresAt.toISOString(), now.toISOString());
 
         {
           const cleanPhone = this.phoneNumber.replace(/\D/g, '');
-          console.log(`[${this.sessionId}] Phone raw: "${this.phoneNumber}" -> cleaned: "${cleanPhone}"`);
+          console.log(`[PAIRING] Phone: raw="${this.phoneNumber}" cleaned="${cleanPhone}" cleanLen=${cleanPhone.length}`);
           if (cleanPhone) {
             // Use the pairing queue to serialize pairing code requests across
             // all sessions on this worker. This prevents multiple concurrent
             // requestPairingCode() calls which trigger WhatsApp 428 errors.
             try {
-              console.log(`[${this.sessionId}] >>> Queuing pairing code request for "${cleanPhone}"...`);
+              const queueStartTime = Date.now();
+              console.log(`[PAIRING] >>> Queuing pairing code request for "${cleanPhone}" at ${new Date(queueStartTime).toISOString()}`);
+              const queuePos = (await import('./linkQueue')).getQueuePosition(this.sessionId);
+              if (queuePos) {
+                console.log(`[PAIRING] Queue position: #${queuePos.position} estimatedWait=${queuePos.estimatedWaitMinutes}min`);
+              } else {
+                console.log(`[PAIRING] Queue position: front (no wait)`);
+              }
               const code = await queueLink(this.sessionId, cleanPhone, async (phone: string) => {
+                console.log(`[PAIRING] Baileys requestPairingCode executing for "${phone}" (2s delay first)...`);
                 await delay(2000);
-                return this.socket.requestPairingCode(phone);
+                const requestStart = Date.now();
+                console.log(`[PAIRING] Calling socket.requestPairingCode("${phone}") at ${new Date(requestStart).toISOString()}`);
+                const result = await this.socket.requestPairingCode(phone);
+                const requestDuration = Date.now() - requestStart;
+                console.log(`[PAIRING] socket.requestPairingCode returned in ${requestDuration}ms: "${result}"`);
+                return result;
               });
-              console.log(`[${this.sessionId}] <<< requestPairingCode returned: "${code}"`);
+              const totalDuration = Date.now() - queueStartTime;
+              const codeAge = 0; // freshly generated
+              console.log(`[PAIRING] <<< requestPairingCode returned: "${code}" totalDuration=${totalDuration}ms codeAge=${codeAge}ms`);
+              console.log(`[PAIRING] Code analysis: len=${code?.length || 0} isAlphanumeric=${/^[A-Z0-9]+$/i.test(code || '')} isEmpty=${!code || code.trim() === ''}`);
               // Guard: if a terminal handler (428, loggedOut, max-retries) ran
               // while this request was in-flight, the session is already in
               // needs_reauth. Do NOT overwrite that state with pairing_sent.
               // pairingStartedAt === -1 is the sentinel for "terminated".
               if (this.pairingStartedAt === -1 || !this.socket) {
-                console.log(`[${this.sessionId}] Pairing code "${code}" received but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) — discarding`);
+                console.log(`[PAIRING] DISCARDING code "${code}" — session terminated during request (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket})`);
                 return;
               }
+              console.log(`[PAIRING] Saving code to DB...`);
+              const dbSaveStart = Date.now();
               await updateSessionPairingCode(this.sessionId, code);
+              console.log(`[PAIRING] DB save took ${Date.now() - dbSaveStart}ms`);
+              console.log(`[PAIRING] Updating state to pairing_sent...`);
               await updateSessionStatus(this.sessionId, 'pairing_sent');
               this.isPairingSent = true;
               this.pairingStartedAt = Date.now();
               pairingCodeRequested = true;
-              console.log(`[${this.sessionId}] Pairing code saved to DB!`);
+              console.log(`[PAIRING] === COMPLETE === session=${this.sessionId} code="${code}" totalFlow=${Date.now() - queueStartTime}ms isPairingSent=${this.isPairingSent} pairingStartedAt=${new Date(this.pairingStartedAt).toISOString()}`);
               logPairingEvent(this.sessionId, 'code_generated', this.workerUrl).catch(() => {});
             } catch (err: any) {
-              console.error(`[${this.sessionId}] <<< requestPairingCode FAILED:`, err);
-              console.error(`[${this.sessionId}] Error name: ${err?.name}, message: ${err?.message}, stack: ${err?.stack?.slice(0, 200)}`);
+              console.error(`[PAIRING] <<< requestPairingCode FAILED for session=${this.sessionId}:`);
+              console.error(`[PAIRING] Error: name=${err?.name} message=${err?.message} code=${err?.code || 'none'}`);
+              console.error(`[PAIRING] Stack: ${err?.stack?.slice(0, 500)}`);
+              if (err?.message?.includes('428') || err?.statusCode === 428) {
+                console.error(`[PAIRING] 428 RATE LIMIT — WhatsApp rejected pairing code request. Too many requests.`);
+              }
               pairingCodeRequested = false;
+              logPairingEvent(this.sessionId, 'code_failed', this.workerUrl, err?.statusCode, { error: err?.message }).catch(() => {});
             }
           } else {
-            console.error(`[${this.sessionId}] EMPTY phone number! Cannot request pairing code. Raw: "${this.phoneNumber}"`);
+            console.error(`[PAIRING] EMPTY phone number! Cannot request pairing code. Raw: "${this.phoneNumber}"`);
           }
         }
 
@@ -270,7 +297,7 @@ export class BotWaveBot {
             return;
           }
           if (!this.isReady && this.qrCode === qr) {
-            console.log(`Code expired for session ${this.sessionId}, restarting connection...`);
+            console.log(`[PAIRING] Code EXPIRED for session ${this.sessionId} after ${PAIRING_TIMEOUT_MS / 1000}s. Clearing stale code and restarting...`);
             // Reset pairingStartedAt BEFORE closing so syncSessionsWithDb
             // sees this session as "pairing in progress" and doesn't start
             // another session concurrently during the restart window.
@@ -718,19 +745,27 @@ class EvolutionBot {
       trackInstance(this.sessionId);
 
       // Fetch pairing code — getPairingCode now handles its own polling
+      const evoPairingStart = Date.now();
+      console.log(`[PAIRING-EVO] === Requesting pairing code via Evolution API === session=${this.sessionId} phone=${this.phoneNumber} at=${new Date(evoPairingStart).toISOString()}`);
       const code = await getPairingCode(this.sessionId, this.phoneNumber);
+      const evoPairingDuration = Date.now() - evoPairingStart;
 
       if (code) {
-        console.log(`[EVO] Pairing code for ${this.sessionId}: ${code}`);
+        console.log(`[PAIRING-EVO] Code received: "${code}" len=${code.length} duration=${evoPairingDuration}ms session=${this.sessionId}`);
+        console.log(`[PAIRING-EVO] Saving to DB...`);
+        const dbStart = Date.now();
         await updateSessionPairingCode(this.sessionId, code);
+        console.log(`[PAIRING-EVO] DB save took ${Date.now() - dbStart}ms`);
         await updateSessionStatus(this.sessionId, 'pairing_sent');
         this.isPairingSent = true;
         this.pairingStartedAt = Date.now();
         this.isReconnecting = false;
+        console.log(`[PAIRING-EVO] === COMPLETE === session=${this.sessionId} code="${code}" totalFlow=${Date.now() - evoPairingStart}ms`);
       } else {
-        console.warn(`[EVO] No pairing code returned for ${this.sessionId}`);
+        console.error(`[PAIRING-EVO] NO CODE returned after ${evoPairingDuration}ms for session=${this.sessionId}. Setting inactive.`);
         await updateSessionStatus(this.sessionId, 'inactive');
         this.isReconnecting = false;
+        logPairingEvent(this.sessionId, 'evo_code_failed', this.workerUrl, undefined, { duration: evoPairingDuration }).catch(() => {});
         return;
       }
 

@@ -63,6 +63,16 @@ export async function GET() {
       throw error;
     }
 
+    // Log pairing-relevant data for any session in pairing flow
+    if (sessions?.length) {
+      const pairingSessions = sessions.filter((s: any) => s.state === 'qr_pending' || s.state === 'pairing_sent');
+      if (pairingSessions.length > 0) {
+        for (const s of pairingSessions) {
+          console.log(`[PAIRING-API] Session ${s.id.slice(0, 8)}: state=${s.state} pairing_code=${s.pairing_code ? `"${s.pairing_code}"` : 'null'} updated_at=${s.updated_at}`);
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: sessions || [],
