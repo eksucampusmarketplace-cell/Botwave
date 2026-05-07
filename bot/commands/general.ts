@@ -55,6 +55,11 @@ async function sendHelp(
 !whois (reply) — user lookup (name, number, about)
 !headers / !country / !emoji
 
+*CREATIVE*
+!logo [style] [name] — Generate logos (45+ styles)
+!logo preview — View all styles
+!brandkit [name] — Brand kit (3 formats)
+
 *SOCIAL & ADMIN*
 !download / !save / !savestatus / !tagall
 !afk / !group / !purge / !settings
@@ -566,6 +571,13 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         commands: [
           { name: '!wallpaper', usage: '!wallpaper [optional query]', description: 'Sends a random HD wallpaper (1920x1080). Optionally specify a search query for themed wallpapers.\n\nExamples: "!wallpaper" (random), "!wallpaper nature"\n\nAliases: !wp' },
           { name: '!qrread', usage: '!qrread (reply to image)', description: 'Scans a QR code from an image and shows its content. Reply to an image containing a QR code.\n\nAliases: !scanqr' },
+        ],
+      },
+      {
+        title: 'LOGO & BRANDING',
+        commands: [
+          { name: '!logo', usage: '!logo [style] [name] | [tagline] #hex --size', description: 'Generate professional logos with 45+ styles. Supports taglines (use | separator), custom hex colors (#FF5733), and size presets (--square, --wide, --tall, --banner, --story).\n\nExamples:\n"!logo neon MyBrand"\n"!logo gradient CoolApp | Your Tagline #3498DB --wide"\n"!logo preview" — View all available styles in a grid\n"!logo styles" — List all style names\n\n10 styles are free; remaining styles require BotWave Pro.\n\nAliases: !logogen, !logocreate, !logomaker' },
+          { name: '!brandkit', usage: '!brandkit [name] #hex', description: 'Generate a complete brand kit with 3 image formats:\n• Square logo (1080×1080) — profile picture / app icon\n• Banner (1600×400) — website header / social cover\n• Status / Story (1080×1920) — WhatsApp status / IG story\n\nOptionally provide a hex color to customize the palette.\n\nExamples:\n"!brandkit NEXUS"\n"!brandkit NEXUS #FF5733"\n\nRequires BotWave Pro.\n\nAliases: !brand, !brandpack' },
         ],
       },
       {
