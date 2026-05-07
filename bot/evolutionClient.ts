@@ -222,9 +222,11 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
 // since Baileys generates it asynchronously (~2-4s after connection starts).
 export async function getPairingCode(instanceName: string, phoneNumber: string) {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
-  console.log(`[EVO-CLIENT] getPairingCode: instance=${instanceName} phone=${cleanPhone}`);
+  const flowStart = Date.now();
+  console.log(`[PAIRING-EVO-CLIENT] ======= getPairingCode START ======= instance=${instanceName} phone=${cleanPhone} at=${new Date(flowStart).toISOString()}`);
 
   // First call triggers connectToWhatsapp inside Evolution API
+  const connectStart = Date.now();
   const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
       method: 'GET',
@@ -232,25 +234,38 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
     }),
   );
   const connectData: any = await connectRes.json();
-  console.log(`[EVO-CLIENT] getPairingCode initial response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} state=${connectData?.state || 'unknown'}`);
-  if (connectData?.pairingCode) return connectData.pairingCode;
+  const connectDuration = Date.now() - connectStart;
+  console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
+  console.log(`[PAIRING-EVO-CLIENT] Full response data: ${JSON.stringify(connectData).slice(0, 500)}`);
+  if (connectData?.pairingCode) {
+    console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
+    return connectData.pairingCode;
+  }
 
   // Baileys may still be connecting — poll up to 5 times (3s apart)
+  console.log(`[PAIRING-EVO-CLIENT] No code on first try, starting polling (5 attempts, 3s apart)...`);
   for (let i = 0; i < 5; i++) {
     await new Promise(r => setTimeout(r, 3000));
+    const pollStart = Date.now();
+    const elapsed = pollStart - flowStart;
     try {
       const res = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
         method: 'GET',
         headers,
       });
       const data: any = await res.json();
-      console.log(`[EVO-CLIENT] getPairingCode poll ${i + 1}/5: pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'}`);
-      if (data?.pairingCode) return data.pairingCode;
-    } catch (err) {
-      console.warn(`[EVO-CLIENT] getPairingCode poll ${i + 1}/5 failed:`, err);
+      const pollDuration = Date.now() - pollStart;
+      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/5: status=${res.status} pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
+      if (data?.pairingCode) {
+        console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
+        return data.pairingCode;
+      }
+    } catch (err: any) {
+      console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/5 FAILED: error=${err?.message} totalElapsed=${elapsed}ms`);
     }
   }
-  console.warn(`[EVO-CLIENT] getPairingCode: no code returned after 5 polls for ${instanceName}`);
+  const totalDuration = Date.now() - flowStart;
+  console.error(`[PAIRING-EVO-CLIENT] ======= getPairingCode FAILED ======= No code after 5 polls for ${instanceName}. totalDuration=${totalDuration}ms`);
   return null;
 }
 

@@ -129,25 +129,62 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
 }
 
 export async function updateSessionPairingCode(sessionId: string, code: string) {
-  console.log(`[DB] Saving pairing code for ${sessionId}: ${code}`);
-  const { error } = await supabase
+  const dbTimestamp = new Date().toISOString();
+  const codeLength = code?.length || 0;
+  const isEmptyCode = !code || code.trim() === '';
+  console.log(`[PAIRING-DB] === Saving pairing code ===> session=${sessionId} code="${code}" codeLen=${codeLength} isEmpty=${isEmptyCode} dbTimestamp=${dbTimestamp}`);
+
+  // Read current state BEFORE the update so we can log what happened
+  const { data: preState, error: preErr } = await supabase
+    .from('bot_sessions')
+    .select('state, pairing_code, updated_at')
+    .eq('id', sessionId)
+    .single();
+
+  if (preErr) {
+    console.error(`[PAIRING-DB] Pre-read FAILED for ${sessionId}:`, preErr.message, preErr.code);
+  } else {
+    console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingCode=${preState?.pairing_code ? `"${preState.pairing_code}"` : 'null'} lastUpdated=${preState?.updated_at}`);
+  }
+
+  const { error, count } = await supabase
     .from('bot_sessions')
     .update({
       pairing_code: code,
-      state: 'qr_pending',
-      updated_at: new Date().toISOString()
+      state: isEmptyCode ? 'qr_pending' : 'qr_pending',
+      updated_at: dbTimestamp
     })
     .eq('id', sessionId)
     .neq('state', 'active');  // never overwrite an active session
 
   if (error) {
-    console.error(`[DB] ERROR saving pairing code for ${sessionId}:`, error);
+    console.error(`[PAIRING-DB] ERROR saving pairing code for ${sessionId}: code=${error.code} message=${error.message} details=${error.details}`);
+  } else if (count === 0) {
+    console.warn(`[PAIRING-DB] BLOCKED — no rows updated for ${sessionId}. Session is likely in 'active' state (protected). code="${code}"`);
   } else {
-    console.log(`[DB] Pairing code saved successfully for ${sessionId}`);
+    console.log(`[PAIRING-DB] SUCCESS — pairing code saved for ${sessionId}: code="${code}" rowsUpdated=${count} at=${dbTimestamp}`);
+  }
+
+  // Post-update verification: confirm the code actually persisted
+  const { data: postState, error: postErr } = await supabase
+    .from('bot_sessions')
+    .select('state, pairing_code, updated_at')
+    .eq('id', sessionId)
+    .single();
+
+  if (postErr) {
+    console.error(`[PAIRING-DB] Post-read FAILED for ${sessionId}:`, postErr.message);
+  } else {
+    const codeMatch = postState?.pairing_code === code;
+    console.log(`[PAIRING-DB] VERIFY — session=${sessionId} state=${postState?.state} dbCode="${postState?.pairing_code}" expected="${code}" match=${codeMatch} updatedAt=${postState?.updated_at}`);
+    if (!codeMatch && !isEmptyCode) {
+      console.error(`[PAIRING-DB] CODE MISMATCH! Saved "${code}" but DB has "${postState?.pairing_code}". Possible race condition or filter blocked the update.`);
+    }
   }
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
+  const timestamp = new Date().toISOString();
   // Defense-in-depth: never regress an active session to pairing_sent or
   // qr_pending. Stale webhooks or race conditions can attempt this; the
   // Supabase filter ensures the update is silently skipped in those cases.
@@ -155,20 +192,31 @@ export async function updateSessionStatus(sessionId: string, status: string) {
   const REGRESSIVE_STATUSES = ['pairing_sent', 'qr_pending'];
   const isRegression = REGRESSIVE_STATUSES.includes(status);
 
+  // Log current state before changing
+  const { data: preState } = await supabase
+    .from('bot_sessions')
+    .select('state, pairing_code')
+    .eq('id', sessionId)
+    .single();
+  console.log(`[PAIRING-STATE] Updating session=${sessionId}: ${preState?.state || 'unknown'} → ${status} (isRegression=${isRegression}, hasPairingCode=${!!preState?.pairing_code}) at=${timestamp}`);
+
   const updatePayload: Record<string, any> = {
     state: status,
-    updated_at: new Date().toISOString()
+    updated_at: timestamp
   };
 
   const clearedFields: string[] = [];
 
   if (status === 'active') {
-    updatePayload.last_active = new Date().toISOString();
+    updatePayload.last_active = timestamp;
     updatePayload.qr_code = null;
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
     updatePayload.pairing_code = null;
     clearedFields.push('qr_code', 'pairing_code');
+    if (preState?.pairing_code) {
+      console.log(`[PAIRING-STATE] Clearing pairing_code="${preState.pairing_code}" because session is now active`);
+    }
   }
 
   if (status === 'needs_reauth') {
@@ -197,10 +245,10 @@ export async function updateSessionStatus(sessionId: string, status: string) {
 
   if (error) {
     if (error.code !== 'PGRST205') {
-      console.error(`[DB] Error updating status for ${sessionId} to ${status}:`, error);
+      console.error(`[PAIRING-STATE] Error updating status for ${sessionId} to ${status}:`, error);
     }
   } else if (isRegression && count === 0) {
-    console.warn(`[DB] Blocked state regression for ${sessionId}: attempted ${status} but session is in a protected state`);
+    console.warn(`[PAIRING-STATE] BLOCKED state regression for ${sessionId}: attempted ${status} but session is in a protected state (current=${preState?.state})`);
   } else {
     const extra = clearedFields.length ? ` (cleared: ${clearedFields.join(', ')})` : '';
     console.log(`[DB] Status updated for ${sessionId}: ${status}${extra}`);

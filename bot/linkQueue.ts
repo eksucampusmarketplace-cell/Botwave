@@ -6,6 +6,7 @@ interface LinkJob {
   resolve: (code: string) => void;
   reject: (err: Error) => void;
   requestPairingCode: (phone: string) => Promise<string>;
+  queuedAt: number;
 }
 
 const queue: LinkJob[] = [];
@@ -16,26 +17,37 @@ export async function queueLink(
   phoneNumber: string,
   requestPairingCode: (phone: string) => Promise<string>,
 ): Promise<string> {
+  const queuedAt = Date.now();
+  console.log(`[PAIRING-QUEUE] Job queued: session=${sessionId} phone=${phoneNumber} queueLen=${queue.length} processing=${processing} at=${new Date(queuedAt).toISOString()}`);
   return new Promise((resolve, reject) => {
-    queue.push({ sessionId, phoneNumber, resolve, reject, requestPairingCode });
+    queue.push({ sessionId, phoneNumber, resolve, reject, requestPairingCode, queuedAt });
     if (!processing) processQueue();
   });
 }
 
 async function processQueue() {
   processing = true;
+  console.log(`[PAIRING-QUEUE] Processing started. queueLen=${queue.length}`);
   while (queue.length > 0) {
     const job = queue.shift()!;
+    const waitTime = Date.now() - job.queuedAt;
+    console.log(`[PAIRING-QUEUE] Processing job: session=${job.sessionId} phone=${job.phoneNumber} waitedInQueue=${waitTime}ms remainingJobs=${queue.length}`);
     try {
+      const jobStart = Date.now();
       const code = await job.requestPairingCode(job.phoneNumber);
+      const jobDuration = Date.now() - jobStart;
+      console.log(`[PAIRING-QUEUE] Job completed: session=${job.sessionId} code="${code}" duration=${jobDuration}ms totalWait=${Date.now() - job.queuedAt}ms`);
       job.resolve(code);
-    } catch (err) {
+    } catch (err: any) {
+      console.error(`[PAIRING-QUEUE] Job FAILED: session=${job.sessionId} error=${err?.message} totalWait=${Date.now() - job.queuedAt}ms`);
       job.reject(err as Error);
     }
     if (queue.length > 0) {
+      console.log(`[PAIRING-QUEUE] Waiting ${DELAY_MS / 1000}s before next job (${queue.length} remaining)...`);
       await new Promise(r => setTimeout(r, DELAY_MS));
     }
   }
+  console.log(`[PAIRING-QUEUE] Queue empty. Processing stopped.`);
   processing = false;
 }
 
