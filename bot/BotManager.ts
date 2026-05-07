@@ -765,7 +765,7 @@ class EvolutionBot {
         console.error(`[PAIRING-EVO] NO CODE returned after ${evoPairingDuration}ms for session=${this.sessionId}. Setting inactive.`);
         await updateSessionStatus(this.sessionId, 'inactive');
         this.isReconnecting = false;
-        logPairingEvent(this.sessionId, 'evo_code_failed', this.workerUrl, undefined, { duration: evoPairingDuration }).catch(() => {});
+        logPairingEvent(this.sessionId, 'evo_code_failed', SELF_URL || null, undefined, { duration: evoPairingDuration }).catch(() => {});
         return;
       }
 
