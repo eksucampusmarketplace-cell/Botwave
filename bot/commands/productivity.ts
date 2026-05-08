@@ -184,7 +184,7 @@ async function handleStats(context: MessageContext, sock: any): Promise<void> {
 
     if (stats.topUsers.length > 0) {
       msg += '\n*TOP USERS*\n';
-      stats.topUsers.slice(0, 5).forEach((u, i) => {
+      stats.topUsers.slice(0, 5).forEach((u: { user_name?: string; user_jid: string; message_count: number }, i: number) => {
         const name = u.user_name || u.user_jid.split('@')[0];
         msg += `${i + 1}. ${name} — ${u.message_count} msgs\n`;
       });
