@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCircuitStats } from '@/bot/circuitBreaker';
-import { checkRedisHealth, isRedisAvailable } from '@/bot/redis';
+import { checkRedisHealth } from '@/bot/redis';
 import { getMemoryStats } from '@/bot/memoryGuard';
 import { getWriteQueueStats } from '@/bot/writeQueue';
 import { getAdaptiveStats } from '@/bot/adaptivePoller';
@@ -32,10 +32,7 @@ export async function GET() {
     uptime: Math.round(process.uptime()),
     memory,
     circuit,
-    redis: {
-      available: isRedisAvailable(),
-      ...redisHealth,
-    },
+    redis: redisHealth,
     writeQueue,
     adaptive,
     authGuard,
