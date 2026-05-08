@@ -14,7 +14,7 @@
  * the bot process hangs until Render force-kills it (causing 502s).
  */
 
-const SHUTDOWN_TIMEOUT_MS = 10_000; // force exit after 10s
+const SHUTDOWN_TIMEOUT_MS = 15_000; // force exit after 15s (extra time for auth flush)
 
 let isShuttingDown = false;
 const registeredIntervals: NodeJS.Timeout[] = [];

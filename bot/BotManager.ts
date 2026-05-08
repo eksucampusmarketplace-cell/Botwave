@@ -1342,8 +1342,12 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
         logPairingEvent(session.id, 'pairing_started', SELF_URL || null).catch(() => {});
       }
 
-      // Stagger: wait between each session start
-      await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
+      // Stagger: wait between each NEW pairing start to avoid WhatsApp 428.
+      // Skip the delay for active/inactive sessions — they already have valid
+      // auth and just need to reconnect quickly after a redeploy.
+      if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
+        await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
+      }
     }
   }
 

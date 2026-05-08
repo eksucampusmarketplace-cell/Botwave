@@ -357,6 +357,26 @@ export async function cleanupOnStartup(): Promise<void> {
     .eq('locked_by', INSTANCE_ID)
     .select('id, state');
 
+  // Also clean up locks from previous main instances with different PIDs.
+  // When INSTANCE_ID is 'main-{PID}', the PID changes on every restart,
+  // leaving orphaned locks that only get cleaned by the 120s orphan cycle.
+  if (INSTANCE_ID.startsWith('main-')) {
+    const { data: mainLocks, error: mainErr } = await supabase
+      .from('bot_sessions')
+      .update({
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+      })
+      .like('locked_by', 'main-%')
+      .neq('locked_by', INSTANCE_ID)
+      .select('id, state');
+
+    if (!mainErr && mainLocks && mainLocks.length > 0) {
+      console.log(`[COORD] Released ${mainLocks.length} stale lock(s) from previous main instances: ${mainLocks.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
+    }
+  }
+
   if (error) {
     console.error('[COORD] Startup cleanup failed:', error);
     return;
