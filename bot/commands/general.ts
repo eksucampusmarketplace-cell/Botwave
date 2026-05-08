@@ -23,12 +23,20 @@ async function sendHelp(
 !sticker — Make sticker
 !joke / !quote / !meme — Fun
 
-*TOOLS*
-!ai / !weather / !define / !wiki
-!translate / !lyrics / !tts
-!doc / !qr / !currency / !short / !img
-!calc / !countdown / !cal / !timezone
+*AI & SMART*
+!ai [message] — AI chat (Groq)
+!img [prompt] — AI image generation
+!scan — Receipt/invoice scanner (reply to photo)
+!music [song] — Search & send music as audio
+!digest — AI summary of group chat
 !ask [question] — Smart FAQ
+
+*TOOLS*
+!weather / !define / !wiki / !horoscope
+!translate / !lyrics / !tts / !currency
+!doc / !topdf / !todoc / !totxt
+!qr / !short / !note / !remind / !schedule
+!calc / !countdown / !cal / !timezone
 
 *MEDIA*
 !viewonce / !viewonce pr / !toimg / !togif / !toaudio
@@ -49,7 +57,7 @@ async function sendHelp(
 !forward / !base64 / !hash / !color
 !palette / !pick / !coinflip / !dice
 !password / !uuid / !epoch / !bmi / !age
-!unit / !paste / !uptime / !id
+!unit / !paste / !uptime / !id / !stats
 
 *INFO*
 !crypto / !ud / !ip / !npm / !whois [domain]
@@ -67,11 +75,14 @@ async function sendHelp(
 !kick / !promote / !demote
 !welcome / !goodbye / !autoview
 !antidelete / !recover / !recover pr / !refer
+!balance / !plan — Rewards & subscription
 !diagnose — System health report (owner)
 
 *GAMES*
-!trivia / !hangman / !wordchain / !8ball
-!truth / !dare / !ship / !fortune / !fact
+!play / !trivia / !hangman / !wordchain
+!answer / !poll / !vote / !leaderboard
+!8ball / !truth / !dare / !ship
+!compliment / !fortune / !fact / !riddle
 
 _Send *!help* for the full .docx guide._
 _Only the bot owner can use commands._
@@ -583,8 +594,11 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         ],
       },
       {
-        title: 'SMART FAQ & DIAGNOSTICS',
+        title: 'AI & SMART FEATURES',
         commands: [
+          { name: '!scan', usage: '!scan (reply to receipt/invoice photo)', description: 'Scans a receipt or invoice photo using AI vision and extracts store name, items, prices, subtotal, tax, total, and payment method. Send or reply to a photo with "!scan". You can add context: "!scan this is in euros".\n\nRequires Groq API key in dashboard settings.\n\nAliases: !receipt, !invoice' },
+          { name: '!music', usage: '!music [song name]', description: 'Searches for a song and sends it as an audio file. Supports any song — just type the name and optionally the artist.\n\nExamples:\n"!music Shape of You"\n"!music Burna Boy Last Last"\n"!music Wizkid Essence"\n\nAliases: !song, !findsong' },
+          { name: '!digest', usage: '!digest  |  !digest today  |  !digest 50', description: 'Generates an AI summary of recent group chat messages using real participant names. Great for catching up on busy groups.\n\nOptions:\n"!digest" — Last few hours\n"!digest today" — Full day summary\n"!digest 50" — Last 50 messages\n\nOnly works in group chats. Requires Groq API key.\n\nAliases: !summary, !tldr' },
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
           { name: '!diagnose', usage: '!diagnose', description: 'Runs a full system health check and reports: bot uptime, memory usage, Evolution API status and latency, worker health (online/offline count), and keepalive configuration. Owner only.\n\nAliases: !diag, !health, !sysinfo' },
         ],

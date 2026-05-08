@@ -9,6 +9,7 @@ import './productivity';
 import './admin';
 import './logo';
 import './chatbot';
+import './smart';
 
 // Re-export registry for use by MessageHandler
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';
