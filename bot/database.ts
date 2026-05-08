@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './circuitBreaker';
 import { trackMap } from './memoryGuard';
-import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache } from './redisSessionCache';
+import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists } from './redisSessionCache';
 import { queueWrite } from './writeQueue';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -169,6 +169,7 @@ export async function getSessionById(sessionId: string) {
   // Cache in Redis for subsequent reads
   if (data) {
     await cacheSession(sessionId, data);
+    await cacheSessionExists(sessionId);
   }
   return data;
 }
@@ -509,17 +510,20 @@ export async function logPairingEvent(
   details?: Record<string, unknown>,
 ) {
   // Verify the session still exists before inserting to avoid FK violations.
-  // The session may have been deleted between the time the event occurred and
-  // the audit log insert (race condition with cascade deletes).
-  const { data: exists } = await supabase
-    .from('bot_sessions')
-    .select('id')
-    .eq('id', sessionId)
-    .maybeSingle();
+  // Check Redis cache first to skip the Supabase round-trip when possible.
+  const existsInRedis = await getCachedSessionExists(sessionId);
+  if (!existsInRedis) {
+    const { data: exists } = await supabase
+      .from('bot_sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .maybeSingle();
 
-  if (!exists) {
-    console.warn(`[AUDIT] Skipping pairing event ${eventType} — session ${sessionId} not found in bot_sessions`);
-    return;
+    if (!exists) {
+      console.warn(`[AUDIT] Skipping pairing event ${eventType} — session ${sessionId} not found in bot_sessions`);
+      return;
+    }
+    await cacheSessionExists(sessionId);
   }
 
   const { error } = await supabase
@@ -546,7 +550,7 @@ export async function logPairingEvent(
  * Sets pairing_lock_acquired_at = NOW() so other workers can see
  * that a pairing is in progress on this worker.
  */
-export async function acquirePairingLock(sessionId: string): Promise<void> {
+export async function acquirePairingLock(sessionId: string, workerUrl?: string | null): Promise<void> {
   const { error } = await supabase
     .from('bot_sessions')
     .update({
@@ -557,13 +561,15 @@ export async function acquirePairingLock(sessionId: string): Promise<void> {
 
   if (error && error.code !== 'PGRST205') {
     console.error(`[DB] Failed to acquire pairing lock for ${sessionId}:`, error);
+  } else {
+    await cachePairingLock(sessionId, workerUrl ?? null);
   }
 }
 
 /**
  * Release the DB-level pairing lock for a session.
  */
-export async function releasePairingLock(sessionId: string): Promise<void> {
+export async function releasePairingLock(sessionId: string, workerUrl?: string | null): Promise<void> {
   const { error } = await supabase
     .from('bot_sessions')
     .update({
@@ -574,6 +580,8 @@ export async function releasePairingLock(sessionId: string): Promise<void> {
 
   if (error && error.code !== 'PGRST205') {
     console.error(`[DB] Failed to release pairing lock for ${sessionId}:`, error);
+  } else {
+    await invalidatePairingLock(workerUrl ?? null);
   }
 }
 
@@ -582,6 +590,10 @@ export async function releasePairingLock(sessionId: string): Promise<void> {
  * that is less than 3 minutes old (the pairing code TTL).
  */
 export async function isWorkerPairingLocked(workerUrl: string | null): Promise<boolean> {
+  // Try Redis first — avoids a Supabase round-trip on every sync cycle
+  const cachedLock = await getCachedPairingLock(workerUrl);
+  if (cachedLock) return true;
+
   const cutoff = new Date(Date.now() - 180_000).toISOString();
 
   let query = supabase
@@ -598,7 +610,11 @@ export async function isWorkerPairingLocked(workerUrl: string | null): Promise<b
 
   const { data, error } = await query;
   if (error) return false;
-  return (data?.length ?? 0) > 0;
+  const locked = (data?.length ?? 0) > 0;
+  if (locked && data?.[0]) {
+    await cachePairingLock(data[0].id, workerUrl);
+  }
+  return locked;
 }
 
 /**
@@ -939,6 +955,13 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
   const cached = getCached(sessionUserIdCache, sessionId);
   if (cached !== undefined) return cached;
 
+  // Try Redis before hitting Supabase — user_id never changes for a session
+  const redisCached = await getCachedSessionUserId(sessionId);
+  if (redisCached) {
+    setCache(sessionUserIdCache, sessionId, redisCached, CACHE_TTL_LONG_MS);
+    return redisCached;
+  }
+
   return resilientRead({
     cacheKey: `sessionUser:${sessionId}`,
     fallbackValue: null as string | null,
@@ -953,7 +976,10 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
         return null;
       }
       const result = data?.user_id || null;
-      setCache(sessionUserIdCache, sessionId, result);
+      setCache(sessionUserIdCache, sessionId, result, CACHE_TTL_LONG_MS);
+      if (result) {
+        await cacheSessionUserId(sessionId, result);
+      }
       return result;
     },
   });
