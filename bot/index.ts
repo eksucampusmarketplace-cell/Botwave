@@ -42,8 +42,14 @@ async function start() {
   // Initial sync
   console.log('[BOT] Running initial session sync...');
   await syncSessionsWithDb(IS_WORKER);
-  console.log('[BOT] Initial sync complete. Polling every 5s...');
+  console.log('[BOT] Initial sync complete. Polling every 15s...');
   
+  // ── Polling intervals ──
+  // Tuned to reduce Supabase load on free-tier (0.5 GB RAM, shared CPU).
+  // Previous: sync 5s, recovery 30s, orphan 60s, audit 120s, reauth 90s, reminders 15s
+  // New:      sync 15s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
+  // Cuts total DB queries by ~60-70%.
+
   // Periodically sync sessions from database
   setInterval(async () => {
     try {
@@ -51,9 +57,9 @@ async function start() {
     } catch (error) {
       console.error('Error syncing sessions:', error);
     }
-  }, 5000); // Every 5 seconds
+  }, 15_000); // Every 15 seconds (was 5s)
 
-  // Main service: recover sessions stuck on dead workers every 30s
+  // Main service: recover sessions stuck on dead workers every 60s
   if (!IS_WORKER) {
     setInterval(async () => {
       try {
@@ -64,10 +70,10 @@ async function start() {
       } catch (err) {
         console.error('[RECOVERY] Error recovering stale sessions:', err);
       }
-    }, 30_000);
+    }, 60_000); // was 30s
   }
 
-  // Coordinator: orphan recovery (every 60s, main only) + audit (every 120s)
+  // Coordinator: orphan recovery (every 120s, main only) + audit (every 300s)
   if (!IS_WORKER) {
     setInterval(async () => {
       try {
@@ -78,7 +84,7 @@ async function start() {
       } catch (err) {
         console.error('[COORD] Orphan recovery error:', err);
       }
-    }, 60_000);
+    }, 120_000); // was 60s
 
     setInterval(async () => {
       try {
@@ -86,9 +92,9 @@ async function start() {
       } catch (err) {
         console.error('[COORD] Audit error:', err);
       }
-    }, 120_000);
+    }, 300_000); // was 120s
 
-    // Auto-recovery: retry needs_reauth sessions every 90s
+    // Auto-recovery: retry needs_reauth sessions every 180s
     setInterval(async () => {
       try {
         const recovered = await autoRecoverNeedsReauth();
@@ -98,10 +104,10 @@ async function start() {
       } catch (err) {
         console.error('[AUTO-RECOVERY] Error:', err);
       }
-    }, 90_000);
+    }, 180_000); // was 90s
   }
 
-  // Reminder + Scheduled Message delivery loop (every 15s)
+  // Reminder + Scheduled Message delivery loop (every 30s)
   setInterval(async () => {
     try {
       // Deliver due reminders
@@ -141,7 +147,7 @@ async function start() {
     } catch (err) {
       console.error('[REMIND/SCHED] Error in delivery loop:', err);
     }
-  }, 15_000);
+  }, 30_000); // was 15s
 
   // Monetization: dunning + trial notifications (main only, every 30min)
   if (!IS_WORKER) {
@@ -149,10 +155,10 @@ async function start() {
   }
 
   // ── Keepalive cron ──
-  // Main: pings self + all workers + Evolution API every 30s (~100 MB/month)
-  // Workers: ping only themselves every 30s (~13 MB/month each)
+  // Main: pings self + all workers + Evolution API every 60s
+  // Workers: ping only themselves every 60s
   // Uses HEAD requests to minimise response body bandwidth.
-  const KEEPALIVE_INTERVAL = 30_000; // 30 seconds
+  const KEEPALIVE_INTERVAL = 60_000; // 60 seconds (was 30s)
   const KEEPALIVE_TIMEOUT = 5_000;
 
   const keepAliveTargets: { name: string; url: string }[] = [];

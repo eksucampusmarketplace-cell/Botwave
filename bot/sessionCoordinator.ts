@@ -24,8 +24,8 @@ const supabase = createClient(
 );
 
 const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
-const LOCK_EXPIRY_MS = 90_000; // 90s without heartbeat = stale lock
-const HEARTBEAT_INTERVAL = 30_000; // heartbeat every 30s
+const LOCK_EXPIRY_MS = 180_000; // 180s without heartbeat = stale lock
+const HEARTBEAT_INTERVAL = 60_000; // heartbeat every 60s (was 30s)
 const AUTO_RECOVERY_COOLDOWN_MS = 120_000; // wait 2 min before auto-retry
 const AUTO_RECOVERY_MAX_ATTEMPTS = 3; // max auto-recovery tries per session
 

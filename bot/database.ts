@@ -19,6 +19,44 @@ if (!supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// ─── In-memory cache layer ──────────────────────────────────────────────────
+// Reduces Supabase load for frequently-read, rarely-changed data.
+// Each cache entry stores the value and an expiry timestamp.
+// TTL is 60s — stale data is acceptable for settings/features/auto-replies
+// since they only change when the user explicitly updates them.
+
+interface CacheEntry<T> { value: T; expiresAt: number; }
+
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+const settingsCache = new Map<string, CacheEntry<any>>();
+const featureCache = new Map<string, CacheEntry<boolean>>();
+const autoReplyCache = new Map<string, CacheEntry<any[]>>();
+const sessionUserIdCache = new Map<string, CacheEntry<string | null>>();
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T): void {
+  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+/** Invalidate all cache entries for a given prefix (e.g. userId or sessionId). */
+export function invalidateCache(prefix: string): void {
+  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache]) {
+    for (const key of cache.keys()) {
+      if (key.startsWith(prefix)) cache.delete(key);
+    }
+  }
+}
+
 export async function initDatabase() {
   console.log('Database initialized');
 
@@ -581,6 +619,10 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
 const FEATURES_DEFAULT_OFF = new Set(['welcome', 'autoview', 'anti_delete']);
 
 export async function getFeatureEnabled(userId: string, featureName: string): Promise<boolean> {
+  const cacheKey = `${userId}:${featureName}`;
+  const cached = getCached(featureCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('bot_features')
     .select('enabled')
@@ -588,14 +630,14 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
     .eq('feature_name', featureName)
     .single();
 
+  let result: boolean;
   if (error) {
-    // No row found — use feature-specific default
-    if (error.code === 'PGRST116') {
-      return !FEATURES_DEFAULT_OFF.has(featureName);
-    }
-    return !FEATURES_DEFAULT_OFF.has(featureName);
+    result = !FEATURES_DEFAULT_OFF.has(featureName);
+  } else {
+    result = data?.enabled ?? !FEATURES_DEFAULT_OFF.has(featureName);
   }
-  return data?.enabled ?? !FEATURES_DEFAULT_OFF.has(featureName);
+  setCache(featureCache, cacheKey, result);
+  return result;
 }
 
 // ─── Leaderboard Tracking ─────────────────────────────────────────────────────
@@ -634,6 +676,9 @@ export async function incrementLeaderboard(sessionId: string, userJid: string, u
 // ─── Auto-Reply Rules ─────────────────────────────────────────────────────────
 
 export async function getAutoReplies(sessionId: string) {
+  const cached = getCached(autoReplyCache, sessionId);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('auto_replies')
     .select('*')
@@ -646,7 +691,9 @@ export async function getAutoReplies(sessionId: string) {
     }
     return [];
   }
-  return data || [];
+  const result = data || [];
+  setCache(autoReplyCache, sessionId, result);
+  return result;
 }
 
 // ─── Active Poll Lookup ───────────────────────────────────────────────────────
@@ -671,6 +718,9 @@ export async function getActivePoll(sessionId: string, chatJid: string) {
 // ─── New: User Settings (Groq API Key, etc.) ─────────────────────────────────
 
 export async function getUserSettings(userId: string) {
+  const cached = getCached(settingsCache, userId);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('user_settings')
     .select('*')
@@ -683,6 +733,7 @@ export async function getUserSettings(userId: string) {
     }
     return null;
   }
+  setCache(settingsCache, userId, data);
   return data;
 }
 
@@ -704,6 +755,7 @@ export async function upsertUserSettings(userId: string, settings: Record<string
     console.error('Error upserting user settings:', error);
     return null;
   }
+  invalidateCache(userId);
   return data;
 }
 
@@ -748,6 +800,9 @@ export async function setAfkState(sessionId: string, userJid: string, isAfk: boo
 // ─── New: Get session's user_id for BYOK lookup ──────────────────────────────
 
 export async function getSessionUserId(sessionId: string): Promise<string | null> {
+  const cached = getCached(sessionUserIdCache, sessionId);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('bot_sessions')
     .select('user_id')
@@ -757,7 +812,9 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
   if (error) {
     return null;
   }
-  return data?.user_id || null;
+  const result = data?.user_id || null;
+  setCache(sessionUserIdCache, sessionId, result);
+  return result;
 }
 
 // ─── Reminders ────────────────────────────────────────────────────────────────
@@ -1263,6 +1320,7 @@ export async function setFeatureEnabled(userId: string, sessionId: string, featu
     console.error('[DB] Error setting feature:', error);
     return false;
   }
+  invalidateCache(userId);
   return true;
 }
 
