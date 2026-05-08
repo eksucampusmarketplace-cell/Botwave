@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
             { status: 401 },
           );
         }
-        profileId = profile.id;
+        profileId = profile.id as string;
         await cacheProfileId(email, profileId);
       }
 
