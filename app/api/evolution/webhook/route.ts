@@ -6,12 +6,47 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+/**
+ * Redis-cached session lookup — checks Redis first, falls back to Supabase.
+ * Avoids hitting Supabase on every single webhook event.
+ */
+interface WebhookSession {
+  id: string;
+  user_id?: string;
+  phone_number?: string;
+  state?: string;
+}
+
+async function getCachedOrFetchSession(
+  supabase: ReturnType<typeof getSupabase>,
+  sessionId: string,
+  columns: string = 'id, user_id, phone_number, state',
+): Promise<WebhookSession | null> {
+  // Try Redis first
+  const cached = await getCachedSession(sessionId);
+  if (cached) return cached as unknown as WebhookSession;
+
+  // Fallback to Supabase
+  const { data } = await supabase
+    .from('bot_sessions')
+    .select(columns)
+    .eq('id', sessionId)
+    .single();
+
+  if (data) {
+    // Cache for next time (30s TTL)
+    await cacheSession(sessionId, data as unknown as Record<string, unknown>);
+  }
+  return data as unknown as WebhookSession | null;
 }
 
 /**
@@ -68,6 +103,7 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', sessionId);
+        await invalidateSessionCache(sessionId);
 
         // Send one-time welcome message when pairing/QR scan completes for the first time.
         // Triggers on any pre-active state (pairing_sent, qr_pending, connecting) — not
@@ -142,6 +178,7 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
+          await invalidateSessionCache(sessionId);
         } else {
           console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused — ignoring (handled by sync loop)`);
         }
@@ -165,6 +202,7 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
+          await invalidateSessionCache(sessionId);
         } else {
           console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting — preserving state (reconnect in progress)`);
         }
@@ -190,6 +228,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
+      await invalidateSessionCache(sessionId);
 
       return NextResponse.json({ ok: true });
     }
@@ -270,12 +309,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      // Look up session info for the handler
-      const { data: session } = await supabase
-        .from('bot_sessions')
-        .select('id, user_id, phone_number, state')
-        .eq('id', sessionId)
-        .single();
+      // Look up session info for the handler (Redis-cached)
+      const session = await getCachedOrFetchSession(supabase, sessionId);
 
       if (!session) {
         console.warn(`[EVO-WEBHOOK] No session found for instance: ${sessionId}`);
@@ -288,7 +323,7 @@ export async function POST(request: NextRequest) {
       if (session.state && session.state !== 'active' && session.state !== 'needs_reauth') {
         const hasFromMe = messages.some((m: any) => m.key?.fromMe);
         if (hasFromMe) {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${session.state} but receiving fromMe messages — auto-correcting to active`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${String(session.state)} but receiving fromMe messages — auto-correcting to active`);
           await supabase.from('bot_sessions')
             .update({
               state: 'active',
@@ -296,6 +331,7 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
+          await invalidateSessionCache(sessionId);
         }
       }
 
@@ -343,20 +379,23 @@ export async function POST(request: NextRequest) {
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
         const { cacheMessage } = await import('@/bot/handlers/AntiDeleteHandler');
 
-        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id, session.phone_number);
+        const sid = session.id;
+        const uid = session.user_id || '';
+        const phone = session.phone_number || '';
+        const sock = new EvolutionSocketAdapter(sessionId, sid, uid, phone);
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
         // Use void to fire-and-forget — do NOT await
         void (async () => {
           // Cache messages for anti-delete recovery (non-blocking)
           for (const msg of cacheMsgs) {
-            cacheMessage(session.id, msg).catch(() => {});
+            cacheMessage(sid, msg).catch(() => {});
           }
 
           // Process status broadcasts via StatusViewer (checks autoview toggle)
           for (const msg of statusMsgs) {
             try {
-              await handleStatusUpdate(msg, sock, session.id, session.user_id);
+              await handleStatusUpdate(msg, sock, sid, uid);
             } catch (err) {
               console.error(`[EVO-WEBHOOK] Error handling status for ${sessionId}:`, err);
             }
@@ -370,8 +409,8 @@ export async function POST(request: NextRequest) {
               // Enqueue for retry so the message isn't lost
               try {
                 const { enqueueWebhookRetry, logHealthEvent } = await import('@/bot/database');
-                await enqueueWebhookRetry(session.id, 'messages.upsert', msg, String(err));
-                await logHealthEvent(session.id, 'webhook_retry', `Message processing failed: ${String(err).slice(0, 200)}`);
+                await enqueueWebhookRetry(sid, 'messages.upsert', msg, String(err));
+                await logHealthEvent(sid, 'webhook_retry', `Message processing failed: ${String(err).slice(0, 200)}`);
               } catch { /* retry enqueue itself is non-critical */ }
             }
           }
@@ -387,11 +426,7 @@ export async function POST(request: NextRequest) {
     if (event === 'messages.delete') {
       const deletedKey = data;
       if (deletedKey?.id && deletedKey?.remoteJid) {
-        const { data: session } = await supabase
-          .from('bot_sessions')
-          .select('id, user_id')
-          .eq('id', sessionId)
-          .single();
+        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id');
 
         if (session) {
           // Build a synthetic revoke message matching the Baileys protocolMessage format
@@ -419,7 +454,7 @@ export async function POST(request: NextRequest) {
           void (async () => {
             try {
               const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
-              await handleMessageRevoke(revokeMsg, session.id, session.user_id);
+              await handleMessageRevoke(revokeMsg, session.id, session.user_id || '');
               console.log(`[EVO-WEBHOOK] Processed message delete for ${sessionId}: msgId=${deletedKey.id}`);
             } catch (err) {
               console.error(`[EVO-WEBHOOK] Error handling message delete for ${sessionId}:`, err);
@@ -438,11 +473,7 @@ export async function POST(request: NextRequest) {
     if (event === 'messages.edited') {
       const editedMsg = data;
       if (editedMsg?.type === 0 && editedMsg?.key?.id) {
-        const { data: session } = await supabase
-          .from('bot_sessions')
-          .select('id, user_id')
-          .eq('id', sessionId)
-          .single();
+        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id');
 
         if (session) {
           const revokeMsg = {
@@ -463,7 +494,7 @@ export async function POST(request: NextRequest) {
           void (async () => {
             try {
               const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
-              await handleMessageRevoke(revokeMsg, session.id, session.user_id);
+              await handleMessageRevoke(revokeMsg, session.id, session.user_id || '');
               console.log(`[EVO-WEBHOOK] Processed edited/revoke for ${sessionId}: msgId=${editedMsg.key.id}`);
             } catch (err) {
               console.error(`[EVO-WEBHOOK] Error handling edited/revoke for ${sessionId}:`, err);
@@ -477,22 +508,18 @@ export async function POST(request: NextRequest) {
 
     // --- Group participant updates ---
     if (event === 'group-participants.update') {
-      const { data: session } = await getSupabase()
-        .from('bot_sessions')
-        .select('id, user_id, phone_number')
-        .eq('id', sessionId)
-        .single();
+      const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, phone_number');
 
       if (session && data) {
         const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
         const { handleGroupParticipantsUpdate } = await import('@/bot/handlers/MessageHandler');
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
 
-        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id, session.phone_number);
+        const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id || '', session.phone_number || '');
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
         try {
-          await handleGroupParticipantsUpdate(data, sock, session.id, session.user_id, queue);
+          await handleGroupParticipantsUpdate(data, sock, session.id, session.user_id || '', queue);
         } catch (err) {
           console.error(`[EVO-WEBHOOK] Error handling group update for ${sessionId}:`, err);
         }
