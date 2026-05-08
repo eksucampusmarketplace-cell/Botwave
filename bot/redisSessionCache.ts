@@ -164,6 +164,109 @@ export async function getCachedSessionState(sessionId: string): Promise<{ state:
   }
 }
 
+// ─── Pairing Lock Cache ─────────────────────────────────────────────────────
+
+const PAIRING_LOCK_TTL = 180; // 3 minutes — matches pairing code TTL
+
+/**
+ * Cache a pairing lock in Redis (mirrors DB pairing_lock_acquired_at).
+ * Used by isWorkerPairingLocked to avoid a Supabase round-trip.
+ */
+export async function cachePairingLock(sessionId: string, workerUrl: string | null): Promise<void> {
+  if (!isAvailable()) return;
+  try {
+    const key = `plock:${workerUrl || '__main__'}`;
+    await redis!.set(key, sessionId, 'EX', PAIRING_LOCK_TTL);
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Check if a worker has a pairing lock cached in Redis.
+ * Returns the session ID if locked, null otherwise.
+ */
+export async function getCachedPairingLock(workerUrl: string | null): Promise<string | null> {
+  if (!isAvailable()) return null;
+  try {
+    const key = `plock:${workerUrl || '__main__'}`;
+    return await redis!.get(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clear pairing lock from Redis (call when lock is released).
+ */
+export async function invalidatePairingLock(workerUrl: string | null): Promise<void> {
+  if (!isAvailable()) return;
+  try {
+    const key = `plock:${workerUrl || '__main__'}`;
+    await redis!.del(key);
+  } catch {
+    // Non-critical
+  }
+}
+
+// ─── Session User ID Cache ──────────────────────────────────────────────────
+
+const USER_ID_TTL = 300; // 5 minutes — user_id never changes for a session
+
+/**
+ * Cache the user_id for a session in Redis.
+ */
+export async function cacheSessionUserId(sessionId: string, userId: string): Promise<void> {
+  if (!isAvailable()) return;
+  try {
+    await redis!.set(`suid:${sessionId}`, userId, 'EX', USER_ID_TTL);
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Get cached user_id for a session from Redis.
+ */
+export async function getCachedSessionUserId(sessionId: string): Promise<string | null> {
+  if (!isAvailable()) return null;
+  try {
+    return await redis!.get(`suid:${sessionId}`);
+  } catch {
+    return null;
+  }
+}
+
+// ─── Session Existence Cache ────────────────────────────────────────────────
+
+const EXISTS_TTL = 60; // 1 minute — short TTL for existence checks
+
+/**
+ * Mark a session as existing in Redis (avoids Supabase existence checks).
+ */
+export async function cacheSessionExists(sessionId: string): Promise<void> {
+  if (!isAvailable()) return;
+  try {
+    await redis!.set(`sexists:${sessionId}`, '1', 'EX', EXISTS_TTL);
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Check if a session is known to exist via Redis cache.
+ * Returns true if cached, false means unknown (not necessarily non-existent).
+ */
+export async function getCachedSessionExists(sessionId: string): Promise<boolean> {
+  if (!isAvailable()) return false;
+  try {
+    const val = await redis!.get(`sexists:${sessionId}`);
+    return val === '1';
+  } catch {
+    return false;
+  }
+}
+
 /** Disconnect the session cache Redis client on shutdown. */
 export async function disconnectSessionCache(): Promise<void> {
   if (redis) {
