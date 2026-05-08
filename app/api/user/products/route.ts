@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let plan = (await getCachedUserPlan(user.id))?.plan;
+    const cachedPlan = await getCachedUserPlan(user.id);
+    let plan: string = cachedPlan?.plan || '';
     if (!plan) {
       const { data: sub } = await supabase
         .from('subscriptions')
