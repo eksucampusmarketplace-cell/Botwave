@@ -925,6 +925,11 @@ class EvolutionBot {
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
 
+          // Refresh webhook config so the instance uses the latest events list.
+          // This ensures existing sessions pick up webhook config changes after deploys.
+          void setWebhook(this.sessionId).catch(err =>
+            console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
+
           // Credit first-session reward (₦10, one-time, non-blocking)
           void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
 
