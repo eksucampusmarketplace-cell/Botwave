@@ -812,7 +812,10 @@ class EvolutionBot {
       // This preserves the WhatsApp linked device across redeploys.
       // For pairing_sent: the pairing may have completed on Evolution API's side
       // even though Botwave restarted before seeing the connection.update webhook.
-      if (this.previousDbState === 'active' || this.previousDbState === 'inactive' || this.previousDbState === 'pairing_sent') {
+      // NOTE: Skip reconnect for 'inactive' sessions — the instance was already
+      // deleted during dead-bot cleanup, so 15 reconnect attempts just waste 2+
+      // minutes polling a non-existent instance.
+      if (this.previousDbState === 'active' || this.previousDbState === 'pairing_sent') {
         const reconnected = await this.tryReconnectExisting();
         if (reconnected) {
           console.log(`[EVO] Successfully reconnected session ${this.sessionId} — skipping fresh pairing`);
@@ -825,7 +828,7 @@ class EvolutionBot {
         // and let Evolution API use saved auth data to reconnect without a
         // new pairing code. This avoids forcing users to re-pair after every
         // redeploy when Evolution API has DATABASE_SAVE_DATA_INSTANCE=true.
-        if (this.previousDbState === 'active' || this.previousDbState === 'inactive') {
+        if (this.previousDbState === 'active') {
           const softReconnected = await this.trySoftReconnect();
           if (softReconnected) {
             console.log(`[EVO] Soft reconnect succeeded for ${this.sessionId} — no re-pairing needed!`);
@@ -834,6 +837,8 @@ class EvolutionBot {
           }
           console.log(`[EVO] Soft reconnect also failed for ${this.sessionId} — falling through to fresh pairing`);
         }
+      } else if (this.previousDbState === 'inactive') {
+        console.log(`[EVO] Session ${this.sessionId} was inactive — skipping reconnect, going straight to fresh pairing`);
       }
 
       // Clean up any stale instance and verify it is fully removed before
