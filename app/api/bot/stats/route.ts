@@ -28,7 +28,7 @@ export async function GET() {
       // Count messages for user's sessions
       const { count: msgCount } = await supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .in('session_id', sessionIds);
       totalMessages = msgCount || 0;
 
