@@ -33,7 +33,21 @@ async function start() {
   // Coordinator: clean up stale locks from previous run, start heartbeat
   await cleanupOnStartup();
   startHeartbeatLoop();
-  
+
+  // Immediate orphan recovery on startup — don't wait 120s for the regular cycle.
+  // This ensures active sessions from a crashed/redeployed worker are unlocked
+  // and ready for reconnection BEFORE the first sync picks them up.
+  if (!IS_WORKER) {
+    try {
+      const recovered = await recoverOrphanedSessions();
+      if (recovered > 0) {
+        console.log(`[STARTUP] Immediately recovered ${recovered} orphaned session(s) for fast reconnection`);
+      }
+    } catch (err) {
+      console.error('[STARTUP] Early orphan recovery failed (non-fatal):', err);
+    }
+  }
+
   // Wait for Evolution API to be reachable before syncing sessions.
   // This prevents the cascade where 404s during loading poison the health counter.
   const USE_EVOLUTION = !!(process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY);
@@ -101,6 +115,20 @@ async function start() {
 
   // Coordinator: orphan recovery (every 120s, main only) + audit (every 300s)
   if (!IS_WORKER) {
+    // Accelerated orphan recovery 15s after startup — catches any sessions that
+    // became orphaned between our startup recovery and the first sync completing.
+    setTimeout(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        const recovered = await recoverOrphanedSessions();
+        if (recovered > 0) {
+          console.log(`[STARTUP] Accelerated recovery: ${recovered} orphaned session(s)`);
+        }
+      } catch (err) {
+        console.error('[STARTUP] Accelerated orphan recovery failed:', err);
+      }
+    }, 15_000);
+
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
