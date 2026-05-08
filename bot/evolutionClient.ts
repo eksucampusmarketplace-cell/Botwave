@@ -236,17 +236,24 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       body: JSON.stringify(payload),
     });
 
-    // If instance name is already in use (stale after restart), delete and retry
-    if (r.status === 403) {
-      console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists — deleting stale instance and retrying`);
-      await deleteInstance(instanceName);
-      // Small delay for cleanup to complete
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return apiFetch(`${BASE}/instance/create`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
+    // If instance name is already in use (stale after restart), delete and retry.
+    // Evolution API returns 403 for in-memory duplicates and 400 with a Prisma
+    // P2002 unique-constraint error for DB-only ghosts (instance not loaded but
+    // record still exists in the database after a restart).
+    if (r.status === 403 || r.status === 400) {
+      const body = await r.clone().text().catch(() => '');
+      const isDuplicate = r.status === 403 || body.includes('Unique constraint');
+      if (isDuplicate) {
+        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting stale instance and retrying`);
+        await deleteInstance(instanceName);
+        // Small delay for cleanup to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return apiFetch(`${BASE}/instance/create`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
     }
 
     return r;
