@@ -70,7 +70,11 @@ export async function POST(request: NextRequest) {
     const sessionId = resolveSessionId(instance);
 
     if (!sessionId) {
-      console.warn('[EVO-WEBHOOK] No session ID in payload:', JSON.stringify({ event, instance }).slice(0, 200));
+      // Global error webhooks from Evolution API don't carry an instance field —
+      // this is expected and not actionable on the Botwave side.
+      if (event !== 'error') {
+        console.warn('[EVO-WEBHOOK] No session ID in payload:', JSON.stringify({ event, instance }).slice(0, 200));
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -184,29 +188,38 @@ export async function POST(request: NextRequest) {
         }
         // If state is qr_pending/pairing_sent/connecting, leave it alone —
         // the BotManager sync loop handles reconnection during pairing.
-      } else if (state === 'connecting') {
-        // Only update to qr_pending if not already in a pairing or active state.
-        // "active" is preserved because the bot may be auto-reconnecting after a
-        // redeploy — changing to qr_pending would trigger the sync loop to
-        // create a duplicate bot and force a fresh pairing code.
-        const { data: current } = await supabase
-          .from('bot_sessions')
-          .select('state')
-          .eq('id', sessionId)
-          .single();
+        } else if (state === 'connecting') {
+          // Only update to qr_pending if not already in a pairing or active state.
+          // "active" is preserved because the bot may be auto-reconnecting after a
+          // redeploy — changing to qr_pending would trigger the sync loop to
+          // create a duplicate bot and force a fresh pairing code.
+          const { data: current } = await supabase
+            .from('bot_sessions')
+            .select('state, updated_at')
+            .eq('id', sessionId)
+            .single();
 
-        if (current?.state !== 'pairing_sent' && current?.state !== 'active') {
-          await supabase.from('bot_sessions')
-            .update({
-              state: 'qr_pending',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', sessionId);
-          await invalidateSessionCache(sessionId);
-        } else {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting — preserving state (reconnect in progress)`);
+          if (current?.state !== 'pairing_sent' && current?.state !== 'active') {
+            // Debounce: skip the DB write if we already set qr_pending recently
+            // (within 30s). Baileys fires connecting events every few seconds
+            // while waiting for QR scan, and each write is unnecessary churn.
+            const lastUpdate = current?.updated_at ? new Date(current.updated_at).getTime() : 0;
+            const debounceMs = 30_000;
+            if (current?.state === 'qr_pending' && Date.now() - lastUpdate < debounceMs) {
+              // Already qr_pending and updated recently — skip
+            } else {
+              await supabase.from('bot_sessions')
+                .update({
+                  state: 'qr_pending',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', sessionId);
+              await invalidateSessionCache(sessionId);
+            }
+          } else {
+            console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting — preserving state (reconnect in progress)`);
+          }
         }
-      }
 
       return NextResponse.json({ ok: true });
     }
