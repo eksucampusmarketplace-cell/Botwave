@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './circuitBreaker';
 import { trackMap } from './memoryGuard';
-import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists } from './redisSessionCache';
+import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './redisSessionCache';
 import { queueWrite } from './writeQueue';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -695,6 +695,13 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
   const cached = getCached(leaderboardCache, cacheKey);
   if (cached !== undefined) return cached;
 
+  // Redis tier — survives across serverless invocations
+  const redisCached = await getCachedLeaderboard(sessionId, limit);
+  if (redisCached) {
+    setCache(leaderboardCache, cacheKey, redisCached, CACHE_TTL_MEDIUM_MS);
+    return redisCached;
+  }
+
   return resilientRead({
     cacheKey: `leaderboard:${cacheKey}`,
     fallbackValue: [] as any[],
@@ -714,6 +721,7 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
       }
       const result = data || [];
       setCache(leaderboardCache, cacheKey, result, CACHE_TTL_MEDIUM_MS);
+      await cacheLeaderboard(sessionId, limit, result);
       return result;
     },
   });
@@ -730,6 +738,13 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
   if (cached !== undefined) return cached;
 
   const defaultVal = !FEATURES_DEFAULT_OFF.has(featureName);
+
+  // Redis tier
+  const redisCached = await getCachedFeature(userId, featureName);
+  if (redisCached !== null) {
+    setCache(featureCache, cacheKey, redisCached, CACHE_TTL_LONG_MS);
+    return redisCached;
+  }
 
   return resilientRead({
     cacheKey: `feature:${cacheKey}`,
@@ -749,6 +764,7 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
         result = data?.enabled ?? defaultVal;
       }
       setCache(featureCache, cacheKey, result, CACHE_TTL_LONG_MS);
+      await cacheFeature(userId, featureName, result);
       return result;
     },
   });
@@ -758,6 +774,11 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
 
 export async function incrementLeaderboard(sessionId: string, userJid: string, userName: string) {
   try {
+    // Try Redis buffer first — avoids 2 Supabase calls per group message
+    const buffered = await bufferLeaderboardIncrement(sessionId, userJid, userName);
+    if (buffered) return;
+
+    // Fallback: direct Supabase write
     const { data: existing } = await supabase
       .from('leaderboard')
       .select('id, message_count')
@@ -788,11 +809,88 @@ export async function incrementLeaderboard(sessionId: string, userJid: string, u
   }
 }
 
+/**
+ * Flush buffered leaderboard increments from Redis to Supabase.
+ * Call this periodically (e.g. every 30s) from the bot's main loop.
+ */
+export async function flushLeaderboardBuffers(): Promise<void> {
+  try {
+    const sessionIds = await getBufferedSessionIds();
+    for (const sessionId of sessionIds) {
+      const entries = await drainLeaderboardBuffer(sessionId);
+      if (!entries) continue;
+      for (const entry of entries) {
+        const { data: existing } = await supabase
+          .from('leaderboard')
+          .select('id, message_count')
+          .eq('session_id', sessionId)
+          .eq('user_jid', entry.userJid)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('leaderboard')
+            .update({
+              message_count: (existing.message_count || 0) + entry.increment,
+              user_name: entry.userName,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+        } else {
+          await supabase.from('leaderboard').insert({
+            session_id: sessionId,
+            user_jid: entry.userJid,
+            user_name: entry.userName,
+            message_count: entry.increment,
+          });
+        }
+      }
+      await invalidateRedisPattern(`lb:${sessionId}:*`);
+      invalidateCache(sessionId);
+    }
+  } catch (err) {
+    console.error('[DB] Error flushing leaderboard buffers:', err);
+  }
+}
+
+/**
+ * Flush buffered message tracking from Redis to Supabase.
+ * Call this periodically (e.g. every 30s) from the bot's main loop.
+ */
+export async function flushMessageBuffer(): Promise<void> {
+  try {
+    const messages = await drainMessageBuffer(50);
+    if (messages.length === 0) return;
+    const rows = messages.map((m) => ({
+      session_id: m.session_id,
+      sender_jid: m.sender_jid,
+      sender_name: m.sender_name,
+      content: m.content,
+      message_type: m.message_type,
+      is_group: m.is_group,
+      group_jid: m.group_jid,
+    }));
+    const { error } = await supabase.from('messages').insert(rows);
+    if (error) {
+      console.error('[DB] Error flushing message buffer:', error);
+    }
+  } catch (err) {
+    console.error('[DB] Error flushing message buffer:', err);
+  }
+}
+
 // ─── Auto-Reply Rules ─────────────────────────────────────────────────────────
 
 export async function getAutoReplies(sessionId: string) {
   const cached = getCached(autoReplyCache, sessionId);
   if (cached !== undefined) return cached;
+
+  // Redis tier
+  const redisCached = await getCachedAutoReplies(sessionId);
+  if (redisCached) {
+    setCache(autoReplyCache, sessionId, redisCached, CACHE_TTL_LONG_MS);
+    return redisCached;
+  }
 
   return resilientRead({
     cacheKey: `autoreplies:${sessionId}`,
@@ -812,6 +910,7 @@ export async function getAutoReplies(sessionId: string) {
       }
       const result = data || [];
       setCache(autoReplyCache, sessionId, result, CACHE_TTL_LONG_MS);
+      await cacheAutoReplies(sessionId, result);
       return result;
     },
   });
@@ -854,6 +953,13 @@ export async function getUserSettings(userId: string) {
   const cached = getCached(settingsCache, userId);
   if (cached !== undefined) return cached;
 
+  // Redis tier
+  const redisCached = await getCachedSettings(userId);
+  if (redisCached) {
+    setCache(settingsCache, userId, redisCached, CACHE_TTL_LONG_MS);
+    return redisCached;
+  }
+
   return resilientRead({
     cacheKey: `settings:${userId}`,
     fallbackValue: null,
@@ -871,6 +977,7 @@ export async function getUserSettings(userId: string) {
         return null;
       }
       setCache(settingsCache, userId, data, CACHE_TTL_LONG_MS);
+      await cacheSettings(userId, data);
       return data;
     },
   });
@@ -895,6 +1002,7 @@ export async function upsertUserSettings(userId: string, settings: Record<string
     return null;
   }
   invalidateCache(userId);
+  await invalidateRedisKey(`settings:${userId}`);
   return data;
 }
 
@@ -904,6 +1012,13 @@ export async function getAfkState(sessionId: string, userJid: string) {
   const cacheKey = `${sessionId}:${userJid}`;
   const cached = getCached(afkCache, cacheKey);
   if (cached !== undefined) return cached;
+
+  // Redis tier
+  const redisCached = await getCachedAfkState(sessionId, userJid);
+  if (redisCached) {
+    setCache(afkCache, cacheKey, redisCached);
+    return redisCached;
+  }
 
   return resilientRead({
     cacheKey: `afk:${cacheKey}`,
@@ -924,6 +1039,7 @@ export async function getAfkState(sessionId: string, userJid: string) {
         return null;
       }
       setCache(afkCache, cacheKey, data);
+      await cacheAfkState(sessionId, userJid, data);
       return data;
     },
   });
@@ -947,6 +1063,7 @@ export async function setAfkState(sessionId: string, userJid: string, isAfk: boo
     console.error('Error setting AFK state:', error);
   }
   invalidateCache(`${sessionId}:${userJid}`);
+  await invalidateRedisKey(`afk:${sessionId}:${userJid}`);
 }
 
 // ─── New: Get session's user_id for BYOK lookup ──────────────────────────────
@@ -1332,6 +1449,20 @@ export async function trackMessage(
   isGroup: boolean,
   groupJid: string | null,
 ): Promise<void> {
+  // Try Redis buffer first — bulk-insert later to cut per-message Supabase writes
+  const buffered = await bufferTrackMessage({
+    session_id: sessionId,
+    sender_jid: senderJid,
+    sender_name: senderName,
+    content: content ? content.substring(0, 500) : null,
+    message_type: messageType,
+    is_group: isGroup,
+    group_jid: groupJid,
+    timestamp: new Date().toISOString(),
+  });
+  if (buffered) return;
+
+  // Fallback: direct Supabase insert
   await queueWrite('trackMessage', async () => {
     const { error } = await supabase.from('messages').insert({
       session_id: sessionId,
@@ -1555,6 +1686,7 @@ export async function setFeatureEnabled(userId: string, sessionId: string, featu
     return false;
   }
   invalidateCache(userId);
+  await invalidateRedisKey(`feature:${sessionId}:${featureName}`);
   return true;
 }
 
@@ -1616,6 +1748,13 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
   const cached = getCached(subscriptionCache, userId);
   if (cached !== undefined) return cached as SubscriptionInfo;
 
+  // Redis tier
+  const redisCached = await getCachedSubscription<SubscriptionInfo>(userId);
+  if (redisCached) {
+    setCache(subscriptionCache, userId, redisCached, CACHE_TTL_LONG_MS);
+    return redisCached;
+  }
+
   return resilientRead({
     cacheKey: `sub:${userId}`,
     fallbackValue: defaults,
@@ -1628,6 +1767,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
 
       if (error || !data) {
         setCache(subscriptionCache, userId, defaults, CACHE_TTL_LONG_MS);
+        await cacheSubscription(userId, defaults);
         return defaults;
       }
 
@@ -1644,6 +1784,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
             })
             .eq('user_id', userId);
           setCache(subscriptionCache, userId, defaults, CACHE_TTL_LONG_MS);
+          await cacheSubscription(userId, defaults);
           return defaults;
         }
       }
@@ -1657,6 +1798,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
         aiDailyLimit: data.ai_daily_limit,
       };
       setCache(subscriptionCache, userId, result, CACHE_TTL_LONG_MS);
+      await cacheSubscription(userId, result);
       return result;
     },
   });
