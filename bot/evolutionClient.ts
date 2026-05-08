@@ -433,22 +433,35 @@ export async function deleteInstance(instanceName: string) {
  * Evolution API's delete endpoint returns 200 immediately but cleanup is
  * async (event-driven). Without verification, a subsequent createInstance
  * races against the cleanup and gets 403 "name already in use".
+ *
+ * If the instance persists after the first delete + polling cycle, we retry
+ * the delete up to {@link MAX_DELETE_RETRIES} times. This handles cases where
+ * the first delete's DB cleanup fails (e.g. P2028 transaction timeout) and
+ * the instance record remains in the database.
  */
-export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 10_000): Promise<void> {
-  await deleteInstance(instanceName);
+export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 15_000): Promise<void> {
+  const MAX_DELETE_RETRIES = 3;
+  const POLL_INTERVAL = 2000;
 
-  const start = Date.now();
-  const pollInterval = 1500;
-  for (let elapsed = 0; elapsed < maxWaitMs; elapsed = Date.now() - start) {
-    const state = await getInstanceStatus(instanceName);
-    if (state === 'unknown') {
-      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} confirmed gone after ${Date.now() - start}ms`);
-      return;
+  for (let attempt = 1; attempt <= MAX_DELETE_RETRIES; attempt++) {
+    await deleteInstance(instanceName);
+
+    const start = Date.now();
+    while (Date.now() - start < maxWaitMs) {
+      const state = await getInstanceStatus(instanceName);
+      if (state === 'unknown') {
+        console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} confirmed gone after ${Date.now() - start}ms (attempt ${attempt})`);
+        return;
+      }
+      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still exists (state=${state}), waiting... (attempt ${attempt})`);
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
     }
-    console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still exists (state=${state}), waiting...`);
-    await new Promise(r => setTimeout(r, pollInterval));
+
+    if (attempt < MAX_DELETE_RETRIES) {
+      console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${maxWaitMs}ms — retrying delete (attempt ${attempt + 1}/${MAX_DELETE_RETRIES})`);
+    }
   }
-  console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${maxWaitMs}ms — proceeding anyway`);
+  console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${MAX_DELETE_RETRIES} delete attempts — proceeding anyway`);
 }
 
 // Configure webhook for an existing instance
