@@ -3,6 +3,7 @@ import { sendReply, botStartTime, axios } from './helpers';
 import { searchKnowledge } from './knowledgeBase';
 import { isEvolutionHealthy } from '../evolutionClient';
 import { WORKER_URLS, IS_WORKER, isWorkerHealthy } from '../workerConfig';
+import { checkSupabaseHealth } from '../database';
 
 // ─── !ask — Smart FAQ with fuzzy matching ───────────────────────────────────
 
@@ -125,6 +126,12 @@ async function handleDiagnose(
     evoStatus = `unreachable (${err?.message || 'timeout'})`;
   }
 
+  // Supabase health
+  const supabaseHealth = await checkSupabaseHealth();
+  const supabaseStatus = supabaseHealth.healthy
+    ? `online (${supabaseHealth.latencyMs}ms)`
+    : `DOWN — ${supabaseHealth.error || 'unknown error'} (${supabaseHealth.latencyMs}ms)`;
+
   // Worker health
   const workerResults: string[] = [];
   if (!IS_WORKER && WORKER_URLS.length > 0) {
@@ -149,6 +156,10 @@ async function handleDiagnose(
   report += `  Uptime: ${formatUptime(uptime)}\n`;
   report += `  Memory: ${memMB} MB\n`;
   report += `  Node: ${nodeVersion}\n\n`;
+
+  report += `*Supabase (Database)*\n`;
+  report += `  Status: ${supabaseStatus}\n`;
+  report += `  URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL || 'not configured'}\n\n`;
 
   report += `*Evolution API*\n`;
   report += `  Health gate: ${evoHealthy ? 'HEALTHY' : 'DEGRADED'}\n`;

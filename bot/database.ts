@@ -1557,4 +1557,28 @@ export async function getUserReferralCode(userId: string): Promise<{ code: strin
   return { code: newRef.code, totalReferred: 0, totalEarned: 0 };
 }
 
+/**
+ * Check Supabase health by running a lightweight query.
+ * Returns latency in ms and whether the connection is healthy.
+ */
+export async function checkSupabaseHealth(): Promise<{ healthy: boolean; latencyMs: number; error?: string }> {
+  const start = Date.now();
+  try {
+    const { error } = await supabase.from('bot_sessions').select('id').limit(1);
+    const latencyMs = Date.now() - start;
+    if (error) {
+      return { healthy: false, latencyMs, error: `${error.code}: ${error.message}` };
+    }
+    return { healthy: true, latencyMs };
+  } catch (err: any) {
+    const latencyMs = Date.now() - start;
+    const msg = err?.message || String(err);
+    // Detect Cloudflare 522 / connection timeout errors
+    if (msg.includes('522') || msg.includes('timed out') || msg.includes('ECONNREFUSED')) {
+      return { healthy: false, latencyMs, error: `Connection timeout (522): Supabase origin server unreachable` };
+    }
+    return { healthy: false, latencyMs, error: msg };
+  }
+}
+
 export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };
