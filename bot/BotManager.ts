@@ -1247,6 +1247,18 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     const bot = activeBots.get(session.id);
 
     if ((session.state === 'active' || session.state === 'inactive') && bot) {
+      // If the session is inactive and the bot is dead (not ready, not
+      // reconnecting), clean it up so a fresh bot can retry on the next cycle.
+      // This prevents sessions from getting permanently stuck after a transient
+      // error (e.g. Evolution API returned 502 during creation).
+      if (session.state === 'inactive') {
+        const status = bot.getStatus();
+        if (!status.isReady && !status.isReconnecting) {
+          console.log(`[SYNC] Cleaning up dead bot for inactive session ${session.id.slice(0, 8)} — will retry on next cycle`);
+          await bot.stop();
+          activeBots.delete(session.id);
+        }
+      }
       continue;
     }
 

@@ -92,6 +92,19 @@ function stripDataUri(input: string): string {
 }
 
 /**
+ * Safely parse a Response body as JSON. Returns null if the body is not valid
+ * JSON (e.g. when Render returns an HTML 502/503 error page).
+ */
+async function safeJson(res: Response): Promise<any | null> {
+  try {
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Wrapper around fetch with timeout and basic error checking.
  */
 async function apiFetch(url: string, options: RequestInit & { skipHealthCount?: boolean } = {}): Promise<Response> {
@@ -226,6 +239,13 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       body: JSON.stringify(payload),
     });
 
+    // 502/503 = Render's reverse proxy couldn't reach the upstream.
+    // Throw so withRetry retries after a backoff instead of crashing
+    // when we try to parse the HTML error page as JSON.
+    if (r.status === 502 || r.status === 503) {
+      throw new Error(`Evolution API returned ${r.status} (transient) — will retry`);
+    }
+
     // If instance name is already in use, delete via API and retry once.
     // The server-side guard now auto-cleans stale instances, so 403 should
     // be rare — but we keep this as a safety net for edge cases (e.g. the
@@ -247,9 +267,13 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     }
 
     return r;
-  });
-  const result = await res.json();
-  const instanceId = (result as any)?.instance?.instanceId || 'none';
+  }, 4, 2000); // 4 attempts, 2s base delay for 502/503 recovery
+  const result = await safeJson(res);
+  if (!result) {
+    console.error(`[EVO-CLIENT] createInstance: response body is not valid JSON (status=${res.status}) — treating as failure`);
+    return { error: true, status: res.status, message: 'Non-JSON response from Evolution API' };
+  }
+  const instanceId = result?.instance?.instanceId || 'none';
   console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${instanceId}`);
 
   // Log proxy verification status from Evolution API response
@@ -289,9 +313,14 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
       method: 'GET',
       headers,
+    }).then(r => {
+      if (r.status === 502 || r.status === 503) {
+        throw new Error(`Evolution API returned ${r.status} (transient) — will retry`);
+      }
+      return r;
     }),
   );
-  const connectData: any = await connectRes.json();
+  const connectData: any = await safeJson(connectRes);
   const connectDuration = Date.now() - connectStart;
   console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
   console.log(`[PAIRING-EVO-CLIENT] Full response data: ${JSON.stringify(connectData).slice(0, 500)}`);
@@ -317,7 +346,15 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
         method: 'GET',
         headers,
       });
-      const data: any = await res.json();
+      if (res.status === 502 || res.status === 503) {
+        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: got ${res.status} (transient) — skipping`);
+        continue;
+      }
+      const data: any = await safeJson(res);
+      if (!data) {
+        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: non-JSON response — skipping`);
+        continue;
+      }
       const pollDuration = Date.now() - pollStart;
       const hasQrCount = typeof data?.count === 'number';
       console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
@@ -346,7 +383,8 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
       method: 'GET',
       headers,
     });
-    const data: any = await res.json();
+    if (res.status === 502 || res.status === 503) return null;
+    const data: any = await safeJson(res);
     return data?.pairingCode || null;
   } catch {
     return null;
@@ -362,7 +400,9 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
       headers,
       skipHealthCount: true,
     });
-    const data: any = await res.json();
+    if (res.status === 502 || res.status === 503) return 'unknown';
+    const data: any = await safeJson(res);
+    if (!data) return 'unknown';
     const state = data?.instance?.state || 'unknown';
     // Only log non-routine state changes (avoid flooding logs during polling)
     if (state !== 'open' && state !== 'connecting') {
@@ -408,7 +448,9 @@ export async function connectInstance(instanceName: string, phoneNumber?: string
       method: 'GET',
       headers,
     });
-    const data: any = await res.json();
+    if (res.status === 502 || res.status === 503) return 'unknown';
+    const data: any = await safeJson(res);
+    if (!data) return 'unknown';
     const state = data?.state || data?.instance?.state || 'unknown';
     console.log(`[EVO-CLIENT] connectInstance ${instanceName}: status=${res.status} state=${state}`);
     return state;
