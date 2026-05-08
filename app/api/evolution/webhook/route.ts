@@ -155,16 +155,36 @@ export async function POST(request: NextRequest) {
           }
         }
       } else if (state === 'close' || state === 'refused') {
-        // Only set needs_reauth if the session was previously active.
-        // During pairing/connecting, 'close' events are normal reconnection
-        // cycles — don't nuke the session state.
+        const statusReason = data?.statusReason || data?.statusCode || data?.disconnectionReasonCode;
         const { data: current } = await supabase
           .from('bot_sessions')
           .select('state')
           .eq('id', sessionId)
           .single();
 
-        if (current?.state === 'active') {
+        if (statusReason === 401) {
+          // 401 = WhatsApp rejected credentials (logged out). Treat as a
+          // terminal logout regardless of current session state. Stale auth
+          // must be cleared so the next pairing attempt starts fresh instead
+          // of reusing rejected credentials in an infinite 401 loop.
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} got 401 close (current state: ${current?.state ?? 'unknown'}) — clearing auth and setting needs_reauth`);
+          await supabase.from('bot_sessions')
+            .update({
+              state: 'needs_reauth',
+              qr_code: null,
+              qr_expires_at: null,
+              qr_generated_at: null,
+              pairing_code: null,
+              auth_state: null,
+              locked_by: null,
+              locked_at: null,
+              heartbeat_at: null,
+              pairing_lock_acquired_at: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+          await invalidateSessionCache(sessionId);
+        } else if (current?.state === 'active') {
           // Temporary disconnect — preserve auth state so Evolution API can
           // auto-reconnect without forcing the user to re-pair.  Only clear
           // transient fields (locks, QR) so the sync loop picks this up.
@@ -186,8 +206,6 @@ export async function POST(request: NextRequest) {
         } else {
           console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused — ignoring (handled by sync loop)`);
         }
-        // If state is qr_pending/pairing_sent/connecting, leave it alone —
-        // the BotManager sync loop handles reconnection during pairing.
         } else if (state === 'connecting') {
           // Only update to qr_pending if not already in a pairing or active state.
           // "active" is preserved because the bot may be auto-reconnecting after a

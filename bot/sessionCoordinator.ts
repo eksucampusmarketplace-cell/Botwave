@@ -470,6 +470,8 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
         qr_code: null,
         qr_expires_at: null,
         qr_generated_at: null,
+        auth_state: null,
+        pairing_lock_acquired_at: null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', session.id)
