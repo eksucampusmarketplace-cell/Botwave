@@ -15,6 +15,8 @@
  *   - Exponential backoff wrapper for write retries
  */
 
+import { markRecovery } from './adaptivePoller';
+
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 const FAILURE_THRESHOLD = 5;       // consecutive failures before opening
@@ -50,6 +52,7 @@ export function recordSuccess(): void {
     console.log(`[CIRCUIT] Recovery confirmed — HALF_OPEN -> CLOSED (blocked ${totalBlocked} requests during outage, served ${totalFallbacks} from stale cache)`);
     totalBlocked = 0;
     totalFallbacks = 0;
+    markRecovery();
   }
   state = 'CLOSED';
   consecutiveFailures = 0;

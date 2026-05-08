@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './circuitBreaker';
+import { trackMap } from './memoryGuard';
+import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache } from './redisSessionCache';
+import { queueWrite } from './writeQueue';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -38,6 +41,20 @@ const afkCache = new Map<string, CacheEntry<any>>();
 const subscriptionCache = new Map<string, CacheEntry<any>>();
 const welcomeCache = new Map<string, CacheEntry<string | null>>();
 const pollCache = new Map<string, CacheEntry<any>>();
+
+// Register all caches with memory guard for periodic cleanup
+const getExpiresAt = (v: unknown) => {
+  const entry = v as CacheEntry<unknown> | undefined;
+  return entry?.expiresAt ?? null;
+};
+trackMap('settingsCache', settingsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('featureCache', featureCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('autoReplyCache', autoReplyCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('sessionUserIdCache', sessionUserIdCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('afkCache', afkCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('subscriptionCache', subscriptionCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('welcomeCache', welcomeCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('pollCache', pollCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
   const entry = cache.get(key);
@@ -110,6 +127,10 @@ export async function getUserSessions(userId?: string) {
 }
 
 export async function getSessionById(sessionId: string) {
+  // Try Redis cache first
+  const cached = await getCachedSession(sessionId);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('bot_sessions')
     .select('*')
@@ -121,6 +142,11 @@ export async function getSessionById(sessionId: string) {
       console.error(`Error fetching session ${sessionId}:`, error);
     }
     return null;
+  }
+
+  // Cache in Redis for subsequent reads
+  if (data) {
+    await cacheSession(sessionId, data);
   }
   return data;
 }
@@ -178,6 +204,9 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
     }
   } else {
     console.log(`Updated QR for session ${sessionId}`);
+    // Invalidate Redis caches so next read fetches fresh data
+    await invalidateSessionCache(sessionId);
+    await invalidateQRCache(sessionId);
   }
 }
 
@@ -305,6 +334,9 @@ export async function updateSessionStatus(sessionId: string, status: string) {
   } else {
     const extra = clearedFields.length ? ` (cleared: ${clearedFields.join(', ')})` : '';
     console.log(`[DB] Status updated for ${sessionId}: ${status}${extra}`);
+    // Invalidate Redis caches after state change
+    await invalidateSessionCache(sessionId);
+    await invalidateQRCache(sessionId);
   }
 }
 
@@ -1141,31 +1173,27 @@ export async function trackCommand(
   senderJid: string,
   commandName: string,
 ): Promise<void> {
-  await resilientWrite({
-    label: 'trackCommand',
-    maxRetries: 0,
-    writeFn: async () => {
-      const { data: existing } = await supabase
-        .from('user_stats')
-        .select('id, total_commands')
-        .eq('session_id', sessionId)
-        .eq('sender_jid', senderJid)
-        .single();
+  await queueWrite('trackCommand', async () => {
+    const { data: existing } = await supabase
+      .from('user_stats')
+      .select('id, total_commands')
+      .eq('session_id', sessionId)
+      .eq('sender_jid', senderJid)
+      .single();
 
-      if (existing) {
-        await supabase
-          .from('user_stats')
-          .update({ total_commands: (existing.total_commands || 0) + 1 })
-          .eq('id', existing.id);
-      } else {
-        await supabase.from('user_stats').insert({
-          user_id: userId,
-          session_id: sessionId,
-          sender_jid: senderJid,
-          total_commands: 1,
-        });
-      }
-    },
+    if (existing) {
+      await supabase
+        .from('user_stats')
+        .update({ total_commands: (existing.total_commands || 0) + 1 })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('user_stats').insert({
+        user_id: userId,
+        session_id: sessionId,
+        sender_jid: senderJid,
+        total_commands: 1,
+      });
+    }
   });
 }
 
@@ -1178,21 +1206,17 @@ export async function trackMessage(
   isGroup: boolean,
   groupJid: string | null,
 ): Promise<void> {
-  await resilientWrite({
-    label: 'trackMessage',
-    maxRetries: 0,
-    writeFn: async () => {
-      const { error } = await supabase.from('messages').insert({
-        session_id: sessionId,
-        sender_jid: senderJid,
-        sender_name: senderName,
-        content: content ? content.substring(0, 500) : null,
-        message_type: messageType,
-        is_group: isGroup,
-        group_jid: groupJid,
-      });
-      if (error) throw error;
-    },
+  await queueWrite('trackMessage', async () => {
+    const { error } = await supabase.from('messages').insert({
+      session_id: sessionId,
+      sender_jid: senderJid,
+      sender_name: senderName,
+      content: content ? content.substring(0, 500) : null,
+      message_type: messageType,
+      is_group: isGroup,
+      group_jid: groupJid,
+    });
+    if (error) throw error;
   });
 }
 
@@ -1205,17 +1229,13 @@ export async function logHealthEvent(
   eventType: HealthEventType,
   details?: string,
 ): Promise<void> {
-  await resilientWrite({
-    label: 'logHealthEvent',
-    maxRetries: 0,
-    writeFn: async () => {
-      const { error } = await supabase.from('bot_health_events').insert({
-        session_id: sessionId,
-        event_type: eventType,
-        details: details ? details.substring(0, 500) : null,
-      });
-      if (error) throw error;
-    },
+  await queueWrite('logHealthEvent', async () => {
+    const { error } = await supabase.from('bot_health_events').insert({
+      session_id: sessionId,
+      event_type: eventType,
+      details: details ? details.substring(0, 500) : null,
+    });
+    if (error) throw error;
   });
 }
 
