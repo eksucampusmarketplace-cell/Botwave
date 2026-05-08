@@ -5,6 +5,7 @@ import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfi
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
+import { disconnectRedis } from './redis';
 
 const bot = initializeBot();
 
@@ -213,6 +214,7 @@ process.on('SIGINT', async () => {
   console.log('[BOT] Received SIGINT — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
   stopMonetizationScheduler();
+  await disconnectRedis();
   await bot.stop(true);
   process.exit(0);
 });
@@ -221,6 +223,7 @@ process.on('SIGTERM', async () => {
   console.log('[BOT] Received SIGTERM — shutting down gracefully (preserving Evolution API instances for reconnect)...');
   stopHeartbeatLoop();
   stopMonetizationScheduler();
+  await disconnectRedis();
   await bot.stop(true);
   process.exit(0);
 });

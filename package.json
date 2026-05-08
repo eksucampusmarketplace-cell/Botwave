@@ -28,6 +28,7 @@
     "framer-motion": "^11.2.10",
     "groq-sdk": "^1.1.2",
     "https-proxy-agent": "^9.0.0",
+    "ioredis": "^5.10.1",
     "jsqr": "^1.4.0",
     "libphonenumber-js": "^1.11.2",
     "mammoth": "^1.12.0",
