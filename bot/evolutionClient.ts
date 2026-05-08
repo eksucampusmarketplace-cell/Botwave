@@ -397,10 +397,14 @@ export async function restartInstance(instanceName: string): Promise<boolean> {
 
 // Connect to an existing instance without requesting a new pairing code.
 // This triggers Baileys to reconnect using saved auth credentials.
-export async function connectInstance(instanceName: string): Promise<string> {
-  console.log(`[EVO-CLIENT] connectInstance: ${instanceName}`);
+export async function connectInstance(instanceName: string, phoneNumber?: string): Promise<string> {
+  console.log(`[EVO-CLIENT] connectInstance: ${instanceName} phone=${phoneNumber || 'none'}`);
   try {
-    const res = await apiFetch(`${BASE}/instance/connect/${instanceName}`, {
+    let url = `${BASE}/instance/connect/${instanceName}`;
+    if (phoneNumber) {
+      url += `?number=${phoneNumber.replace(/\D/g, '')}`;
+    }
+    const res = await apiFetch(url, {
       method: 'GET',
       headers,
     });

@@ -695,7 +695,7 @@ class EvolutionBot {
 
       if (state === 'close' || state === 'connecting') {
         console.log(`[EVO] Instance ${this.sessionId} is ${state} — attempting reconnect via connect endpoint`);
-        const connectState = await connectInstance(this.sessionId);
+        const connectState = await connectInstance(this.sessionId, this.phoneNumber);
         console.log(`[EVO] connectInstance result for ${this.sessionId}: ${connectState}`);
 
         if (connectState === 'open') {
@@ -750,7 +750,7 @@ class EvolutionBot {
 
       // Try to connect the instance — this triggers Baileys to reconnect
       // using saved auth credentials if they exist.
-      const connectState = await connectInstance(this.sessionId);
+      const connectState = await connectInstance(this.sessionId, this.phoneNumber);
       console.log(`[EVO] Soft reconnect: connectInstance result for ${this.sessionId}: ${connectState}`);
 
       if (connectState === 'open') {
