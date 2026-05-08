@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './circuitBreaker';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -59,7 +60,10 @@ export function invalidateCache(prefix: string): void {
       if (key.startsWith(prefix)) cache.delete(key);
     }
   }
+  invalidateStaleCache(prefix);
 }
+
+export { getCircuitStats };
 
 export async function initDatabase() {
   console.log('Database initialized');
@@ -79,24 +83,30 @@ export async function initDatabase() {
 }
 
 export async function getUserSessions(userId?: string) {
-  let query = supabase
-    .from('bot_sessions')
-    .select('*')
-    .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
+  return resilientRead({
+    cacheKey: `sessions:${userId || 'all'}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      let query = supabase
+        .from('bot_sessions')
+        .select('*')
+        .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
 
-  if (userId) {
-    query = query.eq('user_id', userId);
-  }
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) {
-    if (error.code !== 'PGRST205') {
-      console.error('Error fetching sessions:', error);
-    }
-    return [];
-  }
-  return data;
+      if (error) {
+        if (error.code !== 'PGRST205') {
+          console.error('Error fetching sessions:', error);
+        }
+        return [];
+      }
+      return data;
+    },
+  });
 }
 
 export async function getSessionById(sessionId: string) {
@@ -116,36 +126,35 @@ export async function getSessionById(sessionId: string) {
 }
 
 export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean) {
-  // Only fetch actionable states. needs_reauth sessions require user
-  // interaction (re-pair from the dashboard) — workers can't do anything
-  // with them and including them just pollutes sync logs.
-  // inactive = temporary disconnect (auth preserved) — sync loop should
-  // create a bot that tries tryReconnectExisting() before fresh pairing.
-  const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'inactive'];
+  return resilientRead({
+    cacheKey: `sessionsNeeding:${selfUrl || 'main'}:${isWorker}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'inactive'];
 
-  let query = supabase
-    .from('bot_sessions')
-    .select('*')
-    .in('state', actionableStates);
+      let query = supabase
+        .from('bot_sessions')
+        .select('*')
+        .in('state', actionableStates);
 
-  if (selfUrl && isWorker) {
-    // Dedicated worker: only pick up sessions explicitly assigned to it
-    query = query.eq('worker_url', selfUrl);
-  } else {
-    // Main service: pick up sessions that have no worker assigned
-    query = query.is('worker_url', null);
-  }
+      if (selfUrl && isWorker) {
+        query = query.eq('worker_url', selfUrl);
+      } else {
+        query = query.is('worker_url', null);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) {
-    console.error('[DB] Error fetching sessions needing bot:', error);
-    return [];
-  }
-  if (data && data.length > 0) {
-    console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'},worker=${s.worker_url ? (() => { try { return new URL(s.worker_url).hostname; } catch { return s.worker_url; } })() : 'main'})`).join(', '));
-  }
-  return data;
+      if (error) {
+        console.error('[DB] Error fetching sessions needing bot:', error);
+        return [];
+      }
+      if (data && data.length > 0) {
+        console.log(`[DB] Found ${data.length} session(s):`, data.map(s => `${s.id.slice(0,8)}(${s.state},phone=${s.phone_number ? 'yes' : 'NO'},worker=${s.worker_url ? (() => { try { return new URL(s.worker_url).hostname; } catch { return s.worker_url; } })() : 'main'})`).join(', '));
+      }
+      return data;
+    },
+  });
 }
 
 export async function updateSessionQR(sessionId: string, qr: string, expiresAt: string, generatedAt: string) {
@@ -628,21 +637,29 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
   const cached = getCached(featureCache, cacheKey);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('bot_features')
-    .select('enabled')
-    .eq('user_id', userId)
-    .eq('feature_name', featureName)
-    .single();
+  const defaultVal = !FEATURES_DEFAULT_OFF.has(featureName);
 
-  let result: boolean;
-  if (error) {
-    result = !FEATURES_DEFAULT_OFF.has(featureName);
-  } else {
-    result = data?.enabled ?? !FEATURES_DEFAULT_OFF.has(featureName);
-  }
-  setCache(featureCache, cacheKey, result);
-  return result;
+  return resilientRead({
+    cacheKey: `feature:${cacheKey}`,
+    fallbackValue: defaultVal,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bot_features')
+        .select('enabled')
+        .eq('user_id', userId)
+        .eq('feature_name', featureName)
+        .single();
+
+      let result: boolean;
+      if (error) {
+        result = defaultVal;
+      } else {
+        result = data?.enabled ?? defaultVal;
+      }
+      setCache(featureCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 // ─── Leaderboard Tracking ─────────────────────────────────────────────────────
@@ -684,21 +701,27 @@ export async function getAutoReplies(sessionId: string) {
   const cached = getCached(autoReplyCache, sessionId);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('auto_replies')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('enabled', true);
+  return resilientRead({
+    cacheKey: `autoreplies:${sessionId}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('auto_replies')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('enabled', true);
 
-  if (error) {
-    if (error.code !== 'PGRST205' && error.code !== 'PGRST116') {
-      console.error('Error fetching auto replies:', error);
-    }
-    return [];
-  }
-  const result = data || [];
-  setCache(autoReplyCache, sessionId, result);
-  return result;
+      if (error) {
+        if (error.code !== 'PGRST205' && error.code !== 'PGRST116') {
+          console.error('Error fetching auto replies:', error);
+        }
+        return [];
+      }
+      const result = data || [];
+      setCache(autoReplyCache, sessionId, result);
+      return result;
+    },
+  });
 }
 
 // ─── Active Poll Lookup ───────────────────────────────────────────────────────
@@ -708,22 +731,28 @@ export async function getActivePoll(sessionId: string, chatJid: string) {
   const cached = getCached(pollCache, cacheKey);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('polls')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('group_jid', chatJid)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  return resilientRead({
+    cacheKey: `poll:${cacheKey}`,
+    fallbackValue: null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('group_jid', chatJid)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-  if (error) {
-    setCache(pollCache, cacheKey, null);
-    return null;
-  }
-  setCache(pollCache, cacheKey, data);
-  return data;
+      if (error) {
+        setCache(pollCache, cacheKey, null);
+        return null;
+      }
+      setCache(pollCache, cacheKey, data);
+      return data;
+    },
+  });
 }
 
 // ─── New: User Settings (Groq API Key, etc.) ─────────────────────────────────
@@ -732,20 +761,26 @@ export async function getUserSettings(userId: string) {
   const cached = getCached(settingsCache, userId);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  return resilientRead({
+    cacheKey: `settings:${userId}`,
+    fallbackValue: null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-  if (error) {
-    if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
-      console.error('Error fetching user settings:', error);
-    }
-    return null;
-  }
-  setCache(settingsCache, userId, data);
-  return data;
+      if (error) {
+        if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
+          console.error('Error fetching user settings:', error);
+        }
+        return null;
+      }
+      setCache(settingsCache, userId, data);
+      return data;
+    },
+  });
 }
 
 export async function upsertUserSettings(userId: string, settings: Record<string, unknown>) {
@@ -777,22 +812,28 @@ export async function getAfkState(sessionId: string, userJid: string) {
   const cached = getCached(afkCache, cacheKey);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('afk_states')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('user_jid', userJid)
-    .single();
+  return resilientRead({
+    cacheKey: `afk:${cacheKey}`,
+    fallbackValue: null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('afk_states')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_jid', userJid)
+        .single();
 
-  if (error) {
-    if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
-      console.error('Error fetching AFK state:', error);
-    }
-    setCache(afkCache, cacheKey, null);
-    return null;
-  }
-  setCache(afkCache, cacheKey, data);
-  return data;
+      if (error) {
+        if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
+          console.error('Error fetching AFK state:', error);
+        }
+        setCache(afkCache, cacheKey, null);
+        return null;
+      }
+      setCache(afkCache, cacheKey, data);
+      return data;
+    },
+  });
 }
 
 export async function setAfkState(sessionId: string, userJid: string, isAfk: boolean, reason?: string) {
@@ -821,18 +862,24 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
   const cached = getCached(sessionUserIdCache, sessionId);
   if (cached !== undefined) return cached;
 
-  const { data, error } = await supabase
-    .from('bot_sessions')
-    .select('user_id')
-    .eq('id', sessionId)
-    .single();
+  return resilientRead({
+    cacheKey: `sessionUser:${sessionId}`,
+    fallbackValue: null as string | null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bot_sessions')
+        .select('user_id')
+        .eq('id', sessionId)
+        .single();
 
-  if (error) {
-    return null;
-  }
-  const result = data?.user_id || null;
-  setCache(sessionUserIdCache, sessionId, result);
-  return result;
+      if (error) {
+        return null;
+      }
+      const result = data?.user_id || null;
+      setCache(sessionUserIdCache, sessionId, result);
+      return result;
+    },
+  });
 }
 
 // ─── Reminders ────────────────────────────────────────────────────────────────
@@ -858,19 +905,25 @@ export async function createReminder(sessionId: string, userJid: string, chatJid
 }
 
 export async function getDueReminders(): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('reminders')
-    .select('*, bot_sessions!inner(state)')
-    .eq('delivered', false)
-    .lte('remind_at', new Date().toISOString())
-    .eq('bot_sessions.state', 'active')
-    .limit(50);
+  return resilientRead({
+    cacheKey: 'dueReminders',
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('*, bot_sessions!inner(state)')
+        .eq('delivered', false)
+        .lte('remind_at', new Date().toISOString())
+        .eq('bot_sessions.state', 'active')
+        .limit(50);
 
-  if (error) {
-    console.error('[DB] Error fetching due reminders:', error);
-    return [];
-  }
-  return data || [];
+      if (error) {
+        console.error('[DB] Error fetching due reminders:', error);
+        return [];
+      }
+      return data || [];
+    },
+  });
 }
 
 export async function markReminderDelivered(reminderId: string) {
@@ -989,19 +1042,25 @@ export async function createScheduledMessage(sessionId: string, userJid: string,
 }
 
 export async function getDueScheduledMessages(): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('scheduled_messages')
-    .select('*, bot_sessions!inner(state)')
-    .eq('sent', false)
-    .lte('send_at', new Date().toISOString())
-    .eq('bot_sessions.state', 'active')
-    .limit(50);
+  return resilientRead({
+    cacheKey: 'dueScheduled',
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scheduled_messages')
+        .select('*, bot_sessions!inner(state)')
+        .eq('sent', false)
+        .lte('send_at', new Date().toISOString())
+        .eq('bot_sessions.state', 'active')
+        .limit(50);
 
-  if (error) {
-    console.error('[DB] Error fetching due scheduled messages:', error);
-    return [];
-  }
-  return data || [];
+      if (error) {
+        console.error('[DB] Error fetching due scheduled messages:', error);
+        return [];
+      }
+      return data || [];
+    },
+  });
 }
 
 export async function markScheduledMessageSent(messageId: string) {
@@ -1082,31 +1141,32 @@ export async function trackCommand(
   senderJid: string,
   commandName: string,
 ): Promise<void> {
-  try {
-    const { data: existing } = await supabase
-      .from('user_stats')
-      .select('id, total_commands')
-      .eq('session_id', sessionId)
-      .eq('sender_jid', senderJid)
-      .single();
-
-    if (existing) {
-      await supabase
+  await resilientWrite({
+    label: 'trackCommand',
+    maxRetries: 0,
+    writeFn: async () => {
+      const { data: existing } = await supabase
         .from('user_stats')
-        .update({ total_commands: (existing.total_commands || 0) + 1 })
-        .eq('id', existing.id);
-    } else {
-      await supabase.from('user_stats').insert({
-        user_id: userId,
-        session_id: sessionId,
-        sender_jid: senderJid,
-        total_commands: 1,
-      });
-    }
-  } catch (error) {
-    // Non-critical: don't crash the bot over stats
-    console.error('[DB] Error tracking command:', error);
-  }
+        .select('id, total_commands')
+        .eq('session_id', sessionId)
+        .eq('sender_jid', senderJid)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('user_stats')
+          .update({ total_commands: (existing.total_commands || 0) + 1 })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('user_stats').insert({
+          user_id: userId,
+          session_id: sessionId,
+          sender_jid: senderJid,
+          total_commands: 1,
+        });
+      }
+    },
+  });
 }
 
 export async function trackMessage(
@@ -1118,19 +1178,22 @@ export async function trackMessage(
   isGroup: boolean,
   groupJid: string | null,
 ): Promise<void> {
-  try {
-    await supabase.from('messages').insert({
-      session_id: sessionId,
-      sender_jid: senderJid,
-      sender_name: senderName,
-      content: content ? content.substring(0, 500) : null,
-      message_type: messageType,
-      is_group: isGroup,
-      group_jid: groupJid,
-    });
-  } catch (error) {
-    console.error('[DB] Error tracking message:', error);
-  }
+  await resilientWrite({
+    label: 'trackMessage',
+    maxRetries: 0,
+    writeFn: async () => {
+      const { error } = await supabase.from('messages').insert({
+        session_id: sessionId,
+        sender_jid: senderJid,
+        sender_name: senderName,
+        content: content ? content.substring(0, 500) : null,
+        message_type: messageType,
+        is_group: isGroup,
+        group_jid: groupJid,
+      });
+      if (error) throw error;
+    },
+  });
 }
 
 // ─── Health Event Tracking ────────────────────────────────────────────────────
@@ -1142,15 +1205,18 @@ export async function logHealthEvent(
   eventType: HealthEventType,
   details?: string,
 ): Promise<void> {
-  try {
-    await supabase.from('bot_health_events').insert({
-      session_id: sessionId,
-      event_type: eventType,
-      details: details ? details.substring(0, 500) : null,
-    });
-  } catch (error) {
-    console.error('[DB] Error logging health event:', error);
-  }
+  await resilientWrite({
+    label: 'logHealthEvent',
+    maxRetries: 0,
+    writeFn: async () => {
+      const { error } = await supabase.from('bot_health_events').insert({
+        session_id: sessionId,
+        event_type: eventType,
+        details: details ? details.substring(0, 500) : null,
+      });
+      if (error) throw error;
+    },
+  });
 }
 
 export async function getHealthEvents(sessionId: string, limit = 50) {
@@ -1287,17 +1353,23 @@ export async function getWelcomeMessage(sessionId: string, groupJid: string, mes
   const cached = getCached(welcomeCache, cacheKey);
   if (cached !== undefined) return cached;
 
-  const { data } = await supabase
-    .from('welcome_messages')
-    .select('message_text, enabled')
-    .eq('session_id', sessionId)
-    .eq('group_jid', groupJid)
-    .eq('message_type', messageType)
-    .single();
+  return resilientRead({
+    cacheKey: `welcome:${cacheKey}`,
+    fallbackValue: null as string | null,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('welcome_messages')
+        .select('message_text, enabled')
+        .eq('session_id', sessionId)
+        .eq('group_jid', groupJid)
+        .eq('message_type', messageType)
+        .single();
 
-  const result = (data?.enabled && data.message_text) ? data.message_text : null;
-  setCache(welcomeCache, cacheKey, result);
-  return result;
+      const result = (data?.enabled && data.message_text) ? data.message_text : null;
+      setCache(welcomeCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function setFeatureEnabled(userId: string, sessionId: string, featureName: string, enabled: boolean): Promise<boolean> {
@@ -1374,45 +1446,50 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
   const cached = getCached(subscriptionCache, userId);
   if (cached !== undefined) return cached as SubscriptionInfo;
 
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select('plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, next_renewal')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !data) {
-    setCache(subscriptionCache, userId, defaults);
-    return defaults;
-  }
-
-  // Auto-expire if past renewal date
-  if (data.plan !== 'free' && data.next_renewal) {
-    const renewal = new Date(data.next_renewal);
-    if (renewal < new Date()) {
-      await supabase
+  return resilientRead({
+    cacheKey: `sub:${userId}`,
+    fallbackValue: defaults,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('subscriptions')
-        .update({
-          plan: 'free', status: 'expired',
-          quota_limit: 300, quota_used: 0,
-          session_limit: 1, ai_daily_limit: 10,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-      setCache(subscriptionCache, userId, defaults);
-      return defaults;
-    }
-  }
+        .select('plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, next_renewal')
+        .eq('user_id', userId)
+        .single();
 
-  const result: SubscriptionInfo = {
-    plan: data.plan,
-    status: data.status,
-    quotaLimit: data.quota_limit,
-    quotaUsed: data.quota_used,
-    sessionLimit: data.session_limit,
-    aiDailyLimit: data.ai_daily_limit,
-  };
-  setCache(subscriptionCache, userId, result);
-  return result;
+      if (error || !data) {
+        setCache(subscriptionCache, userId, defaults);
+        return defaults;
+      }
+
+      if (data.plan !== 'free' && data.next_renewal) {
+        const renewal = new Date(data.next_renewal);
+        if (renewal < new Date()) {
+          await supabase
+            .from('subscriptions')
+            .update({
+              plan: 'free', status: 'expired',
+              quota_limit: 300, quota_used: 0,
+              session_limit: 1, ai_daily_limit: 10,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', userId);
+          setCache(subscriptionCache, userId, defaults);
+          return defaults;
+        }
+      }
+
+      const result: SubscriptionInfo = {
+        plan: data.plan,
+        status: data.status,
+        quotaLimit: data.quota_limit,
+        quotaUsed: data.quota_used,
+        sessionLimit: data.session_limit,
+        aiDailyLimit: data.ai_daily_limit,
+      };
+      setCache(subscriptionCache, userId, result);
+      return result;
+    },
+  });
 }
 
 /**
