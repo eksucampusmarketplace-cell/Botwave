@@ -536,12 +536,11 @@ export async function setWebhook(instanceName: string) {
             url: webhookUrl,
             byEvents: false,
             base64: false,
-            events: [
-              'CONNECTION_UPDATE',
-              'MESSAGES_UPSERT',
-              'QRCODE_UPDATED',
-              'GROUP_PARTICIPANTS_UPDATE',
-            ],
+            // Empty events array = subscribe to ALL events.
+            // Previously used specific event names (MESSAGES_UPSERT, etc.)
+            // but Evolution API v2.3.7 may not recognize those constants,
+            // causing messages.upsert to never be forwarded.
+            events: [],
           },
         }),
       });
