@@ -7,11 +7,27 @@ import { startMonetizationScheduler, stopMonetizationScheduler } from './monetiz
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
 import { disconnectRedis } from './redis';
 import { isCircuitOpen } from './circuitBreaker';
+import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './gracefulShutdown';
+import { trackMap, startMemoryGuard, stopMemoryGuard } from './memoryGuard';
+import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from './writeQueue';
+import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './adaptivePoller';
+import { disconnectSessionCache } from './redisSessionCache';
 
 const bot = initializeBot();
 
 async function start() {
   console.log(`[BOT] Starting bot service... IS_WORKER=${IS_WORKER} WORKER_URLS=${WORKER_URLS.join(',') || 'none'} SELF_URL=${process.env.SELF_URL || 'not set'} INSTANCE=${getInstanceId()}`);
+
+  // ── Install graceful shutdown before anything else ──
+  installShutdownHandlers();
+  onShutdown('heartbeat', async () => { stopHeartbeatLoop(); });
+  onShutdown('monetization', async () => { stopMonetizationScheduler(); });
+  onShutdown('memoryGuard', async () => { stopMemoryGuard(); });
+  onShutdown('writeQueue', async () => { stopWriteQueueReplay(); });
+  onShutdown('sessionCache', async () => { await disconnectSessionCache(); });
+  onShutdown('redis', async () => { await disconnectRedis(); });
+  onShutdown('bot', async () => { await bot.stop(true); });
+
   await bot.start();
 
   // Coordinator: clean up stale locks from previous run, start heartbeat
@@ -47,79 +63,88 @@ async function start() {
   console.log('[BOT] Initial sync complete. Polling every 15s...');
   
   // ── Polling intervals ──
+  // All intervals are registered for graceful shutdown cleanup.
+  // Adaptive polling multiplier adjusts intervals during degraded conditions.
   // Tuned to reduce Supabase load on free-tier (0.5 GB RAM, shared CPU).
-  // Previous: sync 5s, recovery 30s, orphan 60s, audit 120s, reauth 90s, reminders 15s
-  // New:      sync 15s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
-  // Cuts total DB queries by ~60-70%.
+  // Base: sync 15s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
 
   // Periodically sync sessions from database
-  setInterval(async () => {
-    if (isCircuitOpen()) {
-      console.log('[BOT] Skipping session sync — Supabase circuit is OPEN');
-      return;
-    }
+  registerInterval(setInterval(async () => {
+    if (isShutdown() || isCircuitOpen()) return;
+    const mult = getPollingMultiplier();
+    if (mult === Infinity) return;
     try {
       await syncSessionsWithDb(IS_WORKER);
+      recordPollerSuccess('sessionSync');
     } catch (error) {
+      recordPollerError('sessionSync');
       console.error('Error syncing sessions:', error);
     }
-  }, 15_000); // Every 15 seconds (was 5s)
+  }, 15_000));
 
   // Main service: recover sessions stuck on dead workers every 60s
   if (!IS_WORKER) {
-    setInterval(async () => {
-      if (isCircuitOpen()) return;
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
       try {
         const recovered = await recoverStaleSessions(isWorkerHealthy);
         if (recovered > 0) {
           console.log(`[RECOVERY] Recovered ${recovered} session(s) from dead workers`);
         }
+        recordPollerSuccess('staleRecovery');
       } catch (err) {
+        recordPollerError('staleRecovery');
         console.error('[RECOVERY] Error recovering stale sessions:', err);
       }
-    }, 60_000); // was 30s
+    }, 60_000));
   }
 
   // Coordinator: orphan recovery (every 120s, main only) + audit (every 300s)
   if (!IS_WORKER) {
-    setInterval(async () => {
-      if (isCircuitOpen()) return;
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
       try {
         const recovered = await recoverOrphanedSessions();
         if (recovered > 0) {
           console.log(`[COORD] Recovered ${recovered} orphaned session(s)`);
         }
+        recordPollerSuccess('orphanRecovery');
       } catch (err) {
+        recordPollerError('orphanRecovery');
         console.error('[COORD] Orphan recovery error:', err);
       }
-    }, 120_000); // was 60s
+    }, 120_000));
 
-    setInterval(async () => {
-      if (isCircuitOpen()) return;
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
       try {
         await auditSessions();
+        recordPollerSuccess('audit');
       } catch (err) {
+        recordPollerError('audit');
         console.error('[COORD] Audit error:', err);
       }
-    }, 300_000); // was 120s
+    }, 300_000));
 
     // Auto-recovery: retry needs_reauth sessions every 180s
-    setInterval(async () => {
-      if (isCircuitOpen()) return;
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
       try {
         const recovered = await autoRecoverNeedsReauth();
         if (recovered > 0) {
           console.log(`[AUTO-RECOVERY] Auto-recovered ${recovered} session(s) from needs_reauth`);
         }
+        recordPollerSuccess('autoRecovery');
       } catch (err) {
+        recordPollerError('autoRecovery');
         console.error('[AUTO-RECOVERY] Error:', err);
       }
-    }, 180_000); // was 90s
+    }, 180_000));
   }
 
   // Reminder + Scheduled Message delivery loop (every 30s)
-  setInterval(async () => {
-    if (isCircuitOpen()) return;
+  registerInterval(setInterval(async () => {
+    if (isShutdown() || isCircuitOpen()) return;
     try {
       // Deliver due reminders
       const dueReminders = await getDueReminders();
@@ -155,23 +180,32 @@ async function start() {
           }
         }
       }
+      recordPollerSuccess('reminders');
     } catch (err) {
+      recordPollerError('reminders');
       console.error('[REMIND/SCHED] Error in delivery loop:', err);
     }
-  }, 30_000); // was 15s
+  }, 30_000));
 
   // Monetization: dunning + trial notifications (main only, every 30min)
   if (!IS_WORKER) {
     startMonetizationScheduler();
   }
 
-  // ── Circuit breaker status log (every 60s) ──
-  setInterval(() => {
+  // ── Start write queue replay ──
+  registerInterval(startWriteQueueReplay());
+
+  // ── Start memory guard ──
+  registerInterval(startMemoryGuard());
+
+  // ── Circuit breaker + write queue status log (every 60s) ──
+  registerInterval(setInterval(() => {
     const stats = getCircuitStats();
-    if (stats.state !== 'CLOSED' || stats.totalBlocked > 0) {
-      console.log(`[CIRCUIT] state=${stats.state} failures=${stats.consecutiveFailures} blocked=${stats.totalBlocked} fallbacks=${stats.totalFallbacks} staleCache=${stats.staleCacheSize} inflight=${stats.inflightRequests}`);
+    const wq = getWriteQueueStats();
+    if (stats.state !== 'CLOSED' || stats.totalBlocked > 0 || wq.pending > 0) {
+      console.log(`[CIRCUIT] state=${stats.state} failures=${stats.consecutiveFailures} blocked=${stats.totalBlocked} fallbacks=${stats.totalFallbacks} staleCache=${stats.staleCacheSize} inflight=${stats.inflightRequests} writeQueue=${wq.pending}`);
     }
-  }, 60_000);
+  }, 60_000));
 
   // ── Keepalive cron ──
   // Main: pings self + all workers + Evolution API every 60s
@@ -210,16 +244,19 @@ async function start() {
             if (!res.ok) {
               console.warn(`[KEEPALIVE] ${target.name} (${target.url}): status=${res.status}`);
             }
-          } catch (err: any) {
-            console.warn(`[KEEPALIVE] ${target.name} UNREACHABLE: ${err.message}`);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.warn(`[KEEPALIVE] ${target.name} UNREACHABLE: ${msg}`);
           }
         }),
       );
     };
     pingAll();
-    setInterval(pingAll, KEEPALIVE_INTERVAL);
+    registerInterval(setInterval(pingAll, KEEPALIVE_INTERVAL));
     console.log(`[KEEPALIVE] Pinging ${keepAliveTargets.length} target(s) every ${KEEPALIVE_INTERVAL / 1000}s: ${keepAliveTargets.map(t => t.name).join(', ')}`);
   }
+
+  console.log('[BOT] All resilience modules initialized: gracefulShutdown, memoryGuard, writeQueue, adaptivePoller, authGuard, redisSessionCache');
 }
 
 console.log('[BOT] Bot process starting...');
@@ -227,21 +264,4 @@ start().catch((error) => {
   console.error('[BOT] FATAL: Bot startup failed:', error);
   process.exit(1);
 });
-
-process.on('SIGINT', async () => {
-  console.log('[BOT] Received SIGINT — shutting down gracefully (preserving Evolution API instances for reconnect)...');
-  stopHeartbeatLoop();
-  stopMonetizationScheduler();
-  await disconnectRedis();
-  await bot.stop(true);
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('[BOT] Received SIGTERM — shutting down gracefully (preserving Evolution API instances for reconnect)...');
-  stopHeartbeatLoop();
-  stopMonetizationScheduler();
-  await disconnectRedis();
-  await bot.stop(true);
-  process.exit(0);
-});
+// SIGTERM/SIGINT are now handled by gracefulShutdown.ts — no manual handlers needed
