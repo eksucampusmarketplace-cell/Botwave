@@ -996,8 +996,8 @@ class EvolutionBot {
             isRecreating = true;
             try {
               await deleteInstanceAndVerify(this.sessionId);
+              // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber);
-              await setWebhook(this.sessionId);
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
               if (freshCode) {
                 await updateSessionPairingCode(this.sessionId, freshCode);
@@ -1048,8 +1048,8 @@ class EvolutionBot {
             unknownStateCount = 0;
             try {
               await deleteInstanceAndVerify(this.sessionId);
+              // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber);
-              await setWebhook(this.sessionId);
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
               if (freshCode) {
                 await updateSessionPairingCode(this.sessionId, freshCode);

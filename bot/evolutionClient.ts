@@ -235,9 +235,9 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       const isDuplicate = r.status === 403 || body.includes('Unique constraint');
       if (isDuplicate) {
         console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting and retrying`);
-        await deleteInstance(instanceName);
-        // Brief pause to let async cleanup propagate (Redis/DB)
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await deleteInstanceAndVerify(instanceName);
+        // Extra pause after verified deletion to let DB constraints fully propagate
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return apiFetch(`${BASE}/instance/create`, {
           method: 'POST',
           headers,
@@ -470,7 +470,9 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
   console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${MAX_DELETE_RETRIES} delete attempts — proceeding anyway`);
 }
 
-// Configure webhook for an existing instance
+// Configure webhook for an existing instance.
+// Retries with backoff to handle FK constraint errors that occur when the
+// instance record hasn't fully propagated to the database yet.
 export async function setWebhook(instanceName: string) {
   const webhookUrl = getWebhookUrl();
   if (!webhookUrl) {
@@ -479,28 +481,43 @@ export async function setWebhook(instanceName: string) {
   }
 
   console.log(`[EVO-CLIENT] setWebhook for ${instanceName}: url=${webhookUrl}`);
-  try {
-    const res = await apiFetch(`${BASE}/webhook/set/${instanceName}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        webhook: {
-          enabled: true,
-          url: webhookUrl,
-          byEvents: false,
-          base64: false,
-          events: [
-            'CONNECTION_UPDATE',
-            'MESSAGES_UPSERT',
-            'QRCODE_UPDATED',
-            'GROUP_PARTICIPANTS_UPDATE',
-          ],
-        },
-      }),
-    });
-    console.log(`[EVO-CLIENT] setWebhook ${instanceName}: status=${res.status}`);
-  } catch (err) {
-    console.error(`[EVO-CLIENT] Failed to set webhook for ${instanceName}:`, err);
+  const MAX_RETRIES = 3;
+  const BASE_DELAY = 2000;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await apiFetch(`${BASE}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          webhook: {
+            enabled: true,
+            url: webhookUrl,
+            byEvents: false,
+            base64: false,
+            events: [
+              'CONNECTION_UPDATE',
+              'MESSAGES_UPSERT',
+              'QRCODE_UPDATED',
+              'GROUP_PARTICIPANTS_UPDATE',
+            ],
+          },
+        }),
+      });
+      console.log(`[EVO-CLIENT] setWebhook ${instanceName}: status=${res.status} (attempt ${attempt})`);
+      if (res.ok) return;
+      const body = await res.text().catch(() => '');
+      const isConstraintError = body.includes('foreign key') || body.includes('P2003') || body.includes('P2025');
+      if (!isConstraintError || attempt === MAX_RETRIES) {
+        console.error(`[EVO-CLIENT] setWebhook ${instanceName} failed: status=${res.status} body=${body}`);
+        return;
+      }
+      console.warn(`[EVO-CLIENT] setWebhook ${instanceName} FK constraint error (attempt ${attempt}/${MAX_RETRIES}) — retrying in ${BASE_DELAY * attempt}ms`);
+      await new Promise(r => setTimeout(r, BASE_DELAY * attempt));
+    } catch (err) {
+      console.error(`[EVO-CLIENT] Failed to set webhook for ${instanceName} (attempt ${attempt}/${MAX_RETRIES}):`, err);
+      if (attempt === MAX_RETRIES) return;
+      await new Promise(r => setTimeout(r, BASE_DELAY * attempt));
+    }
   }
 }
 
