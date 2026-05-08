@@ -17,6 +17,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync } from './workerConfig';
+import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from './redis';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +31,8 @@ const AUTO_RECOVERY_COOLDOWN_MS = 120_000; // wait 2 min before auto-retry
 const AUTO_RECOVERY_MAX_ATTEMPTS = 3; // max auto-recovery tries per session
 
 let heartbeatHandle: NodeJS.Timeout | null = null;
+let heartbeatCycle = 0; // counter for periodic Supabase sync
+const SUPABASE_SYNC_EVERY = 5; // sync heartbeat to Supabase every 5th cycle (~5 min)
 // Track auto-recovery attempts per session (in-memory, resets on restart)
 const autoRecoveryAttempts = new Map<string, number>();
 const ownedSessions: Set<string> = new Set();
@@ -113,6 +116,9 @@ export async function tryAcquireLock(sessionId: string): Promise<boolean> {
  * Release a session lock. Safe to call even if not locked.
  */
 export async function releaseLock(sessionId: string): Promise<void> {
+  // Release Redis lock first (non-blocking)
+  await redisReleaseLock(sessionId, INSTANCE_ID);
+
   const { error } = await supabase
     .from('bot_sessions')
     .update({
@@ -135,8 +141,11 @@ export async function releaseLock(sessionId: string): Promise<void> {
 
 /**
  * Update heartbeat for a session we own. Called automatically by the heartbeat loop.
+ * Uses Redis when available, falls back to Supabase.
  */
 export async function refreshHeartbeat(sessionId: string): Promise<void> {
+  if (await redisSetHeartbeat(sessionId, INSTANCE_ID)) return;
+
   const { error } = await supabase
     .from('bot_sessions')
     .update({ heartbeat_at: new Date().toISOString() })
@@ -158,14 +167,22 @@ export function startHeartbeatLoop(): void {
     if (ownedSessions.size === 0) return;
 
     const sessionIds = Array.from(ownedSessions);
-    const { error } = await supabase
-      .from('bot_sessions')
-      .update({ heartbeat_at: new Date().toISOString() })
-      .eq('locked_by', INSTANCE_ID)
-      .in('id', sessionIds);
+    heartbeatCycle++;
 
-    if (error) {
-      console.error(`[COORD] Heartbeat batch update failed:`, error);
+    // Try Redis first for batch heartbeat
+    const redisOk = await redisSetHeartbeatBatch(sessionIds, INSTANCE_ID);
+
+    // Sync to Supabase every Nth cycle (or always if Redis is unavailable)
+    if (!redisOk || heartbeatCycle % SUPABASE_SYNC_EVERY === 0) {
+      const { error } = await supabase
+        .from('bot_sessions')
+        .update({ heartbeat_at: new Date().toISOString() })
+        .eq('locked_by', INSTANCE_ID)
+        .in('id', sessionIds);
+
+      if (error) {
+        console.error(`[COORD] Heartbeat batch update failed:`, error);
+      }
     }
   }, HEARTBEAT_INTERVAL);
 

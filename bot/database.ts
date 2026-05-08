@@ -33,6 +33,10 @@ const settingsCache = new Map<string, CacheEntry<any>>();
 const featureCache = new Map<string, CacheEntry<boolean>>();
 const autoReplyCache = new Map<string, CacheEntry<any[]>>();
 const sessionUserIdCache = new Map<string, CacheEntry<string | null>>();
+const afkCache = new Map<string, CacheEntry<any>>();
+const subscriptionCache = new Map<string, CacheEntry<any>>();
+const welcomeCache = new Map<string, CacheEntry<string | null>>();
+const pollCache = new Map<string, CacheEntry<any>>();
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
   const entry = cache.get(key);
@@ -50,7 +54,7 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T): 
 
 /** Invalidate all cache entries for a given prefix (e.g. userId or sessionId). */
 export function invalidateCache(prefix: string): void {
-  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache]) {
+  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache, afkCache, subscriptionCache, welcomeCache, pollCache]) {
     for (const key of cache.keys()) {
       if (key.startsWith(prefix)) cache.delete(key);
     }
@@ -563,6 +567,7 @@ export async function savePoll(sessionId: string, chatJid: string, question: str
     }
     return null;
   }
+  invalidateCache(sessionId);
   return data;
 }
 
@@ -699,6 +704,10 @@ export async function getAutoReplies(sessionId: string) {
 // ─── Active Poll Lookup ───────────────────────────────────────────────────────
 
 export async function getActivePoll(sessionId: string, chatJid: string) {
+  const cacheKey = `${sessionId}:${chatJid}`;
+  const cached = getCached(pollCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('polls')
     .select('*')
@@ -710,8 +719,10 @@ export async function getActivePoll(sessionId: string, chatJid: string) {
     .single();
 
   if (error) {
+    setCache(pollCache, cacheKey, null);
     return null;
   }
+  setCache(pollCache, cacheKey, data);
   return data;
 }
 
@@ -762,6 +773,10 @@ export async function upsertUserSettings(userId: string, settings: Record<string
 // ─── New: AFK State ───────────────────────────────────────────────────────────
 
 export async function getAfkState(sessionId: string, userJid: string) {
+  const cacheKey = `${sessionId}:${userJid}`;
+  const cached = getCached(afkCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const { data, error } = await supabase
     .from('afk_states')
     .select('*')
@@ -773,8 +788,10 @@ export async function getAfkState(sessionId: string, userJid: string) {
     if (error.code !== 'PGRST116' && error.code !== 'PGRST205') {
       console.error('Error fetching AFK state:', error);
     }
+    setCache(afkCache, cacheKey, null);
     return null;
   }
+  setCache(afkCache, cacheKey, data);
   return data;
 }
 
@@ -795,6 +812,7 @@ export async function setAfkState(sessionId: string, userJid: string, isAfk: boo
   if (error) {
     console.error('Error setting AFK state:', error);
   }
+  invalidateCache(`${sessionId}:${userJid}`);
 }
 
 // ─── New: Get session's user_id for BYOK lookup ──────────────────────────────
@@ -1251,51 +1269,24 @@ export async function markWebhookRetryFailed(id: string, errorMessage: string, a
 // ─── Bot Settings (per-session, for !settings command) ────────────────────────
 
 export async function getSessionSettings(sessionId: string) {
-  const { data: session } = await supabase
-    .from('bot_sessions')
-    .select('user_id')
-    .eq('id', sessionId)
-    .single();
-
-  if (!session) return null;
-
-  const { data } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', session.user_id)
-    .single();
-
-  return data || null;
+  const userId = await getSessionUserId(sessionId);
+  if (!userId) return null;
+  return getUserSettings(userId);
 }
 
 export async function updateSessionSettings(sessionId: string, updates: Record<string, unknown>) {
-  const { data: session } = await supabase
-    .from('bot_sessions')
-    .select('user_id')
-    .eq('id', sessionId)
-    .single();
-
-  if (!session) return null;
-
-  const { data, error } = await supabase
-    .from('user_settings')
-    .upsert(
-      { user_id: session.user_id, ...updates, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id' },
-    )
-    .select()
-    .single();
-
-  if (error) {
-    console.error('[DB] Error updating session settings:', error);
-    return null;
-  }
-  return data;
+  const userId = await getSessionUserId(sessionId);
+  if (!userId) return null;
+  return upsertUserSettings(userId, updates);
 }
 
 // ─── Welcome / Goodbye Messages ───────────────────────────────────────────────
 
 export async function getWelcomeMessage(sessionId: string, groupJid: string, messageType: 'welcome' | 'goodbye' = 'welcome'): Promise<string | null> {
+  const cacheKey = `${sessionId}:${groupJid}:${messageType}`;
+  const cached = getCached(welcomeCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const { data } = await supabase
     .from('welcome_messages')
     .select('message_text, enabled')
@@ -1304,8 +1295,9 @@ export async function getWelcomeMessage(sessionId: string, groupJid: string, mes
     .eq('message_type', messageType)
     .single();
 
-  if (data?.enabled && data.message_text) return data.message_text;
-  return null;
+  const result = (data?.enabled && data.message_text) ? data.message_text : null;
+  setCache(welcomeCache, cacheKey, result);
+  return result;
 }
 
 export async function setFeatureEnabled(userId: string, sessionId: string, featureName: string, enabled: boolean): Promise<boolean> {
@@ -1350,6 +1342,7 @@ export async function setWelcomeMessage(
     console.error('[DB] Error setting welcome message:', error);
     return false;
   }
+  invalidateCache(sessionId);
   return true;
 }
 
@@ -1378,13 +1371,19 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
     sessionLimit: 1, aiDailyLimit: 10,
   };
 
+  const cached = getCached(subscriptionCache, userId);
+  if (cached !== undefined) return cached as SubscriptionInfo;
+
   const { data, error } = await supabase
     .from('subscriptions')
     .select('plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, next_renewal')
     .eq('user_id', userId)
     .single();
 
-  if (error || !data) return defaults;
+  if (error || !data) {
+    setCache(subscriptionCache, userId, defaults);
+    return defaults;
+  }
 
   // Auto-expire if past renewal date
   if (data.plan !== 'free' && data.next_renewal) {
@@ -1399,11 +1398,12 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', userId);
+      setCache(subscriptionCache, userId, defaults);
       return defaults;
     }
   }
 
-  return {
+  const result: SubscriptionInfo = {
     plan: data.plan,
     status: data.status,
     quotaLimit: data.quota_limit,
@@ -1411,6 +1411,8 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
     sessionLimit: data.session_limit,
     aiDailyLimit: data.ai_daily_limit,
   };
+  setCache(subscriptionCache, userId, result);
+  return result;
 }
 
 /**
@@ -1432,6 +1434,7 @@ export async function incrementQuotaUsage(userId: string): Promise<boolean> {
     })
     .eq('user_id', userId);
 
+  invalidateCache(userId);
   return true;
 }
 
