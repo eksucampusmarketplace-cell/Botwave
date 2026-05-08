@@ -32,6 +32,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 interface CacheEntry<T> { value: T; expiresAt: number; }
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
+const CACHE_TTL_MEDIUM_MS = 120_000; // 2 minutes — leaderboard, stats
+const CACHE_TTL_LONG_MS = 300_000; // 5 minutes — settings, features, subscriptions, welcome msgs
 
 const settingsCache = new Map<string, CacheEntry<any>>();
 const featureCache = new Map<string, CacheEntry<boolean>>();
@@ -86,8 +88,8 @@ function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undef
   return entry.value;
 }
 
-function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T): void {
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttl: number = CACHE_TTL_MS): void {
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
 }
 
 /** Invalidate all cache entries for a given prefix (e.g. userId or sessionId). */
@@ -683,7 +685,7 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('leaderboard')
-        .select('*')
+        .select('user_jid, user_name, message_count')
         .eq('session_id', sessionId)
         .order('message_count', { ascending: false })
         .limit(limit);
@@ -695,7 +697,7 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
         return [];
       }
       const result = data || [];
-      setCache(leaderboardCache, cacheKey, result);
+      setCache(leaderboardCache, cacheKey, result, CACHE_TTL_MEDIUM_MS);
       return result;
     },
   });
@@ -730,7 +732,7 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
       } else {
         result = data?.enabled ?? defaultVal;
       }
-      setCache(featureCache, cacheKey, result);
+      setCache(featureCache, cacheKey, result, CACHE_TTL_LONG_MS);
       return result;
     },
   });
@@ -742,7 +744,7 @@ export async function incrementLeaderboard(sessionId: string, userJid: string, u
   try {
     const { data: existing } = await supabase
       .from('leaderboard')
-      .select('*')
+      .select('id, message_count')
       .eq('session_id', sessionId)
       .eq('user_jid', userJid)
       .single();
@@ -793,7 +795,7 @@ export async function getAutoReplies(sessionId: string) {
         return [];
       }
       const result = data || [];
-      setCache(autoReplyCache, sessionId, result);
+      setCache(autoReplyCache, sessionId, result, CACHE_TTL_LONG_MS);
       return result;
     },
   });
@@ -842,7 +844,7 @@ export async function getUserSettings(userId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('*')
+        .select('user_id, groq_api_key, bot_name, bot_prefix, ai_model, ai_system_prompt')
         .eq('user_id', userId)
         .single();
 
@@ -852,7 +854,7 @@ export async function getUserSettings(userId: string) {
         }
         return null;
       }
-      setCache(settingsCache, userId, data);
+      setCache(settingsCache, userId, data, CACHE_TTL_LONG_MS);
       return data;
     },
   });
@@ -893,7 +895,7 @@ export async function getAfkState(sessionId: string, userJid: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('afk_states')
-        .select('*')
+        .select('is_afk, afk_reason, afk_since')
         .eq('session_id', sessionId)
         .eq('user_jid', userJid)
         .single();
@@ -1025,7 +1027,7 @@ export async function getUserReminders(sessionId: string, userJid: string): Prom
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reminders')
-        .select('*')
+        .select('id, message, remind_at')
         .eq('session_id', sessionId)
         .eq('user_jid', userJid)
         .eq('delivered', false)
@@ -1091,7 +1093,7 @@ export async function getUserNotes(sessionId: string, userJid: string): Promise<
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select('id, title, content, created_at')
         .eq('session_id', sessionId)
         .eq('user_jid', userJid)
         .order('created_at', { ascending: false })
@@ -1191,7 +1193,7 @@ export async function getUserScheduledMessages(sessionId: string, userJid: strin
     queryFn: async () => {
       const { data, error } = await supabase
         .from('scheduled_messages')
-        .select('*')
+        .select('id, message, send_at')
         .eq('session_id', sessionId)
         .eq('user_jid', userJid)
         .eq('sent', false)
@@ -1241,7 +1243,7 @@ export async function getSessionStats(sessionId: string) {
           .eq('session_id', sessionId),
         supabase
           .from('leaderboard')
-          .select('*')
+          .select('user_jid, user_name, message_count')
           .eq('session_id', sessionId)
           .order('message_count', { ascending: false })
           .limit(5),
@@ -1257,7 +1259,7 @@ export async function getSessionStats(sessionId: string) {
         topUsers: leaderboardResult.data || [],
         session: sessionResult.data,
       };
-      setCache(sessionStatsCache, sessionId, result);
+      setCache(sessionStatsCache, sessionId, result, CACHE_TTL_MEDIUM_MS);
       return result;
     },
   });
@@ -1348,7 +1350,7 @@ export async function getHealthEvents(sessionId: string, limit = 50) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bot_health_events')
-        .select('*')
+        .select('id, event_type, details, created_at')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -1430,7 +1432,7 @@ export async function getPendingWebhookRetries(limit = 10) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('webhook_retry_queue')
-        .select('*')
+        .select('id, session_id, event, payload, attempts, next_retry_at')
         .eq('status', 'pending')
         .lte('next_retry_at', new Date().toISOString())
         .order('next_retry_at', { ascending: true })
@@ -1508,7 +1510,7 @@ export async function getWelcomeMessage(sessionId: string, groupJid: string, mes
         .single();
 
       const result = (data?.enabled && data.message_text) ? data.message_text : null;
-      setCache(welcomeCache, cacheKey, result);
+      setCache(welcomeCache, cacheKey, result, CACHE_TTL_LONG_MS);
       return result;
     },
   });
@@ -1599,7 +1601,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
         .single();
 
       if (error || !data) {
-        setCache(subscriptionCache, userId, defaults);
+        setCache(subscriptionCache, userId, defaults, CACHE_TTL_LONG_MS);
         return defaults;
       }
 
@@ -1615,7 +1617,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
               updated_at: new Date().toISOString(),
             })
             .eq('user_id', userId);
-          setCache(subscriptionCache, userId, defaults);
+          setCache(subscriptionCache, userId, defaults, CACHE_TTL_LONG_MS);
           return defaults;
         }
       }
@@ -1628,7 +1630,7 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
         sessionLimit: data.session_limit,
         aiDailyLimit: data.ai_daily_limit,
       };
-      setCache(subscriptionCache, userId, result);
+      setCache(subscriptionCache, userId, result, CACHE_TTL_LONG_MS);
       return result;
     },
   });
