@@ -627,6 +627,7 @@ class EvolutionBot {
   private isReady: boolean = false;
   private isPairingSent: boolean = false;
   private isReconnecting: boolean = false;
+  private stopped: boolean = false;
   private pairingStartedAt: number = 0;
   private pollHandle: NodeJS.Timeout | null = null;
   private presenceHandle: NodeJS.Timeout | null = null;
@@ -1001,9 +1002,12 @@ class EvolutionBot {
             isRecreating = true;
             try {
               await deleteInstanceAndVerify(this.sessionId);
+              if (this.stopped) { isRecreating = false; return; }
               // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber);
+              if (this.stopped) { isRecreating = false; return; }
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+              if (this.stopped) { isRecreating = false; return; }
               if (freshCode) {
                 await updateSessionPairingCode(this.sessionId, freshCode);
                 await updateSessionStatus(this.sessionId, 'pairing_sent');
@@ -1053,9 +1057,12 @@ class EvolutionBot {
             unknownStateCount = 0;
             try {
               await deleteInstanceAndVerify(this.sessionId);
+              if (this.stopped) { isRecreating = false; return; }
               // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber);
+              if (this.stopped) { isRecreating = false; return; }
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+              if (this.stopped) { isRecreating = false; return; }
               if (freshCode) {
                 await updateSessionPairingCode(this.sessionId, freshCode);
                 await updateSessionStatus(this.sessionId, 'pairing_sent');
@@ -1109,6 +1116,7 @@ class EvolutionBot {
   }
 
   async stop(preserveInstance = false): Promise<void> {
+    this.stopped = true;
     this.stopPresenceLoop();
     untrackInstance(this.sessionId);
     if (this.pollHandle) {
