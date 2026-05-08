@@ -16,7 +16,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -835,11 +835,11 @@ class EvolutionBot {
         }
       }
 
-      // Clean up any stale instance before creating a new one
-      await deleteInstance(this.sessionId);
-
-      // Wait for Evolution API to finish cleaning up before creating
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Clean up any stale instance and verify it is fully removed before
+      // creating a new one. Evolution API's delete is async (event-driven);
+      // without verification, createInstance races against the cleanup and
+      // gets 403 "name already in use".
+      await deleteInstanceAndVerify(this.sessionId);
 
       // Create instance on Evolution API (includes webhook config)
       const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
@@ -995,8 +995,7 @@ class EvolutionBot {
             console.log(`[EVO] Pairing timed out for ${this.sessionId} — auto-retrying with fresh code`);
             isRecreating = true;
             try {
-              await deleteInstance(this.sessionId);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await deleteInstanceAndVerify(this.sessionId);
               await createInstance(this.sessionId, this.phoneNumber);
               await setWebhook(this.sessionId);
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
@@ -1048,8 +1047,7 @@ class EvolutionBot {
             isRecreating = true;
             unknownStateCount = 0;
             try {
-              await deleteInstance(this.sessionId);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await deleteInstanceAndVerify(this.sessionId);
               await createInstance(this.sessionId, this.phoneNumber);
               await setWebhook(this.sessionId);
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);

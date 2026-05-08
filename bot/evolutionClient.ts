@@ -234,10 +234,8 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       const body = await r.clone().text().catch(() => '');
       const isDuplicate = r.status === 403 || body.includes('Unique constraint');
       if (isDuplicate) {
-        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting stale instance and retrying`);
-        await deleteInstance(instanceName);
-        // Small delay for cleanup to complete
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting stale instance and verifying removal before retry`);
+        await deleteInstanceAndVerify(instanceName);
         return apiFetch(`${BASE}/instance/create`, {
           method: 'POST',
           headers,
@@ -279,7 +277,11 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
   const flowStart = Date.now();
   console.log(`[PAIRING-EVO-CLIENT] ======= getPairingCode START ======= instance=${instanceName} phone=${cleanPhone} at=${new Date(flowStart).toISOString()}`);
 
-  // First call triggers connectToWhatsapp inside Evolution API
+  // First call triggers connectToWhatsapp inside Evolution API.
+  // Baileys needs time to establish the WebSocket, generate identity keys,
+  // and produce a pairing code. Give it an initial 5s window before the
+  // first poll to avoid hitting the connect endpoint while Baileys is
+  // still initialising (which returns {count:0} with no pairing code).
   const connectStart = Date.now();
   const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
@@ -296,10 +298,16 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
     return connectData.pairingCode;
   }
 
-  // Baileys may still be connecting — poll up to 5 times (3s apart)
-  console.log(`[PAIRING-EVO-CLIENT] No code on first try, starting polling (5 attempts, 3s apart)...`);
-  for (let i = 0; i < 5; i++) {
-    await new Promise(r => setTimeout(r, 3000));
+  // Baileys may still be connecting — poll up to 8 times (4s apart).
+  // The initial 5s wait lets Baileys establish its WebSocket before we
+  // start hammering the connect endpoint. Total budget: ~37s.
+  const POLL_ATTEMPTS = 8;
+  const POLL_INTERVAL_MS = 4000;
+  const INITIAL_WAIT_MS = 5000;
+  console.log(`[PAIRING-EVO-CLIENT] No code on first try, waiting ${INITIAL_WAIT_MS}ms then polling (${POLL_ATTEMPTS} attempts, ${POLL_INTERVAL_MS}ms apart)...`);
+  await new Promise(r => setTimeout(r, INITIAL_WAIT_MS));
+
+  for (let i = 0; i < POLL_ATTEMPTS; i++) {
     const pollStart = Date.now();
     const elapsed = pollStart - flowStart;
     try {
@@ -309,17 +317,21 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
       });
       const data: any = await res.json();
       const pollDuration = Date.now() - pollStart;
-      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/5: status=${res.status} pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
+      const hasQrCount = typeof data?.count === 'number';
+      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
       if (data?.pairingCode) {
         console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
         return data.pairingCode;
       }
     } catch (err: any) {
-      console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/5 FAILED: error=${err?.message} totalElapsed=${elapsed}ms`);
+      console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS} FAILED: error=${err?.message} totalElapsed=${elapsed}ms`);
+    }
+    if (i < POLL_ATTEMPTS - 1) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
     }
   }
   const totalDuration = Date.now() - flowStart;
-  console.error(`[PAIRING-EVO-CLIENT] ======= getPairingCode FAILED ======= No code after 5 polls for ${instanceName}. totalDuration=${totalDuration}ms`);
+  console.error(`[PAIRING-EVO-CLIENT] ======= getPairingCode FAILED ======= No code after ${POLL_ATTEMPTS} polls for ${instanceName}. totalDuration=${totalDuration}ms`);
   return null;
 }
 
@@ -414,6 +426,29 @@ export async function deleteInstance(instanceName: string) {
   } catch (err) {
     console.warn(`[EVO-CLIENT] deleteInstance ${instanceName} failed (non-critical):`, err);
   }
+}
+
+/**
+ * Delete an instance and poll until Evolution API confirms it is fully gone.
+ * Evolution API's delete endpoint returns 200 immediately but cleanup is
+ * async (event-driven). Without verification, a subsequent createInstance
+ * races against the cleanup and gets 403 "name already in use".
+ */
+export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 10_000): Promise<void> {
+  await deleteInstance(instanceName);
+
+  const start = Date.now();
+  const pollInterval = 1500;
+  for (let elapsed = 0; elapsed < maxWaitMs; elapsed = Date.now() - start) {
+    const state = await getInstanceStatus(instanceName);
+    if (state === 'unknown') {
+      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} confirmed gone after ${Date.now() - start}ms`);
+      return;
+    }
+    console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still exists (state=${state}), waiting...`);
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+  console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${maxWaitMs}ms — proceeding anyway`);
 }
 
 // Configure webhook for an existing instance
