@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PLANS } from '@/lib/squad';
+import { getCachedSubscriptionFull, cacheSubscriptionFull, invalidateSubscription, getCachedRewards, cacheRewards } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,24 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check Redis cache for full subscription + rewards response
+    const cachedSub = await getCachedSubscriptionFull(user.id);
+    const cachedRewards = await getCachedRewards(user.id);
+    if (cachedSub && cachedRewards) {
+      const planConfig = PLANS[(cachedSub as Record<string, unknown>).plan as string || 'free'] || PLANS.free;
+      return NextResponse.json({
+        success: true,
+        subscription: {
+          ...cachedSub,
+          plan_name: planConfig.name,
+          plan_price: planConfig.price,
+          plan_features: planConfig.features,
+        },
+        rewards: cachedRewards,
+        plans: PLANS,
+      });
+    }
 
     // Get or create subscription (default to free)
     let { data: subscription } = await supabase
@@ -104,6 +123,9 @@ export async function GET(request: NextRequest) {
     }
 
     const planConfig = PLANS[subscription?.plan || 'free'] || PLANS.free;
+
+    if (subscription) await cacheSubscriptionFull(user.id, subscription);
+    if (rewards) await cacheRewards(user.id, rewards);
 
     return NextResponse.json({
       success: true,

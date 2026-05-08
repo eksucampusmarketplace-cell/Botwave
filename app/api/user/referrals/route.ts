@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getCachedReferralData, cacheReferralData, invalidateReferralData, invalidateRewards, getCachedReferralByCode, cacheReferralByCode } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,16 +98,19 @@ export async function GET(request: NextRequest) {
 
     console.log(`[REFERRAL] User ${user.id} fetched data: code=${referral.code} referred=${referral.total_referred} frozen=${referral.is_frozen}`);
 
+    const result = {
+      code: referral.code,
+      totalReferred: referral.total_referred || 0,
+      totalEarned: referral.total_earned || 0,
+      isFrozen: referral.is_frozen || false,
+      frozenReason: referral.frozen_reason || null,
+      referrals: history || [],
+    };
+    await cacheReferralData(user.id, result);
+
     return NextResponse.json({
       success: true,
-      data: {
-        code: referral.code,
-        totalReferred: referral.total_referred || 0,
-        totalEarned: referral.total_earned || 0,
-        isFrozen: referral.is_frozen || false,
-        frozenReason: referral.frozen_reason || null,
-        referrals: history || [],
-      },
+      data: result,
     });
   } catch (err) {
     console.error('[REFERRAL] GET error:', err);
@@ -140,12 +144,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You have already used a referral code' }, { status: 400 });
     }
 
-    // --- Find the referrer ---
-    const { data: referral } = await supabase
-      .from('referrals')
-      .select('user_id, code, is_frozen')
-      .eq('code', code)
-      .single();
+    // --- Find the referrer (try Redis cache first) ---
+    let referral = await getCachedReferralByCode(code) as { user_id: string; code: string; is_frozen: boolean } | null;
+    if (!referral) {
+      const { data: refData } = await supabase
+        .from('referrals')
+        .select('user_id, code, is_frozen')
+        .eq('code', code)
+        .single();
+      referral = refData;
+      if (referral) await cacheReferralByCode(code, referral);
+    }
 
     if (!referral) {
       return NextResponse.json({ error: 'Invalid referral code' }, { status: 404 });
@@ -333,6 +342,11 @@ export async function POST(request: NextRequest) {
     ]);
 
     console.log(`[REFERRAL] Success: code=${code} referrer=${referral.user_id} referred=${user.id} ip=${clientIp} rewards=₦${REFERRAL_REWARD}+₦${REFERRED_REWARD}`);
+
+    await invalidateReferralData(referral.user_id);
+    await invalidateReferralData(user.id);
+    await invalidateRewards(referral.user_id);
+    await invalidateRewards(user.id);
 
     return NextResponse.json({
       success: true,

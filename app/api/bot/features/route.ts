@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getCachedFeatures, cacheFeatures, invalidateFeatures } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
+    const cached = await getCachedFeatures(user.id, sessionId || undefined);
+    if (cached) return NextResponse.json({ success: true, data: cached });
+
     let query = supabase
       .from('bot_features')
       .select('*')
@@ -48,9 +52,11 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    const result = features || [];
+    await cacheFeatures(user.id, result, sessionId || undefined);
     return NextResponse.json({
       success: true,
-      data: features || [],
+      data: result,
     });
   } catch (error) {
     console.error('Get features error:', error);
@@ -117,6 +123,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    await invalidateFeatures(user.id);
     return NextResponse.json({
       success: true,
       data: feature,

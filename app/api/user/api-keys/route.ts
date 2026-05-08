@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
+import { getCachedApiKeys, cacheApiKeys, invalidateApiKeys } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const cached = await getCachedApiKeys(user.id);
+    if (cached) return NextResponse.json({ success: true, data: cached });
+
     const { data: keys, error } = await supabase
       .from('api_keys')
       .select('id, key_prefix, name, permissions, last_used_at, expires_at, created_at')
@@ -34,7 +38,9 @@ export async function GET() {
       throw error;
     }
 
-    return NextResponse.json({ success: true, data: keys || [] });
+    const result = keys || [];
+    await cacheApiKeys(user.id, result);
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Get API keys error:', error);
     return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 });
@@ -72,6 +78,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
+    await invalidateApiKeys(user.id);
     return NextResponse.json({
       success: true,
       data: { ...data, rawKey },
@@ -107,6 +114,7 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error;
 
+    await invalidateApiKeys(user.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete API key error:', error);

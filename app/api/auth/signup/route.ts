@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getCachedReferralByCode, cacheReferralByCode, invalidateReferralData, invalidateRewards } from '@/lib/redisApiCache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,11 +78,18 @@ export async function POST(request: NextRequest) {
     if (referralCode && data.user?.id) {
       try {
         const code = (referralCode as string).trim().toUpperCase();
-        const { data: referral } = await supabase
-          .from('referrals')
-          .select('user_id, code, is_frozen')
-          .eq('code', code)
-          .single();
+
+        // Try Redis cache first for referral code lookup
+        let referral = await getCachedReferralByCode(code) as { user_id: string; code: string; is_frozen: boolean } | null;
+        if (!referral) {
+          const { data: refData } = await supabase
+            .from('referrals')
+            .select('user_id, code, is_frozen')
+            .eq('code', code)
+            .single();
+          referral = refData;
+          if (referral) await cacheReferralByCode(code, referral);
+        }
 
         if (referral && !referral.is_frozen && referral.user_id !== data.user.id) {
           const REFERRAL_REWARD = 20;
@@ -122,6 +130,8 @@ export async function POST(request: NextRequest) {
             }, { onConflict: 'user_id' });
           }
 
+          await invalidateReferralData(referral.user_id);
+          await invalidateRewards(referral.user_id);
           console.log(`[AUTH] Referral applied: code=${code} referrer=${referral.user_id} new_user=${data.user.id}`);
         }
       } catch (refErr) {
