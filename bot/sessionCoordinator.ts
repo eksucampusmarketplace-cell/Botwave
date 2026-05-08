@@ -18,6 +18,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync } from './workerConfig';
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from './redis';
+import { isCircuitOpen } from './circuitBreaker';
+import { isShutdown } from './gracefulShutdown';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,6 +46,7 @@ const ownedSessions: Set<string> = new Set();
  * Idempotent: calling multiple times with the same instance is safe.
  */
 export async function tryAcquireLock(sessionId: string): Promise<boolean> {
+  if (isCircuitOpen() || isShutdown()) return false;
   const now = new Date().toISOString();
 
   // First check current lock state
@@ -164,13 +167,16 @@ export function startHeartbeatLoop(): void {
   if (heartbeatHandle) return;
 
   heartbeatHandle = setInterval(async () => {
-    if (ownedSessions.size === 0) return;
+    if (ownedSessions.size === 0 || isShutdown()) return;
 
     const sessionIds = Array.from(ownedSessions);
     heartbeatCycle++;
 
     // Try Redis first for batch heartbeat
     const redisOk = await redisSetHeartbeatBatch(sessionIds, INSTANCE_ID);
+
+    // Skip Supabase write when circuit is open — Redis heartbeats are enough
+    if (isCircuitOpen()) return;
 
     // Sync to Supabase every Nth cycle (or always if Redis is unavailable)
     if (!redisOk || heartbeatCycle % SUPABASE_SYNC_EVERY === 0) {
@@ -206,6 +212,7 @@ export function stopHeartbeatLoop(): void {
  *  - Sessions with no lock at all but in active/pairing state
  */
 export async function detectOrphanedSessions(): Promise<any[]> {
+  if (isCircuitOpen() || isShutdown()) return [];
   const staleTime = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
 
   const { data, error } = await supabase
@@ -405,7 +412,7 @@ export async function cleanupOnStartup(): Promise<void> {
  *  - Skips sessions that never had a successful connection (no last_active)
  */
 export async function autoRecoverNeedsReauth(): Promise<number> {
-  if (IS_WORKER) return 0;
+  if (IS_WORKER || isCircuitOpen() || isShutdown()) return 0;
 
   const cooldownCutoff = new Date(Date.now() - AUTO_RECOVERY_COOLDOWN_MS).toISOString();
 
@@ -487,6 +494,7 @@ export function resetAutoRecovery(sessionId: string): void {
  * Returns the conflicting instance ID, or null if clean.
  */
 export async function detectConflict(sessionId: string): Promise<string | null> {
+  if (isCircuitOpen()) return null;
   const { data, error } = await supabase
     .from('bot_sessions')
     .select('locked_by, heartbeat_at')
@@ -519,6 +527,7 @@ export async function detectConflict(sessionId: string): Promise<string | null> 
  * Call periodically from main service (e.g. every 60s).
  */
 export async function auditSessions(): Promise<void> {
+  if (isCircuitOpen() || isShutdown()) return;
   const { data: sessions, error } = await supabase
     .from('bot_sessions')
     .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, updated_at')
