@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getPlanLimits } from '@/lib/planGating';
+import { getCachedProducts, cacheProducts, invalidateProducts, getCachedUserPlan, cacheUserPlan } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,9 @@ export async function GET(request: NextRequest) {
     const user = await getUser(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const cached = await getCachedProducts(user.id);
+    if (cached) return NextResponse.json({ success: true, data: cached });
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data } = await supabase
       .from('products')
@@ -30,7 +34,9 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    return NextResponse.json({ success: true, data: data || [] });
+    const result = data || [];
+    await cacheProducts(user.id, result);
+    return NextResponse.json({ success: true, data: result });
   } catch (err) {
     console.error('[PRODUCTS] GET error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -44,13 +50,18 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('plan')
-      .eq('user_id', user.id)
-      .single();
+    let plan = (await getCachedUserPlan(user.id))?.plan;
+    if (!plan) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan')
+        .eq('user_id', user.id)
+        .single();
+      plan = sub?.plan || 'free';
+      await cacheUserPlan(user.id, plan);
+    }
 
-    const limits = getPlanLimits(sub?.plan || 'free');
+    const limits = getPlanLimits(plan);
     if (!limits.hasEcommerce) {
       return NextResponse.json({
         error: 'E-commerce requires Boss plan. Upgrade to unlock.',
@@ -88,6 +99,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    await invalidateProducts(user.id);
     return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error('[PRODUCTS] POST error:', err);
@@ -106,6 +118,7 @@ export async function DELETE(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     await supabase.from('products').delete().eq('id', id).eq('user_id', user.id);
 
+    await invalidateProducts(user.id);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[PRODUCTS] DELETE error:', err);

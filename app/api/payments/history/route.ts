@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getCachedPaymentHistory, cachePaymentHistory } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const cached = await getCachedPaymentHistory(user.id);
+    if (cached) return NextResponse.json({ success: true, payments: cached });
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: payments, error } = await supabase
       .from('payments')
@@ -41,7 +45,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, payments: [] });
     }
 
-    return NextResponse.json({ success: true, payments: payments || [] });
+    const result = payments || [];
+    await cachePaymentHistory(user.id, result);
+    return NextResponse.json({ success: true, payments: result });
   } catch (err) {
     console.error('[PAYMENT-HISTORY] Error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

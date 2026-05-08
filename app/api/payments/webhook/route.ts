@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateWebhookSignature, PLANS } from '@/lib/squad';
+import { invalidateSubscription, invalidatePaymentHistory, invalidateRewards } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,8 @@ export async function POST(request: NextRequest) {
           }, { onConflict: 'user_id' });
 
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
+        await invalidateSubscription(payment.user_id);
+        await invalidatePaymentHistory(payment.user_id);
 
         // Resolve any active dunning
         await supabase
@@ -137,6 +140,7 @@ export async function POST(request: NextRequest) {
               reason: `Upgraded to ${plan} plan`,
               created_at: now.toISOString(),
             });
+            await invalidateRewards(payment.user_id);
             console.log(`[SQUAD-WEBHOOK] Reward credited: user=${payment.user_id} +\u20a630`);
           }
         } catch (rewardErr) {
@@ -190,6 +194,8 @@ export async function POST(request: NextRequest) {
         })
         .eq('user_id', payment.user_id);
 
+      await invalidateSubscription(payment.user_id);
+      await invalidatePaymentHistory(payment.user_id);
       console.log(`[SQUAD-WEBHOOK] Payment failed + dunning started: ref=${transactionRef} user=${payment.user_id} attempt=${attemptNumber}`);
     }
 

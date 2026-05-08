@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { initializePayment, PLANS, getPublicKey } from '@/lib/squad';
+import { invalidatePaymentHistory } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error || 'Payment init failed' }, { status: 500 });
     }
     console.log(`[PAYMENT-INIT] Squad payment initialized: ref=${transactionRef}`);
+    await invalidatePaymentHistory(user.id);
 
     return NextResponse.json({
       success: true,

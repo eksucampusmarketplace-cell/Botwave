@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/workerConfig';
+import { getCachedSessions, cacheSessions, invalidateSessions } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,9 @@ export async function GET() {
       );
     }
 
+    const cached = await getCachedSessions(user.id);
+    if (cached) return NextResponse.json({ success: true, data: cached });
+
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
       .select('*')
@@ -73,9 +77,11 @@ export async function GET() {
       }
     }
 
+    const result = sessions || [];
+    await cacheSessions(user.id, result);
     return NextResponse.json({
       success: true,
-      data: sessions || [],
+      data: result,
     });
   } catch (error) {
     console.error('Get sessions error:', error);
@@ -157,6 +163,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    await invalidateSessions(user.id);
     console.log(`[API] POST session: created ${session.id} state=qr_pending worker=${workerUrl ?? 'main'}`);
     return NextResponse.json({
       success: true,
@@ -229,6 +236,7 @@ export async function DELETE(request: NextRequest) {
         throw error;
       }
 
+      await invalidateSessions(user.id);
       return NextResponse.json({
         success: true,
         message: 'All sessions deleted successfully',
@@ -273,6 +281,7 @@ export async function DELETE(request: NextRequest) {
       throw error;
     }
 
+    await invalidateSessions(user.id);
     return NextResponse.json({
       success: true,
       message: 'Session deleted successfully',
@@ -382,6 +391,7 @@ export async function PATCH(request: NextRequest) {
       console.log(`[API] No worker assigned for session ${sessionId} — main service sync loop will pick it up within 5s`);
     }
 
+    await invalidateSessions(user.id);
     return NextResponse.json({
       success: true,
       data: session,

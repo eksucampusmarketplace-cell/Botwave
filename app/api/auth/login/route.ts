@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isLockedOut, recordLoginAttempt, getClientIp } from '@/lib/admin-security';
+import { getCachedProfileId, cacheProfileId } from '@/lib/redisApiCache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,21 +55,28 @@ export async function POST(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
-      const { data: profile } = await adminSupabase
-        .from('profiles')
-        .select('id')
-        .eq('username', email)
-        .single();
 
-      if (!profile) {
-        recordLoginAttempt(clientIp, email, false);
-        return NextResponse.json(
-          { error: 'Invalid email/username or password' },
-          { status: 401 },
-        );
+      // Try Redis cache first for username→id lookup
+      let profileId = await getCachedProfileId(email);
+      if (!profileId) {
+        const { data: profile } = await adminSupabase
+          .from('profiles')
+          .select('id')
+          .eq('username', email)
+          .single();
+
+        if (!profile) {
+          recordLoginAttempt(clientIp, email, false);
+          return NextResponse.json(
+            { error: 'Invalid email/username or password' },
+            { status: 401 },
+          );
+        }
+        profileId = profile.id;
+        await cacheProfileId(email, profileId);
       }
 
-      const { data: userData } = await adminSupabase.auth.admin.getUserById(profile.id);
+      const { data: userData } = await adminSupabase.auth.admin.getUserById(profileId);
       if (!userData?.user?.email) {
         recordLoginAttempt(clientIp, email, false);
         return NextResponse.json(

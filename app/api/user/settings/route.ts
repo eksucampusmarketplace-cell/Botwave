@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getCachedApiSettings, cacheApiSettings, invalidateApiSettings } from '@/lib/redisApiCache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,6 +10,9 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const cached = await getCachedApiSettings(user.id);
+    if (cached) return NextResponse.json(cached);
 
     const { data, error } = await supabase
       .from('user_settings')
@@ -20,7 +24,7 @@ export async function GET(req: NextRequest) {
       throw error;
     }
 
-    return NextResponse.json({
+    const result = {
       groqApiKey: data?.groq_api_key ? maskApiKey(data.groq_api_key) : null,
       afkEnabled: data?.afk_enabled ?? false,
       afkMessage: data?.afk_message ?? 'I am currently away',
@@ -29,7 +33,9 @@ export async function GET(req: NextRequest) {
       welcomeMessage: data?.welcome_message ?? '',
       commandPrefix: data?.command_prefix ?? '!',
       timezone: data?.timezone ?? '',
-    });
+    };
+    await cacheApiSettings(user.id, result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching user settings:', error);
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
@@ -78,6 +84,7 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
+    await invalidateApiSettings(user.id);
     return NextResponse.json({ success: true, message: 'Settings saved' });
   } catch (error) {
     console.error('Error saving user settings:', error);
