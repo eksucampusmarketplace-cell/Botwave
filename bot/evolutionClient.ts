@@ -213,21 +213,11 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     console.warn(`[PROXY] No proxy available for instance ${instanceName} — connecting with server IP (risk of 428 ban)`);
   }
 
-  // Configure per-instance webhook so Evolution API sends events to BotWave
-  if (webhookUrl) {
-    payload.webhook = {
-      enabled: true,
-      url: webhookUrl,
-      byEvents: false,
-      base64: false,
-      events: [
-        'CONNECTION_UPDATE',
-        'MESSAGES_UPSERT',
-        'QRCODE_UPDATED',
-        'GROUP_PARTICIPANTS_UPDATE',
-      ],
-    };
-  }
+  // NOTE: Do NOT include webhook config in the create payload.
+  // Evolution API's webhook upsert can fail with a FK constraint error when
+  // pgbouncer is used (the Instance record isn't visible to the webhook insert
+  // within the same request). Instead, rely on WEBHOOK_GLOBAL_URL for event
+  // delivery and set per-instance webhook separately after creation succeeds.
 
   const res = await withRetry(async () => {
     const r = await apiFetch(`${BASE}/instance/create`, {
@@ -269,6 +259,13 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     } else if (res.status === 400) {
       console.error(`[PROXY] Proxy REJECTED for ${instanceName} — Evolution API says proxy ${proxy.host}:${proxy.port} is invalid (check credentials or connectivity)`);
     }
+  }
+
+  // Set per-instance webhook separately (non-fatal — global webhook is the fallback)
+  if (webhookUrl && (res.status === 200 || res.status === 201)) {
+    setWebhook(instanceName).catch(err => {
+      console.warn(`[EVO-CLIENT] setWebhook after create failed for ${instanceName} (non-fatal, global webhook active):`, err);
+    });
   }
 
   return result;
