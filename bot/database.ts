@@ -41,6 +41,16 @@ const afkCache = new Map<string, CacheEntry<any>>();
 const subscriptionCache = new Map<string, CacheEntry<any>>();
 const welcomeCache = new Map<string, CacheEntry<string | null>>();
 const pollCache = new Map<string, CacheEntry<any>>();
+const leaderboardCache = new Map<string, CacheEntry<any[]>>();
+const remindersCache = new Map<string, CacheEntry<any[]>>();
+const notesCache = new Map<string, CacheEntry<any[]>>();
+const scheduledMsgsCache = new Map<string, CacheEntry<any[]>>();
+const sessionStatsCache = new Map<string, CacheEntry<any>>();
+const healthEventsCache = new Map<string, CacheEntry<any[]>>();
+const webhookRetryCache = new Map<string, CacheEntry<any[]>>();
+const rewardBalanceCache = new Map<string, CacheEntry<any>>();
+const referralCache = new Map<string, CacheEntry<any>>();
+const pairingCountsCache = new Map<string, CacheEntry<Record<string, number>>>();
 
 // Register all caches with memory guard for periodic cleanup
 const getExpiresAt = (v: unknown) => {
@@ -55,6 +65,16 @@ trackMap('afkCache', afkCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpi
 trackMap('subscriptionCache', subscriptionCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 trackMap('welcomeCache', welcomeCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 trackMap('pollCache', pollCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('leaderboardCache', leaderboardCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('remindersCache', remindersCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('notesCache', notesCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('scheduledMsgsCache', scheduledMsgsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('sessionStatsCache', sessionStatsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('healthEventsCache', healthEventsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('webhookRetryCache', webhookRetryCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('rewardBalanceCache', rewardBalanceCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('referralCache', referralCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+trackMap('pairingCountsCache', pairingCountsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
   const entry = cache.get(key);
@@ -72,7 +92,7 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T): 
 
 /** Invalidate all cache entries for a given prefix (e.g. userId or sessionId). */
 export function invalidateCache(prefix: string): void {
-  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache, afkCache, subscriptionCache, welcomeCache, pollCache]) {
+  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache, afkCache, subscriptionCache, welcomeCache, pollCache, leaderboardCache, remindersCache, notesCache, scheduledMsgsCache, sessionStatsCache, healthEventsCache, webhookRetryCache, rewardBalanceCache, referralCache, pairingCountsCache]) {
     for (const key of cache.keys()) {
       if (key.startsWith(prefix)) cache.delete(key);
     }
@@ -451,19 +471,29 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
  * Used by assignWorkerAsync to pick the least-loaded worker.
  */
 export async function getPairingCountsByWorker(): Promise<Record<string, number>> {
-  const { data, error } = await supabase
-    .from('bot_sessions')
-    .select('worker_url')
-    .in('state', ['qr_pending', 'pairing_sent']);
+  const cached = getCached(pairingCountsCache, '__all__');
+  if (cached !== undefined) return cached;
 
-  if (error || !data) return {};
+  return resilientRead({
+    cacheKey: 'pairingCounts',
+    fallbackValue: {} as Record<string, number>,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bot_sessions')
+        .select('worker_url')
+        .in('state', ['qr_pending', 'pairing_sent']);
 
-  const counts: Record<string, number> = {};
-  for (const row of data) {
-    const key = row.worker_url || '__main__';
-    counts[key] = (counts[key] || 0) + 1;
-  }
-  return counts;
+      if (error || !data) return {};
+
+      const counts: Record<string, number> = {};
+      for (const row of data) {
+        const key = row.worker_url || '__main__';
+        counts[key] = (counts[key] || 0) + 1;
+      }
+      setCache(pairingCountsCache, '__all__', counts);
+      return counts;
+    },
+  });
 }
 
 /**
@@ -643,20 +673,32 @@ export async function recordVote(pollId: string, optionIndex: number) {
 }
 
 export async function getLeaderboard(sessionId: string, limit: number = 10) {
-  const { data, error } = await supabase
-    .from('leaderboard')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('message_count', { ascending: false })
-    .limit(limit);
+  const cacheKey = `${sessionId}:${limit}`;
+  const cached = getCached(leaderboardCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    if (error.code !== 'PGRST205') {
-      console.error('Error fetching leaderboard:', error);
-    }
-    return [];
-  }
-  return data;
+  return resilientRead({
+    cacheKey: `leaderboard:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('message_count', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        if (error.code !== 'PGRST205') {
+          console.error('Error fetching leaderboard:', error);
+        }
+        return [];
+      }
+      const result = data || [];
+      setCache(leaderboardCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 // ─── Feature Toggle Check ─────────────────────────────────────────────────────
@@ -722,6 +764,7 @@ export async function incrementLeaderboard(sessionId: string, userJid: string, u
         message_count: 1,
       });
     }
+    invalidateCache(sessionId);
   } catch {
     // non-critical — leaderboard tracking should never break message handling
   }
@@ -933,6 +976,7 @@ export async function createReminder(sessionId: string, userJid: string, chatJid
     console.error('[DB] Error creating reminder:', error);
     return null;
   }
+  invalidateCache(`${sessionId}:${userJid}`);
   return data;
 }
 
@@ -967,23 +1011,36 @@ export async function markReminderDelivered(reminderId: string) {
   if (error) {
     console.error('[DB] Error marking reminder delivered:', error);
   }
+  remindersCache.clear();
 }
 
 export async function getUserReminders(sessionId: string, userJid: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('reminders')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('user_jid', userJid)
-    .eq('delivered', false)
-    .order('remind_at', { ascending: true })
-    .limit(10);
+  const cacheKey = `${sessionId}:${userJid}`;
+  const cached = getCached(remindersCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    console.error('[DB] Error fetching user reminders:', error);
-    return [];
-  }
-  return data || [];
+  return resilientRead({
+    cacheKey: `reminders:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_jid', userJid)
+        .eq('delivered', false)
+        .order('remind_at', { ascending: true })
+        .limit(10);
+
+      if (error) {
+        console.error('[DB] Error fetching user reminders:', error);
+        return [];
+      }
+      const result = data || [];
+      setCache(remindersCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function deleteReminder(reminderId: string, userJid: string) {
@@ -997,6 +1054,7 @@ export async function deleteReminder(reminderId: string, userJid: string) {
     console.error('[DB] Error deleting reminder:', error);
     return false;
   }
+  remindersCache.clear();
   return true;
 }
 
@@ -1018,23 +1076,36 @@ export async function createNote(sessionId: string, userJid: string, title: stri
     console.error('[DB] Error creating note:', error);
     return null;
   }
+  invalidateCache(`${sessionId}:${userJid}`);
   return data;
 }
 
 export async function getUserNotes(sessionId: string, userJid: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('notes')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('user_jid', userJid)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  const cacheKey = `${sessionId}:${userJid}`;
+  const cached = getCached(notesCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    console.error('[DB] Error fetching user notes:', error);
-    return [];
-  }
-  return data || [];
+  return resilientRead({
+    cacheKey: `notes:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_jid', userJid)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error('[DB] Error fetching user notes:', error);
+        return [];
+      }
+      const result = data || [];
+      setCache(notesCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function deleteNote(noteId: string, userJid: string) {
@@ -1048,6 +1119,7 @@ export async function deleteNote(noteId: string, userJid: string) {
     console.error('[DB] Error deleting note:', error);
     return false;
   }
+  notesCache.clear();
   return true;
 }
 
@@ -1070,6 +1142,7 @@ export async function createScheduledMessage(sessionId: string, userJid: string,
     console.error('[DB] Error creating scheduled message:', error);
     return null;
   }
+  invalidateCache(`${sessionId}:${userJid}`);
   return data;
 }
 
@@ -1104,23 +1177,36 @@ export async function markScheduledMessageSent(messageId: string) {
   if (error) {
     console.error('[DB] Error marking scheduled message sent:', error);
   }
+  scheduledMsgsCache.clear();
 }
 
 export async function getUserScheduledMessages(sessionId: string, userJid: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from('scheduled_messages')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('user_jid', userJid)
-    .eq('sent', false)
-    .order('send_at', { ascending: true })
-    .limit(10);
+  const cacheKey = `${sessionId}:${userJid}`;
+  const cached = getCached(scheduledMsgsCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    console.error('[DB] Error fetching user scheduled messages:', error);
-    return [];
-  }
-  return data || [];
+  return resilientRead({
+    cacheKey: `scheduled:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scheduled_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_jid', userJid)
+        .eq('sent', false)
+        .order('send_at', { ascending: true })
+        .limit(10);
+
+      if (error) {
+        console.error('[DB] Error fetching user scheduled messages:', error);
+        return [];
+      }
+      const result = data || [];
+      setCache(scheduledMsgsCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function deleteScheduledMessage(messageId: string, userJid: string) {
@@ -1134,35 +1220,47 @@ export async function deleteScheduledMessage(messageId: string, userJid: string)
     console.error('[DB] Error deleting scheduled message:', error);
     return false;
   }
+  scheduledMsgsCache.clear();
   return true;
 }
 
 // ─── Session Stats ────────────────────────────────────────────────────────────
 
 export async function getSessionStats(sessionId: string) {
-  const [messagesResult, leaderboardResult, sessionResult] = await Promise.all([
-    supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('session_id', sessionId),
-    supabase
-      .from('leaderboard')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('message_count', { ascending: false })
-      .limit(5),
-    supabase
-      .from('bot_sessions')
-      .select('created_at, last_active, state, session_name')
-      .eq('id', sessionId)
-      .single(),
-  ]);
+  const cached = getCached(sessionStatsCache, sessionId);
+  if (cached !== undefined) return cached;
 
-  return {
-    totalMessages: messagesResult.count || 0,
-    topUsers: leaderboardResult.data || [],
-    session: sessionResult.data,
-  };
+  return resilientRead({
+    cacheKey: `sessionStats:${sessionId}`,
+    fallbackValue: { totalMessages: 0, topUsers: [] as any[], session: null },
+    queryFn: async () => {
+      const [messagesResult, leaderboardResult, sessionResult] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('session_id', sessionId),
+        supabase
+          .from('leaderboard')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('message_count', { ascending: false })
+          .limit(5),
+        supabase
+          .from('bot_sessions')
+          .select('created_at, last_active, state, session_name')
+          .eq('id', sessionId)
+          .single(),
+      ]);
+
+      const result = {
+        totalMessages: messagesResult.count || 0,
+        topUsers: leaderboardResult.data || [],
+        session: sessionResult.data,
+      };
+      setCache(sessionStatsCache, sessionId, result);
+      return result;
+    },
+  });
 }
 
 // ─── Command & Message Tracking ───────────────────────────────────────────────
@@ -1240,18 +1338,30 @@ export async function logHealthEvent(
 }
 
 export async function getHealthEvents(sessionId: string, limit = 50) {
-  const { data, error } = await supabase
-    .from('bot_health_events')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const cacheKey = `${sessionId}:${limit}`;
+  const cached = getCached(healthEventsCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    console.error('[DB] Error fetching health events:', error);
-    return [];
-  }
-  return data || [];
+  return resilientRead({
+    cacheKey: `healthEvents:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bot_health_events')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('[DB] Error fetching health events:', error);
+        return [];
+      }
+      const result = data || [];
+      setCache(healthEventsCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function getHealthSummary(sessionIds: string[]) {
@@ -1310,19 +1420,31 @@ export async function enqueueWebhookRetry(
 }
 
 export async function getPendingWebhookRetries(limit = 10) {
-  const { data, error } = await supabase
-    .from('webhook_retry_queue')
-    .select('*')
-    .eq('status', 'pending')
-    .lte('next_retry_at', new Date().toISOString())
-    .order('next_retry_at', { ascending: true })
-    .limit(limit);
+  const cacheKey = `pending:${limit}`;
+  const cached = getCached(webhookRetryCache, cacheKey);
+  if (cached !== undefined) return cached;
 
-  if (error) {
-    console.error('[DB] Error fetching webhook retries:', error);
-    return [];
-  }
-  return data || [];
+  return resilientRead({
+    cacheKey: `webhookRetry:${cacheKey}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('webhook_retry_queue')
+        .select('*')
+        .eq('status', 'pending')
+        .lte('next_retry_at', new Date().toISOString())
+        .order('next_retry_at', { ascending: true })
+        .limit(limit);
+
+      if (error) {
+        console.error('[DB] Error fetching webhook retries:', error);
+        return [];
+      }
+      const result = data || [];
+      setCache(webhookRetryCache, cacheKey, result);
+      return result;
+    },
+  });
 }
 
 export async function markWebhookRetryProcessing(id: string): Promise<void> {
@@ -1565,21 +1687,35 @@ export interface RewardBalance {
 }
 
 export async function getRewardBalance(userId: string): Promise<RewardBalance> {
-  const { data } = await supabase
-    .from('reward_balances')
-    .select('balance, total_earned, total_cashed_out')
-    .eq('user_id', userId)
-    .single();
+  const cached = getCached(rewardBalanceCache, userId);
+  if (cached !== undefined) return cached as RewardBalance;
 
-  if (!data) {
-    return { balance: 0, totalEarned: 0, totalCashedOut: 0 };
-  }
+  const defaults: RewardBalance = { balance: 0, totalEarned: 0, totalCashedOut: 0 };
 
-  return {
-    balance: data.balance,
-    totalEarned: data.total_earned,
-    totalCashedOut: data.total_cashed_out,
-  };
+  return resilientRead({
+    cacheKey: `rewardBalance:${userId}`,
+    fallbackValue: defaults,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('reward_balances')
+        .select('balance, total_earned, total_cashed_out')
+        .eq('user_id', userId)
+        .single();
+
+      if (!data) {
+        setCache(rewardBalanceCache, userId, defaults);
+        return defaults;
+      }
+
+      const result: RewardBalance = {
+        balance: data.balance,
+        totalEarned: data.total_earned,
+        totalCashedOut: data.total_cashed_out,
+      };
+      setCache(rewardBalanceCache, userId, result);
+      return result;
+    },
+  });
 }
 
 /**
@@ -1639,6 +1775,7 @@ export async function creditReward(
     total_cashed_out: current.totalCashedOut,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
+  rewardBalanceCache.delete(userId);
 
   return amount;
 }
@@ -1676,6 +1813,7 @@ export async function checkAndCashout(userId: string, phoneNumber: string): Prom
       last_cashout_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('user_id', userId);
+    rewardBalanceCache.delete(userId);
 
     return true;
   }
@@ -1693,26 +1831,39 @@ function generateReferralCode(): string {
 }
 
 export async function getUserReferralCode(userId: string): Promise<{ code: string; totalReferred: number; totalEarned: number } | null> {
-  const { data: referral } = await supabase
-    .from('referrals')
-    .select('code, total_referred, total_earned')
-    .eq('user_id', userId)
-    .single();
+  const cached = getCached(referralCache, userId);
+  if (cached !== undefined) return cached;
 
-  if (referral) {
-    return { code: referral.code, totalReferred: referral.total_referred || 0, totalEarned: referral.total_earned || 0 };
-  }
+  return resilientRead({
+    cacheKey: `referral:${userId}`,
+    fallbackValue: null as { code: string; totalReferred: number; totalEarned: number } | null,
+    queryFn: async () => {
+      const { data: referral } = await supabase
+        .from('referrals')
+        .select('code, total_referred, total_earned')
+        .eq('user_id', userId)
+        .single();
 
-  // Auto-create referral code
-  const code = generateReferralCode();
-  const { data: newRef, error } = await supabase
-    .from('referrals')
-    .insert({ user_id: userId, code, total_referred: 0, total_earned: 0, is_frozen: false, created_at: new Date().toISOString() })
-    .select('code, total_referred, total_earned')
-    .single();
+      if (referral) {
+        const result = { code: referral.code, totalReferred: referral.total_referred || 0, totalEarned: referral.total_earned || 0 };
+        setCache(referralCache, userId, result);
+        return result;
+      }
 
-  if (error || !newRef) return null;
-  return { code: newRef.code, totalReferred: 0, totalEarned: 0 };
+      // Auto-create referral code
+      const code = generateReferralCode();
+      const { data: newRef, error } = await supabase
+        .from('referrals')
+        .insert({ user_id: userId, code, total_referred: 0, total_earned: 0, is_frozen: false, created_at: new Date().toISOString() })
+        .select('code, total_referred, total_earned')
+        .single();
+
+      if (error || !newRef) return null;
+      const result = { code: newRef.code, totalReferred: 0, totalEarned: 0 };
+      setCache(referralCache, userId, result);
+      return result;
+    },
+  });
 }
 
 /**
