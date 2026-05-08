@@ -226,16 +226,18 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       body: JSON.stringify(payload),
     });
 
-    // If instance name is already in use (stale after restart), delete and retry.
-    // Evolution API returns 403 for in-memory duplicates and 400 with a Prisma
-    // P2002 unique-constraint error for DB-only ghosts (instance not loaded but
-    // record still exists in the database after a restart).
+    // If instance name is already in use, delete via API and retry once.
+    // The server-side guard now auto-cleans stale instances, so 403 should
+    // be rare — but we keep this as a safety net for edge cases (e.g. the
+    // guard cleanup itself fails, or a P2002 unique-constraint race on DB).
     if (r.status === 403 || r.status === 400) {
       const body = await r.clone().text().catch(() => '');
       const isDuplicate = r.status === 403 || body.includes('Unique constraint');
       if (isDuplicate) {
-        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting stale instance and verifying removal before retry`);
-        await deleteInstanceAndVerify(instanceName);
+        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting and retrying`);
+        await deleteInstance(instanceName);
+        // Brief pause to let async cleanup propagate (Redis/DB)
+        await new Promise(resolve => setTimeout(resolve, 3000));
         return apiFetch(`${BASE}/instance/create`, {
           method: 'POST',
           headers,
