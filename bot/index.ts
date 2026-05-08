@@ -1,11 +1,12 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
-import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
+import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
 import { disconnectRedis } from './redis';
+import { isCircuitOpen } from './circuitBreaker';
 
 const bot = initializeBot();
 
@@ -53,6 +54,10 @@ async function start() {
 
   // Periodically sync sessions from database
   setInterval(async () => {
+    if (isCircuitOpen()) {
+      console.log('[BOT] Skipping session sync — Supabase circuit is OPEN');
+      return;
+    }
     try {
       await syncSessionsWithDb(IS_WORKER);
     } catch (error) {
@@ -63,6 +68,7 @@ async function start() {
   // Main service: recover sessions stuck on dead workers every 60s
   if (!IS_WORKER) {
     setInterval(async () => {
+      if (isCircuitOpen()) return;
       try {
         const recovered = await recoverStaleSessions(isWorkerHealthy);
         if (recovered > 0) {
@@ -77,6 +83,7 @@ async function start() {
   // Coordinator: orphan recovery (every 120s, main only) + audit (every 300s)
   if (!IS_WORKER) {
     setInterval(async () => {
+      if (isCircuitOpen()) return;
       try {
         const recovered = await recoverOrphanedSessions();
         if (recovered > 0) {
@@ -88,6 +95,7 @@ async function start() {
     }, 120_000); // was 60s
 
     setInterval(async () => {
+      if (isCircuitOpen()) return;
       try {
         await auditSessions();
       } catch (err) {
@@ -97,6 +105,7 @@ async function start() {
 
     // Auto-recovery: retry needs_reauth sessions every 180s
     setInterval(async () => {
+      if (isCircuitOpen()) return;
       try {
         const recovered = await autoRecoverNeedsReauth();
         if (recovered > 0) {
@@ -110,6 +119,7 @@ async function start() {
 
   // Reminder + Scheduled Message delivery loop (every 30s)
   setInterval(async () => {
+    if (isCircuitOpen()) return;
     try {
       // Deliver due reminders
       const dueReminders = await getDueReminders();
@@ -154,6 +164,14 @@ async function start() {
   if (!IS_WORKER) {
     startMonetizationScheduler();
   }
+
+  // ── Circuit breaker status log (every 60s) ──
+  setInterval(() => {
+    const stats = getCircuitStats();
+    if (stats.state !== 'CLOSED' || stats.totalBlocked > 0) {
+      console.log(`[CIRCUIT] state=${stats.state} failures=${stats.consecutiveFailures} blocked=${stats.totalBlocked} fallbacks=${stats.totalFallbacks} staleCache=${stats.staleCacheSize} inflight=${stats.inflightRequests}`);
+    }
+  }, 60_000);
 
   // ── Keepalive cron ──
   // Main: pings self + all workers + Evolution API every 60s
