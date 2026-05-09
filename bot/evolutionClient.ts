@@ -3,7 +3,7 @@
 
 const BASE = process.env.EVOLUTION_API_URL || '';
 const KEY  = process.env.EVOLUTION_API_KEY  || '';
-const REQUEST_TIMEOUT = 15_000;
+const REQUEST_TIMEOUT = 30_000;
 const KEEPALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
 
 // Proxy pool for distributing WebSocket connections across different IPs.

@@ -53,8 +53,8 @@ export class MessageQueue {
 
       const msg = this.queue[0];
 
-      const minDelay = 10000;
-      const maxDelay = 30000;
+      const minDelay = 2000;
+      const maxDelay = 5000;
       const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
       const now = Date.now();
