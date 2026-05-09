@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
           topic_id: topicId,
           title: seed.title,
           file_type: seed.fileType,
+          content: seed.summary.keyPoints.join('\n'),
           word_count: seed.wordCount,
           status: seed.status,
         })
@@ -167,12 +168,13 @@ export async function POST(request: NextRequest) {
       };
       await supabase
         .from('study_summaries')
-        .insert({ material_id: materialId, content: summaryContent });
+        .insert({ material_id: materialId, user_id: user.id, summary_type: 'full', content: summaryContent });
 
       // Insert questions
       if (seed.questions.length > 0) {
         const questionRows = seed.questions.map((q) => ({
           material_id: materialId,
+          user_id: user.id,
           question_type: q.questionType,
           question: q.question,
           options: q.options,
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
       if (seed.flashcards.length > 0) {
         const flashcardRows = seed.flashcards.map((fc) => ({
           material_id: materialId,
+          user_id: user.id,
           front: fc.front,
           back: fc.back,
           difficulty: fc.difficulty,
