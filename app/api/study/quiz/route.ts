@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import {
+  getCachedStudyQuestions,
+  cacheStudyQuestions,
+} from '@/lib/redisApiCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -16,7 +20,7 @@ async function getUser() {
   return user;
 }
 
-// GET — fetch questions for quiz mode
+// GET — fetch questions for quiz mode (Redis first, Supabase fallback)
 export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,6 +31,15 @@ export async function GET(request: NextRequest) {
   const difficulty = searchParams.get('difficulty');
   const limit = parseInt(searchParams.get('limit') || '15', 10);
 
+  // Try Redis cache for material-specific questions
+  if (materialId && !difficulty) {
+    const cached = await getCachedStudyQuestions(materialId);
+    if (cached) {
+      const shuffled = (cached as Record<string, unknown>[]).sort(() => Math.random() - 0.5).slice(0, limit);
+      return NextResponse.json({ success: true, data: shuffled });
+    }
+  }
+
   const supabase = getServiceSupabase();
   let query = supabase
     .from('study_questions')
@@ -35,7 +48,6 @@ export async function GET(request: NextRequest) {
 
   if (materialId) query = query.eq('material_id', materialId);
   if (topicId) {
-    // Get questions from all materials under this topic
     const { data: materials } = await supabase
       .from('study_materials')
       .select('id')
@@ -53,7 +65,11 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Shuffle questions
+  // Cache in Redis for material-specific queries
+  if (materialId && data && data.length > 0 && !difficulty) {
+    await cacheStudyQuestions(materialId, data);
+  }
+
   const shuffled = (data || []).sort(() => Math.random() - 0.5);
   return NextResponse.json({ success: true, data: shuffled });
 }
@@ -72,7 +88,6 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceSupabase();
 
-  // Fetch the actual questions to verify answers
   const questionIds = answers.map((a: { questionId: string }) => a.questionId);
   const { data: questions, error: qErr } = await supabase
     .from('study_questions')
@@ -103,7 +118,6 @@ export async function POST(request: NextRequest) {
   const total = answers.length;
   const scorePercent = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-  // Save attempt
   const { data: attempt, error: saveErr } = await supabase
     .from('study_quiz_attempts')
     .insert({
@@ -124,7 +138,6 @@ export async function POST(request: NextRequest) {
     console.error('[STUDY-QUIZ] Save error:', saveErr);
   }
 
-  // Update progress
   if (materialId) {
     const masteryLevel = scorePercent >= 90 ? 5 : scorePercent >= 70 ? 4 : scorePercent >= 50 ? 3 : scorePercent >= 30 ? 2 : 1;
     await supabase

@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { buildSummaryPrompt, buildQuestionsPrompt, buildFlashcardsPrompt } from '@/lib/study/prompts';
+import {
+  cacheStudySummary,
+  cacheStudyQuestions,
+  cacheStudyFlashcards,
+  invalidateStudyMaterials,
+} from '@/lib/redisApiCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -52,7 +58,6 @@ async function callGroq(apiKey: string, prompt: string): Promise<string> {
 }
 
 function parseJsonFromResponse(text: string): unknown {
-  // Try to extract JSON from markdown code blocks or raw response
   const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\])/) || text.match(/(\{[\s\S]*\})/);
   if (jsonMatch) {
     return JSON.parse(jsonMatch[1].trim());
@@ -82,7 +87,6 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceSupabase();
 
-  // Fetch the material content
   const { data: material, error: matErr } = await supabase
     .from('study_materials')
     .select('id, title, content, user_id')
@@ -97,7 +101,6 @@ export async function POST(request: NextRequest) {
   const results: { summary?: unknown; questions?: unknown; flashcards?: unknown } = {};
 
   try {
-    // Generate summary
     if (type === 'all' || type === 'summary') {
       const summaryPrompt = buildSummaryPrompt(material.content, material.title);
       const summaryRaw = await callGroq(groqKey, summaryPrompt);
@@ -110,10 +113,11 @@ export async function POST(request: NextRequest) {
         content: summaryData,
       });
 
+      // Cache summary in Redis
+      await cacheStudySummary(materialId, summaryData);
       results.summary = summaryData;
     }
 
-    // Generate questions
     if (type === 'all' || type === 'questions') {
       const questionsPrompt = buildQuestionsPrompt(material.content, material.title);
       const questionsRaw = await callGroq(groqKey, questionsPrompt);
@@ -139,12 +143,14 @@ export async function POST(request: NextRequest) {
         }));
 
         await supabase.from('study_questions').insert(questionRows);
+
+        // Cache questions in Redis
+        await cacheStudyQuestions(materialId, questionsData);
       }
 
       results.questions = questionsData;
     }
 
-    // Generate flashcards
     if (type === 'all' || type === 'flashcards') {
       const flashcardsPrompt = buildFlashcardsPrompt(material.content, material.title);
       const flashcardsRaw = await callGroq(groqKey, flashcardsPrompt);
@@ -164,16 +170,21 @@ export async function POST(request: NextRequest) {
         }));
 
         await supabase.from('study_flashcards').insert(flashcardRows);
+
+        // Cache flashcards in Redis
+        await cacheStudyFlashcards(materialId, flashcardsData);
       }
 
       results.flashcards = flashcardsData;
     }
 
-    // Update material status
+    // Update material status & invalidate materials list cache
     await supabase
       .from('study_materials')
       .update({ status: 'analyzed', updated_at: new Date().toISOString() })
       .eq('id', materialId);
+
+    await invalidateStudyMaterials(user.id);
 
     return NextResponse.json({ success: true, data: results });
   } catch (err: unknown) {

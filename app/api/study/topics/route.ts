@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import {
+  getCachedStudyTopics,
+  cacheStudyTopics,
+  invalidateStudyTopics,
+} from '@/lib/redisApiCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -16,10 +21,14 @@ async function getUser() {
   return user;
 }
 
-// GET — list user's topics
+// GET — list user's topics (Redis first, Supabase fallback)
 export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Try Redis cache first
+  const cached = await getCachedStudyTopics(user.id);
+  if (cached) return NextResponse.json({ success: true, data: cached });
 
   const supabase = getServiceSupabase();
   const { data, error } = await supabase
@@ -29,6 +38,10 @@ export async function GET() {
     .order('sort_order', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Cache in Redis for next time
+  if (data) await cacheStudyTopics(user.id, data);
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -50,6 +63,10 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Invalidate cached topics
+  await invalidateStudyTopics(user.id);
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -70,5 +87,9 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Invalidate cached topics
+  await invalidateStudyTopics(user.id);
+
   return NextResponse.json({ success: true });
 }

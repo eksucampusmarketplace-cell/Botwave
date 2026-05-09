@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { extractTextFromFile } from '@/lib/study/extractors';
+import {
+  getCachedStudyMaterials,
+  cacheStudyMaterials,
+  invalidateStudyMaterials,
+  invalidateStudyContent,
+} from '@/lib/redisApiCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -17,13 +23,17 @@ async function getUser() {
   return user;
 }
 
-// GET — list user's materials
+// GET — list user's materials (Redis first, Supabase fallback)
 export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const topicId = searchParams.get('topic_id');
+  const topicId = searchParams.get('topic_id') || undefined;
+
+  // Try Redis cache first
+  const cached = await getCachedStudyMaterials(user.id, topicId);
+  if (cached) return NextResponse.json({ success: true, data: cached });
 
   const supabase = getServiceSupabase();
   let query = supabase
@@ -36,6 +46,10 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Cache in Redis
+  if (data) await cacheStudyMaterials(user.id, data, topicId);
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -97,6 +111,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Invalidate materials cache so new material shows up
+    await invalidateStudyMaterials(user.id);
+
     return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Upload failed';
@@ -122,5 +140,10 @@ export async function DELETE(request: NextRequest) {
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Invalidate both material list and content caches
+  await invalidateStudyMaterials(user.id);
+  await invalidateStudyContent(id);
+
   return NextResponse.json({ success: true });
 }
