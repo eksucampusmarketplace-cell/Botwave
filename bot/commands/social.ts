@@ -741,7 +741,45 @@ const textRoasts: string[] = [
 async function handleRoast(context: MessageContext, args: string[], sock: any): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text;
-  const targetName = args.join(' ') || context.pushName || 'this person';
+
+  // Resolve target name from @mentions, quoted message sender, or args
+  let targetName = 'this person';
+  const contextInfo = context.rawMessage.message?.extendedTextMessage?.contextInfo
+    || context.rawMessage.message?.conversation?.contextInfo;
+  const mentionedJids: string[] = contextInfo?.mentionedJid || [];
+
+  if (mentionedJids.length > 0) {
+    // User tagged someone — try to get their display name
+    const mentionJid = mentionedJids[0];
+    try {
+      if (typeof sock.fetchProfile === 'function') {
+        const profile = await sock.fetchProfile(mentionJid);
+        if (profile?.name || profile?.pushName || profile?.verifiedName) {
+          targetName = profile.name || profile.pushName || profile.verifiedName;
+        } else {
+          targetName = '+' + mentionJid.replace(/@.*$/, '');
+        }
+      } else {
+        targetName = '+' + mentionJid.replace(/@.*$/, '');
+      }
+    } catch {
+      targetName = '+' + mentionJid.replace(/@.*$/, '');
+    }
+  } else if (quotedMsg && contextInfo?.participant) {
+    // Replying to someone's message — use their name
+    try {
+      if (typeof sock.fetchProfile === 'function') {
+        const profile = await sock.fetchProfile(contextInfo.participant);
+        if (profile?.name || profile?.pushName || profile?.verifiedName) {
+          targetName = profile.name || profile.pushName || profile.verifiedName;
+        }
+      }
+    } catch { /* use default */ }
+  } else {
+    // Fall back to args or sender name
+    const cleanArgs = args.filter(a => !a.startsWith('@')).join(' ').trim();
+    targetName = cleanArgs || context.pushName || 'this person';
+  }
 
   let roast: string;
   if (quotedText && quotedText.length > 0) {
