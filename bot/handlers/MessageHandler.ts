@@ -493,8 +493,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   if (cmdKey.fromMe) {
     try {
       await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cmdKey });
-    } catch {
-      // Edit may fail — continue anyway
+    } catch (editErr: any) {
+      console.error(`[EDIT-CMD] Edit-to-hourglass failed in ${context.isGroup ? 'group' : 'DM'} ${context.chatJid}:`, editErr?.message || editErr);
+      // In private chats, retry with a minimal key (strip participant)
+      if (!context.isGroup) {
+        try {
+          const cleanKey = { remoteJid: cmdKey.remoteJid, fromMe: cmdKey.fromMe, id: cmdKey.id };
+          await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cleanKey });
+        } catch {
+          // Still failed — continue anyway
+        }
+      }
     }
   } else {
     try {

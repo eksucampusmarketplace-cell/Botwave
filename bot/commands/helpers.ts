@@ -110,8 +110,16 @@ export async function sendReply(
     try {
       await sock.sendMessage(jid, { text: textContent, edit: msgKey });
       return;
-    } catch (editErr) {
-      console.error('[EDIT] Edit failed, falling back to normal send:', editErr);
+    } catch (editErr: any) {
+      console.error(`[EDIT] Edit failed for ${jid}:`, editErr?.message || editErr);
+      // Retry with a clean key (some JID formats cause key mismatches)
+      try {
+        const cleanKey = { remoteJid: msgKey.remoteJid, fromMe: msgKey.fromMe, id: msgKey.id };
+        await sock.sendMessage(jid, { text: textContent, edit: cleanKey });
+        return;
+      } catch {
+        console.error('[EDIT] Retry with clean key also failed, falling back to normal send');
+      }
     }
   }
 
@@ -140,17 +148,30 @@ export async function downloadMedia(message: any, sock: any): Promise<Buffer | n
     if (typeof (sock as any).downloadMediaMessage === 'function') {
       const buffer = await (sock as any).downloadMediaMessage(message, 'buffer');
       if (buffer && buffer.length > 0) return buffer;
+      console.warn('[MEDIA-DL] Evolution API returned empty buffer');
     }
-  } catch {
-    // Fallback below
+  } catch (e1: any) {
+    console.warn('[MEDIA-DL] Evolution API download failed:', e1?.message || e1);
   }
 
   // Fallback: direct Baileys download (works when using native Baileys connection)
   try {
     const buffer = await baileysDownloadMedia(message, 'buffer', {});
     if (buffer) return Buffer.from(buffer);
-  } catch {
-    // Fallback below
+    console.warn('[MEDIA-DL] Baileys download returned empty');
+  } catch (e2: any) {
+    console.warn('[MEDIA-DL] Baileys download failed:', e2?.message || e2);
+  }
+
+  // Fallback: Evolution API getBase64FromMediaMessage endpoint
+  try {
+    const sessionId = (sock as any).sessionId;
+    if (sessionId && message?.key && message?.message) {
+      const buffer = await getBase64FromMediaMessage(sessionId, message);
+      if (buffer && buffer.length > 0) return buffer;
+    }
+  } catch (e3: any) {
+    console.warn('[MEDIA-DL] Evolution getBase64 failed:', e3?.message || e3);
   }
 
   // Last resort: direct URL download
@@ -164,10 +185,11 @@ export async function downloadMedia(message: any, sock: any): Promise<Buffer | n
         return Buffer.from(res.data);
       }
     }
-  } catch {
-    // All methods failed
+  } catch (e4: any) {
+    console.warn('[MEDIA-DL] Direct URL download failed:', e4?.message || e4);
   }
 
+  console.error('[MEDIA-DL] All download methods failed for message', message?.key?.id);
   return null;
 }
 
