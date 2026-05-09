@@ -34,10 +34,12 @@ const ROOM_TTL = 1800; // 30 minutes
 const SPECTATOR_DELAY_MS = 2500;
 
 let redis: Redis | null = null;
+let redisReady = false;
 let redisSub: Redis | null = null;
 
 function getRedis(): Redis | null {
-  if (redis) return redis;
+  if (redis && redisReady) return redis;
+  if (redis && !redisReady) return null;
   if (!REDIS_URL) return null;
   try {
     redis = new Redis(REDIS_URL, {
@@ -46,10 +48,10 @@ function getRedis(): Redis | null {
         if (times > 5) return null;
         return Math.min(times * 500, 3000);
       },
-      enableOfflineQueue: false,
-      lazyConnect: true,
     });
-    redis.connect().catch(() => {});
+    redis.on('ready', () => { redisReady = true; });
+    redis.on('error', () => { redisReady = false; });
+    redis.on('close', () => { redisReady = false; });
     return redis;
   } catch {
     return null;

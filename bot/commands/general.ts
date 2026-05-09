@@ -46,7 +46,9 @@ async function sendHelp(
 *MEDIA*
 !viewonce / !viewonce pr / !toimg / !togif / !toaudio
 !removebg / !carbon / !screenshot / !ocr
-!wallpaper / !qrread
+!blur / !grayscale / !rotate / !resize
+!invert / !brightness / !contrast
+!crop / !compress / !wallpaper / !qrread
 
 *TEXT*
 !reverse / !upper / !lower / !mock
@@ -704,7 +706,20 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
         ],
       },
-
+      {
+        title: 'IMAGE EDITING',
+        commands: [
+          { name: '!blur', usage: '!blur [amount] (reply to image)', description: 'Applies Gaussian blur to an image. Amount range: 1-100 (default 5).\n\nExample: "!blur 10"' },
+          { name: '!grayscale', usage: '!grayscale (reply to image)', description: 'Converts an image to black and white.\n\nAliases: !greyscale, !bw' },
+          { name: '!rotate', usage: '!rotate [degrees] (reply to image)', description: 'Rotates an image by the specified degrees (default 90).\n\nExample: "!rotate 180"' },
+          { name: '!resize', usage: '!resize [width] [height] (reply to image)', description: 'Resizes an image. If only width is given, height scales proportionally. Max 4096px.\n\nExample: "!resize 800 600"' },
+          { name: '!invert', usage: '!invert (reply to image)', description: 'Inverts (negates) all colors in the image.\n\nAliases: !negative' },
+          { name: '!brightness', usage: '!brightness [factor] (reply to image)', description: 'Adjusts image brightness. Factor range: 0.1-3.0 (1.0 = no change, higher = brighter).\n\nExample: "!brightness 1.5"' },
+          { name: '!contrast', usage: '!contrast [factor] (reply to image)', description: 'Adjusts image contrast. Factor range: 0.1-3.0 (1.0 = no change, higher = more contrast).\n\nExample: "!contrast 1.5"' },
+          { name: '!crop', usage: '!crop [x] [y] [width] [height] (reply to image)', description: 'Crops an image to the specified region. Use "!crop center" for a square crop from the center.\n\nExamples: "!crop center", "!crop 50 50 300 200"' },
+          { name: '!compress', usage: '!compress (reply to image)', description: 'Compresses an image to reduce file size. Shows the before/after size and percentage saved.' },
+        ],
+      },
     ];
 
     const children: Paragraph[] = [];
