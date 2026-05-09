@@ -133,9 +133,12 @@ export interface InitPaymentResult {
   error?: string;
 }
 
+const SQUAD_API_TIMEOUT_MS = 10_000; // 10s timeout for Squad API calls
+
 /**
  * Initialize a payment transaction via Squad API.
  * Uses bank transfer channel only as per requirements.
+ * Has a 10-second timeout to prevent hanging requests.
  */
 export async function initializePayment(params: InitPaymentParams): Promise<InitPaymentResult> {
   const secretKey = getSecretKey();
@@ -144,6 +147,9 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SQUAD_API_TIMEOUT_MS);
+
     const res = await fetch(`${getBaseUrl()}/transaction/initiate`, {
       method: 'POST',
       headers: {
@@ -161,7 +167,9 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
         payment_channels: ['bank', 'transfer'],
         metadata: params.metadata,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     const data = await res.json() as Record<string, unknown>;
 
@@ -179,6 +187,9 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
       error: (data.message as string) || `Squad returned status: ${data.status}`,
     };
   } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { success: false, error: 'Squad API timed out — please try again' };
+    }
     return {
       success: false,
       error: `Squad API error: ${err instanceof Error ? err.message : String(err)}`,
@@ -203,12 +214,17 @@ export async function verifyPayment(transactionRef: string): Promise<VerifyPayme
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SQUAD_API_TIMEOUT_MS);
+
     const res = await fetch(`${getBaseUrl()}/transaction/verify/${transactionRef}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${secretKey}`,
       },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     const data = await res.json() as Record<string, unknown>;
 
@@ -224,6 +240,9 @@ export async function verifyPayment(transactionRef: string): Promise<VerifyPayme
 
     return { success: false, error: (data.message as string) || 'Verification failed' };
   } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { success: false, error: 'Squad verify timed out — please try again' };
+    }
     return {
       success: false,
       error: `Squad verify error: ${err instanceof Error ? err.message : String(err)}`,

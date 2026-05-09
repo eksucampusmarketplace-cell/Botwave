@@ -16,6 +16,8 @@ export interface PlanLimits {
   templateLimit: number;
   customCommandLimit: number;
   flowLimit: number;
+  hasAutoReply: boolean;
+  hasStatusViewer: boolean;
   hasGroupAnalytics: boolean;
   hasAnalyticsExport: boolean;
   hasEcommerce: boolean;
@@ -31,6 +33,8 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     templateLimit: 3,
     customCommandLimit: 0,
     flowLimit: 0,
+    hasAutoReply: false,
+    hasStatusViewer: false,
     hasGroupAnalytics: false,
     hasAnalyticsExport: false,
     hasEcommerce: false,
@@ -44,6 +48,8 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     templateLimit: 10,
     customCommandLimit: 5,
     flowLimit: 0,
+    hasAutoReply: true,
+    hasStatusViewer: false,
     hasGroupAnalytics: false,
     hasAnalyticsExport: false,
     hasEcommerce: false,
@@ -57,6 +63,8 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     templateLimit: 50,
     customCommandLimit: 20,
     flowLimit: 3,
+    hasAutoReply: true,
+    hasStatusViewer: true,
     hasGroupAnalytics: true,
     hasAnalyticsExport: false,
     hasEcommerce: false,
@@ -70,6 +78,8 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     templateLimit: -1,
     customCommandLimit: -1,
     flowLimit: -1,
+    hasAutoReply: true,
+    hasStatusViewer: true,
     hasGroupAnalytics: true,
     hasAnalyticsExport: true,
     hasEcommerce: true,
