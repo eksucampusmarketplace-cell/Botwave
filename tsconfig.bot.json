@@ -14,5 +14,5 @@
     "allowJs": true
   },
   "include": ["bot/**/*", "lib/utils.ts", "lib/game/**/*", "server/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "lib/game/haptics.ts", "lib/game/sounds.ts"]
 }
