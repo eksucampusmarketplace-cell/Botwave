@@ -348,3 +348,67 @@ export async function cacheAnalytics(userId: string, data: unknown): Promise<voi
 export async function invalidateAnalytics(userId: string): Promise<void> {
   await apiCacheDel(`analytics:${userId}`);
 }
+
+// ─── Study Hub ──────────────────────────────────────────────────────────────
+
+const STUDY_TOPICS_TTL = 600; // 10 min
+const STUDY_MATERIALS_TTL = 600; // 10 min
+const STUDY_SUMMARY_TTL = 3600; // 1 hr — AI summaries rarely change
+const STUDY_QUESTIONS_TTL = 3600; // 1 hr
+const STUDY_FLASHCARDS_TTL = 3600; // 1 hr
+
+export async function getCachedStudyTopics(userId: string): Promise<unknown[] | null> {
+  return apiCacheGet<unknown[]>(`study:topics:${userId}`);
+}
+
+export async function cacheStudyTopics(userId: string, data: unknown[]): Promise<void> {
+  await apiCacheSet(`study:topics:${userId}`, data, STUDY_TOPICS_TTL);
+}
+
+export async function invalidateStudyTopics(userId: string): Promise<void> {
+  await apiCacheDel(`study:topics:${userId}`);
+}
+
+export async function getCachedStudyMaterials(userId: string, topicId?: string): Promise<unknown[] | null> {
+  const key = topicId ? `study:mats:${userId}:${topicId}` : `study:mats:${userId}`;
+  return apiCacheGet<unknown[]>(key);
+}
+
+export async function cacheStudyMaterials(userId: string, data: unknown[], topicId?: string): Promise<void> {
+  const key = topicId ? `study:mats:${userId}:${topicId}` : `study:mats:${userId}`;
+  await apiCacheSet(key, data, STUDY_MATERIALS_TTL);
+}
+
+export async function invalidateStudyMaterials(userId: string): Promise<void> {
+  await apiCacheDelPattern(`study:mats:${userId}*`);
+}
+
+export async function getCachedStudySummary(materialId: string): Promise<unknown | null> {
+  return apiCacheGet<unknown>(`study:summary:${materialId}`);
+}
+
+export async function cacheStudySummary(materialId: string, data: unknown): Promise<void> {
+  await apiCacheSet(`study:summary:${materialId}`, data, STUDY_SUMMARY_TTL);
+}
+
+export async function getCachedStudyQuestions(materialId: string): Promise<unknown[] | null> {
+  return apiCacheGet<unknown[]>(`study:questions:${materialId}`);
+}
+
+export async function cacheStudyQuestions(materialId: string, data: unknown[]): Promise<void> {
+  await apiCacheSet(`study:questions:${materialId}`, data, STUDY_QUESTIONS_TTL);
+}
+
+export async function getCachedStudyFlashcards(materialId: string): Promise<unknown[] | null> {
+  return apiCacheGet<unknown[]>(`study:flashcards:${materialId}`);
+}
+
+export async function cacheStudyFlashcards(materialId: string, data: unknown[]): Promise<void> {
+  await apiCacheSet(`study:flashcards:${materialId}`, data, STUDY_FLASHCARDS_TTL);
+}
+
+export async function invalidateStudyContent(materialId: string): Promise<void> {
+  await apiCacheDel(`study:summary:${materialId}`);
+  await apiCacheDel(`study:questions:${materialId}`);
+  await apiCacheDel(`study:flashcards:${materialId}`);
+}

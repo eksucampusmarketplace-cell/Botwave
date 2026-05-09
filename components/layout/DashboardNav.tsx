@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/dashboard/health', label: 'Health' },
   { href: '/dashboard/templates', label: 'Templates' },
   { href: '/dashboard/flows', label: 'Flows' },
+  { href: '/dashboard/study', label: 'Study', accent: true },
   { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
   { href: '/dashboard/referrals', label: 'Referrals' },
   { href: '/dashboard/rewards', label: 'Rewards', accent: true },
