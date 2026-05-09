@@ -100,7 +100,8 @@ export async function sendReply(
      !processedContent.image && !processedContent.sticker && !processedContent.video &&
      !processedContent.audio && !processedContent.document);
 
-  if (isTextOnly && msgKey?.fromMe) {
+  const isGroup = jid.endsWith('@g.us');
+  if (isTextOnly && msgKey?.fromMe && isGroup) {
     const textContent = typeof processedContent === 'string'
       ? processedContent
       : processedContent.text;
@@ -112,14 +113,6 @@ export async function sendReply(
       return;
     } catch (editErr: any) {
       console.error(`[EDIT] Edit failed for ${jid}:`, editErr?.message || editErr);
-      // Retry with a clean key (some JID formats cause key mismatches)
-      try {
-        const cleanKey = { remoteJid: msgKey.remoteJid, fromMe: msgKey.fromMe, id: msgKey.id };
-        await sock.sendMessage(jid, { text: textContent, edit: cleanKey });
-        return;
-      } catch {
-        console.error('[EDIT] Retry with clean key also failed, falling back to normal send');
-      }
     }
   }
 

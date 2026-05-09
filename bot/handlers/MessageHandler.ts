@@ -425,26 +425,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   }
 
   // Edit-on-reply: replace the command text with the result in-place.
-  // For fromMe messages (bot owner), edit the command to "Processing..."
-  // so it transforms into the result. For other users' messages, delete
-  // the command instead (can't edit someone else's message).
+  // Only in groups — DM edits fail with "RemoteJid does not match" in
+  // Evolution API due to JID format mismatches. For other users' messages,
+  // delete the command instead (can't edit someone else's message).
   const cmdKey = context.rawMessage.key;
-  if (cmdKey.fromMe) {
+  if (cmdKey.fromMe && context.isGroup) {
     try {
       await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cmdKey });
     } catch (editErr: any) {
-      console.error(`[EDIT-CMD] Edit-to-hourglass failed in ${context.isGroup ? 'group' : 'DM'} ${context.chatJid}:`, editErr?.message || editErr);
-      // In private chats, retry with a minimal key (strip participant)
-      if (!context.isGroup) {
-        try {
-          const cleanKey = { remoteJid: cmdKey.remoteJid, fromMe: cmdKey.fromMe, id: cmdKey.id };
-          await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cleanKey });
-        } catch {
-          // Still failed — continue anyway
-        }
-      }
+      console.error(`[EDIT-CMD] Edit-to-hourglass failed in group ${context.chatJid}:`, editErr?.message || editErr);
     }
-  } else {
+  } else if (!cmdKey.fromMe) {
     try {
       await sock.sendMessage(context.chatJid, { delete: cmdKey });
     } catch {
