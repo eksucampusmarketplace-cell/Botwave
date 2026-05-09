@@ -148,13 +148,34 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
 // ─── !music — Music Search & Audio Download ─────────────────────────────────
 
 async function findYtDlp(): Promise<string> {
-  for (const p of ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp']) {
+  const paths = ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp'];
+  for (const p of paths) {
     try {
       await access(p);
       return p;
     } catch { /* not found, try next */ }
   }
-  return 'yt-dlp';
+
+  // Try PATH
+  try {
+    await execFileAsync('which', ['yt-dlp'], { timeout: 5000 });
+    return 'yt-dlp';
+  } catch { /* not in PATH */ }
+
+  // Auto-download yt-dlp to /tmp
+  console.log('[MUSIC] yt-dlp not found, downloading...');
+  try {
+    const dlUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+    const dest = '/tmp/yt-dlp';
+    await execFileAsync('sh', ['-c', `curl -L -o ${dest} ${dlUrl} && chmod +x ${dest}`], { timeout: 60000 });
+    await access(dest);
+    console.log('[MUSIC] yt-dlp downloaded successfully');
+    return dest;
+  } catch (dlErr: any) {
+    console.error('[MUSIC] Failed to download yt-dlp:', dlErr?.message);
+  }
+
+  throw new Error('yt-dlp is not installed and could not be downloaded. Install it with: curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /tmp/yt-dlp && chmod +x /tmp/yt-dlp');
 }
 
 async function handleMusic(
@@ -190,7 +211,20 @@ async function handleMusic(
       context.queue,
     );
 
-    const ytdlpBin = await findYtDlp();
+    let ytdlpBin: string;
+    try {
+      ytdlpBin = await findYtDlp();
+    } catch (installErr: any) {
+      console.error('[MUSIC] yt-dlp unavailable:', installErr?.message);
+      await sendReply(
+        context.chatJid,
+        `Music search is temporarily unavailable — yt-dlp could not be found or installed on this server.\n\n_Server admin: install yt-dlp to enable !music_`,
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+      return;
+    }
     const tmpFile = path.join(os.tmpdir(), `botwave_music_${Date.now()}`);
 
     // Search YouTube for the song and get info
