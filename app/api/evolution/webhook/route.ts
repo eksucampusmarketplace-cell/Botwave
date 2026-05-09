@@ -308,15 +308,11 @@ export async function POST(request: NextRequest) {
     if (event === 'qrcode.updated') {
       const webhookReceivedAt = new Date().toISOString();
       const pairingCode = data?.pairingCode || data?.qrcode?.pairingCode;
-      const qrBase64 = data?.base64 || data?.qrcode?.base64;
       const qrCode = data?.code || data?.qrcode?.code;
 
       console.log(`[PAIRING-WEBHOOK] ======= qrcode.updated received ======= session=${sessionId} at=${webhookReceivedAt}`);
-      console.log(`[PAIRING-WEBHOOK] Data: hasPairingCode=${!!pairingCode} pairingCode="${pairingCode || 'none'}" hasQR=${!!qrCode} hasBase64=${!!qrBase64}`);
+      console.log(`[PAIRING-WEBHOOK] Data: hasPairingCode=${!!pairingCode} pairingCode="${pairingCode || 'none'}" hasQR=${!!qrCode}`);
 
-      // Check current state — never regress an active session back to pairing_sent.
-      // Evolution API may deliver stale qrcode.updated events after the connection
-      // has already opened; honoring them would kill a working session.
       const { data: current, error: stateErr } = await supabase
         .from('bot_sessions')
         .select('state, pairing_code, updated_at')
@@ -329,15 +325,32 @@ export async function POST(request: NextRequest) {
         console.log(`[PAIRING-WEBHOOK] Current DB state: state=${current?.state} existingCode="${current?.pairing_code || 'null'}" lastUpdated=${current?.updated_at}`);
       }
 
+      // Never regress an active session back to pairing_sent.
       if (current?.state === 'active') {
         console.log(`[PAIRING-WEBHOOK] BLOCKED — session ${sessionId} is already active. Ignoring stale qrcode.updated (code="${pairingCode || 'none'}")`);
         return NextResponse.json({ ok: true });
       }
 
-      // Staleness check: if the webhook arrives with a pairing code that matches
-      // what's already in the DB, it may be a duplicate delivery
+      // CODE LOCK: If a valid pairing code already exists and is less than
+      // 55 seconds old, do NOT overwrite it. Evolution API fires qrcode.updated
+      // every ~30s with a NEW code, but the user may already be entering the
+      // current one. Overwriting it mid-entry causes "invalid code" errors.
+      // WhatsApp pairing codes expire after 60s, so 55s gives a safe margin.
+      const CODE_LOCK_WINDOW_MS = 55_000;
+      if (pairingCode && current?.pairing_code && current.pairing_code !== pairingCode) {
+        const lastUpdated = current.updated_at ? new Date(current.updated_at).getTime() : 0;
+        const codeAge = Date.now() - lastUpdated;
+        if (codeAge < CODE_LOCK_WINDOW_MS) {
+          console.log(`[PAIRING-WEBHOOK] CODE LOCKED — existing code "${current.pairing_code}" is ${Math.round(codeAge / 1000)}s old (< ${CODE_LOCK_WINDOW_MS / 1000}s). Ignoring new code "${pairingCode}".`);
+          return NextResponse.json({ ok: true });
+        }
+        console.log(`[PAIRING-WEBHOOK] Existing code "${current.pairing_code}" expired (${Math.round(codeAge / 1000)}s old). Accepting new code "${pairingCode}".`);
+      }
+
+      // Skip exact duplicate deliveries entirely
       if (pairingCode && current?.pairing_code === pairingCode) {
-        console.log(`[PAIRING-WEBHOOK] DUPLICATE — webhook pairing code "${pairingCode}" matches existing DB code. Processing anyway but flagging.`);
+        console.log(`[PAIRING-WEBHOOK] DUPLICATE — code "${pairingCode}" already in DB. Skipping.`);
+        return NextResponse.json({ ok: true });
       }
 
       const updates: Record<string, unknown> = { updated_at: webhookReceivedAt };
