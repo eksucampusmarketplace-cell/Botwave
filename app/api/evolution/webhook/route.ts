@@ -11,6 +11,13 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/re
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
 
+// Webhook-level message dedup: track recently processed message IDs to prevent
+// duplicate command execution when Evolution API sends the same message multiple
+// times (once per status change: SERVER_ACK → DELIVERY_ACK → READ → PLAYED).
+const recentWebhookMsgIds = new Set<string>();
+const WEBHOOK_DEDUP_MAX = 600;
+const WEBHOOK_DEDUP_KEEP = 500;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -437,15 +444,23 @@ export async function POST(request: NextRequest) {
           '';
         console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} status=${msgStatus || 'none'} text="${text.slice(0, 80)}"`);
 
-        // Skip ACK status updates — Evolution API fires messages.upsert for
-        // both new messages AND delivery status changes (SERVER_ACK,
-        // DELIVERY_ACK, READ, PLAYED). Only process genuinely new messages.
-        // Baileys uses numeric codes: 2=SERVER_ACK 3=DELIVERY_ACK 4=READ 5=PLAYED
-        const ACK_STATUSES = ['SERVER_ACK', 'DELIVERY_ACK', 'READ', 'PLAYED'];
-        const ACK_CODES = [2, 3, 4, 5];
-        if (msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)))) {
-          console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
+        // Webhook-level dedup: Evolution API fires messages.upsert multiple
+        // times for the same message (once per status change: SERVER_ACK,
+        // DELIVERY_ACK, READ, PLAYED). Use message ID to deduplicate.
+        const msgId = msg.key?.id;
+        if (msgId && recentWebhookMsgIds.has(msgId)) {
+          console.log(`[EVO-WEBHOOK] DEDUP skip msg ${msgId.slice(0, 12)} (already processed)`);
           continue;
+        }
+        if (msgId) {
+          recentWebhookMsgIds.add(msgId);
+          if (recentWebhookMsgIds.size > WEBHOOK_DEDUP_MAX) {
+            const arr = Array.from(recentWebhookMsgIds);
+            recentWebhookMsgIds.clear();
+            for (const id of arr.slice(-WEBHOOK_DEDUP_KEEP)) {
+              recentWebhookMsgIds.add(id);
+            }
+          }
         }
 
         // Route status broadcasts to the StatusViewer handler (respects
