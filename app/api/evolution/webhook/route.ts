@@ -87,16 +87,18 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase();
 
     // --- Worker routing guard ---
-    // Evolution API sends each event to BOTH the per-instance webhook (worker)
-    // AND the global webhook (main). Without this guard, both instances
-    // independently process the same event → duplicate messages / actions.
+    // In Docker deployments, only the web container (botwave-web) receives
+    // webhooks via the global WEBHOOK_GLOBAL_URL. The bot/worker containers
+    // do NOT run Next.js and never receive webhooks directly. So the web
+    // container must process ALL events — no routing guard needed.
     //
-    // For action-producing events, check if this instance is the correct owner.
-    // - session.worker_url is set → only the matching worker should process
-    // - session.worker_url is null → only the main instance should process
-    //
-    // State-management events (connection.update, logout.instance) are still
-    // processed by any instance since they're idempotent DB writes.
+    // On Render (legacy), both web and bot services could receive the same
+    // webhook, requiring deduplication. That's handled by checking SELF_URL:
+    // if it matches the session's worker_url, this instance owns the session.
+    // When SELF_URL is unset or doesn't correspond to a known worker, this
+    // instance is the central webhook receiver and processes everything.
+    const IS_CENTRAL_WEBHOOK_RECEIVER = !IS_WORKER && !SELF_URL.includes('worker');
+
     const ACTION_EVENTS = [
       'messages.upsert',
       'messages.delete',
@@ -105,14 +107,14 @@ export async function POST(request: NextRequest) {
       'qrcode.updated',
     ];
 
-    if (ACTION_EVENTS.includes(event)) {
+    if (!IS_CENTRAL_WEBHOOK_RECEIVER && ACTION_EVENTS.includes(event)) {
       const routeSession = await getCachedOrFetchSession(supabase, sessionId, 'id, worker_url');
       if (routeSession) {
         const ownerUrl = routeSession.worker_url || null;
         const isCorrectInstance =
           ownerUrl
-            ? SELF_URL === ownerUrl                    // worker-owned: only that worker
-            : !IS_WORKER;                              // main-owned: only the main instance
+            ? SELF_URL === ownerUrl
+            : !IS_WORKER;
         if (!isCorrectInstance) {
           console.log(`[EVO-WEBHOOK] SKIP ${event} for ${sessionId.slice(0, 8)} — owner=${ownerUrl || 'main'}, self=${SELF_URL || 'main'} (not ours)`);
           return NextResponse.json({ ok: true });
