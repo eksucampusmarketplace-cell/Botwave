@@ -746,7 +746,10 @@ export async function findMessages(instanceName: string, where: Record<string, u
     });
     if (!res.ok) return [];
     const data: any = await res.json();
-    return Array.isArray(data) ? data : data?.messages || data?.data || [];
+    // Evolution API v2.3+ returns paginated: { messages: { records: [...] } }
+    const messages = Array.isArray(data) ? data
+      : data?.messages?.records || data?.messages || data?.data || [];
+    return Array.isArray(messages) ? messages : [];
   } catch {
     return [];
   }
@@ -761,8 +764,10 @@ async function findMessageByKeyId(instanceName: string, keyId: string): Promise<
   });
   if (!res.ok) return null;
   const data: any = await res.json();
-  const messages = Array.isArray(data) ? data : data?.messages || data?.data || [];
-  return messages[0] || null;
+  // Evolution API v2.3+ returns paginated: { messages: { records: [...] } }
+  const messages = Array.isArray(data) ? data
+    : data?.messages?.records || data?.messages || data?.data || [];
+  return Array.isArray(messages) ? messages[0] || null : null;
 }
 
 // Delete a message for everyone

@@ -100,8 +100,7 @@ export async function sendReply(
      !processedContent.image && !processedContent.sticker && !processedContent.video &&
      !processedContent.audio && !processedContent.document);
 
-  const isGroup = jid.endsWith('@g.us');
-  if (isTextOnly && msgKey?.fromMe && isGroup) {
+  if (isTextOnly && msgKey?.fromMe) {
     const textContent = typeof processedContent === 'string'
       ? processedContent
       : processedContent.text;
@@ -112,7 +111,7 @@ export async function sendReply(
       await sock.sendMessage(jid, { text: textContent, edit: msgKey });
       return;
     } catch (editErr: any) {
-      console.error(`[EDIT] Edit failed for ${jid}:`, editErr?.message || editErr);
+      console.error(`[EDIT] Edit failed for ${jid}, falling back to normal send:`, editErr?.message || editErr);
     }
   }
 
