@@ -11,8 +11,10 @@
  * Sends notifications via the active bot session for each user.
  */
 
+import { createClient } from '@supabase/supabase-js';
 import { getActiveBotSocket } from '../BotManager';
 import { delay } from '../../lib/utils';
+import { PLANS } from '../../lib/squad';
 import {
   getDueRetryNotifications,
   getUsersToDowngrade,
@@ -69,6 +71,12 @@ export function stopMonetizationScheduler(): void {
 async function runSchedulerCycle(): Promise<void> {
   try {
     console.log('[MONETIZATION] Running notification cycle...');
+
+    // 0. Proactive plan expiry — downgrade expired subscriptions
+    const expiredCount = await downgradeExpiredPlans();
+    if (expiredCount > 0) {
+      console.log(`[MONETIZATION] Proactively downgraded ${expiredCount} expired subscription(s)`);
+    }
 
     // 1. Process dunning retries
     const dunningNotifs = await getDueRetryNotifications();
@@ -173,4 +181,51 @@ function getDowngradeMessage(): string {
     `💳 Send *!upgrade* to pay directly here\n` +
     `🌐 Dashboard: ${appUrl}/dashboard`
   );
+}
+
+/**
+ * Proactively downgrade subscriptions whose next_renewal date has passed.
+ * This ensures expired plans are caught even if the user never visits the dashboard.
+ */
+async function downgradeExpiredPlans(): Promise<number> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+    const now = new Date().toISOString();
+
+    const { data: expired } = await supabase
+      .from('subscriptions')
+      .select('user_id, plan')
+      .neq('plan', 'free')
+      .eq('status', 'active')
+      .not('next_renewal', 'is', null)
+      .lt('next_renewal', now);
+
+    if (!expired || expired.length === 0) return 0;
+
+    const freePlan = PLANS.free;
+    for (const sub of expired) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          plan: 'free',
+          status: 'expired',
+          quota_limit: freePlan.quotaLimit,
+          quota_used: 0,
+          session_limit: freePlan.sessionLimit,
+          ai_daily_limit: freePlan.aiDailyLimit,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', sub.user_id);
+
+      console.log(`[MONETIZATION] Expired plan downgraded: user=${sub.user_id.slice(0, 8)} plan=${sub.plan} -> free`);
+    }
+
+    return expired.length;
+  } catch (err) {
+    console.error('[MONETIZATION] Failed to downgrade expired plans:', err);
+    return 0;
+  }
 }
