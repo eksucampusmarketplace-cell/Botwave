@@ -12,6 +12,7 @@ import { trackMap, startMemoryGuard, stopMemoryGuard } from './memoryGuard';
 import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from './writeQueue';
 import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './adaptivePoller';
 import { disconnectSessionCache } from './redisSessionCache';
+import { createServer as createHttpServer } from 'http';
 
 const bot = initializeBot();
 
@@ -287,8 +288,37 @@ async function start() {
   console.log('[BOT] All resilience modules initialized: gracefulShutdown, memoryGuard, writeQueue, adaptivePoller, authGuard, redisSessionCache');
 }
 
+// ── Lightweight health HTTP server for worker health checks ──
+// The main web server (customServer.js) provides /api/health via Next.js,
+// but workers only run this bot process. This simple server lets the
+// orchestrator health-check workers without spinning up full Next.js.
+const healthPort = parseInt(process.env.PORT || '10000', 10);
+
+const healthServer = createHttpServer((req, res) => {
+  if (req.url === '/api/health' && req.method === 'GET') {
+    const memUsage = process.memoryUsage();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      ok: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      instance: process.env.SELF_URL || 'unknown',
+      isWorker: process.env.IS_WORKER === 'true',
+      uptime: Math.round(process.uptime()),
+      memory: { rssMB: Math.round(memUsage.rss / 1024 / 1024) },
+    }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
 console.log('[BOT] Bot process starting...');
-start().catch((error) => {
+start().then(() => {
+  healthServer.listen(healthPort, () => {
+    console.log(`[BOT] Health endpoint ready on :${healthPort}/api/health`);
+  });
+}).catch((error) => {
   console.error('[BOT] FATAL: Bot startup failed:', error);
   process.exit(1);
 });
