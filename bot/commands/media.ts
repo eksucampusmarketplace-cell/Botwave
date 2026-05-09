@@ -81,6 +81,10 @@ function isInstagramUrl(url: string): boolean {
   return /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv|reels)\/[\w-]+/i.test(url);
 }
 
+function isTikTokUrl(url: string): boolean {
+  return /(?:tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com)/i.test(url);
+}
+
 function extractTwitterStatusId(url: string): string | null {
   const match = url.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i);
   return match ? match[2] : null;
@@ -223,6 +227,63 @@ async function downloadInstagramMedia(url: string): Promise<{ buffer: Buffer; ty
   return null;
 }
 
+async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type: 'video' | 'image' } | null> {
+  // Method 1: tikwm.com API (free, no auth)
+  try {
+    const resp = await axios.post('https://www.tikwm.com/api/', `url=${encodeURIComponent(url)}&count=12&cursor=0&web=1&hd=1`, {
+      timeout: 15000,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    const data = resp.data?.data;
+    if (!data) throw new Error('No data in tikwm response');
+
+    // Photo/slideshow posts have images array
+    if (data.images && data.images.length > 0) {
+      const imageUrl = data.images[0];
+      const mediaResp = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      return { buffer: Buffer.from(mediaResp.data), type: 'image' };
+    }
+
+    // Video posts
+    const videoUrl = data.hdplay || data.play;
+    if (videoUrl) {
+      const mediaResp = await axios.get(videoUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      return { buffer: Buffer.from(mediaResp.data), type: 'video' };
+    }
+  } catch (err: any) {
+    console.error('[DOWNLOAD-TIKTOK] tikwm API failed:', err?.message || err);
+  }
+
+  // Method 2: tikcdn.io API (fallback)
+  try {
+    const resp = await axios.get(`https://tikcdn.io/ssstik/${encodeURIComponent(url)}`, {
+      timeout: 15000,
+      responseType: 'arraybuffer',
+      maxContentLength: 50 * 1024 * 1024,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    const ct = String(resp.headers['content-type'] || '');
+    if (ct.includes('video')) return { buffer: Buffer.from(resp.data), type: 'video' };
+    if (ct.includes('image')) return { buffer: Buffer.from(resp.data), type: 'image' };
+  } catch (err: any) {
+    console.error('[DOWNLOAD-TIKTOK] tikcdn fallback failed:', err?.message || err);
+  }
+
+  return null;
+}
+
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
   return jid.replace(/:\d+@/, '@').trim();
@@ -347,6 +408,19 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
         return;
       }
       console.log('[DOWNLOAD] Instagram fast path failed, falling through to yt-dlp');
+    }
+
+    if (isTikTokUrl(url)) {
+      const result = await downloadTikTokMedia(url);
+      if (result) {
+        if (result.type === 'video') {
+          await sendReply(context.chatJid, { video: result.buffer, mimetype: 'video/mp4', caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        } else {
+          await sendReply(context.chatJid, { image: result.buffer, caption: 'Downloaded via BotWave' }, sock, context.rawMessage.key, context.queue);
+        }
+        return;
+      }
+      console.log('[DOWNLOAD] TikTok fast path failed, falling through to yt-dlp');
     }
 
     // Try yt-dlp binary first (supports 1000+ sites)

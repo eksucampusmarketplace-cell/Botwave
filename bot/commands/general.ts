@@ -1,5 +1,5 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
-import { sendReply, pickResponse, getHelpHint, botStartTime } from './helpers';
+import { sendReply, pickResponse, getHelpHint, botStartTime, axios } from './helpers';
 import { helpIntros, pingReplies, unknownCommandReplies } from '../utils/responsePools';
 import { currentTimeStr, currentDateStr } from '../utils/antiban';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
@@ -39,6 +39,7 @@ async function sendHelp(
 !calc / !countdown / !cal / !timezone
 
 *STUDY*
+!study — Open Study Hub (one-time login link)
 !flashcard — Create & review flashcards
 !quiz — Quiz from notes or trivia
 !pomodoro — Focus timer (25/5 min)
@@ -601,6 +602,11 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         title: 'STUDY TOOLS',
         commands: [
           {
+            name: '!study',
+            usage: '!study',
+            description: 'Generates a one-time login link to open Study Hub — your personal study dashboard with AI-generated summaries, quizzes, flashcards, and progress tracking. The link expires after 10 minutes or 1 use. Only the bot owner can use this command. Non-bot-users cannot access Study Hub.\n\nAliases: !studyhub',
+          },
+          {
             name: '!flashcard',
             usage: '!flashcard add [front] | [back]  |  !flashcard list  |  !flashcard test  |  !flashcard delete [n]  |  !flashcard clear',
             description: 'Personal flashcard system for studying. Create cards with a front (question) and back (answer) separated by "|". Review cards randomly with "test". Delete individual cards by number or clear all at once.\n\nExamples:\n"!flashcard add What is H2O? | Water"\n"!flashcard list" — see all your cards\n"!flashcard test" — random card quiz (answer revealed after 10s)\n"!flashcard delete 3" — remove card #3\n"!flashcard clear" — delete all cards\n\nAliases: !fc, !flashcards',
@@ -835,6 +841,83 @@ async function sendUnknownCommand(
   await sendReply(context.chatJid, response, sock, context.rawMessage.key, context.queue);
 }
 
+async function handleStudy(
+  context: MessageContext,
+  sock: any,
+): Promise<void> {
+  if (!context.isOwner) {
+    await sendReply(
+      context.chatJid,
+      'Only the bot owner can use this command.',
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+    return;
+  }
+
+  try {
+    // Get the owner's phone number from the socket
+    const ownerJid = (sock as any).user?.id || '';
+    const phone = '+' + ownerJid.replace(/@.*$/, '').replace(/:\d+$/, '');
+
+    if (!phone || phone === '+') {
+      await sendReply(
+        context.chatJid,
+        'Could not determine your phone number. Please try again.',
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+      return;
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
+    const botSecret = process.env.BOT_INTERNAL_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+    const res = await axios.post(`${appUrl}/api/study/auth`, {
+      phone_number: phone,
+      session_id: context.sessionId || null,
+      user_id: context.userId || null,
+    }, {
+      headers: { 'x-bot-secret': botSecret },
+      timeout: 15000,
+    });
+
+    if (res.data?.success && res.data?.login_url) {
+      await sendReply(
+        context.chatJid,
+        `*Study Hub Access* \u{1F4DA}\n\n` +
+        `Click the link below to open Study Hub:\n\n` +
+        `${res.data.login_url}\n\n` +
+        `\u{26A0}\uFE0F This link expires in *10 minutes* and can only be used *once*.\n` +
+        `\u{1F6AB} Do not share this link — it's tied to your account.\n\n` +
+        `_Send !study again anytime to get a new link._`,
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+    } else {
+      await sendReply(
+        context.chatJid,
+        'Failed to generate Study Hub access. Please try again later.',
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+    }
+  } catch (err: any) {
+    console.error('[STUDY] Error generating login link:', err?.message || err);
+    await sendReply(
+      context.chatJid,
+      'Something went wrong. Please try again later.',
+      sock,
+      context.rawMessage.key,
+      context.queue,
+    );
+  }
+}
+
 // ─── Register General Commands ───────────────────────────────────────────────
 
 registerCommand({
@@ -851,6 +934,15 @@ registerCommand({
   category: 'general',
   description: 'Check if the bot is alive',
   execute: (ctx, _args, sock, vars) => sendPing(ctx, sock, vars),
+});
+
+registerCommand({
+  name: 'study',
+  aliases: ['study', 'studyhub'],
+  category: 'study',
+  description: 'Get a one-time login link to Study Hub',
+  ownerOnly: true,
+  execute: (ctx, _args, sock) => handleStudy(ctx, sock),
 });
 
 // sendUnknownCommand is exported for use by the dispatcher, not registered as a command
