@@ -1,14 +1,13 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
-import { cacheJSON, getCachedJSON } from '../redisSessionCache';
+
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   pickResponse,
   currentTimeStr,
   currentDateStr,
 } from '../utils/antiban';
-import { readFile } from 'fs/promises';
-import path from 'path';
+
 import {
   afkReplies,
   spamWarnings,
@@ -143,78 +142,7 @@ function isDuplicateMessage(msgId: string): boolean {
 const afkReplyCooldown: Map<string, number> = new Map();
 const AFK_COOLDOWN_MS = 5 * 60 * 1000;
 
-// ─── DM Welcome Video (first-time private chat) ────────────────────────────
 
-const dmWelcomeSentLocal: Set<string> = new Set();
-let dmWelcomeVideoBuffer: Buffer | null = null;
-
-async function getDmWelcomeVideo(): Promise<Buffer | null> {
-  if (dmWelcomeVideoBuffer) return dmWelcomeVideoBuffer;
-  try {
-    dmWelcomeVideoBuffer = await readFile(path.resolve(process.cwd(), 'bot', 'assets', 'botwave-demo.mp4'));
-    return dmWelcomeVideoBuffer;
-  } catch {
-    return null;
-  }
-}
-
-async function hasDmWelcomeBeenSent(sessionId: string, chatJid: string): Promise<boolean> {
-  const localKey = `${sessionId}:${chatJid}`;
-  if (dmWelcomeSentLocal.has(localKey)) return true;
-  try {
-    const redisKey = `dm_welcome:${sessionId}:${chatJid}`;
-    const cached = await getCachedJSON<boolean>(redisKey);
-    if (cached) {
-      dmWelcomeSentLocal.add(localKey);
-      return true;
-    }
-  } catch {}
-  return false;
-}
-
-async function markDmWelcomeSent(sessionId: string, chatJid: string): Promise<void> {
-  const localKey = `${sessionId}:${chatJid}`;
-  dmWelcomeSentLocal.add(localKey);
-  try {
-    const redisKey = `dm_welcome:${sessionId}:${chatJid}`;
-    await cacheJSON(redisKey, true, 90 * 24 * 60 * 60); // 90 days TTL
-  } catch {}
-}
-
-async function sendDmWelcome(chatJid: string, pushName: string, sock: any, sessionId: string): Promise<void> {
-  if (await hasDmWelcomeBeenSent(sessionId, chatJid)) return;
-  await markDmWelcomeSent(sessionId, chatJid);
-
-  try {
-    const video = await getDmWelcomeVideo();
-    const name = pushName || 'there';
-
-    const welcomeText =
-      `Hey ${name}! Welcome to *BotWave* \u{1F44B}\n\n` +
-      `I'm your WhatsApp automation bot — powered by BotWave.\n\n` +
-      `Here's what I can do:\n` +
-      `\u{1F3A8} *!sticker* — Turn images into stickers\n` +
-      `\u{1F916} *!ai [question]* — AI-powered answers\n` +
-      `\u{1F3B5} *!music [song]* — Download music\n` +
-      `\u{1F4E5} *!download [url]* — Download media\n` +
-      `\u{1F3AE} *!trivia* — Play trivia games\n` +
-      `\u{1F4AC} *!help* — See all 50+ commands\n\n` +
-      `Add me to your group and type *!help* to get started!\n\n` +
-      `_Created by Decisive Analyst | botwave.online_`;
-
-    if (video) {
-      await sock.sendMessage(chatJid, {
-        video,
-        caption: welcomeText,
-        gifPlayback: false,
-      });
-    } else {
-      await sock.sendMessage(chatJid, { text: welcomeText });
-    }
-  } catch (err) {
-    console.error('[DM-WELCOME] Failed to send welcome:', err);
-  }
-}
 
 // ─── Main Message Handler ───────────────────────────────────────────────────
 
@@ -374,9 +302,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       const rawOwnerJid = (sock as any).user?.id;
       const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : undefined;
       if (ownerJid && normalizeJid(senderJid) !== ownerJid) {
-        // Send welcome video to first-time DMs
-        void sendDmWelcome(chatJid, pushName, sock, sessionId);
-
         try {
           const ownerAfk = await getAfkState(sessionId, ownerJid);
           const isAfkViaCommand = ownerAfk?.is_afk;
