@@ -11,6 +11,23 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/re
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
 
+// Dedup cache for fromMe command ACKs — prevents processing the same command
+// multiple times when Evolution API fires duplicate ACK webhooks.
+const seenFromMeCmds = new Map<string, number>();
+const SEEN_TTL = 30_000; // 30 seconds
+function markSeen(msgId: string): boolean {
+  const now = Date.now();
+  // Prune old entries
+  if (seenFromMeCmds.size > 200) {
+    for (const [k, t] of seenFromMeCmds) {
+      if (now - t > SEEN_TTL) seenFromMeCmds.delete(k);
+    }
+  }
+  if (seenFromMeCmds.has(msgId)) return false; // already seen
+  seenFromMeCmds.set(msgId, now);
+  return true; // first time
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -440,10 +457,23 @@ export async function POST(request: NextRequest) {
         // Skip ACK status updates — Evolution API fires messages.upsert for
         // both new messages AND delivery status changes (SERVER_ACK,
         // DELIVERY_ACK, READ, PLAYED). Only process genuinely new messages.
+        // Exception: for fromMe messages with commands (!prefix), Evolution API
+        // sometimes only sends the SERVER_ACK event, not the initial upsert.
+        // So we allow SERVER_ACK through for fromMe command messages.
         // Baileys uses numeric codes: 2=SERVER_ACK 3=DELIVERY_ACK 4=READ 5=PLAYED
         const ACK_STATUSES = ['SERVER_ACK', 'DELIVERY_ACK', 'READ', 'PLAYED'];
         const ACK_CODES = [2, 3, 4, 5];
-        if (msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)))) {
+        const isAck = msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)));
+        const isFromMeCommand = fromMe && text.trimStart().startsWith('!');
+        if (isAck && isFromMeCommand) {
+          const msgId = msg.key?.id || '';
+          if (!markSeen(msgId)) {
+            console.log(`[EVO-WEBHOOK] SKIP duplicate fromMe command ACK: "${text.slice(0, 40)}"`);
+            continue;
+          }
+          console.log(`[EVO-WEBHOOK] Processing fromMe command via ACK: "${text.slice(0, 40)}"`);
+        }
+        if (isAck && !isFromMeCommand) {
           console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
           continue;
         }
