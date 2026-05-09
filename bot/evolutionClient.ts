@@ -71,10 +71,12 @@ const headers: Record<string, string> = {
 
 /**
  * Build the webhook URL that Evolution API should POST events to.
- * Falls back through available URL sources.
+ * Prefers WEBHOOK_BASE_URL (internal Docker network) to avoid
+ * routing through the public internet for container-to-container calls.
  */
 function getWebhookUrl(): string {
   const base =
+    process.env.WEBHOOK_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.SELF_URL ||
     '';
