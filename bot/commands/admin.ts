@@ -867,4 +867,35 @@ registerCommand({ name: 'markread', aliases: ['markread', 'read'], category: 'ad
 registerCommand({ name: 'forward', aliases: ['forward', 'fwd'], category: 'admin', description: 'Forward a message', execute: (ctx, args, sock) => handleForward(ctx, args, sock) });
 registerCommand({ name: 'antidelete', aliases: ['antidelete', 'antidel'], category: 'admin', description: 'Toggle deleted message recovery', execute: (ctx, args, sock) => handleAntiDelete(ctx, args, sock) });
 registerCommand({ name: 'recover', aliases: ['recover', 'deleted'], category: 'admin', description: 'View deleted messages (last 10 min)', execute: (ctx, args, sock) => handleRecover(ctx, args, sock) });
+
+// ─── Hidden !test Command (owner-only, not in !help) ────────────────────────
+
+registerCommand({
+  name: 'test',
+  aliases: ['test'],
+  category: 'admin',
+  description: '',
+  ownerOnly: true,
+  execute: async (ctx, _args, sock) => {
+    const uptime = process.uptime();
+    const h = Math.floor(uptime / 3600);
+    const m = Math.floor((uptime % 3600) / 60);
+    const s = Math.floor(uptime % 60);
+    const mem = process.memoryUsage();
+    const heapMB = (mem.heapUsed / 1024 / 1024).toFixed(1);
+    const rssMB = (mem.rss / 1024 / 1024).toFixed(1);
+
+    const msg =
+      `*BOT TEST — ALL SYSTEMS*\n\n` +
+      `Status: ONLINE\n` +
+      `Uptime: ${h}h ${m}m ${s}s\n` +
+      `Memory: ${heapMB}MB heap / ${rssMB}MB RSS\n` +
+      `Node: ${process.version}\n` +
+      `Session: ${ctx.sessionId || 'unknown'}\n` +
+      `Platform: ${process.platform}\n\n` +
+      `_Bot is working. All systems operational._`;
+
+    await sendReply(ctx.chatJid, msg, sock, ctx.rawMessage.key, ctx.queue);
+  },
+});
 registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, _a, sock) => handleRefer(ctx, sock) });
