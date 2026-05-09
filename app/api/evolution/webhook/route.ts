@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
 
+const SELF_URL = process.env.SELF_URL || '';
+const IS_WORKER = process.env.IS_WORKER === 'true';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -24,12 +27,13 @@ interface WebhookSession {
   user_id?: string;
   phone_number?: string;
   state?: string;
+  worker_url?: string | null;
 }
 
 async function getCachedOrFetchSession(
   supabase: ReturnType<typeof getSupabase>,
   sessionId: string,
-  columns: string = 'id, user_id, phone_number, state',
+  columns: string = 'id, user_id, phone_number, state, worker_url',
 ): Promise<WebhookSession | null> {
   // Try Redis first
   const cached = await getCachedSession(sessionId);
@@ -81,6 +85,40 @@ export async function POST(request: NextRequest) {
     console.log(`[EVO-WEBHOOK] event=${event} session=${sessionId}`);
 
     const supabase = getSupabase();
+
+    // --- Worker routing guard ---
+    // Evolution API sends each event to BOTH the per-instance webhook (worker)
+    // AND the global webhook (main). Without this guard, both instances
+    // independently process the same event → duplicate messages / actions.
+    //
+    // For action-producing events, check if this instance is the correct owner.
+    // - session.worker_url is set → only the matching worker should process
+    // - session.worker_url is null → only the main instance should process
+    //
+    // State-management events (connection.update, logout.instance) are still
+    // processed by any instance since they're idempotent DB writes.
+    const ACTION_EVENTS = [
+      'messages.upsert',
+      'messages.delete',
+      'messages.edited',
+      'group-participants.update',
+      'qrcode.updated',
+    ];
+
+    if (ACTION_EVENTS.includes(event)) {
+      const routeSession = await getCachedOrFetchSession(supabase, sessionId, 'id, worker_url');
+      if (routeSession) {
+        const ownerUrl = routeSession.worker_url || null;
+        const isCorrectInstance =
+          ownerUrl
+            ? SELF_URL === ownerUrl                    // worker-owned: only that worker
+            : !IS_WORKER;                              // main-owned: only the main instance
+        if (!isCorrectInstance) {
+          console.log(`[EVO-WEBHOOK] SKIP ${event} for ${sessionId.slice(0, 8)} — owner=${ownerUrl || 'main'}, self=${SELF_URL || 'main'} (not ours)`);
+          return NextResponse.json({ ok: true });
+        }
+      }
+    }
 
     // --- Connection state changes ---
     if (event === 'connection.update') {
