@@ -308,7 +308,7 @@ async function showLeaderboard(context: MessageContext, sock: any): Promise<void
 
 // ─── Register Game Commands ──────────────────────────────────────────────────
 
-registerCommand({ name: 'play', aliases: ['play', 'game', 'games'], category: 'games', description: 'Start a mini game', execute: (ctx, args, sock) => startGame(ctx, args, sock) });
+registerCommand({ name: 'play', aliases: ['play'], category: 'games', description: 'Start a mini game', execute: (ctx, args, sock) => startGame(ctx, args, sock) });
 registerCommand({ name: 'trivia', aliases: ['trivia'], category: 'games', description: 'Start a trivia game', execute: (ctx, _a, sock) => startGame(ctx, ['trivia'], sock) });
 registerCommand({ name: 'hangman', aliases: ['hangman'], category: 'games', description: 'Start hangman', execute: (ctx, _a, sock) => startGame(ctx, ['hangman'], sock) });
 registerCommand({ name: 'wordchain', aliases: ['wordchain'], category: 'games', description: 'Start word chain', execute: (ctx, _a, sock) => startGame(ctx, ['wordchain'], sock) });
