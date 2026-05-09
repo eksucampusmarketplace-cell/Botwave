@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { BOARD_THEMES } from '@/lib/game/types';
 import { getPieceChar, fenToPieceCode, getPieceClasses, getPieceSizeMultiplier, type PieceStyle } from '@/lib/game/pieces';
 import { playSound, getSoundForMove, resumeAudio } from '@/lib/game/sounds';
+import { getValidMoves } from '@/lib/game/chess-engine';
 
 interface Arrow {
   from: string;
@@ -28,6 +29,7 @@ interface ChessBoardProps {
   showCoordinates?: boolean;
   showLegalMoves?: boolean;
   highlightStyle?: 'dots' | 'squares';
+  allowFlip?: boolean;
 }
 
 const PIECE_UNICODE: Record<string, string> = {
@@ -81,8 +83,10 @@ export default function ChessBoard({
   showCoordinates = true,
   showLegalMoves = true,
   highlightStyle = 'dots',
+  allowFlip = false,
 }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [manualFlip, setManualFlip] = useState(false);
   const [dragFrom, setDragFrom] = useState<string | null>(null);
   const [dragOverSquare, setDragOverSquare] = useState<string | null>(null);
   const [showPromotion, setShowPromotion] = useState<{ from: string; to: string } | null>(null);
@@ -99,9 +103,15 @@ export default function ChessBoard({
     [theme]
   );
 
-  const flipped = myColor === 'b';
+  const flipped = allowFlip ? (myColor === 'b') !== manualFlip : myColor === 'b';
   const displayFiles = flipped ? [...FILES].reverse() : FILES;
   const displayRanks = flipped ? [...RANKS].reverse() : RANKS;
+
+  const legalMoveTargets = useMemo(() => {
+    if (!selectedSquare) return new Set<string>();
+    const moves = getValidMoves(fen, selectedSquare);
+    return new Set(moves.map((m) => m.substring(2, 4)));
+  }, [fen, selectedSquare]);
 
   useEffect(() => {
     if (prevFenRef.current !== fen && soundEnabled) {
@@ -283,12 +293,82 @@ export default function ChessBoard({
 
   const sizeMultiplier = getPieceSizeMultiplier(pieceStyle);
 
+  const getSquareFromTouch = useCallback((touch: React.Touch): string | null => {
+    if (!boardRef.current) return null;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    const col = Math.floor((x / rect.width) * 8);
+    const row = Math.floor((y / rect.height) * 8);
+    if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+    return displayFiles[col] + displayRanks[row];
+  }, [displayFiles, displayRanks]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (disabled) return;
+    const touch = e.touches[0];
+    const square = getSquareFromTouch(touch);
+    if (!square) return;
+    const piece = pieces[square];
+    if (piece && isMyPiece(piece)) {
+      e.preventDefault();
+      setDragFrom(square);
+      setSelectedSquare(square);
+    }
+  }, [disabled, pieces, isMyPiece, getSquareFromTouch]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragFrom) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const square = getSquareFromTouch(touch);
+    setDragOverSquare(square);
+  }, [dragFrom, getSquareFromTouch]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!dragFrom) return;
+    e.preventDefault();
+    const square = dragOverSquare;
+    if (square && square !== dragFrom) {
+      if (!isMyTurn && premovesEnabled) {
+        setPremove({ from: dragFrom, to: square });
+        if (soundEnabled) playSound('premove');
+      } else if (isMyTurn) {
+        const piece = pieces[dragFrom];
+        if (
+          piece && (piece === 'P' || piece === 'p') &&
+          ((myColor === 'w' && square[1] === '8') || (myColor === 'b' && square[1] === '1'))
+        ) {
+          setShowPromotion({ from: dragFrom, to: square });
+        } else {
+          onMove(dragFrom, square);
+        }
+      }
+    }
+    setDragFrom(null);
+    setDragOverSquare(null);
+    setSelectedSquare(null);
+  }, [dragFrom, dragOverSquare, isMyTurn, premovesEnabled, soundEnabled, pieces, myColor, onMove]);
+
   return (
     <div className="relative select-none" ref={boardRef}>
+      {/* Board flip button */}
+      {allowFlip && (
+        <button
+          onClick={() => setManualFlip((f) => !f)}
+          className="absolute -right-10 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-700/80 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-colors z-10 text-sm"
+          title="Flip board"
+        >
+          \u21C5
+        </button>
+      )}
       <div
         className="grid grid-cols-8 border-2 border-gray-700 rounded-lg overflow-hidden shadow-2xl"
         style={{ aspectRatio: '1/1', maxWidth: '560px', width: '100%' }}
         onContextMenu={(e) => e.preventDefault()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {displayRanks.map((rank, ri) =>
           displayFiles.map((file, fi) => {
@@ -324,10 +404,10 @@ export default function ChessBoard({
                 onMouseUp={(e) => { if (e.button === 2) handleRightMouseUp(square, e); }}
                 onContextMenu={(e) => e.preventDefault()}
               >
-                {showLegalMoves && selectedSquare && !hasPiece && isMyTurn && (
+                {showLegalMoves && selectedSquare && !hasPiece && isMyTurn && legalMoveTargets.has(square) && (
                   <div className={`absolute rounded-full ${highlightStyle === 'dots' ? 'w-[25%] h-[25%] bg-black/20' : 'w-full h-full border-4 border-black/20'}`} />
                 )}
-                {showLegalMoves && selectedSquare && hasPiece && isOpponentPiece(piece) && isMyTurn && (
+                {showLegalMoves && selectedSquare && hasPiece && isOpponentPiece(piece) && isMyTurn && legalMoveTargets.has(square) && (
                   <div className="absolute w-full h-full rounded-full border-[4px] border-black/25 pointer-events-none" />
                 )}
 

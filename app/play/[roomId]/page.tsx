@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import type {
@@ -18,6 +18,9 @@ import GameChat from '@/components/game/GameChat';
 import GameTimer from '@/components/game/GameTimer';
 import MoveHistory from '@/components/game/MoveHistory';
 import GameResult from '@/components/game/GameResult';
+import CapturedPieces from '@/components/game/CapturedPieces';
+import { getOpeningForMoveList } from '@/lib/game/openings';
+import { isInCheck } from '@/lib/game/chess-engine';
 
 type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -177,6 +180,15 @@ export default function PlayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, playerId]);
 
+  const openingName = useMemo(() => {
+    if (!room || room.type !== 'chess' || room.moves.length === 0) return null;
+    const sanMoves = room.moves
+      .map((m) => m.notation)
+      .filter((n): n is string => !!n);
+    const opening = getOpeningForMoveList(sanMoves);
+    return opening?.name || null;
+  }, [room]);
+
   const handleMove = useCallback(
     (from: string, to: string, promotion?: string) => {
       if (!socketRef.current || !room) return;
@@ -288,6 +300,47 @@ export default function PlayPage() {
       setError('Failed to create rematch');
     }
   }, [room, playerId]);
+
+  const handleExportPGN = useCallback(() => {
+    if (!room || room.type !== 'chess') return;
+    const sanMoves = room.moves
+      .map((m) => m.notation)
+      .filter((n): n is string => !!n);
+    const pairs: string[] = [];
+    for (let i = 0; i < sanMoves.length; i += 2) {
+      const moveNum = Math.floor(i / 2) + 1;
+      pairs.push(sanMoves[i + 1]
+        ? `${moveNum}. ${sanMoves[i]} ${sanMoves[i + 1]}`
+        : `${moveNum}. ${sanMoves[i]}`
+      );
+    }
+    let result = '*';
+    if (room.status === 'finished') {
+      if (room.resultType === 'draw' || room.resultType === 'stalemate') result = '1/2-1/2';
+      else if (room.winner === room.player1?.id) result = '1-0';
+      else if (room.winner === room.player2?.id) result = '0-1';
+    }
+    const date = new Date(room.createdAt).toISOString().split('T')[0].replace(/-/g, '.');
+    const pgn = [
+      `[Event "BotWave Game"]`,
+      `[Site "botwave.online"]`,
+      `[Date "${date}"]`,
+      `[White "${room.player1?.displayName || 'Player 1'}"]`,
+      `[Black "${room.player2?.displayName || 'Player 2'}"]`,
+      `[Result "${result}"]`,
+      `[TimeControl "${room.settings.timeControl || 600}+${room.settings.increment || 0}"]`,
+      '',
+      pairs.join(' ') + ' ' + result,
+    ].join('\n');
+
+    const blob = new Blob([pgn], { type: 'application/x-chess-pgn' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `botwave-${room.id}.pgn`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [room]);
 
   const handleShareResult = useCallback(() => {
     if (!room) return;
@@ -409,15 +462,29 @@ export default function PlayPage() {
       <div className="flex flex-col lg:flex-row gap-4 p-4 max-w-7xl mx-auto">
         {/* Main board area */}
         <div className="flex-1 flex flex-col items-center gap-4">
+          {/* Opening name */}
+          {room.type === 'chess' && openingName && (
+            <div className="w-full max-w-[560px] text-center">
+              <span className="text-xs text-amber-400/80 font-medium bg-amber-400/10 px-3 py-1 rounded-full">
+                {openingName}
+              </span>
+            </div>
+          )}
+
           {/* Opponent info */}
           <div className="w-full max-w-[560px] flex items-center justify-between bg-gray-800/40 rounded-xl px-4 py-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-sm">
                 {room.type === 'chess' ? (isPlayer1 ? '\u265A' : '\u2654') : (isPlayer1 ? 'O' : 'X')}
               </div>
-              <span className="text-white font-medium">
-                {isPlayer1 ? room.player2?.displayName : room.player1?.displayName}
-              </span>
+              <div>
+                <span className="text-white font-medium">
+                  {isPlayer1 ? room.player2?.displayName : room.player1?.displayName}
+                </span>
+                {room.type === 'chess' && (
+                  <CapturedPieces fen={room.boardState} myColor={isPlayer1 ? 'w' : 'b'} position="top" />
+                )}
+              </div>
             </div>
             {room.currentTurn === (isPlayer1 ? room.player2?.id : room.player1?.id) && (
               <span className="text-xs text-yellow-400 animate-pulse">Thinking...</span>
@@ -444,9 +511,17 @@ export default function PlayPage() {
               myColor={isPlayer1 ? 'w' : 'b'}
               onMove={handleMove}
               theme={room.settings.boardTheme}
+              pieceStyle={(room.settings.pieceStyle as import('@/lib/game/pieces').PieceStyle) || 'classic'}
               lastMove={lastMove || undefined}
-              isCheck={room.boardState.includes('+')}
+              isCheck={isInCheck(room.boardState)}
               disabled={room.status !== 'playing' || !isPlayer}
+              soundEnabled={room.settings.enableSounds}
+              animationsEnabled={room.settings.enableAnimations}
+              showCoordinates={room.settings.showCoordinates !== false}
+              showLegalMoves={room.settings.showLegalMoves !== false}
+              highlightStyle={room.settings.highlightStyle || 'dots'}
+              premovesEnabled={room.settings.enablePremoves !== false}
+              allowFlip
             />
           )}
 
@@ -466,14 +541,38 @@ export default function PlayPage() {
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm">
                 {room.type === 'chess' ? (isPlayer1 ? '\u2654' : '\u265A') : (isPlayer1 ? 'X' : 'O')}
               </div>
-              <span className="text-white font-medium">
-                {isPlayer1 ? room.player1?.displayName : room.player2?.displayName} (You)
-              </span>
+              <div>
+                <span className="text-white font-medium">
+                  {isPlayer1 ? room.player1?.displayName : room.player2?.displayName} (You)
+                </span>
+                {room.type === 'chess' && (
+                  <CapturedPieces fen={room.boardState} myColor={isPlayer1 ? 'w' : 'b'} position="bottom" />
+                )}
+              </div>
             </div>
             {isMyTurn && (
               <span className="text-xs text-green-400 font-bold">Your turn</span>
             )}
           </div>
+
+          {/* Game status bar */}
+          {room.type === 'chess' && room.status === 'playing' && (
+            <div className="w-full max-w-[560px] flex items-center justify-center gap-3">
+              {room.boardState.includes(' w ') ? (
+                <span className="text-xs text-gray-400">White to move</span>
+              ) : (
+                <span className="text-xs text-gray-400">Black to move</span>
+              )}
+              {isInCheck(room.boardState) && (
+                <span className="text-xs text-red-400 font-bold animate-pulse">CHECK!</span>
+              )}
+              {room.moves.length > 0 && room.moves[room.moves.length - 1]?.notation && (
+                <span className="text-xs text-gray-500">
+                  Last: <span className="text-gray-300 font-mono">{room.moves[room.moves.length - 1].notation}</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Game controls */}
           {isPlayer && room.status === 'playing' && (
@@ -498,6 +597,15 @@ export default function PlayPage() {
               >
                 Resign
               </button>
+              {room.type === 'chess' && room.moves.length > 0 && (
+                <button
+                  onClick={handleExportPGN}
+                  className="px-4 py-2 bg-gray-600/80 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors"
+                  title="Download game as PGN"
+                >
+                  Export PGN
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -523,6 +631,7 @@ export default function PlayPage() {
           myPlayerId={playerId}
           onRematch={handleRematch}
           onShareResult={handleShareResult}
+          onExportPGN={room.type === 'chess' ? handleExportPGN : undefined}
         />
       )}
     </div>

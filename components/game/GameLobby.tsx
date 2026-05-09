@@ -9,6 +9,7 @@ import {
   TIME_CONTROLS,
   ChessVariant,
 } from '@/lib/game/types';
+import { PIECE_STYLES, type PieceStyle } from '@/lib/game/pieces';
 
 interface GameLobbyProps {
   room: GameRoom;
@@ -235,8 +236,30 @@ export default function GameLobby({
           </div>
         </div>
 
+        {/* Piece Style (chess only) */}
+        {room.type === 'chess' && (
+          <div className="mb-4">
+            <label className="text-sm text-gray-300 mb-2 block">Piece Style</label>
+            <div className="flex gap-2 flex-wrap">
+              {PIECE_STYLES.map((ps) => (
+                <button
+                  key={ps.id}
+                  onClick={() => onUpdateSettings({ pieceStyle: ps.id })}
+                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                    (room.settings.pieceStyle || 'classic') === ps.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {ps.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Toggles */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
             <input
               type="checkbox"
@@ -254,6 +277,24 @@ export default function GameLobby({
               className="rounded bg-gray-700 border-gray-600"
             />
             Sounds
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={room.settings.showCoordinates !== false}
+              onChange={(e) => onUpdateSettings({ showCoordinates: e.target.checked })}
+              className="rounded bg-gray-700 border-gray-600"
+            />
+            Coordinates
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={room.settings.showLegalMoves !== false}
+              onChange={(e) => onUpdateSettings({ showLegalMoves: e.target.checked })}
+              className="rounded bg-gray-700 border-gray-600"
+            />
+            Show Legal Moves
           </label>
         </div>
       </div>

@@ -59,6 +59,11 @@ export function getCurrentTurn(fen: string): 'w' | 'b' {
   return chess.turn();
 }
 
+export function isInCheck(fen: string): boolean {
+  const chess = new Chess(fen);
+  return chess.isCheck();
+}
+
 export function isGameOver(fen: string): {
   over: boolean;
   reason?: string;
