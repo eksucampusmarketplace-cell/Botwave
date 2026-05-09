@@ -184,13 +184,13 @@ export default function ReviewPage() {
                   soundEnabled={false}
                 />
               ) : (
-                <TicTacToeBoard
-                  board={currentFen}
-                  isMyTurn={false}
-                  mySymbol="X"
-                  onMove={() => {}}
-                  disabled={true}
-                />
+                  <TicTacToeBoard
+                    board={(() => { try { return JSON.parse(currentFen); } catch { return Array(9).fill(null); } })()}
+                    isMyTurn={false}
+                    mySymbol="X"
+                    onMove={() => {}}
+                    disabled={true}
+                  />
               )}
             </div>
 
