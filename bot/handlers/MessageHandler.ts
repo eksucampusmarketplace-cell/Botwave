@@ -34,6 +34,7 @@ import {
 import { getCommand, type MessageContext, type TemplateVars } from '../commands/registry';
 import { sendUnknownCommand } from '../commands';
 import { sendReply } from '../commands/helpers';
+import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
 
 // Import all command modules to trigger self-registration
 import '../commands';
@@ -225,6 +226,11 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       trackGroupMessage(chatJid);
     }
 
+    // Cache messages for !recap and !spy
+    if (content && content.length > 0) {
+      cacheMessage(chatJid, senderJid, pushName, content);
+    }
+
     await simulateGoingOnline(sock);
 
     if (!isCommand && shouldThrottleContact(senderJid)) {
@@ -347,6 +353,28 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       await processAutoReply(context, sock);
     }
 
+    // Auto-react check for groups
+    if (isGroup && !isCommand && content) {
+      const reactEmoji = checkReactRules(chatJid, content);
+      if (reactEmoji && message.key) {
+        try {
+          await sock.sendMessage(chatJid, { react: { text: reactEmoji, key: message.key } });
+        } catch { /* non-critical */ }
+      }
+    }
+
+    // Ghost mode: schedule deletion of bot replies to ghost-mode users
+    if (fromMe && !isCommand) {
+      const ghostDelay = getGhostDelay(senderJid);
+      if (ghostDelay && message.key) {
+        setTimeout(async () => {
+          try {
+            await sock.sendMessage(chatJid, { delete: message.key });
+          } catch { /* deletion may fail, non-critical */ }
+        }, ghostDelay * 1000);
+      }
+    }
+
     if (isGroup) markGroupReplied(chatJid);
     trackContactReply(senderJid);
     trackWhoSentLast(chatJid, true);
@@ -373,8 +401,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   }
 
   const parts = context.message.slice(1).split(' ');
-  const commandName = parts[0].toLowerCase();
-  const args = parts.slice(1);
+  let commandName = parts[0].toLowerCase();
+  let args = parts.slice(1);
+
+  // Alias expansion
+  const aliasExpansion = expandAlias(context.senderJid, commandName);
+  if (aliasExpansion) {
+    const aliasParts = aliasExpansion.replace(/^!/, '').split(' ');
+    commandName = aliasParts[0].toLowerCase();
+    args = [...aliasParts.slice(1), ...args];
+    console.log(`Alias expanded: !${parts[0]} -> !${commandName} ${args.join(' ')}`);
+  }
 
   console.log(`Command: !${commandName} from ${context.senderJid}`);
 
