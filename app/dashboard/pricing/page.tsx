@@ -164,8 +164,10 @@ export default function PricingPage() {
 
     const controller = new AbortController();
     const fetchTimeout = setTimeout(() => controller.abort(), 12000);
+    console.log(`[PAYMENT] Initiating upgrade to plan=${planKey}`);
 
     try {
+      const startMs = performance.now();
       const res = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -174,6 +176,7 @@ export default function PricingPage() {
         signal: controller.signal,
       });
       clearTimeout(fetchTimeout);
+      console.log(`[PAYMENT] /api/payments/initiate responded: HTTP ${res.status} in ${Math.round(performance.now() - startMs)}ms`);
 
       if (res.status === 401) {
         setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
@@ -185,23 +188,27 @@ export default function PricingPage() {
       const data = await res.json();
 
       if (!data.success) {
+        console.error('[PAYMENT] API returned failure:', data.error);
         setMessage({ type: 'error', text: data.error || 'Payment initialization failed' });
         setLoading(null);
         return;
       }
 
-      console.log('[PAYMENT] Response:', JSON.stringify({ checkoutUrl: data.checkoutUrl, publicKey: !!data.publicKey, squadReady }));
+      console.log('[PAYMENT] API success:', JSON.stringify({ checkoutUrl: data.checkoutUrl ? data.checkoutUrl.slice(0, 60) + '...' : 'NONE', publicKey: !!data.publicKey, transactionRef: data.transactionRef, squadWidgetReady: squadReady }));
 
       // Strategy 1: Redirect to Squad checkout URL (fastest, most reliable)
       if (data.checkoutUrl) {
+        console.log('[PAYMENT] Strategy 1: opening checkoutUrl:', data.checkoutUrl);
         setMessage({ type: 'success', text: 'Opening payment page...' });
         const popup = window.open(data.checkoutUrl, '_blank');
         if (!popup || popup.closed) {
+          console.log('[PAYMENT] Popup blocked, redirecting in same tab');
           window.location.href = data.checkoutUrl;
         }
         setLoading(null);
         return;
       }
+      console.warn('[PAYMENT] No checkoutUrl in response, trying fallback strategies');
 
       // Strategy 2: Try Squad inline modal
       if (squadReady && window.squad && data.publicKey) {
@@ -250,6 +257,7 @@ export default function PricingPage() {
       // Strategy 3: Build Squad checkout URL manually from transaction ref
       if (data.transactionRef) {
         const manualUrl = `https://checkout.squadco.com/${data.transactionRef}`;
+        console.log('[PAYMENT] Strategy 3: manual checkout URL:', manualUrl);
         setMessage({ type: 'success', text: 'Opening payment page...' });
         const popup = window.open(manualUrl, '_blank');
         if (!popup || popup.closed) {
@@ -260,16 +268,19 @@ export default function PricingPage() {
       }
 
       // Nothing worked
+      console.error('[PAYMENT] ALL strategies exhausted. No checkoutUrl, no widget, no transactionRef.');
       setMessage({ type: 'error', text: 'Payment gateway is not responding. Please try again or contact support.' });
       setLoading(null);
     } catch (err) {
       clearTimeout(fetchTimeout);
       const isTimeout = err instanceof Error && err.name === 'AbortError';
+      const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error(`[PAYMENT] CATCH: ${isTimeout ? 'TIMEOUT (12s)' : errDetail}`, err);
       setMessage({
         type: 'error',
         text: isTimeout
           ? 'Payment request timed out. Please check your internet connection and try again.'
-          : 'Something went wrong. Please try again.',
+          : `Something went wrong: ${errDetail}`,
       });
       setLoading(null);
     }

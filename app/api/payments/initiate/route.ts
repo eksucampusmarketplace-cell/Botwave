@@ -33,15 +33,17 @@ export async function POST(request: NextRequest) {
 
     const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (!user) {
-      console.warn('[PAYMENT-INIT] Auth failed:', authError?.message || 'No user session');
+      console.warn('[PAYMENT-INIT] Auth failed:', authError?.message || 'No user session', 'cookies:', request.cookies.getAll().map(c => c.name).join(','));
       return NextResponse.json({ error: 'Unauthorized — please log in again' }, { status: 401 });
     }
-    console.log(`[PAYMENT-INIT] User ${user.id} (${user.email}) requesting upgrade`);
+    console.log(`[PAYMENT-INIT] User ${user.id.slice(0, 8)} (${user.email}) requesting upgrade`);
 
     const body = await request.json() as { plan?: string };
     const plan = body.plan;
+    console.log(`[PAYMENT-INIT] Requested plan: ${plan}`);
 
     if (!plan || !PLANS[plan] || plan === 'free') {
+      console.warn(`[PAYMENT-INIT] Invalid plan requested: ${plan}`);
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      // Re-initialize Squad for existing pending payment so we get a fresh checkout URL
+      console.log(`[PAYMENT-INIT] Found existing pending payment: ref=${existing.squad_transaction_ref} — re-initializing`);
       const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard?payment=success`;
       const reResult = await initializePayment({
         email: user.email || '',
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
         callbackUrl,
         metadata: { user_id: user.id, plan },
       });
-      console.log(`[PAYMENT-INIT] Re-initialized existing pending payment: ref=${existing.squad_transaction_ref}`);
+      console.log(`[PAYMENT-INIT] Re-init result: success=${reResult.success} checkoutUrl=${reResult.checkoutUrl || 'NONE'} error=${reResult.error || 'none'}`);
       return NextResponse.json({
         success: true,
         transactionRef: existing.squad_transaction_ref,
@@ -108,15 +110,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      console.error(`[PAYMENT-INIT] Squad API failed: ${result.error}`);
+      console.error(`[PAYMENT-INIT] Squad API FAILED for ref=${transactionRef}: ${result.error}`);
       await supabase
         .from('payments')
         .update({ status: 'failed', updated_at: new Date().toISOString() })
         .eq('squad_transaction_ref', transactionRef);
 
-      return NextResponse.json({ error: result.error || 'Payment init failed' }, { status: 500 });
+      return NextResponse.json({ success: false, error: result.error || 'Payment init failed' }, { status: 500 });
     }
-    console.log(`[PAYMENT-INIT] Squad payment initialized: ref=${transactionRef}`);
+    console.log(`[PAYMENT-INIT] Squad payment initialized OK: ref=${transactionRef} checkoutUrl=${result.checkoutUrl || 'NONE'}`);
     await invalidatePaymentHistory(user.id);
 
     return NextResponse.json({
@@ -129,7 +131,8 @@ export async function POST(request: NextRequest) {
       plan,
     });
   } catch (err) {
-    console.error('[PAYMENT-INIT] Error:', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[PAYMENT-INIT] UNHANDLED EXCEPTION: ${errMsg}`, err);
+    return NextResponse.json({ success: false, error: `Server error: ${errMsg}` }, { status: 500 });
   }
 }
