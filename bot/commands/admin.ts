@@ -896,6 +896,21 @@ registerCommand({
       `_Bot is working. All systems operational._`;
 
     await sendReply(ctx.chatJid, msg, sock, ctx.rawMessage.key, ctx.queue);
+
+    // Also send the welcome video so owner can preview it
+    try {
+      const path = await import('path');
+      const { readFile } = await import('fs/promises');
+      const videoPath = path.resolve(process.cwd(), 'bot', 'assets', 'botwave-demo.mp4');
+      const video = await readFile(videoPath);
+      await sock.sendMessage(ctx.chatJid, {
+        video,
+        caption: `*Welcome Video Preview*\n\n_This is what new DM senders will see._`,
+        gifPlayback: false,
+      });
+    } catch (err) {
+      await sendReply(ctx.chatJid, 'Could not load welcome video file.', sock, ctx.rawMessage.key, ctx.queue);
+    }
   },
 });
 registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, _a, sock) => handleRefer(ctx, sock) });
