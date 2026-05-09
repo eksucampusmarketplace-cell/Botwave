@@ -14,6 +14,8 @@
 import { registerCommand, type MessageContext } from '../commands/registry';
 import { sendReply } from '../commands/helpers';
 import { getUserSubscription, getSessionUserId } from '../database';
+import { PLANS, type PlanConfig } from '../../lib/squad';
+import { initializePayment } from '../../lib/squad';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -22,62 +24,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
-
-interface PlanInfo {
-  name: string;
-  price: number;
-  quotaLimit: number;
-  sessionLimit: number;
-  aiDailyLimit: number;
-  features: string[];
-}
-
-const PLANS: Record<string, PlanInfo> = {
-  lite: {
-    name: 'Lite',
-    price: 500,
-    quotaLimit: 2000,
-    sessionLimit: 1,
-    aiDailyLimit: 50,
-    features: [
-      '2,000 messages/month',
-      '50 AI queries/day',
-      'Auto reply',
-      'Custom commands (5)',
-      'Message templates (10)',
-    ],
-  },
-  standard: {
-    name: 'Standard',
-    price: 1000,
-    quotaLimit: 10000,
-    sessionLimit: 3,
-    aiDailyLimit: 200,
-    features: [
-      '10,000 messages/month',
-      '3 sessions',
-      '200 AI queries/day',
-      'Status viewer',
-      'Group analytics',
-      'Flow builder (3 flows)',
-    ],
-  },
-  boss: {
-    name: 'Boss',
-    price: 2000,
-    quotaLimit: -1,
-    sessionLimit: 5,
-    aiDailyLimit: -1,
-    features: [
-      'Unlimited messages',
-      '5 sessions',
-      'Unlimited AI queries',
-      'API access',
-      'Custom branding',
-      'Everything unlocked',
-    ],
-  },
-};
 
 async function handleUpgrade(
   context: MessageContext,
@@ -119,7 +65,7 @@ async function handleUpgrade(
     return;
   }
 
-  // Generate payment link
+  // Generate payment link using shared Squad client
   const paymentLink = await generatePaymentLink(userId, requestedPlan);
 
   if (!paymentLink) {
@@ -132,6 +78,7 @@ async function handleUpgrade(
   }
 
   const plan = PLANS[requestedPlan];
+  if (!plan) return;
   const msg =
     `💳 *Upgrade to ${plan.name}* — ₦${plan.price.toLocaleString()}/mo\n\n` +
     `*What you get:*\n` +
@@ -182,7 +129,6 @@ async function generatePaymentLink(userId: string, plan: string): Promise<string
     const planConfig = PLANS[plan];
     if (!planConfig) return null;
 
-    // Get user email for Squad
     const { data: userData } = await supabase.auth.admin.getUserById(userId);
     const email = userData?.user?.email;
     if (!email) return null;
@@ -190,7 +136,6 @@ async function generatePaymentLink(userId: string, plan: string): Promise<string
     const transactionRef = `bw-${plan}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
-    // Create payment record
     await supabase.from('payments').insert({
       user_id: userId,
       amount: planConfig.price,
@@ -200,44 +145,20 @@ async function generatePaymentLink(userId: string, plan: string): Promise<string
       metadata: { source: 'whatsapp_upgrade' },
     });
 
-    // Initialize Squad payment
-    const secretKey = process.env.SQUAD_SECRET_KEY;
-    if (!secretKey) {
-      console.error('[UPGRADE] SQUAD_SECRET_KEY not configured');
-      return null;
-    }
-
-    const baseUrl = process.env.SQUAD_SANDBOX === 'true'
-      ? 'https://sandbox-api-d.squadco.com'
-      : 'https://api-d.squadco.com';
-
-    const res = await fetch(`${baseUrl}/transaction/initiate`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${secretKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        amount: planConfig.price * 100,
-        initiate_type: 'inline',
-        currency: 'NGN',
-        transaction_ref: transactionRef,
-        customer_name: userData.user?.user_metadata?.username || email,
-        callback_url: `${appUrl}/dashboard?payment=success`,
-        payment_channels: ['bank', 'transfer'],
-        metadata: { user_id: userId, plan, source: 'whatsapp' },
-      }),
+    const result = await initializePayment({
+      email,
+      amount: planConfig.price,
+      transactionRef,
+      customerName: userData.user?.user_metadata?.username || email,
+      callbackUrl: `${appUrl}/dashboard?payment=success`,
+      metadata: { user_id: userId, plan, source: 'whatsapp' },
     });
 
-    const data = await res.json() as Record<string, unknown>;
-
-    if (data.status === 200) {
-      const innerData = data.data as Record<string, unknown> | undefined;
-      return (innerData?.checkout_url as string) || null;
+    if (result.success && result.checkoutUrl) {
+      return result.checkoutUrl;
     }
 
-    console.error('[UPGRADE] Squad API error:', data);
+    console.error('[UPGRADE] Squad payment init failed:', result.error);
     return null;
   } catch (err) {
     console.error('[UPGRADE] Failed to generate payment link:', err);

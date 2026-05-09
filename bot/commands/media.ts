@@ -607,12 +607,14 @@ async function handleSaveStatus(context: MessageContext, args: string[], sock: a
 }
 
 async function handleTTS(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
-    await sendReply(context.chatJid, getHelpHint('tts'), sock, context.rawMessage.key, context.queue);
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const inputText = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!inputText) {
+    await sendReply(context.chatJid, getHelpHint('tts') + '\n\n_Tip: Reply to a message with !tts to convert it to speech_', sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
-    const text = args.join(' ').slice(0, 500);
+    const text = inputText.slice(0, 500);
     // Use Google Translate TTS (free, no key)
     const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(text)}`;
     const response = await axios.get(ttsUrl, {

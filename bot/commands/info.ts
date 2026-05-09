@@ -25,11 +25,12 @@ async function handleAICommand(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  const query = args.join(' ');
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const query = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
   if (!query) {
     await sendReply(
       context.chatJid,
-      'Please provide a message after *!ai*\n\nExample: !ai What is quantum computing?',
+      'Please provide a message after *!ai* or reply to a message with *!ai*\n\nExample: !ai What is quantum computing?',
       sock,
       context.rawMessage.key,
       context.queue,
@@ -43,8 +44,8 @@ async function handleAICommand(
     try {
       const settings = await getUserSettings(context.userId || '');
       groqKey = settings?.groq_api_key || null;
-    } catch {
-      // fallback
+    } catch (err) {
+      console.error('[AI] Failed to fetch user settings:', err);
     }
   }
 
@@ -155,12 +156,12 @@ async function handleDefine(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  if (!args.length) {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const word = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!word) {
     await sendReply(context.chatJid, getHelpHint('define'), sock, context.rawMessage.key, context.queue);
     return;
   }
-
-  const word = args.join(' ');
 
   try {
     const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { timeout: 10000 });
@@ -239,13 +240,16 @@ async function handleTranslate(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  if (args.length < 2) {
-    await sendReply(context.chatJid, getHelpHint('translate'), sock, context.rawMessage.key, context.queue);
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '';
+  // Support: !translate es [reply to text] OR !translate es hello world
+  if (args.length < 1 || (args.length < 2 && !quotedText)) {
+    await sendReply(context.chatJid, getHelpHint('translate') + '\n\n_Tip: Reply to a message with !translate [lang] to translate it_', sock, context.rawMessage.key, context.queue);
     return;
   }
 
   const targetLang = args[0].toLowerCase();
-  const text = args.slice(1).join(' ');
+  const text = args.length > 1 ? args.slice(1).join(' ') : quotedText;
 
   try {
     // Using a free translation API
@@ -284,12 +288,13 @@ async function handleTranslate(
 }
 
 async function handleWiki(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const query = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!query) {
     await sendReply(context.chatJid, getHelpHint('wiki'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
-    const query = args.join(' ');
     const response = await axios.get(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`,
       { timeout: 10000 },
@@ -316,12 +321,13 @@ async function handleWiki(context: MessageContext, args: string[], sock: any): P
 }
 
 async function handleLyrics(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const query = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!query) {
     await sendReply(context.chatJid, getHelpHint('lyrics'), sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
-    const query = args.join(' ');
     let artist = '';
     let title = query;
     if (query.includes(' - ')) {
@@ -359,8 +365,8 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
           { timeout: 10000 },
         );
         lyrics = response.data?.lyrics || '';
-      } catch {
-        // Try next
+      } catch (err) {
+        console.log('[LYRICS] lyrics.ovh failed:', (err as Error)?.message);
       }
     }
 
@@ -375,8 +381,8 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
           { timeout: 10000 },
         );
         lyrics = response.data?.lyrics || '';
-      } catch {
-        // No lyrics found
+      } catch (err) {
+        console.log('[LYRICS] lyrics.ovh guess failed:', (err as Error)?.message);
       }
     }
 
@@ -392,8 +398,8 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
           const best = results.find((r: any) => r.plainLyrics) || results[0];
           lyrics = best?.plainLyrics || best?.syncedLyrics?.replace(/\[\d+:\d+\.\d+\]\s*/g, '') || '';
         }
-      } catch {
-        // exhausted
+      } catch (err) {
+        console.log('[LYRICS] fallback search failed:', (err as Error)?.message);
       }
     }
 
@@ -497,12 +503,13 @@ async function handleCrypto(context: MessageContext, args: string[], sock: any):
 }
 
 async function handleUrbanDictionary(context: MessageContext, args: string[], sock: any): Promise<void> {
-  if (!args.length) {
-    await sendReply(context.chatJid, '*URBAN DICTIONARY*\n\n!ud [word or phrase]\n\nExample: !ud yeet', sock, context.rawMessage.key, context.queue);
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const term = args.length ? args.join(' ') : (quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '');
+  if (!term) {
+    await sendReply(context.chatJid, '*URBAN DICTIONARY*\n\n!ud [word or phrase]\n\nExample: !ud yeet\n\n_Tip: Reply to a message with !ud to look it up_', sock, context.rawMessage.key, context.queue);
     return;
   }
   try {
-    const term = args.join(' ');
     const response = await axios.get(`https://api.urbandictionary.com/v0/define`, {
       params: { term },
       timeout: 10000,
