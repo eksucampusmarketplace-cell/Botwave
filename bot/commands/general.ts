@@ -94,7 +94,6 @@ async function sendHelp(
 !welcome / !goodbye / !autoview
 !antidelete / !recover / !recover pr / !refer
 !balance / !plan — Rewards & subscription
-!diagnose — System health report (owner)
 
 *GAMES*
 !play / !trivia / !hangman / !wordchain
@@ -705,7 +704,6 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!music', usage: '!music [song name]', description: 'Searches for a song and sends it as an audio file. Supports any song — just type the name and optionally the artist.\n\nExamples:\n"!music Shape of You"\n"!music Burna Boy Last Last"\n"!music Wizkid Essence"\n\nAliases: !song, !findsong' },
           { name: '!digest', usage: '!digest  |  !digest today  |  !digest 50', description: 'Generates an AI summary of recent group chat messages using real participant names. Great for catching up on busy groups.\n\nOptions:\n"!digest" — Last few hours\n"!digest today" — Full day summary\n"!digest 50" — Last 50 messages\n\nOnly works in group chats. Requires Groq API key.\n\nAliases: !summary, !tldr' },
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
-          { name: '!diagnose', usage: '!diagnose', description: 'Runs a full system health check and reports: bot uptime, memory usage, Evolution API status and latency, worker health (online/offline count), and keepalive configuration. Owner only.\n\nAliases: !diag, !health, !sysinfo' },
         ],
       },
       {

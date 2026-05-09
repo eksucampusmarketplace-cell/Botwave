@@ -668,37 +668,54 @@ export async function updateMessage(
   key: { remoteJid: string; fromMe: boolean; id: string },
   text: string,
 ) {
-  const number = key.remoteJid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');
+  const isGroup = key.remoteJid.endsWith('@g.us');
+  const isLid = key.remoteJid.endsWith('@lid');
+  const number = key.remoteJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
+  console.log(`[EDIT-DEBUG] updateMessage: remoteJid=${key.remoteJid} fromMe=${key.fromMe} id=${key.id} isGroup=${isGroup} isLid=${isLid} number=${number}`);
+
   const res = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ number, key, text }),
   });
-  if (res.ok) return res.json();
+  if (res.ok) {
+    console.log(`[EDIT-DEBUG] updateMessage SUCCESS on first attempt`);
+    return res.json();
+  }
 
   const body = await res.text();
+  console.log(`[EDIT-DEBUG] updateMessage FAILED (${res.status}): ${body.slice(0, 300)}`);
 
   // If "RemoteJid does not match", the DB likely stores the message with a
-  // LID-format key. Look up the stored key and retry with its remoteJid.
+  // different JID format. Look up the stored key and retry with its remoteJid.
   if (body.includes('RemoteJid does not match')) {
     try {
       const stored = await findMessageByKeyId(instanceName, key.id);
+      console.log(`[EDIT-DEBUG] DB lookup: stored key=${JSON.stringify(stored?.key)}`);
       if (stored?.key?.remoteJid && stored.key.remoteJid !== key.remoteJid) {
-        const lidJid = stored.key.remoteJid;
-        const lidNumber = lidJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
-        const fixedKey = { ...key, remoteJid: lidJid };
+        const storedJid = stored.key.remoteJid;
+        const storedNumber = storedJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
+        const fixedKey = { ...key, remoteJid: storedJid };
+        console.log(`[EDIT-DEBUG] Retrying with stored JID: ${storedJid} (was ${key.remoteJid})`);
         const res2 = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ number: lidNumber, key: fixedKey, text }),
+          body: JSON.stringify({ number: storedNumber, key: fixedKey, text }),
         });
-        if (res2.ok) return res2.json();
+        if (res2.ok) {
+          console.log(`[EDIT-DEBUG] updateMessage SUCCESS on retry with stored JID`);
+          return res2.json();
+        }
         const body2 = await res2.text();
-        throw new Error(`updateMessage LID retry failed (${res2.status}): ${body2.slice(0, 200)}`);
+        throw new Error(`updateMessage retry failed (${res2.status}): ${body2.slice(0, 200)}`);
+      } else if (!stored) {
+        console.log(`[EDIT-DEBUG] Message not found in DB by key.id=${key.id}`);
+      } else {
+        console.log(`[EDIT-DEBUG] Stored JID matches webhook JID — no alternate to try`);
       }
     } catch (lookupErr) {
-      if (lookupErr instanceof Error && lookupErr.message.includes('LID retry failed')) throw lookupErr;
-      console.error('[EVO-CLIENT] LID key lookup failed:', lookupErr);
+      if (lookupErr instanceof Error && lookupErr.message.includes('retry failed')) throw lookupErr;
+      console.error('[EVO-CLIENT] Key lookup failed:', lookupErr);
     }
   }
 
@@ -714,7 +731,7 @@ export async function findMessages(instanceName: string, where: Record<string, u
       body: JSON.stringify({ where, limit }),
     });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await res.json();
     return Array.isArray(data) ? data : data?.messages || data?.data || [];
   } catch {
     return [];
@@ -729,7 +746,7 @@ async function findMessageByKeyId(instanceName: string, keyId: string): Promise<
     body: JSON.stringify({ where: { key: { id: keyId } } }),
   });
   if (!res.ok) return null;
-  const data = await res.json();
+  const data: any = await res.json();
   const messages = Array.isArray(data) ? data : data?.messages || data?.data || [];
   return messages[0] || null;
 }
