@@ -496,8 +496,8 @@ export function formatGameEvent(event: string, data: Record<string, string>): st
 // ─── Register commands ──────────────────────────────────────────────────────
 
 registerCommand({
-  name: 'mgame',
-  aliases: ['mgame', 'multiplayer'],
+  name: 'game',
+  aliases: ['game', 'games', 'mgame', 'multiplayer'],
   category: 'games',
   description: 'Multiplayer online games (chess, tic-tac-toe) — play in browser!',
   execute: async (context, args, sock) => {
