@@ -72,6 +72,9 @@ services:
     environment:
       - PORT=10000
       - NODE_ENV=production
+      - SELF_URL=http://botwave-web:10000
+      - IS_WORKER=false
+      - EVOLUTION_API_URL=http://evolution-api:8080
     command: ["node", "dist/bot/server/customServer.js"]
     networks:
       - botwave-net
