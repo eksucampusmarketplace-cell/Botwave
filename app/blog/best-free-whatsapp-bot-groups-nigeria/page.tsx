@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
-    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
-    description: 'Looking for the best free WhatsApp bot for managing groups in Nigeria? BotWave offers anti-spam, polls, games, AI chat, stickers, and 50+ commands. Free forever.',
+  title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+  description: 'Looking for the best free WhatsApp bot for managing groups in Nigeria? BotWave offers anti-spam, polls, games, AI chat, stickers, and 50+ commands. Free forever.',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],
   openGraph: {
-        title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
-        description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
+    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+    description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
     url: 'https://www.botwave.online/blog/best-free-whatsapp-bot-groups-nigeria',
     type: 'article',
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
