@@ -2,14 +2,7 @@ import { registerCommand, type MessageContext, type TemplateVars } from './regis
 import { sendReply, downloadMedia, getQuotedMessage, getImageFromContext, axios } from './helpers';
 import { getUserSettings } from '../database';
 import { getBase64FromMediaMessage } from '../evolutionClient';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { writeFile, unlink, readFile, access } from 'fs/promises';
-import path from 'path';
-import os from 'os';
 import { createClient } from '@supabase/supabase-js';
-
-const execFileAsync = promisify(execFile);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -145,37 +138,47 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
   }
 }
 
-// ─── !music — Music Search & Audio Download ─────────────────────────────────
+// ─── !music — Music Search & Audio Download (via Invidious API) ──────────────
 
-async function findYtDlp(): Promise<string> {
-  const paths = ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp'];
-  for (const p of paths) {
+const INVIDIOUS_INSTANCES = [
+  'https://vid.puffyan.us',
+  'https://inv.tux.pizza',
+  'https://invidious.nerdvpn.de',
+  'https://yt.artemislena.eu',
+  'https://invidious.privacyredirect.com',
+];
+
+interface InvidiousSearchResult {
+  type: string;
+  title: string;
+  videoId: string;
+  author: string;
+  lengthSeconds: number;
+}
+
+interface InvidiousAdaptiveFormat {
+  type: string;
+  url: string;
+  bitrate: string;
+  container: string;
+  audioQuality?: string;
+  audioSampleRate?: number;
+}
+
+async function invidiousRequest<T>(path: string, timeoutMs = 15000): Promise<{ data: T; instance: string }> {
+  const errors: string[] = [];
+  for (const instance of INVIDIOUS_INSTANCES) {
     try {
-      await access(p);
-      return p;
-    } catch { /* not found, try next */ }
+      const resp = await axios.get<T>(`${instance}${path}`, {
+        timeout: timeoutMs,
+        headers: { 'Accept': 'application/json' },
+      });
+      return { data: resp.data, instance };
+    } catch (err: any) {
+      errors.push(`${instance}: ${err?.message || 'unknown'}`);
+    }
   }
-
-  // Try PATH
-  try {
-    await execFileAsync('which', ['yt-dlp'], { timeout: 5000 });
-    return 'yt-dlp';
-  } catch { /* not in PATH */ }
-
-  // Auto-download yt-dlp to /tmp
-  console.log('[MUSIC] yt-dlp not found, downloading...');
-  try {
-    const dlUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
-    const dest = '/tmp/yt-dlp';
-    await execFileAsync('sh', ['-c', `curl -L -o ${dest} ${dlUrl} && chmod +x ${dest}`], { timeout: 60000 });
-    await access(dest);
-    console.log('[MUSIC] yt-dlp downloaded successfully');
-    return dest;
-  } catch (dlErr: any) {
-    console.error('[MUSIC] Failed to download yt-dlp:', dlErr?.message);
-  }
-
-  throw new Error('yt-dlp is not installed and could not be downloaded. Install it with: curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /tmp/yt-dlp && chmod +x /tmp/yt-dlp');
+  throw new Error(`All Invidious instances failed: ${errors.join('; ')}`);
 }
 
 async function handleMusic(
@@ -205,97 +208,84 @@ async function handleMusic(
   try {
     await sendReply(
       context.chatJid,
-      `Searching for "${query}"... This may take a moment.`,
+      `Searching for "${query}"...`,
       sock,
       context.rawMessage.key,
       context.queue,
     );
 
-    let ytdlpBin: string;
-    try {
-      ytdlpBin = await findYtDlp();
-    } catch (installErr: any) {
-      console.error('[MUSIC] yt-dlp unavailable:', installErr?.message);
+    // 1. Search for the song via Invidious
+    const searchPath = `/api/v1/search?q=${encodeURIComponent(query + ' audio')}&type=video&sort_by=relevance`;
+    const { data: results } = await invidiousRequest<InvidiousSearchResult[]>(searchPath);
+
+    const video = results?.find((r) => r.type === 'video');
+    if (!video) {
+      await sendReply(context.chatJid, `No results found for "${query}". Try a different search.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const videoTitle = video.title || query;
+    const videoUrl = `https://www.youtube.com/watch?v=${video.videoId}`;
+    const durationMin = Math.floor(video.lengthSeconds / 60);
+    const durationSec = video.lengthSeconds % 60;
+
+    // Reject videos longer than 10 minutes (likely not songs)
+    if (video.lengthSeconds > 600) {
       await sendReply(
         context.chatJid,
-        `Music search is temporarily unavailable — yt-dlp could not be found or installed on this server.\n\n_Server admin: install yt-dlp to enable !music_`,
-        sock,
-        context.rawMessage.key,
-        context.queue,
+        `"${videoTitle}" is ${durationMin}:${String(durationSec).padStart(2, '0')} long — too long for a song. Try a more specific search.`,
+        sock, context.rawMessage.key, context.queue,
       );
       return;
     }
-    const tmpFile = path.join(os.tmpdir(), `botwave_music_${Date.now()}`);
 
-    // Search YouTube for the song and get info
-    let videoTitle = query;
-    let videoUrl = '';
-    try {
-      const { stdout } = await execFileAsync(ytdlpBin, [
-        `ytsearch1:${query} audio`,
-        '--dump-json',
-        '--no-playlist',
-        '--no-warnings',
-      ], { timeout: 30000, maxBuffer: 5 * 1024 * 1024 });
+    // 2. Get audio stream URL from video details
+    const videoPath = `/api/v1/videos/${video.videoId}`;
+    const { data: videoInfo, instance } = await invidiousRequest<{ adaptiveFormats: InvidiousAdaptiveFormat[] }>(videoPath);
 
-      const info = JSON.parse(stdout);
-      videoTitle = info.title || query;
-      videoUrl = info.webpage_url || info.url || '';
-    } catch (searchErr: any) {
-      console.error('[MUSIC] Search failed:', searchErr?.message);
-    }
+    const audioFormats = (videoInfo.adaptiveFormats || [])
+      .filter((f) => f.type?.startsWith('audio/'))
+      .sort((a, b) => parseInt(b.bitrate || '0') - parseInt(a.bitrate || '0'));
 
-    // Download audio only
-    const dlArgs = [
-      videoUrl || `ytsearch1:${query} audio`,
-      '-f', 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio',
-      '--extract-audio',
-      '--audio-format', 'mp3',
-      '--audio-quality', '128K',
-      '--no-playlist',
-      '--max-filesize', '16M',
-      '-o', `${tmpFile}.%(ext)s`,
-      '--no-warnings',
-      '--postprocessor-args', '-ac 2 -ar 44100',
-    ];
+    // Prefer medium quality (128kbps-ish) to keep file size reasonable
+    const audioStream = audioFormats.find((f) => parseInt(f.bitrate || '0') <= 160000) || audioFormats[0];
 
-    // Check for YouTube cookies
-    const cookiesPath = path.join(os.tmpdir(), 'yt-cookies.txt');
-    try {
-      await access(cookiesPath);
-      dlArgs.push('--cookies', cookiesPath);
-    } catch { /* no cookies */ }
-
-    if (videoUrl && /youtube\.com|youtu\.be/.test(videoUrl)) {
-      dlArgs.push('--extractor-args', 'youtube:player_client=mediaconnect');
-    }
-
-    await execFileAsync(ytdlpBin, dlArgs, { timeout: 120000 });
-
-    // Find the output file
-    const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
-    const outFile = files.trim();
-
-    if (!outFile) {
-      await sendReply(context.chatJid, `Could not download "${query}". Try a different search term.`, sock, context.rawMessage.key, context.queue);
+    if (!audioStream?.url) {
+      await sendReply(context.chatJid, `Found "${videoTitle}" but could not extract audio. Try another song.`, sock, context.rawMessage.key, context.queue);
       return;
     }
 
-    const audioBuffer = await readFile(outFile);
+    // 3. Download the audio stream
+    console.log(`[MUSIC] Downloading: ${videoTitle} from ${instance}`);
+    const audioResp = await axios.get(audioStream.url, {
+      responseType: 'arraybuffer',
+      timeout: 60000,
+      maxContentLength: 16 * 1024 * 1024,
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
 
-    // Send as audio message
+    const audioBuffer = Buffer.from(audioResp.data);
+    if (audioBuffer.length < 1000) {
+      await sendReply(context.chatJid, `Download failed for "${videoTitle}". Try again.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // 4. Determine mimetype from stream
+    const isWebm = audioStream.container === 'webm' || audioStream.type?.includes('webm');
+    const mimetype = isWebm ? 'audio/webm' : 'audio/mp4';
+    const ext = isWebm ? 'webm' : 'm4a';
+
+    // 5. Send as audio message
+    const safeName = videoTitle.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 60);
     await sock.sendMessage(context.chatJid, {
       audio: audioBuffer,
-      mimetype: 'audio/mpeg',
+      mimetype,
       ptt: false,
-      fileName: `${videoTitle.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 60)}.mp3`,
+      fileName: `${safeName}.${ext}`,
     }, { quoted: context.rawMessage });
 
-    // Clean up
-    await unlink(outFile).catch(() => {});
-
-    // Send song info
-    const caption = `*${videoTitle}*${videoUrl ? `\n${videoUrl}` : ''}`;
+    // 6. Send song info
+    const caption = `*${videoTitle}*\n_${video.author} • ${durationMin}:${String(durationSec).padStart(2, '0')}_\n${videoUrl}`;
     await sendReply(context.chatJid, caption, sock, context.rawMessage.key, context.queue);
   } catch (error: any) {
     console.error('[MUSIC] Error:', error?.message || error);
