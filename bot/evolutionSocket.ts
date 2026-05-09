@@ -21,6 +21,7 @@ import {
   updateMessage,
   deleteForEveryone,
   getBase64FromMediaMessage,
+  findMessages,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -257,9 +258,11 @@ export class EvolutionSocketAdapter {
     const message = msg?.message as Record<string, unknown> | undefined;
     if (!message) return null;
 
-    // Primary: use Evolution API to decrypt and fetch media via the active session
+    // Primary: use Evolution API to decrypt and fetch media via the active session.
+    // Pass the FULL message object (with key + message) — Evolution API needs the
+    // key to look up the message in its database for decryption.
     try {
-      const buffer = await getBase64FromMediaMessage(this.instanceName, message);
+      const buffer = await getBase64FromMediaMessage(this.instanceName, msg);
       if (buffer && buffer.length > 0) return buffer;
     } catch (err) {
       console.error('[EVO-SOCK] getBase64FromMediaMessage failed, trying direct URL:', err);
@@ -331,6 +334,15 @@ export class EvolutionSocketAdapter {
       return await fetchProfile(this.instanceName, jid);
     } catch {
       return null;
+    }
+  }
+
+  /** Fetch recent messages for a chat from Evolution API's database. */
+  async fetchMessageHistory(chatJid: string, limit = 50): Promise<any[]> {
+    try {
+      return await findMessages(this.instanceName, { key: { remoteJid: chatJid } }, limit);
+    } catch {
+      return [];
     }
   }
 

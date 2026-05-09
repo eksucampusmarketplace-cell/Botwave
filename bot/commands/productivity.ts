@@ -896,5 +896,5 @@ registerCommand({ name: 'bmi', aliases: ['bmi'], category: 'utility', descriptio
 registerCommand({ name: 'age', aliases: ['age'], category: 'utility', description: 'Calculate age', execute: (ctx, args, sock) => handleAge(ctx, args, sock) });
 registerCommand({ name: 'unit', aliases: ['unit'], category: 'utility', description: 'Unit conversion', execute: (ctx, args, sock) => handleUnit(ctx, args, sock) });
 registerCommand({ name: 'flashcard', aliases: ['flashcard', 'fc', 'flashcards'], category: 'study', description: 'Create and review flashcards', execute: (ctx, args, sock) => handleFlashcard(ctx, args, sock) });
-registerCommand({ name: 'quiz', aliases: ['quiz', 'trivia'], category: 'study', description: 'Quiz from notes or general trivia', execute: (ctx, args, sock) => handleQuiz(ctx, args, sock) });
+registerCommand({ name: 'quiz', aliases: ['quiz', 'studyquiz'], category: 'study', description: 'Quiz from notes or general trivia', execute: (ctx, args, sock) => handleQuiz(ctx, args, sock) });
 registerCommand({ name: 'pomodoro', aliases: ['pomodoro', 'pomo', 'focus'], category: 'study', description: 'Pomodoro focus timer', execute: (ctx, args, sock) => handlePomodoro(ctx, args, sock) });

@@ -1,6 +1,8 @@
 import { registerCommand, getCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, getQuotedMessage, delay } from './helpers';
 import { getAfkState, setAfkState } from '../database';
+import { isRedisAvailable } from '../redis';
+import Redis from 'ioredis';
 import crypto from 'crypto';
 
 // ─── In-Memory Stores ───────────────────────────────────────────────────────
@@ -9,7 +11,38 @@ import crypto from 'crypto';
 const ghostTimers = new Map<string, number>();
 
 // Alias store: userJid -> Map<alias, expandedCommand>
+// Backed by Redis for persistence across restarts.
 const aliasStore = new Map<string, Map<string, string>>();
+const ALIAS_REDIS_PREFIX = 'botwave:alias:';
+
+let aliasRedis: Redis | null = null;
+const REDIS_URL = process.env.REDIS_URL;
+if (REDIS_URL) {
+  try {
+    aliasRedis = new Redis(REDIS_URL, { maxRetriesPerRequest: 1, retryStrategy(t) { return t > 3 ? null : Math.min(t * 200, 2000); } });
+    aliasRedis.on('error', () => {});
+  } catch { /* Redis unavailable, in-memory only */ }
+}
+
+async function loadAliasesFromRedis(userJid: string): Promise<Map<string, string>> {
+  if (!aliasRedis) return new Map();
+  try {
+    const data = await aliasRedis.get(`${ALIAS_REDIS_PREFIX}${userJid}`);
+    if (data) return new Map(Object.entries(JSON.parse(data)));
+  } catch { /* ignore */ }
+  return new Map();
+}
+
+async function saveAliasesToRedis(userJid: string, aliases: Map<string, string>): Promise<void> {
+  if (!aliasRedis) return;
+  try {
+    if (aliases.size === 0) {
+      await aliasRedis.del(`${ALIAS_REDIS_PREFIX}${userJid}`);
+    } else {
+      await aliasRedis.set(`${ALIAS_REDIS_PREFIX}${userJid}`, JSON.stringify(Object.fromEntries(aliases)));
+    }
+  } catch { /* ignore */ }
+}
 
 // React rules: chatJid -> [{ pattern, emoji, addedBy }]
 const reactRules = new Map<string, Array<{ pattern: string; emoji: string; addedBy: string }>>();
@@ -60,9 +93,13 @@ export function checkReactRules(chatJid: string, text: string): string | null {
   return null;
 }
 
-export function expandAlias(userJid: string, command: string): string | null {
-  const userAliases = aliasStore.get(userJid);
-  if (!userAliases) return null;
+export async function expandAlias(userJid: string, command: string): Promise<string | null> {
+  let userAliases = aliasStore.get(userJid);
+  if (!userAliases) {
+    userAliases = await loadAliasesFromRedis(userJid);
+    if (userAliases.size > 0) aliasStore.set(userJid, userAliases);
+  }
+  if (!userAliases || userAliases.size === 0) return null;
   return userAliases.get(command.toLowerCase()) || null;
 }
 
@@ -903,7 +940,11 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
   const sub = args[0]?.toLowerCase();
 
   if (!sub || sub === 'list') {
-    const userAliases = aliasStore.get(context.senderJid);
+    let userAliases = aliasStore.get(context.senderJid);
+    if (!userAliases) {
+      userAliases = await loadAliasesFromRedis(context.senderJid);
+      if (userAliases.size > 0) aliasStore.set(context.senderJid, userAliases);
+    }
     if (!userAliases || userAliases.size === 0) {
       await sendReply(context.chatJid, 'No aliases set.\n\nCreate one: !alias set gm = !ai say good morning poetically', sock, context.rawMessage.key, context.queue);
       return;
@@ -921,9 +962,14 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
       await sendReply(context.chatJid, 'Usage: !alias delete [name]', sock, context.rawMessage.key, context.queue);
       return;
     }
-    const userAliases = aliasStore.get(context.senderJid);
+    let userAliases = aliasStore.get(context.senderJid);
+    if (!userAliases) {
+      userAliases = await loadAliasesFromRedis(context.senderJid);
+      if (userAliases.size > 0) aliasStore.set(context.senderJid, userAliases);
+    }
     if (userAliases?.has(aliasName)) {
       userAliases.delete(aliasName);
+      await saveAliasesToRedis(context.senderJid, userAliases);
       await sendReply(context.chatJid, `Alias !${aliasName} deleted.`, sock, context.rawMessage.key, context.queue);
     } else {
       await sendReply(context.chatJid, `No alias named "${aliasName}" found.`, sock, context.rawMessage.key, context.queue);
@@ -961,6 +1007,7 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
       aliasStore.set(context.senderJid, new Map());
     }
     aliasStore.get(context.senderJid)!.set(aliasName, command);
+    await saveAliasesToRedis(context.senderJid, aliasStore.get(context.senderJid)!);
     await sendReply(
       context.chatJid,
       `*ALIAS CREATED*\n\n!${aliasName} → ${command}\n\nJust type !${aliasName} to use it.`,
