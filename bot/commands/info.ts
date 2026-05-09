@@ -297,7 +297,7 @@ async function handleWiki(context: MessageContext, args: string[], sock: any): P
   try {
     const response = await axios.get(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`,
-      { timeout: 10000 },
+      { timeout: 10000, headers: { 'User-Agent': 'BotWave/1.0 (WhatsApp Bot; contact@botwave.app)' } },
     );
     const data = response.data;
     if (data.type === 'disambiguation') {

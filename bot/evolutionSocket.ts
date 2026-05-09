@@ -20,6 +20,7 @@ import {
   checkOnWhatsApp,
   updateMessage,
   deleteForEveryone,
+  getBase64FromMediaMessage,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -247,15 +248,24 @@ export class EvolutionSocketAdapter {
 
   /**
    * Download media from an incoming message.
-   * Evolution API webhook messages include a `url` field inside the
-   * media-specific message object (imageMessage, videoMessage, etc.).
+   * Uses Evolution API's getBase64FromMediaMessage endpoint which decrypts
+   * WhatsApp CDN media through the active Baileys session. Falls back to
+   * direct URL download if the API call fails.
    */
   async downloadMediaMessage(_msg: unknown, _type: string): Promise<Buffer | null> {
     const msg = _msg as Record<string, unknown>;
     const message = msg?.message as Record<string, unknown> | undefined;
     if (!message) return null;
 
-    // Check all media message types for a URL
+    // Primary: use Evolution API to decrypt and fetch media via the active session
+    try {
+      const buffer = await getBase64FromMediaMessage(this.instanceName, message);
+      if (buffer && buffer.length > 0) return buffer;
+    } catch (err) {
+      console.error('[EVO-SOCK] getBase64FromMediaMessage failed, trying direct URL:', err);
+    }
+
+    // Fallback: try direct URL download (works for some media types)
     const mediaKeys = [
       'imageMessage',
       'videoMessage',
@@ -272,7 +282,6 @@ export class EvolutionSocketAdapter {
         mediaUrl = mediaMsg.url;
         break;
       }
-      // documentWithCaptionMessage nests further
       if (key === 'documentWithCaptionMessage' && mediaMsg) {
         const inner = (mediaMsg as any)?.message?.documentMessage;
         if (inner?.url && typeof inner.url === 'string') {
@@ -290,7 +299,7 @@ export class EvolutionSocketAdapter {
           return Buffer.from(arrayBuf);
         }
       } catch (err) {
-        console.error('[EVO-SOCK] Failed to download media:', err);
+        console.error('[EVO-SOCK] Failed to download media via URL:', err);
       }
     }
     return null;
