@@ -425,17 +425,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   }
 
   // Edit-on-reply: replace the command text with the result in-place.
-  // Only in groups — DM edits fail with "RemoteJid does not match" in
-  // Evolution API due to JID format mismatches. For other users' messages,
-  // delete the command instead (can't edit someone else's message).
+  // Evolution API stores DM messages with @lid remoteJid but the webhook
+  // sends @s.whatsapp.net — the retry in evolutionClient.updateMessage
+  // looks up the stored @lid key and retries with it.
   const cmdKey = context.rawMessage.key;
-  if (cmdKey.fromMe && context.isGroup) {
+  if (cmdKey.fromMe) {
     try {
       await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cmdKey });
     } catch (editErr: any) {
-      console.error(`[EDIT-CMD] Edit-to-hourglass failed in group ${context.chatJid}:`, editErr?.message || editErr);
+      console.error(`[EDIT-CMD] Edit-to-hourglass failed in ${context.isGroup ? 'group' : 'DM'} ${context.chatJid}:`, editErr?.message || editErr);
     }
-  } else if (!cmdKey.fromMe) {
+  } else {
     try {
       await sock.sendMessage(context.chatJid, { delete: cmdKey });
     } catch {
