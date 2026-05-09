@@ -27,12 +27,26 @@ INSTRUCTIONS — follow ALL of these strictly:
 
 7. **QUICK REVIEW** — A 5-bullet ultra-condensed version for last-minute revision.
 
+TOPIC GROUPING — VERY IMPORTANT:
+If the material covers MULTIPLE topics or sub-topics, you MUST group content under topic headers for readability.
+Use these special prefixes in your string arrays:
+- "## TOPIC NAME" — a topic sub-heading (use ALL CAPS for the topic name)
+- ">> Brief intro text" — a 1-2 sentence introduction/overview for that topic section
+- Regular strings (no prefix) — normal bullet points under that topic
+
+For definitions, use: {"term": "## TOPIC NAME", "definition": "Brief intro for this topic section"} as a header entry, followed by normal definition entries.
+
+Example for keyPoints:
+["## PANCREATIC HORMONES", ">> The pancreas regulates blood glucose through insulin and glucagon.", "Insulin is the ONLY hypoglycaemic hormone...", "## ADRENAL HORMONES", ">> The adrenal glands produce steroids and catecholamines.", "Cortisol is regulated by the HPA axis..."]
+
+If the material covers only ONE topic, you may skip the ## headers.
+
 FORMAT: Return valid JSON with this structure:
 {
-  "keyPoints": ["point 1", "point 2", ...],
-  "examHighlights": ["highlight 1", "highlight 2", ...],
-  "definitions": [{"term": "...", "definition": "..."}],
-  "clinicalCorrelations": ["correlation 1", ...],
+  "keyPoints": ["## TOPIC (if multi-topic)", ">> Brief intro", "point 1", "point 2", ...],
+  "examHighlights": ["## TOPIC (if multi-topic)", ">> Brief intro", "highlight 1", ...],
+  "definitions": [{"term": "## TOPIC", "definition": "Brief intro"}, {"term": "...", "definition": "..."}],
+  "clinicalCorrelations": ["## TOPIC (if multi-topic)", ">> Brief intro", "correlation 1", ...],
   "processes": [{"name": "...", "steps": ["step 1", "step 2", ...]}],
   "mnemonics": [{"topic": "...", "mnemonic": "...", "explanation": "..."}],
   "quickReview": ["point 1", "point 2", "point 3", "point 4", "point 5"]

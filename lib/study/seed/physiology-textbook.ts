@@ -12,14 +12,17 @@ export const physiologyTextbookMaterial = {
 
   summary: {
     definitions: [
+      { term: '## GENERAL ENDOCRINOLOGY', definition: 'Endocrinology is the study of hormones — chemical messengers secreted into the blood by glands or specialised cells. Hormones act on distant target cells via specific receptors.' },
       { term: 'Endocrine Gland', definition: 'Ductless gland that secretes hormones directly into the bloodstream. Examples: pituitary, thyroid, adrenal, pancreas, gonads. Distinguished from exocrine glands which secrete via ducts.' },
       { term: 'Hormone', definition: 'Chemical messenger synthesized and secreted by endocrine cells, transported via blood to target cells where it produces a specific physiological response. Term coined by Ernest Starling (1905).' },
+      { term: '## THYROID GLAND', definition: 'The thyroid is the largest endocrine gland (~20g), located anterior to the trachea. It produces T₃ and T₄ (from follicular cells) and calcitonin (from parafollicular C cells).' },
       { term: 'Thyroid Gland', definition: 'Butterfly-shaped gland in the anterior neck. Largest endocrine gland (~20g). Two lobes connected by isthmus. Produces T₃ (triiodothyronine), T₄ (thyroxine), and calcitonin from parafollicular C cells.' },
       { term: 'Thyroid Follicle', definition: 'Functional unit of thyroid gland. Spherical structure lined by follicular epithelial cells surrounding a central colloid (thyroglobulin). Site of thyroid hormone synthesis and storage.' },
       { term: 'Thyroglobulin', definition: 'Large glycoprotein (660 kDa) stored in thyroid follicular colloid. Serves as the precursor and storage form of thyroid hormones. Contains tyrosine residues that are iodinated to form T₃ and T₄.' },
       { term: 'Iodide Trapping', definition: 'Active transport of iodide (I⁻) into thyroid follicular cells against a concentration gradient (20-40x plasma level). Mediated by Na⁺/I⁻ symporter (NIS). Rate-limiting step controlled by TSH.' },
       { term: 'Thyroid Peroxidase (TPO)', definition: 'Key enzyme in thyroid hormone synthesis. Catalyses: 1) Oxidation of I⁻ to I₂, 2) Iodination of tyrosine residues (organification), 3) Coupling of MIT + DIT to form T₃/T₄. Target of anti-TPO antibodies in Hashimoto\'s.' },
       { term: 'Wolff-Chaikoff Effect', definition: 'Temporary inhibition of thyroid hormone synthesis when exposed to high iodide concentrations. Protective mechanism against hyperthyroidism. Basis for using potassium iodide in thyroid storm.' },
+      { term: '## PARATHYROID & CALCIUM METABOLISM', definition: 'Calcium homeostasis is tightly regulated by PTH, calcitonin, and vitamin D₃ acting on bone, kidney, and gut. The parathyroid glands are the primary sensors and regulators of serum calcium.' },
       { term: 'Parathyroid Glands', definition: 'Four small glands on the posterior surface of thyroid. Chief cells secrete PTH (parathyroid hormone). Oxyphil cells function unknown. Critical for calcium homeostasis.' },
       { term: 'Parathyroid Hormone (PTH)', definition: 'Peptide hormone (84 amino acids) from chief cells. The most important regulator of calcium homeostasis. Actions: ↑bone resorption, ↑renal Ca²⁺ reabsorption, ↑1,25-dihydroxyvitamin D₃ synthesis → ↑intestinal Ca²⁺ absorption.' },
       { term: 'Calcitonin', definition: 'Peptide hormone from parafollicular C cells of thyroid. Actions: ↓bone resorption (inhibits osteoclasts), ↓serum calcium. Physiologically less important than PTH. Used therapeutically in Paget\'s disease and osteoporosis.' },
@@ -33,7 +36,8 @@ export const physiologyTextbookMaterial = {
     ],
 
     keyPoints: [
-      // THYROID GLAND
+      '## THYROID GLAND',
+      '>> The thyroid produces hormones essential for metabolism, growth, and development. Thyroid hormone synthesis depends on iodine and is regulated by the hypothalamic-pituitary-thyroid axis.',
       'Thyroid gland is the LARGEST endocrine gland (~20g). Butterfly-shaped. Located anterior to trachea at C5-T1 level.',
       'Thyroid has 2 types of cells: Follicular cells (produce T₃/T₄) and Parafollicular C cells (produce calcitonin).',
       'Thyroid hormones: T₄ (thyroxine, 90% of output) is the major secretory product. T₃ (triiodothyronine, 10%) is 3-5x more potent. Most T₃ is made by peripheral deiodination of T₄.',
@@ -46,7 +50,8 @@ export const physiologyTextbookMaterial = {
       'TSH (from anterior pituitary) is the main regulator of thyroid function. TRH (from hypothalamus) stimulates TSH release. T₃/T₄ provide negative feedback.',
       'TSH actions on thyroid: ↑iodide trapping, ↑T₃/T₄ synthesis, ↑proteolysis and release, ↑vascularity, ↑gland size (hypertrophy/hyperplasia).',
 
-      // PARATHYROID AND CALCIUM
+      '## PARATHYROID & CALCIUM METABOLISM',
+      '>> Calcium is critical for nerve conduction, muscle contraction, and bone structure. PTH is the master regulator — it raises calcium by acting on bone, kidney, and (indirectly) gut via vitamin D₃.',
       'Normal serum calcium: 9-11 mg/dL (2.25-2.75 mmol/L). 3 forms: ionised/free (50%, physiologically active), protein-bound (40%, mainly albumin), complexed (10%, with PO₄³⁻, citrate).',
       'PTH is the MOST IMPORTANT regulator of calcium homeostasis. Secreted in response to ↓ionised Ca²⁺ (detected by calcium-sensing receptor on chief cells).',
       'PTH actions on BONE: ↑osteoclast activity → bone resorption → ↑Ca²⁺ and PO₄³⁻ release into blood.',
@@ -58,7 +63,8 @@ export const physiologyTextbookMaterial = {
       'Calcium functions: bone structure, muscle contraction, nerve conduction, blood clotting, enzyme activation, hormone secretion, cell signaling.',
       'Hypocalcaemia → increased neuromuscular excitability → tetany (Trousseau sign, Chvostek sign). Hypercalcaemia → decreased excitability → weakness, constipation, renal stones.',
 
-      // GENERAL ENDOCRINOLOGY PRINCIPLES
+      '## GENERAL ENDOCRINOLOGY PRINCIPLES',
+      '>> These are foundational concepts about how hormones are classified, how they travel in blood, how they signal, and how their levels are controlled.',
       'Hormone classification by chemistry: 1) Peptide/protein (insulin, GH, PTH), 2) Steroid (cortisol, aldosterone, sex hormones), 3) Amine (thyroid hormones, catecholamines), 4) Eicosanoid (prostaglandins).',
       'Water-soluble hormones (peptides, catecholamines): act via surface receptors + second messengers. Rapid onset, short duration.',
       'Lipid-soluble hormones (steroids, thyroid): cross membrane → nuclear receptors → gene expression. Slow onset, long duration.',
@@ -68,9 +74,13 @@ export const physiologyTextbookMaterial = {
     ],
 
     examHighlights: [
+      '## THYROID GLAND',
+      '>> These thyroid facts are the most commonly tested in physiology exams.',
       'T₃ is 3-5x more potent than T₄ but T₄ is the major secretory product (90%). Most T₃ is from peripheral conversion.',
       'Only FREE (unbound) thyroid hormone is biologically active. Total T₄ changes with TBG changes but free T₄ remains constant.',
       'Thyroid hormones are the only hormones requiring iodine (a trace element) for synthesis.',
+      '## PARATHYROID & CALCIUM METABOLISM',
+      '>> PTH and vitamin D₃ are the highest-yield calcium topics.',
       'PTH is the MOST IMPORTANT calcium regulator. PTH ↑Ca²⁺ and ↓PO₄³⁻. Calcitonin ↓Ca²⁺.',
       'PTH acts on bone and kidney DIRECTLY but on gut INDIRECTLY (via vitamin D₃).',
       'Trousseau sign (carpal spasm) and Chvostek sign (facial twitch) = signs of hypocalcaemia/tetany.',
@@ -83,11 +93,15 @@ export const physiologyTextbookMaterial = {
     ],
 
     clinicalCorrelations: [
+      '## THYROID DISORDERS',
+      '>> Clinical conditions of the thyroid range from goitre (iodine deficiency) to autoimmune diseases (Graves\', Hashimoto\'s) to thyroid emergencies (thyroid storm).',
       'Goitre: enlarged thyroid gland. Simple/endemic goitre = iodine deficiency → ↓T₃/T₄ → ↑TSH → thyroid hyperplasia. Prevented by iodised salt.',
       'Graves\' disease: autoimmune hyperthyroidism. TSI (thyroid-stimulating immunoglobulin) mimics TSH. Diffuse goitre + exophthalmos + pretibial myxedema. Treatment: antithyroid drugs, radioactive iodine, surgery.',
       'Hashimoto\'s thyroiditis: autoimmune hypothyroidism. Anti-TPO and anti-thyroglobulin antibodies. Painless goitre → gradual destruction → hypothyroidism. Treatment: levothyroxine replacement.',
       'Thyroid storm: life-threatening hyperthyroidism. Triggered by surgery/infection in uncontrolled Graves\'. Features: high fever, tachycardia, altered consciousness. Treatment: propranolol, propylthiouracil, potassium iodide, hydrocortisone.',
       'De Quervain\'s thyroiditis: subacute granulomatous thyroiditis. Post-viral. Painful tender thyroid. Initially hyperthyroid → hypothyroid → recovery. Self-limiting.',
+      '## PARATHYROID & CALCIUM DISORDERS',
+      '>> Calcium disorders present with characteristic clinical features — "stones, bones, groans, and moans" for hyperparathyroidism, and tetany for hypoparathyroidism.',
       'Hypoparathyroidism: most commonly post-thyroidectomy (accidental removal). ↓Ca²⁺, ↑PO₄³⁻, ↓PTH. Tetany, Trousseau, Chvostek. Treatment: calcium + vitamin D supplements.',
       'Primary hyperparathyroidism: usually parathyroid adenoma (80%). ↑Ca²⁺, ↓PO₄³⁻, ↑PTH. "Stones (renal), bones (pain), abdominal groans (constipation), psychiatric moans (depression)."',
       'Osteoporosis: decreased bone density. Risk factors: postmenopausal (↓estrogen), ↓calcium/vitamin D, inactivity. Fractures of vertebrae, hip, wrist. Prevention: exercise, calcium, vitamin D.',
