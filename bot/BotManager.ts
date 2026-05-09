@@ -28,8 +28,66 @@ try {
   HttpsProxyAgent = null;
 }
 import P from 'pino';
+import { readFile } from 'fs/promises';
+import path from 'path';
+import { cacheJSON, getCachedJSON } from './redisSessionCache';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
+
+// ─── Session Welcome Video (sent once on first pairing) ─────────────────────
+
+let sessionWelcomeVideoBuffer: Buffer | null = null;
+
+async function getSessionWelcomeVideo(): Promise<Buffer | null> {
+  if (sessionWelcomeVideoBuffer) return sessionWelcomeVideoBuffer;
+  try {
+    sessionWelcomeVideoBuffer = await readFile(path.resolve(process.cwd(), 'bot', 'assets', 'botwave-demo.mp4'));
+    return sessionWelcomeVideoBuffer;
+  } catch {
+    return null;
+  }
+}
+
+async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any): Promise<void> {
+  const redisKey = `session_welcome:${sessionId}`;
+  try {
+    const alreadySent = await getCachedJSON<boolean>(redisKey);
+    if (alreadySent) return;
+  } catch {}
+
+  try {
+    await cacheJSON(redisKey, true, 365 * 24 * 60 * 60); // 1 year TTL
+  } catch {}
+
+  try {
+    const video = await getSessionWelcomeVideo();
+    const welcomeText =
+      `Welcome to *BotWave*! \u{1F44B}\n\n` +
+      `Your WhatsApp is now connected and ready to go!\n\n` +
+      `Here's what I can do:\n` +
+      `\u{1F3A8} *!sticker* \u2014 Turn images into stickers\n` +
+      `\u{1F916} *!ai [question]* \u2014 AI-powered answers\n` +
+      `\u{1F3B5} *!music [song]* \u2014 Download music\n` +
+      `\u{1F4E5} *!download [url]* \u2014 Download media\n` +
+      `\u{1F3AE} *!trivia* \u2014 Play trivia games\n` +
+      `\u{1F4AC} *!help* \u2014 See all 50+ commands\n\n` +
+      `Add me to your group and type *!help* to get started!\n\n` +
+      `_Created by Decisive Analyst | botwave.online_`;
+
+    if (video) {
+      await sock.sendMessage(ownerJid, {
+        video,
+        caption: welcomeText,
+        gifPlayback: false,
+      });
+    } else {
+      await sock.sendMessage(ownerJid, { text: welcomeText });
+    }
+    console.log(`[SESSION-WELCOME] Sent welcome to ${sessionId}`);
+  } catch (err) {
+    console.error(`[SESSION-WELCOME] Failed to send welcome for ${sessionId}:`, err);
+  }
+}
 
 // Cast to any: pino v10 types are incompatible with Baileys 6.x Logger typedef
 const logger = P({ level: 'info' }) as any;
@@ -544,6 +602,12 @@ export class BotWaveBot {
 
         // Start presence simulation (advanced anti-ban)
         startPresenceSimulation(this.socket, this.sessionId);
+
+        // Send welcome video to owner on first session pairing
+        const ownerJid = this.socket?.user?.id;
+        if (ownerJid) {
+          void sendSessionWelcome(this.sessionId, ownerJid, this.socket);
+        }
       }
     });
 
@@ -953,6 +1017,11 @@ class EvolutionBot {
 
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           this.startPresenceLoop();
+
+          // Send welcome video to owner on first session pairing
+          const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+          const ownerJid = `${cleanPhone}@s.whatsapp.net`;
+          void sendSessionWelcome(this.sessionId, ownerJid, this.socketAdapter);
         } else if (state === 'connecting') {
           unknownStateCount = 0;
           // Waiting for connection — applies to both pairing and reconnect.
