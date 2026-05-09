@@ -243,8 +243,8 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 0 && hour < 6) {
     return {
       isQuietHours: true,
-      extraDelay: 500 + Math.random() * 1500, // 0.5-2s extra delay
-      skipMultiplier: 1.5, // slightly more likely to skip
+      extraDelay: 200 + Math.random() * 500, // 0.2-0.7s extra delay
+      skipMultiplier: 1.2, // slightly more likely to skip
       shortenResponses: false,
     };
   }
@@ -253,7 +253,7 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 6 && hour < 8) {
     return {
       isQuietHours: false,
-      extraDelay: 300 + Math.random() * 700, // 0.3-1s extra delay
+      extraDelay: 100 + Math.random() * 300, // 0.1-0.4s extra delay
       skipMultiplier: 1.0,
       shortenResponses: false,
     };
@@ -263,7 +263,7 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 22) {
     return {
       isQuietHours: false,
-      extraDelay: 200 + Math.random() * 800, // 0.2-1s extra delay
+      extraDelay: 100 + Math.random() * 300, // 0.1-0.4s extra delay
       skipMultiplier: 1.0,
       shortenResponses: false,
     };
@@ -316,9 +316,9 @@ export function shortenForQuietHours(text: string): string {
 export function getAntiPatternDelay(): number {
   const roll = Math.random();
 
-  if (roll < 0.02) {
-    // 2% — brief pause
-    return 2000 + Math.random() * 3000; // 2-5s
+  if (roll < 0.01) {
+    // 1% — brief pause
+    return 1000 + Math.random() * 2000; // 1-3s
   }
 
   return 0; // Normal timing
