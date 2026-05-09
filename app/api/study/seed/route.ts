@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { titles } = body as { titles?: string[] };
+  const { titles, force } = body as { titles?: string[]; force?: boolean };
 
   const supabase = getServiceSupabase();
   const loaded: string[] = [];
@@ -130,8 +130,17 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (existing && existing.length > 0) {
-        loaded.push(`${seed.title} (already exists)`);
-        continue;
+        if (force) {
+          // Force reload: delete old data and re-insert
+          const oldId = existing[0].id;
+          await supabase.from('study_summaries').delete().eq('material_id', oldId);
+          await supabase.from('study_questions').delete().eq('material_id', oldId);
+          await supabase.from('study_flashcards').delete().eq('material_id', oldId);
+          await supabase.from('study_materials').delete().eq('id', oldId);
+        } else {
+          loaded.push(`${seed.title} (already exists)`);
+          continue;
+        }
       }
 
       // Insert material

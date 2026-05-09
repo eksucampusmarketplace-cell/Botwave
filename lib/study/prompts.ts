@@ -55,7 +55,7 @@ FORMAT: Return valid JSON with this structure:
 Be thorough. A medical student's exam grade depends on this. Do not skip necessary things.`;
 }
 
-export function buildQuestionsPrompt(content: string, title: string, count: number = 15): string {
+export function buildQuestionsPrompt(content: string, title: string, count: number = 100): string {
   return `You are a medical exam question writer. Generate ${count} high-quality objective questions from the following material.
 
 MATERIAL TITLE: ${title}
