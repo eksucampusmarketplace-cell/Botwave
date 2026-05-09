@@ -256,7 +256,7 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
     .from('bot_sessions')
     .update({
       pairing_code: code,
-      state: isEmptyCode ? 'qr_pending' : 'qr_pending',
+      state: isEmptyCode ? 'qr_pending' : 'pairing_sent',
       updated_at: dbTimestamp
     })
     .eq('id', sessionId)

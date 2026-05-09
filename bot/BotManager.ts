@@ -713,6 +713,18 @@ class EvolutionBot {
           return true;
         }
 
+        // If connectInstance returns 'unknown' but getInstanceStatus said
+        // 'close'/'connecting', the instance was likely deleted (e.g. 401
+        // logout). Verify by re-checking status — if now 'unknown', the
+        // instance is gone and further retries are pointless.
+        if (connectState === 'unknown') {
+          const recheck = await getInstanceStatus(this.sessionId);
+          if (recheck === 'unknown') {
+            console.log(`[EVO] Instance ${this.sessionId} disappeared after connect attempt (likely 401 logout) — bailing out`);
+            return false;
+          }
+        }
+
         // Connection attempt didn't succeed — retry if attempts remain
         if (attempt < MAX_RECONNECT_RETRIES) {
           const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
@@ -950,6 +962,7 @@ class EvolutionBot {
           } else if (this.isReconnecting && Date.now() - reconnectStart > RECONNECT_TIMEOUT_MS) {
             console.log(`[EVO] Reconnect timed out for ${this.sessionId} — stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
             this.isReconnecting = false;
+            await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             if (this.pollHandle) {
               clearInterval(this.pollHandle);
@@ -983,6 +996,7 @@ class EvolutionBot {
 
             // Reconnection failed — now set needs_reauth
             this.isReconnecting = false;
+            await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth (reconnect failed)`);
 
@@ -1044,6 +1058,7 @@ class EvolutionBot {
             // "active" state in the dashboard.
             console.log(`[EVO] Reconnect ended with ${state} for ${this.sessionId} — marking needs_reauth`);
             this.isReconnecting = false;
+            await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
             if (this.pollHandle) {
               clearInterval(this.pollHandle);
