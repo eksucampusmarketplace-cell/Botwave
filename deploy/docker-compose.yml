@@ -99,6 +99,7 @@ services:
       - WORKER_URLS=http://botwave-worker-1:10000,http://botwave-worker-2:10000,http://botwave-worker-3:10000
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
+      - WEBHOOK_BASE_URL=http://botwave-web:10000
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -126,6 +127,7 @@ services:
       - SELF_URL=http://botwave-worker-1:10000
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
+      - WEBHOOK_BASE_URL=http://botwave-web:10000
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -153,6 +155,7 @@ services:
       - SELF_URL=http://botwave-worker-2:10000
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
+      - WEBHOOK_BASE_URL=http://botwave-web:10000
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -180,6 +183,7 @@ services:
       - SELF_URL=http://botwave-worker-3:10000
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
+      - WEBHOOK_BASE_URL=http://botwave-web:10000
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
