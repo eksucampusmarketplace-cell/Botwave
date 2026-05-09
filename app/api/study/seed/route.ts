@@ -143,6 +143,22 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Build a text representation for the required `content` column
+      const contentParts: string[] = [
+        seed.title,
+        '',
+        ...seed.summary.keyPoints,
+        '',
+        ...seed.summary.examHighlights,
+        '',
+        ...seed.summary.clinicalCorrelations,
+        '',
+        ...seed.summary.definitions.map((d) => `${d.term}: ${d.definition}`),
+        '',
+        ...seed.summary.quickReview,
+      ];
+      const contentText = contentParts.join('\n');
+
       // Insert material
       const { data: material, error: matErr } = await supabase
         .from('study_materials')
@@ -153,6 +169,7 @@ export async function POST(request: NextRequest) {
           file_type: seed.fileType,
           word_count: seed.wordCount,
           status: seed.status,
+          content: contentText,
         })
         .select('id')
         .single();
@@ -176,7 +193,7 @@ export async function POST(request: NextRequest) {
       };
       await supabase
         .from('study_summaries')
-        .insert({ material_id: materialId, content: summaryContent });
+        .insert({ material_id: materialId, user_id: user.id, content: summaryContent });
 
       // Insert questions
       if (seed.questions.length > 0) {
