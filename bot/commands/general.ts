@@ -74,9 +74,22 @@ async function sendHelp(
 !logo preview — View all styles
 !brandkit [name] — Brand kit (3 formats)
 
-*SOCIAL & ADMIN*
+*SOCIAL & GROUP*
+!afk [reason] — Away status (auto-reply)
+!roast / !ghost / !type / !wrap / !profile
+!tldr — Summarize long messages
+!encrypt / !decrypt — Secret messages
+!alias set [name] = [cmd] — Shortcuts
+!chain [cmd1] | [cmd2] — Pipe commands
+!recap — Group chat summary
+!react [emoji] when [word] — Auto-react
+!spy — Group analytics dashboard
+!deadman / !alive — Safety switch
+!birthday set DD/MM — Birthday tracker
+
+*ADMIN*
 !download / !save / !savestatus / !tagall
-!afk / !group / !purge / !settings
+!group / !purge / !settings
 !kick / !promote / !demote
 !welcome / !goodbye / !autoview
 !antidelete / !recover / !recover pr / !refer
@@ -560,6 +573,28 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             usage: '!pomodoro [work_mins] [break_mins]  |  !pomodoro status  |  !pomodoro stop',
             description: 'Pomodoro focus timer. Start a work session (default 25 min) followed by a break (default 5 min). The bot notifies you when to switch.\n\nExamples:\n"!pomodoro" — 25 min work, 5 min break\n"!pomodoro 45 10" — 45 min work, 10 min break\n"!pomodoro status" — check remaining time\n"!pomodoro stop" — cancel timer\n\nAliases: !pomo, !focus',
           },
+        ],
+      },
+      {
+        title: 'SOCIAL & GROUP',
+        commands: [
+          { name: '!afk', usage: '!afk [reason]  |  !afk off', description: 'Set yourself as Away From Keyboard. Anyone who tags or messages you gets an auto-reply with your reason. Auto-clears when you use !afk off.\n\nExamples:\n"!afk studying" — AFK with reason\n"!afk" — AFK without reason\n"!afk off" — disable AFK\n\nAliases: !away, !brb' },
+          { name: '!roast', usage: '!roast [name]  |  reply to message with !roast', description: 'Generates a savage (but friendly) roast. Reply to someone\'s message for a text-specific roast, or use !roast [name] for a general one. 20+ unique templates.\n\nAliases: !burn' },
+          { name: '!tldr', usage: '!tldr  |  reply to long message with !tldr', description: 'Summarizes long messages into key bullet points using sentence scoring by word importance and position. No AI needed.\n\nReply to a long message, or: !tldr [long text]\n\nAliases: !summarize, !summary' },
+          { name: '!encrypt', usage: '!encrypt [PIN] [message]', description: 'Encrypts a message with AES-256 using your PIN. Share the encrypted text — only someone with the PIN can decrypt it.\n\nExample: "!encrypt 1234 This is my secret"\n\nAliases: !enc' },
+          { name: '!decrypt', usage: '!decrypt [PIN] [encrypted text]  |  reply with !decrypt [PIN]', description: 'Decrypts an encrypted message. Reply to the encrypted message or paste it after the PIN.\n\nAliases: !dec' },
+          { name: '!ghost', usage: '!ghost [seconds]  |  !ghost off', description: 'Ghost mode — your messages auto-delete after X seconds (like Snapchat). Default 30s, range 5-300s.\n\nExamples:\n"!ghost 10" — delete after 10s\n"!ghost off" — disable\n"!ghost status" — check current setting\n\nAliases: !vanish' },
+          { name: '!alias', usage: '!alias set [name] = [command]  |  !alias list  |  !alias delete [name]', description: 'Create custom command shortcuts. Map any alias to any command.\n\nExamples:\n"!alias set gm = !ai say good morning poetically"\n"!alias list" — see your aliases\n"!alias delete gm" — remove an alias\n\nAliases: !shortcut' },
+          { name: '!chain', usage: '!chain [cmd1] | [cmd2] | [cmd3]', description: 'Pipe commands together like Unix. Each command runs in sequence (up to 3 steps).\n\nExample: "!chain translate es Hello world | tts"\n\nAliases: !pipe' },
+          { name: '!recap', usage: '!recap [count]', description: 'Smart group chat summarizer. Analyzes the last N messages (default 50) and shows top talkers, hot topics, and time range. Groups only.\n\nExample: "!recap 100"' },
+          { name: '!react', usage: '!react [emoji] when [trigger]  |  !react list  |  !react clear', description: 'Auto-react to messages matching patterns. When someone says the trigger word, bot reacts with the emoji. Groups only.\n\nExamples:\n"!react 🔥 when fire"\n"!react 😂 when lmao"\n\nAliases: !autoreact' },
+          { name: '!spy', usage: '!spy', description: 'Group analytics dashboard. Shows who talks most, most active hours, emoji usage stats, and most used words. Groups only.\n\nAliases: !analytics, !groupstats' },
+          { name: '!deadman', usage: '!deadman [time] [phone] [message]  |  !deadman status  |  !deadman off', description: 'Safety switch. Sets a timer — if you don\'t type !alive before it runs out, the bot sends your message to the specified contact.\n\nExamples:\n"!deadman 24h 2348164143260 If I don\'t check in, something may be wrong"\n"!alive" — reset the timer\n"!deadman off" — cancel\n\nAliases: !deadswitch' },
+          { name: '!alive', usage: '!alive', description: 'Resets your deadman switch timer. Type this to prove you\'re okay.\n\nAliases: !checkin' },
+          { name: '!type', usage: '!type [message]', description: 'Typing animation effect. Bot sends your message character by character with a typewriter animation (max 200 chars). Uses message editing for ban safety.\n\nAliases: !typewriter' },
+          { name: '!birthday', usage: '!birthday set DD/MM  |  !birthday list  |  !birthday next', description: 'Birthday tracker for groups. Set your birthday, see all birthdays, or check who\'s next.\n\nExamples:\n"!birthday set 15/03"\n"!birthday list"\n"!birthday next"\n\nAliases: !bday' },
+          { name: '!profile', usage: '!profile', description: 'Your chat profile card with stats: messages sent, average length, level, XP, badges earned, favorite emojis and words. Level up by chatting more!\n\nAliases: !me, !card' },
+          { name: '!wrap', usage: '!wrap', description: 'Your personal chat Wrapped (like Spotify Wrapped). Shows total messages, peak hour, most active day, longest message, personality type, and more.\n\nAliases: !wrapped, !review' },
         ],
       },
       {

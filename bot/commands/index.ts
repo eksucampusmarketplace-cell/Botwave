@@ -10,6 +10,7 @@ import './admin';
 import './logo';
 import './chatbot';
 import './smart';
+import './social';
 
 // Re-export registry for use by MessageHandler
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';

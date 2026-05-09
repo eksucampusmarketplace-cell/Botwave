@@ -50,6 +50,7 @@ export type CommandCategory =
   | 'creative'
   | 'productivity'
   | 'study'
+  | 'social'
   | 'admin'
   | 'utility';
 
