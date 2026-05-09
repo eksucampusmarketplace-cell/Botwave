@@ -704,13 +704,45 @@ async function handleWhois(context: MessageContext, args: string[], sock: any): 
   }
 
   // ── 5. Domain WHOIS lookup: !whois google.com ──
+  const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
   try {
-    const domain = args[0].replace(/^https?:\/\//, '').split('/')[0];
-    const { stdout } = await execFileAsync('whois', [domain], { timeout: 10000 });
-    const lines = stdout.split('\n').filter((l: string) => l.match(/domain name|registrar|creation|expir|name server|updated/i)).slice(0, 10);
-    await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\n${lines.join('\n') || 'No WHOIS data available.'}`, sock, context.rawMessage.key, context.queue);
-  } catch {
-    await sendReply(context.chatJid, 'WHOIS lookup failed. The whois tool may not be installed on this server.', sock, context.rawMessage.key, context.queue);
+    // Try web API first (works on all servers without whois binary)
+    const response = await axios.get(`https://rdap.org/domain/${encodeURIComponent(domain)}`, { timeout: 10000 });
+    const data = response.data;
+    const lines: string[] = [];
+    if (data.ldhName) lines.push(`*Domain:* ${data.ldhName}`);
+    // Registrar
+    const registrar = data.entities?.find((e: any) => e.roles?.includes('registrar'));
+    if (registrar?.vcardArray?.[1]) {
+      const fn = registrar.vcardArray[1].find((v: any) => v[0] === 'fn');
+      if (fn) lines.push(`*Registrar:* ${fn[3]}`);
+    }
+    // Dates
+    for (const evt of data.events || []) {
+      if (evt.eventAction === 'registration') lines.push(`*Created:* ${evt.eventDate}`);
+      if (evt.eventAction === 'expiration') lines.push(`*Expires:* ${evt.eventDate}`);
+      if (evt.eventAction === 'last changed') lines.push(`*Updated:* ${evt.eventDate}`);
+    }
+    // Name servers
+    const ns = data.nameservers?.map((n: any) => n.ldhName).filter(Boolean);
+    if (ns?.length) lines.push(`*Name Servers:* ${ns.join(', ')}`);
+    // Status
+    if (data.status?.length) lines.push(`*Status:* ${data.status.slice(0, 3).join(', ')}`);
+
+    if (lines.length === 0) {
+      await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\nNo WHOIS data available for this domain.`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\n${lines.join('\n')}`, sock, context.rawMessage.key, context.queue);
+    }
+  } catch (rdapErr: any) {
+    // Fallback: try system whois binary
+    try {
+      const { stdout } = await execFileAsync('whois', [domain], { timeout: 10000 });
+      const filtered = stdout.split('\n').filter((l: string) => l.match(/domain name|registrar|creation|expir|name server|updated/i)).slice(0, 10);
+      await sendReply(context.chatJid, `*WHOIS: ${domain}*\n\n${filtered.join('\n') || 'No WHOIS data available.'}`, sock, context.rawMessage.key, context.queue);
+    } catch {
+      await sendReply(context.chatJid, `WHOIS lookup failed for "${domain}". The domain may not exist or WHOIS data is unavailable.`, sock, context.rawMessage.key, context.queue);
+    }
   }
 }
 
