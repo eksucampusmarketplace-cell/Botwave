@@ -147,17 +147,14 @@ export async function POST(request: NextRequest) {
 
     if (workerUrl && INTERNAL_SECRET) {
       try {
-        await fetch(`${workerUrl}/api/internal/session`, {
+        await fetch(`${workerUrl}/api/internal/trigger-sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-internal-secret': INTERNAL_SECRET,
           },
-          body: JSON.stringify({
-            action: 'start',
-            sessionId: session.id,
-          }),
         });
+        console.log(`[API] POST session: notified worker ${workerUrl} to sync immediately`);
       } catch (err) {
         console.error(`[API] POST session: FAILED to notify worker ${workerUrl} for session ${session.id}:`, err);
       }
@@ -369,26 +366,21 @@ export async function PATCH(request: NextRequest) {
     // Notify the newly assigned worker to pick up the session
     const workerUrl = newWorkerUrl;
     if (workerUrl && INTERNAL_SECRET) {
-      console.log(`[API] Notifying worker ${workerUrl} to start session ${sessionId}`);
+      console.log(`[API] Notifying worker ${workerUrl} to sync immediately for session ${sessionId}`);
       try {
-        const notifyRes = await fetch(`${workerUrl}/api/internal/session`, {
+        await fetch(`${workerUrl}/api/internal/trigger-sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-internal-secret': INTERNAL_SECRET,
           },
-          body: JSON.stringify({
-            action: 'start',
-            sessionId,
-          }),
         });
-        const notifyData = await notifyRes.json().catch(() => ({}));
-        console.log(`[API] Worker notification response: status=${notifyRes.status} data=${JSON.stringify(notifyData).slice(0, 200)}`);
+        console.log(`[API] Worker ${workerUrl} notified to sync`);
       } catch (err) {
         console.error(`[API] Failed to notify worker ${workerUrl} for reconnect:`, err);
       }
     } else {
-      console.log(`[API] No worker assigned for session ${sessionId} — main service sync loop will pick it up within 5s`);
+      console.log(`[API] No worker assigned for session ${sessionId} — sync loop will pick it up within 5s`);
     }
 
     await invalidateSessions(user.id);

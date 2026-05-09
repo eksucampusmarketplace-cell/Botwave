@@ -75,6 +75,7 @@ services:
       - SELF_URL=http://botwave-web:10000
       - IS_WORKER=false
       - EVOLUTION_API_URL=http://evolution-api:8080
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     command: ["node", "dist/bot/server/customServer.js"]
     networks:
       - botwave-net
@@ -103,6 +104,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
       - WEBHOOK_BASE_URL=http://botwave-web:10000
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -131,6 +133,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
       - WEBHOOK_BASE_URL=http://botwave-web:10000
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -159,6 +162,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
       - WEBHOOK_BASE_URL=http://botwave-web:10000
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -187,6 +191,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
       - WEBHOOK_BASE_URL=http://botwave-web:10000
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
