@@ -419,13 +419,23 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     trackCommand(context.sessionId, context.userId, context.senderJid, commandName);
   }
 
-  // Delete the command message so "!stats" etc. doesn't show in chat.
-  // The command handler will send a fresh result message.
+  // Edit-on-reply: replace the command text with the result in-place.
+  // For fromMe messages (bot owner), edit the command to "Processing..."
+  // so it transforms into the result. For other users' messages, delete
+  // the command instead (can't edit someone else's message).
   const cmdKey = context.rawMessage.key;
-  try {
-    await sock.sendMessage(context.chatJid, { delete: cmdKey });
-  } catch {
-    // Deletion may fail (not admin in group, or API limitation). Continue.
+  if (cmdKey.fromMe) {
+    try {
+      await sock.sendMessage(context.chatJid, { text: '\u23f3', edit: cmdKey });
+    } catch {
+      // Edit may fail — continue anyway
+    }
+  } else {
+    try {
+      await sock.sendMessage(context.chatJid, { delete: cmdKey });
+    } catch {
+      // Deletion may fail (not admin in group). Continue.
+    }
   }
 
   await delay(500 + Math.random() * 1500);
