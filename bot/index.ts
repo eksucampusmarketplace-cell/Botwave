@@ -295,7 +295,8 @@ async function start() {
 const healthPort = parseInt(process.env.PORT || '10000', 10);
 
 const healthServer = createHttpServer((req, res) => {
-  if (req.url === '/api/health' && req.method === 'GET') {
+  const url = (req.url || '').split('?')[0];
+  if (url === '/api/health') {
     const memUsage = process.memoryUsage();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -308,17 +309,19 @@ const healthServer = createHttpServer((req, res) => {
       memory: { rssMB: Math.round(memUsage.rss / 1024 / 1024) },
     }));
   } else {
+    console.log(`[HEALTH] 404 for ${req.method} ${req.url}`);
     res.writeHead(404);
     res.end();
   }
 });
 
+// Start health server immediately so keepalive checks work during bot startup
+healthServer.listen(healthPort, () => {
+  console.log(`[BOT] Health endpoint ready on :${healthPort}/api/health`);
+});
+
 console.log('[BOT] Bot process starting...');
-start().then(() => {
-  healthServer.listen(healthPort, () => {
-    console.log(`[BOT] Health endpoint ready on :${healthPort}/api/health`);
-  });
-}).catch((error) => {
+start().catch((error) => {
   console.error('[BOT] FATAL: Bot startup failed:', error);
   process.exit(1);
 });
