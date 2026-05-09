@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
-  title: 'Best Free WhatsApp Bot for Groups in Nigeria (2025)',
-  description: 'Looking for the best free WhatsApp bot for managing groups in Nigeria? BotWave offers anti-spam, polls, games, AI chat, stickers, and 50+ commands. Free forever.',
+    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+    description: 'Looking for the best free WhatsApp bot for managing groups in Nigeria? BotWave offers anti-spam, polls, games, AI chat, stickers, and 50+ commands. Free forever.',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],
   openGraph: {
-    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2025)',
-    description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
+        title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+        description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
     url: 'https://www.botwave.online/blog/best-free-whatsapp-bot-groups-nigeria',
     type: 'article',
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Best Free WhatsApp Bot for Groups in Nigeria (2025)
+# Best Free WhatsApp Bot for Groups in Nigeria (2026)
 
-**Last updated: May 2025** | 6 min read
+**Last updated: May 2026** | 6 min read
 
 If you manage a WhatsApp group in Nigeria — whether it's a class group, church group, business community, or just a group of friends — you know how chaotic things can get. Spam, off-topic messages, people asking the same questions repeatedly. What if a bot could handle all of that for you?
 
@@ -109,11 +109,11 @@ That's it. The bot works in every group where your connected WhatsApp number is 
 
 ## Conclusion
 
-If you're managing a WhatsApp group in Nigeria, BotWave is the best free option available in 2025. It's free, it's easy to set up, it's built for Nigerian users, and it has more features than most paid alternatives.
+If you're managing a WhatsApp group in Nigeria, BotWave is the best free option available in 2026. It's free, it's easy to set up, it's built for Nigerian users, and it has more features than most paid alternatives.
 
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 3, 2025" readTime="6 min read" />;
+  return <BlogArticle content={content} date="May 3, 2026" readTime="6 min read" />;
 }

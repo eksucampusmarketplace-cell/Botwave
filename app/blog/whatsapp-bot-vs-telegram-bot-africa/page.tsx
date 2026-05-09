@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2025)',
+  title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2026)',
   description: 'Telegram bots are popular worldwide, but in Africa WhatsApp dominates. We compare WhatsApp bots vs Telegram bots for features, reach, cost, and ease of setup. BotWave vs Evolution API vs Baileys.',
   keywords: ['whatsapp bot vs telegram bot', 'telegram bot alternative', 'whatsapp bot africa', 'whatsapp vs telegram', 'botwave vs evolution api', 'best messaging bot africa'],
   openGraph: {
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2025)
+# WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2026)
 
-**Last updated: May 2025** | 7 min read
+**Last updated: May 2026** | 7 min read
 
 If you're building a community, running a business, or managing a group in Africa, you've probably wondered: should I use a Telegram bot or a WhatsApp bot? Both platforms have bots, but they're very different — especially when it comes to the African market.
 
@@ -131,5 +131,5 @@ If you're a developer who wants to build custom WhatsApp integrations, Evolution
 `;
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 5, 2025" readTime="7 min read" />;
+  return <BlogArticle content={content} date="May 5, 2026" readTime="7 min read" />;
 }

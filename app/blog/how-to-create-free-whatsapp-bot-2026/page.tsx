@@ -2,22 +2,22 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
-  title: 'How to Create a Free WhatsApp Bot in 2025 (No Coding Needed)',
+  title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)',
   description: 'Step-by-step guide to creating your own WhatsApp bot for free using BotWave. Set up stickers, AI chat, games, polls, and 50+ commands in under 2 minutes. No coding required.',
-  keywords: ['how to create whatsapp bot', 'free whatsapp bot', 'whatsapp bot tutorial', 'make whatsapp bot 2025', 'whatsapp bot no coding', 'botwave tutorial'],
+  keywords: ['how to create whatsapp bot', 'free whatsapp bot', 'whatsapp bot tutorial', 'make whatsapp bot 2026', 'whatsapp bot no coding', 'botwave tutorial'],
   openGraph: {
-    title: 'How to Create a Free WhatsApp Bot in 2025 (No Coding)',
+    title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding)',
     description: 'Your WhatsApp bot can be live in 2 minutes. Free. No coding. Here\'s exactly how.',
-    url: 'https://www.botwave.online/blog/how-to-create-free-whatsapp-bot-2025',
+    url: 'https://www.botwave.online/blog/how-to-create-free-whatsapp-bot-2026',
     type: 'article',
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
   },
 };
 
 const content = `
-# How to Create a Free WhatsApp Bot in 2025 (No Coding Needed)
+# How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)
 
-**Last updated: May 2025** | 5 min read
+**Last updated: May 2026** | 5 min read
 
 Everyone thinks creating a WhatsApp bot requires coding skills, expensive servers, or paying $20-50/month for some sketchy service. That's not true anymore. With BotWave, you can have a fully functional WhatsApp bot running in under 2 minutes — completely free.
 
@@ -106,11 +106,11 @@ Once your bot is running:
 
 ## Conclusion
 
-Creating a WhatsApp bot in 2025 doesn't require any coding, any money, or any technical knowledge. BotWave gives you everything for free — just sign up, scan QR, and your bot is live.
+Creating a WhatsApp bot in 2026 doesn't require any coding, any money, or any technical knowledge. BotWave gives you everything for free — just sign up, scan QR, and your bot is live.
 
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 1, 2025" readTime="5 min read" />;
+  return <BlogArticle content={content} date="May 1, 2026" readTime="5 min read" />;
 }

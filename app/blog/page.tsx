@@ -6,18 +6,18 @@ import Navbar from '@/components/layout/Navbar';
 
 const posts = [
   {
-    slug: 'how-to-create-free-whatsapp-bot-2025',
-    title: 'How to Create a Free WhatsApp Bot in 2025 (No Coding Needed)',
+        slug: 'how-to-create-free-whatsapp-bot-2026',
+        title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)',
     excerpt: 'Step-by-step guide to setting up your own WhatsApp bot for free using BotWave. Stickers, AI chat, games, polls — all live in under 2 minutes.',
-    date: '2025-05-01',
+    date: '2026-05-01',
     readTime: '5 min read',
     tags: ['Tutorial', 'WhatsApp Bot', 'Free'],
   },
   {
     slug: 'best-free-whatsapp-bot-groups-nigeria',
-    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2025)',
+    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
     excerpt: 'Looking for a WhatsApp bot to manage your campus group, business chat, or community? Here are the features that matter and why BotWave is the top choice.',
-    date: '2025-05-03',
+    date: '2026-05-03',
     readTime: '6 min read',
     tags: ['Nigeria', 'Groups', 'Best Of'],
   },
@@ -25,7 +25,7 @@ const posts = [
     slug: 'whatsapp-bot-vs-telegram-bot-africa',
     title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?',
     excerpt: 'Telegram bots have been around longer, but WhatsApp dominates Africa. We compare features, reach, and cost to help you pick the right platform.',
-    date: '2025-05-05',
+    date: '2026-05-05',
     readTime: '7 min read',
     tags: ['Comparison', 'Telegram', 'Africa'],
   },
