@@ -243,9 +243,9 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 0 && hour < 6) {
     return {
       isQuietHours: true,
-      extraDelay: 5000 + Math.random() * 10000, // 5-15s extra delay
-      skipMultiplier: 3.0, // 3x more likely to skip
-      shortenResponses: true,
+      extraDelay: 500 + Math.random() * 1500, // 0.5-2s extra delay
+      skipMultiplier: 1.5, // slightly more likely to skip
+      shortenResponses: false,
     };
   }
 
@@ -253,8 +253,8 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 6 && hour < 8) {
     return {
       isQuietHours: false,
-      extraDelay: 2000 + Math.random() * 3000, // 2-5s extra delay
-      skipMultiplier: 1.5,
+      extraDelay: 300 + Math.random() * 700, // 0.3-1s extra delay
+      skipMultiplier: 1.0,
       shortenResponses: false,
     };
   }
@@ -263,8 +263,8 @@ export function getActivityConfig(): ActivityConfig {
   if (hour >= 22) {
     return {
       isQuietHours: false,
-      extraDelay: 1000 + Math.random() * 3000, // 1-4s extra delay
-      skipMultiplier: 1.5,
+      extraDelay: 200 + Math.random() * 800, // 0.2-1s extra delay
+      skipMultiplier: 1.0,
       shortenResponses: false,
     };
   }
@@ -316,17 +316,9 @@ export function shortenForQuietHours(text: string): string {
 export function getAntiPatternDelay(): number {
   const roll = Math.random();
 
-  if (roll < 0.01) {
-    // 1% — long pause (went afk briefly)
-    return 60000 + Math.random() * 60000; // 60-120s
-  }
-  if (roll < 0.04) {
-    // 3% — grabbed something
-    return 30000 + Math.random() * 30000; // 30-60s
-  }
-  if (roll < 0.09) {
-    // 5% — briefly distracted
-    return 15000 + Math.random() * 15000; // 15-30s
+  if (roll < 0.02) {
+    // 2% — brief pause
+    return 2000 + Math.random() * 3000; // 2-5s
   }
 
   return 0; // Normal timing
@@ -377,13 +369,11 @@ export function trackContactReply(contactJid: string): void {
 export function getTypingSpeedMultiplier(): number {
   const hour = new Date().getHours();
 
-  if (hour >= 0 && hour < 6) return 1.8 + Math.random() * 0.5;   // Very slow late night
-  if (hour >= 6 && hour < 9) return 1.3 + Math.random() * 0.3;   // Slow morning
-  if (hour >= 9 && hour < 12) return 0.9 + Math.random() * 0.2;  // Normal-fast morning
-  if (hour >= 12 && hour < 14) return 1.1 + Math.random() * 0.2; // Lunch = slightly slow
-  if (hour >= 14 && hour < 18) return 0.8 + Math.random() * 0.3; // Fastest — afternoon
-  if (hour >= 18 && hour < 22) return 1.0 + Math.random() * 0.2; // Normal evening
-  return 1.4 + Math.random() * 0.3;                               // Late evening
+  if (hour >= 0 && hour < 6) return 1.0 + Math.random() * 0.2;   // Slightly slow late night
+  if (hour >= 6 && hour < 9) return 0.9 + Math.random() * 0.2;   // Normal morning
+  if (hour >= 9 && hour < 18) return 0.8 + Math.random() * 0.2;  // Fast daytime
+  if (hour >= 18 && hour < 22) return 0.9 + Math.random() * 0.2; // Normal evening
+  return 1.0 + Math.random() * 0.2;                               // Late evening
 }
 
 // ─── Reply Order Randomization (Groups) ───────────────────────────────────────
@@ -412,9 +402,9 @@ export function getGroupReplyDelay(groupJid: string): number {
   const recentCount = timestamps.filter(t => Date.now() - t < GROUP_ACTIVITY_WINDOW).length;
 
   if (recentCount <= 1) return 0; // Quiet group — reply normally
-  if (recentCount <= 3) return 1000 + Math.random() * 2000; // Moderate — 1-3s extra
-  if (recentCount <= 6) return 2000 + Math.random() * 4000; // Busy — 2-6s extra
-  return 4000 + Math.random() * 6000; // Very busy — 4-10s extra ("catching up")
+  if (recentCount <= 3) return 300 + Math.random() * 700; // Moderate — 0.3-1s extra
+  if (recentCount <= 6) return 500 + Math.random() * 1500; // Busy — 0.5-2s extra
+  return 1000 + Math.random() * 2000; // Very busy — 1-3s extra
 }
 
 // ─── Connection Fingerprint Diversity ─────────────────────────────────────────
@@ -478,7 +468,7 @@ export async function naturalDelay(sessionId: string): Promise<void> {
 const burstTracker: Map<string, number[]> = new Map();
 const BURST_WINDOW = 10_000; // 10 seconds
 const BURST_THRESHOLD = 3; // 3 replies in 10s = burst
-const BURST_COOLDOWN = 8_000; // 8 second cooldown after burst
+const BURST_COOLDOWN = 2_000; // 2 second cooldown after burst
 
 export function checkBurstAndDelay(sessionId: string): number {
   const now = Date.now();
@@ -489,7 +479,7 @@ export function checkBurstAndDelay(sessionId: string): number {
 
   if (recent.length >= BURST_THRESHOLD) {
     // Burst detected — add cooldown
-    return BURST_COOLDOWN + Math.random() * 4000; // 8-12s cooldown
+    return BURST_COOLDOWN + Math.random() * 1000; // 2-3s cooldown
   }
   return 0;
 }
