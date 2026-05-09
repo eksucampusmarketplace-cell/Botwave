@@ -52,6 +52,9 @@ const REWARDS_TTL = 300; // 5 min
 const PAYMENT_HISTORY_TTL = 120; // 2 min
 const PROFILE_TTL = 600; // 10 min — username→id mapping rarely changes
 const API_KEYS_TTL = 300; // 5 min
+const STATS_TTL = 60; // 1 min — stats refresh frequently
+const HEALTH_TTL = 60; // 1 min — health data refreshes frequently
+const ANALYTICS_TTL = 120; // 2 min — analytics aggregation is expensive
 
 // ─── Generic Helpers ─────────────────────────────────────────────────────────
 
@@ -302,4 +305,46 @@ export async function cacheReferralByCode(code: string, data: unknown): Promise<
 
 export async function invalidateReferralByCode(code: string): Promise<void> {
   await apiCacheDel(`refcode:${code.toUpperCase()}`);
+}
+
+// ─── Bot Stats ──────────────────────────────────────────────────────────────
+
+export async function getCachedStats(userId: string): Promise<Record<string, unknown> | null> {
+  return apiCacheGet<Record<string, unknown>>(`stats:${userId}`);
+}
+
+export async function cacheStats(userId: string, data: unknown): Promise<void> {
+  await apiCacheSet(`stats:${userId}`, data, STATS_TTL);
+}
+
+export async function invalidateStats(userId: string): Promise<void> {
+  await apiCacheDel(`stats:${userId}`);
+}
+
+// ─── Bot Health ─────────────────────────────────────────────────────────────
+
+export async function getCachedHealth(userId: string): Promise<Record<string, unknown> | null> {
+  return apiCacheGet<Record<string, unknown>>(`health:${userId}`);
+}
+
+export async function cacheHealth(userId: string, data: unknown): Promise<void> {
+  await apiCacheSet(`health:${userId}`, data, HEALTH_TTL);
+}
+
+export async function invalidateHealth(userId: string): Promise<void> {
+  await apiCacheDel(`health:${userId}`);
+}
+
+// ─── Bot Analytics ──────────────────────────────────────────────────────────
+
+export async function getCachedAnalytics(userId: string): Promise<Record<string, unknown> | null> {
+  return apiCacheGet<Record<string, unknown>>(`analytics:${userId}`);
+}
+
+export async function cacheAnalytics(userId: string, data: unknown): Promise<void> {
+  await apiCacheSet(`analytics:${userId}`, data, ANALYTICS_TTL);
+}
+
+export async function invalidateAnalytics(userId: string): Promise<void> {
+  await apiCacheDel(`analytics:${userId}`);
 }
