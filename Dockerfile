@@ -68,13 +68,16 @@ COPY --from=bot-builder /app/dist ./dist
 COPY --from=web-builder /app/.next ./.next
 COPY --from=web-builder /app/public ./public
 
-# Copy source (needed for Next.js runtime)
-COPY --from=web-builder /app/next.config.mjs ./
+# Copy source (needed for Next.js runtime and bot)
+COPY --from=web-builder /app/next.config.js ./
+COPY --from=web-builder /app/postcss.config.js ./
 COPY --from=web-builder /app/tailwind.config.ts ./
 COPY --from=web-builder /app/tsconfig.json ./
 COPY --from=web-builder /app/app ./app
 COPY --from=web-builder /app/components ./components
 COPY --from=web-builder /app/lib ./lib
+COPY --from=web-builder /app/bot ./bot
+COPY --from=web-builder /app/server ./server
 
 EXPOSE 10000
 
