@@ -705,6 +705,22 @@ export async function updateMessage(
   throw new Error(`updateMessage failed (${res.status}): ${body.slice(0, 200)}`);
 }
 
+// Fetch recent messages for a chat from Evolution API's database.
+export async function findMessages(instanceName: string, where: Record<string, unknown>, limit = 50): Promise<any[]> {
+  try {
+    const res = await apiFetch(`${BASE}/chat/findMessages/${instanceName}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ where, limit }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : data?.messages || data?.data || [];
+  } catch {
+    return [];
+  }
+}
+
 // Look up a message by its key.id in Evolution API's database.
 async function findMessageByKeyId(instanceName: string, keyId: string): Promise<any> {
   const res = await apiFetch(`${BASE}/chat/findMessages/${instanceName}`, {
@@ -852,12 +868,13 @@ function ensureKeepAlive(): void {
 // Download media from a message via Evolution API's getBase64FromMediaMessage endpoint.
 // This is more reliable than direct CDN download because Evolution API uses the
 // active Baileys client to decrypt and fetch the media.
-export async function getBase64FromMediaMessage(instanceName: string, message: Record<string, unknown>): Promise<Buffer | null> {
+// `fullMessage` must be the full WhatsApp message with both `key` and `message` properties.
+export async function getBase64FromMediaMessage(instanceName: string, fullMessage: Record<string, unknown>): Promise<Buffer | null> {
   try {
     const res = await apiFetch(`${BASE}/chat/getBase64FromMediaMessage/${instanceName}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message: fullMessage }),
     });
     if (!res.ok) return null;
     const data: any = await res.json();

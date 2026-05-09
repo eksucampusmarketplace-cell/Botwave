@@ -363,8 +363,9 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    // Ghost mode: schedule deletion of the user's own messages
-    if (!fromMe) {
+    // Ghost mode: schedule deletion of messages from users who enabled it.
+    // Works for both the bot owner (fromMe=true) and other users in groups.
+    {
       const ghostDelay = getGhostDelay(senderJid);
       if (ghostDelay && message.key) {
         setTimeout(async () => {
@@ -404,8 +405,8 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   let commandName = parts[0].toLowerCase();
   let args = parts.slice(1);
 
-  // Alias expansion
-  const aliasExpansion = expandAlias(context.senderJid, commandName);
+  // Alias expansion (async — loads from Redis if not cached)
+  const aliasExpansion = await expandAlias(context.senderJid, commandName);
   if (aliasExpansion) {
     const aliasParts = aliasExpansion.replace(/^!/, '').split(' ');
     commandName = aliasParts[0].toLowerCase();
