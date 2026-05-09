@@ -736,7 +736,7 @@ async function handleQuiz(context: MessageContext, args: string[], sock: any): P
     }
 
     // Extract key sentences and generate fill-in-the-blank questions
-    const sentences = sourceText.split(/[.!?\n]+/).map(s => s.trim()).filter(s => s.length > 15);
+    const sentences = sourceText.split(/[.!?\n]+/).map((s: string) => s.trim()).filter((s: string) => s.length > 15);
     if (sentences.length < 2) {
       await sendReply(context.chatJid, 'Not enough content to generate a quiz. Provide more detailed notes.', sock, context.rawMessage.key, context.queue);
       return;
@@ -748,7 +748,7 @@ async function handleQuiz(context: MessageContext, args: string[], sock: any): P
 
     for (let i = 0; i < count; i++) {
       const sentence = shuffled[i];
-      const words = sentence.split(/\s+/).filter(w => w.length > 3);
+      const words = sentence.split(/\s+/).filter((w: string) => w.length > 3);
       if (words.length < 3) continue;
       // Pick a random significant word to blank out
       const blankIdx = Math.floor(Math.random() * words.length);
