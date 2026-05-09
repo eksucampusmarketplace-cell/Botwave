@@ -22,13 +22,30 @@ FROM deps AS web-builder
 WORKDIR /app
 COPY . .
 
-# Next.js needs NEXT_PUBLIC_* vars at build time (they get inlined into client JS)
+# Next.js needs ALL env vars at build time because:
+# - NEXT_PUBLIC_* get inlined into client JS
+# - Server-side vars are needed because Next.js imports route modules
+#   during build to read their config (e.g. export const dynamic)
+#   and bot/database.ts throws if SUPABASE keys are missing at import time
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_APP_URL
+ARG SUPABASE_SERVICE_ROLE_KEY
+ARG REDIS_URL
+ARG EVOLUTION_API_URL=http://evolution-api:8080
+ARG EVOLUTION_API_KEY=placeholder
+ARG BOT_SECRET_KEY=placeholder
+ARG INTERNAL_SECRET=placeholder
+
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+ENV REDIS_URL=$REDIS_URL
+ENV EVOLUTION_API_URL=$EVOLUTION_API_URL
+ENV EVOLUTION_API_KEY=$EVOLUTION_API_KEY
+ENV BOT_SECRET_KEY=$BOT_SECRET_KEY
+ENV INTERNAL_SECRET=$INTERNAL_SECRET
 
 RUN npm run build
 
