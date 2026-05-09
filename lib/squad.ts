@@ -143,14 +143,20 @@ const SQUAD_API_TIMEOUT_MS = 10_000; // 10s timeout for Squad API calls
 export async function initializePayment(params: InitPaymentParams): Promise<InitPaymentResult> {
   const secretKey = getSecretKey();
   if (!secretKey) {
+    console.error('[SQUAD] initializePayment BLOCKED: SQUAD_SECRET_KEY is empty/missing');
     return { success: false, error: 'SQUAD_SECRET_KEY not configured' };
   }
+
+  const baseUrl = getBaseUrl();
+  const amountKobo = params.amount * 100;
+  console.log(`[SQUAD] initializePayment START: ref=${params.transactionRef} email=${params.email} amount=₦${params.amount} (${amountKobo} kobo) baseUrl=${baseUrl}`);
 
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SQUAD_API_TIMEOUT_MS);
+    const startMs = Date.now();
 
-    const res = await fetch(`${getBaseUrl()}/transaction/initiate`, {
+    const res = await fetch(`${baseUrl}/transaction/initiate`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${secretKey}`,
@@ -158,7 +164,7 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
       },
       body: JSON.stringify({
         email: params.email,
-        amount: params.amount * 100, // Convert Naira to kobo
+        amount: amountKobo,
         initiate_type: 'inline',
         currency: 'NGN',
         transaction_ref: params.transactionRef,
@@ -171,25 +177,42 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
     });
     clearTimeout(timeout);
 
-    const data = await res.json() as Record<string, unknown>;
+    const elapsedMs = Date.now() - startMs;
+    console.log(`[SQUAD] initializePayment HTTP ${res.status} in ${elapsedMs}ms ref=${params.transactionRef}`);
+
+    const rawText = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      console.error(`[SQUAD] initializePayment non-JSON response (${res.status}): ${rawText.slice(0, 500)}`);
+      return { success: false, error: `Squad returned non-JSON (HTTP ${res.status})` };
+    }
+
+    console.log(`[SQUAD] initializePayment response: status=${data.status} message=${data.message || 'none'} hasData=${!!data.data}`);
 
     if (data.status === 200) {
       const innerData = data.data as Record<string, unknown> | undefined;
+      const checkoutUrl = innerData?.checkout_url as string | undefined;
+      console.log(`[SQUAD] initializePayment SUCCESS: ref=${params.transactionRef} checkoutUrl=${checkoutUrl || 'NONE'}`);
       return {
         success: true,
-        checkoutUrl: innerData?.checkout_url as string | undefined,
+        checkoutUrl,
         transactionRef: params.transactionRef,
       };
     }
 
+    console.error(`[SQUAD] initializePayment FAILED: status=${data.status} message=${data.message} ref=${params.transactionRef}`);
     return {
       success: false,
       error: (data.message as string) || `Squad returned status: ${data.status}`,
     };
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
+      console.error(`[SQUAD] initializePayment TIMEOUT after ${SQUAD_API_TIMEOUT_MS}ms ref=${params.transactionRef}`);
       return { success: false, error: 'Squad API timed out — please try again' };
     }
+    console.error(`[SQUAD] initializePayment EXCEPTION ref=${params.transactionRef}:`, err);
     return {
       success: false,
       error: `Squad API error: ${err instanceof Error ? err.message : String(err)}`,
@@ -210,14 +233,19 @@ export interface VerifyPaymentResult {
 export async function verifyPayment(transactionRef: string): Promise<VerifyPaymentResult> {
   const secretKey = getSecretKey();
   if (!secretKey) {
+    console.error('[SQUAD] verifyPayment BLOCKED: SQUAD_SECRET_KEY is empty/missing');
     return { success: false, error: 'SQUAD_SECRET_KEY not configured' };
   }
+
+  const baseUrl = getBaseUrl();
+  console.log(`[SQUAD] verifyPayment START: ref=${transactionRef} baseUrl=${baseUrl}`);
 
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SQUAD_API_TIMEOUT_MS);
+    const startMs = Date.now();
 
-    const res = await fetch(`${getBaseUrl()}/transaction/verify/${transactionRef}`, {
+    const res = await fetch(`${baseUrl}/transaction/verify/${transactionRef}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${secretKey}`,
@@ -226,10 +254,23 @@ export async function verifyPayment(transactionRef: string): Promise<VerifyPayme
     });
     clearTimeout(timeout);
 
-    const data = await res.json() as Record<string, unknown>;
+    const elapsedMs = Date.now() - startMs;
+    console.log(`[SQUAD] verifyPayment HTTP ${res.status} in ${elapsedMs}ms ref=${transactionRef}`);
+
+    const rawText = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      console.error(`[SQUAD] verifyPayment non-JSON response (${res.status}): ${rawText.slice(0, 500)}`);
+      return { success: false, error: `Squad returned non-JSON (HTTP ${res.status})` };
+    }
+
+    console.log(`[SQUAD] verifyPayment response: status=${data.status} hasData=${!!data.data} ref=${transactionRef}`);
 
     if (data.status === 200) {
       const innerData = data.data as Record<string, unknown> | undefined;
+      console.log(`[SQUAD] verifyPayment SUCCESS: ref=${transactionRef} txStatus=${innerData?.transaction_status}`);
       return {
         success: true,
         transactionRef: innerData?.transaction_ref as string | undefined,
@@ -238,11 +279,14 @@ export async function verifyPayment(transactionRef: string): Promise<VerifyPayme
       };
     }
 
+    console.error(`[SQUAD] verifyPayment FAILED: status=${data.status} message=${data.message} ref=${transactionRef}`);
     return { success: false, error: (data.message as string) || 'Verification failed' };
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
+      console.error(`[SQUAD] verifyPayment TIMEOUT after ${SQUAD_API_TIMEOUT_MS}ms ref=${transactionRef}`);
       return { success: false, error: 'Squad verify timed out — please try again' };
     }
+    console.error(`[SQUAD] verifyPayment EXCEPTION ref=${transactionRef}:`, err);
     return {
       success: false,
       error: `Squad verify error: ${err instanceof Error ? err.message : String(err)}`,
