@@ -708,13 +708,14 @@ export async function updateMessage(
       console.log(`[EDIT-DEBUG] DB lookup: stored key=${JSON.stringify(stored?.key)}`);
       if (stored?.key?.remoteJid && stored.key.remoteJid !== key.remoteJid) {
         const storedJid = stored.key.remoteJid;
-        const storedNumber = storedJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
+        // Pass the full stored JID (including @lid) as `number` — Evolution API's
+        // createJid() preserves @lid suffix, so it will match the stored remoteJid.
         const fixedKey = { ...key, remoteJid: storedJid };
         console.log(`[EDIT-DEBUG] Retrying with stored JID: ${storedJid} (was ${key.remoteJid})`);
         const res2 = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ number: storedNumber, key: fixedKey, text }),
+          body: JSON.stringify({ number: storedJid, key: fixedKey, text }),
         });
         if (res2.ok) {
           console.log(`[EDIT-DEBUG] updateMessage SUCCESS on retry with stored JID`);
