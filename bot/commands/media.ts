@@ -13,6 +13,18 @@ import os from 'os';
 
 const execFileAsync = promisify(execFile);
 
+let _ffmpegAvailable: boolean | null = null;
+async function isFFmpegAvailable(): Promise<boolean> {
+  if (_ffmpegAvailable !== null) return _ffmpegAvailable;
+  try {
+    await execFileAsync('ffmpeg', ['-version'], { timeout: 5000 });
+    _ffmpegAvailable = true;
+  } catch {
+    _ffmpegAvailable = false;
+  }
+  return _ffmpegAvailable;
+}
+
 const YT_COOKIES_PATH = path.join(os.tmpdir(), 'yt-cookies.txt');
 let ytCookiesReady = false;
 
@@ -848,7 +860,8 @@ async function handleToImg(context: MessageContext, sock: any): Promise<void> {
       return;
     }
 
-    const pngBuffer = await sharp(buffer).png().toBuffer();
+    // Use pages:1 to extract only the first frame — handles both static and animated WebP
+    const pngBuffer = await sharp(buffer, { pages: 1 }).png().toBuffer();
     await sock.sendMessage(context.chatJid, { image: pngBuffer, caption: 'Sticker converted to image' }, { quoted: context.rawMessage });
   } catch (error) {
     console.error('[TOIMG] Error:', error);
@@ -874,20 +887,30 @@ async function handleToGif(context: MessageContext, sock: any): Promise<void> {
       return;
     }
 
-    const tmpIn = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.webp`);
-    const tmpOut = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.mp4`);
-    await writeFile(tmpIn, buffer);
+    const hasFFmpeg = await isFFmpegAvailable();
 
-    await execFileAsync('ffmpeg', ['-y', '-i', tmpIn, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', tmpOut], { timeout: 30000 });
-    const { readFile } = await import('fs/promises');
-    const gifBuffer = await readFile(tmpOut);
+    if (hasFFmpeg) {
+      // Preferred: ffmpeg produces better quality video with gifPlayback
+      const tmpIn = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.webp`);
+      const tmpOut = path.join(os.tmpdir(), `botwave_togif_${Date.now()}.mp4`);
+      await writeFile(tmpIn, buffer);
 
-    await sock.sendMessage(context.chatJid, { video: gifBuffer, gifPlayback: true, caption: 'Converted to GIF' }, { quoted: context.rawMessage });
-    await unlink(tmpIn).catch(() => {});
-    await unlink(tmpOut).catch(() => {});
+      await execFileAsync('ffmpeg', ['-y', '-i', tmpIn, '-movflags', 'faststart', '-pix_fmt', 'yuv420p', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', tmpOut], { timeout: 30000 });
+      const { readFile } = await import('fs/promises');
+      const mp4Buffer = await readFile(tmpOut);
+
+      await sock.sendMessage(context.chatJid, { video: mp4Buffer, gifPlayback: true, caption: 'Converted to GIF' }, { quoted: context.rawMessage });
+      await unlink(tmpIn).catch(() => {});
+      await unlink(tmpOut).catch(() => {});
+    } else {
+      // Fallback: use sharp to convert animated WebP → GIF (no ffmpeg needed)
+      console.log('[TOGIF] ffmpeg not available, using sharp fallback');
+      const gifBuffer = await sharp(buffer, { animated: true }).gif().toBuffer();
+      await sock.sendMessage(context.chatJid, { video: gifBuffer, gifPlayback: true, caption: 'Converted to GIF' }, { quoted: context.rawMessage });
+    }
   } catch (error) {
     console.error('[TOGIF] Error:', error);
-    await sendReply(context.chatJid, 'Failed to convert to GIF. ffmpeg may not be available.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Failed to convert to GIF. Please try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
@@ -901,6 +924,12 @@ async function handleToAudio(context: MessageContext, sock: any): Promise<void> 
   }
 
   try {
+    const hasFFmpeg = await isFFmpegAvailable();
+    if (!hasFFmpeg) {
+      await sendReply(context.chatJid, 'Audio extraction requires ffmpeg which is not installed on this server.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
     const msgForDownload = { ...context.rawMessage, message: quotedMsg };
     const buffer = await downloadMedia(msgForDownload, sock);
     if (!buffer) {
@@ -921,7 +950,7 @@ async function handleToAudio(context: MessageContext, sock: any): Promise<void> 
     await unlink(tmpOut).catch(() => {});
   } catch (error) {
     console.error('[TOAUDIO] Error:', error);
-    await sendReply(context.chatJid, 'Failed to extract audio. ffmpeg may not be available.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Failed to extract audio. Please try again.', sock, context.rawMessage.key, context.queue);
   }
 }
 
