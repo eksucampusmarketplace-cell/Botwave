@@ -363,14 +363,14 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    // Ghost mode: schedule deletion of bot replies to ghost-mode users
-    if (fromMe && !isCommand) {
+    // Ghost mode: schedule deletion of the user's own messages
+    if (!fromMe) {
       const ghostDelay = getGhostDelay(senderJid);
       if (ghostDelay && message.key) {
         setTimeout(async () => {
           try {
             await sock.sendMessage(chatJid, { delete: message.key });
-          } catch { /* deletion may fail, non-critical */ }
+          } catch { /* deletion may fail if bot is not admin, non-critical */ }
         }, ghostDelay * 1000);
       }
     }
