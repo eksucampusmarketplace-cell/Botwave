@@ -18,6 +18,8 @@ import {
   fetchProfilePictureUrl,
   fetchProfile,
   checkOnWhatsApp,
+  updateMessage,
+  deleteForEveryone,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -47,6 +49,24 @@ export class EvolutionSocketAdapter {
     // Status broadcast — route through the dedicated sendStatus endpoint
     if (jid === 'status@broadcast') {
       return this.sendStatusMessage(content, _options);
+    }
+
+    // Edit an existing message
+    if (content.edit && content.text && typeof content.text === 'string') {
+      const key = content.edit as { remoteJid: string; fromMe: boolean; id: string };
+      return updateMessage(this.instanceName, key, content.text);
+    }
+
+    // Delete a message for everyone
+    if (content.delete) {
+      const key = content.delete as { remoteJid: string; fromMe: boolean; id: string; participant?: string };
+      return deleteForEveryone(this.instanceName, key);
+    }
+
+    // React to a message
+    if (content.react) {
+      // Reactions are not yet supported via Evolution REST — skip silently
+      return null;
     }
 
     const to = jid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');

@@ -68,18 +68,6 @@ export function getHelpHint(command: string): string {
   return hints[Math.floor(Math.random() * hints.length)];
 }
 
-// ─── Text Detection ──────────────────────────────────────────────────────────
-
-export function isTextOnlyContent(content: any): boolean {
-  if (typeof content === 'string') return true;
-  if (content && typeof content === 'object' && content.text &&
-      !content.image && !content.sticker && !content.video &&
-      !content.audio && !content.document) {
-    return true;
-  }
-  return false;
-}
-
 // ─── Send Reply ──────────────────────────────────────────────────────────────
 
 export async function sendReply(
@@ -104,21 +92,8 @@ export async function sendReply(
     processedContent = { ...processedContent, text: addMessageJitter(processedContent.text) };
   }
 
-  if (isTextOnlyContent(processedContent) && msgKey?.fromMe) {
-    const textContent = typeof processedContent === 'string'
-      ? processedContent
-      : processedContent.text;
-
-    await delay(300 + Math.random() * 700);
-
-    try {
-      await sock.sendMessage(jid, { text: textContent, edit: msgKey });
-      return;
-    } catch (editErr) {
-      console.error('[EDIT] Edit failed, falling back to normal send:', editErr);
-    }
-  }
-
+  // Command messages are deleted before the handler runs, so we always send
+  // a fresh message instead of trying to edit the (now-deleted) original.
   const isAudioContent = processedContent?.audio || processedContent?.mimetype?.includes('audio');
   try {
     await sock.sendPresenceUpdate(isAudioContent ? 'recording' : 'composing', jid);

@@ -659,6 +659,34 @@ export async function sendAudio(instanceName: string, to: string, audioBase64: s
   return res.json();
 }
 
+// Edit (update) an existing text message
+export async function updateMessage(
+  instanceName: string,
+  key: { remoteJid: string; fromMe: boolean; id: string },
+  text: string,
+) {
+  const number = key.remoteJid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');
+  const res = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ number, key, text }),
+  });
+  return res.json();
+}
+
+// Delete a message for everyone
+export async function deleteForEveryone(
+  instanceName: string,
+  key: { remoteJid: string; fromMe: boolean; id: string; participant?: string },
+) {
+  const res = await apiFetch(`${BASE}/chat/deleteMessageForEveryone/${instanceName}`, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify(key),
+  });
+  return res.json();
+}
+
 // Mark messages as read
 export async function markAsRead(instanceName: string, keys: Array<{ remoteJid: string; fromMe: boolean; id: string }>) {
   const res = await apiFetch(`${BASE}/chat/markMessageAsRead/${instanceName}`, {

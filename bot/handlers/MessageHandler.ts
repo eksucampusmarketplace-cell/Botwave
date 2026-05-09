@@ -419,6 +419,15 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     trackCommand(context.sessionId, context.userId, context.senderJid, commandName);
   }
 
+  // Delete the command message so "!stats" etc. doesn't show in chat.
+  // The command handler will send a fresh result message.
+  const cmdKey = context.rawMessage.key;
+  try {
+    await sock.sendMessage(context.chatJid, { delete: cmdKey });
+  } catch {
+    // Deletion may fail (not admin in group, or API limitation). Continue.
+  }
+
   await delay(500 + Math.random() * 1500);
 
   const vars: TemplateVars = {
