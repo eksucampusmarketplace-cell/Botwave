@@ -9,7 +9,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'BotWave - Free WhatsApp Bot That Actually Works (2025) | Stop Paying for Bots',
+    default: 'BotWave - Free WhatsApp Bot That Actually Works (2026) | Stop Paying for Bots',
     template: '%s | BotWave',
   },
   description: 'Everyone is paying $20/mo for WhatsApp bots that barely work. BotWave is 100% free with 50+ commands — stickers, AI chat, games, anti-spam, media downloads. No coding. No catch. Works in Nigeria & worldwide. Why is nobody talking about this?',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     'whatsapp bot platform',
     'telegram bot alternative',
     'free bot platform',
-    'best free bot 2025',
+    'best free bot 2026',
     'chat bot free',
     'messaging bot',
     'bot maker free',
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     'whatsapp bot commands',
     'whatsapp bot sticker',
     'whatsapp chatbot free',
-    'whatsapp bot 2025',
+    'whatsapp bot 2026',
     'best whatsapp bot',
     'whatsapp bot for class groups',
     'whatsapp bot for business nigeria',
