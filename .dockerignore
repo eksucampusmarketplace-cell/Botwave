@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.git
+.env
+.env.*
+deploy/.env.*
+!deploy/.env.*.example
+*.md
+.vscode
+.idea

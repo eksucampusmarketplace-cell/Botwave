@@ -1,0 +1,182 @@
+version: "3.8"
+
+# ========================================================
+# BotWave + Evolution API — Full Stack Docker Compose
+# Deploy on Contabo VPS (Ubuntu + Docker)
+# ========================================================
+
+services:
+  # ── Evolution API ──────────────────────────────────────
+  evolution-api:
+    container_name: evolution_api
+    image: evoapicloud/evolution-api:latest
+    restart: always
+    depends_on:
+      - redis
+      - evolution-postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - botwave-net
+    env_file:
+      - .env.evolution
+
+  # ── Evolution Postgres ─────────────────────────────────
+  evolution-postgres:
+    container_name: evolution_postgres
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${EVOLUTION_DB_NAME:-evolution}
+      POSTGRES_USER: ${EVOLUTION_DB_USER:-evolution}
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASS:-evolution_secret_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - botwave-net
+    expose:
+      - "5432"
+
+  # ── Redis (shared: Evolution + BotWave bot) ────────────
+  redis:
+    container_name: botwave_redis
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - botwave-net
+    expose:
+      - "6379"
+
+  # ── BotWave Web (Next.js + Socket.io game server) ─────
+  botwave-web:
+    container_name: botwave_web
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:10000"
+    env_file:
+      - .env.botwave
+    environment:
+      - PORT=10000
+      - NODE_ENV=production
+    command: ["node", "dist/bot/server/customServer.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      - redis
+
+  # ── BotWave Bot (Main orchestrator) ────────────────────
+  botwave-bot:
+    container_name: botwave_bot_main
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.botwave
+    environment:
+      - IS_WORKER=false
+      - SELF_URL=http://botwave-bot:10000
+      - WORKER_URLS=http://botwave-worker-1:10000,http://botwave-worker-2:10000,http://botwave-worker-3:10000
+      - REDIS_URL=redis://redis:6379
+      - EVOLUTION_API_URL=http://evolution-api:8080
+    command: ["node", "dist/bot/bot/index.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      - redis
+      - evolution-api
+
+  # ── BotWave Worker 1 ───────────────────────────────────
+  botwave-worker-1:
+    container_name: botwave_worker_1
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.botwave
+    environment:
+      - IS_WORKER=true
+      - SELF_URL=http://botwave-worker-1:10000
+      - REDIS_URL=redis://redis:6379
+      - EVOLUTION_API_URL=http://evolution-api:8080
+    command: ["node", "dist/bot/bot/index.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      - redis
+      - evolution-api
+
+  # ── BotWave Worker 2 ───────────────────────────────────
+  botwave-worker-2:
+    container_name: botwave_worker_2
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.botwave
+    environment:
+      - IS_WORKER=true
+      - SELF_URL=http://botwave-worker-2:10000
+      - REDIS_URL=redis://redis:6379
+      - EVOLUTION_API_URL=http://evolution-api:8080
+    command: ["node", "dist/bot/bot/index.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      - redis
+      - evolution-api
+
+  # ── BotWave Worker 3 ───────────────────────────────────
+  botwave-worker-3:
+    container_name: botwave_worker_3
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.botwave
+    environment:
+      - IS_WORKER=true
+      - SELF_URL=http://botwave-worker-3:10000
+      - REDIS_URL=redis://redis:6379
+      - EVOLUTION_API_URL=http://evolution-api:8080
+    command: ["node", "dist/bot/bot/index.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      - redis
+      - evolution-api
+
+  # ── Portainer (Web UI for Docker management) ───────────
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - botwave-net
+
+volumes:
+  evolution_instances:
+  postgres_data:
+  redis_data:
+  portainer_data:
+
+networks:
+  botwave-net:
+    name: botwave-net
+    driver: bridge
