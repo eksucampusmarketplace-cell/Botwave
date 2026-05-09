@@ -241,19 +241,11 @@ async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type:
     const data = resp.data?.data;
     if (!data) throw new Error('No data in tikwm response');
 
-    // Video posts — check video first (images array can contain thumbnails even for videos)
-    const videoUrl = data.hdplay || data.play;
-    if (videoUrl) {
-      const mediaResp = await axios.get(videoUrl, {
-        responseType: 'arraybuffer',
-        timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
-      });
-      return { buffer: Buffer.from(mediaResp.data), type: 'video' };
-    }
+    const toAbsolute = (u: string) => u && u.startsWith('/') ? `https://www.tikwm.com${u}` : u;
+    const isSlideshow = data.duration === 0 && data.images && data.images.length > 0;
 
-    // Photo/slideshow posts — only use images when no video URL exists
-    if (data.images && data.images.length > 0) {
+    // Photo/slideshow posts: images are the actual content
+    if (isSlideshow) {
       const imageUrl = data.images[0];
       const mediaResp = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
@@ -261,6 +253,17 @@ async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type:
         maxContentLength: 50 * 1024 * 1024,
       });
       return { buffer: Buffer.from(mediaResp.data), type: 'image' };
+    }
+
+    // Video posts
+    const videoUrl = toAbsolute(data.hdplay || data.play);
+    if (videoUrl) {
+      const mediaResp = await axios.get(videoUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      return { buffer: Buffer.from(mediaResp.data), type: 'video' };
     }
   } catch (err: any) {
     console.error('[DOWNLOAD-TIKTOK] tikwm API failed:', err?.message || err);
