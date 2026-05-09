@@ -4,9 +4,18 @@
  */
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
-  const pdfParse = (await import('pdf-parse')).default;
-  const result = await pdfParse(buffer);
-  return result.text || '';
+  // pdfjs-dist legacy build works in Node.js without canvas
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const uint8 = new Uint8Array(buffer);
+  const doc = await pdfjsLib.getDocument({ data: uint8 }).promise;
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const items = content.items as Array<{ str: string }>;
+    text += items.map((item) => item.str).join(' ') + '\n';
+  }
+  return text.trim();
 }
 
 export async function extractDocxText(buffer: Buffer): Promise<string> {
@@ -33,10 +42,9 @@ export async function extractTextFromFile(
     }
     case 'ppt':
     case 'pptx': {
-      // PPT/PPTX: extract whatever text is embedded
-      // Full slide extraction requires python-pptx; fallback to raw text
-      const text = buffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n');
-      return { text: text.trim(), fileType: 'ppt' };
+      // PPT/PPTX: extract embedded text strings
+      const raw = buffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, '\n');
+      return { text: raw.trim(), fileType: 'ppt' };
     }
     case 'txt':
     case 'md': {
