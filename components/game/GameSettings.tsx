@@ -57,18 +57,18 @@ export default function GameSettings({
       <div>
         <h4 className="text-sm font-semibold text-gray-300 mb-2">Time Control</h4>
         <div className="grid grid-cols-3 gap-2">
-          {TIME_CONTROLS.map((tc) => (
+          {Object.entries(TIME_CONTROLS).map(([id, seconds]) => (
             <button
-              key={tc.id}
-              onClick={() => onTimeControlChange(tc.id)}
+              key={id}
+              onClick={() => onTimeControlChange(id)}
               className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                timeControl === tc.id
+                timeControl === id
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
               }`}
             >
-              <div className="font-medium">{tc.name}</div>
-              <div className="text-[10px] opacity-70">{tc.minutes}m</div>
+              <div className="font-medium">{id.charAt(0).toUpperCase() + id.slice(1)}</div>
+              <div className="text-[10px] opacity-70">{Math.floor(seconds / 60)}m</div>
             </button>
           ))}
         </div>
