@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getCachedStats, cacheStats } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const cached = await getCachedStats(user.id);
+    if (cached) return NextResponse.json({ success: true, data: cached });
 
     // Get user's sessions
     const { data: sessions } = await supabase
@@ -65,16 +69,15 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        totalMessages,
-        totalCommands,
-        uptimePercent,
-        activeSessions: activeSessions.length,
-        totalSessions: (sessions || []).length,
-      },
-    });
+    const statsData = {
+      totalMessages,
+      totalCommands,
+      uptimePercent,
+      activeSessions: activeSessions.length,
+      totalSessions: (sessions || []).length,
+    };
+    await cacheStats(user.id, statsData);
+    return NextResponse.json({ success: true, data: statsData });
   } catch (error) {
     console.error('Stats API error:', error);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });

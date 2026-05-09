@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getCachedHealth, cacheHealth } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const cached = await getCachedHealth(user.id);
+    if (cached) return NextResponse.json({ success: true, data: cached });
 
     const { data: sessions } = await supabase
       .from('bot_sessions')
@@ -68,19 +72,18 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        errors24h: errCount.count || 0,
-        reconnects24h: reconnCount.count || 0,
-        messagesDelivered24h: sentCount.count || 0,
-        messagesFailed24h: failedCount.count || 0,
-        webhookRetries: retryCount.count || 0,
-        webhookDeadLetters: dlCount.count || 0,
-        uptimeBySession,
-        recentEvents: recentEvents.data || [],
-      },
-    });
+    const healthData = {
+      errors24h: errCount.count || 0,
+      reconnects24h: reconnCount.count || 0,
+      messagesDelivered24h: sentCount.count || 0,
+      messagesFailed24h: failedCount.count || 0,
+      webhookRetries: retryCount.count || 0,
+      webhookDeadLetters: dlCount.count || 0,
+      uptimeBySession,
+      recentEvents: recentEvents.data || [],
+    };
+    await cacheHealth(user.id, healthData);
+    return NextResponse.json({ success: true, data: healthData });
   } catch (error) {
     console.error('Health API error:', error);
     return NextResponse.json({ error: 'Failed to fetch health data' }, { status: 500 });
