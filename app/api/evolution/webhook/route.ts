@@ -429,12 +429,24 @@ export async function POST(request: NextRequest) {
       for (const msg of messages) {
         const from = msg.key?.remoteJid || 'unknown';
         const fromMe = msg.key?.fromMe;
+        const msgStatus = msg.status;
         const text =
           msg.message?.conversation ||
           msg.message?.extendedTextMessage?.text ||
           msg.message?.imageMessage?.caption ||
           '';
-        console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} text="${text.slice(0, 80)}"`);
+        console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} status=${msgStatus || 'none'} text="${text.slice(0, 80)}"`);
+
+        // Skip ACK status updates — Evolution API fires messages.upsert for
+        // both new messages AND delivery status changes (SERVER_ACK,
+        // DELIVERY_ACK, READ, PLAYED). Only process genuinely new messages.
+        // Baileys uses numeric codes: 2=SERVER_ACK 3=DELIVERY_ACK 4=READ 5=PLAYED
+        const ACK_STATUSES = ['SERVER_ACK', 'DELIVERY_ACK', 'READ', 'PLAYED'];
+        const ACK_CODES = [2, 3, 4, 5];
+        if (msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)))) {
+          console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
+          continue;
+        }
 
         // Route status broadcasts to the StatusViewer handler (respects
         // the autoview toggle which defaults to OFF).

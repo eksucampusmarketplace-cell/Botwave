@@ -212,27 +212,20 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     integration: 'WHATSAPP-BAILEYS',
   };
 
-  // Assign a proxy from the pool so each instance connects from a different IP.
-  // This prevents WhatsApp from seeing too many concurrent unregistered
-  // WebSocket connections from the same Render IP (which triggers 428 bans).
+  // Pick a proxy for this instance (applied after creation via separate API call).
   const proxyIndex = proxyCounter;
   const proxy = getNextProxy();
   if (proxy) {
-    payload.proxyHost = proxy.host;
-    payload.proxyPort = proxy.port;
-    payload.proxyProtocol = proxy.protocol;
-    payload.proxyUsername = proxy.username;
-    payload.proxyPassword = proxy.password;
-    console.log(`[PROXY] Assigned proxy #${(proxyIndex % PROXY_LIST.length) + 1}/${PROXY_LIST.length} to instance ${instanceName}: ${proxy.host}:${proxy.port} (user: ${proxy.username}, protocol: ${proxy.protocol})`);
+    console.log(`[PROXY] Will assign proxy #${(proxyIndex % PROXY_LIST.length) + 1}/${PROXY_LIST.length} to instance ${instanceName}: ${proxy.host}:${proxy.port} (user: ${proxy.username}, protocol: ${proxy.protocol})`);
   } else {
     console.warn(`[PROXY] No proxy available for instance ${instanceName} — connecting with server IP (risk of 428 ban)`);
   }
 
-  // NOTE: Do NOT include webhook config in the create payload.
-  // Evolution API's webhook upsert can fail with a FK constraint error when
-  // pgbouncer is used (the Instance record isn't visible to the webhook insert
-  // within the same request). Instead, rely on WEBHOOK_GLOBAL_URL for event
-  // delivery and set per-instance webhook separately after creation succeeds.
+  // NOTE: Do NOT include proxy or webhook config in the create payload.
+  // Evolution API v2.3.7 has a race condition where setProxy is called on
+  // waInstances[name] before the instance is fully registered, causing
+  // "Cannot read properties of undefined (reading 'setProxy')" errors.
+  // Instead, set proxy separately after creation succeeds.
 
   const res = await withRetry(async () => {
     const r = await apiFetch(`${BASE}/instance/create`, {
@@ -278,12 +271,33 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   const instanceId = result?.instance?.instanceId || 'none';
   console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${instanceId}`);
 
-  // Log proxy verification status from Evolution API response
-  if (proxy) {
-    if (res.status === 201 || res.status === 200) {
-      console.log(`[PROXY] Proxy VERIFIED for ${instanceName} — Evolution API accepted proxy ${proxy.host}:${proxy.port} (testProxy passed, IP changed)`);
-    } else if (res.status === 400) {
-      console.error(`[PROXY] Proxy REJECTED for ${instanceName} — Evolution API says proxy ${proxy.host}:${proxy.port} is invalid (check credentials or connectivity)`);
+  // Set proxy via separate API call after instance is fully created.
+  // This avoids the race condition where setProxy is called before the
+  // instance is registered in waInstances.
+  if (proxy && (res.status === 200 || res.status === 201)) {
+    // Small delay to let Evolution API fully register the instance
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          enabled: true,
+          host: proxy.host,
+          port: proxy.port,
+          protocol: proxy.protocol,
+          username: proxy.username,
+          password: proxy.password,
+        }),
+      });
+      if (proxyRes.status === 200 || proxyRes.status === 201) {
+        console.log(`[PROXY] Proxy SET for ${instanceName} — ${proxy.host}:${proxy.port}`);
+      } else {
+        const body = await proxyRes.text().catch(() => '');
+        console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}): ${body.slice(0, 200)}`);
+      }
+    } catch (err) {
+      console.warn(`[PROXY] setProxy call failed for ${instanceName} (non-fatal):`, err);
     }
   }
 
