@@ -71,6 +71,136 @@ interface Flashcard {
 
 type Tab = 'upload' | 'reading' | 'quiz' | 'flashcards' | 'progress';
 
+// ─── Topic Grouping Helpers ─────────────────────────────────────────────────
+// Convention: items starting with "## " are topic headers,
+// items starting with ">> " are brief topic introductions,
+// everything else is a regular bullet point.
+
+interface TopicSection {
+  topic: string | null;
+  intro: string | null;
+  items: string[];
+}
+
+function groupByTopic(items: string[]): TopicSection[] {
+  const sections: TopicSection[] = [];
+  let current: TopicSection = { topic: null, intro: null, items: [] };
+
+  for (const item of items) {
+    if (item.startsWith('## ')) {
+      if (current.topic || current.items.length > 0) {
+        sections.push(current);
+      }
+      current = { topic: item.slice(3), intro: null, items: [] };
+    } else if (item.startsWith('>> ')) {
+      current.intro = item.slice(3);
+    } else {
+      current.items.push(item);
+    }
+  }
+  if (current.topic || current.items.length > 0) {
+    sections.push(current);
+  }
+  return sections;
+}
+
+function hasTopicMarkers(items: string[]): boolean {
+  return items.some((item) => item.startsWith('## '));
+}
+
+interface GroupedDefinition {
+  topic: string | null;
+  intro: string | null;
+  definitions: { term: string; definition: string }[];
+}
+
+function groupDefinitionsByComment(
+  definitions: { term: string; definition: string }[],
+  keyPoints: string[],
+): GroupedDefinition[] {
+  if (!hasTopicMarkers(keyPoints)) return [{ topic: null, intro: null, definitions }];
+
+  const topicSections = groupByTopic(keyPoints);
+  const topicNames = topicSections.filter((s) => s.topic).map((s) => s.topic!);
+  if (topicNames.length === 0) return [{ topic: null, intro: null, definitions }];
+
+  const groups: GroupedDefinition[] = topicNames.map((t) => ({
+    topic: t,
+    intro: null,
+    definitions: [],
+  }));
+  const ungrouped: GroupedDefinition = { topic: null, intro: null, definitions: [] };
+
+  for (const d of definitions) {
+    let matched = false;
+    for (const g of groups) {
+      const topicLower = g.topic!.toLowerCase();
+      const termLower = `${d.term} ${d.definition}`.toLowerCase();
+      if (termLower.includes(topicLower.split(' ')[0]) || topicLower.includes(d.term.toLowerCase().split(' ')[0])) {
+        g.definitions.push(d);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) ungrouped.definitions.push(d);
+  }
+
+  const result = groups.filter((g) => g.definitions.length > 0);
+  if (ungrouped.definitions.length > 0) result.push(ungrouped);
+  return result;
+}
+
+function TopicGroupedList({
+  items,
+  bulletColor = 'var(--primary)',
+  bulletChar = '\u2022',
+  textColor = 'var(--text-secondary)',
+}: {
+  items: string[];
+  bulletColor?: string;
+  bulletChar?: string;
+  textColor?: string;
+}) {
+  if (!hasTopicMarkers(items)) {
+    return (
+      <ul className="space-y-2">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm" style={{ color: textColor }}>
+            <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  const sections = groupByTopic(items);
+  return (
+    <div className="space-y-5">
+      {sections.map((section, si) => (
+        <div key={si}>
+          {section.topic && (
+            <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)] pb-1.5">
+              {section.topic}
+            </h4>
+          )}
+          {section.intro && (
+            <p className="text-sm text-[var(--text-muted)] italic mb-2">{section.intro}</p>
+          )}
+          <ul className="space-y-2">
+            {section.items.map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: textColor }}>
+                <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export default function StudyPage() {
@@ -692,14 +822,7 @@ export default function StudyPage() {
                     {summary.keyPoints?.length > 0 && (
                       <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
                         <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-3">{'\u{1F4CC}'} Key Points</h3>
-                        <ul className="space-y-2">
-                          {summary.keyPoints.map((point, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                              <span className="text-[var(--primary)] mt-0.5 shrink-0">&bull;</span>
-                              <span>{point}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <TopicGroupedList items={summary.keyPoints} bulletColor="var(--primary)" textColor="var(--text-secondary)" />
                       </div>
                     )}
 
@@ -707,44 +830,74 @@ export default function StudyPage() {
                     {summary.examHighlights?.length > 0 && (
                       <div className="bg-yellow-500/5 rounded-2xl border border-yellow-500/20 p-6">
                         <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-wider mb-3">{'\u2B50'} Exam Highlights</h3>
-                        <ul className="space-y-2">
-                          {summary.examHighlights.map((h, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
-                              <span className="text-yellow-400 mt-0.5 shrink-0">{'\u2605'}</span>
-                              <span>{h}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <TopicGroupedList items={summary.examHighlights} bulletColor="#facc15" bulletChar={'\u2605'} textColor="var(--text-primary)" />
                       </div>
                     )}
 
                     {/* Definitions */}
-                    {summary.definitions?.length > 0 && (
-                      <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
-                        <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-3">{'\u{1F4D6}'} Definitions</h3>
-                        <div className="space-y-3">
-                          {summary.definitions.map((d, i) => (
-                            <div key={i} className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--border)]">
-                              <span className="font-semibold text-[var(--primary)] text-sm">{d.term}</span>
-                              <p className="text-sm text-[var(--text-secondary)] mt-1">{d.definition}</p>
+                    {summary.definitions?.length > 0 && (() => {
+                      const hasHeaders = summary.definitions.some((d) => d.term.startsWith('## '));
+                      if (!hasHeaders) {
+                        return (
+                          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+                            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-3">{'\u{1F4D6}'} Definitions</h3>
+                            <div className="space-y-3">
+                              {summary.definitions.map((d, i) => (
+                                <div key={i} className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--border)]">
+                                  <span className="font-semibold text-[var(--primary)] text-sm">{d.term}</span>
+                                  <p className="text-sm text-[var(--text-secondary)] mt-1">{d.definition}</p>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+                        );
+                      }
+                      const defGroups: { topic: string | null; intro: string | null; defs: { term: string; definition: string }[] }[] = [];
+                      let currentGroup: { topic: string | null; intro: string | null; defs: { term: string; definition: string }[] } = { topic: null, intro: null, defs: [] };
+                      for (const d of summary.definitions) {
+                        if (d.term.startsWith('## ')) {
+                          if (currentGroup.topic || currentGroup.defs.length > 0) defGroups.push(currentGroup);
+                          currentGroup = { topic: d.term.slice(3), intro: d.definition || null, defs: [] };
+                        } else {
+                          currentGroup.defs.push(d);
+                        }
+                      }
+                      if (currentGroup.topic || currentGroup.defs.length > 0) defGroups.push(currentGroup);
+
+                      return (
+                        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+                          <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-3">{'\u{1F4D6}'} Definitions</h3>
+                          <div className="space-y-5">
+                            {defGroups.map((group, gi) => (
+                              <div key={gi}>
+                                {group.topic && (
+                                  <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)] pb-1.5">
+                                    {group.topic}
+                                  </h4>
+                                )}
+                                {group.intro && (
+                                  <p className="text-sm text-[var(--text-muted)] italic mb-2">{group.intro}</p>
+                                )}
+                                <div className="space-y-3">
+                                  {group.defs.map((d, i) => (
+                                    <div key={i} className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--border)]">
+                                      <span className="font-semibold text-[var(--primary)] text-sm">{d.term}</span>
+                                      <p className="text-sm text-[var(--text-secondary)] mt-1">{d.definition}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Clinical Correlations */}
                     {summary.clinicalCorrelations?.length > 0 && (
                       <div className="bg-blue-500/5 rounded-2xl border border-blue-500/20 p-6">
                         <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-3">{'\u{1FA7A}'} Clinical Correlations</h3>
-                        <ul className="space-y-2">
-                          {summary.clinicalCorrelations.map((c, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                              <span className="text-blue-400 mt-0.5 shrink-0">&bull;</span>
-                              <span>{c}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <TopicGroupedList items={summary.clinicalCorrelations} bulletColor="#60a5fa" textColor="var(--text-secondary)" />
                       </div>
                     )}
 
