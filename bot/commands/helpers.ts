@@ -92,8 +92,29 @@ export async function sendReply(
     processedContent = { ...processedContent, text: addMessageJitter(processedContent.text) };
   }
 
-  // Command messages are deleted before the handler runs, so we always send
-  // a fresh message instead of trying to edit the (now-deleted) original.
+  // Edit-in-place: if the original message is fromMe (bot owner), edit it
+  // with the result text instead of sending a new message. This transforms
+  // "!stats" → result seamlessly. For media content or non-fromMe, send new.
+  const isTextOnly = typeof processedContent === 'string' ||
+    (processedContent && typeof processedContent === 'object' && processedContent.text &&
+     !processedContent.image && !processedContent.sticker && !processedContent.video &&
+     !processedContent.audio && !processedContent.document);
+
+  if (isTextOnly && msgKey?.fromMe) {
+    const textContent = typeof processedContent === 'string'
+      ? processedContent
+      : processedContent.text;
+
+    await delay(300 + Math.random() * 700);
+
+    try {
+      await sock.sendMessage(jid, { text: textContent, edit: msgKey });
+      return;
+    } catch (editErr) {
+      console.error('[EDIT] Edit failed, falling back to normal send:', editErr);
+    }
+  }
+
   const isAudioContent = processedContent?.audio || processedContent?.mimetype?.includes('audio');
   try {
     await sock.sendPresenceUpdate(isAudioContent ? 'recording' : 'composing', jid);
