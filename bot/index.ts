@@ -75,13 +75,12 @@ async function start() {
   // Initial sync
   console.log('[BOT] Running initial session sync...');
   await syncSessionsWithDb(IS_WORKER);
-  console.log('[BOT] Initial sync complete. Polling every 15s...');
+  console.log('[BOT] Initial sync complete. Polling every 5s...');
   
   // ── Polling intervals ──
   // All intervals are registered for graceful shutdown cleanup.
   // Adaptive polling multiplier adjusts intervals during degraded conditions.
-  // Tuned to reduce Supabase load on free-tier (0.5 GB RAM, shared CPU).
-  // Base: sync 15s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
+  // Base: sync 5s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
 
   // Periodically sync sessions from database
   registerInterval(setInterval(async () => {
@@ -95,7 +94,7 @@ async function start() {
       recordPollerError('sessionSync');
       console.error('Error syncing sessions:', error);
     }
-  }, 15_000));
+  }, 5_000));
 
   // Main service: recover sessions stuck on dead workers every 60s
   if (!IS_WORKER) {
@@ -294,7 +293,7 @@ async function start() {
 // orchestrator health-check workers without spinning up full Next.js.
 const healthPort = parseInt(process.env.PORT || '10000', 10);
 
-const healthServer = createHttpServer((req, res) => {
+const healthServer = createHttpServer(async (req, res) => {
   const url = (req.url || '').split('?')[0];
   if (url === '/api/health') {
     const memUsage = process.memoryUsage();
@@ -308,6 +307,23 @@ const healthServer = createHttpServer((req, res) => {
       uptime: Math.round(process.uptime()),
       memory: { rssMB: Math.round(memUsage.rss / 1024 / 1024) },
     }));
+  } else if (url === '/api/internal/trigger-sync' && req.method === 'POST') {
+    const secret = req.headers['x-internal-secret'];
+    if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
+      return;
+    }
+    console.log('[INTERNAL] Trigger-sync received — running immediate session sync');
+    try {
+      await syncSessionsWithDb(IS_WORKER);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: 'Sync triggered' }));
+    } catch (err) {
+      console.error('[INTERNAL] Trigger-sync failed:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Sync failed' }));
+    }
   } else {
     console.log(`[HEALTH] 404 for ${req.method} ${req.url}`);
     res.writeHead(404);
