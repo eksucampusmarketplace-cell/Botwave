@@ -659,7 +659,8 @@ export async function sendAudio(instanceName: string, to: string, audioBase64: s
   return res.json();
 }
 
-// Edit (update) an existing text message
+// Edit (update) an existing text message.
+// Throws on non-2xx so callers' catch blocks can fall back to normal send.
 export async function updateMessage(
   instanceName: string,
   key: { remoteJid: string; fromMe: boolean; id: string },
@@ -671,6 +672,10 @@ export async function updateMessage(
     headers,
     body: JSON.stringify({ number, key, text }),
   });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`updateMessage failed (${res.status}): ${body.slice(0, 200)}`);
+  }
   return res.json();
 }
 
