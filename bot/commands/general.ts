@@ -77,7 +77,7 @@ async function sendHelp(
 *SOCIAL & GROUP*
 !afk [reason] — Away status (auto-reply)
 !roast / !ghost / !type / !wrap / !profile
-!tldr — Summarize long messages
+!tldr2 — Summarize long messages (no AI)
 !encrypt / !decrypt — Secret messages
 !alias set [name] = [cmd] — Shortcuts
 !chain [cmd1] | [cmd2] — Pipe commands
@@ -580,7 +580,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         commands: [
           { name: '!afk', usage: '!afk [reason]  |  !afk off', description: 'Set yourself as Away From Keyboard. Anyone who tags or messages you gets an auto-reply with your reason. Auto-clears when you use !afk off.\n\nExamples:\n"!afk studying" — AFK with reason\n"!afk" — AFK without reason\n"!afk off" — disable AFK\n\nAliases: !away, !brb' },
           { name: '!roast', usage: '!roast [name]  |  reply to message with !roast', description: 'Generates a savage (but friendly) roast. Reply to someone\'s message for a text-specific roast, or use !roast [name] for a general one. 20+ unique templates.\n\nAliases: !burn' },
-          { name: '!tldr', usage: '!tldr  |  reply to long message with !tldr', description: 'Summarizes long messages into key bullet points using sentence scoring by word importance and position. No AI needed.\n\nReply to a long message, or: !tldr [long text]\n\nAliases: !summarize, !summary' },
+          { name: '!tldr2', usage: '!tldr2  |  reply to long message with !tldr2', description: 'Summarizes long messages into key bullet points using sentence scoring by word importance and position. No AI needed. (Note: !tldr maps to the AI-powered !digest command.)\n\nReply to a long message, or: !tldr2 [long text]\n\nAliases: !quicksummary, !bulletpoints' },
           { name: '!encrypt', usage: '!encrypt [PIN] [message]', description: 'Encrypts a message with AES-256 using your PIN. Share the encrypted text — only someone with the PIN can decrypt it.\n\nExample: "!encrypt 1234 This is my secret"\n\nAliases: !enc' },
           { name: '!decrypt', usage: '!decrypt [PIN] [encrypted text]  |  reply with !decrypt [PIN]', description: 'Decrypts an encrypted message. Reply to the encrypted message or paste it after the PIN.\n\nAliases: !dec' },
           { name: '!ghost', usage: '!ghost [seconds]  |  !ghost off', description: 'Ghost mode — your messages auto-delete after X seconds (like Snapchat). Default 30s, range 5-300s.\n\nExamples:\n"!ghost 10" — delete after 10s\n"!ghost off" — disable\n"!ghost status" — check current setting\n\nAliases: !vanish' },

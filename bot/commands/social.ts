@@ -261,7 +261,7 @@ async function handleEncrypt(context: MessageContext, args: string[], sock: any)
   const encrypted = encryptText(message, pin);
   await sendReply(
     context.chatJid,
-    `*ENCRYPTED MESSAGE*\n\n\`\`\`${encrypted}\`\`\`\n\n_Decrypt with: !decrypt ${pin} [paste encrypted text]_`,
+    `*ENCRYPTED MESSAGE*\n\n\`\`\`${encrypted}\`\`\`\n\n_Decrypt with: !decrypt [your PIN] [paste encrypted text]_\n_Share the PIN privately — don't post it here!_`,
     sock, context.rawMessage.key, context.queue,
   );
 }
@@ -380,6 +380,12 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
     const reserved = ['alias', 'help', 'ghost', 'chain', 'encrypt', 'decrypt'];
     if (reserved.includes(aliasName)) {
       await sendReply(context.chatJid, `Cannot override built-in command "!${aliasName}".`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    // Prevent recursive aliases
+    const expandedCmd = command.replace(/^!/, '').split(/\s+/)[0].toLowerCase();
+    if (expandedCmd === aliasName) {
+      await sendReply(context.chatJid, `Cannot create recursive alias — "!${aliasName}" would call itself.`, sock, context.rawMessage.key, context.queue);
       return;
     }
     if (!aliasStore.has(context.senderJid)) {
@@ -1083,7 +1089,7 @@ async function handleWrap(context: MessageContext, _args: string[], sock: any): 
 
 registerCommand({ name: 'afk', aliases: ['afk', 'away', 'brb'], category: 'general', description: 'Set AFK status', execute: (ctx, args, sock) => handleAfk(ctx, args, sock) });
 registerCommand({ name: 'roast', aliases: ['roast', 'burn'], category: 'fun', description: 'Roast someone (friendly)', execute: (ctx, args, sock) => handleRoast(ctx, args, sock) });
-registerCommand({ name: 'tldr', aliases: ['tldr', 'summarize', 'summary'], category: 'utility', description: 'Summarize long messages', execute: (ctx, args, sock) => handleTldr(ctx, args, sock) });
+registerCommand({ name: 'tldr2', aliases: ['tldr2', 'quicksummary', 'bulletpoints'], category: 'utility', description: 'Summarize long messages (no AI)', execute: (ctx, args, sock) => handleTldr(ctx, args, sock) });
 registerCommand({ name: 'encrypt', aliases: ['encrypt', 'enc'], category: 'utility', description: 'Encrypt a message with PIN', execute: (ctx, args, sock) => handleEncrypt(ctx, args, sock) });
 registerCommand({ name: 'decrypt', aliases: ['decrypt', 'dec'], category: 'utility', description: 'Decrypt an encrypted message', execute: (ctx, args, sock) => handleDecrypt(ctx, args, sock) });
 registerCommand({ name: 'ghost', aliases: ['ghost', 'vanish'], category: 'utility', description: 'Auto-delete your messages', execute: (ctx, args, sock) => handleGhost(ctx, args, sock) });
