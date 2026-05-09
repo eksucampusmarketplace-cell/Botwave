@@ -661,6 +661,8 @@ export async function sendAudio(instanceName: string, to: string, audioBase64: s
 
 // Edit (update) an existing text message.
 // Throws on non-2xx so callers' catch blocks can fall back to normal send.
+// Handles LID/phone JID mismatch: if the first attempt fails because the
+// stored message uses LID addressing, we look up the stored key and retry.
 export async function updateMessage(
   instanceName: string,
   key: { remoteJid: string; fromMe: boolean; id: string },
@@ -672,11 +674,48 @@ export async function updateMessage(
     headers,
     body: JSON.stringify({ number, key, text }),
   });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`updateMessage failed (${res.status}): ${body.slice(0, 200)}`);
+  if (res.ok) return res.json();
+
+  const body = await res.text();
+
+  // If "RemoteJid does not match", the DB likely stores the message with a
+  // LID-format key. Look up the stored key and retry with its remoteJid.
+  if (body.includes('RemoteJid does not match')) {
+    try {
+      const stored = await findMessageByKeyId(instanceName, key.id);
+      if (stored?.key?.remoteJid && stored.key.remoteJid !== key.remoteJid) {
+        const lidJid = stored.key.remoteJid;
+        const lidNumber = lidJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
+        const fixedKey = { ...key, remoteJid: lidJid };
+        const res2 = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ number: lidNumber, key: fixedKey, text }),
+        });
+        if (res2.ok) return res2.json();
+        const body2 = await res2.text();
+        throw new Error(`updateMessage LID retry failed (${res2.status}): ${body2.slice(0, 200)}`);
+      }
+    } catch (lookupErr) {
+      if (lookupErr instanceof Error && lookupErr.message.includes('LID retry failed')) throw lookupErr;
+      console.error('[EVO-CLIENT] LID key lookup failed:', lookupErr);
+    }
   }
-  return res.json();
+
+  throw new Error(`updateMessage failed (${res.status}): ${body.slice(0, 200)}`);
+}
+
+// Look up a message by its key.id in Evolution API's database.
+async function findMessageByKeyId(instanceName: string, keyId: string): Promise<any> {
+  const res = await apiFetch(`${BASE}/chat/findMessages/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ where: { key: { id: keyId } } }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const messages = Array.isArray(data) ? data : data?.messages || data?.data || [];
+  return messages[0] || null;
 }
 
 // Delete a message for everyone
