@@ -135,6 +135,17 @@ export async function sendReply(
 // ─── Media Download ──────────────────────────────────────────────────────────
 
 export async function downloadMedia(message: any, sock: any): Promise<Buffer | null> {
+  // Primary: Evolution API socket adapter (uses getBase64FromMediaMessage internally)
+  try {
+    if (typeof (sock as any).downloadMediaMessage === 'function') {
+      const buffer = await (sock as any).downloadMediaMessage(message, 'buffer');
+      if (buffer && buffer.length > 0) return buffer;
+    }
+  } catch {
+    // Fallback below
+  }
+
+  // Fallback: direct Baileys download (works when using native Baileys connection)
   try {
     const buffer = await baileysDownloadMedia(message, 'buffer', {});
     if (buffer) return Buffer.from(buffer);
@@ -142,15 +153,7 @@ export async function downloadMedia(message: any, sock: any): Promise<Buffer | n
     // Fallback below
   }
 
-  try {
-    if (typeof (sock as any).downloadMediaMessage === 'function') {
-      const buffer = await (sock as any).downloadMediaMessage(message, 'buffer');
-      if (buffer) return buffer;
-    }
-  } catch {
-    // Fallback below
-  }
-
+  // Last resort: direct URL download
   try {
     const msg = message?.message;
     const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
