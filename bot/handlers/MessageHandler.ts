@@ -1,5 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
+import { cacheJSON, getCachedJSON } from '../redisSessionCache';
 import { MessageQueue } from '../utils/MessageQueue';
 import {
   pickResponse,
@@ -144,8 +145,7 @@ const AFK_COOLDOWN_MS = 5 * 60 * 1000;
 
 // ─── DM Welcome Video (first-time private chat) ────────────────────────────
 
-const dmWelcomeSent: Set<string> = new Set();
-const DM_WELCOME_MAX = 5000;
+const dmWelcomeSentLocal: Set<string> = new Set();
 let dmWelcomeVideoBuffer: Buffer | null = null;
 
 async function getDmWelcomeVideo(): Promise<Buffer | null> {
@@ -158,18 +158,32 @@ async function getDmWelcomeVideo(): Promise<Buffer | null> {
   }
 }
 
-async function sendDmWelcome(chatJid: string, pushName: string, sock: any): Promise<void> {
-  const key = chatJid;
-  if (dmWelcomeSent.has(key)) return;
-
-  dmWelcomeSent.add(key);
-  if (dmWelcomeSent.size > DM_WELCOME_MAX) {
-    const arr = Array.from(dmWelcomeSent);
-    dmWelcomeSent.clear();
-    for (const id of arr.slice(-Math.floor(DM_WELCOME_MAX / 2))) {
-      dmWelcomeSent.add(id);
+async function hasDmWelcomeBeenSent(sessionId: string, chatJid: string): Promise<boolean> {
+  const localKey = `${sessionId}:${chatJid}`;
+  if (dmWelcomeSentLocal.has(localKey)) return true;
+  try {
+    const redisKey = `dm_welcome:${sessionId}:${chatJid}`;
+    const cached = await getCachedJSON<boolean>(redisKey);
+    if (cached) {
+      dmWelcomeSentLocal.add(localKey);
+      return true;
     }
-  }
+  } catch {}
+  return false;
+}
+
+async function markDmWelcomeSent(sessionId: string, chatJid: string): Promise<void> {
+  const localKey = `${sessionId}:${chatJid}`;
+  dmWelcomeSentLocal.add(localKey);
+  try {
+    const redisKey = `dm_welcome:${sessionId}:${chatJid}`;
+    await cacheJSON(redisKey, true, 90 * 24 * 60 * 60); // 90 days TTL
+  } catch {}
+}
+
+async function sendDmWelcome(chatJid: string, pushName: string, sock: any, sessionId: string): Promise<void> {
+  if (await hasDmWelcomeBeenSent(sessionId, chatJid)) return;
+  await markDmWelcomeSent(sessionId, chatJid);
 
   try {
     const video = await getDmWelcomeVideo();
@@ -361,7 +375,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : undefined;
       if (ownerJid && normalizeJid(senderJid) !== ownerJid) {
         // Send welcome video to first-time DMs
-        void sendDmWelcome(chatJid, pushName, sock);
+        void sendDmWelcome(chatJid, pushName, sock, sessionId);
 
         try {
           const ownerAfk = await getAfkState(sessionId, ownerJid);
