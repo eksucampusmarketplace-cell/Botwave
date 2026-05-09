@@ -10,6 +10,7 @@ export type GameVariant = ChessVariant | TicTacToeVariant | string;
 export interface GameSettings {
   variant: GameVariant;
   timeControl?: number; // seconds per player
+  increment?: number; // Fischer increment in seconds per move
   boardTheme: string;
   enableAnimations: boolean;
   enableSounds: boolean;

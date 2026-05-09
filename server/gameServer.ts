@@ -480,6 +480,14 @@ export function initGameServer(httpServer: HttpServer): Server<ClientToServerEve
       room.drawOffer = undefined;
       room.undoRequest = undefined;
 
+      // Fischer increment: add time after each move
+      if (room.settings.increment && room.settings.increment > 0 && !isGameOver) {
+        const mover = room.currentTurn === room.player1?.id ? room.player1 : room.player2;
+        if (mover && mover.timeRemaining !== undefined) {
+          mover.timeRemaining += room.settings.increment;
+        }
+      }
+
       // Switch turns
       if (!isGameOver) {
         room.currentTurn =
