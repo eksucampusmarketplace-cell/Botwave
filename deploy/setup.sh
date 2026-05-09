@@ -66,6 +66,11 @@ else
   echo "  .env.botwave already exists, skipping."
 fi
 
+# Docker Compose reads ${VAR} substitutions from .env in the same directory.
+# Symlink .env -> .env.botwave so build args resolve correctly.
+ln -sf .env.botwave .env
+echo "  Linked .env -> .env.botwave for Docker Compose build args."
+
 # ── 6. Setup firewall ──
 echo "[6/6] Configuring firewall..."
 if command -v ufw &>/dev/null; then
