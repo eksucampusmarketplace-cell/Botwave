@@ -8,9 +8,10 @@ interface GameResultProps {
   myPlayerId: string;
   onRematch: () => void;
   onShareResult: () => void;
+  onExportPGN?: () => void;
 }
 
-export default function GameResult({ room, myPlayerId, onRematch, onShareResult }: GameResultProps) {
+export default function GameResult({ room, myPlayerId, onRematch, onShareResult, onExportPGN }: GameResultProps) {
   const isWinner = room.winner === myPlayerId;
   const isDraw = room.resultType === 'draw' || room.resultType === 'stalemate';
   const winnerPlayer = room.winner === room.player1?.id ? room.player1 : room.player2;
@@ -106,6 +107,14 @@ export default function GameResult({ room, myPlayerId, onRematch, onShareResult 
             Share Result
           </button>
         </div>
+        {onExportPGN && room.type === 'chess' && (
+          <button
+            onClick={onExportPGN}
+            className="w-full mt-2 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl text-sm transition-colors"
+          >
+            Download PGN
+          </button>
+        )}
       </div>
     </div>
   );

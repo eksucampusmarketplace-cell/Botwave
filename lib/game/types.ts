@@ -12,8 +12,13 @@ export interface GameSettings {
   timeControl?: number; // seconds per player
   increment?: number; // Fischer increment in seconds per move
   boardTheme: string;
+  pieceStyle?: string;
+  showCoordinates?: boolean;
+  showLegalMoves?: boolean;
+  highlightStyle?: 'dots' | 'squares';
   enableAnimations: boolean;
   enableSounds: boolean;
+  enablePremoves?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Record<GameType, GameSettings> = {
@@ -56,6 +61,11 @@ export const BOARD_THEMES = [
   { id: 'neon', name: 'Neon', light: '#1a1a2e', dark: '#16213e' },
   { id: 'marble', name: 'Marble', light: '#e8e8e8', dark: '#a0a0a0' },
   { id: 'pixel', name: 'Pixel Art', light: '#8bac0f', dark: '#306230' },
+  { id: 'ocean', name: 'Ocean', light: '#dee3e6', dark: '#8ca2ad' },
+  { id: 'coral', name: 'Coral', light: '#f0e0d0', dark: '#d08070' },
+  { id: 'midnight', name: 'Midnight', light: '#34495e', dark: '#2c3e50' },
+  { id: 'forest', name: 'Forest', light: '#e8eddf', dark: '#6b8f71' },
+  { id: 'tournament', name: 'Tournament', light: '#eeeed2', dark: '#769656' },
 ];
 
 export const PRESET_AVATARS = [
