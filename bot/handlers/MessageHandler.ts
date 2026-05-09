@@ -394,8 +394,11 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   try {
     const handler = getCommand(commandName);
     if (handler) {
+      const startMs = Date.now();
       await handler.execute(context, args, sock, vars, commandName);
+      console.log(`Command !${commandName} completed in ${Date.now() - startMs}ms`);
     } else {
+      console.log(`Unknown command: !${commandName} — sending help hint`);
       await sendUnknownCommand(context, sock, vars);
     }
   } catch (err) {
@@ -408,7 +411,9 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
         context.rawMessage.key,
         context.queue,
       );
-    } catch { /* reply itself failed — nothing more we can do */ }
+    } catch (replyErr) {
+      console.error(`Failed to send error reply for !${commandName}:`, replyErr);
+    }
   }
 }
 

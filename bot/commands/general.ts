@@ -38,6 +38,11 @@ async function sendHelp(
 !qr / !short / !note / !remind / !schedule
 !calc / !countdown / !cal / !timezone
 
+*STUDY*
+!flashcard — Create & review flashcards
+!quiz — Quiz from notes or trivia
+!pomodoro — Focus timer (25/5 min)
+
 *MEDIA*
 !viewonce / !viewonce pr / !toimg / !togif / !toaudio
 !removebg / !carbon / !screenshot / !ocr
@@ -83,6 +88,8 @@ async function sendHelp(
 !answer / !poll / !vote / !leaderboard
 !8ball / !truth / !dare / !ship
 !compliment / !fortune / !fact / !riddle
+
+_Tip: Most text commands support reply-to — reply to any message with the command to process that text (e.g. reply with !translate es)_
 
 _Send *!help* for the full .docx guide._
 _Only the bot owner can use commands._
@@ -142,8 +149,8 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
         commands: [
           {
             name: '!ai',
-            usage: '!ai [your message]',
-            description: 'Chat with an AI assistant powered by Groq. Send any question, request, or prompt and get an intelligent response. Requires your Groq API key to be configured in your bot settings. Supports multi-turn conversation context.',
+            usage: '!ai [your message]  or  reply to a message with !ai',
+            description: 'Chat with an AI assistant powered by Groq. Send any question, request, or prompt and get an intelligent response. You can also reply to any message with "!ai" to ask the AI about that text. Requires your Groq API key to be configured in your bot settings. Supports multi-turn conversation context.',
           },
           {
             name: '!weather',
@@ -152,8 +159,8 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           },
           {
             name: '!define',
-            usage: '!define [word]',
-            description: 'Looks up the dictionary definition of any English word. Returns the meaning, part of speech, and example usage. Example: "!define serendipity".',
+            usage: '!define [word]  or  reply to a message with !define',
+            description: 'Looks up the dictionary definition of any English word. Returns the meaning, part of speech, and example usage. You can also reply to a message containing a word with "!define". Example: "!define serendipity".',
           },
           {
             name: '!horoscope',
@@ -162,8 +169,8 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           },
           {
             name: '!translate',
-            usage: '!translate [language code] [text]',
-            description: 'Translates text to another language. Common language codes: es (Spanish), fr (French), de (German), pt (Portuguese), ja (Japanese), ko (Korean), zh (Chinese), ar (Arabic), hi (Hindi). Example: "!translate fr Good morning everyone".',
+            usage: '!translate [lang] [text]  or  reply with !translate [lang]',
+            description: 'Translates text to another language. You can reply to any message with "!translate es" to translate it. Common language codes: es (Spanish), fr (French), de (German), pt (Portuguese), ja (Japanese), ko (Korean), zh (Chinese), ar (Arabic), hi (Hindi). Example: "!translate fr Good morning everyone".',
           },
           {
             name: '!doc',
@@ -202,18 +209,18 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           },
           {
             name: '!tts',
-            usage: '!tts [text]',
-            description: 'Converts text to a voice note (Text-to-Speech). The bot generates an audio message that plays like a regular WhatsApp voice note. Example: "!tts Good morning everyone".',
+            usage: '!tts [text]  or  reply to a message with !tts',
+            description: 'Converts text to a voice note (Text-to-Speech). The bot generates an audio message that plays like a regular WhatsApp voice note. You can also reply to any message with "!tts" to convert it to speech. Example: "!tts Good morning everyone".',
           },
           {
             name: '!wiki',
-            usage: '!wiki [topic]',
-            description: 'Fetches a Wikipedia summary for any topic. Returns a concise overview with key facts. Example: "!wiki artificial intelligence" or "!wiki Nigeria".',
+            usage: '!wiki [topic]  or  reply to a message with !wiki',
+            description: 'Fetches a Wikipedia summary for any topic. Returns a concise overview with key facts. You can also reply to a message with "!wiki" to look up that text. Example: "!wiki artificial intelligence" or "!wiki Nigeria".',
           },
           {
             name: '!lyrics',
-            usage: '!lyrics [song name]',
-            description: 'Searches for and displays song lyrics. Example: "!lyrics Bohemian Rhapsody" or "!lyrics Shape of You Ed Sheeran". Returns the full lyrics text.',
+            usage: '!lyrics [song name]  or  reply to a message with !lyrics',
+            description: 'Searches for and displays song lyrics. You can also reply to a message containing a song name with "!lyrics". Example: "!lyrics Bohemian Rhapsody" or "!lyrics Shape of You Ed Sheeran". Returns the full lyrics text.',
           },
           {
             name: '!currency',
@@ -533,6 +540,26 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!id', usage: '!id', description: 'Shows chat information: Chat JID, your JID, message ID, chat type (group/private). Useful for debugging.\n\nAliases: !chatid' },
           { name: '!paste', usage: '!paste [text]', description: 'Creates a paste on paste.rs and returns a shareable link. You can also reply to a message with "!paste" to paste its content.\n\nAliases: !pastebin' },
           { name: '!purge', usage: '!purge [n]', description: 'Request to delete your own last N messages (1-100). Note: Full message deletion requires Baileys direct connection.\n\nAliases: !del' },
+        ],
+      },
+      {
+        title: 'STUDY TOOLS',
+        commands: [
+          {
+            name: '!flashcard',
+            usage: '!flashcard add [front] | [back]  |  !flashcard list  |  !flashcard test  |  !flashcard delete [n]  |  !flashcard clear',
+            description: 'Personal flashcard system for studying. Create cards with a front (question) and back (answer) separated by "|". Review cards randomly with "test". Delete individual cards by number or clear all at once.\n\nExamples:\n"!flashcard add What is H2O? | Water"\n"!flashcard list" — see all your cards\n"!flashcard test" — random card quiz (answer revealed after 10s)\n"!flashcard delete 3" — remove card #3\n"!flashcard clear" — delete all cards\n\nAliases: !fc, !flashcards',
+          },
+          {
+            name: '!quiz',
+            usage: '!quiz  |  !quiz from [text]  |  reply to notes with !quiz',
+            description: 'Quiz generator with two modes:\n\n1. From notes: Reply to a message containing your study notes with "!quiz" or use "!quiz from [your notes]". Generates fill-in-the-blank questions from the text.\n\n2. General trivia: Just type "!quiz" for a random multiple-choice trivia question. Answer is revealed after 15 seconds.\n\nAliases: !trivia (for general quiz)',
+          },
+          {
+            name: '!pomodoro',
+            usage: '!pomodoro [work_mins] [break_mins]  |  !pomodoro status  |  !pomodoro stop',
+            description: 'Pomodoro focus timer. Start a work session (default 25 min) followed by a break (default 5 min). The bot notifies you when to switch.\n\nExamples:\n"!pomodoro" — 25 min work, 5 min break\n"!pomodoro 45 10" — 45 min work, 10 min break\n"!pomodoro status" — check remaining time\n"!pomodoro stop" — cancel timer\n\nAliases: !pomo, !focus',
+          },
         ],
       },
       {

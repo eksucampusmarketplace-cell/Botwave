@@ -639,6 +639,238 @@ async function handleUnit(context: MessageContext, args: string[], sock: any): P
 }
 
 
+// ─── Study Tools ─────────────────────────────────────────────────────────────
+
+// In-memory flashcard storage per user (keyed by senderJid)
+const flashcardStore = new Map<string, Array<{ front: string; back: string }>>();
+
+async function handleFlashcard(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const userJid = context.senderJid;
+  const sub = args[0]?.toLowerCase() || 'help';
+
+  if (sub === 'add' || sub === 'create') {
+    const rest = args.slice(1).join(' ');
+    const parts = rest.split('|').map(p => p.trim());
+    if (parts.length < 2 || !parts[0] || !parts[1]) {
+      await sendReply(context.chatJid, '*FLASHCARDS*\n\n!flashcard add [front] | [back]\n\nExample: !flashcard add What is H2O? | Water', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const cards = flashcardStore.get(userJid) || [];
+    cards.push({ front: parts[0], back: parts[1] });
+    flashcardStore.set(userJid, cards);
+    await sendReply(context.chatJid, `Card added! You now have *${cards.length}* card(s).\n\nFront: ${parts[0]}\nBack: ${parts[1]}`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (sub === 'list') {
+    const cards = flashcardStore.get(userJid) || [];
+    if (!cards.length) {
+      await sendReply(context.chatJid, 'No flashcards yet. Use: !flashcard add [front] | [back]', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    let msg = `*YOUR FLASHCARDS (${cards.length})*\n\n`;
+    cards.forEach((c, i) => { msg += `${i + 1}. ${c.front}\n`; });
+    msg += '\nUse !flashcard test to start a review session\nUse !flashcard delete [number] to remove';
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (sub === 'test' || sub === 'review' || sub === 'study') {
+    const cards = flashcardStore.get(userJid) || [];
+    if (!cards.length) {
+      await sendReply(context.chatJid, 'No flashcards to review. Add some first: !flashcard add [front] | [back]', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    const card = cards[Math.floor(Math.random() * cards.length)];
+    await sendReply(context.chatJid, `*FLASHCARD REVIEW*\n\n*Q:* ${card.front}\n\n_Think of your answer, then wait for the reveal..._`, sock, context.rawMessage.key, context.queue);
+    setTimeout(async () => {
+      try {
+        await sendReply(context.chatJid, `*ANSWER:* ${card.back}`, sock, context.rawMessage.key, context.queue);
+      } catch { /* ignore */ }
+    }, 10000);
+    return;
+  }
+
+  if (sub === 'delete' || sub === 'del' || sub === 'remove') {
+    const cards = flashcardStore.get(userJid) || [];
+    const index = parseInt(args[1]) - 1;
+    if (index >= 0 && index < cards.length) {
+      const removed = cards.splice(index, 1)[0];
+      flashcardStore.set(userJid, cards);
+      await sendReply(context.chatJid, `Deleted: "${removed.front}"`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Invalid card number. Use !flashcard list to see your cards.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (sub === 'clear') {
+    flashcardStore.delete(userJid);
+    await sendReply(context.chatJid, 'All flashcards cleared.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await sendReply(context.chatJid,
+    '*FLASHCARDS*\n\n' +
+    '!flashcard add [front] | [back] — Add a card\n' +
+    '!flashcard list — View all cards\n' +
+    '!flashcard test — Random review\n' +
+    '!flashcard delete [n] — Delete a card\n' +
+    '!flashcard clear — Delete all cards\n\n' +
+    'Example: !flashcard add Capital of France? | Paris',
+    sock, context.rawMessage.key, context.queue);
+}
+
+async function handleQuiz(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const quotedMsg = getQuotedMessage(context.rawMessage);
+  const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '';
+
+  const sub = args[0]?.toLowerCase() || '';
+
+  // Generate quiz from notes text: !quiz [reply to notes] or !quiz from [text]
+  if (sub === 'from' || (!sub && quotedText)) {
+    const sourceText = sub === 'from' ? args.slice(1).join(' ') : quotedText;
+    if (!sourceText || sourceText.length < 20) {
+      await sendReply(context.chatJid, '*QUIZ GENERATOR*\n\nReply to a message with !quiz to generate questions from it.\nOr: !quiz from [your notes text]\n\nThe text should be at least 20 characters.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    // Extract key sentences and generate fill-in-the-blank questions
+    const sentences = sourceText.split(/[.!?\n]+/).map(s => s.trim()).filter(s => s.length > 15);
+    if (sentences.length < 2) {
+      await sendReply(context.chatJid, 'Not enough content to generate a quiz. Provide more detailed notes.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const questions: string[] = [];
+    const shuffled = [...sentences].sort(() => Math.random() - 0.5);
+    const count = Math.min(5, shuffled.length);
+
+    for (let i = 0; i < count; i++) {
+      const sentence = shuffled[i];
+      const words = sentence.split(/\s+/).filter(w => w.length > 3);
+      if (words.length < 3) continue;
+      // Pick a random significant word to blank out
+      const blankIdx = Math.floor(Math.random() * words.length);
+      const answer = words[blankIdx];
+      const blanked = sentence.replace(new RegExp(`\\b${answer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), '_____');
+      questions.push(`${questions.length + 1}. ${blanked}\n   *Answer:* ||${answer}||`);
+    }
+
+    if (!questions.length) {
+      await sendReply(context.chatJid, 'Could not generate meaningful questions from this text. Try longer notes.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(context.chatJid,
+      `*QUIZ FROM NOTES*\n\nFill in the blanks:\n\n${questions.join('\n\n')}\n\n_Generated ${questions.length} question(s)_`,
+      sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // Quick general knowledge quiz
+  const trivia = [
+    { q: 'What is the chemical symbol for gold?', a: 'Au', options: ['Au', 'Ag', 'Fe', 'Cu'] },
+    { q: 'Which planet is closest to the sun?', a: 'Mercury', options: ['Venus', 'Mercury', 'Mars', 'Earth'] },
+    { q: 'What is the largest organ in the human body?', a: 'Skin', options: ['Liver', 'Brain', 'Skin', 'Heart'] },
+    { q: 'In what year did World War II end?', a: '1945', options: ['1943', '1944', '1945', '1946'] },
+    { q: 'What is the hardest natural substance?', a: 'Diamond', options: ['Steel', 'Diamond', 'Titanium', 'Quartz'] },
+    { q: 'Which gas makes up most of Earth\'s atmosphere?', a: 'Nitrogen', options: ['Oxygen', 'Carbon dioxide', 'Nitrogen', 'Hydrogen'] },
+    { q: 'What is the smallest country in the world?', a: 'Vatican City', options: ['Monaco', 'Vatican City', 'San Marino', 'Liechtenstein'] },
+    { q: 'How many bones are in the adult human body?', a: '206', options: ['186', '206', '226', '256'] },
+    { q: 'What is the speed of light in km/s (approx)?', a: '300,000', options: ['150,000', '200,000', '300,000', '400,000'] },
+    { q: 'Which element has the atomic number 1?', a: 'Hydrogen', options: ['Helium', 'Hydrogen', 'Lithium', 'Carbon'] },
+  ];
+
+  const item = trivia[Math.floor(Math.random() * trivia.length)];
+  const shuffledOptions = [...item.options].sort(() => Math.random() - 0.5);
+  const optionsStr = shuffledOptions.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join('\n');
+
+  await sendReply(context.chatJid,
+    `*QUIZ TIME!*\n\n${item.q}\n\n${optionsStr}\n\n_Answer will be revealed in 15 seconds..._`,
+    sock, context.rawMessage.key, context.queue);
+
+  setTimeout(async () => {
+    try {
+      await sendReply(context.chatJid, `*ANSWER:* ${item.a}`, sock, context.rawMessage.key, context.queue);
+    } catch { /* ignore */ }
+  }, 15000);
+}
+
+// Active pomodoro timers per user
+const pomodoroTimers = new Map<string, { timeout: ReturnType<typeof setTimeout>; type: string; endsAt: number }>();
+
+async function handlePomodoro(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const userJid = context.senderJid;
+  const sub = args[0]?.toLowerCase() || '';
+
+  if (sub === 'stop' || sub === 'cancel') {
+    const timer = pomodoroTimers.get(userJid);
+    if (timer) {
+      clearTimeout(timer.timeout);
+      pomodoroTimers.delete(userJid);
+      await sendReply(context.chatJid, 'Pomodoro cancelled.', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'No active Pomodoro timer.', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (sub === 'status') {
+    const timer = pomodoroTimers.get(userJid);
+    if (timer) {
+      const remaining = Math.max(0, Math.ceil((timer.endsAt - Date.now()) / 60000));
+      await sendReply(context.chatJid, `*POMODORO STATUS*\n\nMode: ${timer.type === 'work' ? 'Focus' : 'Break'}\nRemaining: ${remaining} minute(s)`, sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'No active Pomodoro timer. Start one with !pomodoro', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // Check if already running
+  if (pomodoroTimers.has(userJid)) {
+    const timer = pomodoroTimers.get(userJid)!;
+    const remaining = Math.max(0, Math.ceil((timer.endsAt - Date.now()) / 60000));
+    await sendReply(context.chatJid, `You already have a Pomodoro running (${timer.type}, ${remaining}min left).\n\nUse !pomodoro stop to cancel it.`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const workMins = parseInt(args[0]) || 25;
+  const breakMins = parseInt(args[1]) || 5;
+
+  if (workMins < 1 || workMins > 120 || breakMins < 1 || breakMins > 60) {
+    await sendReply(context.chatJid, 'Invalid duration. Work: 1-120 min, Break: 1-60 min.\n\nExample: !pomodoro 25 5', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  await sendReply(context.chatJid,
+    `*POMODORO STARTED*\n\nFocus time: ${workMins} minutes\nBreak time: ${breakMins} minutes\n\nStay focused! I'll notify you when it's break time.\n\nUse !pomodoro status to check remaining time\nUse !pomodoro stop to cancel`,
+    sock, context.rawMessage.key, context.queue);
+
+  const workTimeout = setTimeout(async () => {
+    try {
+      await sendReply(context.chatJid, `*BREAK TIME!*\n\nGreat focus session! Take a ${breakMins}-minute break.\n\nI'll let you know when to get back to work.`, sock, context.rawMessage.key, context.queue);
+      pomodoroTimers.set(userJid, {
+        type: 'break',
+        endsAt: Date.now() + breakMins * 60000,
+        timeout: setTimeout(async () => {
+          try {
+            pomodoroTimers.delete(userJid);
+            await sendReply(context.chatJid, '*BREAK OVER!*\n\nTime to get back to work! Start another session with !pomodoro', sock, context.rawMessage.key, context.queue);
+          } catch { /* ignore */ }
+        }, breakMins * 60000),
+      });
+    } catch { /* ignore */ }
+  }, workMins * 60000);
+
+  pomodoroTimers.set(userJid, {
+    type: 'work',
+    endsAt: Date.now() + workMins * 60000,
+    timeout: workTimeout,
+  });
+}
+
+
 // ─── Register Productivity Commands ─────────────────────────────────────────
 
 registerCommand({ name: 'remind', aliases: ['remind', 'reminder', 'remindme'], category: 'productivity', description: 'Set a reminder', execute: (ctx, args, sock) => handleRemind(ctx, args, sock) });
@@ -663,3 +895,6 @@ registerCommand({ name: 'epoch', aliases: ['epoch', 'timestamp'], category: 'uti
 registerCommand({ name: 'bmi', aliases: ['bmi'], category: 'utility', description: 'Calculate BMI', execute: (ctx, args, sock) => handleBMI(ctx, args, sock) });
 registerCommand({ name: 'age', aliases: ['age'], category: 'utility', description: 'Calculate age', execute: (ctx, args, sock) => handleAge(ctx, args, sock) });
 registerCommand({ name: 'unit', aliases: ['unit'], category: 'utility', description: 'Unit conversion', execute: (ctx, args, sock) => handleUnit(ctx, args, sock) });
+registerCommand({ name: 'flashcard', aliases: ['flashcard', 'fc', 'flashcards'], category: 'study', description: 'Create and review flashcards', execute: (ctx, args, sock) => handleFlashcard(ctx, args, sock) });
+registerCommand({ name: 'quiz', aliases: ['quiz', 'trivia'], category: 'study', description: 'Quiz from notes or general trivia', execute: (ctx, args, sock) => handleQuiz(ctx, args, sock) });
+registerCommand({ name: 'pomodoro', aliases: ['pomodoro', 'pomo', 'focus'], category: 'study', description: 'Pomodoro focus timer', execute: (ctx, args, sock) => handlePomodoro(ctx, args, sock) });

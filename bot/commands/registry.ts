@@ -49,6 +49,7 @@ export type CommandCategory =
   | 'media'
   | 'creative'
   | 'productivity'
+  | 'study'
   | 'admin'
   | 'utility';
 
