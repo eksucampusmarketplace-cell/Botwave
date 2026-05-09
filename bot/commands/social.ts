@@ -1378,48 +1378,32 @@ async function handleAlive(context: MessageContext, _args: string[], sock: any):
 async function handleType(context: MessageContext, args: string[], sock: any): Promise<void> {
   const text = args.join(' ');
   if (!text) {
-    await sendReply(context.chatJid, 'Usage: !type [message]\n\nThe bot types your message character by character with a typing animation.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Usage: !type [message]\n\nShows "typing..." indicator while composing, then sends the message.', sock, context.rawMessage.key, context.queue);
     return;
   }
 
-  // Limit length for ban safety
-  if (text.length > 200) {
-    await sendReply(context.chatJid, 'Message too long for typing effect (max 200 chars).', sock, context.rawMessage.key, context.queue);
+  // Limit length for safety
+  if (text.length > 500) {
+    await sendReply(context.chatJid, 'Message too long for typing effect (max 500 chars).', sock, context.rawMessage.key, context.queue);
     return;
   }
-
-  // Send initial message then edit it progressively
-  // We build the message in chunks for ban safety (not char by char)
-  const chunkSize = Math.max(5, Math.ceil(text.length / 10));
-  let current = '';
 
   try {
-    // Send initial message with first chunk
-    current = text.substring(0, chunkSize) + '▌';
-    const sentMsg = await sock.sendMessage(context.chatJid, { text: current });
+    // Show "typing..." indicator — this appears as "composing" in WhatsApp
+    await sock.sendPresenceUpdate('composing', context.chatJid);
 
-    if (!sentMsg?.key) {
-      await sendReply(context.chatJid, text, sock, context.rawMessage.key, context.queue);
-      return;
-    }
+    // Simulate typing duration based on text length (~50ms per char, min 1s, max 8s)
+    const typingDuration = Math.max(1000, Math.min(text.length * 50, 8000));
+    await delay(typingDuration);
 
-    // Edit in chunks with delays
-    for (let i = chunkSize; i < text.length; i += chunkSize) {
-      await delay(800 + Math.random() * 400);
-      current = text.substring(0, Math.min(i + chunkSize, text.length));
-      const cursor = i + chunkSize < text.length ? '▌' : '';
-      try {
-        await sock.sendMessage(context.chatJid, { text: current + cursor, edit: sentMsg.key });
-      } catch {
-        break;
-      }
-    }
+    // Stop typing indicator
+    await sock.sendPresenceUpdate('paused', context.chatJid);
 
-    // Final edit without cursor
-    await delay(500);
-    try {
-      await sock.sendMessage(context.chatJid, { text, edit: sentMsg.key });
-    } catch { /* final edit failed, message is still readable */ }
+    // Small pause before sending (feels natural)
+    await delay(300);
+
+    // Send the final message
+    await sock.sendMessage(context.chatJid, { text });
   } catch (err) {
     console.error('[TYPE] Animation failed:', err);
     await sendReply(context.chatJid, text, sock, context.rawMessage.key, context.queue);
