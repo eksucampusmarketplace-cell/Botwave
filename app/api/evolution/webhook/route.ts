@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
+import { SELF_URL, IS_WORKER } from '@/bot/workerConfig';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -24,12 +25,27 @@ interface WebhookSession {
   user_id?: string;
   phone_number?: string;
   state?: string;
+  worker_url?: string | null;
+}
+
+/**
+ * Check if this BotWave instance is the correct handler for a session.
+ * Prevents duplicate processing when both per-instance and global webhooks
+ * deliver the same event to different BotWave instances.
+ */
+function isOwnerInstance(sessionWorkerUrl: string | null | undefined): boolean {
+  if (!SELF_URL) return true; // standalone mode — always process
+  if (sessionWorkerUrl) {
+    return SELF_URL === sessionWorkerUrl;
+  }
+  // Session on main (worker_url is null) — only main should process
+  return !IS_WORKER;
 }
 
 async function getCachedOrFetchSession(
   supabase: ReturnType<typeof getSupabase>,
   sessionId: string,
-  columns: string = 'id, user_id, phone_number, state',
+  columns: string = 'id, user_id, phone_number, state, worker_url',
 ): Promise<WebhookSession | null> {
   // Try Redis first
   const cached = await getCachedSession(sessionId);
@@ -279,9 +295,15 @@ export async function POST(request: NextRequest) {
       // has already opened; honoring them would kill a working session.
       const { data: current, error: stateErr } = await supabase
         .from('bot_sessions')
-        .select('state, pairing_code, updated_at')
+        .select('state, pairing_code, updated_at, worker_url')
         .eq('id', sessionId)
         .single();
+
+      // Worker routing: only the instance that owns the session should write pairing data
+      if (current && !isOwnerInstance(current.worker_url)) {
+        console.log(`[PAIRING-WEBHOOK] Skipping qrcode.updated for ${sessionId} — owned by ${current.worker_url || 'main'}, we are ${SELF_URL || 'unknown'}`);
+        return NextResponse.json({ ok: true });
+      }
 
       if (stateErr) {
         console.error(`[PAIRING-WEBHOOK] Failed to read current state for ${sessionId}: ${stateErr.message}`);
@@ -295,9 +317,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Staleness check: if the webhook arrives with a pairing code that matches
-      // what's already in the DB, it may be a duplicate delivery
+      // what's already in the DB, skip the redundant DB write entirely
       if (pairingCode && current?.pairing_code === pairingCode) {
-        console.log(`[PAIRING-WEBHOOK] DUPLICATE — webhook pairing code "${pairingCode}" matches existing DB code. Processing anyway but flagging.`);
+        console.log(`[PAIRING-WEBHOOK] DUPLICATE — webhook pairing code "${pairingCode}" matches existing DB code. Skipping redundant update.`);
+        return NextResponse.json({ ok: true });
       }
 
       const updates: Record<string, unknown> = { updated_at: webhookReceivedAt };
@@ -345,6 +368,14 @@ export async function POST(request: NextRequest) {
 
       if (!session) {
         console.warn(`[EVO-WEBHOOK] No session found for instance: ${sessionId}`);
+        return NextResponse.json({ ok: true });
+      }
+
+      // Worker routing: skip if this instance doesn't own the session.
+      // Evolution API sends to both per-instance and global webhooks,
+      // so without this check the same message gets processed twice.
+      if (!isOwnerInstance(session.worker_url)) {
+        console.log(`[EVO-WEBHOOK] Skipping messages.upsert for ${sessionId} — owned by ${session.worker_url || 'main'}, we are ${SELF_URL || 'unknown'}`);
         return NextResponse.json({ ok: true });
       }
 
@@ -457,7 +488,12 @@ export async function POST(request: NextRequest) {
     if (event === 'messages.delete') {
       const deletedKey = data;
       if (deletedKey?.id && deletedKey?.remoteJid) {
-        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id');
+        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, worker_url');
+
+        if (session && !isOwnerInstance(session.worker_url)) {
+          console.log(`[EVO-WEBHOOK] Skipping messages.delete for ${sessionId} — owned by ${session.worker_url || 'main'}`);
+          return NextResponse.json({ ok: true });
+        }
 
         if (session) {
           // Build a synthetic revoke message matching the Baileys protocolMessage format
@@ -504,7 +540,12 @@ export async function POST(request: NextRequest) {
     if (event === 'messages.edited') {
       const editedMsg = data;
       if (editedMsg?.type === 0 && editedMsg?.key?.id) {
-        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id');
+        const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, worker_url');
+
+        if (session && !isOwnerInstance(session.worker_url)) {
+          console.log(`[EVO-WEBHOOK] Skipping messages.edited for ${sessionId} — owned by ${session.worker_url || 'main'}`);
+          return NextResponse.json({ ok: true });
+        }
 
         if (session) {
           const revokeMsg = {
@@ -539,7 +580,12 @@ export async function POST(request: NextRequest) {
 
     // --- Group participant updates ---
     if (event === 'group-participants.update') {
-      const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, phone_number');
+      const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, phone_number, worker_url');
+
+      if (session && !isOwnerInstance(session.worker_url)) {
+        console.log(`[EVO-WEBHOOK] Skipping group-participants.update for ${sessionId} — owned by ${session.worker_url || 'main'}`);
+        return NextResponse.json({ ok: true });
+      }
 
       if (session && data) {
         const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
