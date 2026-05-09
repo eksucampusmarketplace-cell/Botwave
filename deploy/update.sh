@@ -13,6 +13,8 @@ git pull
 
 echo "[UPDATE] Rebuilding and restarting services..."
 cd deploy
+# Ensure .env symlink exists for Docker Compose build args
+ln -sf .env.botwave .env
 docker compose up -d --build
 
 echo "[UPDATE] Done! Services restarting..."
