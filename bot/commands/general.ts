@@ -102,6 +102,14 @@ async function sendHelp(
 !8ball / !truth / !dare / !ship
 !compliment / !fortune / !fact / !riddle
 
+*MULTIPLAYER*
+!game chess — Start online chess match
+!game tictactoe — Start Tic-Tac-Toe
+!game join <id> — Join a game room
+!game spectate <id> — Watch a live game
+!game stats — Your win/loss record
+!game leaderboard — Top players
+
 _Tip: Most text commands support reply-to — reply to any message with the command to process that text (e.g. reply with !translate es)_
 
 _Send *!help* for the full .docx guide._
@@ -354,6 +362,41 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!riddle',
             usage: '!riddle',
             description: 'Sends a random riddle. You have 30 seconds to think, then the answer is revealed. Test your brain!',
+          },
+        ],
+      },
+      {
+        title: 'MULTIPLAYER ONLINE GAMES',
+        commands: [
+          {
+            name: '!game chess',
+            usage: '!game chess',
+            description: 'Start an online chess match. Creates a game room and sends a link — the opponent clicks to join and play in the browser. Features: real-time play, move timers, ELO ratings, opening book detection, premoves, board arrows, sound effects, 7 piece styles, 5 board themes.',
+          },
+          {
+            name: '!game tictactoe',
+            usage: '!game tictactoe',
+            description: 'Start a Tic-Tac-Toe game. Quick casual game played in the browser. Alias: !game ttt',
+          },
+          {
+            name: '!game join',
+            usage: '!game join <room-id>',
+            description: 'Join an existing game room by its ID. The room ID is shown when someone creates a game.',
+          },
+          {
+            name: '!game spectate',
+            usage: '!game spectate <room-id>',
+            description: 'Watch a live game as a spectator. You see the board with a slight delay and can react with emojis. Alias: !game watch',
+          },
+          {
+            name: '!game stats',
+            usage: '!game stats',
+            description: 'View your multiplayer game statistics — wins, losses, draws, and ELO rating for each game type.',
+          },
+          {
+            name: '!game leaderboard',
+            usage: '!game leaderboard [type]',
+            description: 'View the top-rated players. Optionally specify a game type (chess/tictactoe). Default: chess. Alias: !game lb',
           },
         ],
       },
