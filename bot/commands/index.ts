@@ -11,6 +11,7 @@ import './logo';
 import './chatbot';
 import './smart';
 import './social';
+import './multiplayerGame';
 
 // Re-export registry for use by MessageHandler
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';

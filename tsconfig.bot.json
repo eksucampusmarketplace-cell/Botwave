@@ -13,6 +13,6 @@
     "noImplicitAny": false,
     "allowJs": true
   },
-  "include": ["bot/**/*", "lib/utils.ts"],
+  "include": ["bot/**/*", "lib/utils.ts", "lib/game/**/*", "server/**/*"],
   "exclude": ["node_modules", "dist"]
 }

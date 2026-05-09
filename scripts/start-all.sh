@@ -38,11 +38,18 @@ else
   echo "[start-all] Bot process is running (PID: $BOT_PID)"
 fi
 
-# Start Next.js
-echo "[start-all] Starting Next.js web server..."
-npx next start -p ${PORT:-10000} &
-WEB_PID=$!
-echo "[start-all] Web started (PID: $WEB_PID)"
+# Start Next.js with custom server (includes Socket.io for game platform)
+echo "[start-all] Starting Next.js web server with Socket.io game server..."
+if [ -f dist/bot/server/customServer.js ]; then
+  node dist/bot/server/customServer.js 2>&1 &
+  WEB_PID=$!
+  echo "[start-all] Custom server started (PID: $WEB_PID) — Socket.io game server active"
+else
+  echo "[start-all] Custom server not found, falling back to standard Next.js start"
+  npx next start -p ${PORT:-10000} &
+  WEB_PID=$!
+  echo "[start-all] Web started (PID: $WEB_PID)"
+fi
 
 # If either process dies, kill the other and exit
 trap "kill $BOT_PID $WEB_PID 2>/dev/null; exit" SIGINT SIGTERM
