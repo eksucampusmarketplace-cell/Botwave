@@ -202,6 +202,7 @@ async function handleMusic(
         '--dump-json',
         '--no-playlist',
         '--no-warnings',
+        '--extractor-args', 'youtube:player_client=mediaconnect',
       ], { timeout: 30000, maxBuffer: 5 * 1024 * 1024 });
 
       const info = JSON.parse(stdout);
@@ -232,9 +233,7 @@ async function handleMusic(
       dlArgs.push('--cookies', cookiesPath);
     } catch { /* no cookies */ }
 
-    if (videoUrl && /youtube\.com|youtu\.be/.test(videoUrl)) {
-      dlArgs.push('--extractor-args', 'youtube:player_client=mediaconnect');
-    }
+    dlArgs.push('--extractor-args', 'youtube:player_client=mediaconnect');
 
     await execFileAsync(ytdlpBin, dlArgs, { timeout: 120000 });
 

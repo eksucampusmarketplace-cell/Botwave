@@ -1229,12 +1229,5 @@ registerCommand({ name: 'removebg', aliases: ['removebg', 'rbg'], category: 'med
 registerCommand({ name: 'ocr', aliases: ['ocr', 'readtext'], category: 'media', description: 'Extract text from image', execute: (ctx, _a, sock) => handleOCR(ctx, sock) });
 registerCommand({ name: 'wallpaper', aliases: ['wallpaper', 'wp'], category: 'media', description: 'Random HD wallpaper', execute: (ctx, args, sock) => handleWallpaper(ctx, args, sock) });
 registerCommand({ name: 'qrread', aliases: ['qrread', 'scanqr'], category: 'media', description: 'Read QR code', execute: (ctx, _a, sock) => handleQRRead(ctx, sock) });
-registerCommand({ name: 'blur', aliases: ['blur'], category: 'media', description: 'Blur an image', execute: (ctx, args, sock) => handleBlur(ctx, args, sock) });
-registerCommand({ name: 'grayscale', aliases: ['grayscale', 'greyscale', 'bw'], category: 'media', description: 'Grayscale an image', execute: (ctx, _a, sock) => handleGrayscale(ctx, sock) });
-registerCommand({ name: 'rotate', aliases: ['rotate'], category: 'media', description: 'Rotate an image', execute: (ctx, args, sock) => handleRotate(ctx, args, sock) });
-registerCommand({ name: 'resize', aliases: ['resize'], category: 'media', description: 'Resize an image', execute: (ctx, args, sock) => handleResize(ctx, args, sock) });
-registerCommand({ name: 'invert', aliases: ['invert', 'negative'], category: 'media', description: 'Invert image colors', execute: (ctx, _a, sock) => handleInvert(ctx, sock) });
-registerCommand({ name: 'brightness', aliases: ['brightness'], category: 'media', description: 'Adjust image brightness', execute: (ctx, args, sock) => handleBrightness(ctx, args, sock) });
-registerCommand({ name: 'contrast', aliases: ['contrast'], category: 'media', description: 'Adjust image contrast', execute: (ctx, args, sock) => handleContrast(ctx, args, sock) });
-registerCommand({ name: 'crop', aliases: ['crop'], category: 'media', description: 'Crop an image', execute: (ctx, args, sock) => handleCrop(ctx, args, sock) });
-registerCommand({ name: 'compress', aliases: ['compress'], category: 'media', description: 'Compress an image', execute: (ctx, _a, sock) => handleCompress(ctx, sock) });
+// Image editing commands (blur, grayscale, rotate, resize, invert, brightness,
+// contrast, crop, compress) removed — not functional and expose internal state.

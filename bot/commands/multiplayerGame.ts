@@ -8,8 +8,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
 // Lightweight Redis client for bot commands
 let redis: Redis | null = null;
+let redisReady = false;
 function getRedis(): Redis | null {
-  if (redis) return redis;
+  if (redis && redisReady) return redis;
+  if (redis && !redisReady) return null;
   if (!REDIS_URL) return null;
   try {
     redis = new Redis(REDIS_URL, {
@@ -18,10 +20,10 @@ function getRedis(): Redis | null {
         if (times > 3) return null;
         return Math.min(times * 500, 2000);
       },
-      enableOfflineQueue: false,
-      lazyConnect: true,
     });
-    redis.connect().catch(() => {});
+    redis.on('ready', () => { redisReady = true; });
+    redis.on('error', () => { redisReady = false; });
+    redis.on('close', () => { redisReady = false; });
     return redis;
   } catch {
     return null;

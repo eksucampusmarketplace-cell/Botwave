@@ -1,7 +1,6 @@
 import { registerCommand, getCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, getQuotedMessage, delay } from './helpers';
 import { getAfkState, setAfkState } from '../database';
-import { isRedisAvailable } from '../redis';
 import Redis from 'ioredis';
 import crypto from 'crypto';
 

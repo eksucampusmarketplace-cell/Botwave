@@ -714,7 +714,7 @@ export async function findMessages(instanceName: string, where: Record<string, u
       body: JSON.stringify({ where, limit }),
     });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await res.json();
     return Array.isArray(data) ? data : data?.messages || data?.data || [];
   } catch {
     return [];
@@ -729,7 +729,7 @@ async function findMessageByKeyId(instanceName: string, keyId: string): Promise<
     body: JSON.stringify({ where: { key: { id: keyId } } }),
   });
   if (!res.ok) return null;
-  const data = await res.json();
+  const data: any = await res.json();
   const messages = Array.isArray(data) ? data : data?.messages || data?.data || [];
   return messages[0] || null;
 }
