@@ -150,6 +150,21 @@ function groupDefinitionsByComment(
   return result;
 }
 
+function FormattedBulletText({ text, textColor }: { text: string; textColor: string }) {
+  const colonIdx = text.indexOf(':');
+  if (colonIdx > 0 && colonIdx < 80) {
+    const prefix = text.slice(0, colonIdx);
+    const rest = text.slice(colonIdx);
+    return (
+      <span style={{ color: textColor }}>
+        <strong className="text-[var(--text-primary)]">{prefix}</strong>
+        {rest}
+      </span>
+    );
+  }
+  return <span style={{ color: textColor }}>{text}</span>;
+}
+
 function TopicGroupedList({
   items,
   bulletColor = 'var(--primary)',
@@ -163,11 +178,11 @@ function TopicGroupedList({
 }) {
   if (!hasTopicMarkers(items)) {
     return (
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm" style={{ color: textColor }}>
+          <li key={i} className="flex items-start gap-2.5 text-sm">
             <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
-            <span>{item}</span>
+            <FormattedBulletText text={item} textColor={textColor} />
           </li>
         ))}
       </ul>
@@ -176,22 +191,25 @@ function TopicGroupedList({
 
   const sections = groupByTopic(items);
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {sections.map((section, si) => (
         <div key={si}>
           {section.topic && (
-            <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)] pb-1.5">
-              {section.topic}
-            </h4>
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--primary)]/30">
+              <div className="w-1.5 h-5 rounded-full bg-[var(--primary)]" />
+              <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider">
+                {section.topic}
+              </h4>
+            </div>
           )}
           {section.intro && (
-            <p className="text-sm text-[var(--text-muted)] italic mb-2">{section.intro}</p>
+            <p className="text-sm text-[var(--text-muted)] italic mb-3 pl-4 border-l-2 border-[var(--border)]">{section.intro}</p>
           )}
-          <ul className="space-y-2">
+          <ul className="space-y-2.5 pl-1">
             {section.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: textColor }}>
+              <li key={i} className="flex items-start gap-2.5 text-sm">
                 <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
-                <span>{item}</span>
+                <FormattedBulletText text={item} textColor={textColor} />
               </li>
             ))}
           </ul>
@@ -807,11 +825,11 @@ export default function StudyPage() {
                     {summary.quickReview?.length > 0 && (
                       <div className="bg-gradient-to-r from-[var(--primary)]/10 to-[var(--accent)]/10 rounded-2xl border border-[var(--primary)]/20 p-6">
                         <h3 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-3">Quick Review</h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2.5">
                           {summary.quickReview.map((point, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
+                            <li key={i} className="flex items-start gap-2.5 text-sm">
                               <span className="text-[var(--primary)] mt-0.5 shrink-0">&bull;</span>
-                              <span>{point}</span>
+                              <FormattedBulletText text={point} textColor="var(--text-primary)" />
                             </li>
                           ))}
                         </ul>
@@ -871,12 +889,15 @@ export default function StudyPage() {
                             {defGroups.map((group, gi) => (
                               <div key={gi}>
                                 {group.topic && (
-                                  <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)] pb-1.5">
-                                    {group.topic}
-                                  </h4>
+                                  <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--primary)]/30">
+                                    <div className="w-1.5 h-5 rounded-full bg-[var(--primary)]" />
+                                    <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider">
+                                      {group.topic}
+                                    </h4>
+                                  </div>
                                 )}
                                 {group.intro && (
-                                  <p className="text-sm text-[var(--text-muted)] italic mb-2">{group.intro}</p>
+                                  <p className="text-sm text-[var(--text-muted)] italic mb-3 pl-4 border-l-2 border-[var(--border)]">{group.intro}</p>
                                 )}
                                 <div className="space-y-3">
                                   {group.defs.map((d, i) => (
