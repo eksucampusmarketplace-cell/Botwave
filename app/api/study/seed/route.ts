@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import {
   invalidateStudyMaterials,
   invalidateStudyTopics,
@@ -21,7 +20,7 @@ function getServiceSupabase() {
 }
 
 async function getUser() {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
