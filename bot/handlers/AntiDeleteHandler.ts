@@ -194,10 +194,13 @@ export async function handleMessageRevoke(
     return;
   }
 
-  console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — found cached message in chat=${cached.chatJid} from=${cached.senderJid}`);
+  console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — found cached message in chat=${cached.chatJid} from=${cached.senderJid} revokeJid=${revokeMessage.key.remoteJid}`);
   msgCache.delete(deletedKey.id);
 
-  const chatJid = revokeMessage.key.remoteJid || cached.chatJid;
+  // Use the cached chatJid (phone JID format) instead of revokeMessage.key.remoteJid
+  // which may be a LID format (e.g. 254267029979336@lid).  The !recover command
+  // looks up by context.chatJid which is always the phone JID, so the keys must match.
+  const chatJid = cached.chatJid || revokeMessage.key.remoteJid;
   const revokerParticipant = revokeMessage.key.participant;
   const revokerPn = (revokeMessage.key as any).participantPn;
   const deleterJid = normalizeJid(revokerPn || revokerParticipant || revokeMessage.key.remoteJid || '');
@@ -233,6 +236,17 @@ export function getDeletedMessages(sessionId: string, chatJid: string): Recovere
   const delCache = getSessionDeletedCache(sessionId);
   console.log(`[ANTI-DELETE] getDeletedMessages: session=${sessionId.slice(0, 8)} chatJid=${chatJid} cachedChats=[${Array.from(delCache.keys()).join(', ')}]`);
   let chatDeleted = delCache.get(chatJid) || [];
+
+  // Fallback: if no results for the phone JID, check if there are results
+  // stored under a LID key whose cached messages originated from this chatJid.
+  if (chatDeleted.length === 0) {
+    for (const [key, msgs] of delCache.entries()) {
+      if (key !== chatJid && msgs.some((m) => m.chatJid === chatJid)) {
+        chatDeleted = [...chatDeleted, ...msgs.filter((m) => m.chatJid === chatJid)];
+      }
+    }
+  }
+
   chatDeleted = pruneExpiredDeleted(chatDeleted);
   delCache.set(chatJid, chatDeleted);
 
