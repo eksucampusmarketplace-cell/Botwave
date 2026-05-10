@@ -1,5 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
+import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
 import {
@@ -457,13 +458,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     if (handler) {
       const startMs = Date.now();
       await handler.execute(context, args, sock, vars, commandName);
-      console.log(`Command !${commandName} completed in ${Date.now() - startMs}ms`);
+      const durationMs = Date.now() - startMs;
+      console.log(`Command !${commandName} completed in ${durationMs}ms`);
+      trackCommandExecution(commandName, true, durationMs, context.sessionId);
     } else {
       console.log(`Unknown command: !${commandName} — sending help hint`);
       await sendUnknownCommand(context, sock, vars);
     }
-  } catch (err) {
+  } catch (err: any) {
+    const durationMs = Date.now() - Date.now(); // approximate
     console.error(`Command !${commandName} failed:`, err);
+    trackCommandExecution(commandName, false, 0, context.sessionId, err?.message);
     try {
       await sendReply(
         context.chatJid,
