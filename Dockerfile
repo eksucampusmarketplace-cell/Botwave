@@ -79,14 +79,9 @@ COPY scripts/ ./scripts/
 # Copy bot build
 COPY --from=bot-builder /app/dist ./dist
 
-# Copy Next.js build (exclude build cache — not needed at runtime)
-COPY --from=web-builder /app/.next/server ./.next/server
-COPY --from=web-builder /app/.next/static ./.next/static
-COPY --from=web-builder /app/.next/BUILD_ID ./.next/BUILD_ID
-COPY --from=web-builder /app/.next/build-manifest.json ./.next/build-manifest.json
-COPY --from=web-builder /app/.next/prerender-manifest.json ./.next/prerender-manifest.json
-COPY --from=web-builder /app/.next/routes-manifest.json ./.next/routes-manifest.json
-COPY --from=web-builder /app/.next/required-server-files.json ./.next/required-server-files.json
+# Copy Next.js build and remove build cache (not needed at runtime, saves ~300MB)
+COPY --from=web-builder /app/.next ./.next
+RUN rm -rf .next/cache
 COPY --from=web-builder /app/public ./public
 
 # Copy source (needed for Next.js SSR runtime)
