@@ -8,6 +8,7 @@ import {
   cacheStudyFlashcards,
   invalidateStudyMaterials,
 } from '@/lib/redisApiCache';
+import { callAI } from '@/lib/ai-provider';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -22,7 +23,7 @@ async function getUser() {
   return user;
 }
 
-async function getGroqKey(userId: string): Promise<string | null> {
+async function getGroqFallbackKey(userId: string): Promise<string | null> {
   const supabase = getServiceSupabase();
   const { data } = await supabase
     .from('user_settings')
@@ -30,30 +31,6 @@ async function getGroqKey(userId: string): Promise<string | null> {
     .eq('user_id', userId)
     .single();
   return data?.groq_api_key || process.env.GROQ_API_KEY || null;
-}
-
-async function callGroq(apiKey: string, prompt: string): Promise<string> {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 8000,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Groq API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
 }
 
 function parseJsonFromResponse(text: string): unknown {
@@ -76,13 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'materialId is required' }, { status: 400 });
   }
 
-  const groqKey = await getGroqKey(user.id);
-  if (!groqKey) {
-    return NextResponse.json(
-      { error: 'Groq API key not set. Go to Settings and add your free Groq API key.' },
-      { status: 400 },
-    );
-  }
+  const groqFallbackKey = await getGroqFallbackKey(user.id);
 
   const supabase = getServiceSupabase();
 
@@ -102,7 +73,7 @@ export async function POST(request: NextRequest) {
   try {
     if (type === 'all' || type === 'summary') {
       const summaryPrompt = buildSummaryPrompt(material.content, material.title);
-      const summaryRaw = await callGroq(groqKey, summaryPrompt);
+      const summaryRaw = await callAI({ prompt: summaryPrompt, groqFallbackKey });
       const summaryData = parseJsonFromResponse(summaryRaw);
 
       await supabase.from('study_summaries').insert({
@@ -119,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'all' || type === 'questions') {
       const questionsPrompt = buildQuestionsPrompt(material.content, material.title);
-      const questionsRaw = await callGroq(groqKey, questionsPrompt);
+      const questionsRaw = await callAI({ prompt: questionsPrompt, groqFallbackKey });
       const questionsData = parseJsonFromResponse(questionsRaw) as Array<{
         type: string;
         question: string;
@@ -152,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'all' || type === 'flashcards') {
       const flashcardsPrompt = buildFlashcardsPrompt(material.content, material.title);
-      const flashcardsRaw = await callGroq(groqKey, flashcardsPrompt);
+      const flashcardsRaw = await callAI({ prompt: flashcardsPrompt, groqFallbackKey });
       const flashcardsData = parseJsonFromResponse(flashcardsRaw) as Array<{
         front: string;
         back: string;
