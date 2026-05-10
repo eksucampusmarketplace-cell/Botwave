@@ -61,11 +61,14 @@ export default function ForgotPasswordPage() {
 
           {sent ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-6">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-4">
                 <p className="text-sm text-emerald-400">
                   If an account with that email exists, a password reset link has been sent. Check your inbox.
                 </p>
               </div>
+              <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-6">
+                Don&apos;t see it? Check your <span className="font-semibold">spam/junk folder</span> — emails from new senders sometimes land there.
+              </p>
               <Link href="/login" className="text-sm text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
                 Back to login
               </Link>
