@@ -44,22 +44,24 @@ export async function sendEmail(envelope: EmailEnvelope): Promise<string> {
 
 export async function sendVerificationEmail(to: string, code: string, username: string): Promise<string> {
   const { verificationTemplate } = await import('./templates/verification');
-  return sendEmail({
+  const result = await sendEmailDirect({
     channel: 'auth',
     to,
     subject: `${code} is your BotWave verification code`,
     html: verificationTemplate(code, username),
   });
+  return result.messageId || '';
 }
 
 export async function sendForgotPasswordEmail(to: string, resetUrl: string, username: string): Promise<string> {
   const { forgotPasswordTemplate } = await import('./templates/forgot-password');
-  return sendEmail({
+  const result = await sendEmailDirect({
     channel: 'auth',
     to,
     subject: 'Reset your BotWave password',
     html: forgotPasswordTemplate(resetUrl, username),
   });
+  return result.messageId || '';
 }
 
 export async function sendWelcomeEmail(to: string, username: string): Promise<string> {
