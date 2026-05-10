@@ -139,6 +139,26 @@ export default function SessionsPage() {
     setShowQR(true);
   };
 
+  const handleDisconnectSession = async (sessionId: string) => {
+    if (!confirm('Disconnect this session? The bot will stop responding. You can reconnect it later.')) return;
+
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchSessions();
+      } else {
+        setError(data.error || 'Failed to disconnect session');
+      }
+    } catch {
+      setError('Failed to disconnect session');
+    }
+  };
+
   const handleDeleteSession = async (sessionId: string) => {
     if (!confirm('Delete this session? This cannot be undone.')) return;
 
@@ -214,6 +234,7 @@ export default function SessionsPage() {
                 status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                 lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
                 onConnect={() => handleConnect(session)}
+                onDisconnect={() => handleDisconnectSession(session.id)}
                 onDelete={() => handleDeleteSession(session.id)}
               />
             ))

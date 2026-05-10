@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getCachedReferralData, cacheReferralData, invalidateReferralData, invalidateRewards, getCachedReferralByCode, cacheReferralByCode } from '@/lib/redisApiCache';
+import { getCachedReferralData, cacheReferralData, invalidateReferralData, invalidateRewards, getCachedReferralByCode, cacheReferralByCode, invalidateReferralByCode } from '@/lib/redisApiCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -245,6 +245,9 @@ export async function POST(request: NextRequest) {
         frozen_reason: `Auto-frozen: ${flaggedCount} flagged referrals detected`,
       }).eq('user_id', referral.user_id);
 
+      await invalidateReferralByCode(code);
+      await invalidateReferralData(referral.user_id);
+
       console.warn(`[REFERRAL-FRAUD] Auto-frozen referrer: user=${referral.user_id} flagged=${flaggedCount}`);
       return NextResponse.json({ error: 'This referral code is no longer active' }, { status: 400 });
     }
@@ -263,18 +266,26 @@ export async function POST(request: NextRequest) {
       created_at: now,
     });
 
-    // Update referrer stats (direct update, no RPC needed)
-    const { data: refStats } = await supabase
-      .from('referrals')
-      .select('total_referred, total_earned')
-      .eq('user_id', referral.user_id)
-      .single();
+    // Update referrer stats atomically via RPC (avoids race conditions)
+    const { error: statsErr } = await supabase.rpc('increment_referral_stats', {
+      p_user_id: referral.user_id,
+      p_earned: REFERRAL_REWARD,
+    });
 
-    if (refStats) {
-      await supabase.from('referrals').update({
-        total_referred: (refStats.total_referred || 0) + 1,
-        total_earned: (refStats.total_earned || 0) + REFERRAL_REWARD,
-      }).eq('user_id', referral.user_id);
+    if (statsErr) {
+      // Fallback: direct update if RPC fails
+      const { data: refStats } = await supabase
+        .from('referrals')
+        .select('total_referred, total_earned')
+        .eq('user_id', referral.user_id)
+        .single();
+
+      if (refStats) {
+        await supabase.from('referrals').update({
+          total_referred: (refStats.total_referred || 0) + 1,
+          total_earned: (refStats.total_earned || 0) + REFERRAL_REWARD,
+        }).eq('user_id', referral.user_id);
+      }
     }
 
     // Credit rewards via safe increment
@@ -347,6 +358,7 @@ export async function POST(request: NextRequest) {
     await invalidateReferralData(user.id);
     await invalidateRewards(referral.user_id);
     await invalidateRewards(user.id);
+    await invalidateReferralByCode(code);
 
     return NextResponse.json({
       success: true,
