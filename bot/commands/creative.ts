@@ -481,7 +481,9 @@ async function handleScreenshot(context: MessageContext, args: string[], sock: a
   if (!url.startsWith('http')) url = 'https://' + url;
 
   try {
-    await sendReply(context.chatJid, 'Taking screenshot...', sock, context.rawMessage.key, context.queue);
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(context.chatJid, 'Taking screenshot...', sock, context.rawMessage.key, context.queue);
+    }
     const screenshotUrl = `https://image.thum.io/get/width/1280/${url}`;
     const response = await axios.get(screenshotUrl, { responseType: 'arraybuffer', timeout: 20000 });
     const buffer = Buffer.from(response.data);

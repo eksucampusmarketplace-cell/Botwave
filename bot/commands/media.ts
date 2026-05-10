@@ -735,7 +735,9 @@ async function handleImg(context: MessageContext, args: string[], sock: any): Pr
   }
   try {
     const prompt = args.join(' ');
-    await sendReply(context.chatJid, `Generating image for: "${prompt}"...\nThis may take 10-30 seconds.`, sock, context.rawMessage.key, context.queue);
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(context.chatJid, `Generating image for: "${prompt}"...\nThis may take 10-30 seconds.`, sock, context.rawMessage.key, context.queue);
+    }
 
     // Use Pollinations AI (free, no key)
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`;

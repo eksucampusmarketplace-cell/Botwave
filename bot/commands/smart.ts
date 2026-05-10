@@ -45,7 +45,9 @@ async function handleScan(
   }
 
   try {
-    await sendReply(context.chatJid, 'Scanning receipt...', sock, context.rawMessage.key, context.queue);
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(context.chatJid, 'Scanning receipt...', sock, context.rawMessage.key, context.queue);
+    }
 
     let imageBuffer: Buffer | null = null;
     if (hasDirectImage) {
@@ -137,13 +139,15 @@ async function handleMusic(
   const query = args.join(' ');
 
   try {
-    await sendReply(
-      context.chatJid,
-      `Searching for "${query}"... This may take a moment.`,
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(
+        context.chatJid,
+        `Searching for "${query}"... This may take a moment.`,
+        sock,
+        context.rawMessage.key,
+        context.queue,
+      );
+    }
 
     const ytdlpBin = await findYtDlp();
     const tmpFile = path.join(os.tmpdir(), `botwave_music_${Date.now()}`);
@@ -252,7 +256,9 @@ async function handleDigest(
   }
 
   try {
-    await sendReply(context.chatJid, 'Generating digest...', sock, context.rawMessage.key, context.queue);
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(context.chatJid, 'Generating digest...', sock, context.rawMessage.key, context.queue);
+    }
 
     // Determine how many messages or time range
     const arg = args[0]?.toLowerCase() || '';

@@ -39,7 +39,12 @@ async function handleAICommand(
   }
 
   try {
-    await sendReply(context.chatJid, 'Thinking...', sock, context.rawMessage.key, context.queue);
+    // Skip "Thinking..." for fromMe messages — the edit-in-place flow will
+    // replace the original command message directly with the AI response.
+    // Sending an intermediate status causes duplicates when the edit fails.
+    if (!context.rawMessage.key?.fromMe) {
+      await sendReply(context.chatJid, 'Thinking...', sock, context.rawMessage.key, context.queue);
+    }
 
     const aiResponse = await callAI({
       prompt: query,

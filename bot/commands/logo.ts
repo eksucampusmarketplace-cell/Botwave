@@ -1690,7 +1690,9 @@ async function handleLogoWallpaper(context: MessageContext, args: string[], sock
     return;
   }
 
-  await sendReply(context.chatJid, '🖼️ Creating your wallpaper...', sock, context.rawMessage.key, context.queue);
+  if (!context.rawMessage.key?.fromMe) {
+    await sendReply(context.chatJid, '🖼️ Creating your wallpaper...', sock, context.rawMessage.key, context.queue);
+  }
   await delay(randomBetween(600, 1200));
 
   try {
