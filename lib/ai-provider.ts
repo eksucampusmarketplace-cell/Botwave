@@ -84,7 +84,7 @@ async function callGemini(apiKey: string, prompt: string, maxTokens: number, tem
     throw Object.assign(new Error(`Gemini API error (${res.status}): ${errText}`), { status: res.status });
   }
 
-  const data = await res.json();
+  const data: any = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
@@ -119,7 +119,7 @@ async function callGeminiVision(apiKey: string, prompt: string, imageBase64: str
     throw Object.assign(new Error(`Gemini Vision error (${res.status}): ${errText}`), { status: res.status });
   }
 
-  const data = await res.json();
+  const data: any = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
