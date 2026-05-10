@@ -491,6 +491,12 @@ export async function POST(request: NextRequest) {
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
         if (fromMe && !text.trimStart().startsWith('!')) continue;
+
+        // Mark every command message as seen so that ACK re-deliveries of the
+        // same message are caught by the dedup cache above.
+        const cmdMsgId = msg.key?.id;
+        if (cmdMsgId) markSeen(cmdMsgId);
+
         commandMsgs.push(msg);
       }
 

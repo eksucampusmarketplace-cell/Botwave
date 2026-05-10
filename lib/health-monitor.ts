@@ -65,9 +65,9 @@ async function handleHealthResult(health: HealthResponse | null): Promise<void> 
       text: `BotWave has recovered. All checks are passing.`,
       html: buildAlertHtml('System Recovered', 'info', {
         'Status': 'All systems operational',
-        'Active Sessions': health.sessions.active,
-        'CPU': `${health.system.cpuPercent}%`,
-        'Memory': `${health.system.memPercent}%`,
+        'Active Sessions': health.sessions?.active ?? 'N/A',
+        'CPU': `${health.system?.cpuPercent ?? 'N/A'}%`,
+        'Memory': `${health.system?.memPercent ?? 'N/A'}%`,
       }),
     });
   }
@@ -97,33 +97,33 @@ async function handleHealthResult(health: HealthResponse | null): Promise<void> 
   }
 
   // High CPU alert
-  if (health.system.cpuPercent > 90) {
+  if (health.system?.cpuPercent != null && health.system.cpuPercent > 90) {
     await sendAlertEmail({
       subject: '⚠️ BotWave High CPU Usage',
       text: `CPU usage is at ${health.system.cpuPercent}%`,
       html: buildAlertHtml('High CPU Usage', 'warning', {
         'CPU Usage': `${health.system.cpuPercent}%`,
         'Memory Usage': `${health.system.memPercent}%`,
-        'Active Sessions': health.sessions.active,
+        'Active Sessions': health.sessions?.active ?? 'N/A',
       }),
     });
   }
 
   // High memory alert
-  if (health.system.memPercent > 90) {
+  if (health.system?.memPercent != null && health.system.memPercent > 90) {
     await sendAlertEmail({
       subject: '⚠️ BotWave High Memory Usage',
       text: `Memory usage is at ${health.system.memPercent}%`,
       html: buildAlertHtml('High Memory Usage', 'warning', {
         'Memory Usage': `${health.system.memPercent}%`,
         'CPU Usage': `${health.system.cpuPercent}%`,
-        'Active Sessions': health.sessions.active,
+        'Active Sessions': health.sessions?.active ?? 'N/A',
       }),
     });
   }
 
   // Stuck sessions alert
-  if (health.sessions.stuck > 0) {
+  if (health.sessions?.stuck != null && health.sessions.stuck > 0) {
     await sendAlertEmail({
       subject: `⚠️ BotWave: ${health.sessions.stuck} Stuck Session(s)`,
       text: `${health.sessions.stuck} sessions appear stuck (no heartbeat for 3+ minutes)`,
