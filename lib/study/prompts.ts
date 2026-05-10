@@ -28,23 +28,27 @@ INSTRUCTIONS — follow ALL of these strictly:
 7. **QUICK REVIEW** — A 5-bullet ultra-condensed version for last-minute revision.
 
 TOPIC GROUPING — VERY IMPORTANT:
-If the material covers MULTIPLE topics or sub-topics, you MUST group content under topic headers for readability.
+You MUST group content under topic headers AND sub-section labels for readability. Students must always know WHAT they are reading about.
 Use these special prefixes in your string arrays:
-- "## TOPIC NAME" — a topic sub-heading (use ALL CAPS for the topic name)
+- "## TOPIC NAME" — a main topic heading (use ALL CAPS for the topic name)
 - ">> Brief intro text" — a 1-2 sentence introduction/overview for that topic section
-- Regular strings (no prefix) — normal bullet points under that topic
+- "### Sub-section" — a sub-section label within a topic (e.g. Structure, Types, Mechanism of Action, Regulation, Functions, Clinical Significance, Normal Values)
+- Regular strings (no prefix) — normal bullet points under that sub-section
+
+EVERY topic MUST have sub-sections. Do NOT dump all bullets flat under a topic — group them by aspect.
+Common sub-sections: Structure & Location, Types/Classification, Mechanism of Action, Synthesis/Production, Regulation, Functions/Actions, Normal Values, Transport, Clinical Significance.
 
 For definitions, use: {"term": "## TOPIC NAME", "definition": "Brief intro for this topic section"} as a header entry, followed by normal definition entries.
 
 Example for keyPoints:
-["## PANCREATIC HORMONES", ">> The pancreas regulates blood glucose through insulin and glucagon.", "Insulin is the ONLY hypoglycaemic hormone...", "## ADRENAL HORMONES", ">> The adrenal glands produce steroids and catecholamines.", "Cortisol is regulated by the HPA axis..."]
+["## INSULIN", ">> Insulin is the only hypoglycaemic hormone, secreted by beta cells of the pancreatic islets.", "### Structure & Source", "Secreted by beta cells of islets of Langerhans", "Peptide hormone (51 amino acids, 2 chains linked by disulphide bonds)", "### Mechanism of Action", "Binds tyrosine kinase receptor on target cells", "Promotes GLUT4 translocation to cell membrane", "### Functions", "↓Blood glucose — the ONLY hypoglycaemic hormone", "↑Glycogenesis, ↑lipogenesis, ↑protein synthesis", "### Clinical Significance", "Deficiency → Diabetes Mellitus", "Type 1: autoimmune destruction of beta cells", "## GLUCAGON", ">> Glucagon opposes insulin and raises blood glucose.", "### Source & Regulation", "Secreted by alpha cells of islets of Langerhans", "Stimulated by hypoglycaemia, inhibited by insulin"]
 
-If the material covers only ONE topic, you may skip the ## headers.
+If the material covers only ONE topic, still use ### sub-sections to organize the content.
 
 FORMAT: Return valid JSON with this structure:
 {
-  "keyPoints": ["## TOPIC (if multi-topic)", ">> Brief intro", "point 1", "point 2", ...],
-  "examHighlights": ["## TOPIC (if multi-topic)", ">> Brief intro", "highlight 1", ...],
+  "keyPoints": ["## TOPIC", ">> Brief intro", "### Sub-section", "point 1", "point 2", "### Another Sub-section", "point 3", ...],
+  "examHighlights": ["## TOPIC", ">> Brief intro", "### Sub-section", "highlight 1", ...],
   "definitions": [{"term": "## TOPIC", "definition": "Brief intro"}, {"term": "...", "definition": "..."}],
   "clinicalCorrelations": ["## TOPIC (if multi-topic)", ">> Brief intro", "correlation 1", ...],
   "processes": [{"name": "...", "steps": ["step 1", "step 2", ...]}],
