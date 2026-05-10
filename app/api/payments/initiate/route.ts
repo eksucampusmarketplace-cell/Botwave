@@ -74,15 +74,26 @@ export async function POST(request: NextRequest) {
         metadata: { user_id: user.id, plan },
       });
       console.log(`[PAYMENT-INIT] Re-init result: success=${reResult.success} checkoutUrl=${reResult.checkoutUrl || 'NONE'} error=${reResult.error || 'none'}`);
-      return NextResponse.json({
-        success: true,
-        transactionRef: existing.squad_transaction_ref,
-        checkoutUrl: reResult.checkoutUrl || null,
-        publicKey: getPublicKey(),
-        amount: planConfig.price,
-        email: user.email,
-        plan,
-      });
+
+      if (reResult.success) {
+        return NextResponse.json({
+          success: true,
+          transactionRef: existing.squad_transaction_ref,
+          checkoutUrl: reResult.checkoutUrl || null,
+          publicKey: getPublicKey(),
+          amount: planConfig.price,
+          email: user.email,
+          plan,
+        });
+      }
+
+      // Re-init failed (e.g. "Duplicate reference") — mark old payment as failed
+      // and fall through to create a fresh one
+      console.log(`[PAYMENT-INIT] Re-init failed, marking old ref as failed and creating new payment`);
+      await supabase
+        .from('payments')
+        .update({ status: 'failed', updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
     }
 
     // Create payment record

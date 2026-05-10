@@ -30,7 +30,7 @@ async function getGroqKey(userId: string): Promise<string | null> {
     .select('groq_api_key')
     .eq('user_id', userId)
     .single();
-  return data?.groq_api_key || null;
+  return data?.groq_api_key || process.env.GROQ_API_KEY || null;
 }
 
 async function callGroq(apiKey: string, prompt: string): Promise<string> {
