@@ -28,7 +28,6 @@
     "docx": "^9.6.1",
     "fluent-ffmpeg": "^2.1.3",
     "framer-motion": "^11.2.10",
-    "groq-sdk": "^1.1.2",
     "https-proxy-agent": "^9.0.0",
     "ioredis": "^5.10.1",
     "jsqr": "^1.4.0",

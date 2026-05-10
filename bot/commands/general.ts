@@ -24,7 +24,7 @@ async function sendHelp(
 !joke / !quote / !meme — Fun
 
 *AI & SMART*
-!ai [message] — AI chat (Groq)
+!ai [message] — AI chat (Gemini)
 !img [prompt] — AI image generation
 !scan — Receipt/invoice scanner (reply to photo)
 !music [song] — Search & send music as audio
@@ -171,7 +171,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           {
             name: '!ai',
             usage: '!ai [your message]  or  reply to a message with !ai',
-            description: 'Chat with an AI assistant powered by Groq. Send any question, request, or prompt and get an intelligent response. You can also reply to any message with "!ai" to ask the AI about that text. Requires your Groq API key to be configured in your bot settings. Supports multi-turn conversation context.',
+            description: 'Chat with an AI assistant powered by Google Gemini. Send any question, request, or prompt and get an intelligent response. You can also reply to any message with "!ai" to ask the AI about that text. Works automatically — no API key needed. Supports multi-turn conversation context.',
           },
           {
             name: '!weather',
@@ -706,9 +706,9 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
       {
         title: 'AI & SMART FEATURES',
         commands: [
-          { name: '!scan', usage: '!scan (reply to receipt/invoice photo)', description: 'Scans a receipt or invoice photo using AI vision and extracts store name, items, prices, subtotal, tax, total, and payment method. Send or reply to a photo with "!scan". You can add context: "!scan this is in euros".\n\nRequires Groq API key in dashboard settings.\n\nAliases: !receipt, !invoice' },
+          { name: '!scan', usage: '!scan (reply to receipt/invoice photo)', description: 'Scans a receipt or invoice photo using AI vision and extracts store name, items, prices, subtotal, tax, total, and payment method. Send or reply to a photo with "!scan". You can add context: "!scan this is in euros".\n\nAliases: !receipt, !invoice' },
           { name: '!music', usage: '!music [song name]', description: 'Searches for a song and sends it as an audio file. Supports any song — just type the name and optionally the artist.\n\nExamples:\n"!music Shape of You"\n"!music Burna Boy Last Last"\n"!music Wizkid Essence"\n\nAliases: !song, !findsong' },
-          { name: '!digest', usage: '!digest  |  !digest today  |  !digest 50', description: 'Generates an AI summary of recent group chat messages using real participant names. Great for catching up on busy groups.\n\nOptions:\n"!digest" — Last few hours\n"!digest today" — Full day summary\n"!digest 50" — Last 50 messages\n\nOnly works in group chats. Requires Groq API key.\n\nAliases: !summary, !tldr' },
+          { name: '!digest', usage: '!digest  |  !digest today  |  !digest 50', description: 'Generates an AI summary of recent group chat messages using real participant names. Great for catching up on busy groups.\n\nOptions:\n"!digest" — Last few hours\n"!digest today" — Full day summary\n"!digest 50" — Last 50 messages\n\nOnly works in group chats.\n\nAliases: !summary, !tldr' },
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
         ],
       },

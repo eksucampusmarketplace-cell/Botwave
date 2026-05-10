@@ -23,16 +23,6 @@ async function getUser() {
   return user;
 }
 
-async function getGroqFallbackKey(userId: string): Promise<string | null> {
-  const supabase = getServiceSupabase();
-  const { data } = await supabase
-    .from('user_settings')
-    .select('groq_api_key')
-    .eq('user_id', userId)
-    .single();
-  return data?.groq_api_key || process.env.GROQ_API_KEY || null;
-}
-
 function parseJsonFromResponse(text: string): unknown {
   const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\])/) || text.match(/(\{[\s\S]*\})/);
   if (jsonMatch) {
@@ -53,8 +43,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'materialId is required' }, { status: 400 });
   }
 
-  const groqFallbackKey = await getGroqFallbackKey(user.id);
-
   const supabase = getServiceSupabase();
 
   const { data: material, error: matErr } = await supabase
@@ -73,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     if (type === 'all' || type === 'summary') {
       const summaryPrompt = buildSummaryPrompt(material.content, material.title);
-      const summaryRaw = await callAI({ prompt: summaryPrompt, groqFallbackKey });
+      const summaryRaw = await callAI({ prompt: summaryPrompt });
       const summaryData = parseJsonFromResponse(summaryRaw);
 
       await supabase.from('study_summaries').insert({
@@ -90,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'all' || type === 'questions') {
       const questionsPrompt = buildQuestionsPrompt(material.content, material.title);
-      const questionsRaw = await callAI({ prompt: questionsPrompt, groqFallbackKey });
+      const questionsRaw = await callAI({ prompt: questionsPrompt });
       const questionsData = parseJsonFromResponse(questionsRaw) as Array<{
         type: string;
         question: string;
@@ -123,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'all' || type === 'flashcards') {
       const flashcardsPrompt = buildFlashcardsPrompt(material.content, material.title);
-      const flashcardsRaw = await callAI({ prompt: flashcardsPrompt, groqFallbackKey });
+      const flashcardsRaw = await callAI({ prompt: flashcardsPrompt });
       const flashcardsData = parseJsonFromResponse(flashcardsRaw) as Array<{
         front: string;
         back: string;

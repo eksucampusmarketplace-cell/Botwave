@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('user_settings')
-      .select('groq_api_key, afk_enabled, afk_message, bot_name, skip_probability, welcome_message, command_prefix, timezone')
+      .select('afk_enabled, afk_message, bot_name, skip_probability, welcome_message, command_prefix, timezone')
       .eq('user_id', user.id)
       .single();
 
@@ -25,7 +25,6 @@ export async function GET(req: NextRequest) {
     }
 
     const result = {
-      groqApiKey: data?.groq_api_key ? maskApiKey(data.groq_api_key) : null,
       afkEnabled: data?.afk_enabled ?? false,
       afkMessage: data?.afk_message ?? 'I am currently away',
       botName: data?.bot_name ?? 'BotWave',
@@ -52,19 +51,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { groqApiKey, afkEnabled, afkMessage, botName, skipProbability, welcomeMessage, commandPrefix, timezone } = body;
+    const { afkEnabled, afkMessage, botName, skipProbability, welcomeMessage, commandPrefix, timezone } = body;
 
     const updateData: Record<string, unknown> = {
       user_id: user.id,
       updated_at: new Date().toISOString(),
     };
-
-    if (groqApiKey !== undefined) {
-      // Only update if not the masked version
-      if (!groqApiKey.includes('****')) {
-        updateData.groq_api_key = groqApiKey || null;
-      }
-    }
     if (afkEnabled !== undefined) updateData.afk_enabled = afkEnabled;
     if (afkMessage !== undefined) updateData.afk_message = afkMessage;
     if (botName !== undefined) updateData.bot_name = botName;
@@ -92,7 +84,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function maskApiKey(key: string): string {
-  if (key.length <= 8) return '****';
-  return key.slice(0, 4) + '****' + key.slice(-4);
-}
+

@@ -1,7 +1,7 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, pickResponse, getHelpHint, getQuotedMessage, axios } from './helpers';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
-import { getUserSettings } from '../database';
+import { callAI } from '../../lib/ai-provider';
 import {
   weatherReplies,
   dictReplies,
@@ -38,57 +38,24 @@ async function handleAICommand(
     return;
   }
 
-  // BYOK — get user's Groq API key from Supabase
-  let groqKey: string | null = null;
-  if (context.sessionId) {
-    try {
-      const settings = await getUserSettings(context.userId || '');
-      groqKey = settings?.groq_api_key || null;
-    } catch (err) {
-      console.error('[AI] Failed to fetch user settings:', err);
-    }
-  }
-
-  if (!groqKey) {
-    await sendReply(
-      context.chatJid,
-      'Add your Groq API key in the dashboard to use AI!\nbotwave.com/dashboard -> Settings -> AI Settings\n\nGroq is free at console.groq.com',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
-    return;
-  }
-
   try {
     await sendReply(context.chatJid, 'Thinking...', sock, context.rawMessage.key, context.queue);
 
-    const Groq = (await import('groq-sdk')).default;
-    const groq = new Groq({ apiKey: groqKey });
-
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words.',
-        },
-        { role: 'user', content: query },
-      ],
-      max_tokens: 500,
+    const aiResponse = await callAI({
+      prompt: query,
+      maxTokens: 500,
       temperature: 0.7,
+      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words.',
     });
-
-    const aiResponse = completion.choices[0]?.message?.content || 'Sorry, I could not process that request.';
 
     const intro = pickResponse(aiIntros, vars, false);
 
     await sendReply(context.chatJid, `${intro}\n\n${aiResponse}`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
-    console.error('Groq API error:', error);
+    console.error('AI error:', error);
     await sendReply(
       context.chatJid,
-      'AI service error. Check your Groq API key or try again later.',
+      'AI service temporarily unavailable. Please try again later.',
       sock,
       context.rawMessage.key,
       context.queue,
@@ -781,7 +748,7 @@ async function handleCountry(context: MessageContext, args: string[], sock: any)
 
 // ─── Register Info Commands ─────────────────────────────────────────────────
 
-registerCommand({ name: 'ai', aliases: ['ai', 'ask', 'chat'], category: 'info', description: 'AI chat (requires Groq key)', execute: (ctx, args, sock, vars) => handleAICommand(ctx, args, sock, vars) });
+registerCommand({ name: 'ai', aliases: ['ai', 'ask', 'chat'], category: 'info', description: 'AI chat', execute: (ctx, args, sock, vars) => handleAICommand(ctx, args, sock, vars) });
 registerCommand({ name: 'weather', aliases: ['weather', 'w', 'forecast'], category: 'info', description: 'Get weather info', execute: (ctx, args, sock, vars) => handleWeatherCommand(ctx, args, sock, vars) });
 registerCommand({ name: 'define', aliases: ['define', 'dictionary', 'dict'], category: 'info', description: 'Dictionary lookup', execute: (ctx, args, sock, vars) => handleDefine(ctx, args, sock, vars) });
 registerCommand({ name: 'horoscope', aliases: ['horoscope', 'zodiac'], category: 'info', description: 'Daily horoscope', execute: (ctx, args, sock, vars) => handleHoroscope(ctx, args, sock, vars) });

@@ -37,9 +37,9 @@ export const knowledgeBase: KBEntry[] = [
     category: 'commands',
   },
   {
-    keywords: ['ai', 'chatbot', 'ask ai', 'artificial intelligence', 'groq', 'ai chat'],
+    keywords: ['ai', 'chatbot', 'ask ai', 'artificial intelligence', 'gemini', 'ai chat'],
     question: 'How does AI chat work?',
-    answer: 'Use *!ai [your question]* to chat with AI. You need a free Groq API key \u2014 get one at console.groq.com and add it in Dashboard > Settings > AI Settings. The AI uses Llama 3.3 70B for intelligent responses.',
+    answer: 'Use *!ai [your question]* to chat with AI. It works automatically \u2014 no setup or API key needed! BotWave uses Google Gemini for fast, intelligent responses.',
     category: 'commands',
   },
   {
@@ -233,7 +233,7 @@ export const knowledgeBase: KBEntry[] = [
   {
     keywords: ['coding', 'developer', 'no code', 'programming', 'technical'],
     question: 'Do I need coding skills?',
-    answer: 'No! BotWave is 100% no-code. Sign up, scan QR code, your bot is live. All configuration happens through the web dashboard. Even AI chat just needs pasting a free Groq API key.',
+    answer: 'No! BotWave is 100% no-code. Sign up, scan QR code, your bot is live. All configuration happens through the web dashboard. AI features work automatically with no setup needed.',
     category: 'general',
   },
   {

@@ -1,7 +1,7 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, getImageFromContext, axios } from './helpers';
-import { getUserSettings } from '../database';
 import { getBase64FromMediaMessage } from '../evolutionClient';
+import { callAI, callAIVision } from '../../lib/ai-provider';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink, readFile, access } from 'fs/promises';
@@ -16,7 +16,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 );
 
-// ─── !scan — Receipt/Invoice Scanner using Groq Vision ──────────────────────
+// ─── !scan — Receipt/Invoice Scanner using Gemini Vision ─────────────────────
 
 async function handleScan(
   context: MessageContext,
@@ -36,27 +36,7 @@ async function handleScan(
       '- Store/vendor name\n' +
       '- Individual items & prices\n' +
       '- Subtotal, tax, total\n' +
-      '- Date & payment method\n\n' +
-      '_Requires Groq API key in settings_',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
-    return;
-  }
-
-  let groqKey: string | null = null;
-  if (context.userId) {
-    try {
-      const settings = await getUserSettings(context.userId);
-      groqKey = settings?.groq_api_key || null;
-    } catch { /* fallback */ }
-  }
-
-  if (!groqKey) {
-    await sendReply(
-      context.chatJid,
-      'Add your Groq API key in the dashboard to use receipt scanning!\nbotwave.com/dashboard -> Settings -> AI Settings\n\nGroq is free at console.groq.com',
+      '- Date & payment method',
       sock,
       context.rawMessage.key,
       context.queue,
@@ -87,22 +67,10 @@ async function handleScan(
     }
 
     const base64Image = imageBuffer.toString('base64');
-    const mimeType = 'image/jpeg';
-
-    const Groq = (await import('groq-sdk')).default;
-    const groq = new Groq({ apiKey: groqKey });
-
     const customPrompt = args.length > 0 ? `\n\nAdditional context from user: ${args.join(' ')}` : '';
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.2-90b-vision-preview',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analyze this receipt/invoice image. Extract and format the following information clearly:
+    const result = await callAIVision({
+      prompt: `Analyze this receipt/invoice image. Extract and format the following information clearly:
 
 1. **Store/Vendor Name** (if visible)
 2. **Date** (if visible)
@@ -113,35 +81,16 @@ async function handleScan(
 7. **Payment Method** (if visible)
 
 Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visible, skip it. Be concise.${customPrompt}`,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 1000,
-      temperature: 0.3,
+      imageBase64: base64Image,
+      mimeType: 'image/jpeg',
+      maxTokens: 1000,
     });
 
-    const result = completion.choices[0]?.message?.content || 'Could not read the receipt. Try a clearer photo.';
     await sendReply(context.chatJid, `*RECEIPT SCAN RESULT*\n\n${result}`, sock, context.rawMessage.key, context.queue);
-  } catch (error: any) {
-    console.error('[SCAN] Error:', error?.message || error);
-    if (error?.message?.includes('model') || error?.status === 400) {
-      await sendReply(
-        context.chatJid,
-        'Vision model not available with your API key. Make sure your Groq account has access to vision models at console.groq.com',
-        sock,
-        context.rawMessage.key,
-        context.queue,
-      );
-    } else {
-      await sendReply(context.chatJid, 'Receipt scanning failed. Try a clearer photo or try again later.', sock, context.rawMessage.key, context.queue);
-    }
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[SCAN] Error:', err.message);
+    await sendReply(context.chatJid, 'Receipt scanning failed. Try a clearer photo or try again later.', sock, context.rawMessage.key, context.queue);
   }
 }
 
@@ -288,27 +237,7 @@ async function handleDigest(
       'Use this command in a group chat to get an AI summary of recent messages.\n\n' +
       '!digest — Summarize last few hours\n' +
       '!digest today — Today\'s summary\n' +
-      '!digest 50 — Last 50 messages\n\n' +
-      '_Requires Groq API key in settings_',
-      sock,
-      context.rawMessage.key,
-      context.queue,
-    );
-    return;
-  }
-
-  let groqKey: string | null = null;
-  if (context.userId) {
-    try {
-      const settings = await getUserSettings(context.userId);
-      groqKey = settings?.groq_api_key || null;
-    } catch { /* fallback */ }
-  }
-
-  if (!groqKey) {
-    await sendReply(
-      context.chatJid,
-      'Add your Groq API key in the dashboard to use digest!\nbotwave.com/dashboard -> Settings -> AI Settings\n\nGroq is free at console.groq.com',
+      '!digest 50 — Last 50 messages',
       sock,
       context.rawMessage.key,
       context.queue,
@@ -394,15 +323,11 @@ async function handleDigest(
       chatLog = chatLog.slice(chatLog.indexOf('\n') + 1);
     }
 
-    const Groq = (await import('groq-sdk')).default;
-    const groq = new Groq({ apiKey: groqKey });
-
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a WhatsApp group chat summarizer. Create a concise, easy-to-read digest of the conversation. Rules:
+    const summary = await callAI({
+      prompt: `Summarize this group chat (${textCount} text messages${mediaCount > 0 ? `, ${mediaCount} media messages` : ''}):\n\n${chatLog}`,
+      maxTokens: 800,
+      temperature: 0.5,
+      systemPrompt: `You are a WhatsApp group chat summarizer. Create a concise, easy-to-read digest of the conversation. Rules:
 - Use the REAL NAMES of participants (as shown in the chat log)
 - Organize by topic/theme, not chronologically
 - Highlight key decisions, questions, and action items
@@ -411,17 +336,7 @@ async function handleDigest(
 - Use WhatsApp formatting: *bold* for headers, _italic_ for emphasis
 - Be neutral and objective
 - If there were arguments or debates, summarize both sides fairly`,
-        },
-        {
-          role: 'user',
-          content: `Summarize this group chat (${textCount} text messages${mediaCount > 0 ? `, ${mediaCount} media messages` : ''}):\n\n${chatLog}`,
-        },
-      ],
-      max_tokens: 800,
-      temperature: 0.5,
     });
-
-    const summary = completion.choices[0]?.message?.content || 'Could not generate summary.';
 
     const header = `*GROUP DIGEST*\n` +
       `_${textCount} messages${mediaCount > 0 ? ` + ${mediaCount} media` : ''} summarized_\n\n`;
