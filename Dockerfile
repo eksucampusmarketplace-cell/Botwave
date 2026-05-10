@@ -21,8 +21,8 @@ FROM build-base AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY scripts/patch-baileys.js ./scripts/
-RUN npm ci --omit=dev && 
-    rm -rf /app/node_modules/@next/swc-linux-x64-gnu && 
+RUN npm ci --omit=dev && \
+    rm -rf /app/node_modules/@next/swc-linux-x64-gnu && \
     npm cache clean --force
 
 # ── Bot Build ────────────────────────────────────────────
