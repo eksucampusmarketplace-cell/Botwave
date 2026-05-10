@@ -9,7 +9,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY scripts/patch-baileys.js ./scripts/
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
 # --- Bot Build ---
 FROM deps AS bot-builder
@@ -37,15 +37,15 @@ ARG EVOLUTION_API_KEY=placeholder
 ARG BOT_SECRET_KEY=placeholder
 ARG INTERNAL_SECRET=placeholder
 
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-ENV REDIS_URL=$REDIS_URL
-ENV EVOLUTION_API_URL=$EVOLUTION_API_URL
-ENV EVOLUTION_API_KEY=$EVOLUTION_API_KEY
-ENV BOT_SECRET_KEY=$BOT_SECRET_KEY
-ENV INTERNAL_SECRET=$INTERNAL_SECRET
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+    SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY \
+    REDIS_URL=$REDIS_URL \
+    EVOLUTION_API_URL=$EVOLUTION_API_URL \
+    EVOLUTION_API_KEY=$EVOLUTION_API_KEY \
+    BOT_SECRET_KEY=$BOT_SECRET_KEY \
+    INTERNAL_SECRET=$INTERNAL_SECRET
 
 RUN npm run build
 
@@ -53,14 +53,17 @@ RUN npm run build
 FROM base AS production
 WORKDIR /app
 
+ENV NODE_ENV=production
+
 # Install yt-dlp for !download command + docker CLI for admin deployment panel
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
     chmod +x /usr/local/bin/yt-dlp && \
-    apk add --no-cache docker-cli docker-cli-compose git
+    apk add --no-cache docker-cli docker-cli-compose git && \
+    rm -rf /var/cache/apk/*
 
 COPY package.json package-lock.json ./
 COPY scripts/ ./scripts/
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy bot build
 COPY --from=bot-builder /app/dist ./dist
