@@ -1,7 +1,7 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, getImageFromContext, axios } from './helpers';
 import { getBase64FromMediaMessage } from '../evolutionClient';
-import { callAI, callAIVision } from '../../lib/ai-provider';
+import { callAI, callAIVision, AIQuotaExhaustedError, AIRateLimitError } from '../../lib/ai-provider';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink, readFile, access } from 'fs/promises';
@@ -90,7 +90,13 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
   } catch (error: unknown) {
     const err = error as Error;
     console.error('[SCAN] Error:', err.message);
-    await sendReply(context.chatJid, 'Receipt scanning failed. Try a clearer photo or try again later.', sock, context.rawMessage.key, context.queue);
+    let msg = 'Receipt scanning failed. Try a clearer photo or try again later.';
+    if (error instanceof AIQuotaExhaustedError) {
+      msg = 'AI quota exhausted — the Gemini API key needs billing enabled. Contact the bot admin.';
+    } else if (error instanceof AIRateLimitError) {
+      msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
+    }
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
   }
 }
 
@@ -344,7 +350,13 @@ async function handleDigest(
     await sendReply(context.chatJid, header + summary, sock, context.rawMessage.key, context.queue);
   } catch (error: any) {
     console.error('[DIGEST] Error:', error?.message || error);
-    await sendReply(context.chatJid, 'Digest generation failed. Try again later.', sock, context.rawMessage.key, context.queue);
+    let msg = 'Digest generation failed. Try again later.';
+    if (error instanceof AIQuotaExhaustedError) {
+      msg = 'AI quota exhausted — the Gemini API key needs billing enabled. Contact the bot admin.';
+    } else if (error instanceof AIRateLimitError) {
+      msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
+    }
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
   }
 }
 

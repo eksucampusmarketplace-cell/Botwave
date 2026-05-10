@@ -1,11 +1,88 @@
 /**
- * AI Provider — Google Gemini with smart key rotation.
+ * AI Provider — Multi-provider with Groq (primary) and Gemini (fallback).
  *
- * Reads GEMINI_API_KEY from env — supports comma-separated keys for rotation.
- * Example: GEMINI_API_KEY=key1,key2,key3
- * When a key hits a rate limit (429), it is cooldown-locked and the next key
- * is tried automatically.
+ * Provider priority: Groq → Gemini
+ *
+ * GROQ_API_KEY — free, no billing needed, 30 req/min.
+ * GEMINI_API_KEY — supports comma-separated keys for rotation.
+ *
+ * When a key hits a rate limit (429), it is cooldown-locked and the next
+ * provider/key is tried automatically.
  */
+
+export class AIQuotaExhaustedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AIQuotaExhaustedError';
+  }
+}
+
+export class AIRateLimitError extends Error {
+  retryAfterMs: number;
+  constructor(message: string, retryAfterMs: number) {
+    super(message);
+    this.name = 'AIRateLimitError';
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+// ─── Groq Provider ──────────────────────────────────────────────────────────
+
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+let groqCooldownUntil = 0;
+
+function getGroqApiKey(): string | null {
+  return process.env.GROQ_API_KEY?.trim() || null;
+}
+
+function isGroqAvailable(): boolean {
+  return !!getGroqApiKey() && Date.now() >= groqCooldownUntil;
+}
+
+async function callGroq(
+  apiKey: string,
+  prompt: string,
+  maxTokens: number,
+  temperature: number,
+  systemPrompt?: string,
+): Promise<string> {
+  const messages: Array<{ role: string; content: string }> = [];
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  }
+  messages.push({ role: 'user', content: prompt });
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  });
+
+  if (res.status === 429) {
+    const retryAfter = res.headers.get('retry-after');
+    const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
+    groqCooldownUntil = Date.now() + cooldownMs;
+    throw Object.assign(new AIRateLimitError('Groq rate limited', cooldownMs), { status: 429, cooldownMs });
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq API error (${res.status}): ${errText}`);
+  }
+
+  const data: any = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// ─── Gemini Provider ────────────────────────────────────────────────────────
 
 interface GeminiKey {
   key: string;
@@ -49,6 +126,31 @@ function markKeyCooldown(geminiKey: GeminiKey, retryAfterMs = 60_000) {
   geminiKey.cooldownUntil = Date.now() + retryAfterMs;
 }
 
+function parseGemini429(body: string): { isQuotaExhausted: boolean; retryAfterMs: number } {
+  try {
+    const parsed = JSON.parse(body);
+    const violations = parsed?.error?.details?.find(
+      (d: any) => d['@type']?.includes('QuotaFailure'),
+    )?.violations;
+    const hasZeroLimit = violations?.some((v: any) =>
+      v.quotaMetric?.includes('free_tier') || v.quotaId?.includes('FreeTier'),
+    );
+    const retryInfo = parsed?.error?.details?.find(
+      (d: any) => d['@type']?.includes('RetryInfo'),
+    );
+    const retryDelaySec = retryInfo?.retryDelay
+      ? parseFloat(retryInfo.retryDelay)
+      : 60;
+    const limitZero = body.includes('limit: 0');
+    return {
+      isQuotaExhausted: limitZero || (hasZeroLimit ?? false),
+      retryAfterMs: retryDelaySec * 1000,
+    };
+  } catch {
+    return { isQuotaExhausted: false, retryAfterMs: 60_000 };
+  }
+}
+
 async function callGemini(apiKey: string, prompt: string, maxTokens: number, temperature: number, systemPrompt?: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
@@ -74,9 +176,15 @@ async function callGemini(apiKey: string, prompt: string, maxTokens: number, tem
   });
 
   if (res.status === 429) {
-    const retryAfter = res.headers.get('retry-after');
-    const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
-    throw Object.assign(new Error('Gemini rate limited'), { status: 429, cooldownMs });
+    const errBody = await res.text();
+    const { isQuotaExhausted, retryAfterMs } = parseGemini429(errBody);
+    if (isQuotaExhausted) {
+      throw new AIQuotaExhaustedError(
+        'Gemini API quota exhausted (limit: 0). Enable billing on your Google Cloud project to unlock the free usage allowance.',
+      );
+    }
+    const cooldownMs = retryAfterMs || 60_000;
+    throw Object.assign(new AIRateLimitError('Gemini rate limited', cooldownMs), { status: 429, cooldownMs });
   }
 
   if (!res.ok) {
@@ -109,9 +217,15 @@ async function callGeminiVision(apiKey: string, prompt: string, imageBase64: str
   });
 
   if (res.status === 429) {
-    const retryAfter = res.headers.get('retry-after');
-    const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
-    throw Object.assign(new Error('Gemini rate limited'), { status: 429, cooldownMs });
+    const errBody = await res.text();
+    const { isQuotaExhausted, retryAfterMs } = parseGemini429(errBody);
+    if (isQuotaExhausted) {
+      throw new AIQuotaExhaustedError(
+        'Gemini API quota exhausted (limit: 0). Enable billing on your Google Cloud project to unlock the free usage allowance.',
+      );
+    }
+    const cooldownMs = retryAfterMs || 60_000;
+    throw Object.assign(new AIRateLimitError('Gemini rate limited', cooldownMs), { status: 429, cooldownMs });
   }
 
   if (!res.ok) {
@@ -122,6 +236,8 @@ async function callGeminiVision(apiKey: string, prompt: string, imageBase64: str
   const data: any = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
+
+// ─── Public API ─────────────────────────────────────────────────────────────
 
 export interface AICallOptions {
   prompt: string;
@@ -138,73 +254,153 @@ export interface AIVisionOptions {
 }
 
 /**
- * Call AI with automatic Gemini key rotation.
+ * Call AI — tries Groq first, then Gemini with key rotation.
  */
 export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt }: AICallOptions): Promise<string> {
-  const keys = loadGeminiKeys();
+  const errors: Error[] = [];
 
-  if (keys.length === 0) {
-    throw new Error('No AI provider available. Set GEMINI_API_KEY in environment variables.');
-  }
-
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const geminiKey = getNextAvailableKey();
-    if (!geminiKey) {
-      throw new Error('All Gemini API keys are rate-limited. Try again in a minute or add more keys.');
-    }
-
+  // Try Groq first
+  if (isGroqAvailable()) {
     try {
-      return await callGemini(geminiKey.key, prompt, maxTokens, temperature, systemPrompt);
+      const result = await callGroq(getGroqApiKey()!, prompt, maxTokens, temperature, systemPrompt);
+      return result;
     } catch (err: unknown) {
-      const error = err as Error & { status?: number; cooldownMs?: number };
-      if (error.status === 429) {
-        markKeyCooldown(geminiKey, error.cooldownMs || 60_000);
-        console.warn(`[AI] Gemini key rotated (rate limited), trying next...`);
-        continue;
-      }
-      throw err;
+      const error = err as Error;
+      console.warn(`[AI] Groq failed: ${error.message}, falling back to Gemini...`);
+      errors.push(error);
     }
   }
 
-  throw new Error('All Gemini API keys are rate-limited. Try again in a minute or add more keys.');
+  // Fallback to Gemini with key rotation
+  const keys = loadGeminiKeys();
+  if (keys.length > 0) {
+    for (let attempt = 0; attempt < keys.length; attempt++) {
+      const geminiKey = getNextAvailableKey();
+      if (!geminiKey) break;
+
+      try {
+        return await callGemini(geminiKey.key, prompt, maxTokens, temperature, systemPrompt);
+      } catch (err: unknown) {
+        if (err instanceof AIQuotaExhaustedError) {
+          errors.push(err);
+          break;
+        }
+        const error = err as Error & { status?: number; cooldownMs?: number };
+        if (error.status === 429) {
+          markKeyCooldown(geminiKey, error.cooldownMs || 60_000);
+          console.warn(`[AI] Gemini key rotated (rate limited), trying next...`);
+          continue;
+        }
+        errors.push(error);
+        break;
+      }
+    }
+  }
+
+  // No provider worked
+  if (!getGroqApiKey() && keys.length === 0) {
+    throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
+  }
+
+  const lastErr = errors[errors.length - 1];
+  if (lastErr instanceof AIQuotaExhaustedError) throw lastErr;
+  if (lastErr instanceof AIRateLimitError) throw lastErr;
+  throw new AIRateLimitError('All AI providers are rate-limited. Try again in a minute.', 60_000);
 }
 
 /**
- * Call AI Vision (image analysis) with automatic key rotation.
+ * Call AI Vision — tries Groq (Llama vision) first, then Gemini Vision.
+ * Note: Groq vision uses llama-4-scout-17b-16e-instruct for image analysis.
  */
 export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg', maxTokens = 1000 }: AIVisionOptions): Promise<string> {
-  const keys = loadGeminiKeys();
+  const errors: Error[] = [];
 
-  if (keys.length === 0) {
-    throw new Error('No AI provider available. Set GEMINI_API_KEY in environment variables.');
-  }
-
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const geminiKey = getNextAvailableKey();
-    if (!geminiKey) {
-      throw new Error('All Gemini API keys are rate-limited. Try again in a minute or add more keys.');
-    }
-
+  // Try Groq vision first
+  const groqKey = getGroqApiKey();
+  if (groqKey && Date.now() >= groqCooldownUntil) {
     try {
-      return await callGeminiVision(geminiKey.key, prompt, imageBase64, mimeType, maxTokens);
-    } catch (err: unknown) {
-      const error = err as Error & { status?: number; cooldownMs?: number };
-      if (error.status === 429) {
-        markKeyCooldown(geminiKey, error.cooldownMs || 60_000);
-        console.warn(`[AI] Gemini vision key rotated (rate limited), trying next...`);
-        continue;
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-4-scout-17b-16e-instruct',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+            ],
+          }],
+          max_tokens: maxTokens,
+          temperature: 0.3,
+        }),
+      });
+
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('retry-after');
+        const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
+        groqCooldownUntil = Date.now() + cooldownMs;
+        throw Object.assign(new AIRateLimitError('Groq rate limited', cooldownMs), { status: 429 });
       }
-      throw err;
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        if (text) return text;
+      }
+
+      const errText = await res.text();
+      throw new Error(`Groq Vision error (${res.status}): ${errText}`);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.warn(`[AI] Groq Vision failed: ${error.message}, falling back to Gemini Vision...`);
+      errors.push(error);
     }
   }
 
-  throw new Error('All Gemini API keys are rate-limited. Try again in a minute or add more keys.');
+  // Fallback to Gemini Vision
+  const keys = loadGeminiKeys();
+  if (keys.length > 0) {
+    for (let attempt = 0; attempt < keys.length; attempt++) {
+      const geminiKey = getNextAvailableKey();
+      if (!geminiKey) break;
+
+      try {
+        return await callGeminiVision(geminiKey.key, prompt, imageBase64, mimeType, maxTokens);
+      } catch (err: unknown) {
+        if (err instanceof AIQuotaExhaustedError) {
+          errors.push(err);
+          break;
+        }
+        const error = err as Error & { status?: number; cooldownMs?: number };
+        if (error.status === 429) {
+          markKeyCooldown(geminiKey, error.cooldownMs || 60_000);
+          console.warn(`[AI] Gemini vision key rotated (rate limited), trying next...`);
+          continue;
+        }
+        errors.push(error);
+        break;
+      }
+    }
+  }
+
+  if (!groqKey && keys.length === 0) {
+    throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
+  }
+
+  const lastErr = errors[errors.length - 1];
+  if (lastErr instanceof AIQuotaExhaustedError) throw lastErr;
+  if (lastErr instanceof AIRateLimitError) throw lastErr;
+  throw new AIRateLimitError('All AI providers are rate-limited. Try again in a minute.', 60_000);
 }
 
 /**
  * Check which AI providers are configured.
  */
-export function getAIProviderStatus(): { geminiKeys: number } {
+export function getAIProviderStatus(): { groq: boolean; geminiKeys: number } {
   const keys = loadGeminiKeys();
-  return { geminiKeys: keys.length };
+  return { groq: !!getGroqApiKey(), geminiKeys: keys.length };
 }
