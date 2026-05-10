@@ -751,7 +751,7 @@ export default function StudyPage() {
                 <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Pre-built Study Materials</h2>
                   <p className="text-xs text-[var(--text-muted)] mb-4">
-                    Load comprehensive endocrinology study materials with 300+ quiz questions, flashcards, summaries, mnemonics, and clinical correlations — ready to study instantly.
+                    Load comprehensive endocrinology study materials with 466 quiz questions, 97 flashcards, summaries, mnemonics, and clinical correlations — ready to study instantly.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
@@ -760,19 +760,19 @@ export default function StudyPage() {
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
                       <p className="text-sm font-medium text-[var(--text-primary)]">Hypothalamo-Pituitary Connection</p>
-                      <p className="text-xs text-[var(--text-muted)]">68 questions &middot; 21 flashcards</p>
+                      <p className="text-xs text-[var(--text-muted)]">68 questions &middot; 17 flashcards</p>
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
                       <p className="text-sm font-medium text-[var(--text-primary)]">Growth Hormone</p>
-                      <p className="text-xs text-[var(--text-muted)]">61 questions &middot; 21 flashcards</p>
+                      <p className="text-xs text-[var(--text-muted)]">61 questions &middot; 15 flashcards</p>
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
                       <p className="text-sm font-medium text-[var(--text-primary)]">Final Block — 8 Topics</p>
-                      <p className="text-xs text-[var(--text-muted)]">108 questions &middot; 20 flashcards</p>
+                      <p className="text-xs text-[var(--text-muted)]">148 questions &middot; 32 flashcards</p>
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
                       <p className="text-sm font-medium text-[var(--text-primary)]">Physiology Textbook — Endocrinology</p>
-                      <p className="text-xs text-[var(--text-muted)]">55 questions &middot; 12 flashcards</p>
+                      <p className="text-xs text-[var(--text-muted)]">102 questions &middot; 13 flashcards</p>
                     </div>
                   </div>
                   <button
@@ -780,7 +780,7 @@ export default function StudyPage() {
                     disabled={seedLoading}
                     className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-purple-600 text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
                   >
-                    {seedLoading ? 'Loading materials...' : 'Load All Pre-built Materials (379 Questions)'}
+                    {seedLoading ? 'Loading materials...' : 'Load All Pre-built Materials (466 Questions)'}
                   </button>
                 </div>
 
