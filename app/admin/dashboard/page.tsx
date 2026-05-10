@@ -29,6 +29,13 @@ interface UserData {
   id: string;
   username: string;
   created_at: string;
+  signup_source: string;
+  signup_referrer: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  last_login_at: string | null;
+  login_count: number;
   totalSessions: number;
   activeSessions: number;
   enabledFeatures: number;
@@ -40,6 +47,12 @@ interface UserData {
     state: string;
     last_active: string | null;
   }>;
+}
+
+interface AcquisitionData {
+  totalUsers: number;
+  sourceCounts: Record<string, number>;
+  last30Days: Array<{ date: string; total: number; sources: Record<string, number> }>;
 }
 
 interface SecurityData {
@@ -109,6 +122,7 @@ export default function AdminDashboard() {
   const [fetchingMonetization, setFetchingMonetization] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchingUsers, setFetchingUsers] = useState(false);
+  const [acquisitionData, setAcquisitionData] = useState<AcquisitionData | null>(null);
   const [fetchingSecurity, setFetchingSecurity] = useState(false);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [supportStats, setSupportStats] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0 });
@@ -181,10 +195,11 @@ export default function AdminDashboard() {
     setFetchingUsers(true);
     setFetchError(null);
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch('/api/admin/users?acquisition=true');
       const data = await res.json();
       if (data.success) {
         setUsers(data.data);
+        if (data.acquisition) setAcquisitionData(data.acquisition);
       } else {
         setFetchError(data.error || 'Failed to load users');
       }
@@ -554,7 +569,7 @@ export default function AdminDashboard() {
           {activeTab === 'users' && (
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
-                <p className="text-zinc-500 font-mono text-xs">{"// All registered users and their session details"}</p>
+                <p className="text-zinc-500 font-mono text-xs">{"// Users & acquisition analytics"}</p>
                 <button onClick={fetchUsers} className="text-[10px] font-mono px-3 py-1.5 text-zinc-500 border border-zinc-800 hover:text-white transition-colors">
                   REFRESH
                 </button>
@@ -564,73 +579,191 @@ export default function AdminDashboard() {
                   <p className="text-red-400 font-mono text-xs">{fetchError}</p>
                 </div>
               )}
+
+              {/* Acquisition Analytics */}
+              {acquisitionData && (
+                <div className="mb-8">
+                  <h3 className="font-display text-sm tracking-wider text-red-600 mb-4">USER ACQUISITION</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    {Object.entries(acquisitionData.sourceCounts)
+                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                      .map(([source, count]) => {
+                        const colors: Record<string, string> = {
+                          referral: 'text-green-400 border-green-500/30',
+                          whatsapp: 'text-emerald-400 border-emerald-500/30',
+                          google: 'text-blue-400 border-blue-500/30',
+                          google_organic: 'text-blue-300 border-blue-400/30',
+                          facebook: 'text-indigo-400 border-indigo-500/30',
+                          twitter: 'text-sky-400 border-sky-500/30',
+                          instagram: 'text-pink-400 border-pink-500/30',
+                          direct: 'text-zinc-400 border-zinc-600/30',
+                        };
+                        const color = colors[source] || 'text-zinc-400 border-zinc-600/30';
+                        return (
+                          <div key={source} className={`bg-zinc-900/50 border p-3 ${color}`}>
+                            <p className="font-mono text-[9px] tracking-widest uppercase">{source.replace('_', ' ')}</p>
+                            <p className="font-bold text-xl mt-1">{String(count)}</p>
+                            <p className="font-mono text-[9px] text-zinc-600">
+                              {((count as number) / acquisitionData.totalUsers * 100).toFixed(0)}%
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  {/* Signup trend - last 7 days */}
+                  <div className="bg-zinc-900/30 border border-zinc-800 p-4">
+                    <p className="font-mono text-[10px] text-zinc-500 mb-3">SIGNUPS — LAST 7 DAYS</p>
+                    <div className="flex items-end gap-1 h-16">
+                      {acquisitionData.last30Days.slice(-7).map((day) => {
+                        const maxDay = Math.max(...acquisitionData.last30Days.slice(-7).map(d => d.total), 1);
+                        const height = day.total > 0 ? Math.max((day.total / maxDay) * 100, 8) : 4;
+                        return (
+                          <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="font-mono text-[8px] text-zinc-500">{day.total}</span>
+                            <div
+                              className={`w-full rounded-sm ${day.total > 0 ? 'bg-green-500/60' : 'bg-zinc-800'}`}
+                              style={{ height: `${height}%` }}
+                              title={`${day.date}: ${day.total} signups`}
+                            />
+                            <span className="font-mono text-[7px] text-zinc-600">{day.date.slice(5)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* User List */}
               {fetchingUsers ? (
                 <p className="text-zinc-500 font-mono text-xs text-center py-12 animate-pulse">Loading users...</p>
               ) : users.length === 0 ? (
                 <p className="text-zinc-600 font-mono text-xs text-center py-12">No users found</p>
               ) : (
                 <div className="space-y-3">
-                  {users.map(user => (
-                    <div key={user.id} className="bg-zinc-800/30 border border-zinc-800">
-                      <button
-                        onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
-                        className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-800/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center">
-                            <span className="font-mono text-[10px] text-blue-400">{(user.username || '?')[0].toUpperCase()}</span>
+                  {users.map(user => {
+                    const sourceColors: Record<string, string> = {
+                      referral: 'bg-green-500/15 text-green-400',
+                      whatsapp: 'bg-emerald-500/15 text-emerald-400',
+                      google: 'bg-blue-500/15 text-blue-400',
+                      google_organic: 'bg-blue-400/15 text-blue-300',
+                      facebook: 'bg-indigo-500/15 text-indigo-400',
+                      twitter: 'bg-sky-500/15 text-sky-400',
+                      instagram: 'bg-pink-500/15 text-pink-400',
+                      direct: 'bg-zinc-600/15 text-zinc-400',
+                    };
+                    const sourceColor = sourceColors[user.signup_source] || 'bg-zinc-600/15 text-zinc-400';
+                    return (
+                      <div key={user.id} className="bg-zinc-800/30 border border-zinc-800">
+                        <button
+                          onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                          className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center">
+                              <span className="font-mono text-[10px] text-blue-400">{(user.username || '?')[0].toUpperCase()}</span>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-mono text-sm text-white">{user.username || 'Unknown'}</p>
+                                <span className={`font-mono text-[8px] px-1.5 py-0.5 rounded ${sourceColor}`}>
+                                  {user.signup_source.toUpperCase().replace('_', ' ')}
+                                </span>
+                              </div>
+                              <p className="font-mono text-[10px] text-zinc-500">
+                                Joined: {formatDate(user.created_at)}
+                                {user.utm_campaign && <span className="ml-2 text-zinc-600">campaign: {user.utm_campaign}</span>}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-mono text-sm text-white">{user.username || 'Unknown'}</p>
-                            <p className="font-mono text-[10px] text-zinc-500">Joined: {formatDate(user.created_at)}</p>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right hidden sm:block">
+                              <p className="font-mono text-[10px] text-zinc-500">SESSIONS</p>
+                              <p className="font-mono text-sm">
+                                <span className="text-green-500">{user.activeSessions}</span>
+                                <span className="text-zinc-600">/{user.totalSessions}</span>
+                              </p>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                              <p className="font-mono text-[10px] text-zinc-500">FEATURES</p>
+                              <p className="font-mono text-sm text-cyan-500">{user.enabledFeatures}</p>
+                            </div>
+                            <span className="font-mono text-zinc-500">{expandedUser === user.id ? '[-]' : '[+]'}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right hidden sm:block">
-                            <p className="font-mono text-[10px] text-zinc-500">SESSIONS</p>
-                            <p className="font-mono text-sm">
-                              <span className="text-green-500">{user.activeSessions}</span>
-                              <span className="text-zinc-600">/{user.totalSessions}</span>
-                            </p>
+                        </button>
+                        {expandedUser === user.id && (
+                          <div className="border-t border-zinc-800 p-4">
+                            {/* User details */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                              <div className="bg-zinc-900/50 p-2">
+                                <p className="font-mono text-[9px] text-zinc-600">SOURCE</p>
+                                <p className="font-mono text-xs text-white">{user.signup_source}</p>
+                              </div>
+                              {user.signup_referrer && (
+                                <div className="bg-zinc-900/50 p-2">
+                                  <p className="font-mono text-[9px] text-zinc-600">REFERRER</p>
+                                  <p className="font-mono text-[10px] text-zinc-400 truncate" title={user.signup_referrer}>{user.signup_referrer}</p>
+                                </div>
+                              )}
+                              {user.utm_source && (
+                                <div className="bg-zinc-900/50 p-2">
+                                  <p className="font-mono text-[9px] text-zinc-600">UTM SOURCE</p>
+                                  <p className="font-mono text-xs text-zinc-400">{user.utm_source}</p>
+                                </div>
+                              )}
+                              {user.utm_medium && (
+                                <div className="bg-zinc-900/50 p-2">
+                                  <p className="font-mono text-[9px] text-zinc-600">UTM MEDIUM</p>
+                                  <p className="font-mono text-xs text-zinc-400">{user.utm_medium}</p>
+                                </div>
+                              )}
+                              <div className="bg-zinc-900/50 p-2">
+                                <p className="font-mono text-[9px] text-zinc-600">LOGINS</p>
+                                <p className="font-mono text-xs text-white">{user.login_count}</p>
+                              </div>
+                              {user.last_login_at && (
+                                <div className="bg-zinc-900/50 p-2">
+                                  <p className="font-mono text-[9px] text-zinc-600">LAST LOGIN</p>
+                                  <p className="font-mono text-[10px] text-zinc-400">{formatDate(user.last_login_at)}</p>
+                                </div>
+                              )}
+                            </div>
+                            {/* Sessions table */}
+                            {user.sessions.length > 0 && (
+                              <table className="w-full font-mono text-[10px]">
+                                <thead>
+                                  <tr className="text-zinc-500">
+                                    <th className="text-left p-2">SESSION</th>
+                                    <th className="text-left p-2">PHONE</th>
+                                    <th className="text-left p-2">STATE</th>
+                                    <th className="text-left p-2">LAST ACTIVE</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {user.sessions.map(s => (
+                                    <tr key={s.id} className="border-t border-zinc-800/50">
+                                      <td className="p-2 text-zinc-400">{s.session_name || s.id.slice(0, 8)}</td>
+                                      <td className="p-2">{s.phone_number}</td>
+                                      <td className="p-2">
+                                        <span className={
+                                          s.state === 'active' ? 'text-green-500' :
+                                          s.state === 'needs_reauth' ? 'text-yellow-500' : 'text-red-500'
+                                        }>{s.state.toUpperCase()}</span>
+                                      </td>
+                                      <td className="p-2 text-zinc-500">{formatDate(s.last_active)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                            {user.sessions.length === 0 && (
+                              <p className="text-zinc-600 font-mono text-[10px] py-2">No sessions</p>
+                            )}
                           </div>
-                          <div className="text-right hidden sm:block">
-                            <p className="font-mono text-[10px] text-zinc-500">FEATURES</p>
-                            <p className="font-mono text-sm text-cyan-500">{user.enabledFeatures}</p>
-                          </div>
-                          <span className="font-mono text-zinc-500">{expandedUser === user.id ? '[-]' : '[+]'}</span>
-                        </div>
-                      </button>
-                      {expandedUser === user.id && user.sessions.length > 0 && (
-                        <div className="border-t border-zinc-800 p-4">
-                          <table className="w-full font-mono text-[10px]">
-                            <thead>
-                              <tr className="text-zinc-500">
-                                <th className="text-left p-2">SESSION</th>
-                                <th className="text-left p-2">PHONE</th>
-                                <th className="text-left p-2">STATE</th>
-                                <th className="text-left p-2">LAST ACTIVE</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {user.sessions.map(s => (
-                                <tr key={s.id} className="border-t border-zinc-800/50">
-                                  <td className="p-2 text-zinc-400">{s.session_name || s.id.slice(0, 8)}</td>
-                                  <td className="p-2">{s.phone_number}</td>
-                                  <td className="p-2">
-                                    <span className={
-                                      s.state === 'active' ? 'text-green-500' :
-                                      s.state === 'needs_reauth' ? 'text-yellow-500' : 'text-red-500'
-                                    }>{s.state.toUpperCase()}</span>
-                                  </td>
-                                  <td className="p-2 text-zinc-500">{formatDate(s.last_active)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
