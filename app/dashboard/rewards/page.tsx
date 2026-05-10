@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import DashboardNav from '@/components/layout/DashboardNav';
 
 interface RewardBalance {
   balance: number;
@@ -50,12 +51,10 @@ export default function RewardsPage() {
   const progress = rewards ? Math.min(100, Math.round((rewards.balance / 100) * 100)) : 0;
 
   return (
-    <main className="min-h-screen bg-dark px-4 py-12 relative">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-dark relative">
+      <DashboardNav />
+      <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
         <div className="text-center mb-12">
-          <Link href="/dashboard" className="font-mono text-xs text-green/50 tracking-[2px] hover:text-green transition-colors">
-            {'<'} BACK TO DASHBOARD
-          </Link>
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[4px] mt-6 mb-4">
             REWARDS & <span className="text-green">PLAN</span>
           </h1>

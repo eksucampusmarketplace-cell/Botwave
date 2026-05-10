@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DashboardNav from '@/components/layout/DashboardNav';
 
 interface Mailbox {
   id: string;
@@ -133,14 +134,19 @@ export default function MailboxPage() {
 
   if (loading && !mailbox) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
-      </div>
+      <main className="min-h-screen" style={{ background: 'var(--bg)' }}>
+        <DashboardNav />
+        <div className="flex items-center justify-center h-64 pt-24">
+          <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <main className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <DashboardNav />
+      <div className="max-w-6xl mx-auto px-4 pt-24 pb-12">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -344,6 +350,7 @@ export default function MailboxPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </main>
   );
 }

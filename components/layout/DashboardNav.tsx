@@ -1,26 +1,103 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
 
-const navLinks = [
+interface NavGroup {
+  label: string;
+  links: { href: string; label: string; tour?: string; accent?: boolean }[];
+}
+
+const primaryLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/sessions', label: 'Sessions', tour: 'nav-sessions' },
   { href: '/dashboard/messages', label: 'Messages' },
-  { href: '/dashboard/analytics', label: 'Analytics', tour: 'nav-analytics' },
-  { href: '/dashboard/health', label: 'Health' },
-  { href: '/dashboard/templates', label: 'Templates' },
-  { href: '/dashboard/auto-replies', label: 'Auto-Reply' },
-  { href: '/dashboard/flows', label: 'Flows' },
-  { href: '/dashboard/study', label: 'Study', accent: true },
-  { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
-  { href: '/dashboard/referrals', label: 'Referrals' },
-  { href: '/dashboard/rewards', label: 'Rewards', accent: true },
-  { href: '/dashboard/mailbox', label: 'Mailbox' },
 ];
+
+const navGroups: NavGroup[] = [
+  {
+    label: 'Bot',
+    links: [
+      { href: '/dashboard/analytics', label: 'Analytics', tour: 'nav-analytics' },
+      { href: '/dashboard/health', label: 'Health' },
+      { href: '/dashboard/templates', label: 'Templates' },
+      { href: '/dashboard/auto-replies', label: 'Auto-Reply' },
+      { href: '/dashboard/flows', label: 'Flows' },
+    ],
+  },
+  {
+    label: 'More',
+    links: [
+      { href: '/dashboard/study', label: 'Study', accent: true },
+      { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
+      { href: '/dashboard/referrals', label: 'Referrals' },
+      { href: '/dashboard/rewards', label: 'Rewards', accent: true },
+      { href: '/dashboard/mailbox', label: 'Mailbox' },
+    ],
+  },
+];
+
+const allLinks = [
+  ...primaryLinks,
+  ...navGroups.flatMap((g) => g.links),
+];
+
+function Dropdown({ group }: { group: NavGroup }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-sm px-3 py-2 rounded-lg transition-colors font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)] flex items-center gap-1"
+      >
+        {group.label}
+        <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden z-[1001]"
+          >
+            {group.links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                data-tour={link.tour}
+                onClick={() => setOpen(false)}
+                className={`block text-sm px-4 py-2.5 transition-colors font-medium ${
+                  link.accent
+                    ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function DashboardNav() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,27 +130,28 @@ export default function DashboardNav() {
             Bot<span className="text-[var(--primary)]">Wave</span>
           </Link>
 
+          {/* Desktop nav: primary links + grouped dropdowns */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {primaryLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 data-tour={link.tour}
-                className={`text-sm px-3 py-2 rounded-lg transition-colors font-medium ${
-                  link.accent
-                    ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
-                }`}
+                className="text-sm px-3 py-2 rounded-lg transition-colors font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]"
               >
                 {link.label}
               </Link>
             ))}
+            {navGroups.map((group) => (
+              <Dropdown key={group.label} group={group} />
+            ))}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Theme toggle — always visible */}
             <button
               onClick={toggleTheme}
-              className="hidden md:flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
+              className="flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <span className="text-sm">{theme === 'dark' ? '\u2600\uFE0F' : '\u{1F319}'}</span>
@@ -109,10 +187,10 @@ export default function DashboardNav() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-[57px] left-0 right-0 z-[999] bg-[var(--surface)] border-b border-[var(--border)] md:hidden"
+            className="fixed top-[57px] left-0 right-0 z-[999] bg-[var(--surface)] border-b border-[var(--border)] md:hidden overflow-y-auto max-h-[80vh]"
           >
             <div className="flex flex-col px-4 py-2">
-              {navLinks.map((link) => (
+              {allLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -126,12 +204,6 @@ export default function DashboardNav() {
                   {link.label}
                 </Link>
               ))}
-              <button
-                onClick={() => { setMenuOpen(false); toggleTheme(); }}
-                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] py-3 border-b border-[var(--border)] text-left font-medium"
-              >
-                {theme === 'dark' ? '\u2600\uFE0F Light Mode' : '\u{1F319} Dark Mode'}
-              </button>
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}
                 className="text-sm text-red-500 py-3 text-left font-medium"

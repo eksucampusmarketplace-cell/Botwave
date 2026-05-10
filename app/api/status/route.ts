@@ -32,8 +32,8 @@ export async function GET() {
 
       return {
         id: s.id,
-        name: s.session_name,
-        phone: s.phone_number ? `${s.phone_number.slice(0, 6)}****${s.phone_number.slice(-2)}` : 'N/A',
+        name: `Bot ${s.session_name ? s.session_name.charAt(0).toUpperCase() + '***' : 'Unknown'}`,
+        phone: 'Hidden',
         status: isOnline ? 'online' : s.state === 'needs_reauth' ? 'needs_reauth' : 'offline',
         lastActive: s.last_active,
         createdAt: s.created_at,

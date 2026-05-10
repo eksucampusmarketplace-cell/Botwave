@@ -205,7 +205,6 @@ export default function StatusPage() {
                       </div>
                       <div>
                         <h3 className="text-white font-medium">{session.name}</h3>
-                        <p className="text-gray-500 text-sm">{session.phone}</p>
                       </div>
                     </div>
 
