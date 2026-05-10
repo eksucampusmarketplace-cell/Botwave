@@ -5,7 +5,7 @@ import { getCachedReferralByCode, cacheReferralByCode, invalidateReferralData, i
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, username, referralCode } = body;
+    const { email, password, username, referralCode, signup_source, signup_referrer, utm_source, utm_medium, utm_campaign } = body;
 
     if (!email || !password || !username) {
       return NextResponse.json(
@@ -49,7 +49,14 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      user_metadata: { username },
+      user_metadata: {
+        username,
+        signup_source: referralCode ? 'referral' : (signup_source || 'direct'),
+        signup_referrer: signup_referrer || undefined,
+        utm_source: utm_source || undefined,
+        utm_medium: utm_medium || undefined,
+        utm_campaign: utm_campaign || undefined,
+      },
       email_confirm: true,
     });
 

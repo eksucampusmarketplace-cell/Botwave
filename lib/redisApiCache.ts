@@ -412,3 +412,29 @@ export async function invalidateStudyContent(materialId: string): Promise<void> 
   await apiCacheDel(`study:questions:${materialId}`);
   await apiCacheDel(`study:flashcards:${materialId}`);
 }
+
+// ─── Admin: User Acquisition Analytics ──────────────────────────────────────
+
+export async function getCachedAcquisitionData(): Promise<unknown | null> {
+  return apiCacheGet<unknown>('admin:acquisition');
+}
+
+export async function cacheAcquisitionData(data: unknown): Promise<void> {
+  await apiCacheSet('admin:acquisition', data, ANALYTICS_TTL);
+}
+
+export async function invalidateAcquisitionData(): Promise<void> {
+  await apiCacheDel('admin:acquisition');
+}
+
+export async function getCachedAdminUsers(): Promise<unknown[] | null> {
+  return apiCacheGet<unknown[]>('admin:users');
+}
+
+export async function cacheAdminUsers(data: unknown[]): Promise<void> {
+  await apiCacheSet('admin:users', data, ANALYTICS_TTL);
+}
+
+export async function invalidateAdminUsers(): Promise<void> {
+  await apiCacheDel('admin:users');
+}

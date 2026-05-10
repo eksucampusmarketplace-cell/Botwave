@@ -75,6 +75,39 @@ function SignupContent() {
     const ref = searchParams.get('ref');
     if (ref) setFormData((prev) => ({ ...prev, referralCode: ref.toUpperCase() }));
   }, [searchParams]);
+
+  const getSignupSource = () => {
+    const ref = searchParams.get('ref');
+    const utmSource = searchParams.get('utm_source');
+    const utmMedium = searchParams.get('utm_medium');
+    const utmCampaign = searchParams.get('utm_campaign');
+    const via = searchParams.get('via');
+
+    let source = 'direct';
+    if (ref || formData.referralCode) source = 'referral';
+    else if (via === 'whatsapp' || utmSource === 'whatsapp') source = 'whatsapp';
+    else if (utmSource === 'google' || utmMedium === 'cpc') source = 'google';
+    else if (utmSource) source = utmSource;
+    else if (document.referrer) {
+      try {
+        const refHost = new URL(document.referrer).hostname;
+        if (refHost.includes('google')) source = 'google_organic';
+        else if (refHost.includes('whatsapp')) source = 'whatsapp';
+        else if (refHost.includes('facebook') || refHost.includes('fb.')) source = 'facebook';
+        else if (refHost.includes('twitter') || refHost.includes('x.com')) source = 'twitter';
+        else if (refHost.includes('instagram')) source = 'instagram';
+        else source = refHost;
+      } catch { /* ignore */ }
+    }
+
+    return {
+      signup_source: source,
+      signup_referrer: document.referrer || undefined,
+      utm_source: utmSource || undefined,
+      utm_medium: utmMedium || undefined,
+      utm_campaign: utmCampaign || undefined,
+    };
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -108,6 +141,7 @@ function SignupContent() {
           password: formData.password,
           username: formData.username,
           referralCode: formData.referralCode || undefined,
+          ...getSignupSource(),
         }),
       });
 

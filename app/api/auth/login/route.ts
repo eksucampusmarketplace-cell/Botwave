@@ -108,6 +108,29 @@ export async function POST(request: NextRequest) {
     }
 
     recordLoginAttempt(clientIp, email, true);
+
+    // Track login for acquisition analytics (best-effort, non-blocking)
+    try {
+      const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+      if (loggedInUser) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const adminSupabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        );
+        const { error: rpcErr } = await adminSupabase.rpc('increment_login_count', { p_user_id: loggedInUser.id });
+        if (rpcErr) {
+          // Fallback if RPC doesn't exist yet
+          await adminSupabase
+            .from('profiles')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', loggedInUser.id);
+        }
+      }
+    } catch {
+      // Non-critical — don't block login
+    }
+
     return response;
   } catch (err) {
     console.error('[AUTH] Login exception:', err);
