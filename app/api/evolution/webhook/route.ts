@@ -454,6 +454,21 @@ export async function POST(request: NextRequest) {
           '';
         console.log(`[EVO-WEBHOOK] msg from=${from} fromMe=${fromMe} status=${msgStatus || 'none'} text="${text.slice(0, 80)}"`);
 
+        // Route status broadcasts to the StatusViewer handler (respects
+        // the autoview toggle which defaults to OFF).
+        if (from === 'status@broadcast') {
+          statusMsgs.push(msg);
+          continue;
+        }
+
+        // Cache every message for anti-delete recovery — including ACK
+        // re-deliveries.  ACKs still carry the full message content and
+        // cacheMessage() deduplicates by msgId internally (Map.set is a
+        // no-op for the same key).  This ensures fromMe messages (which
+        // arrive only as ACKs, never as a fresh upsert) are cached and
+        // available for !recover when someone deletes them.
+        cacheMsgs.push(msg);
+
         // Skip ACK status updates — Evolution API fires messages.upsert for
         // both new messages AND delivery status changes (SERVER_ACK,
         // DELIVERY_ACK, READ, PLAYED). Only process genuinely new messages.
@@ -477,16 +492,6 @@ export async function POST(request: NextRequest) {
           console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
           continue;
         }
-
-        // Route status broadcasts to the StatusViewer handler (respects
-        // the autoview toggle which defaults to OFF).
-        if (from === 'status@broadcast') {
-          statusMsgs.push(msg);
-          continue;
-        }
-
-        // Cache every non-status message for anti-delete recovery
-        cacheMsgs.push(msg);
 
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
