@@ -13,6 +13,7 @@ const navLinks = [
   { href: '/dashboard/analytics', label: 'Analytics', tour: 'nav-analytics' },
   { href: '/dashboard/health', label: 'Health' },
   { href: '/dashboard/templates', label: 'Templates' },
+  { href: '/dashboard/auto-replies', label: 'Auto-Reply' },
   { href: '/dashboard/flows', label: 'Flows' },
   { href: '/dashboard/study', label: 'Study', accent: true },
   { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },

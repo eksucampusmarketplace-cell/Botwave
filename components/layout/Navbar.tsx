@@ -34,6 +34,7 @@ export default function Navbar() {
             { href: '#security', label: 'Security' },
             { href: '#faq', label: 'FAQ' },
             { href: '/blog', label: 'Blog' },
+            { href: '/status', label: 'Status' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -96,6 +97,7 @@ export default function Navbar() {
                 { href: '#security', label: 'Security' },
                 { href: '#faq', label: 'FAQ' },
                 { href: '/blog', label: 'Blog' },
+                { href: '/status', label: 'Status' },
               ].map((link) => (
                 <Link
                   key={link.href}
