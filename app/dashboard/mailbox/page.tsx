@@ -252,6 +252,11 @@ export default function MailboxPage() {
                   <p className="text-sm mt-1">
                     {folder === 'inbox' ? 'Your inbox is empty' : `Nothing in ${folder}`}
                   </p>
+                  {folder === 'inbox' && (
+                    <p className="text-xs text-amber-400/80 mt-3">
+                      Expecting an email? Check your <span className="font-semibold">spam/junk folder</span> in your email provider — emails from new senders sometimes land there.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
