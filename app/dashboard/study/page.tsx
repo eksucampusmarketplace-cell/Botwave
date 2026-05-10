@@ -507,7 +507,7 @@ export default function StudyPage() {
       const res = await fetch('/api/study/seed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ force: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load seed materials');
