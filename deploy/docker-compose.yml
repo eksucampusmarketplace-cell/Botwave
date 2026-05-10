@@ -76,6 +76,10 @@ services:
       - IS_WORKER=false
       - EVOLUTION_API_URL=http://evolution-api:8080
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
+    volumes:
+      - /opt/botwave/deploy:/deploy-config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/botwave/.git:/opt/botwave/.git
     command: ["node", "dist/bot/server/customServer.js"]
     networks:
       - botwave-net
@@ -199,6 +203,32 @@ services:
       - redis
       - evolution-api
 
+  # ── Nginx (Reverse Proxy + HTTPS) ───────────────────────
+  nginx:
+    container_name: botwave_nginx
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/active.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    networks:
+      - botwave-net
+    depends_on:
+      - botwave-web
+
+  # ── Certbot (Let's Encrypt auto-renewal) ───────────────
+  certbot:
+    container_name: botwave_certbot
+    image: certbot/certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
   # ── Portainer (Web UI for Docker management) ───────────
   portainer:
     container_name: portainer
@@ -217,6 +247,8 @@ volumes:
   postgres_data:
   redis_data:
   portainer_data:
+  certbot_www:
+  certbot_certs:
 
 networks:
   botwave-net:
