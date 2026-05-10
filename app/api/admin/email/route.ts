@@ -1,16 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { sendEmailDirect, getQueueStats, retryDeadLetterQueue, CHANNEL_CONFIG } from '@/lib/email';
 import type { EmailChannel } from '@/lib/email';
 import { getAllChannelHealth } from '@/lib/email/spam-protection';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
-function isAdminAuthed(): boolean {
-  const cookieStore = cookies();
-  return cookieStore.get('admin_session')?.value === 'authenticated';
-}
-
-export async function GET() {
-  if (!isAdminAuthed()) {
+export async function GET(request: NextRequest) {
+  const adminToken = request.cookies.get('admin_token');
+  const tokenValid = await verifyAdminToken(adminToken?.value);
+  if (!tokenValid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -36,7 +33,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthed()) {
+  const adminToken = request.cookies.get('admin_token');
+  const tokenValid = await verifyAdminToken(adminToken?.value);
+  if (!tokenValid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
