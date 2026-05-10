@@ -123,6 +123,23 @@ docker compose down
 docker compose down -v  # WARNING: deletes all database data!
 ```
 
+### Automated Docker Cleanup (Weekly Cron)
+
+Set up a weekly cron job to remove dangling images and reclaim disk space:
+
+```bash
+crontab -e
+# Add this line:
+0 3 * * 0 /opt/botwave/deploy/docker-cleanup.sh >> /var/log/docker-cleanup.log 2>&1
+```
+
+Or run manually:
+
+```bash
+cd /opt/botwave/deploy
+./docker-cleanup.sh
+```
+
 ## Adding a Domain + HTTPS (Optional)
 
 If you want `https://botwave.yourdomain.com` instead of `http://IP:3000`:

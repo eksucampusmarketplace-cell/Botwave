@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
+  productionBrowserSourceMaps: false,
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
