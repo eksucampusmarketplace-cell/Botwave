@@ -21,7 +21,9 @@ FROM build-base AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY scripts/patch-baileys.js ./scripts/
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev && 
+    rm -rf /app/node_modules/@next/swc-linux-x64-gnu && 
+    npm cache clean --force
 
 # ── Bot Build ────────────────────────────────────────────
 FROM deps AS bot-builder
@@ -77,8 +79,14 @@ COPY scripts/ ./scripts/
 # Copy bot build
 COPY --from=bot-builder /app/dist ./dist
 
-# Copy Next.js build
-COPY --from=web-builder /app/.next ./.next
+# Copy Next.js build (exclude build cache — not needed at runtime)
+COPY --from=web-builder /app/.next/server ./.next/server
+COPY --from=web-builder /app/.next/static ./.next/static
+COPY --from=web-builder /app/.next/BUILD_ID ./.next/BUILD_ID
+COPY --from=web-builder /app/.next/build-manifest.json ./.next/build-manifest.json
+COPY --from=web-builder /app/.next/prerender-manifest.json ./.next/prerender-manifest.json
+COPY --from=web-builder /app/.next/routes-manifest.json ./.next/routes-manifest.json
+COPY --from=web-builder /app/.next/required-server-files.json ./.next/required-server-files.json
 COPY --from=web-builder /app/public ./public
 
 # Copy source (needed for Next.js SSR runtime)
