@@ -189,8 +189,12 @@ export async function handleMessageRevoke(
 
   const msgCache = getSessionMsgCache(sessionId);
   const cached = msgCache.get(deletedKey.id);
-  if (!cached) return;
+  if (!cached) {
+    console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — message NOT in cache (session=${sessionId.slice(0, 8)}). Cache size=${msgCache.size}`);
+    return;
+  }
 
+  console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — found cached message in chat=${cached.chatJid} from=${cached.senderJid}`);
   msgCache.delete(deletedKey.id);
 
   const chatJid = revokeMessage.key.remoteJid || cached.chatJid;
@@ -227,6 +231,7 @@ export interface RecoveredMessage {
 
 export function getDeletedMessages(sessionId: string, chatJid: string): RecoveredMessage[] {
   const delCache = getSessionDeletedCache(sessionId);
+  console.log(`[ANTI-DELETE] getDeletedMessages: session=${sessionId.slice(0, 8)} chatJid=${chatJid} cachedChats=[${Array.from(delCache.keys()).join(', ')}]`);
   let chatDeleted = delCache.get(chatJid) || [];
   chatDeleted = pruneExpiredDeleted(chatDeleted);
   delCache.set(chatJid, chatDeleted);
