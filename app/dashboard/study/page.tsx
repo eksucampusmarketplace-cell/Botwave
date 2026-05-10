@@ -193,12 +193,23 @@ function FormattedBulletText({ text, textColor }: { text: string; textColor: str
 function BulletList({ items, bulletColor, bulletChar, textColor }: { items: string[]; bulletColor: string; bulletChar: string; textColor: string }) {
   return (
     <ul className="space-y-2.5">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2.5 text-sm">
-          <span className="mt-1 shrink-0 text-base leading-none" style={{ color: bulletColor }}>{bulletChar}</span>
-          <FormattedBulletText text={item} textColor={textColor} />
-        </li>
-      ))}
+      {items.map((item, i) => {
+        const numberedMatch = item.match(/^(\d+)\)\s/);
+        if (numberedMatch) {
+          return (
+            <li key={i} className="flex items-start gap-2.5 text-sm">
+              <span className="mt-0.5 shrink-0 text-xs font-bold min-w-[1.25rem] text-right" style={{ color: bulletColor }}>{numberedMatch[1]}.</span>
+              <FormattedBulletText text={item.replace(/^\d+\)\s/, '')} textColor={textColor} />
+            </li>
+          );
+        }
+        return (
+          <li key={i} className="flex items-start gap-2.5 text-sm">
+            <span className="mt-1 shrink-0 text-base leading-none" style={{ color: bulletColor }}>{bulletChar}</span>
+            <FormattedBulletText text={item} textColor={textColor} />
+          </li>
+        );
+      })}
     </ul>
   );
 }
