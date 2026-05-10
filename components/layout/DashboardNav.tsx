@@ -6,12 +6,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
 
-interface NavGroup {
+interface NavLink {
+  href: string;
   label: string;
-  links: { href: string; label: string; tour?: string; accent?: boolean }[];
+  tour?: string;
+  accent?: boolean;
 }
 
-const primaryLinks = [
+interface NavGroup {
+  label: string;
+  links: NavLink[];
+}
+
+const primaryLinks: NavLink[] = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/sessions', label: 'Sessions', tour: 'nav-sessions' },
   { href: '/dashboard/messages', label: 'Messages' },
