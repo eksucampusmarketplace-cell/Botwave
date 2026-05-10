@@ -8,10 +8,11 @@ interface SessionCardProps {
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth';
   lastActive: string;
   onConnect: () => void;
+  onDisconnect?: () => void;
   onDelete?: () => void;
 }
 
-export default function SessionCard({ name, phone, status, lastActive, onConnect, onDelete }: SessionCardProps) {
+export default function SessionCard({ name, phone, status, lastActive, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   const statusColors = {
     connected: 'bg-green text-dark',
     active: 'bg-green text-dark',
@@ -65,6 +66,16 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
             className="font-display text-[10px] tracking-[2px] px-4 py-2 bg-green text-dark font-bold hover:bg-cyan transition-colors"
           >
             CONNECT
+          </motion.button>
+        )}
+        {onDisconnect && (status === 'connected' || status === 'active') && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onDisconnect}
+            className="font-display text-[10px] tracking-[2px] px-3 py-2 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+          >
+            DISCONNECT
           </motion.button>
         )}
         {onDelete && (

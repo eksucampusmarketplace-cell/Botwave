@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCachedReferralByCode, cacheReferralByCode, invalidateReferralData, invalidateRewards } from '@/lib/redisApiCache';
+import { getCachedReferralByCode, cacheReferralByCode, invalidateReferralData, invalidateRewards, invalidateReferralByCode } from '@/lib/redisApiCache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,25 +113,38 @@ export async function POST(request: NextRequest) {
           // Credit referrer reward
           const { error: rpcErr1 } = await supabase.rpc('increment_reward_balance', { p_user_id: referral.user_id, p_amount: REFERRAL_REWARD });
           if (rpcErr1) {
-            await supabase.from('reward_balances').upsert({
-              user_id: referral.user_id,
-              balance: REFERRAL_REWARD,
-              total_earned: REFERRAL_REWARD,
-            }, { onConflict: 'user_id' });
+            // Fallback: read current balance then increment (not reset)
+            const { data: bal1 } = await supabase.from('reward_balances').select('balance, total_earned').eq('user_id', referral.user_id).single();
+            if (bal1) {
+              await supabase.from('reward_balances').update({
+                balance: (bal1.balance || 0) + REFERRAL_REWARD,
+                total_earned: (bal1.total_earned || 0) + REFERRAL_REWARD,
+              }).eq('user_id', referral.user_id);
+            } else {
+              await supabase.from('reward_balances').insert({
+                user_id: referral.user_id,
+                balance: REFERRAL_REWARD,
+                total_earned: REFERRAL_REWARD,
+                total_cashed_out: 0,
+              });
+            }
           }
 
-          // Credit referred user reward
+          // Credit referred user reward (new user, so insert is safe)
           const { error: rpcErr2 } = await supabase.rpc('increment_reward_balance', { p_user_id: data.user.id, p_amount: REFERRED_REWARD });
           if (rpcErr2) {
-            await supabase.from('reward_balances').upsert({
+            await supabase.from('reward_balances').insert({
               user_id: data.user.id,
               balance: REFERRED_REWARD,
               total_earned: REFERRED_REWARD,
-            }, { onConflict: 'user_id' });
+              total_cashed_out: 0,
+            });
           }
 
           await invalidateReferralData(referral.user_id);
           await invalidateRewards(referral.user_id);
+          await invalidateRewards(data.user.id);
+          await invalidateReferralByCode(code);
           console.log(`[AUTH] Referral applied: code=${code} referrer=${referral.user_id} new_user=${data.user.id}`);
         }
       } catch (refErr) {

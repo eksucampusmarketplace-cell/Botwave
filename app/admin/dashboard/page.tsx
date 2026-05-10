@@ -107,6 +107,9 @@ export default function AdminDashboard() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [monetizationData, setMonetizationData] = useState<any>(null);
   const [fetchingMonetization, setFetchingMonetization] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchingUsers, setFetchingUsers] = useState(false);
+  const [fetchingSecurity, setFetchingSecurity] = useState(false);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [supportStats, setSupportStats] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0 });
   const [supportFilter, setSupportFilter] = useState('all');
@@ -175,22 +178,40 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   const fetchUsers = async () => {
+    setFetchingUsers(true);
+    setFetchError(null);
     try {
       const res = await fetch('/api/admin/users');
       const data = await res.json();
-      if (data.success) setUsers(data.data);
+      if (data.success) {
+        setUsers(data.data);
+      } else {
+        setFetchError(data.error || 'Failed to load users');
+      }
     } catch (err) {
       console.error('Error fetching users:', err);
+      setFetchError('Network error loading users');
+    } finally {
+      setFetchingUsers(false);
     }
   };
 
   const fetchSecurityData = async () => {
+    setFetchingSecurity(true);
+    setFetchError(null);
     try {
       const res = await fetch('/api/admin/security');
       const data = await res.json();
-      if (data.success) setSecurityData(data.data);
+      if (data.success) {
+        setSecurityData(data.data);
+      } else {
+        setFetchError(data.error || 'Failed to load security data');
+      }
     } catch (err) {
       console.error('Error fetching security data:', err);
+      setFetchError('Network error loading security data');
+    } finally {
+      setFetchingSecurity(false);
     }
   };
 
@@ -461,14 +482,20 @@ export default function AdminDashboard() {
                 </button>
               ))}
             </div>
-            {activeTab === 'sessions' && (
-              <button 
-                onClick={() => window.location.reload()}
-                className="text-xs font-mono text-red-600 hover:text-red-500"
-              >
-                REFRESH
-              </button>
-            )}
+            <button 
+              onClick={() => {
+                if (activeTab === 'sessions') window.location.reload();
+                else if (activeTab === 'users') fetchUsers();
+                else if (activeTab === 'settings') fetchRateLimits();
+                else if (activeTab === 'security') fetchSecurityData();
+                else if (activeTab === 'health') fetchHealthData();
+                else if (activeTab === 'monetization') fetchMonetizationData();
+                else if (activeTab === 'support') fetchSupportTickets();
+              }}
+              className="text-xs font-mono text-red-600 hover:text-red-500"
+            >
+              REFRESH
+            </button>
           </div>
 
           {/* Sessions Tab */}
@@ -526,9 +553,21 @@ export default function AdminDashboard() {
           {/* Users Tab */}
           {activeTab === 'users' && (
             <div className="p-4 sm:p-6">
-              <p className="text-zinc-500 font-mono text-xs mb-6">{"// All registered users and their session details"}</p>
-              {users.length === 0 ? (
-                <p className="text-zinc-600 font-mono text-xs text-center py-12">Loading users...</p>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-zinc-500 font-mono text-xs">{"// All registered users and their session details"}</p>
+                <button onClick={fetchUsers} className="text-[10px] font-mono px-3 py-1.5 text-zinc-500 border border-zinc-800 hover:text-white transition-colors">
+                  REFRESH
+                </button>
+              </div>
+              {fetchError && activeTab === 'users' && (
+                <div className="bg-red-950/20 border border-red-900/50 p-3 mb-4">
+                  <p className="text-red-400 font-mono text-xs">{fetchError}</p>
+                </div>
+              )}
+              {fetchingUsers ? (
+                <p className="text-zinc-500 font-mono text-xs text-center py-12 animate-pulse">Loading users...</p>
+              ) : users.length === 0 ? (
+                <p className="text-zinc-600 font-mono text-xs text-center py-12">No users found</p>
               ) : (
                 <div className="space-y-3">
                   {users.map(user => (

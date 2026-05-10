@@ -292,6 +292,100 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+    }
+
+    const { data: session } = await supabase
+      .from('bot_sessions')
+      .select('id, state, worker_url, session_name, phone_number')
+      .eq('id', sessionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    if (session.state === 'inactive') {
+      return NextResponse.json({ error: 'Session is already inactive' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'inactive',
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        auth_state: null,
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+
+    // Notify worker to stop the bot process
+    const workerUrl = session.worker_url || process.env.SELF_URL || process.env.NEXT_PUBLIC_APP_URL;
+    if (workerUrl && INTERNAL_SECRET) {
+      try {
+        await fetch(`${workerUrl}/api/internal/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': INTERNAL_SECRET,
+          },
+          body: JSON.stringify({ action: 'disconnect', sessionId }),
+        });
+      } catch {
+        // Non-critical — sync loop will handle cleanup
+      }
+    }
+
+    // Clean up Evolution API instance
+    const evoUrl = process.env.EVOLUTION_API_URL;
+    const evoKey = process.env.EVOLUTION_API_KEY;
+    if (evoUrl && evoKey) {
+      try {
+        await fetch(`${evoUrl}/instance/delete/${sessionId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', apikey: evoKey },
+        });
+      } catch {
+        // Non-critical
+      }
+    }
+
+    await invalidateSessions(user.id);
+    console.log(`[API] PUT disconnect: session=${sessionId} name=${session.session_name} phone=${session.phone_number}`);
+
+    return NextResponse.json({
+      success: true,
+      message: `Session ${session.session_name || sessionId} disconnected`,
+    });
+  } catch (error) {
+    console.error('[API] PUT disconnect FAILED:', error);
+    return NextResponse.json({ error: 'Failed to disconnect session' }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
