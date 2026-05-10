@@ -72,33 +72,58 @@ interface Flashcard {
 type Tab = 'upload' | 'reading' | 'quiz' | 'flashcards' | 'progress';
 
 // ─── Topic Grouping Helpers ─────────────────────────────────────────────────
-// Convention: items starting with "## " are topic headers,
-// items starting with ">> " are brief topic introductions,
-// everything else is a regular bullet point.
+// Convention:
+// "## TOPIC"     → main topic header (e.g. THYROID GLAND)
+// ">> intro"     → brief topic introduction
+// "### Subtopic" → sub-section within a topic (e.g. Structure, Synthesis, Actions)
+// plain text     → regular bullet point
+
+interface SubSection {
+  label: string;
+  items: string[];
+}
 
 interface TopicSection {
   topic: string | null;
   intro: string | null;
   items: string[];
+  subSections: SubSection[];
 }
 
 function groupByTopic(items: string[]): TopicSection[] {
   const sections: TopicSection[] = [];
-  let current: TopicSection = { topic: null, intro: null, items: [] };
+  let current: TopicSection = { topic: null, intro: null, items: [], subSections: [] };
+  let currentSub: SubSection | null = null;
 
   for (const item of items) {
     if (item.startsWith('## ')) {
-      if (current.topic || current.items.length > 0) {
+      if (currentSub) {
+        current.subSections.push(currentSub);
+        currentSub = null;
+      }
+      if (current.topic || current.items.length > 0 || current.subSections.length > 0) {
         sections.push(current);
       }
-      current = { topic: item.slice(3), intro: null, items: [] };
+      current = { topic: item.slice(3), intro: null, items: [], subSections: [] };
     } else if (item.startsWith('>> ')) {
       current.intro = item.slice(3);
+    } else if (item.startsWith('### ')) {
+      if (currentSub) {
+        current.subSections.push(currentSub);
+      }
+      currentSub = { label: item.slice(4), items: [] };
     } else {
-      current.items.push(item);
+      if (currentSub) {
+        currentSub.items.push(item);
+      } else {
+        current.items.push(item);
+      }
     }
   }
-  if (current.topic || current.items.length > 0) {
+  if (currentSub) {
+    current.subSections.push(currentSub);
+  }
+  if (current.topic || current.items.length > 0 || current.subSections.length > 0) {
     sections.push(current);
   }
   return sections;
@@ -165,6 +190,30 @@ function FormattedBulletText({ text, textColor }: { text: string; textColor: str
   return <span style={{ color: textColor }}>{text}</span>;
 }
 
+function BulletList({ items, bulletColor, bulletChar, textColor }: { items: string[]; bulletColor: string; bulletChar: string; textColor: string }) {
+  return (
+    <ul className="space-y-2.5">
+      {items.map((item, i) => {
+        const numberedMatch = item.match(/^(\d+)\)\s/);
+        if (numberedMatch) {
+          return (
+            <li key={i} className="flex items-start gap-2.5 text-sm">
+              <span className="mt-0.5 shrink-0 text-xs font-bold min-w-[1.25rem] text-right" style={{ color: bulletColor }}>{numberedMatch[1]}.</span>
+              <FormattedBulletText text={item.replace(/^\d+\)\s/, '')} textColor={textColor} />
+            </li>
+          );
+        }
+        return (
+          <li key={i} className="flex items-start gap-2.5 text-sm">
+            <span className="mt-1 shrink-0 text-base leading-none" style={{ color: bulletColor }}>{bulletChar}</span>
+            <FormattedBulletText text={item} textColor={textColor} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function TopicGroupedList({
   items,
   bulletColor = 'var(--primary)',
@@ -177,42 +226,39 @@ function TopicGroupedList({
   textColor?: string;
 }) {
   if (!hasTopicMarkers(items)) {
-    return (
-      <ul className="space-y-2.5">
-        {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm">
-            <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
-            <FormattedBulletText text={item} textColor={textColor} />
-          </li>
-        ))}
-      </ul>
-    );
+    return <BulletList items={items} bulletColor={bulletColor} bulletChar={bulletChar} textColor={textColor} />;
   }
 
   const sections = groupByTopic(items);
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {sections.map((section, si) => (
         <div key={si}>
           {section.topic && (
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--primary)]/30">
-              <div className="w-1.5 h-5 rounded-full bg-[var(--primary)]" />
-              <h4 className="text-sm font-bold text-[var(--primary)] uppercase tracking-wider">
+            <div className="flex items-center gap-2.5 mb-3 pb-2 border-b-2 border-[var(--primary)]/30">
+              <div className="w-1.5 h-6 rounded-full bg-[var(--primary)]" />
+              <h4 className="text-base font-bold text-[var(--primary)] uppercase tracking-wider">
                 {section.topic}
               </h4>
             </div>
           )}
           {section.intro && (
-            <p className="text-sm text-[var(--text-muted)] italic mb-3 pl-4 border-l-2 border-[var(--border)]">{section.intro}</p>
+            <p className="text-sm text-[var(--text-muted)] italic mb-4 pl-4 border-l-2 border-[var(--primary)]/20">{section.intro}</p>
           )}
-          <ul className="space-y-2.5 pl-1">
-            {section.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm">
-                <span className="mt-0.5 shrink-0" style={{ color: bulletColor }}>{bulletChar}</span>
-                <FormattedBulletText text={item} textColor={textColor} />
-              </li>
-            ))}
-          </ul>
+          {section.items.length > 0 && (
+            <div className="pl-1 mb-3">
+              <BulletList items={section.items} bulletColor={bulletColor} bulletChar={bulletChar} textColor={textColor} />
+            </div>
+          )}
+          {section.subSections.map((sub, subi) => (
+            <div key={subi} className="mt-4 ml-2 pl-3 border-l-2 border-[var(--border)]">
+              <h5 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-muted)]" />
+                {sub.label}
+              </h5>
+              <BulletList items={sub.items} bulletColor={bulletColor} bulletChar={bulletChar} textColor={textColor} />
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -461,7 +507,7 @@ export default function StudyPage() {
       const res = await fetch('/api/study/seed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ force: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load seed materials');

@@ -242,30 +242,68 @@ async function handleTranslate(
 ): Promise<void> {
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const quotedText = quotedMsg?.conversation || quotedMsg?.extendedTextMessage?.text || '';
-  // Support: !translate es [reply to text] OR !translate es hello world
+
+  const knownLangs = new Set([
+    'af','sq','am','ar','hy','az','eu','be','bn','bs','bg','ca','ceb','zh','co','hr','cs','da',
+    'nl','en','eo','et','fi','fr','fy','gl','ka','de','el','gu','ht','ha','haw','he','hi','hmn',
+    'hu','is','ig','id','ga','it','ja','jw','kn','kk','km','rw','ko','ku','ky','lo','la','lv',
+    'lt','lb','mk','mg','ms','ml','mt','mi','mr','mn','my','ne','no','ny','or','ps','fa','pl',
+    'pt','pa','ro','ru','sm','gd','sr','st','sn','sd','si','sk','sl','so','es','su','sw','sv',
+    'tl','tg','ta','tt','te','th','tr','tk','uk','ur','ug','uz','vi','cy','xh','yi','yo','zu',
+  ]);
+
+  // Parse args: !translate [target] [text] OR !translate [source] [target] [text]
   if (args.length < 1 || (args.length < 2 && !quotedText)) {
-    await sendReply(context.chatJid, getHelpHint('translate') + '\n\n_Tip: Reply to a message with !translate [lang] to translate it_', sock, context.rawMessage.key, context.queue);
+    await sendReply(
+      context.chatJid,
+      getHelpHint('translate') +
+        '\n\n*Usage:*\n' +
+        '• `!translate en Hello` — auto-detect source → English\n' +
+        '• `!translate fr en Bonjour` — French → English\n' +
+        '• Reply to a message with `!translate en` to translate it',
+      sock, context.rawMessage.key, context.queue,
+    );
     return;
   }
 
-  const targetLang = args[0].toLowerCase();
-  const text = args.length > 1 ? args.slice(1).join(' ') : quotedText;
+  let sourceLang = 'autodetect';
+  let targetLang: string;
+  let text: string;
+
+  const firstArg = args[0].toLowerCase();
+  const secondArg = args.length > 1 ? args[1].toLowerCase() : '';
+
+  if (args.length >= 2 && knownLangs.has(firstArg) && knownLangs.has(secondArg)) {
+    sourceLang = firstArg;
+    targetLang = secondArg;
+    text = args.length > 2 ? args.slice(2).join(' ') : quotedText;
+  } else {
+    targetLang = firstArg;
+    text = args.length > 1 ? args.slice(1).join(' ') : quotedText;
+  }
+
+  if (!text) {
+    await sendReply(context.chatJid, 'No text to translate. Provide text or reply to a message.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
 
   try {
-    // Using a free translation API
+    const langpair = `${sourceLang}|${targetLang}`;
     const response = await axios.get(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`,
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`,
       { timeout: 10000 },
     );
 
     const translated = response.data?.responseData?.translatedText;
-    if (!translated) {
-      await sendReply(context.chatJid, 'Translation failed. Try again.', sock, context.rawMessage.key, context.queue);
+    const detectedLang = response.data?.responseData?.detectedLanguage;
+    if (!translated || response.data?.responseStatus === 403) {
+      await sendReply(context.chatJid, 'Translation failed. Check language codes and try again.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
+    const fromLabel = sourceLang === 'autodetect' && detectedLang ? detectedLang : sourceLang;
     let reply = pickResponse(translateReplies, vars, false);
-    reply += `\n\n*Original:* ${text}\n*Translated (${targetLang}):* ${translated}`;
+    reply += `\n\n*Original (${fromLabel}):* ${text}\n*Translated (${targetLang}):* ${translated}`;
 
     // Promo check
     if (context.sessionId && context.userId) {
@@ -283,7 +321,7 @@ async function handleTranslate(
     await sendReply(context.chatJid, reply, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('Translation error:', error);
-    await sendReply(context.chatJid, 'Translation service error.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Translation service error. Try again later.', sock, context.rawMessage.key, context.queue);
   }
 }
 
