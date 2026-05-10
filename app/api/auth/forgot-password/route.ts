@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { isLockedOut, recordLoginAttempt, getClientIp } from '@/lib/admin-security';
+import { generateCode, storeVerificationCode, checkRateLimit } from '@/lib/email/verification-store';
+import { sendForgotPasswordEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,16 +49,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Always send reset email via Supabase Auth (uses anon key for the reset flow)
-    const { createClient: createAnonClient } = await import('@supabase/supabase-js');
-    const anonSupabase = createAnonClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
+    // Look up username for the email template
+    let username = resetEmail.split('@')[0];
+    if (resetEmail.includes('@')) {
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const user = users?.users?.find((u) => u.email?.toLowerCase() === resetEmail.toLowerCase());
+      if (user?.user_metadata?.username) {
+        username = user.user_metadata.username;
+      }
+    }
 
-    await anonSupabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online'}/reset-password`,
+    // Generate a password reset link via Supabase
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: resetEmail,
+      options: {
+        redirectTo: `${appUrl}/reset-password`,
+      },
     });
+
+    if (linkData?.properties?.action_link) {
+      // Send reset email via Postal (our own email system)
+      try {
+        await sendForgotPasswordEmail(resetEmail, linkData.properties.action_link, username);
+      } catch (emailErr) {
+        console.error('[AUTH] Forgot password email failed:', emailErr);
+        // Fallback to Supabase built-in email
+        const { createClient: createAnonClient } = await import('@supabase/supabase-js');
+        const anonSupabase = createAnonClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
+        await anonSupabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: `${appUrl}/reset-password`,
+        });
+      }
+    } else {
+      // Fallback if link generation fails
+      if (linkError) {
+        console.error('[AUTH] Generate link error:', linkError.message);
+      }
+      const { createClient: createAnonClient } = await import('@supabase/supabase-js');
+      const anonSupabase = createAnonClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      await anonSupabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${appUrl}/reset-password`,
+      });
+    }
 
     // Always return success to avoid email enumeration
     return NextResponse.json({

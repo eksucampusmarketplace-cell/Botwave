@@ -1,6 +1,11 @@
 import Redis from 'ioredis';
 import type { EmailEnvelope, QueuedEmail, EmailResult } from './types';
-import { sendEmailDirect } from './index';
+
+// Lazy import to avoid circular dependency (index.ts re-exports from queue.ts)
+async function sendEmailDirect(envelope: EmailEnvelope): Promise<EmailResult> {
+  const mod = await import('./index');
+  return mod.sendEmailDirect(envelope);
+}
 
 const QUEUE_KEY = 'botwave:email:queue';
 const DLQ_KEY = 'botwave:email:dlq';

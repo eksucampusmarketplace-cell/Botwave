@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -63,6 +63,7 @@ export default function SignupPage() {
 function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [step, setStep] = useState<'form' | 'verify'>('form');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -70,6 +71,8 @@ function SignupContent() {
     username: '',
     referralCode: '',
   });
+  const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+  const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -110,6 +113,13 @@ function SignupContent() {
   };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -151,11 +161,106 @@ function SignupContent() {
         throw new Error(data.error || 'Signup failed');
       }
 
-      router.push('/login?message=Account created successfully. You can now login.');
+      if (data.requiresVerification) {
+        setStep('verify');
+        setResendCooldown(60);
+      } else {
+        router.push('/login?message=Account created successfully. You can now login.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCodeChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    if (value && !/^\d$/.test(value)) return;
+
+    const newCode = [...verificationCode];
+    newCode[index] = value;
+    setVerificationCode(newCode);
+
+    if (value && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all 6 digits entered
+    if (value && newCode.every((d) => d !== '')) {
+      handleVerify(newCode.join(''));
+    }
+  };
+
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      const newCode = pasted.split('');
+      setVerificationCode(newCode);
+      handleVerify(pasted);
+    }
+  };
+
+  const handleVerify = async (codeStr?: string) => {
+    const code = codeStr || verificationCode.join('');
+    if (code.length !== 6) {
+      setError('Please enter the full 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, code }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Verification failed');
+      }
+
+      router.push('/login?message=Account created successfully. You can now login.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+      setVerificationCode(['', '', '', '', '', '']);
+      codeInputRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend code');
+      }
+
+      setResendCooldown(60);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend code');
     }
   };
 
@@ -178,114 +283,201 @@ function SignupContent() {
             </Link>
           </div>
 
-          <form onSubmit={handleSubmit} className="glass-card rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Create Account
-            </h2>
-            <p className="text-sm text-slate-500 font-mono mb-8">
-              // start automating for free
-            </p>
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
+          <AnimatePresence mode="wait">
+            {step === 'form' ? (
+              <motion.form
+                key="signup-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleSubmit}
+                className="glass-card rounded-xl p-8"
               >
-                {error}
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  Create Account
+                </h2>
+                <p className="text-sm text-slate-500 font-mono mb-8">
+                  // start automating for free
+                </p>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">USERNAME</label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      required
+                      className={inputClass}
+                      placeholder="choose_a_username"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">EMAIL</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className={inputClass}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">PASSWORD</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      className={inputClass}
+                      placeholder="min. 8 characters"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">CONFIRM PASSWORD</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                      className={inputClass}
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">REFERRAL CODE <span className="text-slate-600">(optional)</span></label>
+                    <input
+                      type="text"
+                      name="referralCode"
+                      value={formData.referralCode}
+                      onChange={handleChange}
+                      className={inputClass}
+                      placeholder="BW-XXXXXX"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sending Code...
+                      </span>
+                    ) : (
+                      'Create Account →'
+                    )}
+                  </button>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-slate-500">
+                    Already have an account?{' '}
+                    <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                      Sign in
+                    </Link>
+                  </p>
+                </div>
+              </motion.form>
+            ) : (
+              <motion.div
+                key="verify-form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="glass-card rounded-xl p-8"
+              >
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  Verify Your Email
+                </h2>
+                <p className="text-sm text-slate-500 font-mono mb-2">
+                  // check your inbox for the code
+                </p>
+                <p className="text-sm text-slate-400 mb-8">
+                  We sent a 6-digit code to <span className="text-emerald-400 font-medium">{formData.email}</span>
+                </p>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg p-3 mb-6"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                <div className="flex justify-center gap-3 mb-8" onPaste={handleCodePaste}>
+                  {verificationCode.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { codeInputRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleCodeChange(i, e.target.value)}
+                      onKeyDown={(e) => handleCodeKeyDown(i, e)}
+                      className="w-12 h-14 bg-[#0d1117] border border-[#1e293b] rounded-lg text-center text-xl font-bold text-white font-mono focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none transition-all"
+                      autoFocus={i === 0}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handleVerify()}
+                  disabled={loading || verificationCode.some((d) => !d)}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10 mb-4"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Verifying...
+                    </span>
+                  ) : (
+                    'Verify & Create Account'
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => { setStep('form'); setError(''); setVerificationCode(['', '', '', '', '', '']); }}
+                    className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={handleResend}
+                    disabled={resendCooldown > 0}
+                    className="text-sm text-emerald-400 hover:text-emerald-300 disabled:text-slate-600 transition-colors"
+                  >
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                  </button>
+                </div>
               </motion.div>
             )}
-
-            <div className="space-y-5">
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">USERNAME</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                  placeholder="choose_a_username"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">EMAIL</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                  placeholder="user@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">PASSWORD</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                  placeholder="min. 8 characters"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">CONFIRM PASSWORD</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-slate-400 block mb-1.5 font-mono">REFERRAL CODE <span className="text-slate-600">(optional)</span></label>
-                <input
-                  type="text"
-                  name="referralCode"
-                  value={formData.referralCode}
-                  onChange={handleChange}
-                  className={inputClass}
-                  placeholder="BW-XXXXXX"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Creating Account...
-                  </span>
-                ) : (
-                  'Create Account →'
-                )}
-              </button>
-            </div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-slate-500">
-                Already have an account?{' '}
-                <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </form>
+          </AnimatePresence>
         </motion.div>
 
         {/* Right — Terminal */}

@@ -19,6 +19,7 @@ const navLinks = [
   { href: '/dashboard/settings', label: 'Settings', tour: 'nav-settings' },
   { href: '/dashboard/referrals', label: 'Referrals' },
   { href: '/dashboard/rewards', label: 'Rewards', accent: true },
+  { href: '/dashboard/mailbox', label: 'Mailbox' },
 ];
 
 export default function DashboardNav() {

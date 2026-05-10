@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateWebhookSignature, PLANS } from '@/lib/squad';
 import { invalidateSubscription, invalidatePaymentHistory, invalidateRewards } from '@/lib/redisApiCache';
+import { sendPaymentConfirmationEmail, sendSubscriptionEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,6 +99,23 @@ export async function POST(request: NextRequest) {
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
         await invalidateSubscription(payment.user_id);
         await invalidatePaymentHistory(payment.user_id);
+
+        // Send payment confirmation + subscription emails
+        try {
+          const { data: userData } = await supabase.auth.admin.getUserById(payment.user_id);
+          if (userData?.user?.email) {
+            const uname = userData.user.user_metadata?.username || userData.user.email.split('@')[0];
+            const amount = String(payment.amount || planConfig.price || '0');
+            sendPaymentConfirmationEmail(userData.user.email, uname, plan, amount, 'NGN').catch((e) =>
+              console.error('[SQUAD-WEBHOOK] Payment email failed:', e),
+            );
+            sendSubscriptionEmail(userData.user.email, uname, plan, 'activated').catch((e) =>
+              console.error('[SQUAD-WEBHOOK] Subscription email failed:', e),
+            );
+          }
+        } catch (emailErr) {
+          console.error('[SQUAD-WEBHOOK] Email notification failed (non-blocking):', emailErr);
+        }
 
         // Resolve any active dunning
         await supabase
