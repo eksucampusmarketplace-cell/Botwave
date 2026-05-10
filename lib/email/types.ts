@@ -24,6 +24,11 @@ export interface EmailResult {
   error?: string;
 }
 
+// All channels route through mail.botwave.online (only verified Postal domain).
+// Different fromName per channel for branding; same domain + credential.
+const VERIFIED_DOMAIN = 'mail.botwave.online';
+const VERIFIED_SMTP_USER = 'UserMail/4n5ch0PAlOlVgnqFbuwGrUtQ';
+
 export const CHANNEL_CONFIG: Record<EmailChannel, {
   domain: string;
   defaultFrom: string;
@@ -31,39 +36,39 @@ export const CHANNEL_CONFIG: Record<EmailChannel, {
   smtpUser: string;
 }> = {
   auth: {
-    domain: 'auth.botwave.online',
-    defaultFrom: 'noreply@auth.botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `noreply@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave Security',
-    smtpUser: 'Auth/nIPpFdSQO0wX1dQdLD4yiiYD',
+    smtpUser: VERIFIED_SMTP_USER,
   },
   notify: {
-    domain: 'notify.botwave.online',
-    defaultFrom: 'alerts@notify.botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `alerts@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave Alerts',
-    smtpUser: 'Notifications/MtLgQKXv34kATRpvkFl2qbfK',
+    smtpUser: VERIFIED_SMTP_USER,
   },
   billing: {
-    domain: 'billing.botwave.online',
-    defaultFrom: 'noreply@billing.botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `billing@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave Billing',
-    smtpUser: 'Billing/W0TppJvOifqNkxIlC5b642h9',
+    smtpUser: VERIFIED_SMTP_USER,
   },
   welcome: {
-    domain: 'welcome.botwave.online',
-    defaultFrom: 'hello@welcome.botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `hello@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave',
-    smtpUser: 'Welcome/1UJBCPiCp3d1MjBghZR6oDs7',
+    smtpUser: VERIFIED_SMTP_USER,
   },
   alerts: {
-    domain: 'botwave.online',
-    defaultFrom: 'alerts@botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `alerts@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave Alerts',
-    smtpUser: 'Alerts/UPaLwkanpZoTEY7XKT2JoQsM',
+    smtpUser: VERIFIED_SMTP_USER,
   },
   usermail: {
-    domain: 'mail.botwave.online',
-    defaultFrom: 'noreply@mail.botwave.online',
+    domain: VERIFIED_DOMAIN,
+    defaultFrom: `noreply@${VERIFIED_DOMAIN}`,
     defaultFromName: 'BotWave Mail',
-    smtpUser: 'UserMail/4n5ch0PAlOlVgnqFbuwGrUtQ',
+    smtpUser: VERIFIED_SMTP_USER,
   },
 };

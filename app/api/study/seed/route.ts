@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
       if (seed.questions.length > 0) {
         const questionRows = seed.questions.map((q) => ({
           material_id: materialId,
+          user_id: user.id,
           question_type: q.questionType,
           question: q.question,
           options: q.options,
@@ -217,6 +218,7 @@ export async function POST(request: NextRequest) {
       if (seed.flashcards.length > 0) {
         const flashcardRows = seed.flashcards.map((fc) => ({
           material_id: materialId,
+          user_id: user.id,
           front: fc.front,
           back: fc.back,
           difficulty: fc.difficulty,

@@ -470,6 +470,8 @@ export default function StudyPage() {
       if (data.success) {
         setQuizResult(data.data);
         setQuizActive(false);
+      } else {
+        setError(data.error || 'Quiz submission failed');
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Quiz submission failed');
