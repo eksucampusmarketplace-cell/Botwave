@@ -12,7 +12,7 @@ export async function GET() {
 
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
-      .select('id, session_name, state, last_active, created_at, phone_number')
+      .select('id, session_name, state, last_active, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -32,7 +32,7 @@ export async function GET() {
 
       return {
         id: s.id,
-        name: `Bot ${s.session_name ? s.session_name.charAt(0).toUpperCase() + '***' : 'Unknown'}`,
+        name: `Bot #${i + 1}`,
         phone: 'Hidden',
         status: isOnline ? 'online' : s.state === 'needs_reauth' ? 'needs_reauth' : 'offline',
         lastActive: s.last_active,
