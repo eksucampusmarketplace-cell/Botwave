@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCachedReferralByCode, cacheReferralByCode, invalidateReferralData, invalidateRewards, invalidateReferralByCode } from '@/lib/redisApiCache';
+import { generateCode, storeVerificationCode, checkRateLimit, storePendingSignup } from '@/lib/email/verification-store';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate username format (alphanumeric + underscores, 3-30 chars)
     if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
       return NextResponse.json(
         { error: 'Username must be 3-30 characters (letters, numbers, underscores only)' },
@@ -45,124 +45,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create user via Supabase Auth (admin client to bypass email confirmation if needed)
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      user_metadata: {
-        username,
-        signup_source: referralCode ? 'referral' : (signup_source || 'direct'),
-        signup_referrer: signup_referrer || undefined,
-        utm_source: utm_source || undefined,
-        utm_medium: utm_medium || undefined,
-        utm_campaign: utm_campaign || undefined,
-      },
-      email_confirm: true,
-    });
-
-    if (error) {
-      // Handle common Supabase auth errors with user-friendly messages
-      if (error.message.includes('already been registered') || error.message.includes('already exists')) {
-        return NextResponse.json(
-          { error: 'An account with this email already exists' },
-          { status: 409 },
-        );
-      }
-      if (error.message.includes('invalid') && error.message.includes('email')) {
-        return NextResponse.json(
-          { error: 'Please enter a valid email address' },
-          { status: 400 },
-        );
-      }
-      console.error('[AUTH] Signup error:', error.message);
+    // Rate limit: 1 code per 60s per email
+    const canSend = await checkRateLimit(email);
+    if (!canSend) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 400 },
+        { error: 'Please wait 60 seconds before requesting another code' },
+        { status: 429 },
       );
     }
 
-    // Auto-apply referral code if provided
-    if (referralCode && data.user?.id) {
-      try {
-        const code = (referralCode as string).trim().toUpperCase();
+    // Check if email is already registered and confirmed
+    const { data: existingAuth } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single();
 
-        // Try Redis cache first for referral code lookup
-        let referral = await getCachedReferralByCode(code) as { user_id: string; code: string; is_frozen: boolean } | null;
-        if (!referral) {
-          const { data: refData } = await supabase
-            .from('referrals')
-            .select('user_id, code, is_frozen')
-            .eq('code', code)
-            .single();
-          referral = refData;
-          if (referral) await cacheReferralByCode(code, referral);
-        }
-
-        if (referral && !referral.is_frozen && referral.user_id !== data.user.id) {
-          const REFERRAL_REWARD = 20;
-          const REFERRED_REWARD = 10;
-
-          await supabase.from('referral_history').insert({
-            referrer_id: referral.user_id,
-            referred_user_id: data.user.id,
-            referred_email: email,
-            referral_code: code,
-            reward_amount: REFERRAL_REWARD,
-            status: 'credited',
-            created_at: new Date().toISOString(),
-          });
-
-          await supabase.rpc('increment_referral_stats', {
-            p_user_id: referral.user_id,
-            p_earned: REFERRAL_REWARD,
-          });
-
-          // Credit referrer reward
-          const { error: rpcErr1 } = await supabase.rpc('increment_reward_balance', { p_user_id: referral.user_id, p_amount: REFERRAL_REWARD });
-          if (rpcErr1) {
-            // Fallback: read current balance then increment (not reset)
-            const { data: bal1 } = await supabase.from('reward_balances').select('balance, total_earned').eq('user_id', referral.user_id).single();
-            if (bal1) {
-              await supabase.from('reward_balances').update({
-                balance: (bal1.balance || 0) + REFERRAL_REWARD,
-                total_earned: (bal1.total_earned || 0) + REFERRAL_REWARD,
-              }).eq('user_id', referral.user_id);
-            } else {
-              await supabase.from('reward_balances').insert({
-                user_id: referral.user_id,
-                balance: REFERRAL_REWARD,
-                total_earned: REFERRAL_REWARD,
-                total_cashed_out: 0,
-              });
-            }
-          }
-
-          // Credit referred user reward (new user, so insert is safe)
-          const { error: rpcErr2 } = await supabase.rpc('increment_reward_balance', { p_user_id: data.user.id, p_amount: REFERRED_REWARD });
-          if (rpcErr2) {
-            await supabase.from('reward_balances').insert({
-              user_id: data.user.id,
-              balance: REFERRED_REWARD,
-              total_earned: REFERRED_REWARD,
-              total_cashed_out: 0,
-            });
-          }
-
-          await invalidateReferralData(referral.user_id);
-          await invalidateRewards(referral.user_id);
-          await invalidateRewards(data.user.id);
-          await invalidateReferralByCode(code);
-          console.log(`[AUTH] Referral applied: code=${code} referrer=${referral.user_id} new_user=${data.user.id}`);
-        }
-      } catch (refErr) {
-        console.warn('[AUTH] Referral application failed (non-blocking):', refErr);
-      }
+    if (existingAuth) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 409 },
+      );
     }
 
-    return NextResponse.json(
-      { message: 'Account created successfully', user: { id: data.user?.id, email: data.user?.email } },
-      { status: 201 },
-    );
+    // Generate verification code and store it
+    const code = generateCode();
+    await storeVerificationCode(email, code);
+
+    // Store pending signup data for the verify step
+    await storePendingSignup(email, {
+      email, password, username, referralCode,
+      signup_source: referralCode ? 'referral' : (signup_source || 'direct'),
+      signup_referrer: signup_referrer || undefined,
+      utm_source: utm_source || undefined,
+      utm_medium: utm_medium || undefined,
+      utm_campaign: utm_campaign || undefined,
+    });
+
+    // Send verification email via Postal
+    try {
+      await sendVerificationEmail(email, code, username);
+    } catch (emailErr) {
+      console.error('[AUTH] Failed to send verification email:', emailErr);
+      return NextResponse.json(
+        { error: 'Failed to send verification email. Please try again.' },
+        { status: 500 },
+      );
+    }
+
+    console.log(`[AUTH] Verification code sent to ${email} for user ${username}`);
+
+    return NextResponse.json({
+      message: 'Verification code sent to your email',
+      requiresVerification: true,
+    });
   } catch (err) {
     console.error('[AUTH] Signup exception:', err);
     return NextResponse.json(
