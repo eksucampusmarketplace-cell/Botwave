@@ -5,8 +5,8 @@ import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
 
-const DEPLOY_DIR = '/deploy-config';
-const HISTORY_FILE = '/deploy-config/deploy-history.json';
+const DEPLOY_DIR = '/opt/botwave/deploy';
+const HISTORY_FILE = '/opt/botwave/deploy/deploy-history.json';
 const MAX_HISTORY = 50;
 
 type DeployTarget = 'all' | 'botwave' | 'evolution';

@@ -77,9 +77,8 @@ services:
       - EVOLUTION_API_URL=http://evolution-api:8080
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
     volumes:
-      - /opt/botwave/deploy:/deploy-config
+      - /opt/botwave:/opt/botwave
       - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/botwave/.git:/opt/botwave/.git
     command: ["node", "dist/bot/server/customServer.js"]
     networks:
       - botwave-net

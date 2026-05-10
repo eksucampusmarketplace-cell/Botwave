@@ -5,8 +5,8 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-const DEPLOY_DIR = '/deploy-config';
-const BACKUP_DIR = '/deploy-config/backups';
+const DEPLOY_DIR = '/opt/botwave/deploy';
+const BACKUP_DIR = '/opt/botwave/deploy/backups';
 const MAX_BACKUPS = 20;
 
 const ENV_FILES: Record<string, string> = {
