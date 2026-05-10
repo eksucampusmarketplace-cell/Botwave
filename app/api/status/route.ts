@@ -25,7 +25,7 @@ export async function GET() {
     const activeSessions = allSessions.filter(s => s.state === 'active');
     const totalSessions = allSessions.length;
 
-    const sessionStatuses = allSessions.map(s => {
+    const sessionStatuses = allSessions.map((s, i) => {
       const isOnline = s.state === 'active';
       const lastSeen = s.last_active ? new Date(s.last_active).getTime() : null;
       const uptimeMs = isOnline && lastSeen ? now - new Date(s.created_at).getTime() : 0;
