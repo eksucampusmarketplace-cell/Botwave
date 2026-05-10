@@ -53,9 +53,10 @@ RUN npm run build
 FROM base AS production
 WORKDIR /app
 
-# Install yt-dlp for !download command
+# Install yt-dlp for !download command + docker CLI for admin deployment panel
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
-    chmod +x /usr/local/bin/yt-dlp
+    chmod +x /usr/local/bin/yt-dlp && \
+    apk add --no-cache docker-cli docker-cli-compose git
 
 COPY package.json package-lock.json ./
 COPY scripts/ ./scripts/

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import DeploymentTab from '@/components/admin/DeploymentTab';
 
 interface RateLimitSetting {
   id: string;
@@ -80,7 +81,7 @@ interface SupportMessage {
   created_at: string;
 }
 
-type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health' | 'monetization' | 'support';
+type TabType = 'sessions' | 'users' | 'settings' | 'security' | 'health' | 'monetization' | 'support' | 'deployment';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -384,6 +385,7 @@ export default function AdminDashboard() {
     { id: 'health', label: 'SYSTEM HEALTH' },
     { id: 'monetization', label: 'MONETIZATION' },
     { id: 'support', label: `SUPPORT${supportStats.open > 0 ? ` (${supportStats.open})` : ''}` },
+    { id: 'deployment', label: 'DEPLOYMENT' },
   ];
 
   return (
@@ -1134,6 +1136,10 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+          )}
+          {/* Deployment Tab */}
+          {activeTab === 'deployment' && (
+            <DeploymentTab />
           )}
         </div>
       </div>
