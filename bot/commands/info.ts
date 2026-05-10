@@ -1,7 +1,7 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, pickResponse, getHelpHint, getQuotedMessage, axios } from './helpers';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
-import { callAI } from '../../lib/ai-provider';
+import { callAI, AIQuotaExhaustedError, AIRateLimitError } from '../../lib/ai-provider';
 import {
   weatherReplies,
   dictReplies,
@@ -53,9 +53,16 @@ async function handleAICommand(
     await sendReply(context.chatJid, `${intro}\n\n${aiResponse}`, sock, context.rawMessage.key, context.queue);
   } catch (error) {
     console.error('AI error:', error);
+    let msg = 'AI service temporarily unavailable. Please try again later.';
+    if (error instanceof AIQuotaExhaustedError) {
+      msg = 'AI quota exhausted — the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+    } else if (error instanceof AIRateLimitError) {
+      const secs = Math.ceil(error.retryAfterMs / 1000);
+      msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
+    }
     await sendReply(
       context.chatJid,
-      'AI service temporarily unavailable. Please try again later.',
+      msg,
       sock,
       context.rawMessage.key,
       context.queue,
