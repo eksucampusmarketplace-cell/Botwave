@@ -13,6 +13,7 @@ import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from 
 import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './adaptivePoller';
 import { disconnectSessionCache } from './redisSessionCache';
 import { createServer as createHttpServer } from 'http';
+import { startHealthMonitor, stopHealthMonitor } from '../lib/health-monitor';
 
 const bot = initializeBot();
 
@@ -27,6 +28,7 @@ async function start() {
   onShutdown('writeQueue', async () => { stopWriteQueueReplay(); });
   onShutdown('sessionCache', async () => { await disconnectSessionCache(); });
   onShutdown('redis', async () => { await disconnectRedis(); });
+  onShutdown('healthMonitor', async () => { stopHealthMonitor(); });
   onShutdown('bot', async () => { await bot.stop(true); });
 
   await bot.start();
@@ -76,6 +78,9 @@ async function start() {
   console.log('[BOT] Running initial session sync...');
   await syncSessionsWithDb(IS_WORKER);
   console.log('[BOT] Initial sync complete. Polling every 5s...');
+
+  // Start background health monitoring (main service only)
+  startHealthMonitor();
   
   // ── Polling intervals ──
   // All intervals are registered for graceful shutdown cleanup.
