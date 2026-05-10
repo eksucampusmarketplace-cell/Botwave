@@ -241,24 +241,22 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       throw new Error(`Evolution API returned ${r.status} (transient) — will retry`);
     }
 
-    // If instance name is already in use, delete via API and retry once.
-    // The server-side guard now auto-cleans stale instances, so 403 should
-    // be rare — but we keep this as a safety net for edge cases (e.g. the
-    // guard cleanup itself fails, or a P2002 unique-constraint race on DB).
+    // If instance creation fails with 403 (name in use) or 400 (stale/corrupt
+    // instance state), force-delete the old instance and retry. The 400 case
+    // commonly occurs after WhatsApp logs out a session — Evolution API's
+    // internal state is inconsistent and createInstance rejects even though
+    // the instance no longer functions.
     if (r.status === 403 || r.status === 400) {
       const body = await r.clone().text().catch(() => '');
-      const isDuplicate = r.status === 403 || body.includes('Unique constraint');
-      if (isDuplicate) {
-        console.warn(`[EVO-CLIENT] Instance "${instanceName}" already exists (status=${r.status}) — deleting and retrying`);
-        await deleteInstanceAndVerify(instanceName);
-        // Extra pause after verified deletion to let DB constraints fully propagate
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return apiFetch(`${BASE}/instance/create`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-        });
-      }
+      console.warn(`[EVO-CLIENT] Instance "${instanceName}" creation rejected (status=${r.status}, body=${body.slice(0, 200)}) — force-deleting and retrying`);
+      await deleteInstanceAndVerify(instanceName);
+      // Extra pause after verified deletion to let DB constraints fully propagate
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return apiFetch(`${BASE}/instance/create`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
     }
 
     return r;

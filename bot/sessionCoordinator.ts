@@ -20,6 +20,7 @@ import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync } from './worke
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from './redis';
 import { isCircuitOpen } from './circuitBreaker';
 import { isShutdown } from './gracefulShutdown';
+import { deleteInstanceAndVerify } from './evolutionClient';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -456,7 +457,18 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     const newAttempt = attempts + 1;
     autoRecoveryAttempts.set(session.id, newAttempt);
 
-    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Resetting to qr_pending for reconnection...`);
+    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Cleaning up Evolution instance and resetting to qr_pending...`);
+
+    // Force-delete the Evolution API instance before resetting. This prevents
+    // the 400 "instance already exists" / 404 "instance does not exist" loop
+    // that occurs when Evolution API's internal state is stale after a WhatsApp
+    // logout. A fresh createInstance call will succeed after this cleanup.
+    try {
+      await deleteInstanceAndVerify(session.id);
+      console.log(`[AUTO-RECOVERY] Session ${sid}: Evolution instance cleaned up`);
+    } catch (err) {
+      console.warn(`[AUTO-RECOVERY] Session ${sid}: Evolution cleanup failed (non-fatal, proceeding):`, err);
+    }
 
     const { error: updateErr } = await supabase
       .from('bot_sessions')
