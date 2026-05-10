@@ -238,7 +238,7 @@ const faqs = [
   },
   {
     q: 'How is BotWave different from other WhatsApp bots?',
-    a: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Groq, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
+    a: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Google Gemini, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
   },
   {
     q: 'Is BotWave better than Telegram bots?',
@@ -262,7 +262,7 @@ const faqs = [
   },
   {
     q: 'Do I need to be a developer to use BotWave?',
-    a: 'No! Unlike tools like Evolution API, Baileys, or other WhatsApp libraries that require coding knowledge, BotWave is 100% no-code. Sign up, scan QR code, and your bot is live. All configuration happens through a web dashboard. Even setting up AI chat just requires pasting a free Groq API key — no programming needed.',
+    a: 'No! Unlike tools like Evolution API, Baileys, or other WhatsApp libraries that require coding knowledge, BotWave is 100% no-code. Sign up, scan QR code, and your bot is live. All configuration happens through a web dashboard. AI features work automatically — no setup or API keys needed.',
   },
   {
     q: 'Can BotWave help me grow my community?',

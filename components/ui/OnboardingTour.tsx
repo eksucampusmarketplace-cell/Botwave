@@ -40,7 +40,7 @@ const steps: Step[] = [
   },
   {
     target: '[data-tour="nav-settings"]',
-    content: 'Configure your Groq AI key, anti-ban settings, and manage your account here.',
+    content: 'Configure anti-ban settings, bot customization, and manage your account here.',
     placement: 'bottom',
   },
 ];

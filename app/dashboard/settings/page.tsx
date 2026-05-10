@@ -17,7 +17,6 @@ interface ApiKeyData {
 }
 
 export default function SettingsPage() {
-  const [groqKey, setGroqKey] = useState('');
   const [skipProbability, setSkipProbability] = useState(15);
   const [botName, setBotName] = useState('BotWave');
   const [welcomeMessage, setWelcomeMessage] = useState('');
@@ -49,9 +48,6 @@ export default function SettingsPage() {
       try {
         const res = await fetch('/api/user/settings');
         const data = await res.json();
-        if (data.groqApiKey) {
-          setGroqKey(data.groqApiKey);
-        }
         if (data.skipProbability !== undefined) {
           setSkipProbability(Math.round(data.skipProbability * 100));
         }
@@ -107,7 +103,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveApiKey = async () => {
+  const handleSaveSettings = async () => {
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -117,7 +113,6 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          groqApiKey: groqKey,
           skipProbability: skipProbability / 100,
           botName,
           welcomeMessage,
@@ -128,7 +123,7 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to save API key');
+        throw new Error(data.error || 'Failed to save settings');
       }
 
       setSaved(true);
@@ -288,51 +283,29 @@ export default function SettingsPage() {
             <div>
               <h3 className="font-display text-sm tracking-[3px] text-green mb-4">AI SETTINGS</h3>
               <div className="space-y-4">
-                <div>
-                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">GROQ API KEY</label>
-                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
-                    Get your free API key at{' '}
-                    <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-cyan hover:text-green">
-                      console.groq.com
-                    </a>
-                    {' '}— No credit card required. Supports Llama 3 70B and more.
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      value={groqKey}
-                      onChange={(e) => setGroqKey(e.target.value)}
-                      className="flex-1 bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
-                      placeholder="gsk_xxxxxxxxxxxx..."
-                    />
-                    <button
-                      onClick={handleSaveApiKey}
-                      disabled={saving}
-                      className="px-6 py-3 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50"
-                    >
-                      {saving ? 'SAVING...' : saved ? 'SAVED!' : 'SAVE'}
-                    </button>
-                  </div>
-                  {error && (
-                    <p className="mt-2 font-mono text-xs text-red-400">{error}</p>
-                  )}
-                  {saved && (
-                    <p className="mt-2 font-mono text-xs text-green">API key saved successfully!</p>
-                  )}
-                </div>
                 <div className="bg-dark/30 border border-green/5 p-4">
-                  <h4 className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-2">HOW IT WORKS</h4>
-                  <ol className="font-mono text-[10px] text-[#3a6a5a] space-y-1 list-decimal list-inside">
-                    <li>Create a free account at console.groq.com</li>
-                    <li>Copy your API key</li>
-                    <li>Paste it above and click SAVE</li>
-                    <li>Use !ai in WhatsApp to chat with AI</li>
-                  </ol>
-                  <p className="font-mono text-[10px] text-[#5a9a7a] mt-2">
-                    BotWave uses your own key so AI is 100% free for you and us.
+                  <h4 className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-2">AI POWERED BY GEMINI</h4>
+                  <p className="font-mono text-[10px] text-[#3a6a5a]">
+                    All AI features (!ai, !scan, !digest, Study Hub) are powered by Google Gemini and work automatically — no API key needed from you.
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleSaveSettings}
+                disabled={saving}
+                className="px-8 py-3 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50"
+              >
+                {saving ? 'SAVING...' : saved ? 'SAVED!' : 'SAVE ALL SETTINGS'}
+              </button>
+              {error && (
+                <p className="font-mono text-xs text-red-400">{error}</p>
+              )}
+              {saved && (
+                <p className="font-mono text-xs text-green">Settings saved successfully!</p>
+              )}
             </div>
 
             <div>

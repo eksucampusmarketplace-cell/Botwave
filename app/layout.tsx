@@ -218,7 +218,7 @@ export default function RootLayout({
                   name: 'How is BotWave different from other WhatsApp bots?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Groq, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
+                    text: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Google Gemini, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
                   },
                 },
                 {

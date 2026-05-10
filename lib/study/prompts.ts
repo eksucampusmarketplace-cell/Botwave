@@ -1,16 +1,16 @@
 /**
  * Study Feature — AI Prompt Templates
- * Used with Groq API to generate summaries, questions, and flashcards.
+ * Used with Gemini API to generate summaries, questions, and flashcards.
  *
  * FIXED FORMATTING RULE — applies to ALL study note generation:
- * This system prompt ensures Groq always formats notes using the 8-step
+ * This system prompt ensures AI always formats notes using the 8-step
  * medical study note formatting standard. Every fact from every source
  * must be included — nothing skipped or summarised away.
  */
 
 /**
  * The canonical medical study note formatting rule.
- * Embedded into every summary prompt so Groq always follows it.
+ * Embedded into every summary prompt so Gemini always follows it.
  */
 const MEDICAL_NOTE_FORMATTING_RULE = `
 FIXED FORMATTING RULE — YOU MUST ALWAYS FOLLOW THESE RULES:

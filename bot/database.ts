@@ -947,7 +947,7 @@ export async function getActivePoll(sessionId: string, chatJid: string) {
   });
 }
 
-// ─── New: User Settings (Groq API Key, etc.) ─────────────────────────────────
+// ─── New: User Settings ─────────────────────────────────────────────────
 
 export async function getUserSettings(userId: string) {
   const cached = getCached(settingsCache, userId);
@@ -966,7 +966,7 @@ export async function getUserSettings(userId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('user_id, groq_api_key, bot_name, command_prefix, ai_model, ai_system_prompt')
+        .select('user_id, bot_name, command_prefix, ai_model, ai_system_prompt')
         .eq('user_id', userId)
         .single();
 

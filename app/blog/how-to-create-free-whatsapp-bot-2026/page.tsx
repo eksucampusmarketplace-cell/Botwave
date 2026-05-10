@@ -26,7 +26,7 @@ Everyone thinks creating a WhatsApp bot requires coding skills, expensive server
 Before we start, here's what your WhatsApp bot will be able to do:
 
 - **Create stickers** from any image (!sticker)
-- **AI chat** powered by Groq — ask questions, get smart replies (!ai)
+- **AI chat** powered by Google Gemini — ask questions, get smart replies (!ai)
 - **Download media** from URLs (!download)
 - **Run polls** in groups (!poll)
 - **Play games** — trivia, hangman, word chain (!trivia, !hangman)
@@ -93,7 +93,7 @@ No system is 100% risk-free, but BotWave does more than any other bot to keep yo
 | Coding needed | No | No | Yes |
 | Anti-ban | Advanced | Basic/none | None |
 | Commands | 50+ built-in | Limited | Build yourself |
-| AI chat | Yes (Groq) | Sometimes | Build yourself |
+| AI chat | Yes (Gemini) | Sometimes | Build yourself |
 | Dashboard | Yes | Yes | No |
 
 ## What's Next?
@@ -101,7 +101,7 @@ No system is 100% risk-free, but BotWave does more than any other bot to keep yo
 Once your bot is running:
 1. **Add it to your groups** — your friends will love the sticker maker and games
 2. **Try the referral system** — earn rewards by inviting others (!refer)
-3. **Explore AI chat** — add your free Groq API key in settings for unlimited AI conversations
+3. **Explore AI chat** — AI features work automatically with no setup needed
 4. **Set up the app** — add BotWave to your homescreen for quick dashboard access
 
 ## Conclusion

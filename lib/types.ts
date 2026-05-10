@@ -95,7 +95,6 @@ export interface UserProfile {
 export interface UserSettings {
   id: string;
   user_id: string;
-  groq_api_key: string | null;
   afk_enabled: boolean;
   afk_message: string;
   bot_name: string;
