@@ -2,10 +2,41 @@ node_modules
 .next
 dist
 .git
+.gitignore
 .env
 .env.*
 deploy/.env.*
 !deploy/.env.*.example
+
+# Documentation
 *.md
+LICENSE
+
+# Editor/IDE
 .vscode
 .idea
+*.swp
+*.swo
+
+# Testing
+e2e
+tests
+__tests__
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+playwright.config.ts
+playwright-report
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+coverage
+.turbo
