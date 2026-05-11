@@ -803,17 +803,19 @@ export const horoscopeReadings: string[] = [
 // ─── Promo Messages ───────────────────────────────────────────────────────────
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
+const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X';
+
 export const promoMessages: string[] = [
-  `\n─────────────────────────────\nWant your own WhatsApp bot?\nCreate yours FREE at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nLove this feature?\nGet your own bot FREE at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nPowered by BotWave\nCreate yours FREE at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nMade with BotWave\nGet your own bot at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nBotWave — Free WhatsApp Bot\nStart yours at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nImpressed? Build your own!\nFREE at ${APP_URL}/signup`,
-  `\n─────────────────────────────\nThis bot runs on BotWave\nMake yours: ${APP_URL}/signup`,
-  `\n─────────────────────────────\nBotWave powers this bot\nYour own bot: ${APP_URL}/signup`,
-  `\n─────────────────────────────\nAutomate WhatsApp for free\n${APP_URL}/signup`,
-  `\n─────────────────────────────\nBotWave — by Decisive Analyst\nGet started: ${APP_URL}/signup`,
+  `\n─────────────────────────────\nWant your own WhatsApp bot?\nCreate yours FREE at ${APP_URL}/signup\n📢 Follow us: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nLove this feature?\nGet your own bot FREE at ${APP_URL}/signup\n📢 Updates: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nPowered by BotWave\nCreate yours FREE at ${APP_URL}/signup\n📢 Channel: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nMade with BotWave\nGet your own bot at ${APP_URL}/signup\n📢 Follow: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nBotWave — Free WhatsApp Bot\nStart yours at ${APP_URL}/signup\n📢 Join our channel: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nImpressed? Build your own!\nFREE at ${APP_URL}/signup\n📢 Follow BotWave: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nThis bot runs on BotWave\nMake yours: ${APP_URL}/signup\n📢 Updates & tips: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nBotWave powers this bot\nYour own bot: ${APP_URL}/signup\n📢 Follow us: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nAutomate WhatsApp for free\n${APP_URL}/signup\n📢 Channel: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nBotWave — by Decisive Analyst\nGet started: ${APP_URL}/signup\n📢 Follow: ${CHANNEL_URL}`,
 ];
 
 // ─── Ping Replies ─────────────────────────────────────────────────────────────
@@ -1532,8 +1534,8 @@ export const welcomeReplies: string[] = [
   'The more the merrier! Welcome {name}',
   'Welcome to this awesome group, {name}!',
   '{name} has entered {group}!',
-  'Welcome, {name}! Use !help for bot commands',
-  'Hi {name}! Type !help to see what I can do',
+  'Welcome, {name}! Use !help for bot commands\n📢 Follow BotWave: https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X',
+  'Hi {name}! Type !help to see what I can do\n📢 Updates: https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X',
   '{name} is here! Say hi everyone',
   'Welcome {name}! Enjoy the vibes',
   'New addition: {name}! Welcome!',
@@ -1543,7 +1545,7 @@ export const welcomeReplies: string[] = [
   'Welcome to the chat, {name}!',
   'Hey {name}, you\'re gonna love it here!',
   '{name} just joined the family!',
-  'Welcome {name}! Ask me anything with !ai',
+  'Welcome {name}! Ask me anything with !ai\n📢 Follow our channel: https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X',
   'Guess who joined? {name}! Welcome!',
   'Welcome welcome welcome, {name}!',
   'Fresh face alert! {name} is here',

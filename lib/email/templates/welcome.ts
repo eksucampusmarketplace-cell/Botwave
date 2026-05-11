@@ -18,5 +18,11 @@ export function welcomeTemplate(username: string): string {
         Go to Dashboard
       </a>
     </div>
+    <div style="background:#0f172a;border-radius:8px;padding:16px 20px;margin:0 0 20px;text-align:center">
+      <p style="color:#94a3b8;font-size:13px;margin:0 0 8px">Stay updated with new features & tips:</p>
+      <a href="https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X" style="color:#22c55e;text-decoration:none;font-weight:600;font-size:14px">
+        📢 Follow BotWave on WhatsApp
+      </a>
+    </div>
   `);
 }
