@@ -100,6 +100,13 @@ AI-powered — understands slang, typos & context
 Only in DMs or when you say "bot, ..."
 Toggle off anytime: !settings nlp off
 
+*SAVAGE MODE* 🔥
+!settings savage on — Auto-roast anyone who insults you
+AI-powered — detects insults (English + pidgin)
+Fires back with unique savage roasts automatically
+Works in DMs and groups — no trigger needed
+!settings savage off — Disable savage mode
+
 *ADMIN*
 !download / !save / !savestatus / !tagall
 !group / !purge / !settings
