@@ -14,6 +14,8 @@
 
 import { callAI } from '../../lib/ai-provider';
 import { createClient } from '@supabase/supabase-js';
+import { isRedisAvailable } from '../redis';
+import Redis from 'ioredis';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -88,6 +90,11 @@ export interface ContactMemory {
 
 export type AutopilotMode = 'offline' | 'always' | 'manual';
 
+// Per-contact override: 'on' = always autopilot this contact even if global off,
+// 'off' = never autopilot this contact even if global on,
+// absent = follow global setting
+export type ContactOverride = 'on' | 'off';
+
 export interface AutopilotState {
   enabled: boolean;
   mode: AutopilotMode;
@@ -100,6 +107,7 @@ export interface AutopilotState {
   sampleCount: number;
   lastSyncAt: string | null;
   contactMemories: Map<string, ContactMemory>;
+  contactOverrides: Map<string, ContactOverride>;
 }
 
 // ─── In-Memory Caches ───────────────────────────────────────────────────────
@@ -112,14 +120,88 @@ const pendingReplies = new Map<string, NodeJS.Timeout>();
 const ownerLastActive = new Map<string, number>();
 const DEFAULT_INACTIVITY_MINUTES = 5;
 
+// Per-contact owner activity: tracks when the owner last interacted with a specific contact
+// Key: `sessionId:contactJid`, Value: timestamp
+// Used so autopilot only backs off for the SPECIFIC chat the owner is engaging with
+const ownerActivePerContact = new Map<string, number>();
+const OWNER_CONTACT_COOLDOWN_MS = 5 * 60_000; // 5 min after owner engages with a contact
+
 const MAX_SAMPLES = 200;
 const MAX_CONTACT_MESSAGES = 30;
 const ANALYSIS_MIN_SAMPLES = 15;
+const REDIS_AUTOPILOT_TTL = 120; // 2 min cache
+
+// ─── Redis Cache Helpers (bot-side) ─────────────────────────────────────────
+
+let redisRef: Redis | null = null;
+function getRedis(): Redis | null {
+  if (redisRef) return redisRef;
+  if (!isRedisAvailable()) return null;
+  const url = process.env.REDIS_URL;
+  if (!url) return null;
+  try {
+    redisRef = new Redis(url, { maxRetriesPerRequest: 1, enableOfflineQueue: false, lazyConnect: false });
+    return redisRef;
+  } catch {
+    return null;
+  }
+}
+
+async function redisCacheGet(key: string): Promise<Record<string, unknown> | null> {
+  const r = getRedis();
+  if (!r) return null;
+  try {
+    const raw = await r.get(`ap:${key}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function redisCacheSet(key: string, data: unknown, ttl = REDIS_AUTOPILOT_TTL): Promise<void> {
+  const r = getRedis();
+  if (!r) return;
+  try {
+    await r.set(`ap:${key}`, JSON.stringify(data), 'EX', ttl);
+  } catch {
+    // non-critical
+  }
+}
+
+async function redisCacheDel(key: string): Promise<void> {
+  const r = getRedis();
+  if (!r) return;
+  try {
+    await r.del(`ap:${key}`);
+  } catch {
+    // non-critical
+  }
+}
 
 // ─── Owner Activity Tracking ────────────────────────────────────────────────
 
 export function markOwnerActive(sessionId: string): void {
   ownerLastActive.set(sessionId, Date.now());
+}
+
+/**
+ * Mark that the owner sent a message / VN / call to a specific contact.
+ * Autopilot will back off for this contact for OWNER_CONTACT_COOLDOWN_MS.
+ */
+export function markOwnerActiveForContact(sessionId: string, chatJid: string): void {
+  ownerLastActive.set(sessionId, Date.now());
+  ownerActivePerContact.set(`${sessionId}:${chatJid}`, Date.now());
+}
+
+/**
+ * Check if the owner recently interacted with a specific contact.
+ * Returns true if owner sent a message to this contact within cooldown.
+ */
+export function isOwnerActiveWithContact(sessionId: string, chatJid: string): boolean {
+  const lastActive = ownerActivePerContact.get(`${sessionId}:${chatJid}`);
+  if (!lastActive) return false;
+  return Date.now() - lastActive < OWNER_CONTACT_COOLDOWN_MS;
 }
 
 export function isOwnerInactive(sessionId: string, inactivityMinutes?: number): boolean {
@@ -137,30 +219,49 @@ export function getOwnerLastActiveMinutesAgo(sessionId: string): number | null {
 
 // ─── Database Operations ────────────────────────────────────────────────────
 
-async function loadAutopilotState(userId: string, sessionId: string): Promise<AutopilotState> {
+export async function loadAutopilotState(userId: string, sessionId: string): Promise<AutopilotState> {
   const cached = autopilotStates.get(`${userId}:${sessionId}`);
   if (cached) return cached;
 
-  const { data } = await supabase
-    .from('autopilot_personas')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('session_id', sessionId)
-    .single();
+  // Try Redis cache first
+  const redisKey = `${userId}:${sessionId}`;
+  const redisCached = await redisCacheGet(redisKey);
+  let data: Record<string, unknown> | null = redisCached as Record<string, unknown> | null;
+
+  if (!data) {
+    const { data: dbData } = await supabase
+      .from('autopilot_personas')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('session_id', sessionId)
+      .single();
+    data = dbData;
+    if (data) {
+      redisCacheSet(redisKey, data).catch(() => {});
+    }
+  }
+
+  // Parse contact overrides from DB (stored as JSON object { "jid": "on"|"off" })
+  const rawOverrides = (data?.contact_overrides as Record<string, string>) || {};
+  const overridesMap = new Map<string, ContactOverride>();
+  for (const [jid, val] of Object.entries(rawOverrides)) {
+    if (val === 'on' || val === 'off') overridesMap.set(jid, val);
+  }
 
   const state: AutopilotState = {
-    enabled: data?.enabled ?? false,
+    enabled: (data?.enabled as boolean) ?? false,
     mode: (data?.mode as AutopilotMode) || 'offline',
-    replyDelayMinutes: data?.reply_delay_minutes ?? 3,
-    inactivityMinutes: data?.inactivity_minutes ?? DEFAULT_INACTIVITY_MINUTES,
-    maxDailyReplies: data?.max_daily_replies ?? 30,
-    dailyRepliesUsed: data?.daily_replies_used ?? 0,
-    selfDescription: data?.self_description ?? '',
-    styleProfile: data?.style_profile && Object.keys(data.style_profile).length > 0
+    replyDelayMinutes: (data?.reply_delay_minutes as number) ?? 3,
+    inactivityMinutes: (data?.inactivity_minutes as number) ?? DEFAULT_INACTIVITY_MINUTES,
+    maxDailyReplies: (data?.max_daily_replies as number) ?? 30,
+    dailyRepliesUsed: (data?.daily_replies_used as number) ?? 0,
+    selfDescription: (data?.self_description as string) ?? '',
+    styleProfile: data?.style_profile && Object.keys(data.style_profile as object).length > 0
       ? data.style_profile as PersonaProfile : null,
-    sampleCount: Array.isArray(data?.sample_messages) ? data.sample_messages.length : 0,
-    lastSyncAt: data?.last_sync_at ?? null,
+    sampleCount: Array.isArray(data?.sample_messages) ? (data.sample_messages as unknown[]).length : 0,
+    lastSyncAt: (data?.last_sync_at as string) ?? null,
     contactMemories: new Map(),
+    contactOverrides: overridesMap,
   };
 
   autopilotStates.set(`${userId}:${sessionId}`, state);
@@ -178,6 +279,8 @@ async function saveAutopilotState(
       { user_id: userId, session_id: sessionId, updated_at: new Date().toISOString(), ...updates },
       { onConflict: 'user_id,session_id' },
     );
+  // Invalidate Redis cache so next read picks up fresh data
+  redisCacheDel(`${userId}:${sessionId}`).catch(() => {});
 }
 
 // ─── Message Collection (Silent Learning) ───────────────────────────────────
@@ -492,6 +595,11 @@ const CALL_REQUEST_PATTERN = /\b(?:call me|can we call|let'?s call|video call|vo
 /**
  * Master gate: should autopilot reply to this message?
  * Called from MessageHandler AFTER NLP / auto-reply / savage have run.
+ *
+ * Per-contact awareness:
+ * - If owner recently replied to THIS contact → skip (they're handling it)
+ * - If owner is globally inactive (offline mode) OR always mode → reply
+ * - Owner chatting with someone else doesn't block autopilot for this contact
  */
 export async function shouldAutopilotReply(
   userId: string,
@@ -499,18 +607,39 @@ export async function shouldAutopilotReply(
   isGroup: boolean,
   fromMe: boolean,
   otherHandlerReplied: boolean,
+  chatJid?: string,
 ): Promise<boolean> {
   if (fromMe || isGroup || otherHandlerReplied) return false;
 
   const state = await loadAutopilotState(userId, sessionId);
-  if (!state.enabled || !state.styleProfile) return false;
+  if (!state.styleProfile) return false;
   if (state.dailyRepliesUsed >= state.maxDailyReplies) return false;
+
+  // Per-contact override check (overrides global setting)
+  if (chatJid) {
+    const override = state.contactOverrides.get(chatJid);
+    if (override === 'off') return false;  // explicitly disabled for this contact
+    if (override === 'on') {
+      // Explicitly enabled for this contact — skip global check
+      // But still respect per-contact recent activity
+      if (isOwnerActiveWithContact(sessionId, chatJid)) return false;
+      return true;
+    }
+  }
+
+  // No per-contact override → follow global setting
+  if (!state.enabled) return false;
+
+  // Per-contact check: if owner recently engaged with this specific contact, back off
+  if (chatJid && isOwnerActiveWithContact(sessionId, chatJid)) {
+    return false;
+  }
 
   // Mode checks
   if (state.mode === 'offline' && !isOwnerInactive(sessionId, state.inactivityMinutes)) {
-    return false; // Owner is active — don't reply
+    return false; // Owner is globally active — don't reply
   }
-  // 'always' mode: reply regardless
+  // 'always' mode: reply regardless of global activity
   // 'manual' mode: treated same as 'always' (toggled on/off explicitly)
 
   return true;
@@ -525,7 +654,7 @@ export async function generateAutopilotReply(
 ): Promise<string | null> {
   try {
     const state = await loadAutopilotState(userId, sessionId);
-    if (!state.enabled || !state.styleProfile) return null;
+    if (!state.styleProfile) return null;
 
     // Check daily limit
     if (state.dailyRepliesUsed >= state.maxDailyReplies) {
@@ -535,16 +664,37 @@ export async function generateAutopilotReply(
 
     const profile = state.styleProfile;
     const isCallRequest = CALL_REQUEST_PATTERN.test(incomingText);
+    const mood = detectMood(incomingText);
+    const timeHint = getTimePersonalityHint();
 
     const systemPrompt = buildPersonaSystemPrompt(profile, state.selfDescription);
 
-    // Build contact context
+    // Build contact context with relationship awareness
     const memory = state.contactMemories.get(chatJid);
     const contextBlock = memory ? buildContactContext(memory) : '';
 
     let extraInstruction = '';
     if (isCallRequest) {
-      extraInstruction = `\n\nIMPORTANT: They are asking for a voice/video call. You are NOT available to take calls right now. Decline naturally in your style — say you'll call back later, or that you can't talk right now. Do NOT say you're an AI or on autopilot.`;
+      extraInstruction += `\n\nIMPORTANT: They are asking for a voice/video call. You are NOT available to take calls right now. Decline naturally in your style — say you'll call back later, or that you can't talk right now. Do NOT say you're an AI or on autopilot.`;
+    }
+
+    // Mood-adaptive instructions
+    if (mood === 'urgent') {
+      extraInstruction += `\n\nMOOD: This message sounds URGENT. Reply more quickly/directly than usual. Show concern but stay in character.`;
+    } else if (mood === 'angry') {
+      extraInstruction += `\n\nMOOD: They seem angry or frustrated. Respond the way this person naturally handles conflict (${profile.argumentStyle}). Don't be overly apologetic unless that's their style.`;
+    } else if (mood === 'sad') {
+      extraInstruction += `\n\nMOOD: They seem sad or going through something. Be supportive in this person's natural way (advice style: ${profile.adviceGivingStyle}, expressiveness: ${profile.emotionalExpressiveness}).`;
+    } else if (mood === 'happy') {
+      extraInstruction += `\n\nMOOD: They're sharing good news or are happy. Match their energy with excitement expressions this person would use.`;
+    }
+
+    // Time-of-day personality shift
+    extraInstruction += `\n\nTIME CONTEXT: ${timeHint}`;
+
+    // Relationship context
+    if (memory && memory.relationship !== 'unknown') {
+      extraInstruction += `\n\nRELATIONSHIP: You know ${memory.contactName} as a ${memory.relationship}. Your usual tone with them: ${memory.toneWithContact}.`;
     }
 
     const userPrompt = `${contactBlock(contactName, chatJid)}${contextBlock}
@@ -603,6 +753,8 @@ export function scheduleAutopilotReply(
   contactName: string | undefined,
   delayMinutes: number,
   sendFn: (text: string) => Promise<void>,
+  sock?: { readMessages?: (keys: unknown[]) => Promise<void>; sendPresenceUpdate?: (presence: string, jid: string) => Promise<void> },
+  messageKey?: unknown,
 ): void {
   const key = `${sessionId}:${chatJid}`;
 
@@ -610,14 +762,42 @@ export function scheduleAutopilotReply(
   const existing = pendingReplies.get(key);
   if (existing) clearTimeout(existing);
 
-  // Add some human-like jitter to the delay (±30%)
-  const jitter = delayMinutes * 60_000 * (0.7 + Math.random() * 0.6);
+  // Weighted delay: 1-4 min common (70%), 4-7 min less common (30%)
+  let delayMs: number;
+  const roll = Math.random();
+  if (roll < 0.70) {
+    delayMs = (1 + Math.random() * 3) * 60_000;
+  } else {
+    delayMs = (4 + Math.random() * 3) * 60_000;
+  }
+  // Add ±15% human jitter
+  const jitter = delayMs * (0.85 + Math.random() * 0.30);
+
+  // Simulate "read" receipt after a short natural delay (5-30s)
+  const readDelay = 5_000 + Math.random() * 25_000;
+  if (sock?.readMessages && messageKey) {
+    setTimeout(() => {
+      sock.readMessages!([messageKey]).catch(() => {});
+    }, readDelay);
+  }
 
   const timeout = setTimeout(async () => {
     pendingReplies.delete(key);
     try {
+      // Re-check: owner might have replied while we waited
+      if (isOwnerActiveWithContact(sessionId, chatJid)) return;
+
       const reply = await generateAutopilotReply(userId, sessionId, incomingText, chatJid, contactName);
       if (reply) {
+        // Simulate typing indicator before sending (1-4s based on reply length)
+        if (sock?.sendPresenceUpdate) {
+          try {
+            await sock.sendPresenceUpdate('composing', chatJid);
+            const typingDuration = Math.min(1000 + reply.length * 30, 4000);
+            await new Promise((r) => setTimeout(r, typingDuration));
+            await sock.sendPresenceUpdate('paused', chatJid);
+          } catch { /* non-critical */ }
+        }
         await sendFn(reply);
       }
     } catch (err) {
@@ -698,6 +878,140 @@ export async function setInactivityMinutes(userId: string, sessionId: string, mi
   await saveAutopilotState(userId, sessionId, { inactivity_minutes: clamped });
   const state = autopilotStates.get(`${userId}:${sessionId}`);
   if (state) state.inactivityMinutes = clamped;
+}
+
+// ─── Per-Contact Overrides ──────────────────────────────────────────────────
+
+export async function setContactOverride(
+  userId: string,
+  sessionId: string,
+  contactJid: string,
+  override: ContactOverride | 'default',
+): Promise<void> {
+  const state = await loadAutopilotState(userId, sessionId);
+
+  if (override === 'default') {
+    state.contactOverrides.delete(contactJid);
+  } else {
+    state.contactOverrides.set(contactJid, override);
+  }
+
+  // Serialize overrides map to plain object for DB storage
+  const obj: Record<string, string> = {};
+  for (const [jid, val] of state.contactOverrides.entries()) {
+    obj[jid] = val;
+  }
+  await saveAutopilotState(userId, sessionId, { contact_overrides: obj });
+}
+
+export async function getContactOverrides(
+  userId: string,
+  sessionId: string,
+): Promise<Map<string, ContactOverride>> {
+  const state = await loadAutopilotState(userId, sessionId);
+  return state.contactOverrides;
+}
+
+export async function getContactList(
+  userId: string,
+  sessionId: string,
+): Promise<Array<{ jid: string; name: string; override: ContactOverride | 'default'; messageCount: number }>> {
+  const state = await loadAutopilotState(userId, sessionId);
+  const contacts: Array<{ jid: string; name: string; override: ContactOverride | 'default'; messageCount: number }> = [];
+
+  for (const [jid, memory] of state.contactMemories.entries()) {
+    contacts.push({
+      jid,
+      name: memory.contactName,
+      override: state.contactOverrides.get(jid) || 'default',
+      messageCount: memory.lastMessages.length,
+    });
+  }
+
+  // Also include overrides for contacts not yet in memory
+  for (const [jid, val] of state.contactOverrides.entries()) {
+    if (!state.contactMemories.has(jid)) {
+      contacts.push({
+        jid,
+        name: jid.split('@')[0],
+        override: val,
+        messageCount: 0,
+      });
+    }
+  }
+
+  return contacts;
+}
+
+// ─── Message Batching ───────────────────────────────────────────────────────
+// When someone sends multiple messages in a row, wait for them to finish
+// before generating ONE combined reply.
+
+const batchBuffers = new Map<string, { messages: string[]; timer: NodeJS.Timeout; contactName?: string }>();
+const BATCH_WAIT_MS = 8_000; // Wait 8s of silence before replying to a burst
+
+export function bufferIncomingForBatch(
+  sessionId: string,
+  chatJid: string,
+  text: string,
+  contactName: string | undefined,
+  onBatchReady: (combinedText: string, name: string | undefined) => void,
+): void {
+  const key = `${sessionId}:${chatJid}`;
+  const existing = batchBuffers.get(key);
+
+  if (existing) {
+    // More messages coming — reset timer, append
+    clearTimeout(existing.timer);
+    existing.messages.push(text);
+    if (contactName) existing.contactName = contactName;
+    existing.timer = setTimeout(() => {
+      batchBuffers.delete(key);
+      const combined = existing.messages.join('\n');
+      onBatchReady(combined, existing.contactName);
+    }, BATCH_WAIT_MS);
+  } else {
+    // First message — start buffer
+    const timer = setTimeout(() => {
+      const buf = batchBuffers.get(key);
+      batchBuffers.delete(key);
+      if (buf) {
+        const combined = buf.messages.join('\n');
+        onBatchReady(combined, buf.contactName);
+      }
+    }, BATCH_WAIT_MS);
+    batchBuffers.set(key, { messages: [text], timer, contactName });
+  }
+}
+
+// ─── Mood Detection ─────────────────────────────────────────────────────────
+
+const URGENT_PATTERN = /\b(?:urgent|emergency|asap|help me|please help|i need you|right now|immediately|quickly|hurry)\b/i;
+const ANGRY_PATTERN = /\b(?:wtf|fuck|shit|damn|pissed|angry|annoyed|stupid|idiot|hate you|rubbish|nonsense|useless)\b/i;
+const SAD_PATTERN = /\b(?:sad|depressed|crying|cry|miss you|lonely|heartbroken|lost someone|passed away|died|funeral|hurt|pain)\b/i;
+const HAPPY_PATTERN = /\b(?:amazing|awesome|great news|congrats|celebrate|happy|excited|love it|perfect|wonderful|blessed)\b/i;
+
+export type MoodHint = 'urgent' | 'angry' | 'sad' | 'happy' | 'neutral';
+
+export function detectMood(text: string): MoodHint {
+  if (URGENT_PATTERN.test(text)) return 'urgent';
+  if (ANGRY_PATTERN.test(text)) return 'angry';
+  if (SAD_PATTERN.test(text)) return 'sad';
+  if (HAPPY_PATTERN.test(text)) return 'happy';
+  return 'neutral';
+}
+
+// ─── Time-of-Day Personality ────────────────────────────────────────────────
+
+export function getTimePersonalityHint(): string {
+  const hour = new Date().getHours();
+  if (hour >= 0 && hour < 6) return 'It is very late at night/early morning. Reply sleepy, brief, minimal energy. Shorter messages, less emoji.';
+  if (hour >= 6 && hour < 9) return 'It is early morning. Reply with morning energy — slightly groggy but warming up.';
+  if (hour >= 9 && hour < 12) return 'It is mid-morning. Reply with normal energy.';
+  if (hour >= 12 && hour < 14) return 'It is around lunchtime. Reply casually.';
+  if (hour >= 14 && hour < 18) return 'It is afternoon. Reply with normal energy.';
+  if (hour >= 18 && hour < 21) return 'It is evening. Reply relaxed, winding down.';
+  return 'It is late night. Reply more chill, less formal, shorter messages.';
 }
 
 // ─── Status / Stats ─────────────────────────────────────────────────────────
