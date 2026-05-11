@@ -140,8 +140,6 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       `!settings afk msg [text] — Set AFK message\n` +
       `!settings name [name] — Set bot name\n` +
       `!settings welcome on/off — Toggle welcome/goodbye\n` +
-      `!settings nlp on/off — Toggle smart NLP (natural language commands)\n` +
-      `!settings savage on/off — Toggle savage mode (auto-roast insulters)\n` +
       `!settings status — Show current settings`,
       sock, context.rawMessage.key, context.queue,
     );
@@ -198,41 +196,11 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
     return;
   }
 
-  if (sub === 'nlp') {
-    const action = args[1]?.toLowerCase();
-    if (!context.sessionId || !context.userId) {
-      await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
-      return;
-    }
-    if (action === 'on' || action === 'enable') {
-      await setFeatureEnabled(context.userId, context.sessionId, 'nlp', true);
-      await sendReply(context.chatJid, 'Smart NLP *enabled* — I\'ll now understand natural language requests (e.g. "what\'s the weather in Lagos").\n\nIn groups, prefix with "bot" (e.g. "bot, tell me a joke").', sock, context.rawMessage.key, context.queue);
-    } else if (action === 'off' || action === 'disable') {
-      await setFeatureEnabled(context.userId, context.sessionId, 'nlp', false);
-      await sendReply(context.chatJid, 'Smart NLP *disabled* — use command prefix for commands.', sock, context.rawMessage.key, context.queue);
-    } else {
-      await sendReply(context.chatJid, 'Usage: !settings nlp on/off', sock, context.rawMessage.key, context.queue);
-    }
-    return;
-  }
+  // NLP settings disabled
+  // if (sub === 'nlp') { ... }
 
-  if (sub === 'savage') {
-    const action = args[1]?.toLowerCase();
-    if (!context.sessionId || !context.userId) {
-      await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
-      return;
-    }
-    if (action === 'on' || action === 'enable') {
-      await setFeatureEnabled(context.userId, context.sessionId, 'savage', true);
-      await sendReply(context.chatJid, '🔥 Savage mode *ACTIVATED* — anyone who insults you gets auto-roasted by AI. No mercy. 💀', sock, context.rawMessage.key, context.queue);
-    } else if (action === 'off' || action === 'disable') {
-      await setFeatureEnabled(context.userId, context.sessionId, 'savage', false);
-      await sendReply(context.chatJid, 'Savage mode *disabled* — back to being nice. 😇', sock, context.rawMessage.key, context.queue);
-    } else {
-      await sendReply(context.chatJid, 'Usage: !settings savage on/off', sock, context.rawMessage.key, context.queue);
-    }
-    return;
-  }
+  // Savage mode settings disabled
+  // if (sub === 'savage') { ... }
 
   if (sub === 'welcome') {
     const action = args[1]?.toLowerCase();
@@ -306,47 +274,8 @@ async function handlePlan(context: MessageContext, sock: any): Promise<void> {
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
 }
 
-async function handleAutoView(context: MessageContext, args: string[], sock: any): Promise<void> {
-  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
-  if (!context.sessionId || !userId) {
-    await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
-    return;
-  }
-
-  const sub = args[0]?.toLowerCase();
-
-  if (!sub || sub === 'status') {
-    const enabled = await getFeatureEnabled(userId, 'autoview');
-    await sendReply(
-      context.chatJid,
-      `*AUTO STATUS VIEWER*\n\n` +
-      `*Status:* ${enabled ? 'ON' : 'OFF'}\n` +
-      `*Reaction:* ❤️\n` +
-      `*Daily cap:* 50 statuses\n` +
-      `*Skip rate:* ~15% (anti-ban)\n\n` +
-      `*Commands:*\n` +
-      `!autoview on — Enable auto-view + react\n` +
-      `!autoview off — Disable\n\n` +
-      `Bot will automatically view and react to your contacts' statuses one by one with random delays (5-15s) to stay ban-safe.`,
-      sock, context.rawMessage.key, context.queue,
-    );
-    return;
-  }
-
-  if (sub === 'on' || sub === 'enable') {
-    await setFeatureEnabled(userId, context.sessionId, 'autoview', true);
-    await sendReply(context.chatJid, 'Auto status viewer *enabled*. Bot will view + react to statuses with ❤️ (max 50/day, with random delays).', sock, context.rawMessage.key, context.queue);
-    return;
-  }
-
-  if (sub === 'off' || sub === 'disable') {
-    await setFeatureEnabled(userId, context.sessionId, 'autoview', false);
-    await sendReply(context.chatJid, 'Auto status viewer *disabled*.', sock, context.rawMessage.key, context.queue);
-    return;
-  }
-
-  await sendReply(context.chatJid, 'Usage: !autoview on/off', sock, context.rawMessage.key, context.queue);
-}
+// Autoview removed entirely
+// async function handleAutoView(...) { ... }
 
 async function handleWelcomeCmd(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!context.isGroup) {
@@ -893,7 +822,7 @@ registerCommand({ name: 'group', aliases: ['group', 'groupinfo', 'ginfo'], categ
 registerCommand({ name: 'settings', aliases: ['settings', 'config', 'set'], category: 'admin', description: 'Bot settings', execute: (ctx, args, sock) => handleSettings(ctx, args, sock) });
 registerCommand({ name: 'balance', aliases: ['balance', 'bal', 'rewards'], category: 'admin', description: 'Check reward balance', execute: (ctx, _a, sock) => handleBalance(ctx, sock) });
 registerCommand({ name: 'plan', aliases: ['plan', 'subscription', 'sub'], category: 'admin', description: 'View subscription', execute: (ctx, _a, sock) => handlePlan(ctx, sock) });
-registerCommand({ name: 'autoview', aliases: ['autoview', 'statusview'], category: 'admin', description: 'Auto-view statuses', execute: (ctx, args, sock) => handleAutoView(ctx, args, sock) });
+// registerCommand({ name: 'autoview', aliases: ['autoview', 'statusview'], category: 'admin', description: 'Auto-view statuses', execute: (ctx, args, sock) => handleAutoView(ctx, args, sock) }); // Removed entirely
 registerCommand({ name: 'welcome', aliases: ['welcome'], category: 'admin', description: 'Set welcome message', execute: (ctx, args, sock) => handleWelcomeCmd(ctx, args, sock) });
 registerCommand({ name: 'goodbye', aliases: ['goodbye', 'bye'], category: 'admin', description: 'Set goodbye message', execute: (ctx, args, sock) => handleGoodbyeCmd(ctx, args, sock) });
 registerCommand({ name: 'kick', aliases: ['kick', 'remove'], category: 'admin', description: 'Remove group member', execute: (ctx, args, sock) => handleKick(ctx, args, sock) });

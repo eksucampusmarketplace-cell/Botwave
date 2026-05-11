@@ -89,45 +89,11 @@ async function sendHelp(
 !deadman / !alive — Safety switch
 !birthday set DD/MM — Birthday tracker
 
-*SMART NLP (Natural Language)*
-Enable with !settings nlp on
-Talk naturally — no prefix needed!
-"tell me a joke" → joke
-"what's the weather in Lagos" → weather
-"translate hello to French" → translate
-Works with pidgin too: "abeg make me laugh"
-AI-powered — understands slang, typos & context
-Only in DMs or when you say "bot, ..."
-Toggle off anytime: !settings nlp off
-
-*SAVAGE MODE* 🔥
-!settings savage on — Auto-roast anyone who insults you
-AI-powered — detects insults (English + pidgin)
-Fires back with unique savage roasts automatically
-Works in DMs and groups — no trigger needed
-!settings savage off — Disable savage mode
-
-*AI AUTOPILOT* 🤖
-!autopilot — View status & persona profile
-!autopilot on/off — Toggle globally
-!autopilot on/off @person — Toggle for specific contact
-!autopilot contacts — View per-contact settings
-!autopilot reset @person — Reset contact to global
-!autopilot mode [offline/always] — When to reply
-!autopilot describe [text] — Tell AI about yourself
-!autopilot sync — Build/refresh persona profile
-!autopilot preview [msg] — Test your clone
-!autopilot delay [1-30] — Reply delay (minutes)
-!autopilot inactive [1-60] — Inactivity trigger
-!autopilot limit [5-200] — Daily reply limit
-_AI learns your chat DNA and replies AS you when away_
-_Mood detection, typing simulation, message batching_
-
 *ADMIN*
 !download / !save / !savestatus / !tagall
 !group / !purge / !settings
 !kick / !promote / !demote
-!welcome / !goodbye / !autoview
+!welcome / !goodbye
 !antidelete / !recover / !recover pr / !refer
 !balance / !plan — Rewards & subscription
 
@@ -501,11 +467,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             usage: '!goodbye [message]  or  !goodbye reset',
             description: 'Set a custom goodbye message when members leave the group. Same placeholders as !welcome.',
           },
-          {
-            name: '!autoview',
-            usage: '!autoview on/off',
-            description: 'Auto-view and react (❤️) to contacts\' WhatsApp statuses. Processes one by one with 5-15s delays, skips ~15%, max 50/day. Ban-safe.',
-          },
+          // Autoview removed
           {
             name: '!antidelete',
             usage: '!antidelete on/off',
@@ -741,23 +703,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!brandkit', usage: '!brandkit [name] #hex', description: 'Generate a complete brand kit with 3 image formats:\n• Square logo (1080×1080) — profile picture / app icon\n• Banner (1600×400) — website header / social cover\n• Status / Story (1080×1920) — WhatsApp status / IG story\n\nOptionally provide a hex color to customize the palette.\n\nExamples:\n"!brandkit NEXUS"\n"!brandkit NEXUS #FF5733"\n\nRequires BotWave Pro.\n\nAliases: !brand, !brandpack' },
         ],
       },
-      {
-        title: 'AI AUTOPILOT (Persona Clone)',
-        commands: [
-          { name: '!autopilot', usage: '!autopilot', description: 'View your autopilot status, persona profile, and all available settings. Shows whether autopilot is on/off, current mode, daily reply stats, per-contact overrides, and a summary of your learned personality.' },
-          { name: '!autopilot on/off', usage: '!autopilot on  |  !autopilot off', description: 'Enable or disable autopilot globally. When ON, the AI will reply to DMs in your style when you are away. Your clone must have a persona profile first (run !autopilot sync).' },
-          { name: '!autopilot on/off @person', usage: '!autopilot on @mention  |  !autopilot off 2348012345678', description: 'Enable or disable autopilot for a specific contact. Overrides the global setting:\n- Global ON + person OFF = clone skips that person\n- Global OFF + person ON = clone replies only to that person\n\nUse @mention or a phone number.' },
-          { name: '!autopilot contacts', usage: '!autopilot contacts', description: 'View all tracked contacts with their autopilot status (ON/OFF/global). Shows message count per contact and override status with color indicators.' },
-          { name: '!autopilot reset', usage: '!autopilot reset @person', description: 'Reset a contact\'s autopilot override back to the global setting. The contact will then follow whatever the global on/off state is.' },
-          { name: '!autopilot mode', usage: '!autopilot mode [offline/always/manual]', description: 'Set when autopilot replies:\n- offline: Only replies when you haven\'t sent a message in X minutes (default)\n- always: Replies to all DMs even when online\n- manual: Same as always but explicitly toggled on/off' },
-          { name: '!autopilot describe', usage: '!autopilot describe [text about yourself]', description: 'Tell the AI about your personality, vibe, interests, humor style, how you talk when happy/angry/tired, cultural background, etc. The more detail, the more accurate the clone. Example: "!autopilot describe I\'m a chill Nigerian guy, I speak pidgin mixed with English, I\'m sarcastic..."' },
-          { name: '!autopilot sync', usage: '!autopilot sync', description: 'Analyze your recent messages and build/refresh your persona profile. Requires at least 15 sent messages. The AI examines 40+ style dimensions including formality, slang, emoji habits, sarcasm level, argument style, and more.' },
-          { name: '!autopilot preview', usage: '!autopilot preview [test message]', description: 'Test how your clone would reply to any message without actually sending it. Great for checking if the persona is accurate before enabling.' },
-          { name: '!autopilot delay', usage: '!autopilot delay [1-30]', description: 'Set how many minutes autopilot waits before replying (with natural jitter so it feels human). Default: weighted 1-7 min (1-4 min most common).' },
-          { name: '!autopilot inactive', usage: '!autopilot inactive [1-60]', description: 'Set how many minutes of inactivity before autopilot considers you "away" and starts replying. Default: 5 minutes.' },
-          { name: '!autopilot limit', usage: '!autopilot limit [5-200]', description: 'Set maximum daily auto-replies. Prevents the bot from sending too many messages. Default: 30 per day. Resets at midnight.' },
-        ],
-      },
+      // AI Autopilot section removed
       {
         title: 'AI & SMART FEATURES',
         commands: [
@@ -767,16 +713,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
         ],
       },
-      {
-        title: 'SMART NLP (Natural Language)',
-        commands: [
-          {
-            name: 'Natural Language Processing',
-            usage: 'Enable: !settings nlp on  |  Disable: !settings nlp off',
-            description: 'Talk to BotWave in natural language — no prefix needed! When NLP is enabled, you can type things like:\n\n• "tell me a joke" → runs !joke\n• "what\'s the weather in Lagos" → runs !weather Lagos\n• "translate hello to French" → runs !translate fr hello\n• "abeg make me laugh" → runs !joke (understands Nigerian pidgin)\n• "I\'m bored" → runs a random fun command\n• "how much is 100 dollars in naira" → runs !currency\n\nNLP is powered by a 3-layer system:\n1. Pattern matching (instant, 80+ patterns)\n2. Keyword matching (single words like "joke", "meme")\n3. AI brain (Groq → Gemini fallback for anything patterns miss)\n\nThe AI understands pidgin, slang, typos, and indirect requests.\n\nIn DMs: Just type naturally — the bot knows you\'re talking to it.\nIn groups: Say "bot, tell me a joke" — must address the bot.\n\nNLP is OFF by default. Enable it from the dashboard or with !settings nlp on.\nIt never interferes with normal chat — casual messages like "ok", "lol", greetings are ignored.',
-          },
-        ],
-      },
+      // Smart NLP section removed
       {
         title: 'IMAGE EDITING',
         commands: [
