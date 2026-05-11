@@ -175,24 +175,28 @@ async function runEmailCampaign(
         markEmailed(user.id);
 
         // Log to DB
-        await supabase.from('email_broadcast_log').insert({
-          user_id: user.id,
-          email: user.email,
-          campaign_type: 'reengagement',
-          status: 'sent',
-          job_id: jobId,
-        }).catch(() => {});
+        try {
+          await supabase.from('email_broadcast_log').insert({
+            user_id: user.id,
+            email: user.email,
+            campaign_type: 'reengagement',
+            status: 'sent',
+            job_id: jobId,
+          });
+        } catch { /* non-critical */ }
       } catch (err) {
         console.error(`[EMAIL-BROADCAST] Failed for ${user.email}:`, err);
         job.failedCount++;
 
-        await supabase.from('email_broadcast_log').insert({
-          user_id: user.id,
-          email: user.email,
-          campaign_type: 'reengagement',
-          status: 'failed',
-          job_id: jobId,
-        }).catch(() => {});
+        try {
+          await supabase.from('email_broadcast_log').insert({
+            user_id: user.id,
+            email: user.email,
+            campaign_type: 'reengagement',
+            status: 'failed',
+            job_id: jobId,
+          });
+        } catch { /* non-critical */ }
       }
 
       emailJobs.set(jobId, { ...job });
