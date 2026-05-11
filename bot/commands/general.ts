@@ -89,6 +89,17 @@ async function sendHelp(
 !deadman / !alive — Safety switch
 !birthday set DD/MM — Birthday tracker
 
+*SMART NLP (Natural Language)*
+Enable with !settings nlp on
+Talk naturally — no prefix needed!
+"tell me a joke" → joke
+"what's the weather in Lagos" → weather
+"translate hello to French" → translate
+Works with pidgin too: "abeg make me laugh"
+AI-powered — understands slang, typos & context
+Only in DMs or when you say "bot, ..."
+Toggle off anytime: !settings nlp off
+
 *ADMIN*
 !download / !save / !savestatus / !tagall
 !group / !purge / !settings
@@ -712,6 +723,16 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
           { name: '!music', usage: '!music [song name]', description: 'Searches for a song and sends it as an audio file. Supports any song — just type the name and optionally the artist.\n\nExamples:\n"!music Shape of You"\n"!music Burna Boy Last Last"\n"!music Wizkid Essence"\n\nAliases: !song, !findsong' },
           { name: '!digest', usage: '!digest  |  !digest today  |  !digest 50', description: 'Generates an AI summary of recent group chat messages using real participant names. Great for catching up on busy groups.\n\nOptions:\n"!digest" — Last few hours\n"!digest today" — Full day summary\n"!digest 50" — Last 50 messages\n\nOnly works in group chats.\n\nAliases: !summary, !tldr' },
           { name: '!ask', usage: '!ask [your question]', description: 'Smart FAQ — ask anything about BotWave commands, features, pricing, or troubleshooting. Uses fuzzy keyword matching to find the best answer from the built-in knowledge base.\n\nExamples:\n"!ask how do I make stickers"\n"!ask what are the pricing plans"\n"!ask is my data safe"\n\nAliases: !faq, !support' },
+        ],
+      },
+      {
+        title: 'SMART NLP (Natural Language)',
+        commands: [
+          {
+            name: 'Natural Language Processing',
+            usage: 'Enable: !settings nlp on  |  Disable: !settings nlp off',
+            description: 'Talk to BotWave in natural language — no prefix needed! When NLP is enabled, you can type things like:\n\n• "tell me a joke" → runs !joke\n• "what\'s the weather in Lagos" → runs !weather Lagos\n• "translate hello to French" → runs !translate fr hello\n• "abeg make me laugh" → runs !joke (understands Nigerian pidgin)\n• "I\'m bored" → runs a random fun command\n• "how much is 100 dollars in naira" → runs !currency\n\nNLP is powered by a 3-layer system:\n1. Pattern matching (instant, 80+ patterns)\n2. Keyword matching (single words like "joke", "meme")\n3. AI brain (Groq → Gemini fallback for anything patterns miss)\n\nThe AI understands pidgin, slang, typos, and indirect requests.\n\nIn DMs: Just type naturally — the bot knows you\'re talking to it.\nIn groups: Say "bot, tell me a joke" — must address the bot.\n\nNLP is OFF by default. Enable it from the dashboard or with !settings nlp on.\nIt never interferes with normal chat — casual messages like "ok", "lol", greetings are ignored.',
+          },
         ],
       },
       {

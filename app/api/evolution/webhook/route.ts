@@ -499,13 +499,56 @@ export async function POST(request: NextRequest) {
           console.log(`[EVO-WEBHOOK] Processing fromMe command via ACK: "${text.slice(0, 40)}"`);
         }
         if (isAck && !isFromMeCommand) {
-          console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
-          continue;
+          // For fromMe ACK messages, check if NLP is enabled — if so, allow
+          // the message through instead of skipping it as a status update.
+          if (fromMe && text.trim().length > 2 && session.user_id) {
+            try {
+              const { getFeatureEnabled } = await import('@/bot/database');
+              const nlpEnabled = await getFeatureEnabled(session.user_id, 'nlp');
+              if (nlpEnabled) {
+                const nlpMsgId = msg.key?.id || '';
+                if (!markSeen(nlpMsgId)) {
+                  console.log(`[EVO-WEBHOOK] SKIP duplicate fromMe NLP ACK: "${text.slice(0, 40)}"`);
+                  continue;
+                }
+                console.log(`[EVO-WEBHOOK] Processing fromMe NLP via ACK: "${text.slice(0, 40)}"`);
+                // fall through — don't skip
+              } else {
+                console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
+                continue;
+              }
+            } catch {
+              console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
+              continue;
+            }
+          } else {
+            console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
+            continue;
+          }
         }
 
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
-        if (fromMe && !text.trimStart().startsWith(cmdPrefix)) continue;
+        // Also allow non-command fromMe messages through if NLP is enabled —
+        // the NLP handler will check the feature flag and decide whether to act.
+        if (fromMe && !text.trimStart().startsWith(cmdPrefix)) {
+          if (session.user_id && text.trim().length > 2) {
+            try {
+              const { getFeatureEnabled } = await import('@/bot/database');
+              const nlpEnabled = await getFeatureEnabled(session.user_id, 'nlp');
+              if (nlpEnabled) {
+                console.log(`[EVO-WEBHOOK] fromMe non-command but NLP enabled — allowing through: "${text.slice(0, 40)}"`);
+                // fall through to commandMsgs below
+              } else {
+                continue;
+              }
+            } catch {
+              continue;
+            }
+          } else {
+            continue;
+          }
+        }
 
         // Mark every command message as seen so that ACK re-deliveries of the
         // same message are caught by the dedup cache above.
