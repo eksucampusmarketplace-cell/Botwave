@@ -2,8 +2,8 @@
 const nextConfig = {
   compress: true,
   productionBrowserSourceMaps: false,
-  instrumentationHook: true,
   experimental: {
+    instrumentationHook: true,
     serverActions: {
       bodySizeLimit: '10mb',
     },
