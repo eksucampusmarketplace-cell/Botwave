@@ -12,9 +12,10 @@ async function sendHelp(
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
   // If user types "!help text", show quick text menu; otherwise default to docx
+  const p = context.commandPrefix || '!';
   if (args.length > 0 && (args[0].toLowerCase() === 'text' || args[0].toLowerCase() === 'quick' || args[0].toLowerCase() === 'menu')) {
     const intro = pickResponse(helpIntros, vars, false);
-    const helpMessage = `${intro}
+    let helpMessage = `${intro}
 
 *GENERAL*
 !help — Full guide (.docx)
@@ -116,6 +117,7 @@ _Send *!help* for the full .docx guide._
 _Only the bot owner can use commands._
 
 _Your chats are private — the bot owner cannot read or access your messages._`;
+    if (p !== '!') helpMessage = helpMessage.replace(/!/g, p);
     await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
     return;
   }
@@ -837,7 +839,9 @@ async function sendUnknownCommand(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  const response = pickResponse(unknownCommandReplies, vars, false);
+  let response = pickResponse(unknownCommandReplies, vars, false);
+  const prefix = context.commandPrefix || '!';
+  if (prefix !== '!') response = response.replace(/!help/g, `${prefix}help`);
   await sendReply(context.chatJid, response, sock, context.rawMessage.key, context.queue);
 }
 

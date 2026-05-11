@@ -11,6 +11,7 @@ export interface MessageContext {
   sessionId?: string;
   userId?: string;
   queue?: MessageQueue;
+  commandPrefix?: string;
 }
 
 export interface TemplateVars {
