@@ -82,10 +82,22 @@ const CASUAL_PATTERNS = [
   /^(?:good (?:morning|afternoon|evening|night)|gm|gn|morning|evening|night|afternoon)!?$/i,
   // Reactions / agreement
   /^(?:yesss*|nooo*|facts|real|valid|word|swear|on god|i swear|for real|no lie|100|💯)!?$/i,
+  // Short conversational phrases — these are NOT bot requests even though they
+  // start with question words. Common in DM conversations.
+  /^(?:what'?s that|what'?s this|who'?s this|who'?s that|what happened|what'?s up|what'?s good|where you dey|how far|how you dey|how body|what do you mean|wdym|what'?s wrong|you good|you okay|you sure|you serious|you dey|i miss you|miss you|i love you|love you|explain yourself|say what|huh|what the|come on|for real|are you there|you there|who are you|who is this|who dis|na who|na what|see eh|look at you|calm down|relax|chill|stop|wait|hold on|come again|say again|repeat|pardon|excuse me|i don'?t understand|i no understand|wetin you mean|you dey mad|you dey craze|leave me|go away|not now|later|not interested|no thanks|i'?m good|i dey fine|i'?m fine|nothing|never mind|forget it|drop it|skip).*$/i,
+  // Personal / emotional messages — clearly human-to-human, not bot commands
+  /^(?:i'?m (?:sorry|sad|angry|upset|tired|hungry|sleepy|bored|sick|lonely|happy|excited)|you (?:hurt|annoy|bore|scare|confuse) me|why (?:did you|would you|are you)|how (?:could you|dare you)|you'?re (?:crazy|mad|annoying|sweet|nice|mean|funny)|that'?s (?:crazy|wild|funny|sad|true|fake|cap)|stop (?:it|that|playing)|don'?t (?:do that|say that|start|lie|play)).*$/i,
 ];
 
 export function isRequestLike(text: string): boolean {
   if (CASUAL_PATTERNS.some((re) => re.test(text))) return false;
+  // Short messages (under 15 chars) that start with question words are usually
+  // conversational ("What's that", "Who's this") not bot commands. Require a
+  // stronger signal — the message must contain a specific bot-related keyword.
+  if (text.length < 15) {
+    const hasBotKeyword = /(?:bot|weather|translate|joke|sticker|meme|quote|help|download|remind|define|play|trivia|music|lyrics|crypto|poll|wiki|horoscope|password|roast|dice|coinflip|flashcard|pomodoro)\b/i.test(text);
+    if (!hasBotKeyword) return false;
+  }
   return REQUEST_SIGNALS.some((re) => re.test(text));
 }
 
@@ -339,7 +351,7 @@ RESPONSE FORMAT — respond with ONLY valid JSON, no markdown:
 
 CRITICAL RULES:
 1. If the message is casual chat (greetings, reactions, "lol", "ok", emojis, small talk), return: {"command": "none", "args": [], "reason": "casual chat"}
-2. For ambiguous messages, lean toward "ai" command as a catch-all for questions
+2. For ambiguous messages that could be casual chat OR a bot request, return "none" — do NOT guess. Only classify as "ai" when the user is CLEARLY asking a question or requesting information (e.g. "explain quantum physics", "what is the capital of Nigeria"). Short phrases like "what's that", "who's this", "explain yourself" are CASUAL CHAT, not bot requests
 3. For "ai" command, put the FULL user message in args[0]
 4. Extract real arguments — e.g. "what's the weather like in Abuja" → {"command": "weather", "args": ["Abuja"]}
 5. "I'm bored" or "entertain me" → randomly pick joke, meme, fact, riddle, or trivia
@@ -401,6 +413,13 @@ export async function classifyWithAI(
     if (!AI_COMMAND_LIST.includes(parsed.command)) return null;
 
     console.log(`[NLP-AI] Classified: "${stripped.slice(0, 40)}" → ${parsed.command}(${JSON.stringify(parsed.args)}) reason: ${parsed.reason || 'n/a'}`);
+
+    // Reject AI classifications with low-signal reasons (ambiguous, unclear, etc.)
+    const reason = (parsed.reason || '').toLowerCase();
+    if (reason.includes('ambiguous') || reason.includes('unclear') || reason.includes('leaning') || reason.includes('might be') || reason.includes('could be')) {
+      console.log(`[NLP-AI] Rejected ambiguous classification: "${stripped.slice(0, 40)}" → ${parsed.command} (${parsed.reason})`);
+      return null;
+    }
 
     return {
       command: parsed.command,
