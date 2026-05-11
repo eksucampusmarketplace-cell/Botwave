@@ -9,7 +9,8 @@ import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
-import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
+// Autoview removed entirely
+// import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
 import { cacheMessage, handleMessageRevoke, cleanupSessionCache } from './handlers/AntiDeleteHandler';
 import { MessageQueue } from './utils/MessageQueue';
 import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
@@ -658,7 +659,7 @@ export class BotWaveBot {
 
   async stop(): Promise<void> {
     stopPresenceSimulation(this.sessionId);
-    cleanupStatusViewer(this.sessionId);
+    // cleanupStatusViewer(this.sessionId); // Autoview removed
     cleanupSessionCache(this.sessionId);
     cancelPendingLinks(this.sessionId);
     this.pairingStartedAt = -1;

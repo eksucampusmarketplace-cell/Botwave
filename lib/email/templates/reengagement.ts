@@ -38,14 +38,6 @@ export function reengagementTemplate(username: string, hasLinkedDevice: boolean)
         </tr>
         <tr>
           <td style="padding:8px 0;color:#f1f5f9;font-size:13px;border-bottom:1px solid #334155">
-            <strong>Savage Mode</strong>
-          </td>
-          <td style="padding:8px 0;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;text-align:right">
-            AI-powered auto-roast for insults
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:8px 0;color:#f1f5f9;font-size:13px;border-bottom:1px solid #334155">
             <strong>Anti-Delete</strong>
           </td>
           <td style="padding:8px 0;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;text-align:right">
@@ -54,10 +46,18 @@ export function reengagementTemplate(username: string, hasLinkedDevice: boolean)
         </tr>
         <tr>
           <td style="padding:8px 0;color:#f1f5f9;font-size:13px;border-bottom:1px solid #334155">
-            <strong>Smart NLP</strong>
+            <strong>Media Tools</strong>
           </td>
           <td style="padding:8px 0;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;text-align:right">
-            Natural language commands — no prefix needed
+            Stickers, downloads, image editing, music search
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#f1f5f9;font-size:13px;border-bottom:1px solid #334155">
+            <strong>Study Hub</strong>
+          </td>
+          <td style="padding:8px 0;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;text-align:right">
+            Flashcards, quizzes, Pomodoro timer
           </td>
         </tr>
         <tr>

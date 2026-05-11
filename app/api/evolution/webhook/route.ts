@@ -539,7 +539,8 @@ export async function POST(request: NextRequest) {
         // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
         const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
         const { handleMessage } = await import('@/bot/handlers/MessageHandler');
-        const { handleStatusUpdate } = await import('@/bot/handlers/StatusViewer');
+        // Autoview removed entirely
+        // const { handleStatusUpdate } = await import('@/bot/handlers/StatusViewer');
         const { MessageQueue } = await import('@/bot/utils/MessageQueue');
         const { cacheMessage } = await import('@/bot/handlers/AntiDeleteHandler');
 
@@ -556,14 +557,14 @@ export async function POST(request: NextRequest) {
             cacheMessage(sid, msg).catch(() => {});
           }
 
-          // Process status broadcasts via StatusViewer (checks autoview toggle)
-          for (const msg of statusMsgs) {
-            try {
-              await handleStatusUpdate(msg, sock, sid, uid);
-            } catch (err) {
-              console.error(`[EVO-WEBHOOK] Error handling status for ${sessionId}:`, err);
-            }
-          }
+          // Autoview removed — status broadcasts no longer processed
+          // for (const msg of statusMsgs) {
+          //   try {
+          //     await handleStatusUpdate(msg, sock, sid, uid);
+          //   } catch (err) {
+          //     console.error(`[EVO-WEBHOOK] Error handling status for ${sessionId}:`, err);
+          //   }
+          // }
 
           for (const msg of commandMsgs) {
             try {

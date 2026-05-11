@@ -1,7 +1,7 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
-import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
-import { processSavageMode } from './SavageMode';
+// import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
+// import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
@@ -41,17 +41,17 @@ import { sendUnknownCommand } from '../commands';
 import { sendReply } from '../commands/helpers';
 import { hasActiveAIChat, handleAIReply } from '../commands/info';
 import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
-import {
-  markOwnerActiveForContact,
-  collectOwnerMessage,
-  collectIncomingMessage,
-  shouldAutopilotReply,
-  scheduleAutopilotReply,
-  cancelPendingAutopilotReply,
-  isAutopilotEnabled,
-  loadAutopilotState,
-  bufferIncomingForBatch,
-} from './AutopilotEngine';
+// import {
+//   markOwnerActiveForContact,
+//   collectOwnerMessage,
+//   collectIncomingMessage,
+//   shouldAutopilotReply,
+//   scheduleAutopilotReply,
+//   cancelPendingAutopilotReply,
+//   isAutopilotEnabled,
+//   loadAutopilotState,
+//   bufferIncomingForBatch,
+// } from './AutopilotEngine';
 
 // Import all command modules to trigger self-registration
 import '../commands';
@@ -198,14 +198,13 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const isCommand = content.startsWith(commandPrefix);
 
-    // Owner's outgoing messages: silently learn for autopilot + mark active per-contact
+    // Owner's outgoing messages — autopilot learning disabled
     if (fromMe && !isCommand) {
-      if (userId && sessionId) {
-        markOwnerActiveForContact(sessionId, chatJid);
-        collectOwnerMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
-        // Owner replied in this chat — cancel any pending autopilot reply for THIS contact
-        cancelPendingAutopilotReply(sessionId, chatJid);
-      }
+      // if (userId && sessionId) {
+      //   markOwnerActiveForContact(sessionId, chatJid);
+      //   collectOwnerMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
+      //   cancelPendingAutopilotReply(sessionId, chatJid);
+      // }
       return;
     }
 
@@ -414,57 +413,53 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       const autoReplied = await processAutoReply(context, sock);
       if (autoReplied) {
         otherHandlerReplied = true;
-      } else if (userId) {
-        // Check if autopilot is active in this DM — if so, skip NLP
-        const skipNlp = !isGroup && sessionId
-          ? await isAutopilotEnabled(userId, sessionId)
-          : false;
-        if (!skipNlp) {
-          await processNLP(context, sock);
-        }
       }
+      // NLP and Autopilot disabled
+      // else if (userId) {
+      //   const skipNlp = !isGroup && sessionId
+      //     ? await isAutopilotEnabled(userId, sessionId)
+      //     : false;
+      //   if (!skipNlp) {
+      //     await processNLP(context, sock);
+      //   }
+      // }
     }
 
-    // Savage mode: auto-roast insults directed at the bot owner
-    // Pass quoted text for contextual awareness
-    if (!isCommand && !fromMe && userId && content) {
-      const savageQuotedText = getQuotedText(message);
-      processSavageMode(content, userId, false, pushName, savageQuotedText)
-        .then(async (roast) => {
-          if (roast) {
-            otherHandlerReplied = true;
-            await sendReply(chatJid, roast, sock, message.key, queue);
-          }
-        })
-        .catch((err) => console.error('[SAVAGE] Error in savage mode:', err));
-    }
+    // Savage mode disabled
+    // if (!isCommand && !fromMe && userId && content) {
+    //   const savageQuotedText = getQuotedText(message);
+    //   processSavageMode(content, userId, false, pushName, savageQuotedText)
+    //     .then(async (roast) => {
+    //       if (roast) {
+    //         otherHandlerReplied = true;
+    //         await sendReply(chatJid, roast, sock, message.key, queue);
+    //       }
+    //     })
+    //     .catch((err) => console.error('[SAVAGE] Error in savage mode:', err));
+    // }
 
-    // ── Autopilot: collect incoming message + schedule clone reply ──
-    if (!isCommand && !fromMe && userId && sessionId && content) {
-      // Collect for contact memory
-      collectIncomingMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
-
-      // Schedule autopilot reply if conditions met (DM only, owner inactive, etc.)
-      const shouldReply = await shouldAutopilotReply(
-        userId, sessionId, isGroup, fromMe, otherHandlerReplied, chatJid,
-      );
-      if (shouldReply) {
-        const apState = await loadAutopilotState(userId, sessionId);
-        const sendFn = async (text: string) => {
-          await sendReply(chatJid, text, sock, undefined, queue);
-        };
-        // Use message batching: wait for burst of messages before replying
-        bufferIncomingForBatch(sessionId, chatJid, content, pushName, (combinedText, name) => {
-          scheduleAutopilotReply(
-            userId, sessionId, chatJid, combinedText, name,
-            apState.replyDelayMinutes,
-            sendFn,
-            sock, // pass sock for read receipt + typing simulation
-            message.key, // message key for read receipt
-          );
-        });
-      }
-    }
+    // Autopilot disabled
+    // if (!isCommand && !fromMe && userId && sessionId && content) {
+    //   collectIncomingMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
+    //   const shouldReply = await shouldAutopilotReply(
+    //     userId, sessionId, isGroup, fromMe, otherHandlerReplied, chatJid,
+    //   );
+    //   if (shouldReply) {
+    //     const apState = await loadAutopilotState(userId, sessionId);
+    //     const sendFn = async (text: string) => {
+    //       await sendReply(chatJid, text, sock, undefined, queue);
+    //     };
+    //     bufferIncomingForBatch(sessionId, chatJid, content, pushName, (combinedText, name) => {
+    //       scheduleAutopilotReply(
+    //         userId, sessionId, chatJid, combinedText, name,
+    //         apState.replyDelayMinutes,
+    //         sendFn,
+    //         sock,
+    //         message.key,
+    //       );
+    //     });
+    //   }
+    // }
 
     // Auto-react check for groups
     if (isGroup && !isCommand && content) {
@@ -681,74 +676,56 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
 //   - The user is clearly addressing the bot (group) or sending a request (DM)
 //   - No auto-reply rule already handled the message
 
-async function processNLP(context: MessageContext, sock: any): Promise<void> {
-  if (!context.userId) return;
-
-  try {
-    const enabled = await getFeatureEnabled(context.userId, 'nlp');
-    if (!enabled) return;
-
-    // Build NLP context for group detection (reply-to, @mention, name)
-    const nlpCtx: NLPContext = {};
-    if (context.isGroup) {
-      const rawMsg = context.rawMessage;
-      // Check if replying to the owner's message
-      const quotedParticipant = rawMsg.message?.extendedTextMessage?.contextInfo?.participant;
-      const ownerJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
-      if (quotedParticipant && ownerJid && normalizeJid(quotedParticipant) === ownerJid) {
-        nlpCtx.isReplyToOwner = true;
-      }
-      // Check if the message @mentions the owner
-      const mentionedJids = rawMsg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-      if (ownerJid && mentionedJids.some((jid: string) => normalizeJid(jid) === ownerJid)) {
-        nlpCtx.mentionsOwner = true;
-      }
-      // Owner's push name for name detection
-      const ownerName = (sock as any).user?.name;
-      if (ownerName && ownerName.length >= 3) {
-        nlpCtx.ownerName = ownerName;
-      }
-    }
-
-    // Step 1: try pattern-based matching (fast, no API call)
-    let intent = matchIntent(context.message, context.isGroup, nlpCtx);
-    let source: 'pattern' | 'ai' = 'pattern';
-
-    // Step 2: if no pattern match, try AI classification (Groq → Gemini)
-    // Pass quoted/reply-to text for context awareness
-    if (!intent) {
-      const quotedText = getQuotedText(context.rawMessage);
-      intent = await classifyWithAI(context.message, context.isGroup, quotedText, nlpCtx);
-      if (intent) source = 'ai';
-    }
-
-    if (!intent) return;
-
-    console.log(`[NLP] Matched intent: ${intent.command} (confidence=${intent.confidence}, source=${source}) from "${context.message.slice(0, 60)}"`);
-
-    const handler = getCommand(intent.command);
-    if (!handler) return;
-
-    // Owner-only commands require isOwner
-    if (handler.ownerOnly && !context.isOwner) return;
-
-    const vars: TemplateVars = {
-      name: context.pushName || 'User',
-      time: currentTimeStr(),
-      date: currentDateStr(),
-      group: context.isGroup ? context.chatJid.split('@')[0] : undefined,
-    };
-
-    if (context.sessionId && context.userId) {
-      trackCommand(context.sessionId, context.userId, context.senderJid, intent.command);
-    }
-
-    await handler.execute(context, intent.args, sock, vars, intent.command);
-    console.log(`[NLP] Command ${intent.command} executed via NLP (${source})`);
-  } catch (err) {
-    console.error('[NLP] Error processing intent:', err);
-  }
-}
+// NLP Processing — disabled
+// async function processNLP(context: MessageContext, sock: any): Promise<void> {
+//   if (!context.userId) return;
+//   try {
+//     const enabled = await getFeatureEnabled(context.userId, 'nlp');
+//     if (!enabled) return;
+//     const nlpCtx: NLPContext = {};
+//     if (context.isGroup) {
+//       const rawMsg = context.rawMessage;
+//       const quotedParticipant = rawMsg.message?.extendedTextMessage?.contextInfo?.participant;
+//       const ownerJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
+//       if (quotedParticipant && ownerJid && normalizeJid(quotedParticipant) === ownerJid) {
+//         nlpCtx.isReplyToOwner = true;
+//       }
+//       const mentionedJids = rawMsg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+//       if (ownerJid && mentionedJids.some((jid: string) => normalizeJid(jid) === ownerJid)) {
+//         nlpCtx.mentionsOwner = true;
+//       }
+//       const ownerName = (sock as any).user?.name;
+//       if (ownerName && ownerName.length >= 3) {
+//         nlpCtx.ownerName = ownerName;
+//       }
+//     }
+//     let intent = matchIntent(context.message, context.isGroup, nlpCtx);
+//     let source: 'pattern' | 'ai' = 'pattern';
+//     if (!intent) {
+//       const quotedText = getQuotedText(context.rawMessage);
+//       intent = await classifyWithAI(context.message, context.isGroup, quotedText, nlpCtx);
+//       if (intent) source = 'ai';
+//     }
+//     if (!intent) return;
+//     console.log(`[NLP] Matched intent: ${intent.command} (confidence=${intent.confidence}, source=${source}) from "${context.message.slice(0, 60)}"`);
+//     const handler = getCommand(intent.command);
+//     if (!handler) return;
+//     if (handler.ownerOnly && !context.isOwner) return;
+//     const vars: TemplateVars = {
+//       name: context.pushName || 'User',
+//       time: currentTimeStr(),
+//       date: currentDateStr(),
+//       group: context.isGroup ? context.chatJid.split('@')[0] : undefined,
+//     };
+//     if (context.sessionId && context.userId) {
+//       trackCommand(context.sessionId, context.userId, context.senderJid, intent.command);
+//     }
+//     await handler.execute(context, intent.args, sock, vars, intent.command);
+//     console.log(`[NLP] Command ${intent.command} executed via NLP (${source})`);
+//   } catch (err) {
+//     console.error('[NLP] Error processing intent:', err);
+//   }
+// }
 
 // ─── Group Participants Update (Welcome/Goodbye) ────────────────────────────
 

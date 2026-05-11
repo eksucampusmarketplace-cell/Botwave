@@ -492,13 +492,13 @@ async function handleAutopilot(
   );
 }
 
-// ─── Register ───────────────────────────────────────────────────────────────
+// ─── Register — disabled ────────────────────────────────────────────────────
 
-registerCommand({
-  name: 'autopilot',
-  aliases: ['autopilot', 'clone', 'persona', 'ai-me'],
-  category: 'admin',
-  description: 'AI clone that chats as you',
-  ownerOnly: true,
-  execute: (ctx, args, sock) => handleAutopilot(ctx, args, sock),
-});
+// registerCommand({
+//   name: 'autopilot',
+//   aliases: ['autopilot', 'clone', 'persona', 'ai-me'],
+//   category: 'admin',
+//   description: 'AI clone that chats as you',
+//   ownerOnly: true,
+//   execute: (ctx, args, sock) => handleAutopilot(ctx, args, sock),
+// });
