@@ -7,9 +7,14 @@
  * - Daily cap of 50 views per session
  * - Process one at a time via queue (no bursts)
  * - Never view own statuses
+ *
+ * Baileys compatibility:
+ * - Uses readMessages with full key (including participant) for status viewing
+ * - Uses sendMessage to status@broadcast with statusJidList for reactions
+ * - Logs errors instead of silently swallowing them
  */
 
-import { getFeatureEnabled, getSessionUserId } from '../database';
+import { getFeatureEnabled } from '../database';
 
 const DEFAULT_REACT_EMOJI = '❤️';
 
@@ -76,26 +81,54 @@ async function processQueue(sessionId: string): Promise<void> {
       await randomDelay();
 
       const { msg, sock } = item;
+      const statusPoster = msg.key.participant || msg.key.remoteJid;
+      const myJid = sock.user?.id;
+
+      // Build a complete key for the read receipt
+      const readKey = {
+        remoteJid: msg.key.remoteJid || 'status@broadcast',
+        id: msg.key.id,
+        participant: statusPoster,
+        fromMe: false,
+      };
 
       // View the status (mark as read)
+      let viewSuccess = false;
       try {
-        await sock.readMessages([msg.key]);
-      } catch {
-        // Some statuses may fail to read — non-critical
+        await sock.readMessages([readKey]);
+        viewSuccess = true;
+      } catch (err) {
+        console.warn(`[StatusViewer] readMessages failed for ${sessionId}:`, (err as Error).message);
+        // Fallback: try chatModify approach
+        try {
+          await sock.chatModify(
+            { markRead: true, lastMessages: [{ key: readKey, messageTimestamp: msg.messageTimestamp }] },
+            'status@broadcast',
+          );
+          viewSuccess = true;
+        } catch (err2) {
+          console.warn(`[StatusViewer] chatModify fallback also failed for ${sessionId}:`, (err2 as Error).message);
+        }
       }
 
-      // React with emoji
-      try {
-        await sock.sendMessage(
-          msg.key.remoteJid,
-          { react: { key: msg.key, text: DEFAULT_REACT_EMOJI } },
-          { statusJidList: [msg.key.participant, sock.user?.id].filter(Boolean) },
-        );
-      } catch {
-        // Reaction may fail for some status types — non-critical
+      // React with emoji (only if view succeeded)
+      if (viewSuccess) {
+        try {
+          const jidList = [statusPoster, myJid].filter(Boolean) as string[];
+          await sock.sendMessage(
+            'status@broadcast',
+            { react: { key: readKey, text: DEFAULT_REACT_EMOJI } },
+            { statusJidList: jidList },
+          );
+        } catch (err) {
+          console.warn(`[StatusViewer] react failed for ${sessionId}:`, (err as Error).message);
+        }
       }
 
       incrementDailyCount(sessionId);
+      if (viewSuccess) {
+        console.log(`[StatusViewer] Viewed + reacted to status from ${statusPoster} (session: ${sessionId}, daily: ${getDailyCount(sessionId)}/${DAILY_CAP})`);
+      }
     } catch (error) {
       console.error(`[StatusViewer] Error processing status for ${sessionId}:`, error);
     }
