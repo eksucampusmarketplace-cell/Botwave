@@ -1,6 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
-import { matchIntent, classifyWithAI, getQuotedText } from '../nlp/nlpEngine';
+import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
@@ -601,15 +601,37 @@ async function processNLP(context: MessageContext, sock: any): Promise<void> {
     const enabled = await getFeatureEnabled(context.userId, 'nlp');
     if (!enabled) return;
 
+    // Build NLP context for group detection (reply-to, @mention, name)
+    const nlpCtx: NLPContext = {};
+    if (context.isGroup) {
+      const rawMsg = context.rawMessage;
+      // Check if replying to the owner's message
+      const quotedParticipant = rawMsg.message?.extendedTextMessage?.contextInfo?.participant;
+      const ownerJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
+      if (quotedParticipant && ownerJid && normalizeJid(quotedParticipant) === ownerJid) {
+        nlpCtx.isReplyToOwner = true;
+      }
+      // Check if the message @mentions the owner
+      const mentionedJids = rawMsg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+      if (ownerJid && mentionedJids.some((jid: string) => normalizeJid(jid) === ownerJid)) {
+        nlpCtx.mentionsOwner = true;
+      }
+      // Owner's push name for name detection
+      const ownerName = (sock as any).user?.name;
+      if (ownerName && ownerName.length >= 3) {
+        nlpCtx.ownerName = ownerName;
+      }
+    }
+
     // Step 1: try pattern-based matching (fast, no API call)
-    let intent = matchIntent(context.message, context.isGroup);
+    let intent = matchIntent(context.message, context.isGroup, nlpCtx);
     let source: 'pattern' | 'ai' = 'pattern';
 
     // Step 2: if no pattern match, try AI classification (Groq → Gemini)
     // Pass quoted/reply-to text for context awareness
     if (!intent) {
       const quotedText = getQuotedText(context.rawMessage);
-      intent = await classifyWithAI(context.message, context.isGroup, quotedText);
+      intent = await classifyWithAI(context.message, context.isGroup, quotedText, nlpCtx);
       if (intent) source = 'ai';
     }
 

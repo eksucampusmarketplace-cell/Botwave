@@ -17,19 +17,41 @@ import { INTENT_MAP, type NLPIntent } from './intentMap';
 
 const BOT_PREFIXES = /^(?:bot[,:]?\s+|@bot\s+|hey bot[,:]?\s+|yo bot[,:]?\s+|botwave[,:]?\s+|dear bot[,:]?\s+)/i;
 
+export interface NLPContext {
+  isReplyToOwner?: boolean;
+  mentionsOwner?: boolean;
+  ownerName?: string;
+}
+
 /**
- * In groups the user must address the bot explicitly.  Returns the message
- * with the bot prefix stripped, or null if the bot was not addressed.
+ * In groups the user must address the bot explicitly via prefix, OR by
+ * replying to the owner's message, @mentioning the owner, or using the
+ * owner's name. Returns the message with the address stripped, or null
+ * if not directed at the bot/owner.
  */
-export function stripBotAddress(text: string, isGroup: boolean): string | null {
+export function stripBotAddress(text: string, isGroup: boolean, nlpCtx?: NLPContext): string | null {
   const match = text.match(BOT_PREFIXES);
   if (match) return text.slice(match[0].length).trim();
 
-  // In DMs every message is directed at the bot, but we still need the
-  // message to look like a request (handled by isRequestLike below).
+  // In DMs every message is directed at the bot
   if (!isGroup) return text;
 
-  return null; // group message didn't address the bot
+  // Group: check if directed at the owner via reply, mention, or name
+  if (nlpCtx) {
+    if (nlpCtx.isReplyToOwner || nlpCtx.mentionsOwner) return text;
+
+    if (nlpCtx.ownerName) {
+      const namePattern = new RegExp(`^${nlpCtx.ownerName}[,:]?\\s+`, 'i');
+      const nameMatch = text.match(namePattern);
+      if (nameMatch) return text.slice(nameMatch[0].length).trim();
+      // Also check if name appears anywhere followed by a comma
+      const nameInline = new RegExp(`\\b${nlpCtx.ownerName}[,]\\s*`, 'i');
+      const inlineMatch = text.match(nameInline);
+      if (inlineMatch) return text.replace(inlineMatch[0], '').trim();
+    }
+  }
+
+  return null; // group message not addressed to bot or owner
 }
 
 // ─── Request-Like Detection ──────────────────────────────────────────────────
@@ -150,6 +172,7 @@ const MAX_MESSAGE_LENGTH = 300;
 export function matchIntent(
   rawText: string,
   isGroup: boolean,
+  nlpCtx?: NLPContext,
 ): NLPIntent | null {
   if (!rawText || rawText.length < MIN_MESSAGE_LENGTH || rawText.length > MAX_MESSAGE_LENGTH) {
     return null;
@@ -161,7 +184,7 @@ export function matchIntent(
     .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
 
   // Step 1: check if the user is talking to the bot
-  const stripped = stripBotAddress(normalizedText, isGroup);
+  const stripped = stripBotAddress(normalizedText, isGroup, nlpCtx);
   if (stripped === null) return null; // group msg not addressed to bot
 
   // Step 2: in DMs the message must look like a request
@@ -332,12 +355,13 @@ export async function classifyWithAI(
   text: string,
   isGroup: boolean,
   quotedText?: string,
+  nlpCtx?: NLPContext,
 ): Promise<NLPIntent | null> {
   // Normalize smart quotes
   const normalized = text
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
     .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
-  const stripped = stripBotAddress(normalized, isGroup);
+  const stripped = stripBotAddress(normalized, isGroup, nlpCtx);
   if (!stripped) return null;
   if (!isGroup && !isRequestLike(stripped)) return null;
 
