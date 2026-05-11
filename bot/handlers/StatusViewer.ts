@@ -106,15 +106,37 @@ async function processQueue(sessionId: string): Promise<void> {
 
       // React with emoji (only if view succeeded)
       if (viewSuccess) {
+        let reactSuccess = false;
+
+        // Primary: use the original message key for the reaction
         try {
-          const jidList = [statusPoster, myJid].filter(Boolean) as string[];
           await sock.sendMessage(
             'status@broadcast',
-            { react: { key: readKey, text: DEFAULT_REACT_EMOJI } },
-            { statusJidList: jidList },
+            { react: { key: msg.key, text: DEFAULT_REACT_EMOJI } },
+            { statusJidList: [statusPoster] },
           );
+          reactSuccess = true;
         } catch (err) {
-          console.warn(`[StatusViewer] react failed for ${sessionId}:`, (err as Error).message);
+          console.warn(`[StatusViewer] react (original key) failed for ${sessionId}:`, (err as Error).message);
+        }
+
+        // Fallback: use reconstructed readKey with both poster and self in jidList
+        if (!reactSuccess) {
+          try {
+            const jidList = [statusPoster, myJid].filter(Boolean) as string[];
+            await sock.sendMessage(
+              'status@broadcast',
+              { react: { key: readKey, text: DEFAULT_REACT_EMOJI } },
+              { statusJidList: jidList },
+            );
+            reactSuccess = true;
+          } catch (err2) {
+            console.warn(`[StatusViewer] react (readKey fallback) failed for ${sessionId}:`, (err2 as Error).message);
+          }
+        }
+
+        if (!reactSuccess) {
+          console.warn(`[StatusViewer] All react attempts failed for status from ${statusPoster} (session: ${sessionId})`);
         }
       }
 

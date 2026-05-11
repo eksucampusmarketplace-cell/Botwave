@@ -23,6 +23,7 @@ interface SessionEntry {
   session_id: string;
   enabled: boolean;
   mode: string;
+  status?: string;
 }
 
 export default function AutopilotPage() {
@@ -165,7 +166,7 @@ export default function AutopilotPage() {
                   className="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 text-white"
                 >
                   {sessions.map((s) => (
-                    <option key={s.session_id} value={s.session_id}>{s.session_id}</option>
+                    <option key={s.session_id} value={s.session_id}>{s.session_id}{s.status ? ` (${s.status})` : ''}</option>
                   ))}
                 </select>
               </div>

@@ -47,14 +47,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // No sessionId — fetch all autopilot entries for user
-    const { data, error } = await supabase
+    // No sessionId — fetch user's bot_sessions first, then enrich with autopilot config
+    const { data: botSessions, error: sessError } = await supabase
+      .from('bot_sessions')
+      .select('id, status')
+      .eq('user_id', user.id);
+
+    if (sessError) throw sessError;
+
+    const { data: autopilotData, error: apError } = await supabase
       .from('autopilot_personas')
       .select('session_id, enabled, mode, self_description, reply_delay_minutes, inactivity_minutes, max_daily_replies, daily_replies_used, last_sync_at, contact_overrides')
       .eq('user_id', user.id);
 
-    if (error) throw error;
-    return NextResponse.json({ sessions: data || [] });
+    if (apError) throw apError;
+
+    // Build a map of autopilot configs keyed by session_id
+    const apMap = new Map<string, typeof autopilotData[number]>();
+    for (const ap of autopilotData || []) {
+      apMap.set(ap.session_id, ap);
+    }
+
+    // Merge: every bot_session appears, enriched with autopilot config if it exists
+    const sessions = (botSessions || []).map((s) => {
+      const ap = apMap.get(s.id);
+      return {
+        session_id: s.id,
+        status: s.status,
+        enabled: ap?.enabled ?? false,
+        mode: ap?.mode ?? 'offline',
+      };
+    });
+
+    return NextResponse.json({ sessions });
   } catch (error) {
     console.error('Error fetching autopilot:', error);
     return NextResponse.json({ error: 'Failed to fetch autopilot data' }, { status: 500 });

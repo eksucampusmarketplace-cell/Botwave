@@ -39,6 +39,7 @@ import {
 import { getCommand, type MessageContext, type TemplateVars } from '../commands/registry';
 import { sendUnknownCommand } from '../commands';
 import { sendReply } from '../commands/helpers';
+import { hasActiveAIChat, handleAIReply } from '../commands/info';
 import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
 import {
   markOwnerActiveForContact,
@@ -384,7 +385,32 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     // Track whether any handler already replied (for autopilot priority)
     let otherHandlerReplied = false;
 
-    if (!isCommand) {
+    // Reply-to-AI: if user replies to a bot AI message, continue the conversation
+    if (!isCommand && !fromMe && content) {
+      const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+      if (contextInfo?.quotedMessage) {
+        const quotedParticipant = contextInfo.participant;
+        const myJid = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
+        const myLid = (sock as any).user?.lid ? normalizeJid((sock as any).user.lid) : null;
+        const isReplyToBot = quotedParticipant && (
+          (myJid && normalizeJid(quotedParticipant) === myJid) ||
+          (myLid && normalizeJid(quotedParticipant) === myLid)
+        );
+
+        if (isReplyToBot && hasActiveAIChat(chatJid)) {
+          const vars: TemplateVars = {
+            name: pushName || 'User',
+            time: currentTimeStr(),
+            date: currentDateStr(),
+            group: isGroup ? chatJid.split('@')[0] : undefined,
+          };
+          await handleAIReply(context, sock, vars);
+          otherHandlerReplied = true;
+        }
+      }
+    }
+
+    if (!isCommand && !otherHandlerReplied) {
       const autoReplied = await processAutoReply(context, sock);
       if (autoReplied) {
         otherHandlerReplied = true;
