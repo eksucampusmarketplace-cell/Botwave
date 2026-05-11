@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+function getSupabase() {
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
 interface EmailJob {
   id: string;
   status: 'pending' | 'sending' | 'completed' | 'failed';
@@ -21,15 +25,13 @@ interface EmailJob {
   trigger: 'manual' | 'auto';
 }
 
-// In-memory job tracking (persists across requests in the same process)
 const emailJobs: Map<string, EmailJob> = new Map();
 
-// Track which users have been emailed recently to avoid duplicates
-// Maps user_id → timestamp of last email sent
+// In-memory dedup (supplements DB-based dedup for fast checking)
 const recentlyEmailed: Map<string, number> = new Map();
-const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000; // Don't re-email within 24 hours
+const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-// Auto-send configuration
+// Auto-send state
 let autoSendEnabled = false;
 let autoSendIntervalHours = 12;
 let autoSendInactiveHours = 12;
@@ -43,7 +45,6 @@ function wasRecentlyEmailed(userId: string): boolean {
 
 function markEmailed(userId: string): void {
   recentlyEmailed.set(userId, Date.now());
-  // Clean up old entries periodically
   if (recentlyEmailed.size > 10000) {
     const cutoff = Date.now() - DEDUP_WINDOW_MS;
     for (const [uid, ts] of recentlyEmailed.entries()) {
@@ -52,59 +53,86 @@ function markEmailed(userId: string): void {
   }
 }
 
-async function getInactiveUsers(inactiveHours: number) {
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const cutoff = new Date(Date.now() - inactiveHours * 60 * 60 * 1000).toISOString();
+/** Fetch all users with email from auth + profiles + session activity */
+async function getEnrichedUsers(inactiveHours: number) {
+  const supabase = getSupabase();
 
-  // Get all users with their email and last activity
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, email, username, created_at');
-
-  if (!users || users.length === 0) {
-    return { users: [], totalUsers: 0, inactiveUsers: 0, usersWithSessions: 0, enrichedInactive: [] };
+  // Get users from auth (has email) - paginate to get all
+  const allAuthUsers: { id: string; email: string }[] = [];
+  let page = 1;
+  while (true) {
+    const { data: { users: batch } } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (!batch || batch.length === 0) break;
+    for (const u of batch) {
+      if (u.email && !u.email.endsWith('@botwave.local')) {
+        allAuthUsers.push({ id: u.id, email: u.email });
+      }
+    }
+    if (batch.length < 1000) break;
+    page++;
   }
 
-  // Get active sessions to know who has linked devices + last activity
+  if (allAuthUsers.length === 0) return { allUsers: [], inactiveUsers: [], usersWithSessions: 0, eligibleUsers: [] };
+
+  const userIds = allAuthUsers.map(u => u.id);
+
+  // Get profiles for usernames + last_login
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, username, last_login_at')
+    .in('id', userIds);
+  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+  // Get bot sessions for device linking + last activity
   const { data: sessions } = await supabase
     .from('bot_sessions')
-    .select('user_id, state, updated_at')
-    .in('state', ['active', 'qr_pending', 'disconnected']);
-
+    .select('user_id, state, updated_at');
   const sessionsByUser = new Map<string, { hasActive: boolean; lastActivity: string }>();
   for (const s of sessions || []) {
     const existing = sessionsByUser.get(s.user_id);
     const isActive = s.state === 'active';
-    if (!existing || isActive) {
+    const updatedAt = s.updated_at || '';
+    if (!existing || (isActive && !existing.hasActive) || updatedAt > (existing.lastActivity || '')) {
       sessionsByUser.set(s.user_id, {
         hasActive: existing?.hasActive || isActive,
-        lastActivity: s.updated_at || '',
+        lastActivity: updatedAt > (existing?.lastActivity || '') ? updatedAt : (existing?.lastActivity || ''),
       });
     }
   }
 
-  // Build user list with activity status
-  const enrichedUsers = users.map(u => {
+  // Check DB-based email log for recent sends
+  const cooldownCutoff = new Date(Date.now() - DEDUP_WINDOW_MS).toISOString();
+  const { data: recentSends } = await supabase
+    .from('email_broadcast_log')
+    .select('user_id')
+    .eq('campaign_type', 'reengagement')
+    .eq('status', 'sent')
+    .gte('sent_at', cooldownCutoff);
+  const recentlySentInDb = new Set((recentSends || []).map(s => s.user_id));
+
+  const cutoff = new Date(Date.now() - inactiveHours * 60 * 60 * 1000).toISOString();
+
+  const allUsers = allAuthUsers.map(u => {
+    const profile = profileMap.get(u.id);
     const session = sessionsByUser.get(u.id);
+    const lastActivity = session?.lastActivity || profile?.last_login_at || '';
+    const alreadyEmailed = recentlySentInDb.has(u.id) || wasRecentlyEmailed(u.id);
     return {
       id: u.id,
       email: u.email,
-      username: u.username,
+      username: profile?.username || u.email.split('@')[0],
       hasLinkedDevice: session?.hasActive || false,
-      lastActivity: session?.lastActivity || u.created_at,
-      isInactive: !session?.lastActivity || session.lastActivity < cutoff,
+      lastActivity,
+      isInactive: !lastActivity || lastActivity < cutoff,
+      alreadyEmailed,
     };
   });
 
-  const inactiveUsers = enrichedUsers.filter(u => u.isInactive && u.email);
+  const inactiveUsers = allUsers.filter(u => u.isInactive);
+  const eligibleUsers = inactiveUsers.filter(u => !u.alreadyEmailed);
+  const usersWithSessions = allUsers.filter(u => u.hasLinkedDevice).length;
 
-  return {
-    users: enrichedUsers,
-    totalUsers: users.length,
-    inactiveUsers: inactiveUsers.length,
-    usersWithSessions: enrichedUsers.filter(u => u.hasLinkedDevice).length,
-    enrichedInactive: inactiveUsers,
-  };
+  return { allUsers, inactiveUsers, usersWithSessions, eligibleUsers };
 }
 
 async function runEmailCampaign(
@@ -112,6 +140,7 @@ async function runEmailCampaign(
   type: 'reengagement' | 'custom',
   trigger: 'manual' | 'auto',
 ): Promise<EmailJob> {
+  const supabase = getSupabase();
   const jobId = crypto.randomUUID();
   const job: EmailJob = {
     id: jobId,
@@ -127,13 +156,13 @@ async function runEmailCampaign(
   };
   emailJobs.set(jobId, job);
 
-  // Send emails in background with rate limiting and dedup
+  // Send emails in background with rate limiting
   (async () => {
     job.status = 'sending';
     emailJobs.set(jobId, { ...job });
 
     for (const user of targetUsers) {
-      // Smart dedup: skip if already emailed within 24h
+      // Double-check dedup at send time
       if (wasRecentlyEmailed(user.id)) {
         job.skippedCount++;
         emailJobs.set(jobId, { ...job });
@@ -144,14 +173,31 @@ async function runEmailCampaign(
         await sendReengagementEmail(user.email, user.username || 'there', user.hasLinkedDevice);
         job.sentCount++;
         markEmailed(user.id);
+
+        // Log to DB
+        await supabase.from('email_broadcast_log').insert({
+          user_id: user.id,
+          email: user.email,
+          campaign_type: 'reengagement',
+          status: 'sent',
+          job_id: jobId,
+        }).catch(() => {});
       } catch (err) {
         console.error(`[EMAIL-BROADCAST] Failed for ${user.email}:`, err);
         job.failedCount++;
+
+        await supabase.from('email_broadcast_log').insert({
+          user_id: user.id,
+          email: user.email,
+          campaign_type: 'reengagement',
+          status: 'failed',
+          job_id: jobId,
+        }).catch(() => {});
       }
 
       emailJobs.set(jobId, { ...job });
 
-      // Rate limit: 2-5 second delay between emails
+      // Rate limit: 2-5 second delay between emails to protect IP reputation
       const delayMs = (Math.random() * 3 + 2) * 1000;
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
@@ -159,23 +205,20 @@ async function runEmailCampaign(
     job.status = job.failedCount === job.totalRecipients ? 'failed' : 'completed';
     job.completedAt = new Date().toISOString();
     emailJobs.set(jobId, { ...job });
-    console.log(`[EMAIL-BROADCAST] Job ${jobId} (${trigger}) completed: ${job.sentCount} sent, ${job.failedCount} failed, ${job.skippedCount} skipped (dedup)`);
+    console.log(`[EMAIL-BROADCAST] Job ${jobId} (${trigger}) completed: ${job.sentCount} sent, ${job.failedCount} failed, ${job.skippedCount} skipped`);
   })();
 
   return job;
 }
 
-// Auto-send: runs on interval, finds inactive users and sends re-engagement emails
+// Auto-send tick
 async function autoSendTick(): Promise<void> {
   try {
     console.log('[EMAIL-BROADCAST] Auto-send tick running...');
-    const { enrichedInactive } = await getInactiveUsers(autoSendInactiveHours);
-
-    // Filter out recently emailed users
-    const eligibleUsers = enrichedInactive.filter(u => !wasRecentlyEmailed(u.id));
+    const { eligibleUsers } = await getEnrichedUsers(autoSendInactiveHours);
 
     if (eligibleUsers.length === 0) {
-      console.log('[EMAIL-BROADCAST] Auto-send: no eligible users (all recently emailed or active)');
+      console.log('[EMAIL-BROADCAST] Auto-send: no eligible users');
       return;
     }
 
@@ -219,14 +262,7 @@ export async function GET(request: NextRequest) {
     }
 
     const inactiveHours = parseInt(request.nextUrl.searchParams.get('hours') || '12');
-    const { totalUsers, inactiveUsers, usersWithSessions, enrichedInactive } = await getInactiveUsers(inactiveHours);
-
-    // Add dedup info to users
-    const usersWithDedup = enrichedInactive.slice(0, 100).map(u => ({
-      ...u,
-      alreadyEmailed: wasRecentlyEmailed(u.id),
-      lastEmailedAt: recentlyEmailed.get(u.id) ? new Date(recentlyEmailed.get(u.id)!).toISOString() : null,
-    }));
+    const { allUsers, inactiveUsers, usersWithSessions, eligibleUsers } = await getEnrichedUsers(inactiveHours);
 
     const jobs = Array.from(emailJobs.values()).sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -235,10 +271,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        totalUsers,
-        inactiveUsers,
+        totalUsers: allUsers.length,
+        inactiveUsers: inactiveUsers.length,
         usersWithSessions,
-        users: usersWithDedup,
+        eligibleUsers: eligibleUsers.length,
+        users: eligibleUsers.slice(0, 100),
         recentJobs: jobs.slice(0, 20),
         autoSend: {
           enabled: autoSendEnabled,
@@ -264,7 +301,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, type = 'reengagement', inactiveHours = 12, userIds, intervalHours } = body;
 
-    // Handle auto-send configuration
+    // Auto-send controls
     if (action === 'enable_auto_send') {
       autoSendInactiveHours = inactiveHours || 12;
       autoSendIntervalHours = intervalHours || 12;
@@ -292,61 +329,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Manual broadcast
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { eligibleUsers } = await getEnrichedUsers(inactiveHours);
 
-    // Get target users
-    let query = supabase.from('users').select('id, email, username');
+    let targetUsers = eligibleUsers;
     if (userIds && userIds.length > 0) {
-      query = query.in('id', userIds);
-    }
-    const { data: users } = await query;
-
-    if (!users || users.length === 0) {
-      return NextResponse.json({ error: 'No users found' }, { status: 400 });
-    }
-
-    // Filter to users with email
-    const usersWithEmail = users.filter(u => u.email);
-    if (usersWithEmail.length === 0) {
-      return NextResponse.json({ error: 'No users with email addresses found' }, { status: 400 });
-    }
-
-    // Get session info for linked device status
-    const { data: sessions } = await supabase
-      .from('bot_sessions')
-      .select('user_id, state, updated_at')
-      .in('user_id', usersWithEmail.map(u => u.id));
-
-    const activeSessionUsers = new Set(
-      (sessions || []).filter(s => s.state === 'active').map(s => s.user_id)
-    );
-
-    // If no specific userIds, filter to inactive users only
-    let targetUsers = usersWithEmail;
-    if (!userIds) {
-      const cutoff = new Date(Date.now() - inactiveHours * 60 * 60 * 1000).toISOString();
-      const sessionActivity = new Map<string, string>();
-      for (const s of sessions || []) {
-        const existing = sessionActivity.get(s.user_id);
-        if (!existing || s.updated_at > existing) {
-          sessionActivity.set(s.user_id, s.updated_at);
-        }
-      }
-      targetUsers = usersWithEmail.filter(u => {
-        const lastActivity = sessionActivity.get(u.id);
-        return !lastActivity || lastActivity < cutoff;
-      });
+      targetUsers = eligibleUsers.filter(u => userIds.includes(u.id));
     }
 
     if (targetUsers.length === 0) {
-      return NextResponse.json({ error: 'No inactive users found in the specified time window' }, { status: 400 });
+      return NextResponse.json({ error: 'No eligible inactive users (all recently emailed or active)' }, { status: 400 });
     }
 
     const targets = targetUsers.map(u => ({
       id: u.id,
       email: u.email,
       username: u.username,
-      hasLinkedDevice: activeSessionUsers.has(u.id),
+      hasLinkedDevice: u.hasLinkedDevice,
     }));
 
     const job = await runEmailCampaign(targets, type, 'manual');
@@ -356,7 +354,7 @@ export async function POST(request: NextRequest) {
       data: {
         jobId: job.id,
         totalRecipients: job.totalRecipients,
-        message: `Sending re-engagement emails to ${job.totalRecipients} inactive users (skipping recently emailed)`,
+        message: `Sending re-engagement emails to ${job.totalRecipients} inactive users (2-5s delay between each)`,
       },
     });
   } catch (error) {

@@ -242,7 +242,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (!isCommand && shouldSilentlyIgnore(isGroup, content, senderJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
       return;
     }
 
@@ -257,7 +256,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (!isCommand && shouldAvoidDoubleText(chatJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
       return;
     }
 
@@ -273,16 +271,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     await simulateGoingOnline(sock);
 
     if (!isCommand && shouldThrottleContact(senderJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
       return;
     }
 
     const ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
 
     if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
-      try {
-        await sock.readMessages([message.key]);
-      } catch { /* non-critical */ }
       return;
     }
 
