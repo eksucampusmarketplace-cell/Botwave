@@ -417,6 +417,30 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     }
   }
 
+  // Ensure readMessages and readStatus are OFF so the bot doesn't auto-read
+  // incoming messages. Evolution API defaults can vary — set explicitly.
+  if (res.status === 200 || res.status === 201) {
+    try {
+      await apiFetch(`${BASE}/settings/set/${instanceName}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          rejectCall: false,
+          msgCall: '',
+          groupsIgnore: false,
+          alwaysOnline: false,
+          readMessages: false,
+          readStatus: false,
+          syncFullHistory: false,
+        }),
+        skipHealthCount: true,
+      });
+      console.log(`[EVO-CLIENT] Settings enforced for ${instanceName}: readMessages=false, readStatus=false`);
+    } catch (err) {
+      console.warn(`[EVO-CLIENT] Failed to set settings for ${instanceName} (non-fatal):`, err);
+    }
+  }
+
   // Set per-instance webhook separately (non-fatal — global webhook is the fallback)
   if (webhookUrl && (res.status === 200 || res.status === 201)) {
     setWebhook(instanceName).catch(err => {
