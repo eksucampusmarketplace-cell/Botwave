@@ -2,6 +2,7 @@ import { registerCommand, type MessageContext } from './registry';
 import { sendReply } from './helpers';
 import sharp from 'sharp';
 import { getUserSubscription } from '../database';
+import { callAI } from '../../lib/ai-provider';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BOTWAVE LOGO GENERATOR — !logo command
@@ -1451,6 +1452,56 @@ function injectTagline(svg: string, tagline: string, w: number, h: number): stri
   return svg.replace('</svg>', `${taglineSvg}</svg>`);
 }
 
+// ─── AI Logo Enhancement (Premium) ──────────────────────────────────────────
+
+const AI_LOGO_PROMPT = `You are a brand design expert. Given a brand/business name, suggest the perfect logo configuration.
+
+AVAILABLE STYLES: techy, neon, galaxy, gradient, minimalist, watercolor, retro, pixel, gaming, fire, ocean, nature, cyberpunk, vaporwave, elegant, vintage, graffiti, abstract, anime, marble, tribal, african, sports, music, luxury, geometric, holographic, aurora, floral, cosmic, matrix, comic, zen, ice, lava, safari, dark, rainbow, pastel, steampunk, gothic, royal, diamond, glitch, neoncity
+
+Respond with ONLY valid JSON:
+{
+  "style": "best matching style from the list above",
+  "color": "#RRGGBB hex color that fits the brand",
+  "tagline": "a short catchy tagline (max 6 words)",
+  "reason": "brief explanation of your choices"
+}
+
+RULES:
+- Pick a style that matches the brand's vibe/industry
+- Choose a color that evokes the right emotion
+- The tagline should be memorable and relevant
+- Be creative but professional`;
+
+interface AILogoSuggestion {
+  style: string;
+  color: string;
+  tagline: string;
+  reason: string;
+}
+
+async function getAILogoSuggestion(brandName: string): Promise<AILogoSuggestion | null> {
+  try {
+    const response = await callAI({
+      prompt: `Brand name: "${brandName}"\n\nSuggest the perfect logo configuration.`,
+      systemPrompt: AI_LOGO_PROMPT,
+      maxTokens: 150,
+      temperature: 0.7,
+    });
+
+    const cleaned = response.replace(/```json\n?|\n?```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[^{}]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]) as AILogoSuggestion;
+    if (!parsed.style || !parsed.color || !parsed.tagline) return null;
+
+    return parsed;
+  } catch (err) {
+    console.error('[LOGO-AI] Failed to get AI suggestion:', err);
+    return null;
+  }
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 async function handleLogo(context: MessageContext, args: string[], sock: any): Promise<void> {
@@ -1472,7 +1523,8 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
     helpMsg += `  !logo [style] [text] #FF5733\n`;
     helpMsg += `  !logo [style] [text] --square\n`;
     helpMsg += `  !logo preview\n`;
-    helpMsg += `  !logo random [text]\n\n`;
+    helpMsg += `  !logo random [text]\n`;
+    helpMsg += `  !logo ai [text] ⭐ (AI picks style/color/tagline)\n\n`;
     helpMsg += `*Styles:*\n`;
     for (const group of styleGroups) {
       helpMsg += `\n*${group.label}*\n${group.styles}\n`;
@@ -1539,6 +1591,62 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
     } catch (err) {
       console.error('[LOGO] Preview error:', err);
       await sendReply(context.chatJid, `Here are all ${STYLES.length} styles:\n\n${STYLE_LIST}\n\nUse: !logo [style] [text]`, sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  // ── Handle AI-powered logo (Premium) ──
+  if (firstArg === 'ai' || firstArg === 'smart') {
+    const aiText = args.slice(1).join(' ') || context.pushName || 'LOGO';
+    try {
+      const userId = context.chatJid.split('@')[0];
+      const sub = await getUserSubscription(userId);
+      if (sub.plan === 'free') {
+        await sendReply(
+          context.chatJid,
+          `✨ *AI Logo Design* is a premium feature!\n\nAI picks the perfect style, color & tagline for your brand.\n\nFree users: !logo [style] [text]\nUpgrade: !upgrade`,
+          sock, context.rawMessage.key, context.queue,
+        );
+        return;
+      }
+    } catch {
+      // If subscription check fails, allow
+    }
+
+    await sendReply(context.chatJid, '🤖 AI is designing your perfect logo...', sock, context.rawMessage.key, context.queue);
+
+    const suggestion = await getAILogoSuggestion(aiText);
+    if (!suggestion) {
+      await sendReply(context.chatJid, '❌ AI couldn\'t generate suggestions. Try: !logo [style] [text]', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const aiStyle = STYLE_MAP.get(suggestion.style.toLowerCase()) || randomFromArray(STYLES);
+    const aiColor = /^#[0-9A-Fa-f]{6}$/.test(suggestion.color) ? suggestion.color : null;
+    const aiTagline = suggestion.tagline;
+
+    await delay(randomBetween(500, 1000));
+
+    try {
+      const [width, height] = [1200, 675];
+      let svg = aiStyle.generate(aiText.slice(0, 30), width, height, aiTagline, aiColor);
+      if (aiTagline) {
+        svg = injectTagline(svg, aiTagline, width, height);
+      }
+
+      const pngBuffer = await sharp(Buffer.from(svg)).png({ quality: 95 }).toBuffer();
+
+      let caption = `*${aiText}*\n_"${aiTagline}"_\n\n`;
+      caption += `🤖 AI picked: *${aiStyle.name}* style`;
+      if (aiColor) caption += ` • ${aiColor}`;
+      caption += `\n💡 ${suggestion.reason}\n\n`;
+      caption += `_🎨 BotWave AI Logo Generator (Pro)_\n`;
+      caption += `_Not happy? Try: !logo [style] [text] for manual control_`;
+
+      await sendReply(context.chatJid, { image: pngBuffer, caption }, sock, context.rawMessage.key, context.queue);
+    } catch (error) {
+      console.error('[LOGO-AI] Error generating AI logo:', error);
+      await sendReply(context.chatJid, '❌ Failed to generate AI logo. Try: !logo [style] [text]', sock, context.rawMessage.key, context.queue);
     }
     return;
   }
