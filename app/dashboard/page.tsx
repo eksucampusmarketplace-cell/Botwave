@@ -381,9 +381,9 @@ export default function DashboardPage() {
               <h2 className="font-display text-sm tracking-[3px] text-green mb-4">TOOLS</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates' },
-                  { href: '/dashboard/custom-commands', icon: '\uD83E\uDD16', label: 'Commands' },
-                  { href: '/dashboard/flows', icon: '\uD83D\uDD00', label: 'Flows' },
+                  { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates', desc: 'Reusable message snippets with variables' },
+                  { href: '/dashboard/custom-commands', icon: '\uD83E\uDD16', label: 'Commands', desc: 'Custom trigger \u2192 response pairs' },
+                  { href: '/dashboard/flows', icon: '\uD83D\uDD00', label: 'Flows', desc: 'Multi-step conversation sequences' },
                   { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits' },
                   { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics' },
                   { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop' },
@@ -394,11 +394,16 @@ export default function DashboardPage() {
                   <a
                     key={link.href}
                     href={link.href}
-                    className="flex items-center gap-2 p-3 border border-green/10 hover:border-green/30 transition-colors font-mono text-xs"
+                    className="flex flex-col gap-1 p-3 border border-green/10 hover:border-green/30 transition-colors font-mono text-xs"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    <span className="text-base">{link.icon}</span>
-                    {link.label}
+                    <span className="flex items-center gap-2">
+                      <span className="text-base">{link.icon}</span>
+                      {link.label}
+                    </span>
+                    {'desc' in link && link.desc && (
+                      <span className="text-[10px] opacity-50">{link.desc}</span>
+                    )}
                   </a>
                 ))}
               </div>
