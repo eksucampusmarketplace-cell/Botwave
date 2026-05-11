@@ -4,7 +4,7 @@
  * Anti-ban measures:
  * - Random delay 5–15s between each status view/react
  * - Skip ~15% of statuses randomly (human-like)
- * - Daily cap of 50 views per session
+ * - Unlimited views (delays keep it ban-safe)
  * - Process one at a time via queue (no bursts)
  * - Never view own statuses
  *
@@ -18,9 +18,8 @@ import { getFeatureEnabled } from '../database';
 
 const DEFAULT_REACT_EMOJI = '❤️';
 
-// Per-session daily counters (reset at midnight)
+// Per-session daily counters (for logging only)
 const dailyCounters = new Map<string, { count: number; date: string }>();
-const DAILY_CAP = 50;
 const SKIP_PROBABILITY = 0.15;
 
 // Per-session queue to process statuses one at a time
@@ -66,12 +65,6 @@ async function processQueue(sessionId: string): Promise<void> {
     if (!item) break;
 
     try {
-      // Check daily cap
-      if (getDailyCount(sessionId) >= DAILY_CAP) {
-        queue.length = 0; // Clear remaining
-        break;
-      }
-
       // Random skip (human-like: don't view every single status)
       if (Math.random() < SKIP_PROBABILITY) {
         continue;
@@ -127,7 +120,7 @@ async function processQueue(sessionId: string): Promise<void> {
 
       incrementDailyCount(sessionId);
       if (viewSuccess) {
-        console.log(`[StatusViewer] Viewed + reacted to status from ${statusPoster} (session: ${sessionId}, daily: ${getDailyCount(sessionId)}/${DAILY_CAP})`);
+        console.log(`[StatusViewer] Viewed + reacted to status from ${statusPoster} (session: ${sessionId}, today: ${getDailyCount(sessionId)})`);
       }
     } catch (error) {
       console.error(`[StatusViewer] Error processing status for ${sessionId}:`, error);
@@ -154,9 +147,6 @@ export async function handleStatusUpdate(
     // Check if autoview is enabled for this user
     const isEnabled = await getFeatureEnabled(userId, 'autoview');
     if (!isEnabled) return;
-
-    // Check daily cap before queueing
-    if (getDailyCount(sessionId) >= DAILY_CAP) return;
 
     // Add to queue
     if (!statusQueues.has(sessionId)) {
