@@ -38,11 +38,12 @@ export function stripBotAddress(text: string, isGroup: boolean): string | null {
 // A message must look like an actual request or question.
 
 const REQUEST_SIGNALS = [
-  /^(?:what|how|who|when|where|why|which|is|are|was|were|do|does|did|can|could|will|would|should) /i,
+  /^(?:what|how|who|when|where|why|which|is|are|was|were|do|does|did|can|could|will|would|should)(?:'s|'s|s| )/i,
   /(?:please|pls)\b/i,
   /(?:can you|could you|would you|will you)\b/i,
   /(?:make|create|generate|give|send|show|find|get|tell|play|translate|convert|download|search|remind|scan|remove|check|open|start)\b/i,
   /(?:i want|i need|i'd like|i wanna|lemme|let me)\b/i,
+  /(?:weather|translate|remind|download|convert|search|define|horoscope|urban|encrypt|decrypt|schedule)\b/i,
   /\?$/,
 ];
 
@@ -154,8 +155,13 @@ export function matchIntent(
     return null;
   }
 
+  // Normalize smart/curly quotes to straight quotes (iOS/Android keyboards use these)
+  const normalizedText = rawText
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+
   // Step 1: check if the user is talking to the bot
-  const stripped = stripBotAddress(rawText, isGroup);
+  const stripped = stripBotAddress(normalizedText, isGroup);
   if (stripped === null) return null; // group msg not addressed to bot
 
   // Step 2: in DMs the message must look like a request
@@ -327,7 +333,11 @@ export async function classifyWithAI(
   isGroup: boolean,
   quotedText?: string,
 ): Promise<NLPIntent | null> {
-  const stripped = stripBotAddress(text, isGroup);
+  // Normalize smart quotes
+  const normalized = text
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+  const stripped = stripBotAddress(normalized, isGroup);
   if (!stripped) return null;
   if (!isGroup && !isRequestLike(stripped)) return null;
 
