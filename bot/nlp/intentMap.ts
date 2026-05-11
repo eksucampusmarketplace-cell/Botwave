@@ -337,7 +337,7 @@ export const INTENT_MAP: IntentPattern[] = [
     command: 'tts',
     confidence: 0.85,
     patterns: [
-      /(?:say|speak|read)(?: this)?(?: out loud| aloud)?\s*:?\s*["']?(.{3,})["']?$/i,
+      /^(?:say|speak|read)\b(?: this)?(?: out loud| aloud)?\s*:?\s*["']?(.{3,})["']?$/i,
       /(?:text to speech|tts)\s*:?\s*(.+)/i,
       /(?:convert to |make it |turn (?:this |it )?into )(?:speech|audio|voice)/i,
     ],
