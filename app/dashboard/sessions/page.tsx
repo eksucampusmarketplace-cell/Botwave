@@ -252,6 +252,48 @@ export default function SessionsPage() {
             <span className="font-mono text-xs text-[#5a9a7a] group-hover:text-green tracking-[2px]">ADD NEW SESSION</span>
           </button>
         </div>
+
+        {/* How to Connect Guide */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-10 border border-green/15 bg-[#0a0f0a]"
+        >
+          <div className="px-5 py-3 border-b border-green/15 flex items-center gap-2">
+            <span className="text-green text-sm">?</span>
+            <span className="font-mono text-[11px] text-green/70 tracking-[2px]">HOW TO CONNECT YOUR WHATSAPP</span>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg text-cyan font-bold">1</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">ADD A SESSION</span>
+              </div>
+              <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
+                Click the <span className="text-green">+ ADD NEW SESSION</span> button above. Enter a name and your WhatsApp phone number (with country code, e.g. +234...).
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg text-cyan font-bold">2</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">OPEN LINKED DEVICES</span>
+              </div>
+              <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
+                On your phone, open <span className="text-white">WhatsApp</span> &rarr; tap the <span className="text-white">three dots menu</span> (top right) &rarr; <span className="text-white">Linked Devices</span> &rarr; <span className="text-white">Link a Device</span>.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg text-cyan font-bold">3</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">ENTER THE CODE</span>
+              </div>
+              <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
+                Tap <span className="text-white">&quot;Link with phone number instead&quot;</span> and enter the <span className="text-green">8-digit code</span> shown on screen. If WhatsApp shows a scam warning, tap <span className="text-white">Continue</span> — it&apos;s safe.
+              </p>
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       {showAddModal && (
