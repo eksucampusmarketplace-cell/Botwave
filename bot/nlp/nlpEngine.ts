@@ -150,6 +150,8 @@ const KEYWORD_INTENTS: Record<string, { command: string; args: string[] }> = {
   coinflip: { command: 'coinflip', args: [] },
   dice: { command: 'dice', args: [] },
   wallpaper: { command: 'wallpaper', args: [] },
+  logo: { command: 'logo', args: [] },
+  brandkit: { command: 'brandkit', args: [] },
   // Slang / casual triggers
   inspire: { command: 'quote', args: [] },
   motivation: { command: 'quote', args: [] },
@@ -332,6 +334,8 @@ const AI_COMMAND_MAP: Record<string, string> = {
   age: 'Calculate age. Args: [birthdate]',
   country: 'Country info. Args: [countryName]',
   ai: 'AI chat — answer a question or have a conversation. Args: [fullMessage]',
+  settings: 'Toggle bot features. Args: [featureName, on/off]. Features: savage (auto-roast insulters), nlp (smart commands), welcome (group welcome msgs), autoview (auto-view statuses), anti_delete (recover deleted msgs). Example: "enable savage mode" → settings savage on.',
+  brandkit: 'Generate a complete brand kit with multiple formats. Args: [brandName]',
 };
 
 const AI_COMMAND_LIST = Object.keys(AI_COMMAND_MAP);

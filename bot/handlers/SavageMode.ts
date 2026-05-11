@@ -18,10 +18,10 @@ import { getFeatureEnabled } from '../database';
 
 // Common insult patterns (English + Nigerian pidgin / slang / Yoruba / Igbo / Hausa)
 const INSULT_PATTERNS = [
-  // Direct insults
-  /\b(?:stupid|dumb|idiot|fool|foolish|moron|loser|trash|useless|pathetic|lame|boring|ugly|fat|skinny|weak|dull|slow|clown|joke|fraud|scam|fake|wack|wicked|evil|horrible|terrible|awful|disgusting|nasty|smelly|dirty|crazy|mad|insane|psycho|creep|freak|nerd|geek|noob|simp|cringe|weird|annoying|irritating|retard|dumbass|jackass|dimwit|halfwit|numbskull|dense|braindead|clueless|hopeless|worthless|incompetent)\b/i,
-  // Profanity
-  /\b(?:fuck|shit|bitch|ass|dick|cock|bastard|damn|hell|crap|suck|wtf|stfu|shut up|go away|get lost|piss off|screw you|hate you|die|kill yourself|kys|foh|gtfo|pos|sob)\b/i,
+  // Direct insults (expanded)
+  /\b(?:stupid|dumb|idiot|fool|foolish|moron|loser|trash|useless|pathetic|lame|boring|ugly|fat|skinny|weak|dull|slow|clown|joke|fraud|scam|fake|wack|wicked|evil|horrible|terrible|awful|disgusting|nasty|smelly|dirty|crazy|mad|insane|psycho|creep|freak|nerd|geek|noob|simp|cringe|weird|annoying|irritating|retard|dumbass|jackass|dimwit|halfwit|numbskull|dense|braindead|clueless|hopeless|worthless|incompetent|dork|nitwit|bonehead|blockhead|dunce|buffoon|imbecile|ignorant|mediocre|irrelevant|delusional|toxic|embarrassing|ridiculous|laughable|pitiful|disgraceful|shameful)\b/i,
+  // Profanity (expanded)
+  /\b(?:fuck|shit|bitch|ass|dick|cock|bastard|damn|hell|crap|suck|wtf|stfu|shut up|go away|get lost|piss off|screw you|hate you|die|kill yourself|kys|foh|gtfo|gfy|pos|sob|mf|smfh)\b/i,
   // Nigerian pidgin / slang insults
   /\b(?:mumu|olodo|ode|werey|agbaya|olofo|ashawo|alaye|omo ale|oponu|oloriburuku|oniranu|were|arankan|gbegiri|alakoba|jaguda|area boy|agbero|ori e ti daru|efulefu|ewu|anuofia|onye nzuzu|nzuzu|oku|ofeke)\b/i,
   // Extended Yoruba / Igbo / Hausa insults
@@ -34,10 +34,19 @@ const INSULT_PATTERNS = [
   /(?:you no get|you lack|you dey|you too|you just dey) (?:sense|brain|shame|home training|manners)/i,
   /(?:thunder|God|heaven) (?:fire|punish|strike|judge|flog) (?:you|am|una)/i,
   /(?:go and|go|comot|carry yourself) (?:die|sit down|sleep|rest|disappear|away|park well)/i,
-  // English insult phrases
-  /(?:you(?:'re| are)) (?:so |such )?(?:a )?(?:stupid|dumb|idiot|fool|loser|trash|useless|pathetic|lame|boring|ugly|clown|joke|waste|disgrace|disappointment|nobody)/i,
-  /(?:nobody|no one) (?:likes|cares about|wants|asked) you/i,
-  /(?:shut|close) (?:up|your (?:mouth|trap|face))/i,
+  // English insult phrases (expanded)
+  /(?:you(?:'re| are)) (?:so |such )?(?:a )?(?:stupid|dumb|idiot|fool|loser|trash|useless|pathetic|lame|boring|ugly|clown|joke|waste|disgrace|disappointment|nobody|failure|embarrassment|lost cause|bottom feeder)/i,
+  /(?:nobody|no one) (?:likes|cares about|wants|asked|needs|respects|tolerates) you/i,
+  /(?:shut|close) (?:up|your (?:mouth|trap|face|beak))/i,
+  // Dismissive / belittling patterns
+  /(?:you(?:'re| are) (?:not|never)) (?:good enough|smart enough|worth|relevant|important|needed)/i,
+  /(?:waste of|you(?:'re| are) a waste of) (?:time|space|oxygen|air|life|resources|bandwidth)/i,
+  /(?:get|stay) (?:out of|away from) (?:my|our) (?:face|sight|life|chat|group)/i,
+  // Pidgin dismissals
+  /(?:you dey|you don|na you) (?:craze|mad|whine|para|razz|fall my hand|disappoint|shame)/i,
+  /(?:who (?:send|ask|tell|invite)) you/i,
+  /(?:you (?:dey|no) (?:hear|see|understand)) word/i,
+  /(?:person|somebody|someone) (?:wey|that) (?:no|never) (?:get|know|sabi) (?:sense|brain)/i,
   // Sarcastic insult patterns
   /(?:oh )?(?:wow|wooow|wowww) (?:you're|you are|ur) (?:so|sooo|soooo) (?:smart|clever|brilliant|funny|cool|special)/i,
   /(?:great|fantastic|wonderful|amazing) (?:job|work|effort)[,.]? (?:genius|einstein|professor|mr smart|mrs smart)/i,
@@ -69,6 +78,7 @@ Detect these categories:
 - Aggressive tone ("shut up", "go away", "piss off", "comot")
 - Backhanded compliments ("you're smart for someone like you")
 - Dismissive contempt ("who even are you", "I no send you", "you no reach")
+- Tone escalation (ALL CAPS, excessive punctuation like "!!!", aggressive emoji 🤡💀)
 
 DO NOT flag:
 - Friendly banter with obvious humor markers (lol, 😂, jk, 😄, haha)
@@ -77,6 +87,8 @@ DO NOT flag:
 - General complaints not targeting the person
 - Curse words used as exclamations, not insults ("shit, I forgot my keys")
 - Quotes or song lyrics that happen to contain strong language
+- Playful Nigerian slang between friends ("guy you too much", "omo you try")
+- Compliments disguised as slang ("you dey carry go" = positive)
 
 Also detect the LANGUAGE of the insult:
 - "english" for standard English
@@ -109,6 +121,16 @@ Language-specific style:
 - yoruba: "Ori e ti daru, oshi. Even your village people don tire for you 😂"
 - igbo: "Nwanne, your brain na pure efulefu. Even generator get more sense than you 🔥"
 - english: "If I wanted to hear from someone with your IQ, I'd talk to my toaster 🔥"
+- hausa: "Dan banza, idan kwakwalwa ruwa ne, ba za ka iya kashe wuta ba 💀"
+
+Be SPECIFIC to what they said — don't give a generic comeback. Reference their own words and flip them.
+
+More pidgin roast inspiration:
+- "Omo, if brain na water, you no go fit quench match stick 💀"
+- "Na your type dey use data to download nonsense 🤡"
+- "Your insult weak pass NEPA light 😂"
+- "E be like say you dey type with your elbow 🔥"
+- "I no blame you sha, na who dey listen you I blame 😭"
 
 Severity guide:
 - mild: Light teasing, playful comeback ("That's cute, did you practice that in the mirror? 😂")
