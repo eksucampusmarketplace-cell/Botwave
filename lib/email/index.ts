@@ -115,6 +115,20 @@ export async function sendSubscriptionEmail(
   });
 }
 
+export async function sendReengagementEmail(
+  to: string,
+  username: string,
+  hasLinkedDevice: boolean,
+): Promise<string> {
+  const { reengagementTemplate } = await import('./templates/reengagement');
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: 'We miss you on BotWave — come see what\'s new',
+    html: reengagementTemplate(username, hasLinkedDevice),
+  });
+}
+
 function stripHtml(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
