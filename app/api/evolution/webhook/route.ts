@@ -436,6 +436,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Load user's command prefix from settings (default '!')
+      let cmdPrefix = '!';
+      if (session.user_id) {
+        try {
+          const { getUserSettings } = await import('@/bot/database');
+          const settings = await getUserSettings(session.user_id);
+          if (settings?.command_prefix) cmdPrefix = settings.command_prefix;
+        } catch { /* non-critical — fall back to default */ }
+      }
+
       // Log and filter messages synchronously, then fire-and-forget the
       // actual processing.  Anti-ban delays inside handleMessage can take
       // 30-120 s, which exceeds Render's 30 s request timeout and causes
@@ -479,7 +489,7 @@ export async function POST(request: NextRequest) {
         const ACK_STATUSES = ['SERVER_ACK', 'DELIVERY_ACK', 'READ', 'PLAYED'];
         const ACK_CODES = [2, 3, 4, 5];
         const isAck = msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)));
-        const isFromMeCommand = fromMe && text.trimStart().startsWith('!');
+        const isFromMeCommand = fromMe && text.trimStart().startsWith(cmdPrefix);
         if (isAck && isFromMeCommand) {
           const msgId = msg.key?.id || '';
           if (!markSeen(msgId)) {
@@ -495,7 +505,7 @@ export async function POST(request: NextRequest) {
 
         // Allow fromMe messages that start with command prefix (userbot mode)
         // This lets the bot owner send !help, !ping, etc. from their own number
-        if (fromMe && !text.trimStart().startsWith('!')) continue;
+        if (fromMe && !text.trimStart().startsWith(cmdPrefix)) continue;
 
         // Mark every command message as seen so that ACK re-deliveries of the
         // same message are caught by the dedup cache above.

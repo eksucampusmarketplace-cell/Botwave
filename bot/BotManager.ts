@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
@@ -637,8 +637,13 @@ export class BotWaveBot {
             msg.message?.extendedTextMessage?.text ||
             msg.message?.imageMessage?.caption ||
             '';
-          // Allow fromMe commands (userbot mode: owner can use !help etc.)
-          if (msg.key.fromMe && !text.trimStart().startsWith('!')) continue;
+          // Allow fromMe commands (userbot mode: owner can use prefix+help etc.)
+          let cmdPrefix = '!';
+          try {
+            const settings = await getUserSettings(this.userId);
+            if (settings?.command_prefix) cmdPrefix = settings.command_prefix;
+          } catch { /* non-critical */ }
+          if (msg.key.fromMe && !text.trimStart().startsWith(cmdPrefix)) continue;
           await handleMessage(msg, this.socket, this.messageQueue ?? undefined);
         }
       }

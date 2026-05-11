@@ -42,7 +42,7 @@ import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../co
 // Import all command modules to trigger self-registration
 import '../commands';
 
-const COMMAND_PREFIX = '!';
+const DEFAULT_COMMAND_PREFIX = '!';
 const RATE_LIMIT_WINDOW = 60000;
 
 // ─── JID Normalization ──────────────────────────────────────────────────────
@@ -164,8 +164,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       message.message?.videoMessage?.caption ||
       '';
 
-    if (fromMe && !content.trimStart().startsWith('!')) return;
-
     if (!content) return;
 
     // In groups, participant may be a LID (e.g. 94270639878349@lid).
@@ -174,10 +172,23 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const participantPn = (message.key as any).participantPn;
     const senderJid = normalizeJid(participantPn || rawParticipant || chatJid);
     const isGroup = chatJid.endsWith('@g.us');
-    const isCommand = content.startsWith(COMMAND_PREFIX);
     const pushName = message.pushName || 'User';
     const sessionId = (sock as any).sessionId || queue?.['sessionId'];
     const userId = (sock as any).userId;
+
+    // Load user's command prefix from settings (default '!')
+    let commandPrefix = DEFAULT_COMMAND_PREFIX;
+    let ownerSettings: { afk_enabled?: boolean; afk_message?: string; skip_probability?: number; command_prefix?: string } | null = null;
+    if (userId) {
+      try {
+        ownerSettings = await getUserSettings(userId);
+        if (ownerSettings?.command_prefix) commandPrefix = ownerSettings.command_prefix;
+      } catch { /* non-critical */ }
+    }
+
+    const isCommand = content.startsWith(commandPrefix);
+
+    if (fromMe && !isCommand) return;
 
     // Owner detection: compare phone JID and also LID (WhatsApp's new format)
     const ownerJidEarly = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
@@ -198,6 +209,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       sessionId,
       userId,
       queue,
+      commandPrefix,
     };
 
     if (!fromMe) trackWhoSentLast(chatJid, false);
@@ -243,14 +255,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       return;
     }
 
-    let ownerSkipProbability: number | undefined;
-    let ownerSettings: { afk_enabled?: boolean; afk_message?: string; skip_probability?: number } | null = null;
-    if (userId) {
-      try {
-        ownerSettings = await getUserSettings(userId);
-        ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
-      } catch { /* non-critical */ }
-    }
+    const ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
 
     if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
       try {
@@ -402,18 +407,19 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 // ─── Command Dispatcher ────────────────────────────────────────────────────
 
 async function processCommand(context: MessageContext, sock: any): Promise<void> {
-  if (!context.message.startsWith(COMMAND_PREFIX)) {
+  const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
+  if (!context.message.startsWith(prefix)) {
     return;
   }
 
-  const parts = context.message.slice(1).split(' ');
+  const parts = context.message.slice(prefix.length).split(' ');
   let commandName = parts[0].toLowerCase();
   let args = parts.slice(1);
 
   // Alias expansion (async — loads from Redis if not cached)
   const aliasExpansion = await expandAlias(context.senderJid, commandName);
   if (aliasExpansion) {
-    const aliasParts = aliasExpansion.replace(/^!/, '').split(' ');
+    const aliasParts = aliasExpansion.replace(new RegExp(`^\\${prefix}`), '').split(' ');
     commandName = aliasParts[0].toLowerCase();
     args = [...aliasParts.slice(1), ...args];
     console.log(`Alias expanded: !${parts[0]} -> !${commandName} ${args.join(' ')}`);
@@ -531,7 +537,8 @@ async function checkAfkMentions(context: MessageContext, sock: any): Promise<voi
 
 async function processAutoReply(context: MessageContext, sock: any): Promise<void> {
   if (!context.sessionId) return;
-  if (context.message.startsWith(COMMAND_PREFIX)) return;
+  const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
+  if (context.message.startsWith(prefix)) return;
 
   try {
     const rules = await getAutoReplies(context.sessionId);
