@@ -1,6 +1,7 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
 import { matchIntent, classifyWithAI, getQuotedText } from '../nlp/nlpEngine';
+import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
@@ -365,6 +366,17 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       if (!autoReplied && userId) {
         await processNLP(context, sock);
       }
+    }
+
+    // Savage mode: auto-roast insults directed at the bot owner
+    if (!isCommand && !fromMe && userId && content) {
+      processSavageMode(content, userId, false, pushName)
+        .then(async (roast) => {
+          if (roast) {
+            await sendReply(chatJid, roast, sock, message.key, queue);
+          }
+        })
+        .catch((err) => console.error('[SAVAGE] Error in savage mode:', err));
     }
 
     // Auto-react check for groups

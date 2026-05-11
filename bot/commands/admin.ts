@@ -141,6 +141,7 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       `!settings name [name] — Set bot name\n` +
       `!settings welcome on/off — Toggle welcome/goodbye\n` +
       `!settings nlp on/off — Toggle smart NLP (natural language commands)\n` +
+      `!settings savage on/off — Toggle savage mode (auto-roast insulters)\n` +
       `!settings status — Show current settings`,
       sock, context.rawMessage.key, context.queue,
     );
@@ -211,6 +212,24 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       await sendReply(context.chatJid, 'Smart NLP *disabled* — use command prefix for commands.', sock, context.rawMessage.key, context.queue);
     } else {
       await sendReply(context.chatJid, 'Usage: !settings nlp on/off', sock, context.rawMessage.key, context.queue);
+    }
+    return;
+  }
+
+  if (sub === 'savage') {
+    const action = args[1]?.toLowerCase();
+    if (!context.sessionId || !context.userId) {
+      await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    if (action === 'on' || action === 'enable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'savage', true);
+      await sendReply(context.chatJid, '🔥 Savage mode *ACTIVATED* — anyone who insults you gets auto-roasted by AI. No mercy. 💀', sock, context.rawMessage.key, context.queue);
+    } else if (action === 'off' || action === 'disable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'savage', false);
+      await sendReply(context.chatJid, 'Savage mode *disabled* — back to being nice. 😇', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Usage: !settings savage on/off', sock, context.rawMessage.key, context.queue);
     }
     return;
   }
