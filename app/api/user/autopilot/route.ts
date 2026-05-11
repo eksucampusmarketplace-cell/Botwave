@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     // No sessionId — fetch user's bot_sessions first, then enrich with autopilot config
     const { data: botSessions, error: sessError } = await supabase
       .from('bot_sessions')
-      .select('id, status')
+      .select('id, state')
       .eq('user_id', user.id);
 
     if (sessError) throw sessError;
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       const ap = apMap.get(s.id);
       return {
         session_id: s.id,
-        status: s.status,
+        status: s.state,
         enabled: ap?.enabled ?? false,
         mode: ap?.mode ?? 'offline',
       };
