@@ -190,7 +190,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const isCommand = content.startsWith(commandPrefix);
 
-    if (fromMe && !isCommand) return;
+    // Allow fromMe non-command messages through if NLP is enabled
+    if (fromMe && !isCommand) {
+      if (!userId) return;
+      const nlpOn = await getFeatureEnabled(userId, 'nlp');
+      if (!nlpOn) return;
+    }
 
     // Owner detection: compare phone JID and also LID (WhatsApp's new format)
     const ownerJidEarly = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
