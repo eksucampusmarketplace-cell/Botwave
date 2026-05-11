@@ -350,4 +350,429 @@ export const INTENT_MAP: IntentPattern[] = [
     ],
     extractArgs: (match) => [match[1].trim()],
   },
+
+  // ── Meme ───────────────────────────────────────────────────────────────────
+  {
+    command: 'meme',
+    confidence: 0.9,
+    patterns: [
+      q('(?:send|show|give)(?: me)?(?: a)? meme'),
+      /(?:i (?:want|need))(?: a)? meme/i,
+      /^meme$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Fact ───────────────────────────────────────────────────────────────────
+  {
+    command: 'fact',
+    confidence: 0.9,
+    patterns: [
+      q('(?:tell|give|send|share)(?: me)?(?: a)?(?: random| interesting| fun)? fact'),
+      /^(?:random fact|fun fact|fact)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Riddle ─────────────────────────────────────────────────────────────────
+  {
+    command: 'riddle',
+    confidence: 0.9,
+    patterns: [
+      q('(?:tell|give|ask)(?: me)?(?: a)? riddle'),
+      /^riddle$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Fortune ────────────────────────────────────────────────────────────────
+  {
+    command: 'fortune',
+    confidence: 0.9,
+    patterns: [
+      q('(?:tell|read|show)(?: me)? (?:my )?fortune'),
+      /(?:what(?:'s| is)|predict) my (?:future|fortune|fate|destiny)/i,
+      /^fortune$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── 8ball ──────────────────────────────────────────────────────────────────
+  {
+    command: '8ball',
+    confidence: 0.85,
+    patterns: [
+      /magic (?:8 ?ball|eight ?ball)\s*:?\s*(.+)/i,
+      /(?:8ball|eightball)\s*:?\s*(.+)/i,
+      /(?:shake the |ask the )?(?:magic ball|crystal ball)\s*:?\s*(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Truth or Dare ──────────────────────────────────────────────────────────
+  {
+    command: 'truth',
+    confidence: 0.9,
+    patterns: [
+      /(?:give me|ask me)(?: a)? truth(?: question)?/i,
+      /^truth$/i,
+    ],
+    extractArgs: () => [],
+  },
+  {
+    command: 'dare',
+    confidence: 0.9,
+    patterns: [
+      /(?:give me|ask me)(?: a)? dare/i,
+      /^dare$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Compliment ─────────────────────────────────────────────────────────────
+  {
+    command: 'compliment',
+    confidence: 0.9,
+    patterns: [
+      q('(?:give|send|tell)(?: me)?(?: a)? compliment'),
+      /(?:compliment|flatter|hype)(?: me| up)/i,
+      /(?:say something (?:nice|sweet))/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Roast ──────────────────────────────────────────────────────────────────
+  {
+    command: 'roast',
+    confidence: 0.9,
+    patterns: [
+      q('roast me'),
+      /(?:give me a |send a )?roast/i,
+      /(?:insult|burn|destroy|flame) me/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Ship / Love Match ─────────────────────────────────────────────────────
+  {
+    command: 'ship',
+    confidence: 0.85,
+    patterns: [
+      /(?:ship|match|love test|compatibility) (.+?) (?:and|with|&|x) (.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim(), match[2].trim()],
+  },
+
+  // ── OCR / Read Text ────────────────────────────────────────────────────────
+  {
+    command: 'ocr',
+    confidence: 0.85,
+    patterns: [
+      q('(?:read|extract|get|scan)(?: the)? text (?:from |in )?(?:this |the )?(?:image|photo|picture|pic)'),
+      /(?:what does (?:this|the) (?:image|photo|picture) say)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Remove Background ─────────────────────────────────────────────────────
+  {
+    command: 'removebg',
+    confidence: 0.9,
+    patterns: [
+      q('(?:remove|delete|cut|erase)(?: the)? background'),
+      /(?:transparent|no) background/i,
+      /(?:cut out|cutout)(?: the)? (?:subject|person|object)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Scan / Receipt ─────────────────────────────────────────────────────────
+  {
+    command: 'scan',
+    confidence: 0.85,
+    patterns: [
+      q('scan (?:this |the )?(?:receipt|invoice|bill|ticket)'),
+      /(?:read|analyze|process)(?: this| the)? (?:receipt|invoice|bill)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Digest / Summary ──────────────────────────────────────────────────────
+  {
+    command: 'digest',
+    confidence: 0.85,
+    patterns: [
+      q('(?:summarize|summary|digest|recap)(?: the)?(?: group| chat)?'),
+      /what (?:did i|have i) miss(?:ed)?/i,
+      /(?:catch me up|what happened|whats been going on)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Leaderboard ────────────────────────────────────────────────────────────
+  {
+    command: 'leaderboard',
+    confidence: 0.85,
+    patterns: [
+      /(?:who(?:'s| is) (?:the )?(?:most active|top (?:chatter|member|user)))/i,
+      /(?:show|check)(?: the)? (?:leaderboard|scores|rankings|top)/i,
+      /^(?:leaderboard|scores|rankings)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Calculator ─────────────────────────────────────────────────────────────
+  {
+    command: 'calc',
+    confidence: 0.85,
+    patterns: [
+      /(?:calculate|compute|solve|what(?:'s| is)) ([\d\s+\-*/().^%]+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Password Generator ─────────────────────────────────────────────────────
+  {
+    command: 'password',
+    confidence: 0.9,
+    patterns: [
+      q('(?:generate|create|make)(?: me)?(?: a)?(?: random| secure| strong)? password'),
+      /(?:i need|give me)(?: a)? (?:random |secure |strong )?password/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Coin Flip ──────────────────────────────────────────────────────────────
+  {
+    command: 'coinflip',
+    confidence: 0.9,
+    patterns: [
+      /(?:flip|toss)(?: a)? coin/i,
+      /heads or tails/i,
+      /^(?:coinflip|coin flip)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Dice Roll ──────────────────────────────────────────────────────────────
+  {
+    command: 'dice',
+    confidence: 0.9,
+    patterns: [
+      /(?:roll|throw)(?: a| the)? dic?e/i,
+      /^(?:dice|roll)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── BMI Calculator ─────────────────────────────────────────────────────────
+  {
+    command: 'bmi',
+    confidence: 0.85,
+    patterns: [
+      /(?:calculate|check|what(?:'s| is))(?: my)? bmi/i,
+      /(?:body mass index|bmi) (\d+)\s*(?:kg|lbs?)?\s+(\d+)\s*(?:cm|m|ft)?/i,
+    ],
+    extractArgs: (match) => match[1] ? [match[1], match[2]] : [],
+  },
+
+  // ── Age Calculator ─────────────────────────────────────────────────────────
+  {
+    command: 'age',
+    confidence: 0.85,
+    patterns: [
+      /(?:how old|what(?:'s| is) (?:the |my )?age)(?: if| (?:born|birthday))(?: (?:on|is))? (.+)/i,
+      /(?:calculate|check)(?: my)? age/i,
+    ],
+    extractArgs: (match) => match[1] ? [match[1].trim()] : [],
+  },
+
+  // ── Uptime ─────────────────────────────────────────────────────────────────
+  {
+    command: 'uptime',
+    confidence: 0.85,
+    patterns: [
+      /(?:how long have you been|when did you go|when were you) (?:online|running|up|active)/i,
+      /(?:bot |your )?uptime/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  {
+    command: 'stats',
+    confidence: 0.85,
+    patterns: [
+      /(?:show|check|what are)(?: the| my| your)? stats/i,
+      /(?:bot |usage )?(?:statistics|metrics)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Logo ───────────────────────────────────────────────────────────────────
+  {
+    command: 'logo',
+    confidence: 0.85,
+    patterns: [
+      /(?:generate|create|make|design)(?: me)?(?: a)? logo (?:for |called |named |saying )?(.+)/i,
+      /(?:i (?:want|need))(?: a)? logo (?:for |with |saying )?(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Document Creation ──────────────────────────────────────────────────────
+  {
+    command: 'doc',
+    confidence: 0.85,
+    patterns: [
+      /(?:create|make|write)(?: me)?(?: a)? (?:document|doc|docx|word doc) (?:about |titled |called )?(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Shorten URL ────────────────────────────────────────────────────────────
+  {
+    command: 'short',
+    confidence: 0.85,
+    patterns: [
+      /(?:shorten|short|shrink)(?: this)? (?:url|link)\s*:?\s*(https?:\/\/\S+)/i,
+      /(?:make|create)(?: a)? short (?:url|link) (?:for |from )?(https?:\/\/\S+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Hangman ────────────────────────────────────────────────────────────────
+  {
+    command: 'hangman',
+    confidence: 0.9,
+    patterns: [
+      /(?:let(?:'s|'s) |i want to )?play hangman/i,
+      /^hangman$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Word Chain ─────────────────────────────────────────────────────────────
+  {
+    command: 'wordchain',
+    confidence: 0.9,
+    patterns: [
+      /(?:let(?:'s|'s) |i want to )?play word ?chain/i,
+      /^word ?chain$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Tagall ─────────────────────────────────────────────────────────────────
+  {
+    command: 'tagall',
+    confidence: 0.85,
+    patterns: [
+      /(?:tag|mention|notify|ping)(?: all| everyone| every ?body| the group| all members)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Balance / Rewards ──────────────────────────────────────────────────────
+  {
+    command: 'balance',
+    confidence: 0.85,
+    patterns: [
+      /(?:check|show|what(?:'s| is))(?: my)? (?:balance|rewards|coins|credits|points)/i,
+      /(?:how (?:many|much)) (?:rewards|coins|credits|points) (?:do i have|have i got)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Plan / Subscription ────────────────────────────────────────────────────
+  {
+    command: 'plan',
+    confidence: 0.85,
+    patterns: [
+      /(?:check|show|what(?:'s| is))(?: my)? (?:plan|subscription|sub)/i,
+      /(?:what plan am i on|am i (?:free|premium|pro))/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Study Hub ──────────────────────────────────────────────────────────────
+  {
+    command: 'study',
+    confidence: 0.85,
+    patterns: [
+      q('(?:open|launch|start|go to)(?: the)? study (?:hub|room|zone)'),
+      /(?:i want to|let me) study/i,
+      /(?:study hub|study link|study access)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Pomodoro ───────────────────────────────────────────────────────────────
+  {
+    command: 'pomodoro',
+    confidence: 0.85,
+    patterns: [
+      q('(?:start|begin)(?: a)? (?:pomodoro|focus|study)(?: timer| session)?'),
+      /(?:i (?:need|want) to) (?:focus|study|concentrate)/i,
+      /^pomodoro$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Flashcard ──────────────────────────────────────────────────────────────
+  {
+    command: 'flashcard',
+    confidence: 0.85,
+    patterns: [
+      q('(?:create|make|show|review)(?: my)?(?: a)? flashcard'),
+      /^flashcard(?:s)?$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── View Once ──────────────────────────────────────────────────────────────
+  {
+    command: 'viewonce',
+    confidence: 0.85,
+    patterns: [
+      /(?:save|view|open|show|reveal)(?: the)? view ?once/i,
+      /(?:that was )?view ?once/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Country Info ───────────────────────────────────────────────────────────
+  {
+    command: 'country',
+    confidence: 0.85,
+    patterns: [
+      /(?:info|information|tell me) (?:about |on )?(?:the country )?(.{2,30})$/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Multiplayer Games ──────────────────────────────────────────────────────
+  {
+    command: 'game',
+    confidence: 0.85,
+    patterns: [
+      /(?:let(?:'s|'s) |i want to )?play (?:chess|tic ?tac ?toe|ttt)/i,
+      /(?:start|create)(?: a)? (?:chess|tic ?tac ?toe) (?:game|match)/i,
+    ],
+    extractArgs: (_match, full) => {
+      if (/chess/i.test(full)) return ['chess'];
+      if (/tic|ttt/i.test(full)) return ['tictactoe'];
+      return [];
+    },
+  },
+
+  // ── AI Chat (catch-all for long questions — MUST be last) ──────────────────
+  {
+    command: 'ai',
+    confidence: 0.7,
+    patterns: [
+      /^(?:explain|describe|summarize|elaborate on|tell me about|what (?:is|are|was|were|does|do)|how (?:does|do|is|are|to|can)|why (?:is|are|does|do|did)|who (?:is|are|was|were)|when (?:is|was|did|does)|where (?:is|are|was|were)) .{10,}/i,
+    ],
+    extractArgs: (_match, full) => [full],
+  },
 ];

@@ -1,6 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
-import { matchIntent } from '../nlp/nlpEngine';
+import { matchIntent, classifyWithAI } from '../nlp/nlpEngine';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
@@ -589,10 +589,19 @@ async function processNLP(context: MessageContext, sock: any): Promise<void> {
     const enabled = await getFeatureEnabled(context.userId, 'nlp');
     if (!enabled) return;
 
-    const intent = matchIntent(context.message, context.isGroup);
+    // Step 1: try pattern-based matching (fast, no API call)
+    let intent = matchIntent(context.message, context.isGroup);
+    let source: 'pattern' | 'ai' = 'pattern';
+
+    // Step 2: if no pattern match, try AI classification (slower, last resort)
+    if (!intent) {
+      intent = await classifyWithAI(context.message, context.isGroup);
+      if (intent) source = 'ai';
+    }
+
     if (!intent) return;
 
-    console.log(`[NLP] Matched intent: ${intent.command} (confidence=${intent.confidence}) from "${context.message.slice(0, 60)}"`);
+    console.log(`[NLP] Matched intent: ${intent.command} (confidence=${intent.confidence}, source=${source}) from "${context.message.slice(0, 60)}"`);
 
     const handler = getCommand(intent.command);
     if (!handler) return;
@@ -612,7 +621,7 @@ async function processNLP(context: MessageContext, sock: any): Promise<void> {
     }
 
     await handler.execute(context, intent.args, sock, vars, intent.command);
-    console.log(`[NLP] Command ${intent.command} executed via NLP`);
+    console.log(`[NLP] Command ${intent.command} executed via NLP (${source})`);
   } catch (err) {
     console.error('[NLP] Error processing intent:', err);
   }
