@@ -51,6 +51,59 @@ function addToAIHistory(chatJid: string, role: 'user' | 'assistant', content: st
   }
 }
 
+/**
+ * Check if a chat has an active AI conversation (used by reply-to-AI detection).
+ */
+export function hasActiveAIChat(chatJid: string): boolean {
+  const history = aiChatHistory.get(chatJid);
+  if (!history || history.length === 0) return false;
+  const cutoff = Date.now() - AI_HISTORY_EXPIRY_MS;
+  return history.some((h) => h.ts > cutoff);
+}
+
+/**
+ * Handle a reply-to-AI follow-up (no !ai prefix needed).
+ * Called from MessageHandler when a user replies to a bot message in a chat
+ * with active AI history.
+ */
+export async function handleAIReply(
+  context: MessageContext,
+  sock: any,
+  vars: { name?: string; time?: string; date?: string; group?: string },
+): Promise<void> {
+  const query = context.message;
+  if (!query) return;
+
+  try {
+    const history = getAIHistory(context.chatJid);
+
+    const aiResponse = await callAI({
+      prompt: query,
+      maxTokens: 500,
+      temperature: 0.7,
+      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context — refer back to previous messages naturally.',
+      history,
+    });
+
+    addToAIHistory(context.chatJid, 'user', query);
+    addToAIHistory(context.chatJid, 'assistant', aiResponse);
+
+    const intro = pickResponse(aiIntros, vars, false);
+
+    await sendReply(context.chatJid, `${intro}\n\n${aiResponse}`, sock, context.rawMessage.key, context.queue);
+  } catch (error) {
+    console.error('AI reply error:', error);
+    let msg = 'AI service temporarily unavailable. Please try again later.';
+    if (error instanceof AIQuotaExhaustedError) {
+      msg = 'AI quota exhausted — the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+    } else if (error instanceof AIRateLimitError) {
+      const secs = Math.ceil(error.retryAfterMs / 1000);
+      msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
+    }
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+  }
+}
+
 async function handleAICommand(
   context: MessageContext,
   args: string[],
