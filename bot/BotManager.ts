@@ -72,6 +72,7 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
       `\u{1F3AE} *!trivia* \u2014 Play trivia games\n` +
       `\u{1F4AC} *!help* \u2014 See all 50+ commands\n\n` +
       `Add me to your group and type *!help* to get started!\n\n` +
+      `📢 *Follow our channel for updates & tips:*\nhttps://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X\n\n` +
       `_Created by Decisive Analyst | botwave.online_`;
 
     if (video) {

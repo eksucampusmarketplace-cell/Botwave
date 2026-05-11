@@ -150,7 +150,9 @@ _Tip: Most text commands support reply-to — reply to any message with the comm
 _Send *!help* for the full .docx guide._
 _Only the bot owner can use commands._
 
-_Your chats are private — the bot owner cannot read or access your messages._`;
+_Your chats are private — the bot owner cannot read or access your messages._
+
+📢 *Follow BotWave:* https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X`;
     if (p !== '!') helpMessage = helpMessage.replace(/!/g, p);
     await sendReply(context.chatJid, helpMessage, sock, context.rawMessage.key, context.queue);
     return;
