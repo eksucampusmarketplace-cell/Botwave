@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import {
   getCachedAutopilot,
   cacheAutopilot,
@@ -127,7 +128,12 @@ export async function POST(req: NextRequest) {
     if (maxDailyReplies !== undefined) updateData.max_daily_replies = Math.max(5, Math.min(200, maxDailyReplies));
     if (contactOverrides !== undefined) updateData.contact_overrides = contactOverrides;
 
-    const { error } = await supabase
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    const { error } = await adminSupabase
       .from('autopilot_personas')
       .upsert(updateData, { onConflict: 'user_id,session_id' });
 
