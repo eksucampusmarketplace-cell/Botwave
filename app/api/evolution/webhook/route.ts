@@ -11,20 +11,20 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/re
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
 
-// Dedup cache for fromMe command ACKs — prevents processing the same command
-// multiple times when Evolution API fires duplicate ACK webhooks.
-const seenFromMeCmds = new Map<string, number>();
-const SEEN_TTL = 30_000; // 30 seconds
+// Dedup cache — prevents processing the same message multiple times when
+// Evolution API fires duplicate webhooks (common for ACK re-deliveries).
+const seenMsgs = new Map<string, number>();
+const SEEN_TTL = 150_000; // 150 seconds (matches 120s timestamp guard + buffer)
 function markSeen(msgId: string): boolean {
   const now = Date.now();
   // Prune old entries
-  if (seenFromMeCmds.size > 200) {
-    for (const [k, t] of seenFromMeCmds) {
-      if (now - t > SEEN_TTL) seenFromMeCmds.delete(k);
+  if (seenMsgs.size > 500) {
+    for (const [k, t] of seenMsgs) {
+      if (now - t > SEEN_TTL) seenMsgs.delete(k);
     }
   }
-  if (seenFromMeCmds.has(msgId)) return false; // already seen
-  seenFromMeCmds.set(msgId, now);
+  if (seenMsgs.has(msgId)) return false; // already seen
+  seenMsgs.set(msgId, now);
   return true; // first time
 }
 
@@ -479,44 +479,55 @@ export async function POST(request: NextRequest) {
         // available for !recover when someone deletes them.
         cacheMsgs.push(msg);
 
-        // Skip ACK status updates — Evolution API fires messages.upsert for
-        // both new messages AND delivery status changes (SERVER_ACK,
-        // DELIVERY_ACK, READ, PLAYED). Only process genuinely new messages.
-        // Exception: for fromMe messages with commands (!prefix), Evolution API
-        // sometimes only sends the SERVER_ACK event, not the initial upsert.
-        // So we allow SERVER_ACK through for fromMe command messages.
-        // Baileys uses numeric codes: 2=SERVER_ACK 3=DELIVERY_ACK 4=READ 5=PLAYED
-        const ACK_STATUSES = ['SERVER_ACK', 'DELIVERY_ACK', 'READ', 'PLAYED'];
-        const ACK_CODES = [2, 3, 4, 5];
-        const isAck = msgStatus && (ACK_STATUSES.includes(String(msgStatus)) || ACK_CODES.includes(Number(msgStatus)));
-        const isFromMeCommand = fromMe && text.trimStart().startsWith(cmdPrefix);
-        if (isAck && isFromMeCommand) {
-          const msgId = msg.key?.id || '';
-          if (!markSeen(msgId)) {
-            console.log(`[EVO-WEBHOOK] SKIP duplicate fromMe command ACK: "${text.slice(0, 40)}"`);
-            continue;
-          }
-          console.log(`[EVO-WEBHOOK] Processing fromMe command via ACK: "${text.slice(0, 40)}"`);
-        }
-        if (isAck && !isFromMeCommand) {
-          // DELIVERY_ACK / READ / PLAYED events have unreliable fromMe flags —
-          // the user's own outgoing messages can appear as fromMe=false in ACK
-          // events. Never route ACKs to handleMessage; only cache them for
-          // anti-delete recovery (already done via cacheMsgs above).
-          console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'} from=${from}`);
+        // Evolution API always sets a status on messages.upsert (SERVER_ACK,
+        // DELIVERY_ACK, READ, PLAYED) — unlike Baileys which separates new
+        // messages from status updates. We use timestamp + dedup to determine
+        // if a message is recent enough to process.
+        const LATE_STATUS = ['READ', 'PLAYED'];
+        const LATE_CODES = [4, 5];
+        const isLateStatus = msgStatus && (LATE_STATUS.includes(String(msgStatus)) || LATE_CODES.includes(Number(msgStatus)));
+
+        // Always skip READ/PLAYED — these fire long after the message arrived
+        if (isLateStatus) {
+          console.log(`[EVO-WEBHOOK] SKIP late status ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
           continue;
         }
 
-        // Allow fromMe messages that start with command prefix (userbot mode)
-        // This lets the bot owner send !help, !ping, etc. from their own number
+        // Dedup: skip if we already processed this exact message ID
+        const msgId = msg.key?.id || '';
+        if (msgId && !markSeen(msgId)) {
+          console.log(`[EVO-WEBHOOK] SKIP duplicate msg ${msgId.slice(0, 12)} "${text.slice(0, 40)}"`);
+          continue;
+        }
+
+        // Timestamp guard: only process messages sent within the last 120s.
+        // This prevents processing old DELIVERY_ACKs that arrive during
+        // reconnection or batch status updates.
+        const msgTs = Number(msg.messageTimestamp || 0);
+        const nowSec = Math.floor(Date.now() / 1000);
+        const msgAgeSec = nowSec - msgTs;
+        if (msgTs > 0 && msgAgeSec > 120) {
+          console.log(`[EVO-WEBHOOK] SKIP old msg (${msgAgeSec}s ago) ${msgId.slice(0, 12)} "${text.slice(0, 40)}"`);
+          continue;
+        }
+
+        // Check if message has actual content worth processing
+        const hasContent = text || msg.message?.imageMessage || msg.message?.videoMessage || msg.message?.audioMessage || msg.message?.stickerMessage || msg.message?.documentMessage;
+
+        // fromMe messages: only process commands (userbot mode)
         if (fromMe && !text.trimStart().startsWith(cmdPrefix)) {
           continue;
         }
 
-        // Mark every command message as seen so that ACK re-deliveries of the
-        // same message are caught by the dedup cache above.
-        const cmdMsgId = msg.key?.id;
-        if (cmdMsgId) markSeen(cmdMsgId);
+        // Non-fromMe messages: process if they have content (for savage mode,
+        // NLP, autopilot, etc.)
+        if (!fromMe && !hasContent) {
+          console.log(`[EVO-WEBHOOK] SKIP empty non-fromMe msg ${msgId.slice(0, 12)} from=${from}`);
+          continue;
+        }
+
+        console.log(`[EVO-WEBHOOK] Processing msg: fromMe=${fromMe} from=${from} "${text.slice(0, 40)}"`);
+
 
         commandMsgs.push(msg);
       }
