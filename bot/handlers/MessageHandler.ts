@@ -1,5 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
+import { matchIntent, classifyWithAI, getQuotedText } from '../nlp/nlpEngine';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
@@ -360,7 +361,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (!isCommand) {
-      await processAutoReply(context, sock);
+      const autoReplied = await processAutoReply(context, sock);
+      if (!autoReplied && userId) {
+        await processNLP(context, sock);
+      }
     }
 
     // Auto-react check for groups
@@ -535,14 +539,14 @@ async function checkAfkMentions(context: MessageContext, sock: any): Promise<voi
 
 // ─── Auto Reply ─────────────────────────────────────────────────────────────
 
-async function processAutoReply(context: MessageContext, sock: any): Promise<void> {
-  if (!context.sessionId) return;
+async function processAutoReply(context: MessageContext, sock: any): Promise<boolean> {
+  if (!context.sessionId) return false;
   const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
-  if (context.message.startsWith(prefix)) return;
+  if (context.message.startsWith(prefix)) return false;
 
   try {
     const rules = await getAutoReplies(context.sessionId);
-    if (!rules.length) return;
+    if (!rules.length) return false;
 
     const msgLower = context.message.toLowerCase();
 
@@ -561,11 +565,67 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<voi
           time: currentTimeStr(),
         }, false);
         await sendReply(context.chatJid, replyText, sock, context.rawMessage.key, context.queue);
-        break;
+        return true;
       }
     }
   } catch {
     // non-critical
+  }
+  return false;
+}
+
+// ─── NLP Processing ─────────────────────────────────────────────────────────
+//
+// Detects natural-language requests and maps them to bot commands.
+// Only fires when:
+//   - The "nlp" feature toggle is ON for this user (default OFF)
+//   - The user is clearly addressing the bot (group) or sending a request (DM)
+//   - No auto-reply rule already handled the message
+
+async function processNLP(context: MessageContext, sock: any): Promise<void> {
+  if (!context.userId) return;
+
+  try {
+    const enabled = await getFeatureEnabled(context.userId, 'nlp');
+    if (!enabled) return;
+
+    // Step 1: try pattern-based matching (fast, no API call)
+    let intent = matchIntent(context.message, context.isGroup);
+    let source: 'pattern' | 'ai' = 'pattern';
+
+    // Step 2: if no pattern match, try AI classification (Groq → Gemini)
+    // Pass quoted/reply-to text for context awareness
+    if (!intent) {
+      const quotedText = getQuotedText(context.rawMessage);
+      intent = await classifyWithAI(context.message, context.isGroup, quotedText);
+      if (intent) source = 'ai';
+    }
+
+    if (!intent) return;
+
+    console.log(`[NLP] Matched intent: ${intent.command} (confidence=${intent.confidence}, source=${source}) from "${context.message.slice(0, 60)}"`);
+
+    const handler = getCommand(intent.command);
+    if (!handler) return;
+
+    // Owner-only commands require isOwner
+    if (handler.ownerOnly && !context.isOwner) return;
+
+    const vars: TemplateVars = {
+      name: context.pushName || 'User',
+      time: currentTimeStr(),
+      date: currentDateStr(),
+      group: context.isGroup ? context.chatJid.split('@')[0] : undefined,
+    };
+
+    if (context.sessionId && context.userId) {
+      trackCommand(context.sessionId, context.userId, context.senderJid, intent.command);
+    }
+
+    await handler.execute(context, intent.args, sock, vars, intent.command);
+    console.log(`[NLP] Command ${intent.command} executed via NLP (${source})`);
+  } catch (err) {
+    console.error('[NLP] Error processing intent:', err);
   }
 }
 

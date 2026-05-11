@@ -140,6 +140,7 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       `!settings afk msg [text] — Set AFK message\n` +
       `!settings name [name] — Set bot name\n` +
       `!settings welcome on/off — Toggle welcome/goodbye\n` +
+      `!settings nlp on/off — Toggle smart NLP (natural language commands)\n` +
       `!settings status — Show current settings`,
       sock, context.rawMessage.key, context.queue,
     );
@@ -193,6 +194,24 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
     }
     await updateSessionSettings(context.sessionId, { bot_name: name });
     await sendReply(context.chatJid, `Bot name set to: *${name}*`, sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  if (sub === 'nlp') {
+    const action = args[1]?.toLowerCase();
+    if (!context.sessionId || !context.userId) {
+      await sendReply(context.chatJid, 'Session not available.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+    if (action === 'on' || action === 'enable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'nlp', true);
+      await sendReply(context.chatJid, 'Smart NLP *enabled* — I\'ll now understand natural language requests (e.g. "what\'s the weather in Lagos").\n\nIn groups, prefix with "bot" (e.g. "bot, tell me a joke").', sock, context.rawMessage.key, context.queue);
+    } else if (action === 'off' || action === 'disable') {
+      await setFeatureEnabled(context.userId, context.sessionId, 'nlp', false);
+      await sendReply(context.chatJid, 'Smart NLP *disabled* — use command prefix for commands.', sock, context.rawMessage.key, context.queue);
+    } else {
+      await sendReply(context.chatJid, 'Usage: !settings nlp on/off', sock, context.rawMessage.key, context.queue);
+    }
     return;
   }
 

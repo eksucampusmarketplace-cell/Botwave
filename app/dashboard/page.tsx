@@ -16,7 +16,7 @@ import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
 import { useSSE } from '@/lib/useSSE';
 
 // Features that default to OFF — must be explicitly enabled by the user
-const FEATURES_DEFAULT_OFF = new Set(['welcome', 'autoview']);
+const FEATURES_DEFAULT_OFF = new Set(['welcome', 'autoview', 'nlp']);
 
 const defaultFeatures = [
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
@@ -37,6 +37,7 @@ const defaultFeatures = [
   { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '🖼️' },
   { id: 'social', name: 'SOCIAL', description: 'forward, base64, hash, color, save', icon: '🔗' },
   { id: 'autoview', name: 'AUTO STATUS VIEWER', description: 'Auto-view & react to statuses (OFF by default)', icon: '👁️' },
+  { id: 'nlp', name: 'SMART NLP', description: 'Understand natural language requests without prefix (OFF by default)', icon: '🧠' },
 ];
 
 export default function DashboardPage() {
