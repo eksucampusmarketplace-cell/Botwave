@@ -22,6 +22,7 @@ import {
   deleteForEveryone,
   getBase64FromMediaMessage,
   findMessages,
+  sendReaction,
 } from './evolutionClient';
 
 export class EvolutionSocketAdapter {
@@ -48,6 +49,13 @@ export class EvolutionSocketAdapter {
    * Handles text, sticker, document, image content types.
    */
   async sendMessage(jid: string, content: Record<string, unknown>, _options?: Record<string, unknown>) {
+    // React to a message — handle before status broadcast routing so status
+    // reactions go through the dedicated sendReaction endpoint
+    if (content.react) {
+      const reactData = content.react as { key: { remoteJid: string; fromMe: boolean; id: string }; text: string };
+      return sendReaction(this.instanceName, reactData.key, reactData.text);
+    }
+
     // Status broadcast — route through the dedicated sendStatus endpoint
     if (jid === 'status@broadcast') {
       return this.sendStatusMessage(content, _options);
@@ -63,12 +71,6 @@ export class EvolutionSocketAdapter {
     if (content.delete) {
       const key = content.delete as { remoteJid: string; fromMe: boolean; id: string; participant?: string };
       return deleteForEveryone(this.instanceName, key);
-    }
-
-    // React to a message
-    if (content.react) {
-      // Reactions are not yet supported via Evolution REST — skip silently
-      return null;
     }
 
     const to = jid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');

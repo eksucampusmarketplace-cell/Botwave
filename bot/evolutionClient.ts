@@ -798,6 +798,20 @@ export async function markAsRead(instanceName: string, keys: Array<{ remoteJid: 
   return res.json();
 }
 
+// Send a reaction emoji to a message
+export async function sendReaction(
+  instanceName: string,
+  key: { remoteJid: string; fromMe: boolean; id: string },
+  reaction: string,
+) {
+  const res = await apiFetch(`${BASE}/message/sendReaction/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ key, reaction }),
+  });
+  return res.ok ? await safeJson(res) : null;
+}
+
 // Update profile status/bio text
 export async function updateProfileStatus(instanceName: string, status: string) {
   const res = await apiFetch(`${BASE}/chat/updateProfileStatus/${instanceName}`, {
