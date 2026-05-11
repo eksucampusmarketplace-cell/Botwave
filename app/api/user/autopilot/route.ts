@@ -15,6 +15,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Use admin client for autopilot_personas (RLS only allows service_role)
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
     const sessionId = req.nextUrl.searchParams.get('sessionId');
 
     // If sessionId provided, fetch for that session; otherwise fetch all for user
@@ -22,7 +28,7 @@ export async function GET(req: NextRequest) {
       const cached = await getCachedAutopilot(user.id, sessionId);
       if (cached) return NextResponse.json(cached);
 
-      const { data, error } = await supabase
+      const { data, error } = await adminSupabase
         .from('autopilot_personas')
         .select('*')
         .eq('user_id', user.id)
@@ -56,7 +62,7 @@ export async function GET(req: NextRequest) {
 
     if (sessError) throw sessError;
 
-    const { data: autopilotData, error: apError } = await supabase
+    const { data: autopilotData, error: apError } = await adminSupabase
       .from('autopilot_personas')
       .select('session_id, enabled, mode, self_description, reply_delay_minutes, inactivity_minutes, max_daily_replies, daily_replies_used, last_sync_at, contact_overrides')
       .eq('user_id', user.id);
