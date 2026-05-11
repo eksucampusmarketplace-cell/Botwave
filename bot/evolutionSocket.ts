@@ -49,20 +49,18 @@ export class EvolutionSocketAdapter {
    * Handles text, sticker, document, image content types.
    */
   async sendMessage(jid: string, content: Record<string, unknown>, _options?: Record<string, unknown>) {
-    // React to a message — handle before status broadcast routing so status
-    // reactions go through the dedicated sendReaction endpoint
+    // React to a message — only for regular chats (not status broadcasts).
+    // Status reactions via Evolution API's sendReaction endpoint are unreliable
+    // and can send garbled messages to contacts, so skip them entirely.
     if (content.react) {
       const reactData = content.react as {
         key: { remoteJid: string; fromMe: boolean; id: string; participant?: string };
         text: string;
       };
-      // For status reactions, use the poster's JID as remoteJid since
-      // Evolution API's sendReaction doesn't support status@broadcast
-      const reactionKey = { ...reactData.key };
-      if (reactionKey.remoteJid === 'status@broadcast' && reactionKey.participant) {
-        reactionKey.remoteJid = reactionKey.participant;
+      if (reactData.key.remoteJid === 'status@broadcast') {
+        return null;
       }
-      return sendReaction(this.instanceName, reactionKey, reactData.text);
+      return sendReaction(this.instanceName, reactData.key, reactData.text);
     }
 
     // Status broadcast — route through the dedicated sendStatus endpoint
