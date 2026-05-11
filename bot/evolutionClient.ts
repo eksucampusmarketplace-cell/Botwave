@@ -32,6 +32,117 @@ if (PROXY_LIST.length > 0) {
 let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
 
+// Proxy health tracking: when proxies fail, fall back to direct VPS connection.
+// Tracks per-proxy failure counts and a global "proxy disabled" flag.
+const proxyFailures = new Map<string, number>();
+let proxyPoolDisabled = false;
+let proxyRecoveryTimer: ReturnType<typeof setInterval> | null = null;
+const PROXY_FAIL_THRESHOLD = 3;
+const PROXY_RECOVERY_CHECK_MS = 10 * 60 * 1000; // check every 10 min
+
+/** Send an admin alert email (non-blocking, best-effort). */
+async function sendProxyAlert(subject: string, details: Record<string, string | number>): Promise<void> {
+  try {
+    const { sendAlertEmail, buildAlertHtml } = await import('../lib/email-service');
+    await sendAlertEmail({
+      subject: `[BotWave] ${subject}`,
+      text: Object.entries(details).map(([k, v]) => `${k}: ${v}`).join('\n'),
+      html: buildAlertHtml(subject, 'critical', details),
+    });
+  } catch (err) {
+    console.error('[PROXY-ALERT] Failed to send alert email:', err);
+  }
+}
+
+/**
+ * Record a proxy failure. If a proxy exceeds the failure threshold,
+ * disable it. If all proxies are disabled, fall back to direct VPS.
+ */
+export function recordProxyFailure(instanceName: string, proxyHost: string, error: string): void {
+  const count = (proxyFailures.get(proxyHost) || 0) + 1;
+  proxyFailures.set(proxyHost, count);
+  console.warn(`[PROXY] Failure #${count} for ${proxyHost} (instance: ${instanceName}): ${error}`);
+
+  if (count >= PROXY_FAIL_THRESHOLD && !proxyPoolDisabled) {
+    // Check if all proxies are failing
+    const allFailing = PROXY_LIST.every(p => {
+      const host = p.split(':')[0];
+      return (proxyFailures.get(host) || 0) >= PROXY_FAIL_THRESHOLD;
+    });
+
+    if (allFailing) {
+      proxyPoolDisabled = true;
+      console.error('[PROXY] ALL proxies failing — falling back to direct VPS connection');
+      sendProxyAlert('Proxy Pool Down — Falling Back to Direct VPS', {
+        'Status': 'All proxies failed, using direct VPS IP',
+        'Failed Proxies': PROXY_LIST.length.toString(),
+        'Last Error': error,
+        'Instance': instanceName,
+        'Action': 'Sessions will reconnect without proxy. Add/fix proxies when available.',
+      });
+      // Disable proxy on all tracked instances so reconnections use direct VPS
+      disableProxiesOnAllInstances();
+      startProxyRecoveryCheck();
+    }
+  }
+}
+
+/** Reset proxy failure count (called when a proxy connection succeeds). */
+export function recordProxySuccess(proxyHost: string): void {
+  proxyFailures.delete(proxyHost);
+  if (proxyPoolDisabled) {
+    // Check if any proxy is now healthy
+    const anyHealthy = PROXY_LIST.some(p => {
+      const host = p.split(':')[0];
+      return !proxyFailures.has(host) || (proxyFailures.get(host) || 0) < PROXY_FAIL_THRESHOLD;
+    });
+    if (anyHealthy) {
+      proxyPoolDisabled = false;
+      console.log('[PROXY] Proxy pool recovered — re-enabling proxy connections');
+      stopProxyRecoveryCheck();
+      sendProxyAlert('Proxy Pool Recovered', {
+        'Status': 'At least one proxy is healthy again',
+        'Action': 'New sessions will use proxy connections',
+      });
+    }
+  }
+}
+
+/** Periodically test if proxies have recovered. */
+function startProxyRecoveryCheck(): void {
+  if (proxyRecoveryTimer) return;
+  proxyRecoveryTimer = setInterval(async () => {
+    console.log('[PROXY] Recovery check: testing proxy connectivity...');
+    for (const entry of PROXY_LIST) {
+      const parts = entry.split(':');
+      if (parts.length < 4) continue;
+      const host = parts[0];
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10_000);
+        await fetch('https://web.whatsapp.com', { signal: controller.signal });
+        clearTimeout(timeout);
+        recordProxySuccess(host);
+        console.log(`[PROXY] Recovery check: ${host} is reachable`);
+      } catch {
+        console.log(`[PROXY] Recovery check: ${host} still failing`);
+      }
+    }
+  }, PROXY_RECOVERY_CHECK_MS);
+}
+
+function stopProxyRecoveryCheck(): void {
+  if (proxyRecoveryTimer) {
+    clearInterval(proxyRecoveryTimer);
+    proxyRecoveryTimer = null;
+  }
+}
+
+/** Check if proxy pool is currently disabled (falling back to direct VPS). */
+export function isProxyPoolDisabled(): boolean {
+  return proxyPoolDisabled;
+}
+
 /**
  * Check if the Evolution API endpoint is healthy enough to accept new
  * instance creation requests. Returns false if the last N requests all failed.
@@ -47,10 +158,14 @@ export function resetEvolutionHealth(): void {
 
 /**
  * Pick the next proxy from the pool in round-robin order.
- * Returns proxy config or null if no proxies configured.
+ * Returns proxy config or null if no proxies configured or pool is disabled.
  */
 function getNextProxy(): { host: string; port: string; protocol: string; username: string; password: string } | null {
   if (PROXY_LIST.length === 0) return null;
+  if (proxyPoolDisabled) {
+    console.log('[PROXY] Pool disabled (fallback mode) — skipping proxy assignment');
+    return null;
+  }
   const proxy = PROXY_LIST[proxyCounter % PROXY_LIST.length];
   proxyCounter++;
   const parts = proxy.split(':');
@@ -290,12 +405,15 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       });
       if (proxyRes.status === 200 || proxyRes.status === 201) {
         console.log(`[PROXY] Proxy SET for ${instanceName} — ${proxy.host}:${proxy.port}`);
+        recordProxySuccess(proxy.host);
       } else {
         const body = await proxyRes.text().catch(() => '');
         console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}): ${body.slice(0, 200)}`);
+        recordProxyFailure(instanceName, proxy.host, `setProxy status=${proxyRes.status}`);
       }
     } catch (err) {
       console.warn(`[PROXY] setProxy call failed for ${instanceName} (non-fatal):`, err);
+      recordProxyFailure(instanceName, proxy.host, String(err));
     }
   }
 
@@ -307,6 +425,27 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   }
 
   return result;
+}
+
+/**
+ * Disable proxy on an existing instance so it falls back to direct VPS connection.
+ * Used when the proxy pool is down and sessions need to reconnect without proxy.
+ */
+export async function disableInstanceProxy(instanceName: string): Promise<boolean> {
+  try {
+    const res = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ enabled: false }),
+      skipHealthCount: true,
+    });
+    const ok = res.status === 200 || res.status === 201;
+    console.log(`[PROXY] disableInstanceProxy ${instanceName}: status=${res.status} ok=${ok}`);
+    return ok;
+  } catch (err) {
+    console.warn(`[PROXY] disableInstanceProxy ${instanceName} failed:`, err);
+    return false;
+  }
 }
 
 // Get pairing code for an instance (pass phone number as query param).
@@ -891,6 +1030,17 @@ export function untrackInstance(instanceName: string): void {
   if (trackedInstances.size === 0 && keepAliveHandle) {
     clearInterval(keepAliveHandle);
     keepAliveHandle = null;
+  }
+}
+
+/** Disable proxy on all currently tracked instances (used during proxy pool fallback). */
+function disableProxiesOnAllInstances(): void {
+  if (trackedInstances.size === 0) return;
+  console.log(`[PROXY] Disabling proxy on ${trackedInstances.size} tracked instance(s)...`);
+  for (const name of trackedInstances) {
+    disableInstanceProxy(name).catch(err => {
+      console.warn(`[PROXY] Failed to disable proxy on ${name}:`, err);
+    });
   }
 }
 

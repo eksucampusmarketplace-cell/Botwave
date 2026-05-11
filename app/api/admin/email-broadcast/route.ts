@@ -84,6 +84,8 @@ async function getEnrichedUsers(inactiveHours: number) {
   const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
   // Get bot sessions for device linking + last activity
+  // Only count 'active' sessions for lastActivity — 'needs_reauth' sessions
+  // are updated by the system (not the user) and would falsely mark users as active.
   const { data: sessions } = await supabase
     .from('bot_sessions')
     .select('user_id, state, updated_at');
@@ -92,10 +94,12 @@ async function getEnrichedUsers(inactiveHours: number) {
     const existing = sessionsByUser.get(s.user_id);
     const isActive = s.state === 'active';
     const updatedAt = s.updated_at || '';
-    if (!existing || (isActive && !existing.hasActive) || updatedAt > (existing.lastActivity || '')) {
+    // Only use updated_at from active sessions for activity tracking
+    const activityTs = isActive ? updatedAt : '';
+    if (!existing || (isActive && !existing.hasActive) || activityTs > (existing.lastActivity || '')) {
       sessionsByUser.set(s.user_id, {
         hasActive: existing?.hasActive || isActive,
-        lastActivity: updatedAt > (existing?.lastActivity || '') ? updatedAt : (existing?.lastActivity || ''),
+        lastActivity: activityTs > (existing?.lastActivity || '') ? activityTs : (existing?.lastActivity || ''),
       });
     }
   }
@@ -139,6 +143,7 @@ async function runEmailCampaign(
   targetUsers: Array<{ id: string; email: string; username: string; hasLinkedDevice: boolean }>,
   type: 'reengagement' | 'custom',
   trigger: 'manual' | 'auto',
+  delaySec: number = 3,
 ): Promise<EmailJob> {
   const supabase = getSupabase();
   const jobId = crypto.randomUUID();
@@ -201,8 +206,9 @@ async function runEmailCampaign(
 
       emailJobs.set(jobId, { ...job });
 
-      // Rate limit: 2-5 second delay between emails to protect IP reputation
-      const delayMs = (Math.random() * 3 + 2) * 1000;
+      // Rate limit: configurable delay + jitter between emails to protect IP reputation
+      const jitter = Math.random() * 2;
+      const delayMs = (delaySec + jitter) * 1000;
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
 
@@ -244,6 +250,8 @@ function startAutoSend(): void {
   stopAutoSend();
   autoSendEnabled = true;
   const intervalMs = autoSendIntervalHours * 60 * 60 * 1000;
+  // Run first tick immediately, then repeat at interval
+  autoSendTick();
   autoSendTimer = setInterval(autoSendTick, intervalMs);
   console.log(`[EMAIL-BROADCAST] Auto-send enabled: every ${autoSendIntervalHours}h for users inactive ${autoSendInactiveHours}h+`);
 }
@@ -303,7 +311,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, type = 'reengagement', inactiveHours = 12, userIds, intervalHours } = body;
+    const { action, type = 'reengagement', inactiveHours = 12, userIds, intervalHours, scope = 'inactive', delaySec = 3 } = body;
 
     // Auto-send controls
     if (action === 'enable_auto_send') {
@@ -333,15 +341,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Manual broadcast
-    const { eligibleUsers } = await getEnrichedUsers(inactiveHours);
+    const { allUsers, eligibleUsers } = await getEnrichedUsers(inactiveHours);
 
-    let targetUsers = eligibleUsers;
+    // scope='all' sends to all users (skipping only recently-emailed), scope='inactive' (default) sends only to inactive
+    let targetUsers = scope === 'all'
+      ? allUsers.filter(u => !u.alreadyEmailed)
+      : eligibleUsers;
     if (userIds && userIds.length > 0) {
-      targetUsers = eligibleUsers.filter(u => userIds.includes(u.id));
+      targetUsers = targetUsers.filter(u => userIds.includes(u.id));
     }
 
     if (targetUsers.length === 0) {
-      return NextResponse.json({ error: 'No eligible inactive users (all recently emailed or active)' }, { status: 400 });
+      return NextResponse.json({ error: scope === 'all' ? 'No eligible users (all recently emailed within 24h)' : 'No eligible inactive users (all recently emailed or active)' }, { status: 400 });
     }
 
     const targets = targetUsers.map(u => ({
@@ -351,14 +362,15 @@ export async function POST(request: NextRequest) {
       hasLinkedDevice: u.hasLinkedDevice,
     }));
 
-    const job = await runEmailCampaign(targets, type, 'manual');
+    const clampedDelay = Math.max(1, Math.min(delaySec, 30));
+    const job = await runEmailCampaign(targets, type, 'manual', clampedDelay);
 
     return NextResponse.json({
       success: true,
       data: {
         jobId: job.id,
         totalRecipients: job.totalRecipients,
-        message: `Sending re-engagement emails to ${job.totalRecipients} inactive users (2-5s delay between each)`,
+        message: `Sending re-engagement emails to ${job.totalRecipients} users (${clampedDelay}-${clampedDelay + 2}s delay between each)`,
       },
     });
   } catch (error) {

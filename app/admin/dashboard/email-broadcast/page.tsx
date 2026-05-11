@@ -44,6 +44,8 @@ export default function EmailBroadcastPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [inactiveHours, setInactiveHours] = useState(12);
   const [autoIntervalHours, setAutoIntervalHours] = useState(12);
+  const [scope, setScope] = useState<'inactive' | 'all'>('inactive');
+  const [delaySec, setDelaySec] = useState(3);
 
   const fetchData = useCallback(async () => {
     try {
@@ -80,13 +82,14 @@ export default function EmailBroadcastPage() {
   }, [jobs, fetchData]);
 
   const handleSendReengagement = async () => {
-    const eligible = users.filter(u => !u.alreadyEmailed);
-    if (eligible.length === 0) {
-      setMessage({ type: 'error', text: 'No eligible users to email (all recently contacted or active)' });
+    const targetCount = scope === 'all' ? stats.totalUsers : users.filter(u => !u.alreadyEmailed).length;
+    if (targetCount === 0) {
+      setMessage({ type: 'error', text: scope === 'all' ? 'No eligible users (all recently emailed within 24h)' : 'No eligible users to email (all recently contacted or active)' });
       return;
     }
 
-    if (!confirm(`Send re-engagement emails to ${eligible.length} inactive users?\n\n${users.length - eligible.length} users will be skipped (already emailed within 24h).`)) {
+    const scopeLabel = scope === 'all' ? 'ALL' : 'inactive';
+    if (!confirm(`Send re-engagement emails to ${targetCount} ${scopeLabel} users?\n\nUsers emailed within 24h will be skipped automatically.`)) {
       return;
     }
 
@@ -95,7 +98,7 @@ export default function EmailBroadcastPage() {
       const res = await fetch('/api/admin/email-broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'reengagement', inactiveHours }),
+        body: JSON.stringify({ type: 'reengagement', inactiveHours, scope, delaySec }),
       });
       const data = await res.json();
       if (data.success) {
@@ -206,15 +209,48 @@ export default function EmailBroadcastPage() {
             </p>
           </div>
 
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setScope('inactive')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                scope === 'inactive' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+              }`}
+            >
+              Inactive Only
+            </button>
+            <button
+              onClick={() => setScope('all')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                scope === 'all' ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+              }`}
+            >
+              All Users
+            </button>
+          </div>
+
+          {scope === 'inactive' && (
+            <label className="block mb-4">
+              <span className="text-gray-400 text-sm">Inactive threshold (hours)</span>
+              <input
+                type="number"
+                value={inactiveHours}
+                onChange={e => setInactiveHours(parseInt(e.target.value) || 12)}
+                min={1} max={720}
+                className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+              />
+            </label>
+          )}
+
           <label className="block mb-4">
-            <span className="text-gray-400 text-sm">Inactive threshold (hours)</span>
+            <span className="text-gray-400 text-sm">Delay between emails (seconds)</span>
             <input
               type="number"
-              value={inactiveHours}
-              onChange={e => setInactiveHours(parseInt(e.target.value) || 12)}
-              min={1} max={720}
+              value={delaySec}
+              onChange={e => setDelaySec(Math.max(1, Math.min(30, parseInt(e.target.value) || 3)))}
+              min={1} max={30}
               className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
             />
+            <p className="text-gray-600 text-xs mt-1">+0-2s random jitter added automatically to protect IP reputation</p>
           </label>
 
           {alreadyEmailedCount > 0 && (
@@ -227,10 +263,10 @@ export default function EmailBroadcastPage() {
 
           <button
             onClick={handleSendReengagement}
-            disabled={sending || eligibleCount === 0}
+            disabled={sending || (scope === 'inactive' ? eligibleCount === 0 : stats.totalUsers === 0)}
             className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors"
           >
-            {sending ? 'Starting campaign...' : `Email ${eligibleCount} Eligible Users`}
+            {sending ? 'Starting campaign...' : scope === 'all' ? `Email All ${stats.totalUsers} Users` : `Email ${eligibleCount} Eligible Users`}
           </button>
         </div>
 

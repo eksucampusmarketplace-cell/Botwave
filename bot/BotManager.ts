@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -119,6 +119,10 @@ if (PROXY_LIST.length > 0) {
 
 function getNextBaileysProxy(): any | undefined {
   if (PROXY_LIST.length === 0 || !HttpsProxyAgent) return undefined;
+  if (isProxyPoolDisabled()) {
+    console.log('[PROXY] Baileys: proxy pool disabled (fallback mode) — connecting directly');
+    return undefined;
+  }
   const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
   baileysProxyCounter++;
   const parts = entry.split(':');
