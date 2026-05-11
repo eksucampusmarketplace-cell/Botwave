@@ -40,6 +40,17 @@ import { getCommand, type MessageContext, type TemplateVars } from '../commands/
 import { sendUnknownCommand } from '../commands';
 import { sendReply } from '../commands/helpers';
 import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
+import {
+  markOwnerActiveForContact,
+  collectOwnerMessage,
+  collectIncomingMessage,
+  shouldAutopilotReply,
+  scheduleAutopilotReply,
+  cancelPendingAutopilotReply,
+  isAutopilotEnabled,
+  loadAutopilotState,
+  bufferIncomingForBatch,
+} from './AutopilotEngine';
 
 // Import all command modules to trigger self-registration
 import '../commands';
@@ -186,7 +197,16 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const isCommand = content.startsWith(commandPrefix);
 
-    if (fromMe && !isCommand) return;
+    // Owner's outgoing messages: silently learn for autopilot + mark active per-contact
+    if (fromMe && !isCommand) {
+      if (userId && sessionId) {
+        markOwnerActiveForContact(sessionId, chatJid);
+        collectOwnerMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
+        // Owner replied in this chat — cancel any pending autopilot reply for THIS contact
+        cancelPendingAutopilotReply(sessionId, chatJid);
+      }
+      return;
+    }
 
     if (msgId && isDuplicateMessage(msgId)) {
       return;
@@ -361,10 +381,21 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       await sendReply(chatJid, response, sock, message.key, queue);
     }
 
+    // Track whether any handler already replied (for autopilot priority)
+    let otherHandlerReplied = false;
+
     if (!isCommand) {
       const autoReplied = await processAutoReply(context, sock);
-      if (!autoReplied && userId) {
-        await processNLP(context, sock);
+      if (autoReplied) {
+        otherHandlerReplied = true;
+      } else if (userId) {
+        // Check if autopilot is active in this DM — if so, skip NLP
+        const skipNlp = !isGroup && sessionId
+          ? await isAutopilotEnabled(userId, sessionId)
+          : false;
+        if (!skipNlp) {
+          await processNLP(context, sock);
+        }
       }
     }
 
@@ -375,10 +406,38 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       processSavageMode(content, userId, false, pushName, savageQuotedText)
         .then(async (roast) => {
           if (roast) {
+            otherHandlerReplied = true;
             await sendReply(chatJid, roast, sock, message.key, queue);
           }
         })
         .catch((err) => console.error('[SAVAGE] Error in savage mode:', err));
+    }
+
+    // ── Autopilot: collect incoming message + schedule clone reply ──
+    if (!isCommand && !fromMe && userId && sessionId && content) {
+      // Collect for contact memory
+      collectIncomingMessage(userId, sessionId, content, chatJid, pushName).catch(() => {});
+
+      // Schedule autopilot reply if conditions met (DM only, owner inactive, etc.)
+      const shouldReply = await shouldAutopilotReply(
+        userId, sessionId, isGroup, fromMe, otherHandlerReplied, chatJid,
+      );
+      if (shouldReply) {
+        const apState = await loadAutopilotState(userId, sessionId);
+        const sendFn = async (text: string) => {
+          await sendReply(chatJid, text, sock, undefined, queue);
+        };
+        // Use message batching: wait for burst of messages before replying
+        bufferIncomingForBatch(sessionId, chatJid, content, pushName, (combinedText, name) => {
+          scheduleAutopilotReply(
+            userId, sessionId, chatJid, combinedText, name,
+            apState.replyDelayMinutes,
+            sendFn,
+            sock, // pass sock for read receipt + typing simulation
+            message.key, // message key for read receipt
+          );
+        });
+      }
     }
 
     // Auto-react check for groups

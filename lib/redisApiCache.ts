@@ -438,3 +438,23 @@ export async function cacheAdminUsers(data: unknown[]): Promise<void> {
 export async function invalidateAdminUsers(): Promise<void> {
   await apiCacheDel('admin:users');
 }
+
+// ─── Autopilot Persona ──────────────────────────────────────────────────────
+
+const AUTOPILOT_TTL = 120; // 2 min — persona state is read often by bot
+
+export async function getCachedAutopilot(userId: string, sessionId: string): Promise<Record<string, unknown> | null> {
+  return apiCacheGet<Record<string, unknown>>(`autopilot:${userId}:${sessionId}`);
+}
+
+export async function cacheAutopilot(userId: string, sessionId: string, data: unknown): Promise<void> {
+  await apiCacheSet(`autopilot:${userId}:${sessionId}`, data, AUTOPILOT_TTL);
+}
+
+export async function invalidateAutopilot(userId: string, sessionId: string): Promise<void> {
+  await apiCacheDel(`autopilot:${userId}:${sessionId}`);
+}
+
+export async function invalidateAllAutopilot(userId: string): Promise<void> {
+  await apiCacheDelPattern(`autopilot:${userId}:*`);
+}

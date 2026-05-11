@@ -12,7 +12,10 @@ import {
   setMaxDailyReplies,
   setAutopilotMode,
   setInactivityMinutes,
+  setContactOverride,
+  getContactList,
   type AutopilotMode,
+  type ContactOverride,
 } from '../handlers/AutopilotEngine';
 
 // ─── Premium Gate ───────────────────────────────────────────────────────────
@@ -21,6 +24,34 @@ import {
 // pricing goes live.
 
 const AUTOPILOT_PREMIUM_ENABLED = false;
+
+// Extract a contact JID from args — supports @mentions and raw phone numbers
+function extractContactTarget(
+  args: string[],
+  context: MessageContext,
+): { jid: string; display: string } | null {
+  if (args.length === 0) return null;
+
+  const raw = args.join(' ').trim();
+  if (!raw) return null;
+
+  // Check for mentioned JIDs in the message
+  const mentioned = context.rawMessage?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+  if (mentioned && mentioned.length > 0) {
+    const jid = mentioned[0];
+    const display = jid.split('@')[0];
+    return { jid, display };
+  }
+
+  // Try raw phone number (digits only, at least 7)
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (digits.length >= 7) {
+    const jid = `${digits}@s.whatsapp.net`;
+    return { jid, display: digits };
+  }
+
+  return null;
+}
 
 async function requirePremium(context: MessageContext, sock: any): Promise<boolean> {
   if (!AUTOPILOT_PREMIUM_ENABLED) return true; // Free for now
@@ -94,22 +125,37 @@ async function handleAutopilot(
     }
 
     msg += `*Commands:*\n`;
-    msg += `!autopilot on/off — Toggle\n`;
+    msg += `!autopilot on/off — Toggle globally\n`;
+    msg += `!autopilot on/off @person — Toggle per contact\n`;
+    msg += `!autopilot contacts — View per-contact settings\n`;
     msg += `!autopilot mode [offline/always] — When to reply\n`;
     msg += `!autopilot describe [text] — Tell AI about yourself\n`;
     msg += `!autopilot sync — Re-analyze your messages\n`;
     msg += `!autopilot preview [msg] — Test your clone\n`;
     msg += `!autopilot delay [1-30] — Reply delay (min)\n`;
     msg += `!autopilot inactive [1-60] — Inactivity trigger (min)\n`;
-    msg += `!autopilot limit [5-200] — Daily reply limit`;
+    msg += `!autopilot limit [5-200] — Daily reply limit\n`;
+    msg += `!autopilot reset @person — Reset contact to global`;
 
     await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
     return;
   }
 
-  // ── Enable ──
+  // ── Enable (global or per-contact) ──
   if (sub === 'on' || sub === 'enable') {
     if (!(await requirePremium(context, sock))) return;
+
+    // Check for per-contact: !autopilot on @mention or !autopilot on 2348012345678
+    const contactTarget = extractContactTarget(args.slice(1), context);
+    if (contactTarget) {
+      await setContactOverride(userId, sessionId, contactTarget.jid, 'on');
+      await sendReply(
+        context.chatJid,
+        `🤖 Autopilot *enabled for ${contactTarget.display}*.\n\nYour clone will reply to them even if global autopilot is off.`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
 
     const status = await getAutopilotStatus(userId, sessionId);
     if (!status.hasProfile) {
@@ -139,10 +185,74 @@ async function handleAutopilot(
     return;
   }
 
-  // ── Disable ──
+  // ── Disable (global or per-contact) ──
   if (sub === 'off' || sub === 'disable') {
+    // Check for per-contact: !autopilot off @mention or !autopilot off 2348012345678
+    const contactTarget = extractContactTarget(args.slice(1), context);
+    if (contactTarget) {
+      await setContactOverride(userId, sessionId, contactTarget.jid, 'off');
+      await sendReply(
+        context.chatJid,
+        `🤖 Autopilot *disabled for ${contactTarget.display}*.\n\nYour clone will NOT reply to them even if global autopilot is on.`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+
     await setAutopilotEnabled(userId, sessionId, false);
-    await sendReply(context.chatJid, '🤖 Autopilot *disabled*.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '🤖 Autopilot *disabled globally*.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  // ── Reset per-contact override (back to global) ──
+  if (sub === 'reset' || sub === 'default') {
+    const contactTarget = extractContactTarget(args.slice(1), context);
+    if (!contactTarget) {
+      await sendReply(
+        context.chatJid,
+        `Usage: !autopilot reset @person or !autopilot reset 2348012345678\n\nResets autopilot for that contact to follow your global setting.`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+    await setContactOverride(userId, sessionId, contactTarget.jid, 'default');
+    await sendReply(
+      context.chatJid,
+      `🤖 Autopilot reset for *${contactTarget.display}* — now follows your global setting.`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  // ── Contact list ──
+  if (sub === 'contacts' || sub === 'list') {
+    if (!(await requirePremium(context, sock))) return;
+    const contacts = await getContactList(userId, sessionId);
+    if (contacts.length === 0) {
+      await sendReply(
+        context.chatJid,
+        `🤖 No contacts tracked yet. Autopilot learns contacts as messages come in.`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+
+    let msg = `🤖 *AUTOPILOT CONTACTS* (${contacts.length})\n━━━━━━━━━━━━━━━━━━━\n`;
+    for (const c of contacts.slice(0, 30)) {
+      const icon = c.override === 'on' ? '🟢' : c.override === 'off' ? '🔴' : '⚪';
+      const label = c.override === 'on' ? 'ON' : c.override === 'off' ? 'OFF' : 'global';
+      msg += `${icon} *${c.name}* — ${label} (${c.messageCount} msgs)\n`;
+    }
+    if (contacts.length > 30) {
+      msg += `\n_...and ${contacts.length - 30} more_`;
+    }
+    msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `🟢 = always on  🔴 = always off  ⚪ = follows global\n`;
+    msg += `\n!autopilot on @person — enable for specific contact\n`;
+    msg += `!autopilot off @person — disable for specific contact\n`;
+    msg += `!autopilot reset @person — reset to global`;
+
+    await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -366,8 +476,11 @@ async function handleAutopilot(
   await sendReply(
     context.chatJid,
     `🤖 *AI Autopilot Commands:*\n\n` +
-    `!autopilot — View status\n` +
-    `!autopilot on/off — Toggle\n` +
+    `!autopilot — View status & persona profile\n` +
+    `!autopilot on/off — Toggle globally\n` +
+    `!autopilot on/off @person — Toggle for specific contact\n` +
+    `!autopilot contacts — View all contacts & their status\n` +
+    `!autopilot reset @person — Reset contact to global setting\n` +
     `!autopilot mode [offline/always] — When to reply\n` +
     `!autopilot describe [text] — Tell AI about yourself\n` +
     `!autopilot sync — Build/refresh persona profile\n` +
