@@ -614,9 +614,9 @@ export class BotWaveBot {
     this.socket.ev.on('messages.upsert', async (m: any) => {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
-          // Status broadcasts → auto-view/react handler
+          // Status broadcasts — disabled (Evolution API sendReaction is unreliable
+          // and can send garbled messages to contacts)
           if (msg.key.remoteJid === 'status@broadcast') {
-            handleStatusUpdate(msg, this.socket, this.sessionId, this.userId).catch(() => {});
             continue;
           }
 
