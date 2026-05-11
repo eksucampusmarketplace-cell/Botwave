@@ -83,10 +83,16 @@ async function callGroq(
   maxTokens: number,
   temperature: number,
   systemPrompt?: string,
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>,
 ): Promise<string> {
   const messages: Array<{ role: string; content: string }> = [];
   if (systemPrompt) {
     messages.push({ role: 'system', content: systemPrompt });
+  }
+  if (history) {
+    for (const h of history) {
+      messages.push({ role: h.role, content: h.content });
+    }
   }
   messages.push({ role: 'user', content: prompt });
 
@@ -188,7 +194,7 @@ function parseGemini429(body: string): { isQuotaExhausted: boolean; retryAfterMs
   }
 }
 
-async function callGemini(apiKey: string, prompt: string, maxTokens: number, temperature: number, systemPrompt?: string): Promise<string> {
+async function callGemini(apiKey: string, prompt: string, maxTokens: number, temperature: number, systemPrompt?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -196,6 +202,12 @@ async function callGemini(apiKey: string, prompt: string, maxTokens: number, tem
   if (systemPrompt) {
     contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
     contents.push({ role: 'model', parts: [{ text: 'Understood. I will follow these instructions.' }] });
+  }
+
+  if (history) {
+    for (const h of history) {
+      contents.push({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content }] });
+    }
   }
 
   contents.push({ role: 'user', parts: [{ text: prompt }] });
@@ -281,6 +293,7 @@ export interface AICallOptions {
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 export interface AIVisionOptions {
@@ -293,7 +306,7 @@ export interface AIVisionOptions {
 /**
  * Call AI — tries Groq first, then Gemini with key rotation.
  */
-export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt }: AICallOptions): Promise<string> {
+export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt, history }: AICallOptions): Promise<string> {
   const errors: Error[] = [];
 
   // Try Groq with key rotation
@@ -302,7 +315,7 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
     const gk = getNextAvailableGroqKey();
     if (!gk) break;
     try {
-      return await callGroq(gk.key, prompt, maxTokens, temperature, systemPrompt);
+      return await callGroq(gk.key, prompt, maxTokens, temperature, systemPrompt, history);
     } catch (err: unknown) {
       const error = err as Error & { status?: number; cooldownMs?: number };
       if (error.status === 429) {
@@ -324,7 +337,7 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
       if (!geminiKey) break;
 
       try {
-        return await callGemini(geminiKey.key, prompt, maxTokens, temperature, systemPrompt);
+        return await callGemini(geminiKey.key, prompt, maxTokens, temperature, systemPrompt, history);
       } catch (err: unknown) {
         if (err instanceof AIQuotaExhaustedError) {
           errors.push(err);

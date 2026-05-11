@@ -19,6 +19,38 @@ import { promisify } from 'util';
 const dnsResolve = promisify(dns.resolve);
 const execFileAsync = promisify(execFile);
 
+// Per-chat AI conversation history (last N exchanges per chat)
+const aiChatHistory = new Map<string, Array<{ role: 'user' | 'assistant'; content: string; ts: number }>>();
+const AI_HISTORY_MAX_TURNS = 10; // Keep last 10 exchanges (20 messages)
+const AI_HISTORY_EXPIRY_MS = 30 * 60_000; // Expire after 30 min of inactivity
+
+function getAIHistory(chatJid: string): Array<{ role: 'user' | 'assistant'; content: string }> {
+  const history = aiChatHistory.get(chatJid);
+  if (!history || history.length === 0) return [];
+
+  // Remove expired entries
+  const cutoff = Date.now() - AI_HISTORY_EXPIRY_MS;
+  const recent = history.filter((h) => h.ts > cutoff);
+  if (recent.length !== history.length) {
+    aiChatHistory.set(chatJid, recent);
+  }
+
+  return recent.map(({ role, content }) => ({ role, content }));
+}
+
+function addToAIHistory(chatJid: string, role: 'user' | 'assistant', content: string): void {
+  if (!aiChatHistory.has(chatJid)) {
+    aiChatHistory.set(chatJid, []);
+  }
+  const history = aiChatHistory.get(chatJid)!;
+  history.push({ role, content, ts: Date.now() });
+
+  // Trim to max turns (each turn = 1 user + 1 assistant = 2 entries)
+  while (history.length > AI_HISTORY_MAX_TURNS * 2) {
+    history.shift();
+  }
+}
+
 async function handleAICommand(
   context: MessageContext,
   args: string[],
@@ -41,12 +73,20 @@ async function handleAICommand(
   try {
     await sendReply(context.chatJid, 'Thinking...', sock, context.rawMessage.key, context.queue);
 
+    // Get conversation history for this chat
+    const history = getAIHistory(context.chatJid);
+
     const aiResponse = await callAI({
       prompt: query,
       maxTokens: 500,
       temperature: 0.7,
-      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words.',
+      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context — refer back to previous messages naturally.',
+      history,
     });
+
+    // Store this exchange in history
+    addToAIHistory(context.chatJid, 'user', query);
+    addToAIHistory(context.chatJid, 'assistant', aiResponse);
 
     const intro = pickResponse(aiIntros, vars, false);
 
