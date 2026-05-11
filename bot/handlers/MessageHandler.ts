@@ -1,6 +1,6 @@
 import { delay } from '../../lib/utils';
 import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../database';
-import { matchIntent, classifyWithAI } from '../nlp/nlpEngine';
+import { matchIntent, classifyWithAI, getQuotedText } from '../nlp/nlpEngine';
 import { trackCommandExecution } from '../../lib/error-tracker';
 
 import { MessageQueue } from '../utils/MessageQueue';
@@ -593,9 +593,11 @@ async function processNLP(context: MessageContext, sock: any): Promise<void> {
     let intent = matchIntent(context.message, context.isGroup);
     let source: 'pattern' | 'ai' = 'pattern';
 
-    // Step 2: if no pattern match, try AI classification (slower, last resort)
+    // Step 2: if no pattern match, try AI classification (Groq → Gemini)
+    // Pass quoted/reply-to text for context awareness
     if (!intent) {
-      intent = await classifyWithAI(context.message, context.isGroup);
+      const quotedText = getQuotedText(context.rawMessage);
+      intent = await classifyWithAI(context.message, context.isGroup, quotedText);
       if (intent) source = 'ai';
     }
 

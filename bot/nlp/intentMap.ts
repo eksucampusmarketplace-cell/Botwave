@@ -20,10 +20,12 @@ interface IntentPattern {
 }
 
 // Helper to build a pattern that matches common question prefixes
+// Includes Nigerian English / pidgin / slang prefixes
 function q(core: string): RegExp {
   return new RegExp(
-    `(?:can you |please |could you |i want to |i need to |i'd like to |let's |yo |hey |bot |` +
-    `help me |show me |give me |get me |find me )?` +
+    `(?:can you |please |pls |could you |i want to |i need to |i'd like to |let's |yo |hey |bot |` +
+    `help me |show me |give me |get me |find me |abeg |biko |` +
+    `i wan |make you |e fit |oya |sha |joor |na |wetin |shey )?` +
     core,
     'i',
   );
@@ -43,6 +45,10 @@ export const INTENT_MAP: IntentPattern[] = [
       /temperature (?:in |at |of )?(.+)/i,
       /(?:what(?:'s| is) the )?temp(?:erature)? (?:in |at |of )?(.+)/i,
       /forecast (?:for |in )?(.+)/i,
+      // Pidgin / Nigerian English
+      /(?:wetin|how) (?:be |na )?(?:the )?weather (?:for |in |at )?(.+)/i,
+      /(?:e go|e dey|rain dey|sun dey)(?: fall)? (?:for |in |at )?(.+)\??/i,
+      /(?:check|see) weather (?:for |in )?(.+)/i,
     ],
     extractArgs: (match) => [match[1].trim()],
   },
@@ -65,6 +71,10 @@ export const INTENT_MAP: IntentPattern[] = [
       q('(?:make|create|turn|convert)(?: this| it)?(?: into| to)? (?:a )?sticker'),
       /sticker(?:ize|fy)? (?:this|it|that|the (?:image|photo|pic))/i,
       /(?:i want|make me) a sticker/i,
+      // Pidgin / slang
+      /(?:change|turn) (?:this|am|it) (?:to|make) sticker/i,
+      /(?:abeg|oya) (?:make|turn)(?: this| am)? sticker/i,
+      /(?:i wan|make) sticker/i,
     ],
     extractArgs: () => [],
   },
@@ -77,6 +87,11 @@ export const INTENT_MAP: IntentPattern[] = [
       q('tell (?:me |us )?(?:a )?joke'),
       /(?:make me |i need (?:a )?)?(?:laugh|something funny)/i,
       /^(?:joke|funny)$/i,
+      // Pidgin / slang
+      /(?:gist me|crack)(?: one)? joke/i,
+      /(?:abeg|biko|oya) (?:make me |give me )?(?:laugh|joke)/i,
+      /(?:i wan|i need) (?:something )?(?:funny|to laugh)/i,
+      /(?:drop|send|give)(?: me)? (?:something )?funny/i,
     ],
     extractArgs: () => [],
   },
@@ -766,12 +781,174 @@ export const INTENT_MAP: IntentPattern[] = [
     },
   },
 
+  // ── Recap / Summary ─────────────────────────────────────────────────────────
+  {
+    command: 'recap',
+    confidence: 0.85,
+    patterns: [
+      q('(?:summarize|summary|recap|digest)(?: the)?(?: group| chat| conversation)?'),
+      /what (?:did i|have i) miss(?:ed)?/i,
+      /(?:catch me up|what happened|what(?:'s| is) been going on)/i,
+      // Pidgin
+      /(?:wetin|what) (?:happen|dey happen) (?:for|in) (?:this |the )?(?:group|chat)/i,
+      /(?:gist me|fill me in|update me)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Profile Card ───────────────────────────────────────────────────────────
+  {
+    command: 'profile',
+    confidence: 0.85,
+    patterns: [
+      /(?:show|check|view|see)(?: me)?(?: my)? profile/i,
+      /(?:my|show me my) (?:profile|card|stats|info)/i,
+      /^profile$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Wrap / Wrapped ─────────────────────────────────────────────────────────
+  {
+    command: 'wrap',
+    confidence: 0.85,
+    patterns: [
+      /(?:my|show)(?: me)? (?:chat )?(?:wrapped|review|wrap)/i,
+      /(?:chat|year|month) (?:wrapped|review|recap)/i,
+      /^(?:wrapped|wrap)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Timezone ───────────────────────────────────────────────────────────────
+  {
+    command: 'timezone',
+    confidence: 0.85,
+    patterns: [
+      /(?:what (?:time|is the time)|current time) (?:in |at )?(.+)/i,
+      /(?:time ?zone|tz) (?:for |in |of )?(.+)/i,
+      /(?:what(?:'s| is) the) time (?:in |at )(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Urban Dictionary ───────────────────────────────────────────────────────
+  {
+    command: 'ud',
+    confidence: 0.85,
+    patterns: [
+      /(?:urban dictionary|ud|urban)(?: for| of| meaning)?\s+(.+)/i,
+      /(?:what does|what do) (.+) mean (?:in slang|on urban|on the street)/i,
+      /(?:slang|street) (?:meaning|definition) (?:of |for )(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Encrypt / Decrypt ──────────────────────────────────────────────────────
+  {
+    command: 'encrypt',
+    confidence: 0.85,
+    patterns: [
+      /(?:encrypt|lock|hide)(?: this)?(?: message)?\s*:?\s*(.+)/i,
+    ],
+    extractArgs: (match) => [match[1].trim()],
+  },
+
+  // ── Birthday ───────────────────────────────────────────────────────────────
+  {
+    command: 'birthday',
+    confidence: 0.85,
+    patterns: [
+      /(?:set|add|save)(?: my)? birthday/i,
+      /(?:whose|who(?:'s|se)) birthday (?:is )?(?:today|tomorrow|this week)/i,
+      /(?:birthday|bday)(?: list| tracker| reminder)/i,
+      /^(?:birthday|bday)$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Schedule ───────────────────────────────────────────────────────────────
+  {
+    command: 'schedule',
+    confidence: 0.85,
+    patterns: [
+      /(?:schedule|send later|delayed message|timed message)(?: a message)?/i,
+      /(?:send|message)(?: .+)? (?:at|in|after) (\d+\s*(?:min|hour|h|m|am|pm))/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Pick / Choose ──────────────────────────────────────────────────────────
+  {
+    command: 'pick',
+    confidence: 0.85,
+    patterns: [
+      /(?:pick|choose|select)(?: one)?(?:: | from | between )(.+)/i,
+      /(?:which (?:one|should i)|help me choose)\s*:?\s*(.+)/i,
+      /(.+) or (.+)\??/i,
+    ],
+    extractArgs: (match) => {
+      if (match[2]) return [match[1].trim(), match[2].trim()];
+      return [match[1].trim()];
+    },
+  },
+
+  // ── Unit Conversion ────────────────────────────────────────────────────────
+  {
+    command: 'unit',
+    confidence: 0.85,
+    patterns: [
+      /(?:convert |how (?:many|much) (?:is )?)(\d+(?:\.\d+)?)\s*(\w+)\s+(?:to|in|=)\s+(\w+)/i,
+    ],
+    extractArgs: (match) => [match[1], match[2], match[3]],
+  },
+
+  // ── Carbon / Code Screenshot ───────────────────────────────────────────────
+  {
+    command: 'carbon',
+    confidence: 0.85,
+    patterns: [
+      /(?:code|carbon)(?: screenshot| snap| image)?\s*:?\s*```[\s\S]*```/i,
+      /(?:make|create)(?: a)? (?:code|carbon) (?:screenshot|snap|image)/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Bored / Entertain Me (maps to random fun command) ──────────────────────
+  {
+    command: 'joke',
+    confidence: 0.8,
+    patterns: [
+      /(?:i(?:'m| am| dey) )?bored/i,
+      /(?:entertain|amuse)(?: me)?/i,
+      /(?:do|say) something (?:fun|funny|interesting|cool)/i,
+      // Pidgin
+      /(?:i dey|i don) (?:bore|tire)/i,
+      /(?:nothing|nuthing) (?:dey|to) do/i,
+      /(?:cruise|vibes|gist)(?: me)?$/i,
+    ],
+    extractArgs: () => [],
+  },
+
+  // ── Pidgin catch-alls for common requests ──────────────────────────────────
+  {
+    command: 'music',
+    confidence: 0.85,
+    patterns: [
+      /(?:drop|play|send)(?: me)?(?: one)? (?:song|jam|beat|track|banger)(?: (?:by |from |of )?(.+))?/i,
+      /(?:i wan|i want)(?: to)? (?:hear|listen)(?: to)? (.+)/i,
+    ],
+    extractArgs: (match) => match[1] ? [match[1].trim()] : [],
+  },
+
   // ── AI Chat (catch-all for long questions — MUST be last) ──────────────────
   {
     command: 'ai',
     confidence: 0.7,
     patterns: [
       /^(?:explain|describe|summarize|elaborate on|tell me about|what (?:is|are|was|were|does|do)|how (?:does|do|is|are|to|can)|why (?:is|are|does|do|did)|who (?:is|are|was|were)|when (?:is|was|did|does)|where (?:is|are|was|were)) .{10,}/i,
+      // Pidgin questions
+      /^(?:wetin (?:be|dey|na)|how (?:e|dem|person) (?:dey|go|fit)|na (?:who|wetin|where|when|how)) .{10,}/i,
     ],
     extractArgs: (_match, full) => [full],
   },
