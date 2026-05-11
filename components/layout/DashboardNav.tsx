@@ -30,9 +30,10 @@ const navGroups: NavGroup[] = [
     links: [
       { href: '/dashboard/analytics', label: 'Analytics', tour: 'nav-analytics' },
       { href: '/dashboard/health', label: 'Health' },
-      { href: '/dashboard/templates', label: 'Templates' },
+      { href: '/dashboard/templates', label: 'Msg Templates' },
       { href: '/dashboard/auto-replies', label: 'Auto-Reply' },
-      { href: '/dashboard/flows', label: 'Flows' },
+      { href: '/dashboard/custom-commands', label: 'Custom Cmds' },
+      { href: '/dashboard/flows', label: 'Chat Flows' },
     ],
   },
   {

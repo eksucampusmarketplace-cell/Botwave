@@ -155,10 +155,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const fromMe = message.key.fromMe;
     const msgId = message.key.id;
 
-    if (msgId && isDuplicateMessage(msgId)) {
-      return;
-    }
-
     const content =
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
@@ -190,11 +186,25 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const isCommand = content.startsWith(commandPrefix);
 
-    // Allow fromMe non-command messages through if NLP is enabled
+    // For fromMe non-command messages: check if NLP is enabled and handle
+    // dedup separately. ACK re-deliveries carry the same msgId as the
+    // original send which was dropped before the NLP fix, so we use a
+    // dedicated NLP dedup set keyed on msgId+"nlp" to allow one NLP pass.
+    let isFromMeNLP = false;
     if (fromMe && !isCommand) {
       if (!userId) return;
       const nlpOn = await getFeatureEnabled(userId, 'nlp');
       if (!nlpOn) return;
+      isFromMeNLP = true;
+      const nlpDedupKey = `${msgId}:nlp`;
+      if (msgId && isDuplicateMessage(nlpDedupKey)) {
+        return;
+      }
+      console.log(`[NLP] fromMe NLP message entering handler: "${content.slice(0, 60)}"`);
+    } else {
+      if (msgId && isDuplicateMessage(msgId)) {
+        return;
+      }
     }
 
     // Owner detection: compare phone JID and also LID (WhatsApp's new format)
@@ -221,29 +231,32 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     if (!fromMe) trackWhoSentLast(chatJid, false);
 
-    if (!isCommand && sessionId && isSessionRateLimited(sessionId)) {
-      console.log(`Session rate limited: ${sessionId}`);
-      return;
-    }
+    // Skip anti-ban guards for the owner's own NLP messages
+    if (!isFromMeNLP) {
+      if (!isCommand && sessionId && isSessionRateLimited(sessionId)) {
+        console.log(`Session rate limited: ${sessionId}`);
+        return;
+      }
 
-    if (!isCommand && shouldSilentlyIgnore(isGroup, content, senderJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
-      return;
-    }
+      if (!isCommand && shouldSilentlyIgnore(isGroup, content, senderJid)) {
+        try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+        return;
+      }
 
-    if (isGroup && !isCommand && isSpamming(senderJid)) {
-      const response = pickResponse(spamWarnings, { name: pushName, time: currentTimeStr() });
-      await sendReply(chatJid, response, sock, message.key, queue);
-      return;
-    }
+      if (isGroup && !isCommand && isSpamming(senderJid)) {
+        const response = pickResponse(spamWarnings, { name: pushName, time: currentTimeStr() });
+        await sendReply(chatJid, response, sock, message.key, queue);
+        return;
+      }
 
-    if (isGroup && !isCommand && isGroupOnCooldown(chatJid)) {
-      return;
-    }
+      if (isGroup && !isCommand && isGroupOnCooldown(chatJid)) {
+        return;
+      }
 
-    if (!isCommand && shouldAvoidDoubleText(chatJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
-      return;
+      if (!isCommand && shouldAvoidDoubleText(chatJid)) {
+        try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+        return;
+      }
     }
 
     if (isGroup) {
@@ -257,18 +270,20 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     await simulateGoingOnline(sock);
 
-    if (!isCommand && shouldThrottleContact(senderJid)) {
-      try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
-      return;
-    }
+    if (!isFromMeNLP) {
+      if (!isCommand && shouldThrottleContact(senderJid)) {
+        try { await sock.readMessages([message.key]); } catch { /* non-critical */ }
+        return;
+      }
 
-    const ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
+      const ownerSkipProbability = ownerSettings?.skip_probability ?? undefined;
 
-    if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
-      try {
-        await sock.readMessages([message.key]);
-      } catch { /* non-critical */ }
-      return;
+      if (shouldSkipResponse(isGroup, isCommand, ownerSkipProbability)) {
+        try {
+          await sock.readMessages([message.key]);
+        } catch { /* non-critical */ }
+        return;
+      }
     }
 
     if (sessionId) {
