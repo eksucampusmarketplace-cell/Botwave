@@ -26,17 +26,55 @@ export class AIRateLimitError extends Error {
   }
 }
 
-// ─── Groq Provider ──────────────────────────────────────────────────────────
+// ─── Groq Provider (multi-key rotation) ─────────────────────────────────────
 
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-let groqCooldownUntil = 0;
+
+interface GroqKey {
+  key: string;
+  cooldownUntil: number;
+}
+
+let groqKeys: GroqKey[] | null = null;
+let groqKeyIndex = 0;
+
+function loadGroqKeys(): GroqKey[] {
+  if (groqKeys) return groqKeys;
+  const envVal = process.env.GROQ_API_KEY || '';
+  const keys: GroqKey[] = [];
+  for (const k of envVal.split(',')) {
+    const trimmed = k.trim();
+    if (trimmed) keys.push({ key: trimmed, cooldownUntil: 0 });
+  }
+  groqKeys = keys;
+  return keys;
+}
+
+function getNextAvailableGroqKey(): GroqKey | null {
+  const keys = loadGroqKeys();
+  if (keys.length === 0) return null;
+  const now = Date.now();
+  for (let i = 0; i < keys.length; i++) {
+    const idx = (groqKeyIndex + i) % keys.length;
+    if (keys[idx].cooldownUntil <= now) {
+      groqKeyIndex = (idx + 1) % keys.length;
+      return keys[idx];
+    }
+  }
+  return null;
+}
+
+function markGroqKeyCooldown(gk: GroqKey, cooldownMs = 60_000) {
+  gk.cooldownUntil = Date.now() + cooldownMs;
+}
 
 function getGroqApiKey(): string | null {
-  return process.env.GROQ_API_KEY?.trim() || null;
+  const gk = getNextAvailableGroqKey();
+  return gk?.key || null;
 }
 
 function isGroqAvailable(): boolean {
-  return !!getGroqApiKey() && Date.now() >= groqCooldownUntil;
+  return !!getNextAvailableGroqKey();
 }
 
 async function callGroq(
@@ -69,7 +107,6 @@ async function callGroq(
   if (res.status === 429) {
     const retryAfter = res.headers.get('retry-after');
     const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
-    groqCooldownUntil = Date.now() + cooldownMs;
     throw Object.assign(new AIRateLimitError('Groq rate limited', cooldownMs), { status: 429, cooldownMs });
   }
 
@@ -259,15 +296,23 @@ export interface AIVisionOptions {
 export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt }: AICallOptions): Promise<string> {
   const errors: Error[] = [];
 
-  // Try Groq first
-  if (isGroqAvailable()) {
+  // Try Groq with key rotation
+  const allGroqKeys = loadGroqKeys();
+  for (let attempt = 0; attempt < allGroqKeys.length; attempt++) {
+    const gk = getNextAvailableGroqKey();
+    if (!gk) break;
     try {
-      const result = await callGroq(getGroqApiKey()!, prompt, maxTokens, temperature, systemPrompt);
-      return result;
+      return await callGroq(gk.key, prompt, maxTokens, temperature, systemPrompt);
     } catch (err: unknown) {
-      const error = err as Error;
+      const error = err as Error & { status?: number; cooldownMs?: number };
+      if (error.status === 429) {
+        markGroqKeyCooldown(gk, error.cooldownMs || 60_000);
+        console.warn(`[AI] Groq key rotated (rate limited), trying next...`);
+        continue;
+      }
       console.warn(`[AI] Groq failed: ${error.message}, falling back to Gemini...`);
       errors.push(error);
+      break;
     }
   }
 
@@ -298,7 +343,7 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
   }
 
   // No provider worked
-  if (!getGroqApiKey() && keys.length === 0) {
+  if (allGroqKeys.length === 0 && keys.length === 0) {
     throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
   }
 
@@ -315,15 +360,17 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
 export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg', maxTokens = 1000 }: AIVisionOptions): Promise<string> {
   const errors: Error[] = [];
 
-  // Try Groq vision first
-  const groqKey = getGroqApiKey();
-  if (groqKey && Date.now() >= groqCooldownUntil) {
+  // Try Groq vision with key rotation
+  const allGroqKeysVision = loadGroqKeys();
+  for (let attempt = 0; attempt < allGroqKeysVision.length; attempt++) {
+    const gk = getNextAvailableGroqKey();
+    if (!gk) break;
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${groqKey}`,
+          Authorization: `Bearer ${gk.key}`,
         },
         body: JSON.stringify({
           model: 'llama-4-scout-17b-16e-instruct',
@@ -342,8 +389,9 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
       if (res.status === 429) {
         const retryAfter = res.headers.get('retry-after');
         const cooldownMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60_000;
-        groqCooldownUntil = Date.now() + cooldownMs;
-        throw Object.assign(new AIRateLimitError('Groq rate limited', cooldownMs), { status: 429 });
+        markGroqKeyCooldown(gk, cooldownMs);
+        console.warn(`[AI] Groq Vision key rotated (rate limited), trying next...`);
+        continue;
       }
 
       if (res.ok) {
@@ -355,9 +403,14 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
       const errText = await res.text();
       throw new Error(`Groq Vision error (${res.status}): ${errText}`);
     } catch (err: unknown) {
-      const error = err as Error;
+      const error = err as Error & { status?: number; cooldownMs?: number };
+      if (error.status === 429) {
+        markGroqKeyCooldown(gk, error.cooldownMs || 60_000);
+        continue;
+      }
       console.warn(`[AI] Groq Vision failed: ${error.message}, falling back to Gemini Vision...`);
       errors.push(error);
+      break;
     }
   }
 
@@ -387,7 +440,7 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
     }
   }
 
-  if (!groqKey && keys.length === 0) {
+  if (allGroqKeysVision.length === 0 && keys.length === 0) {
     throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
   }
 
@@ -400,7 +453,8 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
 /**
  * Check which AI providers are configured.
  */
-export function getAIProviderStatus(): { groq: boolean; geminiKeys: number } {
+export function getAIProviderStatus(): { groq: boolean; groqKeys: number; geminiKeys: number } {
+  const gKeys = loadGroqKeys();
   const keys = loadGeminiKeys();
-  return { groq: !!getGroqApiKey(), geminiKeys: keys.length };
+  return { groq: gKeys.length > 0, groqKeys: gKeys.length, geminiKeys: keys.length };
 }

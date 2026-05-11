@@ -369,8 +369,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     // Savage mode: auto-roast insults directed at the bot owner
+    // Pass quoted text for contextual awareness
     if (!isCommand && !fromMe && userId && content) {
-      processSavageMode(content, userId, false, pushName)
+      const savageQuotedText = getQuotedText(message);
+      processSavageMode(content, userId, false, pushName, savageQuotedText)
         .then(async (roast) => {
           if (roast) {
             await sendReply(chatJid, roast, sock, message.key, queue);
