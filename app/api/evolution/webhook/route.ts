@@ -499,23 +499,12 @@ export async function POST(request: NextRequest) {
           console.log(`[EVO-WEBHOOK] Processing fromMe command via ACK: "${text.slice(0, 40)}"`);
         }
         if (isAck && !isFromMeCommand) {
-          // Evolution API sometimes delivers incoming messages (from others)
-          // ONLY as DELIVERY_ACK events, with no separate initial upsert.
-          // Allow non-fromMe ACKs with actual content through to handleMessage
-          // (after dedup) so savage mode, NLP, autopilot, etc. can process them.
-          const hasContent = !fromMe && (text || msg.message?.imageMessage || msg.message?.videoMessage || msg.message?.audioMessage || msg.message?.stickerMessage || msg.message?.documentMessage);
-          if (hasContent) {
-            const msgId = msg.key?.id || '';
-            if (!markSeen(msgId)) {
-              console.log(`[EVO-WEBHOOK] SKIP duplicate non-fromMe ACK: "${text.slice(0, 40)}"`);
-              continue;
-            }
-            console.log(`[EVO-WEBHOOK] Processing non-fromMe message via ${msgStatus}: from=${from} "${text.slice(0, 40)}"`);
-            // Fall through to commandMsgs.push below
-          } else {
-            console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
-            continue;
-          }
+          // DELIVERY_ACK / READ / PLAYED events have unreliable fromMe flags —
+          // the user's own outgoing messages can appear as fromMe=false in ACK
+          // events. Never route ACKs to handleMessage; only cache them for
+          // anti-delete recovery (already done via cacheMsgs above).
+          console.log(`[EVO-WEBHOOK] SKIP status update ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'} from=${from}`);
+          continue;
         }
 
         // Allow fromMe messages that start with command prefix (userbot mode)
