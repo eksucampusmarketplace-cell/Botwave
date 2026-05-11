@@ -268,7 +268,52 @@ export async function GET(request: NextRequest) {
     const inactiveHours = parseInt(request.nextUrl.searchParams.get('hours') || '12');
     const { allUsers, inactiveUsers, usersWithSessions, eligibleUsers } = await getEnrichedUsers(inactiveHours);
 
-    const jobs = Array.from(emailJobs.values()).sort((a, b) =>
+    // Get in-memory jobs
+    const memoryJobs = Array.from(emailJobs.values()).sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    // Also get DB log for persistent history
+    const supabase = getSupabase();
+    const { data: dbLog } = await supabase
+      .from('email_broadcast_log')
+      .select('job_id, email, status, sent_at')
+      .order('sent_at', { ascending: false })
+      .limit(100);
+
+    // Aggregate DB log into job summaries (for jobs not in memory)
+    const dbJobMap = new Map<string, { sent: number; failed: number; earliest: string; latest: string }>();
+    for (const entry of dbLog || []) {
+      const jid = entry.job_id || 'unknown';
+      const existing = dbJobMap.get(jid) || { sent: 0, failed: 0, earliest: entry.sent_at, latest: entry.sent_at };
+      if (entry.status === 'sent') existing.sent++;
+      else existing.failed++;
+      if (entry.sent_at < existing.earliest) existing.earliest = entry.sent_at;
+      if (entry.sent_at > existing.latest) existing.latest = entry.sent_at;
+      dbJobMap.set(jid, existing);
+    }
+
+    // Build combined jobs list: memory jobs first, then DB jobs not already in memory
+    const memoryJobIds = new Set(memoryJobs.map(j => j.id));
+    const dbJobs: EmailJob[] = [];
+    for (const [jid, summary] of dbJobMap.entries()) {
+      if (!memoryJobIds.has(jid)) {
+        dbJobs.push({
+          id: jid,
+          status: 'completed',
+          totalRecipients: summary.sent + summary.failed,
+          sentCount: summary.sent,
+          failedCount: summary.failed,
+          skippedCount: 0,
+          createdAt: summary.earliest,
+          completedAt: summary.latest,
+          type: 'reengagement',
+          trigger: 'manual',
+        });
+      }
+    }
+
+    const allJobs = [...memoryJobs, ...dbJobs].sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
@@ -279,8 +324,8 @@ export async function GET(request: NextRequest) {
         inactiveUsers: inactiveUsers.length,
         usersWithSessions,
         eligibleUsers: eligibleUsers.length,
-        users: eligibleUsers.slice(0, 100),
-        recentJobs: jobs.slice(0, 20),
+        users: inactiveUsers.slice(0, 100),
+        recentJobs: allJobs.slice(0, 20),
         autoSend: {
           enabled: autoSendEnabled,
           intervalHours: autoSendIntervalHours,

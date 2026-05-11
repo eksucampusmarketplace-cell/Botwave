@@ -2,6 +2,7 @@ import type { EmailChannel, EmailEnvelope, EmailResult } from './types';
 import { CHANNEL_CONFIG } from './types';
 import { getTransporter } from './transporter';
 import { enqueueEmail } from './queue';
+import { checkChannelRateLimit } from './spam-protection';
 
 export type { EmailChannel, EmailEnvelope, EmailResult };
 export { CHANNEL_CONFIG } from './types';
@@ -11,6 +12,9 @@ export async function sendEmailDirect(envelope: EmailEnvelope): Promise<EmailRes
   const config = CHANNEL_CONFIG[envelope.channel];
   const from = envelope.fromAddress || config.defaultFrom;
   const fromName = envelope.fromName || config.defaultFromName;
+
+  // Track in spam-protection counters for monitoring
+  await checkChannelRateLimit(envelope.channel).catch(() => {});
 
   try {
     const transport = getTransporter(envelope.channel);

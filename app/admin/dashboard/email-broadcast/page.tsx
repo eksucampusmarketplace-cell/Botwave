@@ -37,7 +37,7 @@ export default function EmailBroadcastPage() {
   const router = useRouter();
   const [users, setUsers] = useState<InactiveUser[]>([]);
   const [jobs, setJobs] = useState<EmailJob[]>([]);
-  const [stats, setStats] = useState({ totalUsers: 0, inactiveUsers: 0, usersWithSessions: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, inactiveUsers: 0, usersWithSessions: 0, eligibleUsers: 0 });
   const [autoSend, setAutoSend] = useState<AutoSendConfig>({ enabled: false, intervalHours: 12, inactiveHours: 12 });
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -57,6 +57,7 @@ export default function EmailBroadcastPage() {
           totalUsers: data.data.totalUsers,
           inactiveUsers: data.data.inactiveUsers,
           usersWithSessions: data.data.usersWithSessions,
+          eligibleUsers: data.data.eligibleUsers || 0,
         });
         if (data.data.autoSend) {
           setAutoSend(data.data.autoSend);
@@ -80,13 +81,12 @@ export default function EmailBroadcastPage() {
   }, [jobs, fetchData]);
 
   const handleSendReengagement = async () => {
-    const eligible = users.filter(u => !u.alreadyEmailed);
-    if (eligible.length === 0) {
-      setMessage({ type: 'error', text: 'No eligible users to email (all recently contacted or active)' });
+    if (eligibleCount === 0) {
+      setMessage({ type: 'error', text: 'No eligible users to email (all recently contacted within 24h or currently active)' });
       return;
     }
 
-    if (!confirm(`Send re-engagement emails to ${eligible.length} inactive users?\n\n${users.length - eligible.length} users will be skipped (already emailed within 24h).`)) {
+    if (!confirm(`Send re-engagement emails to ${eligibleCount} inactive users?\n\nRate limited: 2-5s delay between each email.\n${alreadyEmailedCount} users will be skipped (already emailed within 24h).`)) {
       return;
     }
 
@@ -159,7 +159,7 @@ export default function EmailBroadcastPage() {
     );
   }
 
-  const eligibleCount = users.filter(u => !u.alreadyEmailed).length;
+  const eligibleCount = stats.eligibleUsers;
   const alreadyEmailedCount = users.filter(u => u.alreadyEmailed).length;
 
   return (
