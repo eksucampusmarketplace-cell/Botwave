@@ -89,16 +89,44 @@ const CASUAL_PATTERNS = [
   /^(?:i'?m (?:sorry|sad|angry|upset|tired|hungry|sleepy|bored|sick|lonely|happy|excited)|you (?:hurt|annoy|bore|scare|confuse) me|why (?:did you|would you|are you)|how (?:could you|dare you)|you'?re (?:crazy|mad|annoying|sweet|nice|mean|funny)|that'?s (?:crazy|wild|funny|sad|true|fake|cap)|stop (?:it|that|playing)|don'?t (?:do that|say that|start|lie|play)).*$/i,
 ];
 
+// Bot-related keywords that signal the user is talking to the bot, not chatting
+const BOT_KEYWORDS = /(?:bot|weather|translate|joke|sticker|meme|quote|help|download|remind|define|play|trivia|music|lyrics|crypto|poll|wiki|horoscope|password|roast|dice|coinflip|flashcard|pomodoro|tts|text to speech|qr code|wallpaper|calendar|birthday|wrapped|study|encrypt|decrypt|scan|receipt|schedule|urban|fortune|riddle|compliment|truth or dare|dare|hangman|leaderboard|balance|rewards|ping|uptime|afk|note|doc|convert)\b/i;
+
 export function isRequestLike(text: string): boolean {
   if (CASUAL_PATTERNS.some((re) => re.test(text))) return false;
   // Short messages (under 15 chars) that start with question words are usually
   // conversational ("What's that", "Who's this") not bot commands. Require a
   // stronger signal — the message must contain a specific bot-related keyword.
   if (text.length < 15) {
-    const hasBotKeyword = /(?:bot|weather|translate|joke|sticker|meme|quote|help|download|remind|define|play|trivia|music|lyrics|crypto|poll|wiki|horoscope|password|roast|dice|coinflip|flashcard|pomodoro)\b/i.test(text);
-    if (!hasBotKeyword) return false;
+    if (!BOT_KEYWORDS.test(text)) return false;
   }
   return REQUEST_SIGNALS.some((re) => re.test(text));
+}
+
+/**
+ * Second-pass guard for DMs: after a pattern match, verify the message is
+ * actually bot-directed and not casual conversation that accidentally matched.
+ * Long messages (20+ chars) without any bot keyword are likely conversational.
+ */
+function isDMBotDirected(text: string, matchedCommand: string): boolean {
+  // Commands that are always intentional (user typed a specific keyword)
+  const alwaysIntentional = new Set([
+    'sticker', 'joke', 'meme', 'quote', 'trivia', 'hangman', 'dice',
+    'coinflip', 'leaderboard', 'ping', 'help', 'balance', 'study',
+    'flashcard', 'pomodoro', 'password', 'fortune', 'riddle', 'birthday',
+    'wallpaper', 'wrapped', 'profile', 'stats', 'uptime', 'fact',
+  ]);
+  if (alwaysIntentional.has(matchedCommand)) return true;
+
+  // If the message contains a bot-related keyword, it's directed at the bot
+  if (BOT_KEYWORDS.test(text)) return true;
+
+  // Conversational markers: personal pronouns, narrative phrasing, questions
+  // about the other person — these indicate human-to-human chat, not bot commands
+  const conversationalMarkers = /(?:i'?m |you'?re |you are |you were |you did |you want |you need |your |we |they |our |their |\bshe |\bhe |when will you |how do you want |why did you |why are you |why would you |how could you |how dare you |you don'?t |you can'?t |you won'?t |i told you |i said |i think |i feel |i want to |i need to |i have to |i was |i went |i got |i saw |explain yourself|o babe|o baby|my guy|my gee|my dear|my love|\bbro |\bsis |\bfam |\bguy |\bbabe |\bbaba |\bmama |\bpapa )/i;
+  if (conversationalMarkers.test(text)) return false;
+
+  return true;
 }
 
 // ─── Fuzzy Keyword Matching ──────────────────────────────────────────────────
@@ -209,6 +237,11 @@ export function matchIntent(
     for (const pattern of intent.patterns) {
       const match = stripped.match(pattern);
       if (match) {
+        // In DMs, verify the match is actually bot-directed
+        if (!isGroup && !isDMBotDirected(stripped, intent.command)) {
+          console.log(`[NLP] Blocked casual DM match: "${stripped.slice(0, 50)}" → ${intent.command}`);
+          return null;
+        }
         const args = intent.extractArgs ? intent.extractArgs(match, stripped) : [];
         return {
           command: intent.command,
@@ -238,6 +271,10 @@ export function matchIntent(
       for (const pattern of intent.patterns) {
         const match = stripped.match(pattern);
         if (match) {
+          if (!isGroup && !isDMBotDirected(stripped, intent.command)) {
+            console.log(`[NLP] Blocked casual DM match (low-conf): "${stripped.slice(0, 50)}" → ${intent.command}`);
+            return null;
+          }
           const args = intent.extractArgs ? intent.extractArgs(match, stripped) : [];
           return {
             command: intent.command,
