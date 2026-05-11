@@ -52,8 +52,17 @@ export class EvolutionSocketAdapter {
     // React to a message — handle before status broadcast routing so status
     // reactions go through the dedicated sendReaction endpoint
     if (content.react) {
-      const reactData = content.react as { key: { remoteJid: string; fromMe: boolean; id: string }; text: string };
-      return sendReaction(this.instanceName, reactData.key, reactData.text);
+      const reactData = content.react as {
+        key: { remoteJid: string; fromMe: boolean; id: string; participant?: string };
+        text: string;
+      };
+      // For status reactions, use the poster's JID as remoteJid since
+      // Evolution API's sendReaction doesn't support status@broadcast
+      const reactionKey = { ...reactData.key };
+      if (reactionKey.remoteJid === 'status@broadcast' && reactionKey.participant) {
+        reactionKey.remoteJid = reactionKey.participant;
+      }
+      return sendReaction(this.instanceName, reactionKey, reactData.text);
     }
 
     // Status broadcast — route through the dedicated sendStatus endpoint
