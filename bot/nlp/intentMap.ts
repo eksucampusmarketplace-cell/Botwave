@@ -624,6 +624,53 @@ export const INTENT_MAP: IntentPattern[] = [
     extractArgs: () => [],
   },
 
+  // ── Savage Mode Toggle ──────────────────────────────────────────────────────
+  {
+    command: 'settings',
+    confidence: 0.9,
+    patterns: [
+      /(?:enable|activate|turn on|switch on|start)(?: the)? savage(?: mode)?/i,
+      /(?:i want|i need|give me|activate)(?: the)? savage(?: mode)?/i,
+      /savage(?: mode)? (?:on|enable|activate|start)/i,
+      // Pidgin
+      /(?:oya|abeg|make you) (?:on|activate|start)(?: the)? savage/i,
+      /(?:put|set) savage (?:on|mode)/i,
+    ],
+    extractArgs: () => ['savage', 'on'],
+  },
+  {
+    command: 'settings',
+    confidence: 0.9,
+    patterns: [
+      /(?:disable|deactivate|turn off|switch off|stop)(?: the)? savage(?: mode)?/i,
+      /savage(?: mode)? (?:off|disable|deactivate|stop)/i,
+      /(?:remove|cancel|kill)(?: the)? savage(?: mode)?/i,
+      // Pidgin
+      /(?:oya|abeg|make you) (?:off|stop|kill)(?: the)? savage/i,
+    ],
+    extractArgs: () => ['savage', 'off'],
+  },
+
+  // ── NLP Toggle ─────────────────────────────────────────────────────────────
+  {
+    command: 'settings',
+    confidence: 0.9,
+    patterns: [
+      /(?:enable|activate|turn on|switch on)(?: the)? (?:nlp|smart mode|natural language|smart commands)/i,
+      /(?:nlp|smart mode|smart commands) (?:on|enable|activate)/i,
+    ],
+    extractArgs: () => ['nlp', 'on'],
+  },
+  {
+    command: 'settings',
+    confidence: 0.9,
+    patterns: [
+      /(?:disable|deactivate|turn off|switch off)(?: the)? (?:nlp|smart mode|natural language|smart commands)/i,
+      /(?:nlp|smart mode|smart commands) (?:off|disable|deactivate)/i,
+    ],
+    extractArgs: () => ['nlp', 'off'],
+  },
+
   // ── Logo ───────────────────────────────────────────────────────────────────
   {
     command: 'logo',
@@ -631,6 +678,8 @@ export const INTENT_MAP: IntentPattern[] = [
     patterns: [
       /(?:generate|create|make|design)(?: me)?(?: a)? logo (?:for |called |named |saying )?(.+)/i,
       /(?:i (?:want|need))(?: a)? logo (?:for |with |saying )?(.+)/i,
+      // Pidgin
+      /(?:abeg|oya) (?:make|create|design)(?: me)? (?:one )?logo (?:for )?(.+)/i,
     ],
     extractArgs: (match) => [match[1].trim()],
   },

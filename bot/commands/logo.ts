@@ -1582,13 +1582,26 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
   let styleName = cleanTokens[0]?.toLowerCase() || '';
   let logoText: string;
 
+  // Determine if user is free-tier (for random style filtering)
+  let isFreeUser = true;
+  try {
+    const userId = context.chatJid.split('@')[0];
+    const sub = await getUserSubscription(userId);
+    isFreeUser = sub.plan === 'free';
+  } catch {
+    isFreeUser = true; // default to free on error
+  }
+
+  const freeStylesList = STYLES.filter((s) => FREE_STYLES.has(s.name));
+  const randomPool = isFreeUser ? freeStylesList : STYLES;
+
   if (styleName === 'random') {
-    styleName = randomFromArray(STYLES).name;
+    styleName = randomFromArray(randomPool).name;
     logoText = cleanTokens.slice(1).join(' ') || context.pushName || 'LOGO';
   } else if (STYLE_MAP.has(styleName)) {
     logoText = cleanTokens.slice(1).join(' ') || context.pushName || 'LOGO';
   } else {
-    styleName = randomFromArray(STYLES).name;
+    styleName = randomFromArray(randomPool).name;
     logoText = cleanTokens.join(' ') || context.pushName || 'LOGO';
   }
 
@@ -1598,7 +1611,7 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
     return;
   }
 
-  // ── Tier gating ──
+  // ── Tier gating (strict: deny on error for premium styles) ──
   if (!FREE_STYLES.has(style.name)) {
     try {
       const userId = context.chatJid.split('@')[0];
@@ -1613,7 +1626,14 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
         return;
       }
     } catch {
-      // If subscription check fails, allow the request
+      // Subscription check failed — deny access to premium styles by default
+      const freeList = [...FREE_STYLES].join(', ');
+      await sendReply(
+        context.chatJid,
+        `⚠️ Could not verify your subscription. Premium style *"${style.name}"* is locked.\n\nFree styles: ${freeList}\n\nTry a free style or contact support if this persists.`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
     }
   }
 
@@ -1622,6 +1642,28 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
   if (forceUpper) logoText = logoText.toUpperCase();
   else if (forceLower) logoText = logoText.toLowerCase();
   // else: preserve user's original casing
+
+  // ── AI-Enhanced Logo (premium only): suggest tagline + color via Groq ──
+  if (!isFreeUser && !tagline) {
+    try {
+      const { callAI } = await import('../../lib/ai-provider');
+      const aiSuggestion = await callAI({
+        prompt: `Brand name: "${logoText}"\nStyle: ${style.name} (${style.description})\n\nGenerate a short, catchy tagline (max 6 words) and suggest one hex color that matches this brand and style.\n\nRespond with ONLY JSON: {"tagline": "...", "color": "#RRGGBB"}`,
+        maxTokens: 80,
+        temperature: 0.8,
+      });
+      const jsonMatch = aiSuggestion.match(/\{[^{}]*\}/);
+      if (jsonMatch) {
+        const suggestion = JSON.parse(jsonMatch[0]);
+        if (suggestion.tagline && !tagline) tagline = suggestion.tagline;
+        if (suggestion.color && !customColor && /^#[0-9A-Fa-f]{6}$/.test(suggestion.color)) {
+          customColor = suggestion.color;
+        }
+      }
+    } catch {
+      // AI suggestion failed — continue without it
+    }
+  }
 
   // ── Humanized delay ──
   const genMsg = randomFromArray(GENERATING_MESSAGES);
@@ -1649,11 +1691,13 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
     const taglineLabel = tagline ? `\n_"${tagline}"_` : '';
     const colorLabel = customColor ? ` • ${customColor}` : '';
     const tierLabel = FREE_STYLES.has(style.name) ? '🆓' : '⭐';
+    const aiLabel = !isFreeUser && tagline ? '\n_✨ AI-enhanced (tagline + color suggested by Groq)_' : '';
 
     let caption = `*${logoText}*${taglineLabel}\n`;
     caption += `${tierLabel} Style: *${style.name}* — ${style.description}${sizeLabel}${colorLabel}\n\n`;
     caption += `_🎨 BotWave Logo Generator_\n`;
     caption += `_Try: !logo preview • !logo for help_`;
+    caption += aiLabel;
 
     await sendReply(
       context.chatJid,
@@ -1672,22 +1716,49 @@ async function handleLogo(context: MessageContext, args: string[], sock: any): P
 
 async function handleLogoWallpaper(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!args.length) {
+    const freeList = [...FREE_STYLES].join(', ');
     await sendReply(
       context.chatJid,
-      `*🖼️ WALLPAPER GENERATOR*\n\nGenerate beautiful wallpapers!\n\n!wallpaper [style]\n\nStyles: ${STYLE_LIST}\n\nExample: !wallpaper galaxy`,
+      `*🖼️ WALLPAPER GENERATOR*\n\nGenerate beautiful wallpapers!\n\n!wallpaper [style]\n\nFree styles: ${freeList}\nPremium styles unlock with BotWave Pro!\n\nExample: !wallpaper galaxy`,
       sock, context.rawMessage.key, context.queue,
     );
     return;
   }
 
+  // Determine if user is free-tier
+  let wpIsFreeUser = true;
+  try {
+    const userId = context.chatJid.split('@')[0];
+    const sub = await getUserSubscription(userId);
+    wpIsFreeUser = sub.plan === 'free';
+  } catch {
+    wpIsFreeUser = true;
+  }
+
+  const wpFreeStyles = STYLES.filter((s) => FREE_STYLES.has(s.name));
+  const wpRandomPool = wpIsFreeUser ? wpFreeStyles : STYLES;
+
   const styleName = args[0].toLowerCase() === 'random'
-    ? randomFromArray(STYLES).name
+    ? randomFromArray(wpRandomPool).name
     : args[0].toLowerCase();
 
   const style = STYLE_MAP.get(styleName);
   if (!style) {
     await sendReply(context.chatJid, `Unknown style. Try: ${STYLE_LIST}`, sock, context.rawMessage.key, context.queue);
     return;
+  }
+
+  // Tier gating for wallpaper (same as logo)
+  if (!FREE_STYLES.has(style.name)) {
+    if (wpIsFreeUser) {
+      const freeList = [...FREE_STYLES].join(', ');
+      await sendReply(
+        context.chatJid,
+        `✨ *"${style.name}"* is a premium wallpaper style!\n\nFree styles: ${freeList}\n\nUpgrade to BotWave Pro for all styles:\n!upgrade`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
   }
 
   await sendReply(context.chatJid, '🖼️ Creating your wallpaper...', sock, context.rawMessage.key, context.queue);
@@ -1730,7 +1801,7 @@ async function handleBrandKit(context: MessageContext, args: string[], sock: any
     return;
   }
 
-  // ── Tier gating (premium only) ──
+  // ── Tier gating (premium only — strict deny on error) ──
   try {
     const userId = context.chatJid.split('@')[0];
     const sub = await getUserSubscription(userId);
@@ -1743,7 +1814,13 @@ async function handleBrandKit(context: MessageContext, args: string[], sock: any
       return;
     }
   } catch {
-    // If subscription check fails, allow the request
+    // Subscription check failed — deny access to premium features by default
+    await sendReply(
+      context.chatJid,
+      `⚠️ Could not verify your subscription. *Brand Kit* requires a premium plan.\n\nTry again later or contact support if this persists.`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
   }
 
   // ── Parse brand name and optional hex color ──
