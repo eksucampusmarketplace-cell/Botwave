@@ -7,6 +7,10 @@ const CASHOUT_THRESHOLD = 100;
 import { afkReplies, welcomeReplies, goodbyeReplies } from '../utils/responsePools';
 import sharp from 'sharp';
 
+// Track pending cache-clear timers so .recover pr can still access messages
+// within 60s of .recover (or vice versa)
+const pendingClearTimers = new Map<string, NodeJS.Timeout>();
+
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
   return jid.replace(/:\d+@/, '@').trim();
@@ -751,7 +755,14 @@ async function handleRecover(
     }
   }
 
-  clearRecoveredMessages(context.sessionId, context.chatJid);
+  // Delay cache clear so the user can still run .recover pr after .recover
+  // (or vice versa) within 60 seconds without losing the messages.
+  const cacheKey = `${context.sessionId}:${context.chatJid}`;
+  if (pendingClearTimers.has(cacheKey)) clearTimeout(pendingClearTimers.get(cacheKey)!);
+  pendingClearTimers.set(cacheKey, setTimeout(() => {
+    clearRecoveredMessages(context.sessionId, context.chatJid);
+    pendingClearTimers.delete(cacheKey);
+  }, 60_000));
 
   if (isPrivate) {
     await sock.sendMessage(targetJid, { text: `_${deleted.length} deleted message(s) recovered from ${chatName}._` });
