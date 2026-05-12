@@ -11,6 +11,23 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/re
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
 
+// Throttle heartbeat/last_active updates — at most once per 60s per session
+const lastHeartbeatUpdate = new Map<string, number>();
+const HEARTBEAT_THROTTLE_MS = 60_000;
+
+async function touchSessionActivity(supabase: ReturnType<typeof createClient>, sessionId: string): Promise<void> {
+  const now = Date.now();
+  const lastUpdate = lastHeartbeatUpdate.get(sessionId) || 0;
+  if (now - lastUpdate < HEARTBEAT_THROTTLE_MS) return;
+  lastHeartbeatUpdate.set(sessionId, now);
+
+  const nowIso = new Date(now).toISOString();
+  await supabase.from('bot_sessions')
+    .update({ last_active: nowIso, heartbeat_at: nowIso, updated_at: nowIso })
+    .eq('id', sessionId)
+    .eq('state', 'active');
+}
+
 // Dedup cache — prevents processing the same message multiple times when
 // Evolution API fires duplicate webhooks (common for ACK re-deliveries).
 const seenMsgs = new Map<string, number>();
@@ -153,18 +170,21 @@ export async function POST(request: NextRequest) {
           .eq('id', sessionId)
           .single();
 
+        const nowIso = new Date().toISOString();
         await supabase.from('bot_sessions')
           .update({
             state: 'active',
-            last_active: new Date().toISOString(),
+            last_active: nowIso,
+            heartbeat_at: nowIso,
             qr_code: null,
             qr_expires_at: null,
             qr_generated_at: null,
             pairing_code: null,
-            updated_at: new Date().toISOString(),
+            updated_at: nowIso,
           })
           .eq('id', sessionId);
         await invalidateSessionCache(sessionId);
+        lastHeartbeatUpdate.set(sessionId, Date.now());
 
         // Send one-time welcome message when pairing/QR scan completes for the first time.
         // Triggers on any pre-active state (pairing_sent, qr_pending, connecting) — not
@@ -417,6 +437,9 @@ export async function POST(request: NextRequest) {
         console.warn(`[EVO-WEBHOOK] No session found for instance: ${sessionId}`);
         return NextResponse.json({ ok: true });
       }
+
+      // Update heartbeat/last_active so dashboard shows accurate "Last Active"
+      touchSessionActivity(supabase, sessionId).catch(() => {});
 
       // Auto-correct session state: if we're receiving messages from
       // Evolution API but the DB thinks the session is qr_pending/pairing_sent,
