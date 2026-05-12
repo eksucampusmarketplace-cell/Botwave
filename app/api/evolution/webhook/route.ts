@@ -15,19 +15,6 @@ const IS_WORKER = process.env.IS_WORKER === 'true';
 const lastHeartbeatUpdate = new Map<string, number>();
 const HEARTBEAT_THROTTLE_MS = 60_000;
 
-async function touchSessionActivity(supabase: ReturnType<typeof createClient>, sessionId: string): Promise<void> {
-  const now = Date.now();
-  const lastUpdate = lastHeartbeatUpdate.get(sessionId) || 0;
-  if (now - lastUpdate < HEARTBEAT_THROTTLE_MS) return;
-  lastHeartbeatUpdate.set(sessionId, now);
-
-  const nowIso = new Date(now).toISOString();
-  await supabase.from('bot_sessions')
-    .update({ last_active: nowIso, heartbeat_at: nowIso, updated_at: nowIso })
-    .eq('id', sessionId)
-    .eq('state', 'active');
-}
-
 // Dedup cache — prevents processing the same message multiple times when
 // Evolution API fires duplicate webhooks (common for ACK re-deliveries).
 const seenMsgs = new Map<string, number>();
@@ -50,6 +37,19 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+async function touchSessionActivity(supabase: ReturnType<typeof getSupabase>, sessionId: string): Promise<void> {
+  const now = Date.now();
+  const lastUpdate = lastHeartbeatUpdate.get(sessionId) || 0;
+  if (now - lastUpdate < HEARTBEAT_THROTTLE_MS) return;
+  lastHeartbeatUpdate.set(sessionId, now);
+
+  const nowIso = new Date(now).toISOString();
+  await supabase.from('bot_sessions')
+    .update({ last_active: nowIso, heartbeat_at: nowIso, updated_at: nowIso } as Record<string, string>)
+    .eq('id', sessionId)
+    .eq('state', 'active');
 }
 
 /**
