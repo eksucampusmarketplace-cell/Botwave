@@ -1,4 +1,4 @@
-const DELAY_MS = 3 * 60 * 1000; // 3 minutes between links
+const DELAY_MS = 5_000; // 5s gap between Baileys pairing requests (avoids 428)
 
 interface LinkJob {
   sessionId: string;

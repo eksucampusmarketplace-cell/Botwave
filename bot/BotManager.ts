@@ -1094,10 +1094,33 @@ class EvolutionBot {
             }
             return; // Poll handle already cleared
           } else if (this.isPairingSent && Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
+            // Before destroying the instance, do a final state check —
+            // the user may have linked their phone during the timeout window
+            // but the poll returned 'connecting' due to a race condition.
+            const finalState = await getInstanceStatus(this.sessionId);
+            if (finalState === 'open') {
+              console.log(`[EVO] Pairing timeout fired but instance is OPEN for ${this.sessionId} — transitioning to active instead of recreating`);
+              this.isReady = true;
+              this.isPairingSent = false;
+              this.isReconnecting = false;
+              await updateSessionStatus(this.sessionId, 'active');
+              console.log(`[EVO] Session ${this.sessionId} is now active (caught at timeout boundary)!`);
+              void setWebhook(this.sessionId).catch(err =>
+                console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
+              void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
+              this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
+              this.startPresenceLoop();
+              const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+              const ownerJid = `${cleanPhone}@s.whatsapp.net`;
+              void sendSessionWelcome(this.sessionId, ownerJid, this.socketAdapter);
+              // Continue polling to monitor for disconnects
+              return;
+            }
+
             // Pairing timed out — auto-retry with a fresh code instead of
             // going straight to needs_reauth. This gives users another chance
             // without requiring manual reconnection from the dashboard.
-            console.log(`[EVO] Pairing timed out for ${this.sessionId} — auto-retrying with fresh code`);
+            console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) — auto-retrying with fresh code`);
             isRecreating = true;
             try {
               await deleteInstanceAndVerify(this.sessionId);
@@ -1325,36 +1348,8 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     await Promise.all(staleReleases);
   }
 
-  // Check if any in-memory bot is actively pairing (started <3 min ago).
-  // pairingStartedAt is set BEFORE the WebSocket opens (in start()) so
-  // even bots still connecting count as "pairing in progress".
-  // Use module-level PAIRING_TIMEOUT_MS (180s = 3 min, matches pairing code expiry)
-  let pairingInProgress = false;
-  for (const [, bot] of activeBots) {
-    const status = bot.getStatus();
-    if (!status.isReady && status.pairingStartedAt > 0) {
-      const elapsed = Date.now() - status.pairingStartedAt;
-      if (elapsed < PAIRING_TIMEOUT_MS) {
-        pairingInProgress = true;
-        break;
-      }
-    }
-  }
-
-  // Also check the DB-level pairing lock so cross-worker pairing is serialized.
-  // This catches cases where another worker is pairing but this worker's
-  // in-memory state doesn't know about it (shared-nothing architecture).
-  if (!pairingInProgress) {
-    try {
-      const dbLocked = await isWorkerPairingLocked(SELF_URL || null);
-      if (dbLocked) {
-        pairingInProgress = true;
-      }
-    } catch (err) {
-      // Non-critical — fall back to in-memory check only
-      console.warn('[SYNC] Failed to check DB pairing lock:', err);
-    }
-  }
+  // Sessions are independent — no cross-session pairing gate.
+  // Each session pairs on its own timeline without blocking others.
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
@@ -1395,16 +1390,6 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
-      // Queue pairing: skip starting new sessions while another is actively
-      // pairing on this worker. The session stays in the DB and will be
-      // picked up on the next sync cycle (5s) once the current pairing
-      // completes or its 3-minute timeout expires.
-      if (pairingInProgress && (session.state === 'qr_pending' || session.state === 'pairing_sent')) {
-        console.log(`[SYNC] Session ${session.id.slice(0, 8)} queued — another session is pairing on this worker`);
-        // Update queue position so the dashboard can show the user their place
-        updateQueuePosition(session.id, 1).catch(() => {});
-        continue;
-      }
       // Check for conflicts — another instance may already be running this session
       const conflict = await detectConflict(session.id);
       if (conflict) {
@@ -1454,9 +1439,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       activeBots.set(session.id, newBot);
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
-      // Mark pairing in progress so subsequent sessions in this cycle are queued
       if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
-        pairingInProgress = true;
         // Acquire DB-level pairing lock so other workers see it too
         acquirePairingLock(session.id).catch(() => {});
         // Clear queue position since this session is now active
@@ -1480,7 +1463,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       // Don't kill bots that are mid-reconnect (e.g. 515 pairing restart)
       // or in qr_pending state during the handshake
       const status = bot.getStatus();
-      if (status.isReconnecting || status.isQrPending) {
+      if (status.isReconnecting || status.isQrPending || status.isPairingSent) {
         continue;
       }
       console.log(`Stopping bot for removed session: ${id}`);
