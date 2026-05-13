@@ -233,6 +233,16 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
   }
 }
 
+export async function getSessionPairingCode(sessionId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .select('pairing_code')
+    .eq('id', sessionId)
+    .single();
+  if (error || !data) return null;
+  return data.pairing_code || null;
+}
+
 export async function updateSessionPairingCode(sessionId: string, code: string) {
   const dbTimestamp = new Date().toISOString();
   const codeLength = code?.length || 0;

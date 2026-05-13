@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
 import { useSupabaseAuthState } from './SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
 // Autoview removed entirely
@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -1038,7 +1038,71 @@ class EvolutionBot {
           // Waiting for connection — applies to both pairing and reconnect.
           // Check for timeouts so we don't wait forever.
           if (this.isPairingSent) {
-            // Pairing in progress — use pairing timeout
+            // Pairing in progress — poll for updated pairing code in case
+            // Evolution API internally reconnected and generated a new one
+            // (the old code shown on the dashboard would be invalid).
+            try {
+              const latestCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
+              if (latestCode) {
+                const dbCode = await getSessionPairingCode(this.sessionId);
+                if (dbCode !== latestCode) {
+                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestCode}" — updating DB`);
+                  await updateSessionPairingCode(this.sessionId, latestCode);
+                }
+              }
+            } catch (err) {
+              // Non-fatal — just means we couldn't check for updated code
+            }
+
+            // Check pairing timeout
+            if (Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
+              const finalState = await getInstanceStatus(this.sessionId);
+              if (finalState === 'open') {
+                console.log(`[EVO] Pairing timeout (connecting) but instance is OPEN for ${this.sessionId} — transitioning to active`);
+                this.isReady = true;
+                this.isPairingSent = false;
+                this.isReconnecting = false;
+                await updateSessionStatus(this.sessionId, 'active');
+                void setWebhook(this.sessionId).catch(err =>
+                  console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
+                void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
+                this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
+                this.startPresenceLoop();
+                const cleanPhone = this.phoneNumber.replace(/\D/g, '');
+                const ownerJid = `${cleanPhone}@s.whatsapp.net`;
+                void sendSessionWelcome(this.sessionId, ownerJid, this.socketAdapter);
+                return;
+              }
+              // Auto-retry with fresh code
+              console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) — auto-retrying`);
+              isRecreating = true;
+              try {
+                await deleteInstanceAndVerify(this.sessionId);
+                if (this.stopped) { isRecreating = false; return; }
+                await createInstance(this.sessionId, this.phoneNumber);
+                if (this.stopped) { isRecreating = false; return; }
+                const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+                if (this.stopped) { isRecreating = false; return; }
+                if (freshCode) {
+                  await updateSessionPairingCode(this.sessionId, freshCode);
+                  await updateSessionStatus(this.sessionId, 'pairing_sent');
+                  this.pairingStartedAt = Date.now();
+                  pairingWaitStart = Date.now();
+                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshCode}`);
+                } else {
+                  console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} — setting needs_reauth`);
+                  await updateSessionStatus(this.sessionId, 'needs_reauth');
+                  this.isPairingSent = false;
+                  if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+                }
+              } catch (retryErr) {
+                console.error(`[EVO] Auto-retry (connecting) error for ${this.sessionId}:`, retryErr);
+                await updateSessionStatus(this.sessionId, 'needs_reauth');
+                this.isPairingSent = false;
+                if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+              }
+              isRecreating = false;
+            }
           } else if (this.isReconnecting && Date.now() - reconnectStart > RECONNECT_TIMEOUT_MS) {
             console.log(`[EVO] Reconnect timed out for ${this.sessionId} — stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
             this.isReconnecting = false;
