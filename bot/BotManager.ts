@@ -1490,8 +1490,25 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     }
   }
 
-  // Refresh heartbeats for all active bots
+  // Refresh heartbeats for all active bots. If the lock was lost (e.g.
+  // orphan recovery cleared it), re-acquire it so heartbeats can resume.
   for (const [id] of activeBots) {
+    const bot = activeBots.get(id);
+    if (!bot) continue;
+    const status = bot.getStatus();
+    if (!status.isReady && !status.isReconnecting) continue;
+
+    const reacquired = await tryAcquireLock(id);
+    if (!reacquired) {
+      // Another instance owns it — we should stop our local bot to avoid duplicates
+      const conflict = await detectConflict(id);
+      if (conflict) {
+        console.log(`[SYNC] Session ${id.slice(0, 8)} locked by ${conflict} — stopping local bot to avoid duplicate`);
+        await bot.stop();
+        activeBots.delete(id);
+        continue;
+      }
+    }
     await refreshHeartbeat(id);
   }
 }

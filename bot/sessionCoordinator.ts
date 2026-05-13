@@ -216,11 +216,14 @@ export async function detectOrphanedSessions(): Promise<any[]> {
   if (isCircuitOpen() || isShutdown()) return [];
   const staleTime = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
 
+  // Only select sessions with stale or missing heartbeats. Sessions with
+  // locked_by=null but a recent heartbeat_at are likely mid-recovery —
+  // their worker will re-lock them on the next sync cycle.
   const { data, error } = await supabase
     .from('bot_sessions')
     .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, phone_number, updated_at')
     .in('state', ['qr_pending', 'pairing_sent', 'active'])
-    .or(`locked_by.is.null,heartbeat_at.is.null,heartbeat_at.lt.${staleTime}`);
+    .or(`heartbeat_at.is.null,heartbeat_at.lt.${staleTime}`);
 
   if (error) {
     console.error('[COORD] Error detecting orphaned sessions:', error);
@@ -283,11 +286,15 @@ export async function recoverOrphanedSessions(): Promise<number> {
     // so the sync loop can reconnect via tryReconnectExisting() instead of
     // forcing a fresh pairing. This prevents redeploys from nuking connected
     // sessions. Only qr_pending/pairing_sent sessions get fully reset.
+    //
+    // Set heartbeat_at to NOW (not null) so the next orphan scan doesn't
+    // immediately re-detect this session as orphaned. The sync loop on the
+    // correct worker will re-acquire the lock and resume heartbeats.
     if (session.state === 'active') {
       const activeUpdateFields: Record<string, unknown> = {
         locked_by: null,
         locked_at: null,
-        heartbeat_at: null,
+        heartbeat_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       if (newWorkerUrl) {

@@ -59,7 +59,12 @@ export default function MailboxPage() {
   const [compose, setCompose] = useState({ to: '', subject: '', body: '' });
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState('');
-  const [activeMailboxId, setActiveMailboxId] = useState<string | null>(null);
+  const [activeMailboxId, setActiveMailboxId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('botwave_active_mailbox') || null;
+    }
+    return null;
+  });
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [newLocalPart, setNewLocalPart] = useState('');
   const [newLabel, setNewLabel] = useState('');
@@ -80,6 +85,7 @@ export default function MailboxPage() {
         setUnreadCount(data.data.unreadCount);
         if (!activeMailboxId && data.data.mailbox) {
           setActiveMailboxId(data.data.mailbox.id);
+          try { localStorage.setItem('botwave_active_mailbox', data.data.mailbox.id); } catch {}
         }
       }
     } catch (err) {
@@ -170,7 +176,10 @@ export default function MailboxPage() {
   const switchMailbox = (id: string) => {
     setActiveMailboxId(id);
     setSelectedEmail(null);
+    setEmails([]);
+    setLoading(true);
     setShowSwitcher(false);
+    try { localStorage.setItem('botwave_active_mailbox', id); } catch {}
   };
 
   const openEmail = (email: Email) => {

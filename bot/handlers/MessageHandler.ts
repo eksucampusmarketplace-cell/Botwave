@@ -349,9 +349,9 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    if (isCommand && !isOwnerEarly) {
-      return;
-    }
+    // ownerOnly commands are gated inside processCommand() — don't
+    // block all non-owner commands here. Non-owners can use public
+    // commands like !help, !sticker, !ai, etc. in groups and DMs.
 
     if (isCommand && userId) {
       const quotaOk = await incrementQuotaUsage(userId);
@@ -554,6 +554,9 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   try {
     const handler = getCommand(commandName);
     if (handler) {
+      if (handler.ownerOnly && !context.isOwner) {
+        return;
+      }
       const startMs = Date.now();
       await handler.execute(context, args, sock, vars, commandName);
       const durationMs = Date.now() - startMs;
