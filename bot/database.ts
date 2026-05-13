@@ -4,7 +4,7 @@ import { trackMap } from './memoryGuard';
 import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './redisSessionCache';
 import { queueWrite } from './writeQueue';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl) {

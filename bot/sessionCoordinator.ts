@@ -86,18 +86,12 @@ export async function tryAcquireLock(sessionId: string): Promise<boolean> {
     console.log(`[COORD] Session ${sessionId.slice(0, 8)} has stale lock from ${session.locked_by} (heartbeat ${Math.round(heartbeatAge / 1000)}s ago) — taking over`);
   }
 
-  // Acquire lock with conditional update (only if unlocked, ours, or stale)
-  const staleTime = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
-  const { data: updated, error: lockErr } = await supabase
-    .from('bot_sessions')
-    .update({
-      locked_by: INSTANCE_ID,
-      locked_at: now,
-      heartbeat_at: now,
-    })
-    .eq('id', sessionId)
-    .or(`locked_by.is.null,locked_by.eq.${INSTANCE_ID},heartbeat_at.lt.${staleTime}`)
-    .select('id');
+  // Acquire lock with conditional update via RPC (only if unlocked, ours, or stale)
+  const { data: updated, error: lockErr } = await supabase.rpc('acquire_session_lock', {
+    p_session_id: sessionId,
+    p_instance_id: INSTANCE_ID,
+    p_lock_expiry_ms: LOCK_EXPIRY_MS,
+  });
 
   if (lockErr) {
     console.error(`[COORD] Failed to acquire lock for ${sessionId}:`, lockErr);
