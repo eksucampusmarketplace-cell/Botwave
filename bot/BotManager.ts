@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, enableInstanceProxy } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, enableInstanceProxy, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -955,14 +955,20 @@ class EvolutionBot {
       // Fetch pairing code — getPairingCode now handles its own polling
       const evoPairingStart = Date.now();
       console.log(`[PAIRING-EVO] === Requesting pairing code via Evolution API === session=${this.sessionId} phone=${this.phoneNumber} at=${new Date(evoPairingStart).toISOString()}`);
-      const code = await getPairingCode(this.sessionId, this.phoneNumber);
+      const pairingResult = await getPairingCode(this.sessionId, this.phoneNumber);
       const evoPairingDuration = Date.now() - evoPairingStart;
 
-      if (code) {
-        console.log(`[PAIRING-EVO] Code received: "${code}" len=${code.length} duration=${evoPairingDuration}ms session=${this.sessionId}`);
+      if (pairingResult) {
+        const code = pairingResult.pairingCode;
+        console.log(`[PAIRING-EVO] Code received: "${code}" len=${code.length} hasQR=${!!pairingResult.qrCode} duration=${evoPairingDuration}ms session=${this.sessionId}`);
         console.log(`[PAIRING-EVO] Saving to DB...`);
         const dbStart = Date.now();
         await updateSessionPairingCode(this.sessionId, code);
+        // Save QR base64 image alongside the pairing code so the
+        // dashboard can show a scannable QR code to users.
+        if (pairingResult.qrCode) {
+          await updateSessionQR(this.sessionId, pairingResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+        }
         console.log(`[PAIRING-EVO] DB save took ${Date.now() - dbStart}ms`);
         await updateSessionStatus(this.sessionId, 'pairing_sent');
         this.isPairingSent = true;
@@ -1049,12 +1055,15 @@ class EvolutionBot {
             // Evolution API internally reconnected and generated a new one
             // (the old code shown on the dashboard would be invalid).
             try {
-              const latestCode = await refreshPairingCode(this.sessionId, this.phoneNumber);
-              if (latestCode) {
+              const latestResult = await refreshPairingCode(this.sessionId, this.phoneNumber);
+              if (latestResult) {
                 const dbCode = await getSessionPairingCode(this.sessionId);
-                if (dbCode !== latestCode) {
-                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestCode}" — updating DB`);
-                  await updateSessionPairingCode(this.sessionId, latestCode);
+                if (dbCode !== latestResult.pairingCode) {
+                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" — updating DB`);
+                  await updateSessionPairingCode(this.sessionId, latestResult.pairingCode);
+                  if (latestResult.qrCode) {
+                    await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                  }
                 }
               }
             } catch (err) {
@@ -1088,14 +1097,17 @@ class EvolutionBot {
                 if (this.stopped) { isRecreating = false; return; }
                 await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
                 if (this.stopped) { isRecreating = false; return; }
-                const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+                const freshResult = await getPairingCode(this.sessionId, this.phoneNumber);
                 if (this.stopped) { isRecreating = false; return; }
-                if (freshCode) {
-                  await updateSessionPairingCode(this.sessionId, freshCode);
+                if (freshResult) {
+                  await updateSessionPairingCode(this.sessionId, freshResult.pairingCode);
+                  if (freshResult.qrCode) {
+                    await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                  }
                   await updateSessionStatus(this.sessionId, 'pairing_sent');
                   this.pairingStartedAt = Date.now();
                   pairingWaitStart = Date.now();
-                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshCode}`);
+                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
                 } else {
                   console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} — setting needs_reauth`);
                   await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1213,14 +1225,17 @@ class EvolutionBot {
               // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
               if (this.stopped) { isRecreating = false; return; }
-              const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+              const freshResult2 = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
-              if (freshCode) {
-                await updateSessionPairingCode(this.sessionId, freshCode);
+              if (freshResult2) {
+                await updateSessionPairingCode(this.sessionId, freshResult2.pairingCode);
+                if (freshResult2.qrCode) {
+                  await updateSessionQR(this.sessionId, freshResult2.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                }
                 await updateSessionStatus(this.sessionId, 'pairing_sent');
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
-                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshCode}`);
+                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode}`);
               } else {
                 console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} — setting needs_reauth`);
                 await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1269,15 +1284,18 @@ class EvolutionBot {
               // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
               if (this.stopped) { isRecreating = false; return; }
-              const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
+              const freshResult3 = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
-              if (freshCode) {
-                await updateSessionPairingCode(this.sessionId, freshCode);
+              if (freshResult3) {
+                await updateSessionPairingCode(this.sessionId, freshResult3.pairingCode);
+                if (freshResult3.qrCode) {
+                  await updateSessionQR(this.sessionId, freshResult3.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                }
                 await updateSessionStatus(this.sessionId, 'pairing_sent');
                 this.isPairingSent = true;
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
-                console.log(`[EVO] Instance recreated for ${this.sessionId}, new code: ${freshCode}`);
+                console.log(`[EVO] Instance recreated for ${this.sessionId}, new code: ${freshResult3.pairingCode}`);
               } else {
                 console.warn(`[EVO] Instance recreated but no pairing code for ${this.sessionId}`);
                 await updateSessionStatus(this.sessionId, 'qr_pending');

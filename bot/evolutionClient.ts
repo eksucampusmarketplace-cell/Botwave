@@ -511,16 +511,17 @@ export async function disableInstanceProxy(instanceName: string): Promise<boolea
 // Get pairing code for an instance (pass phone number as query param).
 // Triggers Baileys connection if not yet started, then polls for the code
 // since Baileys generates it asynchronously (~2-4s after connection starts).
-export async function getPairingCode(instanceName: string, phoneNumber: string) {
+export interface PairingResult {
+  pairingCode: string;
+  qrCode: string | null;
+  qrBase64: string | null;
+}
+
+export async function getPairingCode(instanceName: string, phoneNumber: string): Promise<PairingResult | null> {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
   const flowStart = Date.now();
   console.log(`[PAIRING-EVO-CLIENT] ======= getPairingCode START ======= instance=${instanceName} phone=${cleanPhone} at=${new Date(flowStart).toISOString()}`);
 
-  // First call triggers connectToWhatsapp inside Evolution API.
-  // Baileys needs time to establish the WebSocket, generate identity keys,
-  // and produce a pairing code. Give it an initial 5s window before the
-  // first poll to avoid hitting the connect endpoint while Baileys is
-  // still initialising (which returns {count:0} with no pairing code).
   const connectStart = Date.now();
   const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
@@ -535,16 +536,12 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
   );
   const connectData: any = await safeJson(connectRes);
   const connectDuration = Date.now() - connectStart;
-  console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
-  console.log(`[PAIRING-EVO-CLIENT] Full response data: ${JSON.stringify(connectData).slice(0, 500)}`);
+  console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} base64=${connectData?.base64 ? 'yes' : 'no'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
   if (connectData?.pairingCode) {
     console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
-    return connectData.pairingCode;
+    return { pairingCode: connectData.pairingCode, qrCode: connectData.code || null, qrBase64: connectData.base64 || null };
   }
 
-  // Baileys may still be connecting — poll up to 8 times (4s apart).
-  // The initial 5s wait lets Baileys establish its WebSocket before we
-  // start hammering the connect endpoint. Total budget: ~37s.
   const POLL_ATTEMPTS = 8;
   const POLL_INTERVAL_MS = 4000;
   const INITIAL_WAIT_MS = 5000;
@@ -570,10 +567,10 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
       }
       const pollDuration = Date.now() - pollStart;
       const hasQrCount = typeof data?.count === 'number';
-      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} state=${data?.state || 'unknown'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
+      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} base64=${data?.base64 ? 'yes' : 'no'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
       if (data?.pairingCode) {
         console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
-        return data.pairingCode;
+        return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
       }
     } catch (err: any) {
       console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS} FAILED: error=${err?.message} totalElapsed=${elapsed}ms`);
@@ -589,7 +586,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string) 
 
 // Fetch the latest pairing code without triggering a new connection.
 // Safe to call repeatedly — returns current QR data when instance is connecting.
-export async function refreshPairingCode(instanceName: string, phoneNumber: string): Promise<string | null> {
+export async function refreshPairingCode(instanceName: string, phoneNumber: string): Promise<PairingResult | null> {
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
     const res = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
@@ -598,7 +595,8 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
     });
     if (res.status === 502 || res.status === 503) return null;
     const data: any = await safeJson(res);
-    return data?.pairingCode || null;
+    if (!data?.pairingCode) return null;
+    return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
   } catch {
     return null;
   }

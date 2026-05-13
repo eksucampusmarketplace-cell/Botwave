@@ -286,10 +286,10 @@ export default function SessionsPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-lg text-cyan font-bold">3</span>
-                <span className="font-mono text-xs text-white font-bold tracking-[1px]">ENTER THE CODE</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">SCAN QR OR ENTER CODE</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                Tap <span className="text-white">&quot;Link with phone number instead&quot;</span> and enter the <span className="text-green">8-digit code</span> shown on screen. If WhatsApp shows a scam warning, tap <span className="text-white">Continue</span> — it&apos;s safe.
+                <span className="text-white">Scan the QR code</span> shown on screen, or tap <span className="text-white">&quot;Link with phone number instead&quot;</span> and enter the <span className="text-green">8-digit code</span>. If WhatsApp shows a scam warning, tap <span className="text-white">Continue</span> — it&apos;s safe.
               </p>
             </div>
           </div>
