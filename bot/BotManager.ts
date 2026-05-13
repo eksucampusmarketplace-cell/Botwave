@@ -96,7 +96,7 @@ const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 5000;
-const PAIRING_TIMEOUT_MS = 180_000;
+const PAIRING_TIMEOUT_MS = 600_000; // 10 min — proxy reconnects need more time
 
 // Proxy pool for Baileys direct mode — distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
