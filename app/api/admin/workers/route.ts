@@ -123,27 +123,32 @@ export async function POST(request: NextRequest) {
 
       if (targetCount > currentWorkers) {
         // Scale UP — start stopped workers or create new ones
+        const toStart: string[] = [];
         for (let i = currentWorkers + 1; i <= targetCount; i++) {
-          const workerName = `botwave-worker-${i}`;
+          toStart.push(`botwave-worker-${i}`);
+        }
+        if (toStart.length > 0) {
           try {
-            // Try starting existing stopped worker first
-            execSync(`docker start botwave_worker_${i} 2>/dev/null || true`, {
-              encoding: 'utf-8', timeout: 30000,
-            });
-          } catch {
-            // Worker doesn't exist — use docker compose to create it
-            try {
-              execSync(
-                `cd /opt/botwave/deploy && docker compose up -d ${workerName} 2>&1`,
-                { encoding: 'utf-8', timeout: 120000 }
-              );
-            } catch (composeErr) {
-              console.error(`[WORKERS] Failed to create ${workerName}:`, composeErr);
+            // Workers 4+ use the 'scale' profile in docker-compose
+            const profileFlag = toStart.some(w => parseInt(w.split('-')[2]) > 3) ? '--profile scale' : '';
+            execSync(
+              `cd /opt/botwave/deploy && docker compose ${profileFlag} up -d ${toStart.join(' ')} 2>&1`,
+              { encoding: 'utf-8', timeout: 180000 }
+            );
+          } catch (composeErr) {
+            console.error(`[WORKERS] Failed to scale up:`, composeErr);
+            // Fallback: try starting individually
+            for (const w of toStart) {
+              try {
+                execSync(`docker start ${w.replace(/-/g, '_')} 2>/dev/null || cd /opt/botwave/deploy && docker compose --profile scale up -d ${w} 2>&1`, {
+                  encoding: 'utf-8', timeout: 120000,
+                });
+              } catch { /* ignore individual failures */ }
             }
           }
         }
       } else if (targetCount < currentWorkers) {
-        // Scale DOWN — stop excess workers (keep lowest numbers)
+        // Scale DOWN — stop excess workers (highest numbers first)
         for (let i = currentWorkers; i > targetCount; i--) {
           try {
             execSync(`docker stop botwave_worker_${i}`, {
