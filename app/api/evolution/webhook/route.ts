@@ -17,18 +17,22 @@ const HEARTBEAT_THROTTLE_MS = 60_000;
 
 // Dedup cache — prevents processing the same message multiple times when
 // Evolution API fires duplicate webhooks (common for ACK re-deliveries).
+// Keys are scoped by session so the same WhatsApp message reaching two
+// different bot sessions (sender's bot + recipient's bot) is processed
+// independently by each.
 const seenMsgs = new Map<string, number>();
 const SEEN_TTL = 150_000; // 150 seconds (matches 120s timestamp guard + buffer)
-function markSeen(msgId: string): boolean {
+function markSeen(sessionId: string, msgId: string): boolean {
+  const key = `${sessionId}:${msgId}`;
   const now = Date.now();
   // Prune old entries
-  if (seenMsgs.size > 500) {
+  if (seenMsgs.size > 1000) {
     for (const [k, t] of seenMsgs) {
       if (now - t > SEEN_TTL) seenMsgs.delete(k);
     }
   }
-  if (seenMsgs.has(msgId)) return false; // already seen
-  seenMsgs.set(msgId, now);
+  if (seenMsgs.has(key)) return false; // already seen
+  seenMsgs.set(key, now);
   return true; // first time
 }
 
@@ -516,9 +520,9 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Dedup: skip if we already processed this exact message ID
+        // Dedup: skip if we already processed this exact message ID for THIS session
         const msgId = msg.key?.id || '';
-        if (msgId && !markSeen(msgId)) {
+        if (msgId && !markSeen(sessionId, msgId)) {
           console.log(`[EVO-WEBHOOK] SKIP duplicate msg ${msgId.slice(0, 12)} "${text.slice(0, 40)}"`);
           continue;
         }
