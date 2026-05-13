@@ -757,12 +757,14 @@ async function handleRecover(
 
   // Delay cache clear so the user can still run .recover pr after .recover
   // (or vice versa) within 60 seconds without losing the messages.
-  const cacheKey = `${context.sessionId}:${context.chatJid}`;
-  if (pendingClearTimers.has(cacheKey)) clearTimeout(pendingClearTimers.get(cacheKey)!);
-  pendingClearTimers.set(cacheKey, setTimeout(() => {
-    clearRecoveredMessages(context.sessionId, context.chatJid);
-    pendingClearTimers.delete(cacheKey);
-  }, 60_000));
+  if (context.sessionId) {
+    const cacheKey = `${context.sessionId}:${context.chatJid}`;
+    if (pendingClearTimers.has(cacheKey)) clearTimeout(pendingClearTimers.get(cacheKey)!);
+    pendingClearTimers.set(cacheKey, setTimeout(() => {
+      clearRecoveredMessages(context.sessionId!, context.chatJid);
+      pendingClearTimers.delete(cacheKey);
+    }, 60_000));
+  }
 
   if (isPrivate) {
     await sock.sendMessage(targetJid, { text: `_${deleted.length} deleted message(s) recovered from ${chatName}._` });
