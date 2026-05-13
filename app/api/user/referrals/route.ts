@@ -4,7 +4,7 @@ import { getCachedReferralData, cacheReferralData, invalidateReferralData, inval
 
 export const dynamic = 'force-dynamic';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!);
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const REFERRAL_REWARD = 20;
@@ -22,7 +22,7 @@ const DISPOSABLE_EMAIL_DOMAINS = [
 async function getUser(request: NextRequest) {
   const { createServerClient } = await import('@supabase/ssr');
   const authClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { get(name: string) { return request.cookies.get(name)?.value; }, set() {}, remove() {} } },
   );

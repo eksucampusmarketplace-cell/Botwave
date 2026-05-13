@@ -80,7 +80,7 @@ interface AuditEntry {
 const auditLogCache: AuditEntry[] = [];
 
 function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createServiceClient(url, key);

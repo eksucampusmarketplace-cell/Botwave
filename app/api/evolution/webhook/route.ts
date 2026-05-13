@@ -36,11 +36,12 @@ function markSeen(sessionId: string, msgId: string): boolean {
   return true; // first time
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+function getServerSupabaseUrl(): string {
+  return process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+}
 
 function getSupabase() {
-  return createClient(supabaseUrl, supabaseServiceKey);
+  return createClient(getServerSupabaseUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!);
 }
 
 async function touchSessionActivity(supabase: ReturnType<typeof getSupabase>, sessionId: string): Promise<void> {

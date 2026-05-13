@@ -69,7 +69,7 @@ export async function GET() {
 
     // Check 4: Environment vars on web side
     diagnostics.checks.envVars = {
-      NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_URL: !!process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       SELF_URL: process.env.SELF_URL || '(not set)',
       IS_WORKER: process.env.IS_WORKER || '(not set)',

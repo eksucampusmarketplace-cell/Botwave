@@ -7,7 +7,7 @@ import { sendEmailDirect } from '@/lib/email';
 async function getUser(request: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 

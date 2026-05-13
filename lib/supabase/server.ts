@@ -2,11 +2,16 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
+/** Runtime Supabase URL — uses SUPABASE_INTERNAL_URL (not baked in by Next.js) with fallback */
+export function getSupabaseUrl(): string {
+  return process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -38,7 +43,7 @@ export async function createClient() {
 
 export async function createAdminClient() {
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getSupabaseUrl(),
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }

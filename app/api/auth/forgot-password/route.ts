@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         // Fallback to Supabase built-in email
         const { createClient: createAnonClient } = await import('@supabase/supabase-js');
         const anonSupabase = createAnonClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         );
         await anonSupabase.auth.resetPasswordForEmail(resetEmail, {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       }
       const { createClient: createAnonClient } = await import('@supabase/supabase-js');
       const anonSupabase = createAnonClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       );
       await anonSupabase.auth.resetPasswordForEmail(resetEmail, {

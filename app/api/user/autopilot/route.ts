@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Use admin client for autopilot_personas (RLS only allows service_role)
     const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     if (contactOverrides !== undefined) updateData.contact_overrides = contactOverrides;
 
     const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
