@@ -349,9 +349,12 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    // ownerOnly commands are gated inside processCommand() — don't
-    // block all non-owner commands here. Non-owners can use public
-    // commands like !help, !sticker, !ai, etc. in groups and DMs.
+    // In private chats, only the owner can trigger commands (fromMe).
+    // In groups, anyone can use public commands; ownerOnly is checked
+    // inside processCommand().
+    if (!isGroup && isCommand && !isOwnerEarly) {
+      return;
+    }
 
     if (isCommand && userId) {
       const quotaOk = await incrementQuotaUsage(userId);
