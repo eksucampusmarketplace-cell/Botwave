@@ -310,7 +310,7 @@ export async function waitForEvolutionReady(maxAttempts = 10, baseDelayMs = 3000
 // Create a new WhatsApp instance for a session, including webhook config.
 // If the instance already exists (403), log and continue — the caller will
 // connect to the existing instance via getPairingCode.
-export async function createInstance(instanceName: string, phoneNumber: string) {
+export async function createInstance(instanceName: string, phoneNumber: string, opts?: { skipProxy?: boolean }) {
   // Guard: refuse to create new instances if Evolution API has been failing
   if (!isEvolutionHealthy()) {
     console.error(`[EVO-CLIENT] createInstance BLOCKED: Evolution API has ${consecutiveFailures} consecutive failures — refusing to accept new pairing sessions`);
@@ -387,7 +387,10 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   // Set proxy via separate API call after instance is fully created.
   // This avoids the race condition where setProxy is called before the
   // instance is registered in waInstances.
-  if (proxy && (res.status === 200 || res.status === 201)) {
+  // When skipProxy is true (during initial pairing), we skip proxy setup
+  // so the connection stays stable for the pairing handshake. Proxy is
+  // set later via setInstanceProxy() after linking succeeds.
+  if (proxy && !opts?.skipProxy && (res.status === 200 || res.status === 201)) {
     // Small delay to let Evolution API fully register the instance
     await new Promise(resolve => setTimeout(resolve, 1500));
     try {
@@ -449,6 +452,39 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   }
 
   return result;
+}
+
+/**
+ * Enable proxy on an existing instance after successful pairing.
+ * Called after linking succeeds so the ongoing connection uses a proxy.
+ */
+export async function enableInstanceProxy(instanceName: string): Promise<boolean> {
+  const proxy = getNextProxy();
+  if (!proxy) {
+    console.log(`[PROXY] enableInstanceProxy: no proxy available for ${instanceName}`);
+    return false;
+  }
+  try {
+    const res = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        enabled: true,
+        host: proxy.host,
+        port: proxy.port,
+        protocol: proxy.protocol,
+        username: proxy.username,
+        password: proxy.password,
+      }),
+      skipHealthCount: true,
+    });
+    const ok = res.status === 200 || res.status === 201;
+    console.log(`[PROXY] enableInstanceProxy ${instanceName}: status=${res.status} ok=${ok} proxy=${proxy.host}:${proxy.port}`);
+    return ok;
+  } catch (err) {
+    console.warn(`[PROXY] enableInstanceProxy ${instanceName} failed:`, err);
+    return false;
+  }
 }
 
 /**

@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, enableInstanceProxy } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -934,8 +934,10 @@ class EvolutionBot {
       // gets 403 "name already in use".
       await deleteInstanceAndVerify(this.sessionId);
 
-      // Create instance on Evolution API (includes webhook config)
-      const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
+      // Create instance on Evolution API WITHOUT proxy — direct connection
+      // is much more stable for the initial pairing handshake. Proxy will be
+      // enabled after linking succeeds via enableInstanceProxy().
+      const createResult = await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true }) as Record<string, unknown> | null;
       if (createResult?.status === 403 || createResult?.error) {
         console.error(`[EVO] Failed to create instance for ${this.sessionId}:`, JSON.stringify(createResult));
         await updateSessionStatus(this.sessionId, 'inactive');
@@ -1018,6 +1020,11 @@ class EvolutionBot {
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
 
+          // Now that pairing succeeded over direct connection, enable proxy
+          // for ongoing messaging to avoid IP bans.
+          void enableInstanceProxy(this.sessionId).catch(err =>
+            console.warn(`[PROXY] Failed to enable proxy after pairing for ${this.sessionId}:`, err));
+
           // Refresh webhook config so the instance uses the latest events list.
           // This ensures existing sessions pick up webhook config changes after deploys.
           void setWebhook(this.sessionId).catch(err =>
@@ -1079,7 +1086,7 @@ class EvolutionBot {
               try {
                 await deleteInstanceAndVerify(this.sessionId);
                 if (this.stopped) { isRecreating = false; return; }
-                await createInstance(this.sessionId, this.phoneNumber);
+                await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
                 if (this.stopped) { isRecreating = false; return; }
                 const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
                 if (this.stopped) { isRecreating = false; return; }
@@ -1181,6 +1188,8 @@ class EvolutionBot {
               this.isReconnecting = false;
               await updateSessionStatus(this.sessionId, 'active');
               console.log(`[EVO] Session ${this.sessionId} is now active (caught at timeout boundary)!`);
+              void enableInstanceProxy(this.sessionId).catch(err =>
+                console.warn(`[PROXY] Failed to enable proxy after pairing for ${this.sessionId}:`, err));
               void setWebhook(this.sessionId).catch(err =>
                 console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
               void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
@@ -1202,7 +1211,7 @@ class EvolutionBot {
               await deleteInstanceAndVerify(this.sessionId);
               if (this.stopped) { isRecreating = false; return; }
               // createInstance already calls setWebhook internally after success
-              await createInstance(this.sessionId, this.phoneNumber);
+              await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
               if (this.stopped) { isRecreating = false; return; }
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
@@ -1258,7 +1267,7 @@ class EvolutionBot {
               await deleteInstanceAndVerify(this.sessionId);
               if (this.stopped) { isRecreating = false; return; }
               // createInstance already calls setWebhook internally after success
-              await createInstance(this.sessionId, this.phoneNumber);
+              await createInstance(this.sessionId, this.phoneNumber, { skipProxy: true });
               if (this.stopped) { isRecreating = false; return; }
               const freshCode = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
