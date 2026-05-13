@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { to, subject, body: emailBody } = body;
+    const { to, subject, body: emailBody, mailboxId } = body;
 
     if (!to || !subject || !emailBody) {
       return NextResponse.json({ error: 'to, subject, and body are required' }, { status: 400 });
@@ -40,11 +40,17 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
-    const { data: mailbox } = await supabase
+    // If mailboxId is specified, use that; otherwise use the first mailbox
+    let mailboxQuery = supabase
       .from('user_mailboxes')
       .select('*')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
+
+    if (mailboxId) {
+      mailboxQuery = mailboxQuery.eq('id', mailboxId);
+    }
+
+    const { data: mailbox } = await mailboxQuery.single();
 
     if (!mailbox) {
       return NextResponse.json({ error: 'No mailbox found' }, { status: 404 });
