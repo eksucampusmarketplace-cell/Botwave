@@ -1157,10 +1157,22 @@ class EvolutionBot {
               }
             }
             return; // Poll handle already cleared
-          } else if (this.isPairingSent && Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
+          } else if (this.isPairingSent) {
+            // Instance closed during pairing — auto-retry immediately with
+            // a fresh code instead of waiting for the full pairing timeout.
+            // This handles proxy drops that kill the connection during pairing.
+            console.log(`[EVO] Instance closed during pairing for ${this.sessionId} (pairingAge=${Math.round((Date.now() - pairingWaitStart) / 1000)}s) — auto-retrying immediately`);
+            if (Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
+              // Pairing timeout exceeded — give up
+              console.log(`[EVO] Pairing timed out for ${this.sessionId} — setting needs_reauth`);
+              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              this.isPairingSent = false;
+              if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+              return;
+            }
             // Before destroying the instance, do a final state check —
             // the user may have linked their phone during the timeout window
-            // but the poll returned 'connecting' due to a race condition.
+            // but the poll returned 'close' due to a race condition.
             const finalState = await getInstanceStatus(this.sessionId);
             if (finalState === 'open') {
               console.log(`[EVO] Pairing timeout fired but instance is OPEN for ${this.sessionId} — transitioning to active instead of recreating`);
