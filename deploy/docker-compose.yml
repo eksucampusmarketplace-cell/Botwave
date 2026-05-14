@@ -296,6 +296,155 @@ services:
       retries: 3
       start_period: 20s
 
+  # ── BotWave Postgres (Supabase data) ────────────────────
+  botwave-postgres:
+    container_name: botwave_postgres
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: botwave
+      POSTGRES_USER: botwave
+      POSTGRES_PASSWORD: ${BOTWAVE_DB_PASS:-botwave_local_db_2024}
+    volumes:
+      - botwave_pgdata:/var/lib/postgresql/data
+    networks:
+      - botwave-net
+    expose:
+      - "5432"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botwave"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── GoTrue (Supabase Auth) ────────────────────────────
+  botwave-gotrue:
+    container_name: botwave_gotrue
+    image: supabase/gotrue:v2.151.0
+    restart: unless-stopped
+    depends_on:
+      botwave-postgres:
+        condition: service_healthy
+    environment:
+      GOTRUE_LOG_LEVEL: warn
+      GOTRUE_DB_DATABASE_URL: postgres://botwave:${BOTWAVE_DB_PASS:-botwave_local_db_2024}@botwave-postgres:5432/botwave?search_path=auth
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_MIGRATIONS_PATH: /usr/local/etc/auth/migrations
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_GROUP_NAME: supabase_admin
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMS_AUTOCONFIRM: "true"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_URI_ALLOW_LIST: "*"
+      API_EXTERNAL_URL: http://144.91.107.59:8000
+      GOTRUE_SITE_URL: https://botwave.online
+    networks:
+      botwave-net:
+        aliases:
+          - gotrue
+    expose:
+      - "9999"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── Kong (Supabase API Gateway) ───────────────────────
+  botwave-kong:
+    container_name: botwave_kong
+    image: kong:3.5
+    restart: unless-stopped
+    depends_on:
+      botwave-gotrue:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+    volumes:
+      - ./kong.yml:/etc/kong/kong.yml:ro
+    ports:
+      - "8000:8000"
+    networks:
+      botwave-net:
+        aliases:
+          - supabase-kong
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── PostgREST (Supabase REST API) ─────────────────────
+  botwave-postgrest:
+    container_name: botwave_postgrest
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      botwave-postgres:
+        condition: service_healthy
+    environment:
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_DB_URI: postgres://botwave:${BOTWAVE_DB_PASS:-botwave_local_db_2024}@botwave-postgres:5432/botwave
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    networks:
+      botwave-net:
+        aliases:
+          - postgrest
+    expose:
+      - "3000"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
   # ── Nginx (Reverse Proxy + HTTPS) ───────────────────────
   # NOTE: Disabled by default — Caddy is handling reverse proxy + HTTPS.
   # Uncomment if you want to use Nginx instead of Caddy.
@@ -369,6 +518,7 @@ volumes:
   postgres_data:
   redis_data:
   portainer_data:
+  botwave_pgdata:
   # certbot_www:
   # certbot_certs:
 
