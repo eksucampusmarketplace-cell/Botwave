@@ -1,6 +1,6 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
-import { recoverStaleSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
+import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
@@ -106,10 +106,23 @@ async function start() {
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
+        // Worker-based recovery (sessions with worker_url set)
         const recovered = await recoverStaleSessions(isWorkerHealthy);
         if (recovered > 0) {
           console.log(`[RECOVERY] Recovered ${recovered} session(s) from dead workers`);
         }
+
+        // Standalone recovery (sessions with worker_url=null stuck without heartbeat).
+        // This replaces the implicit retry that 3 workers provided: when a session
+        // died on one worker, orphan recovery would move it to another. In standalone
+        // mode, this loop detects stuck sessions and resets them for the sync loop.
+        if (WORKER_URLS.length === 0) {
+          const standaloneRecovered = await recoverStaleStandaloneSessions();
+          if (standaloneRecovered > 0) {
+            console.log(`[RECOVERY] Recovered ${standaloneRecovered} stale standalone session(s)`);
+          }
+        }
+
         recordPollerSuccess('staleRecovery');
       } catch (err) {
         recordPollerError('staleRecovery');
@@ -266,6 +279,14 @@ async function start() {
   }
 
   if (keepAliveTargets.length > 0) {
+    // Track consecutive Evolution API failures for self-healing.
+    // After 3+ consecutive failures, trigger readiness wait + session re-sync.
+    // This replicates what workers did implicitly: if Evolution API went down,
+    // each worker would independently detect it and retry connections when it
+    // came back. In standalone, we must do this explicitly.
+    let evoConsecutiveFailures = 0;
+    let evoRecoveryInProgress = false;
+
     const pingAll = async () => {
       await Promise.allSettled(
         keepAliveTargets.map(async (target) => {
@@ -276,13 +297,35 @@ async function start() {
             clearTimeout(timeout);
             if (!res.ok) {
               console.warn(`[KEEPALIVE] ${target.name} (${target.url}): status=${res.status}`);
+              if (target.name === 'evolution-api') evoConsecutiveFailures++;
+            } else {
+              // Evolution API came back online after failures — trigger recovery
+              if (target.name === 'evolution-api' && evoConsecutiveFailures >= 3 && !evoRecoveryInProgress) {
+                evoRecoveryInProgress = true;
+                console.log(`[KEEPALIVE] Evolution API recovered after ${evoConsecutiveFailures} consecutive failures — triggering session re-sync`);
+                evoConsecutiveFailures = 0;
+                resetEvolutionHealth();
+                // Run a sync cycle to reconnect all sessions to the
+                // now-healthy Evolution API — don't wait for the regular 5s cycle
+                syncSessionsWithDb(IS_WORKER).catch(err =>
+                  console.error('[KEEPALIVE] Recovery sync failed:', err)
+                ).finally(() => { evoRecoveryInProgress = false; });
+              } else if (target.name === 'evolution-api') {
+                evoConsecutiveFailures = 0;
+              }
             }
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
             console.warn(`[KEEPALIVE] ${target.name} UNREACHABLE: ${msg}`);
+            if (target.name === 'evolution-api') evoConsecutiveFailures++;
           }
         }),
       );
+
+      // Log when Evolution API is consistently failing
+      if (evoConsecutiveFailures >= 3 && evoConsecutiveFailures % 3 === 0) {
+        console.error(`[KEEPALIVE] Evolution API has been unreachable for ${evoConsecutiveFailures} consecutive checks (${evoConsecutiveFailures}min) — sessions may be disconnecting`);
+      }
     };
     pingAll();
     registerInterval(setInterval(pingAll, KEEPALIVE_INTERVAL));

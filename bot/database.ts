@@ -477,6 +477,80 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
 }
 
 /**
+ * Standalone stale session recovery — for when no workers are configured.
+ * Finds sessions stuck in qr_pending/pairing_sent/inactive with stale
+ * updated_at and no live heartbeat, then resets them so the sync loop
+ * can retry. This replaces the worker-based recovery that only checked
+ * sessions with worker_url IS NOT NULL (useless in standalone mode).
+ */
+export async function recoverStaleStandaloneSessions(): Promise<number> {
+  const STALE_THRESHOLD_MS = 120_000; // 2 minutes without update
+  const cutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
+
+  // Find sessions on main (no worker_url) stuck in non-terminal states
+  // with stale updated_at and no recent heartbeat
+  const { data: stuck, error } = await supabase
+    .from('bot_sessions')
+    .select('id, state, updated_at, heartbeat_at, locked_by')
+    .in('state', ['qr_pending', 'pairing_sent', 'inactive'])
+    .is('worker_url', null)
+    .lt('updated_at', cutoff);
+
+  if (error || !stuck || stuck.length === 0) return 0;
+
+  // Further filter: only recover sessions where heartbeat is also stale
+  // (if heartbeat is recent, the bot process is alive and working on it)
+  const heartbeatCutoff = Date.now() - STALE_THRESHOLD_MS;
+  const trulyStuck = stuck.filter(s => {
+    if (!s.heartbeat_at) return true; // no heartbeat at all — definitely stuck
+    return new Date(s.heartbeat_at).getTime() < heartbeatCutoff;
+  });
+
+  if (trulyStuck.length === 0) return 0;
+
+  console.log(`[RECOVERY-STANDALONE] Found ${trulyStuck.length} stale standalone session(s): ${trulyStuck.map(s => `${s.id.slice(0,8)}(${s.state})`).join(', ')}`);
+
+  let recovered = 0;
+  for (const session of trulyStuck) {
+    if (session.state === 'inactive') {
+      // Inactive sessions should be retried — reset to active so the
+      // sync loop creates a new EvolutionBot that tries tryReconnectExisting
+      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as inactive — resetting to active for reconnection`);
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'active',
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+      if (!updateErr) recovered++;
+    } else {
+      // qr_pending / pairing_sent stuck without heartbeat — clear locks
+      // so the sync loop can pick them up fresh
+      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as ${session.state} — clearing locks for retry`);
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+      if (!updateErr) recovered++;
+    }
+  }
+
+  if (recovered > 0) {
+    console.log(`[RECOVERY-STANDALONE] Recovered ${recovered} stale standalone session(s)`);
+  }
+  return recovered;
+}
+
+/**
  * Count active pairing sessions per worker_url.
  * Used by assignWorkerAsync to pick the least-loaded worker.
  */

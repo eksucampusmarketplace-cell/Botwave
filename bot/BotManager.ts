@@ -930,7 +930,19 @@ class EvolutionBot {
           console.log(`[EVO] Soft reconnect also failed for ${this.sessionId} — falling through to fresh pairing`);
         }
       } else if (this.previousDbState === 'inactive') {
-        console.log(`[EVO] Session ${this.sessionId} was inactive — skipping reconnect, going straight to fresh pairing`);
+        // Inactive = was connected but disconnected (close/refused webhook).
+        // The instance may still exist on Evolution API with saved auth.
+        // Try soft reconnect before falling through to fresh pairing —
+        // this replicates what the 3-worker setup did implicitly when
+        // orphan recovery moved a session to a new worker.
+        console.log(`[EVO] Session ${this.sessionId} was inactive — trying soft reconnect before fresh pairing`);
+        const softReconnected = await this.trySoftReconnect();
+        if (softReconnected) {
+          console.log(`[EVO] Soft reconnect succeeded for inactive session ${this.sessionId} — no re-pairing needed!`);
+          this.startPollLoop();
+          return;
+        }
+        console.log(`[EVO] Soft reconnect failed for inactive session ${this.sessionId} — falling through to fresh pairing`);
       }
 
       // Clean up any stale instance and verify it is fully removed before
