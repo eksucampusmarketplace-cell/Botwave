@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, type PairingResult } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -695,6 +695,9 @@ export class BotWaveBot {
 // Evolution API REST calls. Messages are handled via webhook; this class only
 // manages connection lifecycle + presence simulation.
 
+const EVO_RECONNECT_MAX_BACKOFF_MS = 120_000; // cap at 2 min (like Baileys)
+const EVO_RECONNECT_GIVE_UP_MS = 30 * 60 * 1000; // only give up after 30 min of continuous failure
+
 class EvolutionBot {
   private sessionId: string;
   private userId: string;
@@ -709,6 +712,8 @@ class EvolutionBot {
   private socketAdapter: EvolutionSocketAdapter | null = null;
   private previousDbState: string;
   private workerUrl: string | null = null;
+  private reconnectAttempts: number = 0;
+  private reconnectSince: number = 0; // timestamp when reconnection loop started
 
   public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
 
@@ -1021,6 +1026,8 @@ class EvolutionBot {
           this.isReady = true;
           this.isPairingSent = false;
           this.isReconnecting = false;
+          this.reconnectAttempts = 0;
+          this.reconnectSince = 0;
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
 
@@ -1130,13 +1137,22 @@ class EvolutionBot {
         } else if (state === 'close' || state === 'refused') {
           unknownStateCount = 0;
           if (this.isReady) {
-            // Was connected, now disconnected — try to auto-reconnect before
-            // giving up. This handles temporary disconnects (network blip,
-            // Evolution API restart) without forcing users to re-pair.
+            // Was connected, now disconnected — retry with exponential
+            // backoff (like Baileys does for established sessions). Never
+            // give up quickly; keep retrying for up to 30 minutes before
+            // falling to needs_reauth. This makes standalone mode as
+            // resilient as the old 3-worker setup.
             this.isReady = false;
             this.isPairingSent = false;
             this.stopPresenceLoop();
-            console.log(`[EVO] Session ${this.sessionId} closed/refused — attempting auto-reconnect before needs_reauth`);
+
+            if (this.reconnectSince === 0) {
+              this.reconnectSince = Date.now();
+            }
+            this.reconnectAttempts++;
+
+            const elapsed = Date.now() - this.reconnectSince;
+            console.log(`[EVO] Session ${this.sessionId} closed/refused — reconnect attempt ${this.reconnectAttempts} (elapsed ${Math.round(elapsed / 1000)}s / ${EVO_RECONNECT_GIVE_UP_MS / 1000}s)`);
 
             // Stop polling while we attempt reconnection
             if (this.pollHandle) {
@@ -1145,18 +1161,50 @@ class EvolutionBot {
             }
 
             this.isReconnecting = true;
+
+            // Try reconnecting to existing instance first
             const reconnected = await this.tryReconnectExisting();
             if (reconnected) {
-              console.log(`[EVO] Session ${this.sessionId} auto-reconnected after temporary disconnect`);
-              this.startPollLoop(); // Resume monitoring
-              return; // Exit this (now-dead) interval callback
+              console.log(`[EVO] Session ${this.sessionId} auto-reconnected after temporary disconnect (attempt ${this.reconnectAttempts})`);
+              this.reconnectAttempts = 0;
+              this.reconnectSince = 0;
+              this.startPollLoop();
+              return;
             }
 
-            // Reconnection failed — now set needs_reauth
+            // Try soft reconnect (re-create instance with saved auth)
+            const softReconnected = await this.trySoftReconnect();
+            if (softReconnected) {
+              console.log(`[EVO] Session ${this.sessionId} soft-reconnected (attempt ${this.reconnectAttempts})`);
+              this.reconnectAttempts = 0;
+              this.reconnectSince = 0;
+              this.startPollLoop();
+              return;
+            }
+
+            // Both failed — check if we should keep retrying or give up
+            if (elapsed < EVO_RECONNECT_GIVE_UP_MS) {
+              // Exponential backoff, capped at 2 minutes
+              const backoff = Math.min(1000 * Math.pow(2, this.reconnectAttempts), EVO_RECONNECT_MAX_BACKOFF_MS);
+              console.log(`[EVO] Session ${this.sessionId} reconnect failed — retrying in ${backoff / 1000}s (attempt ${this.reconnectAttempts}, elapsed ${Math.round(elapsed / 1000)}s)`);
+              await updateSessionStatus(this.sessionId, 'inactive');
+              // Schedule retry: wait, then restart poll loop which will
+              // detect close/refused again and trigger the next attempt
+              setTimeout(() => {
+                if (this.stopped) return;
+                this.isReconnecting = true;
+                this.startPollLoop();
+              }, backoff);
+              return;
+            }
+
+            // Exhausted 30-minute retry window — now set needs_reauth
             this.isReconnecting = false;
+            this.reconnectAttempts = 0;
+            this.reconnectSince = 0;
             await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
-            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth (reconnect failed)`);
+            console.log(`[EVO] Session ${this.sessionId} closed/refused -> needs_reauth after ${Math.round(elapsed / 1000)}s of retries`);
 
             const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
             if (appUrl) {
@@ -1374,6 +1422,21 @@ export function getActiveBotSocket(sessionId: string): any | null {
 }
 
 export function initializeBot() {
+  // Register keep-alive disconnect handler so the Evolution API keep-alive
+  // loop can trigger reconnection in BotManager when it detects a session
+  // went offline between poll cycles.
+  if (USE_EVOLUTION) {
+    setKeepAliveDisconnectHandler((instanceName: string, state: string) => {
+      const bot = activeBots.get(instanceName);
+      if (bot && bot instanceof EvolutionBot) {
+        const status = bot.getStatus();
+        if (status.isReady) {
+          console.log(`[KEEPALIVE-HANDLER] Instance ${instanceName} detected as ${state} by keep-alive — bot still thinks it's ready, poll loop will handle reconnection`);
+        }
+      }
+    });
+  }
+
   return {
     start: async () => {
       await initDatabase();

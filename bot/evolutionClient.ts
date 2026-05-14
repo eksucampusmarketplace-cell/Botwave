@@ -1132,9 +1132,18 @@ export async function sendPresence(instanceName: string, jid: string, presence: 
   return res.json();
 }
 
-// Keep-alive: ping Evolution API to prevent instance auto-deletion
+// Keep-alive: ping Evolution API to prevent instance auto-deletion.
+// Also detects disconnected instances and triggers reconnection.
 let keepAliveHandle: NodeJS.Timeout | null = null;
 const trackedInstances = new Set<string>();
+
+// Callback invoked when keep-alive detects a disconnected instance.
+// Set by BotManager to trigger reconnection without circular imports.
+let onDisconnectDetected: ((instanceName: string, state: string) => void) | null = null;
+
+export function setKeepAliveDisconnectHandler(handler: (instanceName: string, state: string) => void): void {
+  onDisconnectDetected = handler;
+}
 
 export function trackInstance(instanceName: string): void {
   trackedInstances.add(instanceName);
@@ -1173,6 +1182,32 @@ function ensureKeepAlive(): void {
         const data: any = await res.json();
         const state = data?.instance?.state || 'unknown';
         console.log(`[EVO-CLIENT] keep-alive ping ${name}: state=${state}`);
+
+        // Notify BotManager when a tracked instance is disconnected so it can
+        // trigger reconnection immediately instead of waiting for the 5s poll.
+        if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
+          console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} — notifying BotManager for reconnection`);
+          onDisconnectDetected(name, state);
+        }
+
+        // If instance is 'close', attempt to reconnect it directly via the
+        // Evolution API connect endpoint. This is the keep-alive's primary
+        // purpose: ensure sessions stay connected even if the poll loop
+        // hasn't detected the disconnect yet.
+        if (state === 'close') {
+          console.log(`[EVO-CLIENT] keep-alive: attempting auto-reconnect for ${name}...`);
+          try {
+            const connectRes = await apiFetch(`${BASE}/instance/connect/${name}`, {
+              method: 'GET',
+              headers,
+            });
+            const connectData: any = await connectRes.json();
+            const newState = connectData?.instance?.state || connectData?.state || 'unknown';
+            console.log(`[EVO-CLIENT] keep-alive: reconnect attempt for ${name} -> ${newState}`);
+          } catch (connectErr) {
+            console.warn(`[EVO-CLIENT] keep-alive: reconnect attempt failed for ${name}:`, connectErr);
+          }
+        }
       } catch (err) {
         console.warn(`[EVO-CLIENT] keep-alive ping ${name} failed:`, err);
       }
