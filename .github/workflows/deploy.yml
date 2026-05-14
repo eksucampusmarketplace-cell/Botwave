@@ -1,0 +1,65 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [BotWave]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Contabo VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 12m
+          script: |
+            set -e
+            echo "=== BotWave Auto-Deploy ==="
+            echo "Triggered by: ${{ github.actor }}"
+            echo "Commit: ${{ github.sha }}"
+            echo ""
+
+            cd /opt/botwave
+
+            echo "[1/4] Pulling latest code..."
+            git fetch origin BotWave
+            git reset --hard origin/BotWave
+
+            echo "[2/4] Building Docker images..."
+            cd deploy
+            ln -sf .env.botwave .env
+            docker compose build --parallel botwave-web botwave-bot 2>&1 | tail -20
+
+            echo "[3/4] Restarting services..."
+            docker compose up -d --no-deps --force-recreate botwave-web botwave-bot 2>&1
+
+            echo "[4/4] Waiting for health check..."
+            sleep 15
+            for i in $(seq 1 12); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:10000/api/health 2>/dev/null || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "Health check passed (HTTP 200)"
+                break
+              fi
+              echo "  Waiting... (attempt $i/12, got HTTP $STATUS)"
+              sleep 10
+            done
+
+            echo ""
+            echo "=== Container Status ==="
+            docker ps --format "table {{.Names}}\t{{.Status}}" | sort
+
+            echo ""
+            echo "=== Deploy complete ==="
