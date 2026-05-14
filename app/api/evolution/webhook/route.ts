@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
       if (qrCode) {
         updates.qr_code = qrCode;
         updates.qr_generated_at = webhookReceivedAt;
-        updates.qr_expires_at = new Date(Date.now() + 60_000).toISOString();
+        updates.qr_expires_at = new Date(Date.now() + 180_000).toISOString();
         console.log(`[PAIRING-WEBHOOK] Will update: qr_code (len=${qrCode.length}) qr_generated_at=${webhookReceivedAt}`);
       }
 

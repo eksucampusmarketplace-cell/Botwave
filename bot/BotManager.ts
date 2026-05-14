@@ -96,7 +96,7 @@ const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 5000;
-const PAIRING_TIMEOUT_MS = 600_000; // 10 min — proxy reconnects need more time
+const PAIRING_TIMEOUT_MS = 180_000; // 3 min — matches UI countdown in QRCodeDisplay
 
 // Proxy pool for Baileys direct mode — distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
@@ -1005,7 +1005,7 @@ class EvolutionBot {
     }
 
     let pairingWaitStart = Date.now();
-    // Use module-level PAIRING_TIMEOUT_MS (180s = 3 min for pairing)
+    // Use module-level PAIRING_TIMEOUT_MS (3 min — matches UI countdown)
     const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
     const reconnectStart = Date.now();
     let unknownStateCount = 0;

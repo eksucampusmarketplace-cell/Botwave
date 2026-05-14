@@ -129,7 +129,7 @@ export async function getUserSessions(userId?: string) {
       let query = supabase
         .from('bot_sessions')
         .select('*')
-        .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
+        .in('state', ['qr_pending', 'pairing_sent', 'active']);
 
       if (userId) {
         query = query.eq('user_id', userId);
@@ -214,7 +214,6 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       qr_expires_at: expiresAt,
       qr_generated_at: generatedAt,
       state: 'qr_pending',
-      auth_state: null,
       updated_at: new Date().toISOString()
     })
     .eq('id', sessionId)
