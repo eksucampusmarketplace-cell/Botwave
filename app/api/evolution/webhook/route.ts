@@ -373,6 +373,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      // Always update QR code unconditionally — it rotates every ~20-30s
+      // independently of the pairing code. The duplicate/lock checks below
+      // only protect the pairing code; QR must stay fresh for scan users.
+      if (qrCode) {
+        const { error: qrErr } = await supabase.from('bot_sessions').update({
+          qr_code: qrCode,
+          qr_generated_at: webhookReceivedAt,
+          qr_expires_at: new Date(Date.now() + 180_000).toISOString(),
+          updated_at: webhookReceivedAt,
+        }).eq('id', sessionId).neq('state', 'active');
+        if (qrErr) {
+          console.error(`[PAIRING-WEBHOOK] QR update FAILED for ${sessionId}: ${qrErr.message}`);
+        } else {
+          console.log(`[PAIRING-WEBHOOK] QR updated for ${sessionId} (len=${qrCode.length})`);
+        }
+      }
+
       // CODE LOCK: If a valid pairing code already exists and is less than
       // 55 seconds old, do NOT overwrite it. Evolution API fires qrcode.updated
       // every ~30s with a NEW code, but the user may already be entering the
@@ -389,35 +406,24 @@ export async function POST(request: NextRequest) {
         console.log(`[PAIRING-WEBHOOK] Existing code "${current.pairing_code}" expired (${Math.round(codeAge / 1000)}s old). Accepting new code "${pairingCode}".`);
       }
 
-      // Skip exact duplicate deliveries entirely
+      // Skip exact duplicate pairing code deliveries (QR already updated above)
       if (pairingCode && current?.pairing_code === pairingCode) {
-        console.log(`[PAIRING-WEBHOOK] DUPLICATE — code "${pairingCode}" already in DB. Skipping.`);
+        console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" — QR already updated above. Done.`);
         return NextResponse.json({ ok: true });
       }
 
-      const updates: Record<string, unknown> = { updated_at: webhookReceivedAt };
-
+      // Update pairing code if it's new
       if (pairingCode) {
-        updates.pairing_code = pairingCode;
-        updates.state = 'pairing_sent';
-        console.log(`[PAIRING-WEBHOOK] Will update: pairing_code="${pairingCode}" state=pairing_sent`);
-      }
-      if (qrCode) {
-        updates.qr_code = qrCode;
-        updates.qr_generated_at = webhookReceivedAt;
-        updates.qr_expires_at = new Date(Date.now() + 180_000).toISOString();
-        console.log(`[PAIRING-WEBHOOK] Will update: qr_code (len=${qrCode.length}) qr_generated_at=${webhookReceivedAt}`);
-      }
-
-      if (Object.keys(updates).length > 1) {
-        const { error: updateErr } = await supabase.from('bot_sessions').update(updates).eq('id', sessionId);
-        if (updateErr) {
-          console.error(`[PAIRING-WEBHOOK] DB update FAILED for ${sessionId}: ${updateErr.message}`);
+        const { error: pairingErr } = await supabase.from('bot_sessions').update({
+          pairing_code: pairingCode,
+          state: 'pairing_sent',
+          updated_at: webhookReceivedAt,
+        }).eq('id', sessionId);
+        if (pairingErr) {
+          console.error(`[PAIRING-WEBHOOK] Pairing code update FAILED for ${sessionId}: ${pairingErr.message}`);
         } else {
-          console.log(`[PAIRING-WEBHOOK] DB update SUCCESS for ${sessionId}: fields=${Object.keys(updates).join(',')}`);
+          console.log(`[PAIRING-WEBHOOK] Pairing code saved for ${sessionId}: "${pairingCode}"`);
         }
-      } else {
-        console.log(`[PAIRING-WEBHOOK] No meaningful updates to apply for ${sessionId}`);
       }
 
       return NextResponse.json({ ok: true });

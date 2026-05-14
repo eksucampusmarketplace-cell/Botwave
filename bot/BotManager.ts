@@ -1056,12 +1056,14 @@ class EvolutionBot {
             try {
               const latestResult = await refreshPairingCode(this.sessionId, this.phoneNumber);
               if (latestResult) {
+                // Always update QR — it rotates every ~20-30s even when
+                // pairing code stays the same across rotations.
+                if (latestResult.qrCode) {
+                  await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                }
                 const dbCode = await getSessionPairingCode(this.sessionId);
                 if (dbCode !== latestResult.pairingCode) {
                   console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" — updating DB`);
-                  if (latestResult.qrCode) {
-                    await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
-                  }
                   await updateSessionPairingCode(this.sessionId, latestResult.pairingCode);
                 }
               }
