@@ -551,6 +551,82 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
 }
 
 /**
+ * Standalone needs_reauth recovery — replicates the worker relay system.
+ *
+ * In the 3-worker setup, when a session hit needs_reauth on Worker 1,
+ * orphan recovery would reassign it to Worker 2, which would create a
+ * fresh EvolutionBot that called tryReconnectExisting() → trySoftReconnect().
+ * This gave every session multiple chances to reconnect across different workers.
+ *
+ * In standalone mode, once needs_reauth is set, the session is dead forever
+ * because getSessionsNeedingBot() doesn't fetch needs_reauth sessions.
+ *
+ * This function picks up needs_reauth sessions and resets them to qr_pending
+ * so the sync loop creates a new EvolutionBot that goes through the full
+ * reconnect flow (tryReconnectExisting → trySoftReconnect → fresh pairing).
+ *
+ * Respects a cooldown to avoid infinite retry storms — only recovers sessions
+ * that have been in needs_reauth for at least RECOVERY_COOLDOWN_MS.
+ */
+export async function recoverNeedsReauthSessions(): Promise<number> {
+  // Wait at least 5 minutes before retrying a needs_reauth session.
+  // This gives Evolution API time to settle and avoids hammering it.
+  const RECOVERY_COOLDOWN_MS = 5 * 60 * 1000;
+  // Don't retry sessions that have been in needs_reauth for more than 24 hours.
+  // After 24h, the user likely needs to manually re-pair (logged out by WhatsApp).
+  const MAX_REAUTH_AGE_MS = 24 * 60 * 60 * 1000;
+
+  const cooldownCutoff = new Date(Date.now() - RECOVERY_COOLDOWN_MS).toISOString();
+  const maxAgeCutoff = new Date(Date.now() - MAX_REAUTH_AGE_MS).toISOString();
+
+  const { data: reauthSessions, error } = await supabase
+    .from('bot_sessions')
+    .select('id, phone_number, updated_at, heartbeat_at')
+    .eq('state', 'needs_reauth')
+    .is('worker_url', null)
+    .lt('updated_at', cooldownCutoff)   // at least 5min in needs_reauth
+    .gt('updated_at', maxAgeCutoff);    // not older than 24h
+
+  if (error || !reauthSessions || reauthSessions.length === 0) return 0;
+
+  console.log(`[RECOVERY-REAUTH] Found ${reauthSessions.length} needs_reauth session(s) eligible for retry: ${reauthSessions.map(s => s.id.slice(0, 8)).join(', ')}`);
+
+  let recovered = 0;
+  for (const session of reauthSessions) {
+    // Reset to active (not qr_pending) so the EvolutionBot gets
+    // previousDbState='active' and tries the full reconnect chain:
+    // tryReconnectExisting() → trySoftReconnect() → fresh pairing.
+    // This replicates the worker relay: when a session hit needs_reauth
+    // on Worker 1, Worker 2 would start it as 'active' and try reconnecting.
+    const { error: updateErr } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'active',
+        pairing_code: null,
+        qr_code: null,
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.id)
+      .eq('state', 'needs_reauth'); // Prevent race: only update if still needs_reauth
+
+    if (!updateErr) {
+      recovered++;
+      console.log(`[RECOVERY-REAUTH] Session ${session.id.slice(0, 8)} reset from needs_reauth → active for auto-retry (will try reconnect first)`);
+    } else {
+      console.error(`[RECOVERY-REAUTH] Failed to recover session ${session.id.slice(0, 8)}:`, updateErr);
+    }
+  }
+
+  if (recovered > 0) {
+    console.log(`[RECOVERY-REAUTH] Recovered ${recovered}/${reauthSessions.length} needs_reauth session(s) — sync loop will retry them`);
+  }
+  return recovered;
+}
+
+/**
  * Count active pairing sessions per worker_url.
  * Used by assignWorkerAsync to pick the least-loaded worker.
  */
