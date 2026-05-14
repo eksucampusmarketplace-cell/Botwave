@@ -35,12 +35,26 @@ export default function SettingsPage() {
   useEffect(() => {
     const checkUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
-        return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          // Try getSession as fallback — getUser may fail due to network issues
+          // while the session cookie is still valid
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            window.location.href = '/login';
+            return;
+          }
+          setUsername(session.user.email || session.user.id);
+        } else {
+          setUsername(user.email || user.id);
+        }
+      } catch {
+        // Network error reaching Supabase — don't redirect, the middleware
+        // already validated the session cookie server-side. Let the page
+        // render so the user isn't bounced back to dashboard.
+        console.warn('[Settings] Auth check failed (network error) — staying on page');
       }
-      setUsername(user.email || user.id);
 
       // Fetch existing settings
       fetchApiKeys();
