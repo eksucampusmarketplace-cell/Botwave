@@ -124,10 +124,14 @@ export default function AutoRepliesPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
-        return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) { window.location.href = '/login'; return; }
+        }
+      } catch {
+        console.warn('[AutoReplies] Auth check failed (network error) — staying on page');
       }
       fetchData();
     };

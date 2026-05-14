@@ -50,10 +50,19 @@ export default function SessionsPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
-        return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          // Fallback to session check — getUser makes a network call that can fail
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            window.location.href = '/login';
+            return;
+          }
+        }
+      } catch {
+        // Network error — middleware already validated auth, proceed
+        console.warn('[Sessions] Auth check failed (network error) — staying on page');
       }
       fetchSessions();
     };

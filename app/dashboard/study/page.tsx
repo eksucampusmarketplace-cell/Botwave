@@ -312,10 +312,14 @@ export default function StudyPage() {
   useEffect(() => {
     const init = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
-        return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) { window.location.href = '/login'; return; }
+        }
+      } catch {
+        console.warn('[Study] Auth check failed (network error) — staying on page');
       }
       fetchTopics();
       fetchMaterials();

@@ -47,8 +47,15 @@ export default function AutopilotPage() {
   useEffect(() => {
     const init = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '/login'; return; }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) { window.location.href = '/login'; return; }
+        }
+      } catch {
+        console.warn('[Autopilot] Auth check failed (network error) — staying on page');
+      }
 
       // Fetch sessions
       try {

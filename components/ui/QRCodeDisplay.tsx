@@ -182,6 +182,15 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                   </div>
                 ))}
               </div>
+
+              {/* Fallback hint */}
+              {pairingCode && (
+                <div className="bg-cyan/5 border border-cyan/20 p-2 sm:p-3 mb-3">
+                  <p className="font-mono text-[10px] text-cyan/70 leading-relaxed">
+                    QR not working? Switch to the <span className="text-white font-bold">ENTER CODE</span> tab above to link with a pairing code instead.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -245,6 +254,15 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                   </p>
                 </div>
               </div>
+
+              {/* Fallback hint */}
+              {qrCode && (
+                <div className="bg-cyan/5 border border-cyan/20 p-2 sm:p-3 mb-3">
+                  <p className="font-mono text-[10px] text-cyan/70 leading-relaxed">
+                    Pairing code not working? Switch to the <span className="text-white font-bold">SCAN QR CODE</span> tab above to link by scanning instead.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -259,6 +277,15 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
           {!isConnected && pairingCode && !qrCode && (
             <div className="text-center mt-2 mb-3">
               <span className="font-mono text-[10px] text-[#3a7a5a]">QR code not available for this session</span>
+            </div>
+          )}
+
+          {/* Neither method working hint */}
+          {!isConnected && hasContent && (
+            <div className="bg-[#0a0a05] border border-yellow-600/15 p-2 sm:p-3 mb-3">
+              <p className="font-mono text-[10px] text-yellow-600/60 leading-relaxed text-center">
+                If neither method works, close this dialog, wait <span className="text-yellow-500 font-bold">1 hour</span>, then try connecting again.
+              </p>
             </div>
           )}
 
