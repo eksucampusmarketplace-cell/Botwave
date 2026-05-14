@@ -189,6 +189,9 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                   <p className="font-mono text-[10px] text-cyan/70 leading-relaxed">
                     QR not working? Switch to the <span className="text-white font-bold">ENTER CODE</span> tab above to link with a pairing code instead.
                   </p>
+                  <p className="font-mono text-[10px] text-cyan/70 leading-relaxed mt-1.5">
+                    You can also use a <span className="text-white font-bold">friend&apos;s phone camera</span> to scan the QR from your screen. Scan quickly — it refreshes every 3 minutes.
+                  </p>
                 </div>
               )}
             </div>
@@ -259,7 +262,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               {qrCode && (
                 <div className="bg-cyan/5 border border-cyan/20 p-2 sm:p-3 mb-3">
                   <p className="font-mono text-[10px] text-cyan/70 leading-relaxed">
-                    Pairing code not working? Switch to the <span className="text-white font-bold">SCAN QR CODE</span> tab above to link by scanning instead.
+                    Pairing code not working? Switch to the <span className="text-white font-bold">SCAN QR CODE</span> tab above to link by scanning instead. You can use a <span className="text-white font-bold">friend&apos;s phone</span> to snap the QR from your screen.
                   </p>
                 </div>
               )}
