@@ -13,7 +13,7 @@ jobs:
   deploy:
     name: Deploy to Contabo VPS
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Deploy via SSH
@@ -23,7 +23,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          command_timeout: 12m
+          command_timeout: 20m
           script: |
             set -e
             echo "=== BotWave Auto-Deploy ==="
@@ -33,19 +33,19 @@ jobs:
 
             cd /opt/botwave
 
-            echo "[1/4] Pulling latest code..."
+            echo "[1/5] Pulling latest code..."
             git fetch origin BotWave
             git reset --hard origin/BotWave
 
-            echo "[2/4] Building Docker images..."
+            echo "[2/5] Building Docker images..."
             cd deploy
             ln -sf .env.botwave .env
-            docker compose build --parallel botwave-web botwave-bot 2>&1 | tail -20
+            docker compose build botwave-web botwave-bot 2>&1 | tail -40
 
-            echo "[3/4] Restarting services..."
+            echo "[3/5] Restarting services..."
             docker compose up -d --no-deps --force-recreate botwave-web botwave-bot 2>&1
 
-            echo "[4/4] Waiting for health check..."
+            echo "[4/5] Waiting for health check..."
             sleep 15
             for i in $(seq 1 12); do
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:10000/api/health 2>/dev/null || echo "000")
@@ -56,6 +56,10 @@ jobs:
               echo "  Waiting... (attempt $i/12, got HTTP $STATUS)"
               sleep 10
             done
+
+            echo ""
+            echo "[5/5] Cleaning up old images..."
+            docker image prune -f 2>&1 | tail -5
 
             echo ""
             echo "=== Container Status ==="
