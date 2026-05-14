@@ -457,34 +457,44 @@ export async function createInstance(instanceName: string, phoneNumber: string, 
 /**
  * Enable proxy on an existing instance after successful pairing.
  * Called after linking succeeds so the ongoing connection uses a proxy.
+ * Tries up to PROXY_LIST.length proxies before giving up.
  */
 export async function enableInstanceProxy(instanceName: string): Promise<boolean> {
-  const proxy = getNextProxy();
-  if (!proxy) {
-    console.log(`[PROXY] enableInstanceProxy: no proxy available for ${instanceName}`);
-    return false;
+  const maxAttempts = PROXY_LIST.length || 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const proxy = getNextProxy();
+    if (!proxy) {
+      console.log(`[PROXY] enableInstanceProxy: no proxy available for ${instanceName}`);
+      return false;
+    }
+    try {
+      const res = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          enabled: true,
+          host: proxy.host,
+          port: proxy.port,
+          protocol: proxy.protocol,
+          username: proxy.username,
+          password: proxy.password,
+        }),
+        skipHealthCount: true,
+      });
+      const ok = res.status === 200 || res.status === 201;
+      console.log(`[PROXY] enableInstanceProxy ${instanceName}: status=${res.status} ok=${ok} proxy=${proxy.host}:${proxy.port} attempt=${attempt + 1}/${maxAttempts}`);
+      if (ok) {
+        recordProxySuccess(proxy.host);
+        return true;
+      }
+      recordProxyFailure(instanceName, proxy.host, `enableInstanceProxy status=${res.status}`);
+    } catch (err) {
+      console.warn(`[PROXY] enableInstanceProxy ${instanceName} attempt ${attempt + 1} failed for ${proxy.host}:${proxy.port}:`, err);
+      recordProxyFailure(instanceName, proxy.host, String(err));
+    }
   }
-  try {
-    const res = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        enabled: true,
-        host: proxy.host,
-        port: proxy.port,
-        protocol: proxy.protocol,
-        username: proxy.username,
-        password: proxy.password,
-      }),
-      skipHealthCount: true,
-    });
-    const ok = res.status === 200 || res.status === 201;
-    console.log(`[PROXY] enableInstanceProxy ${instanceName}: status=${res.status} ok=${ok} proxy=${proxy.host}:${proxy.port}`);
-    return ok;
-  } catch (err) {
-    console.warn(`[PROXY] enableInstanceProxy ${instanceName} failed:`, err);
-    return false;
-  }
+  console.error(`[PROXY] enableInstanceProxy ${instanceName}: all ${maxAttempts} proxies failed`);
+  return false;
 }
 
 /**
