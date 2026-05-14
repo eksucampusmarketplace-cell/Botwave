@@ -95,8 +95,9 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
 const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
-const SESSION_STAGGER_DELAY = 5000;
+const SESSION_STAGGER_DELAY = 15_000; // 15s between pairing starts to avoid WhatsApp 428 rate limits
 const PAIRING_TIMEOUT_MS = 180_000; // 3 min — matches UI countdown in QRCodeDisplay
+const MAX_CONCURRENT_PAIRING = 2; // Max sessions pairing simultaneously — prevents 428 storms
 
 // Proxy pool for Baileys direct mode — distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
@@ -1726,8 +1727,16 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     await Promise.all(staleReleases);
   }
 
-  // Sessions are independent — no cross-session pairing gate.
-  // Each session pairs on its own timeline without blocking others.
+  // Count how many sessions are currently mid-pairing (actively connecting to
+  // WhatsApp). Limit new pairing starts to MAX_CONCURRENT_PAIRING to prevent
+  // thundering herd 428 rate limits from WhatsApp.
+  let currentlyPairingCount = 0;
+  for (const [, bot] of activeBots) {
+    const s = bot.getStatus();
+    if (s.isPairingSent || (s.pairingStartedAt > 0 && (Date.now() - s.pairingStartedAt) < PAIRING_TIMEOUT_MS)) {
+      currentlyPairingCount++;
+    }
+  }
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
@@ -1801,10 +1810,17 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
         }
       }
 
+      // Enforce concurrency limit for pairing sessions
+      const isPairingSession = session.state === 'qr_pending' || session.state === 'pairing_sent';
+      if (isPairingSession && currentlyPairingCount >= MAX_CONCURRENT_PAIRING) {
+        console.log(`[SYNC] Pairing limit reached (${currentlyPairingCount}/${MAX_CONCURRENT_PAIRING}) — deferring session ${session.id.slice(0, 8)} to next cycle`);
+        await releaseLock(session.id);
+        continue;
+      }
+
       // Active-first stabilization: when transitioning from active/inactive
       // sessions to pairing sessions, wait 10s so established sessions
       // have time to connect before new pairing attempts open more sockets.
-      const isPairingSession = session.state === 'qr_pending' || session.state === 'pairing_sent';
       if (isPairingSession) {
         const hasActiveBotsStartingThisCycle = sessions.some(s =>
           (s.state === 'active' || s.state === 'inactive') && !activeBots.has(s.id)
@@ -1838,7 +1854,8 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
 
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
-      if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
+      if (isPairingSession) {
+        currentlyPairingCount++;
         // Acquire DB-level pairing lock so other workers see it too
         acquirePairingLock(session.id).catch(() => {});
         // Clear queue position since this session is now active
@@ -1850,7 +1867,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       // Stagger: wait between each NEW pairing start to avoid WhatsApp 428.
       // Skip the delay for active/inactive sessions — they already have valid
       // auth and just need to reconnect quickly after a redeploy.
-      if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
+      if (isPairingSession) {
         await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
       }
     }
