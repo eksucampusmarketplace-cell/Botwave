@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, type PairingResult } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -763,6 +763,18 @@ class EvolutionBot {
       const state = await getInstanceStatus(this.sessionId);
       console.log(`[EVO] Instance state for ${this.sessionId}: ${state}`);
 
+      // Instance definitively deleted — bail immediately, no retries
+      if (state === 'gone') {
+        console.warn(`[EVO] Instance ${this.sessionId} GONE (404) during reconnect — bailing immediately`);
+        return false;
+      }
+
+      // 428 cooldown active — stop reconnection attempts to avoid making it worse
+      if (state === 'cooldown') {
+        console.warn(`[EVO] 428 cooldown active during reconnect for ${this.sessionId} — pausing reconnection`);
+        return false;
+      }
+
       if (state === 'unknown') {
         if (attempt < MAX_RECONNECT_RETRIES) {
           const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
@@ -805,6 +817,12 @@ class EvolutionBot {
         if (connectState === 'connecting') {
           console.log(`[EVO] Instance ${this.sessionId} is connecting — poll loop will track state`);
           return true;
+        }
+
+        // 428 cooldown kicked in mid-reconnect — bail and let cooldown expire
+        if (connectState === 'cooldown') {
+          console.warn(`[EVO] 428 cooldown blocked connectInstance for ${this.sessionId} — stopping reconnect`);
+          return false;
         }
 
         // If connectInstance returns 'unknown' but getInstanceStatus said
@@ -1338,6 +1356,26 @@ class EvolutionBot {
               this.pollHandle = null;
             }
           }
+        } else if (state === 'gone') {
+          // Instance was deleted by Evolution API (404 response).
+          // Immediately mark needs_reauth — don't wait through 'unknown' polls.
+          console.warn(`[EVO] Instance GONE (404) for ${this.sessionId} — immediately marking needs_reauth`);
+          this.isReady = false;
+          this.isPairingSent = false;
+          this.isReconnecting = false;
+          this.stopPresenceLoop();
+          this.stopDeafSessionDetector();
+          this.stopAuthHealthCheck();
+          await releasePairingLock(this.sessionId);
+          await updateSessionStatus(this.sessionId, 'needs_reauth');
+          if (this.pollHandle) {
+            clearInterval(this.pollHandle);
+            this.pollHandle = null;
+          }
+          return;
+        } else if (state === 'cooldown') {
+          // 428 cooldown is active — skip this poll cycle, don't reconnect
+          console.log(`[EVO] Poll for ${this.sessionId} — 428 cooldown active (${get428CooldownRemaining()}s remaining), skipping`);
         } else if (state === 'unknown') {
           unknownStateCount++;
           if (this.isPairingSent && unknownStateCount < MAX_UNKNOWN_BEFORE_RECREATE * 2) {
@@ -1604,7 +1642,28 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 }
 
 async function _syncSessionsWithDbInner(isWorker?: boolean) {
+  // Skip sync entirely during 428 cooldown — no new connections should be attempted
+  if (is428CooldownActive()) {
+    console.log(`[SYNC] Skipping sync cycle — 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
+    return;
+  }
+
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
+
+  // Active-first startup: sort sessions so active/inactive sessions connect
+  // first, then qr_pending/pairing_sent sessions. This ensures established
+  // sessions reconnect and stabilize before any new pairing attempts start,
+  // preventing the thundering herd that causes 428 cascades.
+  sessions.sort((a, b) => {
+    const priority = (s: typeof a) => {
+      if (s.state === 'active') return 0;
+      if (s.state === 'inactive') return 1;
+      if (s.state === 'pairing_sent') return 2;
+      if (s.state === 'qr_pending') return 3;
+      return 4;
+    };
+    return priority(a) - priority(b);
+  });
 
   // Release stale DB-level pairing locks for sessions on THIS worker that
   // have no corresponding active bot in memory. This handles:
@@ -1697,6 +1756,20 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
           await clearAuthState(session.id);
           await updateSessionStatus(session.id, 'qr_pending');
           session.state = 'qr_pending';
+        }
+      }
+
+      // Active-first stabilization: when transitioning from active/inactive
+      // sessions to pairing sessions, wait 10s so established sessions
+      // have time to connect before new pairing attempts open more sockets.
+      const isPairingSession = session.state === 'qr_pending' || session.state === 'pairing_sent';
+      if (isPairingSession) {
+        const hasActiveBotsStartingThisCycle = sessions.some(s =>
+          (s.state === 'active' || s.state === 'inactive') && !activeBots.has(s.id)
+        );
+        if (hasActiveBotsStartingThisCycle) {
+          console.log(`[SYNC] Stabilization gap: waiting 10s before starting pairing session ${session.id.slice(0, 8)} — active sessions connecting first`);
+          await new Promise(resolve => setTimeout(resolve, 10_000));
         }
       }
 

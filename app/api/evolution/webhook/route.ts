@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
-import { recordMessageActivity } from '@/bot/evolutionClient';
+import { recordMessageActivity, trigger428Cooldown } from '@/bot/evolutionClient';
 
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
@@ -167,6 +167,11 @@ export async function POST(request: NextRequest) {
       const state = data?.state;
       const statusCode = data?.statusCode || data?.disconnectionReasonCode;
       console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: state=${state} statusCode=${statusCode}`);
+
+      // Detect 428 (WhatsApp rate limit) — trigger global cooldown to prevent cascading disconnects
+      if (statusCode === 428) {
+        trigger428Cooldown(`webhook connection.update for ${sessionId}`);
+      }
 
       // Track activity on connection events — proves the session is alive
       if (state === 'open') {
