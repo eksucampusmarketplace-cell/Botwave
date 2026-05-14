@@ -1,6 +1,6 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
-import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
+import { recoverStaleSessions, recoverStaleStandaloneSessions, recoverNeedsReauthSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
@@ -120,6 +120,18 @@ async function start() {
           const standaloneRecovered = await recoverStaleStandaloneSessions();
           if (standaloneRecovered > 0) {
             console.log(`[RECOVERY] Recovered ${standaloneRecovered} stale standalone session(s)`);
+          }
+
+          // needs_reauth recovery — replicates the worker relay system.
+          // In the 3-worker setup, when a session hit needs_reauth on one worker,
+          // orphan recovery would reassign it to another worker which would try
+          // tryReconnectExisting() again. In standalone mode, needs_reauth sessions
+          // are permanently dead because getSessionsNeedingBot() skips them.
+          // This loop picks them up after a 5-minute cooldown and resets to
+          // qr_pending so the sync loop retries with full reconnect flow.
+          const reauthRecovered = await recoverNeedsReauthSessions();
+          if (reauthRecovered > 0) {
+            console.log(`[RECOVERY] Auto-retried ${reauthRecovered} needs_reauth session(s)`);
           }
         }
 
