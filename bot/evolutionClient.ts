@@ -844,7 +844,7 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {
       const state = await getInstanceStatus(instanceName);
-      if (state === 'unknown') {
+      if (state === 'unknown' || state === 'gone') {
         console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} confirmed gone after ${Date.now() - start}ms (attempt ${attempt})`);
         return;
       }
