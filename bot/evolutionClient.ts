@@ -74,6 +74,53 @@ export function get428CooldownRemaining(): number {
 let lastInstanceCreatedAt = 0;
 const RATE_LIMIT_INTERVAL_MS = 15_000; // 15 seconds between instance creations
 
+// ─── Pairing Code Stability ───────────────────────────────────────────
+// Once a pairing code is generated for an instance, don't allow deletion
+// for PAIRING_STABILITY_MS. This gives the user time to enter the code
+// before BotWave's auto-retry loop destroys the instance.
+const pairingCodeTimestamps = new Map<string, number>();
+const PAIRING_STABILITY_MS = 60 * 1000; // 60 seconds — matches WhatsApp pairing code validity
+
+/** Record that a pairing code was just generated for an instance. */
+export function markPairingCodeGenerated(instanceName: string): void {
+  pairingCodeTimestamps.set(instanceName, Date.now());
+}
+
+/** Check if an instance is within the pairing stability window. */
+export function isPairingStabilityActive(instanceName: string): boolean {
+  const ts = pairingCodeTimestamps.get(instanceName);
+  if (!ts) return false;
+  if (Date.now() - ts < PAIRING_STABILITY_MS) return true;
+  pairingCodeTimestamps.delete(instanceName);
+  return false;
+}
+
+/** Clear the pairing stability window (e.g. when pairing succeeds). */
+export function clearPairingStability(instanceName: string): void {
+  pairingCodeTimestamps.delete(instanceName);
+}
+
+// ─── Pairing Rate-Limit Backoff ───────────────────────────────────────
+// After repeated failed pairing attempts for the same number, add
+// increasing cooldown to avoid WhatsApp rate-limiting the number.
+const pairingAttemptCounts = new Map<string, { count: number; lastAttempt: number }>();
+const PAIRING_BACKOFF_STEPS = [0, 0, 0, 60_000, 120_000, 300_000]; // 0,0,0,60s,120s,5min
+
+/** Record a pairing attempt for a phone number. Returns wait time in ms (0 = no wait). */
+export function recordPairingAttempt(phoneNumber: string): number {
+  const entry = pairingAttemptCounts.get(phoneNumber) || { count: 0, lastAttempt: 0 };
+  entry.count++;
+  entry.lastAttempt = Date.now();
+  pairingAttemptCounts.set(phoneNumber, entry);
+  const backoffIdx = Math.min(entry.count - 1, PAIRING_BACKOFF_STEPS.length - 1);
+  return PAIRING_BACKOFF_STEPS[backoffIdx];
+}
+
+/** Clear pairing attempt counter (e.g. when pairing succeeds). */
+export function clearPairingAttempts(phoneNumber: string): void {
+  pairingAttemptCounts.delete(phoneNumber);
+}
+
 /** Wait until the rate limiter allows a new instance creation. */
 async function waitForRateLimit(): Promise<void> {
   const now = Date.now();
@@ -835,6 +882,20 @@ export async function deleteInstance(instanceName: string) {
  * the instance record remains in the database.
  */
 export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 15_000): Promise<void> {
+  // CRITICAL GUARD: Never delete an instance that is currently connected (open).
+  // This prevents accidentally wiping a working session's auth state.
+  const preDeleteState = await getInstanceStatus(instanceName);
+  if (preDeleteState === 'open') {
+    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED — instance ${instanceName} is OPEN (connected). Refusing to delete a live session.`);
+    return;
+  }
+
+  // GUARD: Don't delete during pairing stability window
+  if (isPairingStabilityActive(instanceName)) {
+    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED — instance ${instanceName} is within pairing stability window. Code may still be valid.`);
+    return;
+  }
+
   const MAX_DELETE_RETRIES = 3;
   const POLL_INTERVAL = 2000;
 

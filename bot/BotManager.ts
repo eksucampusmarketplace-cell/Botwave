@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, type PairingResult } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -794,6 +794,8 @@ class EvolutionBot {
         console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
         this.isReady = true;
         this.isReconnecting = false;
+        clearPairingStability(this.sessionId);
+        clearPairingAttempts(this.phoneNumber);
         this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
         await updateSessionStatus(this.sessionId, 'active');
         this.startPresenceLoop();
@@ -882,6 +884,8 @@ class EvolutionBot {
         console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — auto-connected without re-pairing!`);
         this.isReady = true;
         this.isReconnecting = false;
+        clearPairingStability(this.sessionId);
+        clearPairingAttempts(this.phoneNumber);
         this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
         await updateSessionStatus(this.sessionId, 'active');
         this.startPresenceLoop();
@@ -899,6 +903,8 @@ class EvolutionBot {
             console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — connected after ${(i + 1) * 5}s!`);
             this.isReady = true;
             this.isReconnecting = false;
+            clearPairingStability(this.sessionId);
+            clearPairingAttempts(this.phoneNumber);
             this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
             await updateSessionStatus(this.sessionId, 'active');
             this.startPresenceLoop();
@@ -977,6 +983,26 @@ class EvolutionBot {
         console.log(`[EVO] Soft reconnect failed for inactive session ${this.sessionId} — falling through to fresh pairing`);
       }
 
+      // PRE-START OPEN CHECK: Before deleting anything, check if Evolution API
+      // already has this instance as 'open' (connected). This can happen when
+      // BotWave restarts but the user already paired successfully on Evolution API.
+      // Deleting an open instance would wipe the auth state and force re-pairing.
+      const preStartState = await getInstanceStatus(this.sessionId);
+      if (preStartState === 'open') {
+        console.log(`[EVO] PRE-START GUARD: Instance ${this.sessionId} is already OPEN on Evolution API — skipping fresh pairing, marking active`);
+        this.isReady = true;
+        this.isReconnecting = false;
+        clearPairingStability(this.sessionId);
+        clearPairingAttempts(this.phoneNumber);
+        this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
+        await updateSessionStatus(this.sessionId, 'active');
+        await setWebhook(this.sessionId);
+        trackInstance(this.sessionId);
+        this.startPresenceLoop();
+        this.startPollLoop();
+        return;
+      }
+
       // Clean up any stale instance and verify it is fully removed before
       // creating a new one. Evolution API's delete is async (event-driven);
       // without verification, createInstance races against the cleanup and
@@ -1003,10 +1029,16 @@ class EvolutionBot {
       // Fetch pairing code — getPairingCode now handles its own polling
       const evoPairingStart = Date.now();
       console.log(`[PAIRING-EVO] === Requesting pairing code via Evolution API === session=${this.sessionId} phone=${this.phoneNumber} at=${new Date(evoPairingStart).toISOString()}`);
+      const backoffMs = recordPairingAttempt(this.phoneNumber);
+      if (backoffMs > 0) {
+        console.log(`[PAIRING-EVO] Rate-limit backoff: waiting ${backoffMs / 1000}s before pairing attempt for ${this.phoneNumber}`);
+        await new Promise(r => setTimeout(r, backoffMs));
+      }
       const pairingResult = await getPairingCode(this.sessionId, this.phoneNumber);
       const evoPairingDuration = Date.now() - evoPairingStart;
 
       if (pairingResult) {
+        markPairingCodeGenerated(this.sessionId);
         const code = pairingResult.pairingCode;
         console.log(`[PAIRING-EVO] Code received: "${code}" len=${code.length} hasQR=${!!pairingResult.qrCode} duration=${evoPairingDuration}ms session=${this.sessionId}`);
         console.log(`[PAIRING-EVO] Saving to DB...`);
@@ -1073,6 +1105,9 @@ class EvolutionBot {
           this.reconnectAttempts = 0;
           this.reconnectSince = 0;
           this.wasEverActive = true;
+          // Clear pairing guards on successful connection
+          clearPairingStability(this.sessionId);
+          clearPairingAttempts(this.phoneNumber);
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
 
@@ -1127,6 +1162,8 @@ class EvolutionBot {
                 this.isReady = true;
                 this.isPairingSent = false;
                 this.isReconnecting = false;
+                clearPairingStability(this.sessionId);
+                clearPairingAttempts(this.phoneNumber);
                 await updateSessionStatus(this.sessionId, 'active');
                 void setWebhook(this.sessionId).catch(err =>
                   console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
@@ -1149,6 +1186,7 @@ class EvolutionBot {
                 const freshResult = await getPairingCode(this.sessionId, this.phoneNumber);
                 if (this.stopped) { isRecreating = false; return; }
                 if (freshResult) {
+                  markPairingCodeGenerated(this.sessionId);
                   if (freshResult.qrCode) {
                     await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                   }
@@ -1289,6 +1327,8 @@ class EvolutionBot {
               this.isReady = true;
               this.isPairingSent = false;
               this.isReconnecting = false;
+              clearPairingStability(this.sessionId);
+              clearPairingAttempts(this.phoneNumber);
               await updateSessionStatus(this.sessionId, 'active');
               console.log(`[EVO] Session ${this.sessionId} is now active (caught at timeout boundary)!`);
               void setWebhook(this.sessionId).catch(err =>
@@ -1317,6 +1357,7 @@ class EvolutionBot {
               const freshResult2 = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
               if (freshResult2) {
+                markPairingCodeGenerated(this.sessionId);
                 if (freshResult2.qrCode) {
                   await updateSessionQR(this.sessionId, freshResult2.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                 }
@@ -1395,6 +1436,7 @@ class EvolutionBot {
               const freshResult3 = await getPairingCode(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
               if (freshResult3) {
+                markPairingCodeGenerated(this.sessionId);
                 if (freshResult3.qrCode) {
                   await updateSessionQR(this.sessionId, freshResult3.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                 }
