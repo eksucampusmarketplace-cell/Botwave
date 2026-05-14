@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
+import { recordMessageActivity } from '@/bot/evolutionClient';
 
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
@@ -166,6 +167,11 @@ export async function POST(request: NextRequest) {
       const state = data?.state;
       const statusCode = data?.statusCode || data?.disconnectionReasonCode;
       console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: state=${state} statusCode=${statusCode}`);
+
+      // Track activity on connection events — proves the session is alive
+      if (state === 'open') {
+        recordMessageActivity(sessionId);
+      }
 
       if (state === 'open') {
         // Check if this is a first-time connection (pairing just completed)
@@ -423,6 +429,10 @@ export async function POST(request: NextRequest) {
     // Evolution API fires 'messages.upsert' per message (single object),
     // not as an array. Normalize to array for uniform handling.
     if (event === 'messages.upsert') {
+      // Track message activity for deaf session detection and activity-based presence.
+      // Any messages.upsert event proves the session is alive and receiving data.
+      recordMessageActivity(sessionId);
+
       const messages = Array.isArray(data) ? data : (data ? [data] : []);
 
       console.log(`[EVO-WEBHOOK] messages.upsert for ${sessionId}: count=${messages.length}`);

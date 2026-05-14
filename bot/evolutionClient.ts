@@ -1151,6 +1151,18 @@ export function setKeepAliveDisconnectHandler(handler: (instanceName: string, st
   onDisconnectDetected = handler;
 }
 
+// Track per-instance last message activity for activity-based presence.
+// Updated by the webhook handler when messages arrive.
+const lastActivityTimestamp = new Map<string, number>();
+
+export function recordMessageActivity(instanceName: string): void {
+  lastActivityTimestamp.set(instanceName, Date.now());
+}
+
+export function getLastActivity(instanceName: string): number {
+  return lastActivityTimestamp.get(instanceName) || 0;
+}
+
 export function trackInstance(instanceName: string): void {
   trackedInstances.add(instanceName);
   ensureKeepAlive();
@@ -1158,6 +1170,7 @@ export function trackInstance(instanceName: string): void {
 
 export function untrackInstance(instanceName: string): void {
   trackedInstances.delete(instanceName);
+  lastActivityTimestamp.delete(instanceName);
   if (trackedInstances.size === 0 && keepAliveHandle) {
     clearInterval(keepAliveHandle);
     keepAliveHandle = null;
@@ -1175,9 +1188,57 @@ function disableProxiesOnAllInstances(): void {
   }
 }
 
+// Grace period tracking for 'unknown' state — Evolution API may still be
+// loading instances after restart. Don't panic until several consecutive unknowns.
+const unknownGraceCounts = new Map<string, number>();
+const UNKNOWN_GRACE_THRESHOLD = 5; // 5 × 60s = 5 min grace period
+
+// WhatsApp presence heartbeat interval — sends a presence update to WhatsApp
+// (not just polling Evolution API) to keep WhatsApp's activity tracker fresh
+// and prevent the 14-day inactivity unlink.
+const PRESENCE_HEARTBEAT_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
+let presenceHeartbeatHandle: NodeJS.Timeout | null = null;
+
+function ensurePresenceHeartbeat(): void {
+  if (presenceHeartbeatHandle) return;
+  presenceHeartbeatHandle = setInterval(async () => {
+    for (const name of trackedInstances) {
+      try {
+        // Send 'available' then 'unavailable' after a short delay.
+        // This resets WhatsApp's "last active" timer without keeping the
+        // session permanently online (which would suppress phone notifications).
+        await apiFetch(`${BASE}/chat/sendPresence/${name}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ presence: 'available' }),
+        });
+        // Brief delay then go offline — mimics a real user checking their phone
+        setTimeout(async () => {
+          try {
+            await apiFetch(`${BASE}/chat/sendPresence/${name}`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ presence: 'unavailable' }),
+            });
+          } catch { /* non-critical */ }
+        }, 5000 + Math.random() * 5000);
+        console.log(`[EVO-CLIENT] presence heartbeat sent for ${name}`);
+      } catch (err) {
+        console.warn(`[EVO-CLIENT] presence heartbeat failed for ${name}:`, err);
+      }
+      // Stagger between instances to avoid burst
+      await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
+    }
+  }, PRESENCE_HEARTBEAT_INTERVAL);
+}
+
 function ensureKeepAlive(): void {
   if (keepAliveHandle) return;
   console.log(`[EVO-CLIENT] Starting keep-alive loop for ${trackedInstances.size} instance(s), interval=${KEEPALIVE_INTERVAL / 1000}s`);
+
+  // Also start the presence heartbeat loop for WhatsApp activity tracking
+  ensurePresenceHeartbeat();
+
   keepAliveHandle = setInterval(async () => {
     for (const name of trackedInstances) {
       try {
@@ -1188,6 +1249,20 @@ function ensureKeepAlive(): void {
         const data: any = await res.json();
         const state = data?.instance?.state || 'unknown';
         console.log(`[EVO-CLIENT] keep-alive ping ${name}: state=${state}`);
+
+        // Handle 'unknown' state with grace period — Evolution API may still
+        // be loading instances after restart. Don't trigger reconnection.
+        if (state === 'unknown') {
+          const count = (unknownGraceCounts.get(name) || 0) + 1;
+          unknownGraceCounts.set(name, count);
+          if (count <= UNKNOWN_GRACE_THRESHOLD) {
+            console.log(`[EVO-CLIENT] keep-alive: ${name} is unknown (${count}/${UNKNOWN_GRACE_THRESHOLD} grace) — waiting for Evolution API to load`);
+            continue;
+          }
+          console.warn(`[EVO-CLIENT] keep-alive: ${name} exceeded unknown grace threshold — treating as disconnected`);
+        } else {
+          unknownGraceCounts.delete(name);
+        }
 
         // Notify BotManager when a tracked instance is disconnected so it can
         // trigger reconnection immediately instead of waiting for the 5s poll.
@@ -1279,6 +1354,97 @@ export async function verifyEvolutionDataPersistence(): Promise<{ persisted: boo
     return { persisted: instances.length > 0, instanceCount: instances.length };
   } catch {
     return { persisted: false, instanceCount: 0 };
+  }
+}
+
+// ─── Socket.io WebSocket Client ───────────────────────────────────────────────
+// Connects to Evolution API's socket.io server for real-time event delivery.
+// This provides ~10ms disconnect detection vs 60s HTTP polling — the fastest
+// detection layer in the 4-layer system.
+//
+// Requires on Evolution API:
+//   WEBSOCKET_ENABLED=true
+//   WEBSOCKET_GLOBAL_EVENTS=true
+//   WEBSOCKET_ALLOWED_HOSTS=*
+
+let evoSocketClient: ReturnType<typeof import('socket.io-client').io> | null = null;
+let evoSocketReconnectTimer: NodeJS.Timeout | null = null;
+
+export function startEvolutionWebSocket(): void {
+  if (!BASE) return;
+  if (evoSocketClient) return;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { io } = require('socket.io-client') as typeof import('socket.io-client');
+
+    const wsUrl = BASE.replace(/\/+$/, '');
+    console.log(`[EVO-WS] Connecting to Evolution API WebSocket at ${wsUrl}...`);
+
+    evoSocketClient = io(wsUrl, {
+      query: { apikey: KEY },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 5000,
+      reconnectionDelayMax: 30000,
+      timeout: 20000,
+    });
+
+    evoSocketClient.on('connect', () => {
+      console.log('[EVO-WS] Connected to Evolution API WebSocket (real-time events active)');
+      if (evoSocketReconnectTimer) {
+        clearTimeout(evoSocketReconnectTimer);
+        evoSocketReconnectTimer = null;
+      }
+    });
+
+    evoSocketClient.on('disconnect', (reason: string) => {
+      console.warn(`[EVO-WS] Disconnected from Evolution API WebSocket: ${reason}`);
+    });
+
+    evoSocketClient.on('connect_error', (err: Error) => {
+      console.warn(`[EVO-WS] Connection error: ${err.message} — will retry automatically`);
+    });
+
+    // Listen for connection.update events — instant disconnect detection
+    evoSocketClient.on('connection.update', (msg: Record<string, unknown>) => {
+      const instanceName = msg.instance as string;
+      const data = msg.data as Record<string, unknown> | undefined;
+      const state = data?.state as string | undefined;
+      if (!instanceName || !state) return;
+
+      if (!trackedInstances.has(instanceName)) return;
+
+      console.log(`[EVO-WS] connection.update for ${instanceName}: state=${state}`);
+
+      if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
+        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket — notifying BotManager`);
+        onDisconnectDetected(instanceName, state);
+      }
+    });
+
+    // Listen for messages.upsert — track activity for deaf session detection
+    evoSocketClient.on('messages.upsert', (msg: Record<string, unknown>) => {
+      const instanceName = msg.instance as string;
+      if (instanceName && trackedInstances.has(instanceName)) {
+        recordMessageActivity(instanceName);
+      }
+    });
+
+  } catch (err) {
+    console.warn('[EVO-WS] Failed to initialize socket.io client (non-fatal, falling back to HTTP polling):', err);
+  }
+}
+
+export function stopEvolutionWebSocket(): void {
+  if (evoSocketClient) {
+    evoSocketClient.disconnect();
+    evoSocketClient = null;
+  }
+  if (evoSocketReconnectTimer) {
+    clearTimeout(evoSocketReconnectTimer);
+    evoSocketReconnectTimer = null;
   }
 }
 

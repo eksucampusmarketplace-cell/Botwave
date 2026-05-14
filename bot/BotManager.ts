@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, type PairingResult } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -696,7 +696,18 @@ export class BotWaveBot {
 // manages connection lifecycle + presence simulation.
 
 const EVO_RECONNECT_MAX_BACKOFF_MS = 120_000; // cap at 2 min (like Baileys)
-const EVO_RECONNECT_GIVE_UP_MS = 30 * 60 * 1000; // only give up after 30 min of continuous failure
+const EVO_RECONNECT_GIVE_UP_DEFAULT_MS = 30 * 60 * 1000; // 30 min for new sessions
+const EVO_RECONNECT_GIVE_UP_ACTIVE_MS = 2 * 60 * 60 * 1000; // 2h for previously-active sessions
+
+// Deaf session detection: if an active session receives no webhook events
+// for this long, force a restart via /instance/restart to recover from
+// the Baileys "deaf session" bug (messages.upsert stops firing silently).
+const DEAF_SESSION_THRESHOLD_MS = 35 * 60 * 1000; // 35 minutes
+const DEAF_SESSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // check every 5 min
+
+// Auth state health check interval — proactively verify sessions are
+// still authenticated before WhatsApp silently drops them.
+const AUTH_HEALTH_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
 
 class EvolutionBot {
   private sessionId: string;
@@ -709,11 +720,14 @@ class EvolutionBot {
   private pairingStartedAt: number = 0;
   private pollHandle: NodeJS.Timeout | null = null;
   private presenceHandle: NodeJS.Timeout | null = null;
+  private deafCheckHandle: NodeJS.Timeout | null = null;
+  private authHealthHandle: NodeJS.Timeout | null = null;
   private socketAdapter: EvolutionSocketAdapter | null = null;
   private previousDbState: string;
   private workerUrl: string | null = null;
   private reconnectAttempts: number = 0;
   private reconnectSince: number = 0; // timestamp when reconnection loop started
+  private wasEverActive: boolean = false; // tracks if session was ever in 'open' state
 
   public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
 
@@ -1040,9 +1054,9 @@ class EvolutionBot {
           this.isReconnecting = false;
           this.reconnectAttempts = 0;
           this.reconnectSince = 0;
+          this.wasEverActive = true;
           await updateSessionStatus(this.sessionId, 'active');
           console.log(`[EVO] Session ${this.sessionId} is now active!`);
-
 
           // Refresh webhook config so the instance uses the latest events list.
           // This ensures existing sessions pick up webhook config changes after deploys.
@@ -1054,6 +1068,8 @@ class EvolutionBot {
 
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           this.startPresenceLoop();
+          this.startDeafSessionDetector();
+          this.startAuthHealthCheck();
 
           // Send welcome video to owner on first session pairing
           const cleanPhone = this.phoneNumber.replace(/\D/g, '');
@@ -1150,13 +1166,14 @@ class EvolutionBot {
           unknownStateCount = 0;
           if (this.isReady) {
             // Was connected, now disconnected — retry with exponential
-            // backoff (like Baileys does for established sessions). Never
-            // give up quickly; keep retrying for up to 30 minutes before
-            // falling to needs_reauth. This makes standalone mode as
-            // resilient as the old 3-worker setup.
+            // backoff. Previously-active sessions get 2h window (vs 30min
+            // for new sessions) since their auth is likely valid and just
+            // needs time for WhatsApp to come back.
             this.isReady = false;
             this.isPairingSent = false;
             this.stopPresenceLoop();
+            this.stopDeafSessionDetector();
+            this.stopAuthHealthCheck();
 
             if (this.reconnectSince === 0) {
               this.reconnectSince = Date.now();
@@ -1164,7 +1181,8 @@ class EvolutionBot {
             this.reconnectAttempts++;
 
             const elapsed = Date.now() - this.reconnectSince;
-            console.log(`[EVO] Session ${this.sessionId} closed/refused — reconnect attempt ${this.reconnectAttempts} (elapsed ${Math.round(elapsed / 1000)}s / ${EVO_RECONNECT_GIVE_UP_MS / 1000}s)`);
+            const giveUpMs = this.wasEverActive ? EVO_RECONNECT_GIVE_UP_ACTIVE_MS : EVO_RECONNECT_GIVE_UP_DEFAULT_MS;
+            console.log(`[EVO] Session ${this.sessionId} closed/refused — reconnect attempt ${this.reconnectAttempts} (elapsed ${Math.round(elapsed / 1000)}s / ${giveUpMs / 1000}s, wasEverActive=${this.wasEverActive})`);
 
             // Stop polling while we attempt reconnection
             if (this.pollHandle) {
@@ -1195,7 +1213,7 @@ class EvolutionBot {
             }
 
             // Both failed — check if we should keep retrying or give up
-            if (elapsed < EVO_RECONNECT_GIVE_UP_MS) {
+            if (elapsed < giveUpMs) {
               // Exponential backoff, capped at 2 minutes
               const backoff = Math.min(1000 * Math.pow(2, this.reconnectAttempts), EVO_RECONNECT_MAX_BACKOFF_MS);
               console.log(`[EVO] Session ${this.sessionId} reconnect failed — retrying in ${backoff / 1000}s (attempt ${this.reconnectAttempts}, elapsed ${Math.round(elapsed / 1000)}s)`);
@@ -1210,7 +1228,7 @@ class EvolutionBot {
               return;
             }
 
-            // Exhausted 30-minute retry window — now set needs_reauth
+            // Exhausted retry window — now set needs_reauth
             this.isReconnecting = false;
             this.reconnectAttempts = 0;
             this.reconnectSince = 0;
@@ -1365,21 +1383,49 @@ class EvolutionBot {
 
   private startPresenceLoop(): void {
     this.stopPresenceLoop();
+    // Record initial activity so the deaf session detector doesn't
+    // immediately trigger on a freshly connected session.
+    recordMessageActivity(this.sessionId);
+
     const simulate = async () => {
       if (!this.socketAdapter) return;
       try {
         const hour = new Date().getHours();
+        const lastActivity = getLastActivity(this.sessionId);
+        const idleMinutes = lastActivity ? (Date.now() - lastActivity) / 60_000 : Infinity;
+
         let unavailableProb = 0.2;
         if (hour >= 0 && hour < 6) unavailableProb = 0.8;
         else if (hour >= 6 && hour < 9) unavailableProb = 0.5;
         else if (hour >= 22) unavailableProb = 0.4;
-        if (Math.random() < unavailableProb) {
+
+        // Activity-based presence: if session has been idle for >30 min,
+        // always send 'available' to keep WhatsApp's activity tracker fresh
+        // and prevent 14-day companion device unlinking.
+        if (idleMinutes > 30) {
+          await this.socketAdapter.sendPresenceUpdate('available');
+          // Brief delay then go offline — mimics a real user checking phone
+          setTimeout(async () => {
+            try {
+              if (this.socketAdapter) {
+                await this.socketAdapter.sendPresenceUpdate('unavailable');
+              }
+            } catch { /* non-critical */ }
+          }, 3000 + Math.random() * 5000);
+        } else if (Math.random() < unavailableProb) {
           await this.socketAdapter.sendPresenceUpdate('unavailable');
         } else {
           await this.socketAdapter.sendPresenceUpdate('available');
         }
       } catch { /* non-critical */ }
-      const nextDelay = (5 + Math.random() * 10) * 60 * 1000;
+
+      // More frequent presence when idle (every 3-5 min) to keep WhatsApp
+      // activity tracker fresh. Normal frequency when active (5-10 min).
+      const lastActivity = getLastActivity(this.sessionId);
+      const idleMinutes = lastActivity ? (Date.now() - lastActivity) / 60_000 : Infinity;
+      const nextDelay = idleMinutes > 30
+        ? (3 + Math.random() * 2) * 60 * 1000   // 3-5 min when idle
+        : (5 + Math.random() * 5) * 60 * 1000;  // 5-10 min when active
       this.presenceHandle = setTimeout(simulate, nextDelay);
     };
     this.presenceHandle = setTimeout(simulate, 10000 + Math.random() * 20000);
@@ -1392,9 +1438,64 @@ class EvolutionBot {
     }
   }
 
+  private startDeafSessionDetector(): void {
+    this.stopDeafSessionDetector();
+    this.deafCheckHandle = setInterval(async () => {
+      if (!this.isReady || this.stopped) return;
+      const lastActivity = getLastActivity(this.sessionId);
+      if (!lastActivity) return;
+
+      const silentMs = Date.now() - lastActivity;
+      if (silentMs > DEAF_SESSION_THRESHOLD_MS) {
+        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min — forcing instance restart to recover`);
+        try {
+          await restartInstance(this.sessionId);
+          // Reset activity timestamp so we don't immediately trigger again
+          recordMessageActivity(this.sessionId);
+        } catch (err) {
+          console.error(`[DEAF-DETECT] Failed to restart instance ${this.sessionId}:`, err);
+        }
+      }
+    }, DEAF_SESSION_CHECK_INTERVAL_MS);
+  }
+
+  private stopDeafSessionDetector(): void {
+    if (this.deafCheckHandle) {
+      clearInterval(this.deafCheckHandle);
+      this.deafCheckHandle = null;
+    }
+  }
+
+  private startAuthHealthCheck(): void {
+    this.stopAuthHealthCheck();
+    this.authHealthHandle = setInterval(async () => {
+      if (!this.isReady || this.stopped) return;
+      try {
+        const state = await getInstanceStatus(this.sessionId);
+        if (state === 'close' || state === 'refused') {
+          console.warn(`[AUTH-HEALTH] Session ${this.sessionId} auth check found state=${state} — triggering reconnect`);
+          // The poll loop will handle the actual reconnection
+        } else if (state === 'open') {
+          console.log(`[AUTH-HEALTH] Session ${this.sessionId} auth check OK (state=open)`);
+        }
+      } catch (err) {
+        console.warn(`[AUTH-HEALTH] Session ${this.sessionId} auth check failed:`, err);
+      }
+    }, AUTH_HEALTH_CHECK_INTERVAL_MS);
+  }
+
+  private stopAuthHealthCheck(): void {
+    if (this.authHealthHandle) {
+      clearInterval(this.authHealthHandle);
+      this.authHealthHandle = null;
+    }
+  }
+
   async stop(preserveInstance = false): Promise<void> {
     this.stopped = true;
     this.stopPresenceLoop();
+    this.stopDeafSessionDetector();
+    this.stopAuthHealthCheck();
     untrackInstance(this.sessionId);
     if (this.pollHandle) {
       clearInterval(this.pollHandle);
@@ -1435,18 +1536,24 @@ export function getActiveBotSocket(sessionId: string): any | null {
 
 export function initializeBot() {
   // Register keep-alive disconnect handler so the Evolution API keep-alive
-  // loop can trigger reconnection in BotManager when it detects a session
-  // went offline between poll cycles.
+  // loop and WebSocket can trigger immediate reconnection in BotManager
+  // when they detect a session went offline — faster than the 5s poll loop.
   if (USE_EVOLUTION) {
     setKeepAliveDisconnectHandler((instanceName: string, state: string) => {
       const bot = activeBots.get(instanceName);
       if (bot && bot instanceof EvolutionBot) {
         const status = bot.getStatus();
-        if (status.isReady) {
-          console.log(`[KEEPALIVE-HANDLER] Instance ${instanceName} detected as ${state} by keep-alive — bot still thinks it's ready, poll loop will handle reconnection`);
+        if (status.isReady && !status.isReconnecting) {
+          console.log(`[KEEPALIVE-HANDLER] Instance ${instanceName} detected as ${state} — triggering immediate reconnect via poll loop restart`);
+          // Force the poll loop to detect the disconnect immediately
+          // by restarting it (next poll will see close/refused and trigger reconnection)
+          (bot as any).startPollLoop();
         }
       }
     });
+
+    // Start socket.io WebSocket client for real-time events from Evolution API
+    startEvolutionWebSocket();
   }
 
   return {
@@ -1469,6 +1576,7 @@ export function initializeBot() {
         await releaseLock(id);
       }
       activeBots.clear();
+      stopEvolutionWebSocket();
     },
   };
 }
@@ -1606,6 +1714,13 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
             phoneNumber: session.phone_number,
           });
       activeBots.set(session.id, newBot);
+
+      // Stagger all session starts with random jitter (2-8s) to prevent
+      // thundering herd on Evolution API after deploy. Workers naturally
+      // spread load across 3 instances; single service needs artificial jitter.
+      const jitterMs = 2000 + Math.random() * 6000;
+      await new Promise(resolve => setTimeout(resolve, jitterMs));
+
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
       if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
