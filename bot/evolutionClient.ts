@@ -538,7 +538,23 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
   const connectDuration = Date.now() - connectStart;
   console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} base64=${connectData?.base64 ? 'yes' : 'no'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
   if (connectData?.pairingCode) {
-    console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
+    // If pairing code is present but QR data is missing, the Evolution API's
+    // async toDataURL callback hasn't completed yet. Wait briefly and retry.
+    if (!connectData.code) {
+      console.log(`[PAIRING-EVO-CLIENT] Got pairing code but QR data missing — retrying after 1.5s`);
+      await new Promise(r => setTimeout(r, 1500));
+      try {
+        const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
+        const retryData: any = await safeJson(retryRes);
+        if (retryData?.code) {
+          console.log(`[PAIRING-EVO-CLIENT] QR data received on retry. totalDuration=${Date.now() - flowStart}ms`);
+          return { pairingCode: connectData.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
+        }
+      } catch (retryErr: any) {
+        console.warn(`[PAIRING-EVO-CLIENT] QR retry failed: ${retryErr?.message}`);
+      }
+    }
+    console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" hasQR=${!!connectData.code} totalDuration=${Date.now() - flowStart}ms`);
     return { pairingCode: connectData.pairingCode, qrCode: connectData.code || null, qrBase64: connectData.base64 || null };
   }
 
@@ -569,7 +585,20 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
       const hasQrCount = typeof data?.count === 'number';
       console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} base64=${data?.base64 ? 'yes' : 'no'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
       if (data?.pairingCode) {
-        console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" totalDuration=${Date.now() - flowStart}ms`);
+        // If pairing code is present but QR data not ready, retry once
+        if (!data.code) {
+          console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}: pairing code present but QR missing — retrying after 1.5s`);
+          await new Promise(r => setTimeout(r, 1500));
+          try {
+            const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
+            const retryData: any = await safeJson(retryRes);
+            if (retryData?.code) {
+              console.log(`[PAIRING-EVO-CLIENT] QR data received on poll retry. totalDuration=${Date.now() - flowStart}ms`);
+              return { pairingCode: data.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
+            }
+          } catch { /* non-fatal */ }
+        }
+        console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" hasQR=${!!data.code} totalDuration=${Date.now() - flowStart}ms`);
         return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
       }
     } catch (err: any) {
@@ -596,6 +625,17 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
     if (res.status === 502 || res.status === 503) return null;
     const data: any = await safeJson(res);
     if (!data?.pairingCode) return null;
+    // If pairing code is present but QR data not ready, retry once
+    if (!data.code) {
+      await new Promise(r => setTimeout(r, 1500));
+      try {
+        const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
+        const retryData: any = await safeJson(retryRes);
+        if (retryData?.code) {
+          return { pairingCode: data.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
+        }
+      } catch { /* non-fatal */ }
+    }
     return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
   } catch {
     return null;
