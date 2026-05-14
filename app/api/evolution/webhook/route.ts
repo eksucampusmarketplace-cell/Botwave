@@ -390,30 +390,20 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // CODE LOCK: If a valid pairing code already exists and is less than
-      // 55 seconds old, do NOT overwrite it. Evolution API fires qrcode.updated
-      // every ~30s with a NEW code, but the user may already be entering the
-      // current one. Overwriting it mid-entry causes "invalid code" errors.
-      // WhatsApp pairing codes expire after 60s, so 55s gives a safe margin.
-      const CODE_LOCK_WINDOW_MS = 55_000;
-      if (pairingCode && current?.pairing_code && current.pairing_code !== pairingCode) {
-        const lastUpdated = current.updated_at ? new Date(current.updated_at).getTime() : 0;
-        const codeAge = Date.now() - lastUpdated;
-        if (codeAge < CODE_LOCK_WINDOW_MS) {
-          console.log(`[PAIRING-WEBHOOK] CODE LOCKED — existing code "${current.pairing_code}" is ${Math.round(codeAge / 1000)}s old (< ${CODE_LOCK_WINDOW_MS / 1000}s). Ignoring new code "${pairingCode}".`);
-          return NextResponse.json({ ok: true });
-        }
-        console.log(`[PAIRING-WEBHOOK] Existing code "${current.pairing_code}" expired (${Math.round(codeAge / 1000)}s old). Accepting new code "${pairingCode}".`);
-      }
-
       // Skip exact duplicate pairing code deliveries (QR already updated above)
       if (pairingCode && current?.pairing_code === pairingCode) {
         console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" — QR already updated above. Done.`);
         return NextResponse.json({ ok: true });
       }
 
-      // Update pairing code if it's new
+      // Always accept a different pairing code. Evolution API only generates
+      // a new code on reconnect (requestPairingCode), which invalidates the
+      // old one. So a different code means the old one is already dead — we
+      // must save the new one immediately regardless of age.
       if (pairingCode) {
+        if (current?.pairing_code && current.pairing_code !== pairingCode) {
+          console.log(`[PAIRING-WEBHOOK] Pairing code CHANGED for ${sessionId}: "${current.pairing_code}" → "${pairingCode}" (reconnect invalidated old code)`);
+        }
         const { error: pairingErr } = await supabase.from('bot_sessions').update({
           pairing_code: pairingCode,
           state: 'pairing_sent',
