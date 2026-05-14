@@ -38,6 +38,53 @@ if (PROXY_LIST.length > 0) {
 let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
 
+// ─── Global 428 Cooldown ───────────────────────────────────────────────
+// When ANY instance receives a 428 ("Connection Closed" — WhatsApp rate limit),
+// ALL new connection/creation attempts are paused for COOLDOWN_DURATION_MS.
+// This prevents the thrash loop: connect → 428 → retry immediately → 428 again.
+let global428CooldownUntil = 0;
+const COOLDOWN_DURATION_MS = 60_000; // 60 seconds — WhatsApp rate limit resets in ~30-60s
+
+/** Activate the global 428 cooldown. Called when any instance receives 428. */
+export function trigger428Cooldown(source: string): void {
+  const now = Date.now();
+  if (now < global428CooldownUntil) {
+    console.log(`[428-COOLDOWN] Already in cooldown (${Math.round((global428CooldownUntil - now) / 1000)}s remaining) — triggered by ${source}`);
+    return;
+  }
+  global428CooldownUntil = now + COOLDOWN_DURATION_MS;
+  console.warn(`[428-COOLDOWN] ⚠️ ACTIVATED — all new connections paused for ${COOLDOWN_DURATION_MS / 1000}s (triggered by ${source})`);
+}
+
+/** Check if the global 428 cooldown is currently active. */
+export function is428CooldownActive(): boolean {
+  return Date.now() < global428CooldownUntil;
+}
+
+/** Get remaining cooldown time in seconds (0 if not active). */
+export function get428CooldownRemaining(): number {
+  const remaining = global428CooldownUntil - Date.now();
+  return remaining > 0 ? Math.round(remaining / 1000) : 0;
+}
+
+// ─── Rate-Limited Instance Creation ────────────────────────────────────
+// Max 1 new instance creation per RATE_LIMIT_INTERVAL_MS to avoid
+// WhatsApp's thundering herd detection (multiple Baileys connections
+// from the same IP within seconds).
+let lastInstanceCreatedAt = 0;
+const RATE_LIMIT_INTERVAL_MS = 15_000; // 15 seconds between instance creations
+
+/** Wait until the rate limiter allows a new instance creation. */
+async function waitForRateLimit(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastInstanceCreatedAt;
+  if (elapsed < RATE_LIMIT_INTERVAL_MS) {
+    const waitMs = RATE_LIMIT_INTERVAL_MS - elapsed;
+    console.log(`[RATE-LIMIT] Waiting ${Math.round(waitMs / 1000)}s before next instance creation`);
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+}
+
 // Proxy health tracking: when proxies fail, fall back to direct VPS connection.
 // Tracks per-proxy failure counts and a global "proxy disabled" flag.
 const proxyFailures = new Map<string, number>();
@@ -323,6 +370,16 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     throw new Error('Evolution API is unhealthy — cannot create new instances');
   }
 
+  // Guard: refuse during 428 cooldown to prevent cascading disconnects
+  if (is428CooldownActive()) {
+    const remaining = get428CooldownRemaining();
+    console.warn(`[EVO-CLIENT] createInstance BLOCKED: 428 cooldown active (${remaining}s remaining) — refusing ${instanceName}`);
+    throw new Error(`428 cooldown active — ${remaining}s remaining`);
+  }
+
+  // Rate limit: wait if we created an instance too recently
+  await waitForRateLimit();
+
   const webhookUrl = getWebhookUrl();
   console.log(`[EVO-CLIENT] createInstance: name=${instanceName} phone=${phoneNumber} webhookUrl=${webhookUrl || 'NONE'}`);
 
@@ -387,6 +444,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   }
   const instanceId = result?.instance?.instanceId || 'none';
   console.log(`[EVO-CLIENT] createInstance result for ${instanceName}: status=${res.status} instanceId=${instanceId}`);
+  lastInstanceCreatedAt = Date.now();
 
   // Set proxy via separate API call after instance is fully created.
   // This avoids the race condition where setProxy is called before the
@@ -667,7 +725,9 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
 }
 
 // Get connection status of an instance.
-// 404s are expected during reconnection (Evolution API still loading) — don't count them as failures.
+// 404 = instance deleted by Evolution API (DEL_TEMP_INSTANCES or LOGOUT cascade).
+// Returns 'gone' for 404 so BotManager can immediately mark needs_reauth
+// instead of waiting through multiple 'unknown' polls.
 export async function getInstanceStatus(instanceName: string): Promise<string> {
   try {
     const res = await apiFetch(`${BASE}/instance/connectionState/${instanceName}`, {
@@ -676,6 +736,12 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
       skipHealthCount: true,
     });
     if (res.status === 502 || res.status === 503) return 'unknown';
+    // 404 = instance was deleted (REMOVED by Evolution API). Return 'gone'
+    // so BotManager can immediately transition to needs_reauth.
+    if (res.status === 404) {
+      console.warn(`[EVO-CLIENT] getInstanceStatus ${instanceName}: 404 — instance GONE (deleted by Evolution API)`);
+      return 'gone';
+    }
     const data: any = await safeJson(res);
     if (!data) return 'unknown';
     const state = data?.instance?.state || 'unknown';
@@ -713,6 +779,12 @@ export async function restartInstance(instanceName: string): Promise<boolean> {
 // Connect to an existing instance without requesting a new pairing code.
 // This triggers Baileys to reconnect using saved auth credentials.
 export async function connectInstance(instanceName: string, phoneNumber?: string): Promise<string> {
+  // Guard: refuse during 428 cooldown
+  if (is428CooldownActive()) {
+    const remaining = get428CooldownRemaining();
+    console.warn(`[EVO-CLIENT] connectInstance BLOCKED: 428 cooldown active (${remaining}s remaining) — refusing ${instanceName}`);
+    return 'cooldown';
+  }
   console.log(`[EVO-CLIENT] connectInstance: ${instanceName} phone=${phoneNumber || 'none'}`);
   try {
     let url = `${BASE}/instance/connect/${instanceName}`;
@@ -1276,17 +1348,22 @@ function ensureKeepAlive(): void {
         // purpose: ensure sessions stay connected even if the poll loop
         // hasn't detected the disconnect yet.
         if (state === 'close') {
-          console.log(`[EVO-CLIENT] keep-alive: attempting auto-reconnect for ${name}...`);
-          try {
-            const connectRes = await apiFetch(`${BASE}/instance/connect/${name}`, {
-              method: 'GET',
-              headers,
-            });
-            const connectData: any = await connectRes.json();
-            const newState = connectData?.instance?.state || connectData?.state || 'unknown';
-            console.log(`[EVO-CLIENT] keep-alive: reconnect attempt for ${name} -> ${newState}`);
-          } catch (connectErr) {
-            console.warn(`[EVO-CLIENT] keep-alive: reconnect attempt failed for ${name}:`, connectErr);
+          // Skip auto-reconnect during 428 cooldown to avoid triggering more rate limits
+          if (is428CooldownActive()) {
+            console.log(`[EVO-CLIENT] keep-alive: SKIPPING auto-reconnect for ${name} — 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
+          } else {
+            console.log(`[EVO-CLIENT] keep-alive: attempting auto-reconnect for ${name}...`);
+            try {
+              const connectRes = await apiFetch(`${BASE}/instance/connect/${name}`, {
+                method: 'GET',
+                headers,
+              });
+              const connectData: any = await connectRes.json();
+              const newState = connectData?.instance?.state || connectData?.state || 'unknown';
+              console.log(`[EVO-CLIENT] keep-alive: reconnect attempt for ${name} -> ${newState}`);
+            } catch (connectErr) {
+              console.warn(`[EVO-CLIENT] keep-alive: reconnect attempt failed for ${name}:`, connectErr);
+            }
           }
         }
       } catch (err) {
@@ -1407,16 +1484,22 @@ export function startEvolutionWebSocket(): void {
       console.warn(`[EVO-WS] Connection error: ${err.message} — will retry automatically`);
     });
 
-    // Listen for connection.update events — instant disconnect detection
+    // Listen for connection.update events — instant disconnect detection + 428 cooldown
     evoSocketClient.on('connection.update', (msg: Record<string, unknown>) => {
       const instanceName = msg.instance as string;
       const data = msg.data as Record<string, unknown> | undefined;
       const state = data?.state as string | undefined;
+      const statusCode = (data?.statusCode || data?.disconnectionReasonCode) as number | undefined;
       if (!instanceName || !state) return;
 
       if (!trackedInstances.has(instanceName)) return;
 
-      console.log(`[EVO-WS] connection.update for ${instanceName}: state=${state}`);
+      console.log(`[EVO-WS] connection.update for ${instanceName}: state=${state} statusCode=${statusCode || 'none'}`);
+
+      // Detect 428 (WhatsApp rate limit) — trigger global cooldown
+      if (statusCode === 428) {
+        trigger428Cooldown(`WebSocket connection.update for ${instanceName}`);
+      }
 
       if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
         console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket — notifying BotManager`);
