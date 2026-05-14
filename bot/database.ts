@@ -213,11 +213,9 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
       qr_code: qr,
       qr_expires_at: expiresAt,
       qr_generated_at: generatedAt,
-      state: 'qr_pending',
       updated_at: new Date().toISOString()
     })
     .eq('id', sessionId)
-    .neq('state', 'pairing_sent')  // never overwrite pairing_sent
     .neq('state', 'active');       // never overwrite an active session
 
   if (error) {
