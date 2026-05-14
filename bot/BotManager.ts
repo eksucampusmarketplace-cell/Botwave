@@ -1727,16 +1727,10 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     await Promise.all(staleReleases);
   }
 
-  // Count how many sessions are currently mid-pairing (actively connecting to
-  // WhatsApp). Limit new pairing starts to MAX_CONCURRENT_PAIRING to prevent
-  // thundering herd 428 rate limits from WhatsApp.
-  let currentlyPairingCount = 0;
-  for (const [, bot] of activeBots) {
-    const s = bot.getStatus();
-    if (s.isPairingSent || (s.pairingStartedAt > 0 && (Date.now() - s.pairingStartedAt) < PAIRING_TIMEOUT_MS)) {
-      currentlyPairingCount++;
-    }
-  }
+  // Track how many NEW pairing sessions we start in THIS sync cycle.
+  // Only limit new starts — already-running pairing sessions are already
+  // connected to WhatsApp and won't cause additional 428 rate limits.
+  let newPairingStartsThisCycle = 0;
 
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
@@ -1810,10 +1804,10 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
         }
       }
 
-      // Enforce concurrency limit for pairing sessions
+      // Enforce concurrency limit for NEW pairing sessions started this cycle
       const isPairingSession = session.state === 'qr_pending' || session.state === 'pairing_sent';
-      if (isPairingSession && currentlyPairingCount >= MAX_CONCURRENT_PAIRING) {
-        console.log(`[SYNC] Pairing limit reached (${currentlyPairingCount}/${MAX_CONCURRENT_PAIRING}) — deferring session ${session.id.slice(0, 8)} to next cycle`);
+      if (isPairingSession && newPairingStartsThisCycle >= MAX_CONCURRENT_PAIRING) {
+        console.log(`[SYNC] Pairing limit reached (${newPairingStartsThisCycle}/${MAX_CONCURRENT_PAIRING} new this cycle) — deferring session ${session.id.slice(0, 8)} to next cycle`);
         await releaseLock(session.id);
         continue;
       }
@@ -1855,7 +1849,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
       if (isPairingSession) {
-        currentlyPairingCount++;
+        newPairingStartsThisCycle++;
         // Acquire DB-level pairing lock so other workers see it too
         acquirePairingLock(session.id).catch(() => {});
         // Clear queue position since this session is now active
