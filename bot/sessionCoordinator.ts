@@ -30,8 +30,8 @@ const supabase = createClient(
 const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
 const LOCK_EXPIRY_MS = 180_000; // 180s without heartbeat = stale lock
 const HEARTBEAT_INTERVAL = 60_000; // heartbeat every 60s (was 30s)
-const AUTO_RECOVERY_COOLDOWN_MS = 120_000; // wait 2 min before auto-retry
-const AUTO_RECOVERY_MAX_ATTEMPTS = 3; // max auto-recovery tries per session
+const AUTO_RECOVERY_COOLDOWN_MS = 90_000; // wait 90s before auto-retry (was 120s)
+const AUTO_RECOVERY_MAX_ATTEMPTS = 10; // max auto-recovery tries per session (was 3)
 
 let heartbeatHandle: NodeJS.Timeout | null = null;
 let heartbeatCycle = 0; // counter for periodic Supabase sync
@@ -428,8 +428,8 @@ export async function cleanupOnStartup(): Promise<void> {
  * notified via push notification / email.
  * 
  * Safeguards:
- *  - Only recovers sessions that have been in needs_reauth for > 2 minutes
- *  - Max 3 auto-recovery attempts per session (resets on process restart)
+ *  - Only recovers sessions that have been in needs_reauth for > 90 seconds
+ *  - Max 10 auto-recovery attempts per session (resets on process restart)
  *  - Only runs on the main service (not workers)
  *  - Skips sessions that never had a successful connection (no last_active)
  */
@@ -458,41 +458,55 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     const newAttempt = attempts + 1;
     autoRecoveryAttempts.set(session.id, newAttempt);
 
-    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Cleaning up Evolution instance and resetting to qr_pending...`);
+    // First few attempts: preserve auth and try reconnection (avoids re-pairing).
+    // Later attempts: full cleanup with instance deletion for a clean slate.
+    const preserveAuth = newAttempt <= 3;
 
-    // Force-delete the Evolution API instance before resetting. This prevents
-    // the 400 "instance already exists" / 404 "instance does not exist" loop
-    // that occurs when Evolution API's internal state is stale after a WhatsApp
-    // logout. A fresh createInstance call will succeed after this cleanup.
-    try {
-      await deleteInstanceAndVerify(session.id);
-      console.log(`[AUTO-RECOVERY] Session ${sid}: Evolution instance cleaned up`);
-    } catch (err) {
-      console.warn(`[AUTO-RECOVERY] Session ${sid}: Evolution cleanup failed (non-fatal, proceeding):`, err);
+    if (preserveAuth) {
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Preserving auth for reconnect (soft recovery)...`);
+    } else {
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Full cleanup and reset to qr_pending...`);
+
+      // Force-delete the Evolution API instance before resetting. This prevents
+      // the 400 "instance already exists" / 404 "instance does not exist" loop
+      // that occurs when Evolution API's internal state is stale after a WhatsApp
+      // logout. A fresh createInstance call will succeed after this cleanup.
+      try {
+        await deleteInstanceAndVerify(session.id);
+        console.log(`[AUTO-RECOVERY] Session ${sid}: Evolution instance cleaned up`);
+      } catch (err) {
+        console.warn(`[AUTO-RECOVERY] Session ${sid}: Evolution cleanup failed (non-fatal, proceeding):`, err);
+      }
+    }
+
+    // For soft recovery: keep auth_state intact, just reset the lock and state
+    // so the sync loop's EvolutionBot can reconnect using saved credentials.
+    const updateFields: Record<string, unknown> = {
+      state: preserveAuth ? 'active' : 'qr_pending',
+      locked_by: null,
+      locked_at: null,
+      heartbeat_at: new Date().toISOString(),
+      worker_url: null,
+      pairing_code: null,
+      qr_code: null,
+      qr_expires_at: null,
+      qr_generated_at: null,
+      pairing_lock_acquired_at: null,
+      updated_at: new Date().toISOString(),
+    };
+    if (!preserveAuth) {
+      updateFields.auth_state = null;
     }
 
     const { error: updateErr } = await supabase
       .from('bot_sessions')
-      .update({
-        state: 'qr_pending',
-        locked_by: null,
-        locked_at: null,
-        heartbeat_at: null,
-        worker_url: null,
-        pairing_code: null,
-        qr_code: null,
-        qr_expires_at: null,
-        qr_generated_at: null,
-        auth_state: null,
-        pairing_lock_acquired_at: null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateFields)
       .eq('id', session.id)
       .eq('state', 'needs_reauth'); // conditional: only if still needs_reauth
 
     if (!updateErr) {
       recovered++;
-      console.log(`[AUTO-RECOVERY] Session ${sid} reset to qr_pending (attempt ${newAttempt}). Sync loop will attempt reconnection.`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} reset to ${preserveAuth ? 'active (soft)' : 'qr_pending (full)'} (attempt ${newAttempt}). Sync loop will attempt reconnection.`);
 
       // Send push notification to user about auto-recovery attempt
       if (newAttempt >= AUTO_RECOVERY_MAX_ATTEMPTS) {
