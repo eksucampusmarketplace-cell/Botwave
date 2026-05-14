@@ -310,7 +310,7 @@ export async function waitForEvolutionReady(maxAttempts = 10, baseDelayMs = 3000
 // Create a new WhatsApp instance for a session, including webhook config.
 // If the instance already exists (403), log and continue — the caller will
 // connect to the existing instance via getPairingCode.
-export async function createInstance(instanceName: string, phoneNumber: string, opts?: { skipProxy?: boolean }) {
+export async function createInstance(instanceName: string, phoneNumber: string) {
   // Guard: refuse to create new instances if Evolution API has been failing
   if (!isEvolutionHealthy()) {
     console.error(`[EVO-CLIENT] createInstance BLOCKED: Evolution API has ${consecutiveFailures} consecutive failures — refusing to accept new pairing sessions`);
@@ -327,11 +327,9 @@ export async function createInstance(instanceName: string, phoneNumber: string, 
     integration: 'WHATSAPP-BAILEYS',
   };
 
-  // Pick a proxy for this instance (applied after creation via separate API call).
-  const proxyIndex = proxyCounter;
-  const proxy = getNextProxy();
-  if (proxy) {
-    console.log(`[PROXY] Will assign proxy #${(proxyIndex % PROXY_LIST.length) + 1}/${PROXY_LIST.length} to instance ${instanceName}: ${proxy.host}:${proxy.port} (user: ${proxy.username}, protocol: ${proxy.protocol})`);
+  // Proxy is set after creation via retry loop (tries all available proxies).
+  if (PROXY_LIST.length > 0) {
+    console.log(`[PROXY] Will assign proxy from pool of ${PROXY_LIST.length} to instance ${instanceName}`);
   } else {
     console.warn(`[PROXY] No proxy available for instance ${instanceName} — connecting with server IP (risk of 428 ban)`);
   }
@@ -387,36 +385,46 @@ export async function createInstance(instanceName: string, phoneNumber: string, 
   // Set proxy via separate API call after instance is fully created.
   // This avoids the race condition where setProxy is called before the
   // instance is registered in waInstances.
-  // When skipProxy is true (during initial pairing), we skip proxy setup
-  // so the connection stays stable for the pairing handshake. Proxy is
-  // set later via setInstanceProxy() after linking succeeds.
-  if (proxy && !opts?.skipProxy && (res.status === 200 || res.status === 201)) {
+  // Proxy MUST be set BEFORE pairing starts so WhatsApp sees a consistent
+  // IP from the very first connection. Changing IP mid-session causes bans.
+  // Retry through all available proxies if one fails.
+  if (res.status === 200 || res.status === 201) {
     // Small delay to let Evolution API fully register the instance
     await new Promise(resolve => setTimeout(resolve, 1500));
-    try {
-      const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          enabled: true,
-          host: proxy.host,
-          port: proxy.port,
-          protocol: proxy.protocol,
-          username: proxy.username,
-          password: proxy.password,
-        }),
-      });
-      if (proxyRes.status === 200 || proxyRes.status === 201) {
-        console.log(`[PROXY] Proxy SET for ${instanceName} — ${proxy.host}:${proxy.port}`);
-        recordProxySuccess(proxy.host);
-      } else {
-        const body = await proxyRes.text().catch(() => '');
-        console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}): ${body.slice(0, 200)}`);
-        recordProxyFailure(instanceName, proxy.host, `setProxy status=${proxyRes.status}`);
+    const maxProxyAttempts = PROXY_LIST.length || 0;
+    let proxySet = false;
+    for (let pi = 0; pi < maxProxyAttempts && !proxySet; pi++) {
+      const p = getNextProxy();
+      if (!p) break;
+      try {
+        const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            enabled: true,
+            host: p.host,
+            port: p.port,
+            protocol: p.protocol,
+            username: p.username,
+            password: p.password,
+          }),
+        });
+        if (proxyRes.status === 200 || proxyRes.status === 201) {
+          console.log(`[PROXY] Proxy SET for ${instanceName} — ${p.host}:${p.port} (attempt ${pi + 1}/${maxProxyAttempts})`);
+          recordProxySuccess(p.host);
+          proxySet = true;
+        } else {
+          const body = await proxyRes.text().catch(() => '');
+          console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}, attempt ${pi + 1}/${maxProxyAttempts}): ${body.slice(0, 200)}`);
+          recordProxyFailure(instanceName, p.host, `setProxy status=${proxyRes.status}`);
+        }
+      } catch (err) {
+        console.warn(`[PROXY] setProxy attempt ${pi + 1}/${maxProxyAttempts} failed for ${instanceName} (${p.host}:${p.port}):`, err);
+        recordProxyFailure(instanceName, p.host, String(err));
       }
-    } catch (err) {
-      console.warn(`[PROXY] setProxy call failed for ${instanceName} (non-fatal):`, err);
-      recordProxyFailure(instanceName, proxy.host, String(err));
+    }
+    if (!proxySet && maxProxyAttempts > 0) {
+      console.error(`[PROXY] All ${maxProxyAttempts} proxies failed for ${instanceName} — session will run on server IP`);
     }
   }
 
