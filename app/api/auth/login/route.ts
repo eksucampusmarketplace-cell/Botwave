@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { isLockedOut, recordLoginAttempt, getClientIp } from '@/lib/admin-security';
 import { getCachedProfileId, cacheProfileId } from '@/lib/redisApiCache';
 
-function getServerSupabaseUrl(): string {
+function getInternalSupabaseUrl(): string {
   return process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 }
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ message: 'Login successful' });
 
     const supabase = createServerClient(
-      getServerSupabaseUrl(),
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!email.includes('@')) {
       const { createClient } = await import('@supabase/supabase-js');
       const adminSupabase = createClient(
-        getServerSupabaseUrl(),
+        getInternalSupabaseUrl(),
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
 
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       if (loggedInUser) {
         const { createClient } = await import('@supabase/supabase-js');
         const adminSupabase = createClient(
-          getServerSupabaseUrl(),
+          getInternalSupabaseUrl(),
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
         );
         const { error: rpcErr } = await adminSupabase.rpc('increment_login_count', { p_user_id: loggedInUser.id });

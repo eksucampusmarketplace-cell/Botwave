@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true, message: 'Logged out' });
 
     const supabase = createServerClient(
-      (process.env.SUPABASE_INTERNAL_URL || process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!),
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
