@@ -1,6 +1,14 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+let HttpsProxyAgent: any;
+try {
+  HttpsProxyAgent = require('https-proxy-agent').HttpsProxyAgent;
+} catch {
+  HttpsProxyAgent = null;
+}
+
 const BASE = process.env.EVOLUTION_API_URL || '';
 const KEY  = process.env.EVOLUTION_API_KEY  || '';
 const REQUEST_TIMEOUT = 30_000;
@@ -216,7 +224,7 @@ export function recordProxySuccess(proxyHost: string): void {
   }
 }
 
-/** Periodically test if proxies have recovered. */
+/** Periodically test if proxies have recovered by fetching through each proxy. */
 function startProxyRecoveryCheck(): void {
   if (proxyRecoveryTimer) return;
   proxyRecoveryTimer = setInterval(async () => {
@@ -224,16 +232,27 @@ function startProxyRecoveryCheck(): void {
     for (const entry of PROXY_LIST) {
       const parts = entry.split(':');
       if (parts.length < 4) continue;
-      const host = parts[0];
+      const [host, port, user, pass] = parts;
       try {
+        // Test through the actual proxy, not the server's own IP
+        const proxyUrl = `http://${user}:${pass}@${host}:${port}`;
+        const agent = HttpsProxyAgent ? new HttpsProxyAgent(proxyUrl) : null;
+        if (!agent) {
+          console.log(`[PROXY] Recovery check: HttpsProxyAgent not available — skipping`);
+          break;
+        }
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10_000);
-        await fetch('https://web.whatsapp.com', { signal: controller.signal });
+        await fetch('https://web.whatsapp.com', {
+          signal: controller.signal,
+          // @ts-expect-error -- Node fetch supports agent option
+          agent,
+        });
         clearTimeout(timeout);
         recordProxySuccess(host);
-        console.log(`[PROXY] Recovery check: ${host} is reachable`);
+        console.log(`[PROXY] Recovery check: ${host}:${port} is reachable via proxy`);
       } catch {
-        console.log(`[PROXY] Recovery check: ${host} still failing`);
+        console.log(`[PROXY] Recovery check: ${host}:${port} still failing`);
       }
     }
   }, PROXY_RECOVERY_CHECK_MS);
@@ -532,6 +551,11 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
           console.log(`[PROXY] Proxy SET for ${instanceName} — ${p.host}:${p.port} (attempt ${pi + 1}/${maxProxyAttempts})`);
           recordProxySuccess(p.host);
           proxySet = true;
+        } else if (proxyRes.status === 404) {
+          // Instance doesn't exist in Evolution API — not a proxy problem.
+          // Stop trying more proxies; the instance itself is gone.
+          console.warn(`[PROXY] Instance ${instanceName} not found (404) — skipping remaining proxy attempts`);
+          break;
         } else {
           const body = await proxyRes.text().catch(() => '');
           console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}, attempt ${pi + 1}/${maxProxyAttempts}): ${body.slice(0, 200)}`);
@@ -613,6 +637,11 @@ export async function enableInstanceProxy(instanceName: string): Promise<boolean
       if (ok) {
         recordProxySuccess(proxy.host);
         return true;
+      }
+      if (res.status === 404) {
+        // Instance doesn't exist — not a proxy problem, stop trying.
+        console.warn(`[PROXY] enableInstanceProxy: instance ${instanceName} not found (404) — aborting`);
+        return false;
       }
       recordProxyFailure(instanceName, proxy.host, `enableInstanceProxy status=${res.status}`);
     } catch (err) {
