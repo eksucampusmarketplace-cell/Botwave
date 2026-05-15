@@ -72,7 +72,7 @@ export function get428CooldownRemaining(): number {
 // WhatsApp's thundering herd detection (multiple Baileys connections
 // from the same IP within seconds).
 let lastInstanceCreatedAt = 0;
-const RATE_LIMIT_INTERVAL_MS = 15_000; // 15 seconds between instance creations
+const RATE_LIMIT_INTERVAL_MS = 8_000; // 8 seconds between instance creations
 
 // ─── Pairing Code Stability ───────────────────────────────────────────
 // Once a pairing code is generated for an instance, don't allow deletion
@@ -695,9 +695,9 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
     return { pairingCode: connectData.pairingCode, qrCode: connectData.code || null, qrBase64: connectData.base64 || null };
   }
 
-  const POLL_ATTEMPTS = 8;
-  const POLL_INTERVAL_MS = 4000;
-  const INITIAL_WAIT_MS = 5000;
+  const POLL_ATTEMPTS = 12;
+  const POLL_INTERVAL_MS = 2000;
+  const INITIAL_WAIT_MS = 2000;
   console.log(`[PAIRING-EVO-CLIENT] No code on first try, waiting ${INITIAL_WAIT_MS}ms then polling (${POLL_ATTEMPTS} attempts, ${POLL_INTERVAL_MS}ms apart)...`);
   await new Promise(r => setTimeout(r, INITIAL_WAIT_MS));
 
@@ -864,7 +864,7 @@ export async function connectInstance(instanceName: string, phoneNumber?: string
 
 // Delete an instance (used when session is removed).
 // 404s are expected (instance already gone) — don't count them as failures.
-export async function deleteInstance(instanceName: string) {
+export async function deleteInstance(instanceName: string): Promise<number> {
   console.log(`[EVO-CLIENT] deleteInstance: ${instanceName}`);
   try {
     const res = await apiFetch(`${BASE}/instance/delete/${instanceName}`, {
@@ -873,8 +873,10 @@ export async function deleteInstance(instanceName: string) {
       skipHealthCount: true,
     });
     console.log(`[EVO-CLIENT] deleteInstance ${instanceName}: status=${res.status}`);
+    return res.status;
   } catch (err) {
     console.warn(`[EVO-CLIENT] deleteInstance ${instanceName} failed (non-critical):`, err);
+    return 0;
   }
 }
 
@@ -908,7 +910,13 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
   const POLL_INTERVAL = 2000;
 
   for (let attempt = 1; attempt <= MAX_DELETE_RETRIES; attempt++) {
-    await deleteInstance(instanceName);
+    const deleteStatus = await deleteInstance(instanceName);
+
+    // FAST PATH: 404 means instance is already gone — no need to poll
+    if (deleteStatus === 404) {
+      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} already gone (delete returned 404) — skipping verify`);
+      return;
+    }
 
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {

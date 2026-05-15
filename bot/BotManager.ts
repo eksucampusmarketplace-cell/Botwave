@@ -1008,7 +1008,13 @@ class EvolutionBot {
       // creating a new one. Evolution API's delete is async (event-driven);
       // without verification, createInstance races against the cleanup and
       // gets 403 "name already in use".
-      await deleteInstanceAndVerify(this.sessionId);
+      // FAST PATH: skip delete+verify entirely when the instance is already
+      // confirmed gone (404). This avoids ~10s of redundant fetch timeouts.
+      if (preStartState === 'gone') {
+        console.log(`[EVO] Instance ${this.sessionId} already confirmed gone — skipping deleteInstanceAndVerify`);
+      } else {
+        await deleteInstanceAndVerify(this.sessionId);
+      }
 
       // Create instance on Evolution API (includes proxy setup with retry).
       // Proxy is set BEFORE pairing so WhatsApp sees a consistent IP.
