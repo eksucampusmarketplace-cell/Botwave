@@ -23,18 +23,59 @@ if (IS_WORKER) {
 
 const HEALTH_CHECK_TIMEOUT = 5_000;
 
+// ─── Worker Health Cache ─────────────────────────────────────────────────────
+// Cache health check results so we don't hammer dead workers every 5s sync cycle.
+// Healthy results cached for 30s, unhealthy for 60s (backoff for dead workers).
+const workerHealthCache = new Map<string, { healthy: boolean; checkedAt: number }>();
+const HEALTH_CACHE_TTL_HEALTHY = 30_000;  // 30s
+const HEALTH_CACHE_TTL_UNHEALTHY = 60_000; // 60s — don't spam dead workers
+
+// Track consecutive failures per worker. After threshold, enter extended backoff.
+const workerConsecutiveFailures = new Map<string, number>();
+const WORKER_EXTENDED_BACKOFF_THRESHOLD = 5; // 5 consecutive failures
+const HEALTH_CACHE_TTL_EXTENDED = 5 * 60_000; // 5 min backoff after sustained failures
+
+/** Check if all configured workers have been unreachable for a sustained period. */
+export function areAllWorkersDown(): boolean {
+  if (WORKER_URLS.length === 0) return true;
+  return WORKER_URLS.every(url => {
+    const failures = workerConsecutiveFailures.get(url) || 0;
+    return failures >= WORKER_EXTENDED_BACKOFF_THRESHOLD;
+  });
+}
+
 /**
  * Ping a worker URL to check if it's reachable.
- * Returns true if the worker responds within the timeout.
+ * Results are cached to avoid overwhelming dead workers with health checks.
  */
 export async function isWorkerHealthy(url: string): Promise<boolean> {
+  const cached = workerHealthCache.get(url);
+  if (cached) {
+    const failures = workerConsecutiveFailures.get(url) || 0;
+    const ttl = cached.healthy
+      ? HEALTH_CACHE_TTL_HEALTHY
+      : (failures >= WORKER_EXTENDED_BACKOFF_THRESHOLD ? HEALTH_CACHE_TTL_EXTENDED : HEALTH_CACHE_TTL_UNHEALTHY);
+    if (Date.now() - cached.checkedAt < ttl) {
+      return cached.healthy;
+    }
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT);
     const res = await fetch(`${url}/api/health`, { signal: controller.signal });
     clearTimeout(timeout);
-    return res.ok;
+    const healthy = res.ok;
+    workerHealthCache.set(url, { healthy, checkedAt: Date.now() });
+    if (healthy) {
+      workerConsecutiveFailures.delete(url);
+    } else {
+      workerConsecutiveFailures.set(url, (workerConsecutiveFailures.get(url) || 0) + 1);
+    }
+    return healthy;
   } catch {
+    workerHealthCache.set(url, { healthy: false, checkedAt: Date.now() });
+    workerConsecutiveFailures.set(url, (workerConsecutiveFailures.get(url) || 0) + 1);
     return false;
   }
 }

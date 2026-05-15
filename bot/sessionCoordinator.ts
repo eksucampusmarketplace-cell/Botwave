@@ -16,7 +16,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync } from './workerConfig';
+import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync, areAllWorkersDown } from './workerConfig';
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from './redis';
 import { isCircuitOpen } from './circuitBreaker';
 import { isShutdown } from './gracefulShutdown';
@@ -262,9 +262,10 @@ export async function recoverOrphanedSessions(): Promise<number> {
 
     // Smart redistribution: if the session is on main (no worker_url) and
     // healthy workers exist, reassign it to a worker instead of resetting
-    // it on the same congested main service.
+    // it on the same congested main service. Skip entirely when all workers
+    // are known-dead to avoid wasting time on pointless health checks.
     let newWorkerUrl: string | null = null;
-    if (!session.worker_url) {
+    if (!session.worker_url && !areAllWorkersDown()) {
       try {
         newWorkerUrl = await assignWorkerAsync();
         if (newWorkerUrl) {
@@ -277,33 +278,32 @@ export async function recoverOrphanedSessions(): Promise<number> {
 
     console.log(`[COORD] Recovering orphaned session ${session.id.slice(0, 8)} (was ${session.state}, locked_by=${session.locked_by ?? 'none'}${newWorkerUrl ? `, reassigning to ${newWorkerUrl}` : ''})`);
 
-    // For active sessions, preserve auth_state and keep state as 'active'
-    // so the sync loop can reconnect via tryReconnectExisting() instead of
-    // forcing a fresh pairing. This prevents redeploys from nuking connected
-    // sessions. Only qr_pending/pairing_sent sessions get fully reset.
-    //
-    // Set heartbeat_at to NOW (not null) so the next orphan scan doesn't
-    // immediately re-detect this session as orphaned. The sync loop on the
-    // correct worker will re-acquire the lock and resume heartbeats.
-    if (session.state === 'active') {
-      const activeUpdateFields: Record<string, unknown> = {
+    // For active AND pairing_sent sessions, preserve state and set a fresh
+    // heartbeat so the next orphan scan doesn't immediately re-detect them.
+    // Active sessions: the sync loop reconnects via tryReconnectExisting().
+    // Pairing_sent sessions: the user may be entering the pairing code right
+    // now — resetting to qr_pending would delete the instance and invalidate
+    // the code, causing an infinite create→orphan→reset loop. Instead, just
+    // release the stale lock and let the existing bot continue.
+    if (session.state === 'active' || session.state === 'pairing_sent') {
+      const preserveUpdateFields: Record<string, unknown> = {
         locked_by: null,
         locked_at: null,
         heartbeat_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
       if (newWorkerUrl) {
-        activeUpdateFields.worker_url = newWorkerUrl;
+        preserveUpdateFields.worker_url = newWorkerUrl;
       }
-      const { error: activeUpdateErr } = await supabase
+      const { error: preserveUpdateErr } = await supabase
         .from('bot_sessions')
-        .update(activeUpdateFields)
+        .update(preserveUpdateFields)
         .eq('id', session.id);
-      if (!activeUpdateErr) {
+      if (!preserveUpdateErr) {
         recovered++;
-        console.log(`[COORD] Active session ${session.id.slice(0, 8)} recovered — lock released, auth preserved for reconnect${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ''}`);
+        console.log(`[COORD] ${session.state} session ${session.id.slice(0, 8)} recovered — lock released, state preserved${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ''}`);
       } else {
-        console.error(`[COORD] Failed to recover active session ${session.id.slice(0, 8)}:`, activeUpdateErr);
+        console.error(`[COORD] Failed to recover ${session.state} session ${session.id.slice(0, 8)}:`, preserveUpdateErr);
       }
       continue;
     }

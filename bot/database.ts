@@ -529,14 +529,17 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
       if (!updateErr) recovered++;
     } else {
       // qr_pending / pairing_sent stuck without heartbeat — clear locks
-      // so the sync loop can pick them up fresh
+      // so the sync loop can pick them up fresh. For pairing_sent, set a
+      // fresh heartbeat so orphan recovery doesn't immediately re-detect
+      // and reset the session (which would destroy the active pairing code).
+      const freshHeartbeat = session.state === 'pairing_sent' ? new Date().toISOString() : null;
       console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as ${session.state} — clearing locks for retry`);
       const { error: updateErr } = await supabase
         .from('bot_sessions')
         .update({
           locked_by: null,
           locked_at: null,
-          heartbeat_at: null,
+          heartbeat_at: freshHeartbeat,
           updated_at: new Date().toISOString(),
         })
         .eq('id', session.id);

@@ -12,13 +12,12 @@ try {
 const BASE = process.env.EVOLUTION_API_URL || '';
 const KEY  = process.env.EVOLUTION_API_KEY  || '';
 const REQUEST_TIMEOUT = 30_000;
-// In standalone mode (no workers), the keep-alive must check more frequently
-// since there's no worker redundancy. With 3 workers, effective interval was
-// ~80s (4min÷3 workers). In standalone, use 60s directly.
-const WORKER_URLS_RAW = (process.env.WORKER_URLS || '').split(',').filter(Boolean);
-const KEEPALIVE_INTERVAL = WORKER_URLS_RAW.length > 0
-  ? 4 * 60 * 1000   // 4 minutes — workers provide redundant checks
-  : 60 * 1000;       // 60 seconds — standalone needs faster detection
+// Keep-alive interval: always use 60s. The previous 4-minute interval for
+// multi-worker setups assumed workers provide redundant health checks, but
+// when workers are configured yet dead (common after architecture changes),
+// the main service is effectively standalone and 4min is too slow to detect
+// disconnections. 60s is safe for any topology.
+const KEEPALIVE_INTERVAL = 60 * 1000;
 
 // Proxy pool for distributing WebSocket connections across different IPs.
 // Each proxy string is "host:port:user:pass".

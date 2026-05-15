@@ -1895,7 +1895,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     const bot = activeBots.get(id);
     if (!bot) continue;
     const status = bot.getStatus();
-    if (!status.isReady && !status.isReconnecting) continue;
+    if (!status.isReady && !status.isReconnecting && !status.isPairingSent) continue;
 
     const reacquired = await tryAcquireLock(id);
     if (!reacquired) {
