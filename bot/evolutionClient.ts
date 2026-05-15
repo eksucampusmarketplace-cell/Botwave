@@ -103,14 +103,22 @@ export function clearPairingStability(instanceName: string): void {
 // ─── Pairing Rate-Limit Backoff ───────────────────────────────────────
 // After repeated failed pairing attempts for the same number, add
 // increasing cooldown to avoid WhatsApp rate-limiting the number.
+// Counter auto-resets if no attempt has been made in PAIRING_ATTEMPT_TTL_MS
+// to prevent infinite backoff loops when reconnects keep failing.
 const pairingAttemptCounts = new Map<string, { count: number; lastAttempt: number }>();
-const PAIRING_BACKOFF_STEPS = [0, 0, 0, 60_000, 120_000, 300_000]; // 0,0,0,60s,120s,5min
+const PAIRING_BACKOFF_STEPS = [0, 0, 0, 30_000, 45_000, 60_000]; // 0,0,0,30s,45s,60s max
+const PAIRING_ATTEMPT_TTL_MS = 10 * 60 * 1000; // reset counter after 10 min of inactivity
 
 /** Record a pairing attempt for a phone number. Returns wait time in ms (0 = no wait). */
 export function recordPairingAttempt(phoneNumber: string): number {
+  const now = Date.now();
   const entry = pairingAttemptCounts.get(phoneNumber) || { count: 0, lastAttempt: 0 };
+  // Reset counter if last attempt was more than TTL ago
+  if (entry.lastAttempt > 0 && (now - entry.lastAttempt) > PAIRING_ATTEMPT_TTL_MS) {
+    entry.count = 0;
+  }
   entry.count++;
-  entry.lastAttempt = Date.now();
+  entry.lastAttempt = now;
   pairingAttemptCounts.set(phoneNumber, entry);
   const backoffIdx = Math.min(entry.count - 1, PAIRING_BACKOFF_STEPS.length - 1);
   return PAIRING_BACKOFF_STEPS[backoffIdx];
