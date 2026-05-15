@@ -1,6 +1,6 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
-import { recoverStaleSessions, recoverStaleStandaloneSessions, recoverNeedsReauthSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
+import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
@@ -122,17 +122,11 @@ async function start() {
             console.log(`[RECOVERY] Recovered ${standaloneRecovered} stale standalone session(s)`);
           }
 
-          // needs_reauth recovery — replicates the worker relay system.
-          // In the 3-worker setup, when a session hit needs_reauth on one worker,
-          // orphan recovery would reassign it to another worker which would try
-          // tryReconnectExisting() again. In standalone mode, needs_reauth sessions
-          // are permanently dead because getSessionsNeedingBot() skips them.
-          // This loop picks them up after a 5-minute cooldown and resets to
-          // qr_pending so the sync loop retries with full reconnect flow.
-          const reauthRecovered = await recoverNeedsReauthSessions();
-          if (reauthRecovered > 0) {
-            console.log(`[RECOVERY] Auto-retried ${reauthRecovered} needs_reauth session(s)`);
-          }
+          // needs_reauth recovery is now handled by autoRecoverNeedsReauth()
+          // (runs every 180s with exponential backoff and per-cycle limits).
+          // Removed from here to prevent duplicate recovery causing thundering
+          // herd: both systems would reset all needs_reauth sessions at once,
+          // triggering WhatsApp's anti-automation detection and mass LOGOUTs.
         }
 
         recordPollerSuccess('staleRecovery');
@@ -184,7 +178,9 @@ async function start() {
       }
     }, 300_000));
 
-    // Auto-recovery: retry needs_reauth sessions every 180s
+    // Auto-recovery: retry needs_reauth sessions every 300s (5 min).
+    // Uses exponential backoff per session and per-cycle limits to prevent
+    // thundering herd that triggers WhatsApp anti-automation LOGOUTs.
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
@@ -197,7 +193,7 @@ async function start() {
         recordPollerError('autoRecovery');
         console.error('[AUTO-RECOVERY] Error:', err);
       }
-    }, 180_000));
+    }, 300_000));
   }
 
   // Reminder + Scheduled Message delivery loop (every 30s)

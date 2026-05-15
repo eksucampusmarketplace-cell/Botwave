@@ -30,8 +30,9 @@ const supabase = createClient(
 const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
 const LOCK_EXPIRY_MS = 180_000; // 180s without heartbeat = stale lock
 const HEARTBEAT_INTERVAL = 60_000; // heartbeat every 60s (was 30s)
-const AUTO_RECOVERY_COOLDOWN_MS = 90_000; // wait 90s before auto-retry (was 120s)
-const AUTO_RECOVERY_MAX_ATTEMPTS = 10; // max auto-recovery tries per session (was 3)
+const AUTO_RECOVERY_BASE_COOLDOWN_MS = 120_000; // base cooldown: 2 minutes
+const AUTO_RECOVERY_MAX_ATTEMPTS = 5; // max auto-recovery tries per session
+const AUTO_RECOVERY_MAX_PER_CYCLE = 2; // max sessions to recover per 180s cycle (prevent thundering herd)
 
 let heartbeatHandle: NodeJS.Timeout | null = null;
 let heartbeatCycle = 0; // counter for periodic Supabase sync
@@ -436,36 +437,54 @@ export async function cleanupOnStartup(): Promise<void> {
 export async function autoRecoverNeedsReauth(): Promise<number> {
   if (IS_WORKER || isCircuitOpen() || isShutdown()) return 0;
 
-  const cooldownCutoff = new Date(Date.now() - AUTO_RECOVERY_COOLDOWN_MS).toISOString();
+  // Use the shortest possible cooldown to query, then filter per-session
+  // based on exponential backoff below.
+  const minCooldownCutoff = new Date(Date.now() - AUTO_RECOVERY_BASE_COOLDOWN_MS).toISOString();
 
   const { data: stale, error } = await supabase
     .from('bot_sessions')
     .select('id, user_id, last_active, updated_at, phone_number, session_name')
     .eq('state', 'needs_reauth')
-    .lt('updated_at', cooldownCutoff)
+    .lt('updated_at', minCooldownCutoff)
     .not('last_active', 'is', null); // only recover sessions that were previously connected
 
   if (error || !stale || stale.length === 0) return 0;
 
   let recovered = 0;
   for (const session of stale) {
+    // Enforce per-cycle limit to prevent thundering herd
+    if (recovered >= AUTO_RECOVERY_MAX_PER_CYCLE) {
+      console.log(`[AUTO-RECOVERY] Per-cycle limit reached (${AUTO_RECOVERY_MAX_PER_CYCLE}) — deferring remaining sessions to next cycle`);
+      break;
+    }
+
     const attempts = autoRecoveryAttempts.get(session.id) || 0;
     if (attempts >= AUTO_RECOVERY_MAX_ATTEMPTS) {
       continue; // exhausted auto-recovery for this session
+    }
+
+    // Exponential backoff: 2min, 4min, 8min, 16min, 32min per attempt.
+    // This prevents rapid-fire reconnection that triggers WhatsApp's
+    // anti-automation detection and mass LOGOUTs.
+    const backoffMs = AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, attempts);
+    const sessionAge = Date.now() - new Date(session.updated_at).getTime();
+    if (sessionAge < backoffMs) {
+      continue; // not ready yet — backoff period hasn't elapsed
     }
 
     const sid = session.id.slice(0, 8);
     const newAttempt = attempts + 1;
     autoRecoveryAttempts.set(session.id, newAttempt);
 
-    // First few attempts: preserve auth and try reconnection (avoids re-pairing).
+    // First 2 attempts: preserve auth and try reconnection (avoids re-pairing).
     // Later attempts: full cleanup with instance deletion for a clean slate.
-    const preserveAuth = newAttempt <= 3;
+    const preserveAuth = newAttempt <= 2;
 
+    const nextBackoffMin = Math.round(AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, newAttempt) / 60_000);
     if (preserveAuth) {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Preserving auth for reconnect (soft recovery)...`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
     } else {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS}. Full cleanup and reset to qr_pending...`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Full cleanup and reset to qr_pending...`);
 
       // Force-delete the Evolution API instance before resetting. This prevents
       // the 400 "instance already exists" / 404 "instance does not exist" loop
