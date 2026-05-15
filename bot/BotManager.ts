@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
 import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, type PairingResult } from './evolutionClient';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -1697,6 +1697,10 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     return;
   }
 
+  if (wasEvolutionRecentlyDown()) {
+    console.log('[SYNC] Evolution API recently recovered — reconnections will be staggered via queue');
+  }
+
   const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
 
   // Active-first startup: sort sessions so active/inactive sessions connect
@@ -1851,6 +1855,15 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       // spread load across 3 instances; single service needs artificial jitter.
       const jitterMs = 2000 + Math.random() * 6000;
       await new Promise(resolve => setTimeout(resolve, jitterMs));
+
+      // Post-crash reconnect queue: if Evolution just recovered from downtime,
+      // each session gets a progressively longer delay to avoid slamming
+      // Evolution with all reconnections at once (thundering herd).
+      const reconnectDelay = getReconnectDelay();
+      if (reconnectDelay > 0) {
+        console.log(`[SYNC] Reconnect queue: delaying ${session.id.slice(0, 8)} by ${Math.round(reconnectDelay / 1000)}s (Evolution just recovered)`);
+        await new Promise(resolve => setTimeout(resolve, reconnectDelay));
+      }
 
       newBot.start().catch(err => console.error(`[SYNC] Failed to start bot ${session.id}:`, err));
 
