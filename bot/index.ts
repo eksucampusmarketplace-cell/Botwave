@@ -1,7 +1,7 @@
 import './env';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
-import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy } from './workerConfig';
+import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
@@ -275,10 +275,16 @@ async function start() {
     keepAliveTargets.push({ name: 'self', url: `${SELF_URL}/api/health` });
   }
 
-  // Only main pings workers + Evolution API (saves worker bandwidth)
+  // Only main pings workers + Evolution API (saves worker bandwidth).
+  // Skip worker pings entirely when all workers are known-dead to avoid
+  // wasting 15s+ per cycle on timeouts (3 workers × 5s each).
   if (!IS_WORKER) {
-    for (const wUrl of WORKER_URLS) {
-      keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
+    if (!areAllWorkersDown()) {
+      for (const wUrl of WORKER_URLS) {
+        keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
+      }
+    } else if (WORKER_URLS.length > 0) {
+      console.log(`[KEEPALIVE] All ${WORKER_URLS.length} worker(s) in extended backoff — skipping worker pings. Consider removing WORKER_URLS env var if workers are permanently disabled.`);
     }
     const evoUrl = process.env.EVOLUTION_API_URL;
     if (evoUrl) {
