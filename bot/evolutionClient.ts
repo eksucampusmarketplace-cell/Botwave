@@ -74,6 +74,60 @@ export function get428CooldownRemaining(): number {
   return remaining > 0 ? Math.round(remaining / 1000) : 0;
 }
 
+// ─── Post-Crash Reconnect Queue (Thundering Herd Prevention) ──────────
+// When Evolution API crashes and comes back, all sessions detect the failure
+// simultaneously and try to reconnect at once. This slams Evolution right
+// after restart and can crash it again. The reconnect queue staggers
+// reconnections so they trickle in over time instead of flooding.
+let evolutionWasDown = false;
+let recoveryStartedAt = 0;
+let reconnectSlotCounter = 0;
+const RECONNECT_STAGGER_MS = 3_000; // 3 seconds between each reconnection
+const RECOVERY_WINDOW_MS = 120_000; // queue is active for 2 min after recovery
+
+/** Called when Evolution API becomes unreachable (consecutive failures). */
+export function markEvolutionDown(): void {
+  if (!evolutionWasDown) {
+    evolutionWasDown = true;
+    console.warn('[EVO-RECONNECT-QUEUE] Evolution API marked as DOWN — reconnections will be queued on recovery');
+  }
+}
+
+/** Called when Evolution API comes back (first successful response after downtime). */
+export function markEvolutionRecovered(): void {
+  if (evolutionWasDown) {
+    evolutionWasDown = false;
+    recoveryStartedAt = Date.now();
+    reconnectSlotCounter = 0;
+    console.log('[EVO-RECONNECT-QUEUE] Evolution API RECOVERED — staggered reconnection queue active');
+  }
+}
+
+/** Check if the reconnect queue is active (within recovery window). */
+export function isReconnectQueueActive(): boolean {
+  if (recoveryStartedAt === 0) return false;
+  if (Date.now() - recoveryStartedAt > RECOVERY_WINDOW_MS) {
+    recoveryStartedAt = 0;
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Get the delay (in ms) this session should wait before reconnecting.
+ * Each caller gets a progressively later slot. Returns 0 if no queue is active.
+ */
+export function getReconnectDelay(): number {
+  if (!isReconnectQueueActive()) return 0;
+  const slot = reconnectSlotCounter++;
+  return slot * RECONNECT_STAGGER_MS;
+}
+
+/** Returns true if Evolution was recently down (for log/diagnostic purposes). */
+export function wasEvolutionRecentlyDown(): boolean {
+  return isReconnectQueueActive();
+}
+
 // ─── Rate-Limited Instance Creation ────────────────────────────────────
 // Max 1 new instance creation per RATE_LIMIT_INTERVAL_MS to avoid
 // WhatsApp's thundering herd detection (multiple Baileys connections
@@ -364,14 +418,23 @@ async function apiFetch(url: string, options: RequestInit & { skipHealthCount?: 
       // 404s during reconnection are expected — Evolution API may still be loading.
       if (!skipHealthCount && res.status >= 500) {
         consecutiveFailures++;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          markEvolutionDown();
+        }
       }
     } else {
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        markEvolutionRecovered();
+      }
       consecutiveFailures = 0;
     }
     return res;
   } catch (err) {
     // Network errors always count — the API is unreachable
     consecutiveFailures++;
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      markEvolutionDown();
+    }
     throw err;
   } finally {
     clearTimeout(timeout);
