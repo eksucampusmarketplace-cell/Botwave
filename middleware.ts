@@ -3,6 +3,22 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAdminToken } from '@/lib/admin-auth'
 
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get('host') || '';
+  const { pathname, search } = request.nextUrl;
+
+  // Redirect non-www to www (canonical domain)
+  if (host === 'botwave.online' || host === 'botwave.online:443') {
+    return NextResponse.redirect(
+      new URL(`https://www.botwave.online${pathname}${search}`),
+      301,
+    );
+  }
+
+  // Redirect legacy /index.php to /
+  if (pathname === '/index.php') {
+    return NextResponse.redirect(new URL('/', request.url), 301);
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -89,6 +105,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - sitemap.xml, robots.txt (SEO files served without auth)
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|robots\\.txt|llms\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
