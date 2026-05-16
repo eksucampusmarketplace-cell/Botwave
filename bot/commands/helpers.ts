@@ -17,7 +17,24 @@ import {
 } from '../utils/advancedAntiban';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
 import { MessageQueue } from '../utils/MessageQueue';
+import { translateText } from '../utils/translate';
 import type { MessageContext, TemplateVars } from './registry';
+
+// ─── Per-request Language Context ─────────────────────────────────────────────
+// Set by MessageHandler before executing a command, read by sendReply to auto-translate.
+const requestLangMap = new Map<string, string>();
+
+export function setRequestLanguage(chatJid: string, lang: string): void {
+  if (lang && lang !== 'en') {
+    requestLangMap.set(chatJid, lang);
+  } else {
+    requestLangMap.delete(chatJid);
+  }
+}
+
+export function clearRequestLanguage(chatJid: string): void {
+  requestLangMap.delete(chatJid);
+}
 
 // ─── Shared Constants ────────────────────────────────────────────────────────
 
@@ -78,6 +95,19 @@ export async function sendReply(
   queue?: MessageQueue,
 ): Promise<void> {
   let processedContent = content;
+
+  // Auto-translate text responses based on user's language preference
+  const targetLang = requestLangMap.get(jid);
+  if (targetLang && targetLang !== 'en') {
+    try {
+      if (typeof processedContent === 'string') {
+        processedContent = await translateText(processedContent, targetLang);
+      } else if (processedContent?.text && typeof processedContent.text === 'string') {
+        processedContent = { ...processedContent, text: await translateText(processedContent.text, targetLang) };
+      }
+    } catch { /* translation failed, send original */ }
+  }
+
   if (typeof processedContent === 'string') {
     const config = getActivityConfig();
     if (config.shortenResponses) {

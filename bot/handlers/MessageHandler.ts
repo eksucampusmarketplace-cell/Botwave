@@ -38,7 +38,7 @@ import {
 } from '../utils/advancedAntiban';
 import { getCommand, type MessageContext, type TemplateVars } from '../commands/registry';
 import { sendUnknownCommand } from '../commands';
-import { sendReply } from '../commands/helpers';
+import { sendReply, setRequestLanguage, clearRequestLanguage } from '../commands/helpers';
 import { hasActiveAIChat, handleAIReply } from '../commands/info';
 import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
 // import {
@@ -556,6 +556,17 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     group: context.isGroup ? context.chatJid.split('@')[0] : undefined,
   };
 
+  // Set language context for auto-translation in sendReply
+  if (context.userId) {
+    try {
+      const userSettings = await getUserSettings(context.userId);
+      const lang = (userSettings as any)?.language_preference;
+      if (lang && lang !== 'en') {
+        setRequestLanguage(context.chatJid, lang);
+      }
+    } catch { /* non-critical */ }
+  }
+
   try {
     const handler = getCommand(commandName);
     if (handler) {
@@ -583,6 +594,8 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
     } catch (replyErr) {
       console.error(`Failed to send error reply for !${commandName}:`, replyErr);
     }
+  } finally {
+    clearRequestLanguage(context.chatJid);
   }
 }
 
