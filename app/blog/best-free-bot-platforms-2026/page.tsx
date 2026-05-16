@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 9 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 There are dozens of bot platforms available in 2026, but most of them are either expensive, limited on the free tier, or don't support WhatsApp. We compared the top platforms to help you pick the right one.
 
 ## The Platforms We Compared

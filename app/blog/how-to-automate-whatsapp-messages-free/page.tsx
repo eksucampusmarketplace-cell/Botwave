@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 Whether you want to auto-reply to customers, schedule messages, or let AI handle your chats — this guide covers every way to automate WhatsApp messages in 2026 without spending money or writing code.
 
 ## Why Automate WhatsApp?

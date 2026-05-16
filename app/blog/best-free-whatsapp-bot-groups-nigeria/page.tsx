@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 If you manage a WhatsApp group in Nigeria — whether it's a class group, church group, business community, or just a group of friends — you know how chaotic things can get. Spam, off-topic messages, people asking the same questions repeatedly. What if a bot could handle all of that for you?
 
 ## Why Nigerian Groups Need a Bot

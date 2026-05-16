@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 ChatGPT changed how people search for information. But opening a browser, going to chat.openai.com, and typing your question takes time. What if you could ask AI anything directly inside WhatsApp — the app you already have open?
 
 ## AI Chat on WhatsApp with BotWave

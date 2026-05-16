@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 4 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 Custom WhatsApp stickers are one of the most fun things about WhatsApp — but creating them usually requires downloading a separate app, cropping images, importing packs, and a lot of hassle. What if you could just reply to any image and instantly get a sticker?
 
 ## The Fastest Way to Make WhatsApp Stickers
