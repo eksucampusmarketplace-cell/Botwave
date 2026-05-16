@@ -63,18 +63,15 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
   try {
     const video = await getSessionWelcomeVideo();
     const welcomeText =
-      `Welcome to *BotWave*! \u{1F44B}\n\n` +
-      `Your WhatsApp is now connected and ready to go!\n\n` +
-      `Here's what I can do:\n` +
-      `\u{1F3A8} *!sticker* \u2014 Turn images into stickers\n` +
-      `\u{1F916} *!ai [question]* \u2014 AI-powered answers\n` +
-      `\u{1F3B5} *!music [song]* \u2014 Download music\n` +
-      `\u{1F4E5} *!download [url]* \u2014 Download media\n` +
-      `\u{1F3AE} *!trivia* \u2014 Play trivia games\n` +
-      `\u{1F4AC} *!help* \u2014 See all 50+ commands\n\n` +
-      `Add me to your group and type *!help* to get started!\n\n` +
-      `📢 *Follow our channel for updates & tips:*\nhttps://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X\n\n` +
-      `_Created by Decisive Analyst | botwave.online_`;
+      `You're all set! \u{2728} BotWave is connected and ready.\n\n` +
+      `Get started:\n` +
+      `\u{2022} Try *!help* to see everything your bot can do\n` +
+      `\u{2022} Save the dashboard for easy access: https://botwave.online\n\n` +
+      `\u{26A0}\u{FE0F} *Keep in mind:*\n` +
+      `1. Don't overuse or spam automated messages \u2014 if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
+      `2. *Your bot session may disconnect* sometimes. When it does, just go to https://botwave.online and click reconnect. You're always in control.\n\n` +
+      `\u{1F4E2} *Join our WhatsApp channel for updates & tips:*\nhttps://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X\n\n` +
+      `_Built by Decisive Analyst_`;
 
     if (video) {
       await sock.sendMessage(ownerJid, {
