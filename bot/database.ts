@@ -1126,7 +1126,7 @@ export async function getUserSettings(userId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('user_id, bot_name, command_prefix, ai_model, ai_system_prompt')
+        .select('user_id, bot_name, command_prefix, ai_model, ai_system_prompt, language_preference')
         .eq('user_id', userId)
         .single();
 
