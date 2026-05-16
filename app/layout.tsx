@@ -300,7 +300,7 @@ export default function RootLayout({
         <PWARegister />
         <LanguageBanner />
         <SupportChat />
-        <Script id="google-translate-init" strategy="beforeInteractive">
+        <Script id="google-translate-init" strategy="afterInteractive">
           {`
             function googleTranslateElementInit() {
               new google.translate.TranslateElement({
@@ -345,7 +345,7 @@ export default function RootLayout({
         </Script>
         <Script
           src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       </body>
     </html>
