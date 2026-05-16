@@ -1,6 +1,8 @@
 // bot/workerThread.ts
-// Slim worker thread entry point. Each worker runs its own sync loop
-// for a subset of sessions assigned by the main thread.
+// Worker thread entry point. Each worker manages a subset of WhatsApp
+// sessions assigned by the main thread's auto-scaler. Workers create
+// their own bot instances (EvolutionBot or BotWaveBot) and run
+// independent heartbeat loops.
 //
 // V8 Isolate Reality: this file loads its own copies of ALL imported modules.
 // Module-level variables in evolutionClient.ts, BotManager.ts etc. are
@@ -17,7 +19,7 @@ import {
   FLAG_PAUSED,
 } from './workerProtocol';
 
-// Only import after parentPort check (this file should only run as a worker)
+// Only run as a worker thread
 if (!parentPort) {
   console.error('[WT] This file must be run as a worker thread');
   process.exit(1);
@@ -30,7 +32,16 @@ const WORKER_ID = initData.workerId;
 const sharedFlags = new Int32Array(initData.sharedFlags);
 const PREFIX = `[WT-${WORKER_ID}]`;
 
-// ─── Assigned Sessions ──────────────────────────────────────────────────────
+// ─── Lazy Module Imports ────────────────────────────────────────────────────
+// Loaded in-isolate after parentPort check. Each worker gets its own copies.
+
+import { initDatabase } from './database';
+import { EvolutionBot, BotWaveBot } from './BotManager';
+import { tryAcquireLock, refreshHeartbeat } from './sessionCoordinator';
+
+const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
+
+// ─── Session & Bot Management ───────────────────────────────────────────────
 
 interface AssignedSession {
   sessionId: string;
@@ -39,11 +50,15 @@ interface AssignedSession {
   userId: string;
 }
 
+type AnyBot = EvolutionBot | BotWaveBot;
+
 const assignedSessions = new Map<string, AssignedSession>();
+const activeBots = new Map<string, AnyBot>();
 let isPaused = false;
 let isShuttingDown = false;
 let syncLoopHandle: ReturnType<typeof setInterval> | null = null;
 let lastSyncCycleMs = 0;
+let dbInitialized = false;
 
 // ─── Shared Flag Readers ────────────────────────────────────────────────────
 
@@ -65,23 +80,109 @@ function sendToMain(msg: WorkerToMainMsg): void {
   parentPort!.postMessage(msg);
 }
 
+// ─── Database Initialization ────────────────────────────────────────────────
+
+async function ensureDbInitialized(): Promise<void> {
+  if (dbInitialized) return;
+  try {
+    await initDatabase();
+    dbInitialized = true;
+    console.log(`${PREFIX} Database initialized`);
+  } catch (err) {
+    console.error(`${PREFIX} Database initialization failed:`, err);
+    throw err;
+  }
+}
+
+// ─── Bot Lifecycle ──────────────────────────────────────────────────────────
+
+async function startBotForSession(session: AssignedSession): Promise<void> {
+  if (activeBots.has(session.sessionId) || isShuttingDown) return;
+
+  try {
+    await ensureDbInitialized();
+
+    const locked = await tryAcquireLock(session.sessionId);
+    if (!locked) {
+      console.log(`${PREFIX} Could not acquire lock for ${session.sessionId.slice(0, 8)}`);
+      sendToMain({ type: 'session_failed', sessionId: session.sessionId, reason: 'lock_failed' });
+      return;
+    }
+
+    console.log(`${PREFIX} Starting bot for ${session.sessionId.slice(0, 8)} (state=${session.state})`);
+
+    const bot: AnyBot = USE_EVOLUTION
+      ? new EvolutionBot({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          phoneNumber: session.phone,
+          previousDbState: session.state,
+        })
+      : new BotWaveBot({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          phoneNumber: session.phone,
+        });
+
+    activeBots.set(session.sessionId, bot);
+
+    bot.start().then(() => {
+      console.log(`${PREFIX} Bot started successfully for ${session.sessionId.slice(0, 8)}`);
+      sendToMain({ type: 'session_ready', sessionId: session.sessionId });
+    }).catch(err => {
+      console.error(`${PREFIX} Bot start failed for ${session.sessionId.slice(0, 8)}:`, err);
+      activeBots.delete(session.sessionId);
+      assignedSessions.delete(session.sessionId);
+      sendToMain({ type: 'session_failed', sessionId: session.sessionId, reason: String(err) });
+    });
+  } catch (err) {
+    console.error(`${PREFIX} Error in startBotForSession for ${session.sessionId.slice(0, 8)}:`, err);
+    sendToMain({ type: 'session_failed', sessionId: session.sessionId, reason: String(err) });
+  }
+}
+
+async function stopBotForSession(sessionId: string): Promise<void> {
+  const bot = activeBots.get(sessionId);
+  if (!bot) return;
+
+  try {
+    if (bot instanceof EvolutionBot) {
+      await bot.stop(true); // preserve Evolution API instances
+    } else {
+      await bot.stop();
+    }
+  } catch (err) {
+    console.error(`${PREFIX} Error stopping bot ${sessionId.slice(0, 8)}:`, err);
+  }
+
+  activeBots.delete(sessionId);
+  assignedSessions.delete(sessionId);
+}
+
 // ─── Message Handling from Main ─────────────────────────────────────────────
 
 parentPort.on('message', (msg: MainToWorkerMsg) => {
   switch (msg.type) {
-    case 'assign_session':
-      assignedSessions.set(msg.sessionId, {
+    case 'assign_session': {
+      const session: AssignedSession = {
         sessionId: msg.sessionId,
         phone: msg.phone,
         state: msg.state,
         userId: msg.userId,
-      });
+      };
+      assignedSessions.set(msg.sessionId, session);
       console.log(`${PREFIX} Session assigned: ${msg.sessionId.slice(0, 8)} (total: ${assignedSessions.size})`);
+      startBotForSession(session).catch(err =>
+        console.error(`${PREFIX} Failed to start bot after assignment:`, err)
+      );
       break;
+    }
 
     case 'unassign_session':
-      assignedSessions.delete(msg.sessionId);
-      console.log(`${PREFIX} Session unassigned: ${msg.sessionId.slice(0, 8)} (total: ${assignedSessions.size})`);
+      console.log(`${PREFIX} Session unassigned: ${msg.sessionId.slice(0, 8)}`);
+      stopBotForSession(msg.sessionId).catch(err =>
+        console.error(`${PREFIX} Failed to stop bot after unassignment:`, err)
+      );
       break;
 
     case 'pause':
@@ -100,7 +201,6 @@ parentPort.on('message', (msg: MainToWorkerMsg) => {
 
     case 'create_approved':
       console.log(`${PREFIX} Instance creation approved for ${msg.sessionId.slice(0, 8)}`);
-      // The actual instance creation happens in the sync loop
       break;
 
     case 'create_queued':
@@ -114,12 +214,11 @@ parentPort.on('message', (msg: MainToWorkerMsg) => {
   }
 });
 
-// ─── Sync Loop ──────────────────────────────────────────────────────────────
+// ─── Sync Loop (Heartbeats + Health) ────────────────────────────────────────
 
 async function runSyncCycle(): Promise<void> {
-  if (isPaused || isShuttingDown || assignedSessions.size === 0) return;
+  if (isPaused || isShuttingDown || activeBots.size === 0) return;
 
-  // Check shared flags
   if (is428Active()) {
     console.log(`${PREFIX} Skipping sync — 428 cooldown active`);
     return;
@@ -137,15 +236,16 @@ async function runSyncCycle(): Promise<void> {
 
   const cycleStart = Date.now();
 
-  // Send heartbeats for all assigned sessions
-  for (const [sessionId] of assignedSessions) {
-    sendToMain({
-      type: 'heartbeat',
-      sessionId,
-      timestamp: Date.now(),
-      state: 'active',
-    });
+  // Refresh heartbeats for all active bots in parallel
+  const heartbeatPromises: Promise<void>[] = [];
+  for (const [sessionId] of activeBots) {
+    heartbeatPromises.push(
+      refreshHeartbeat(sessionId).catch(err =>
+        console.error(`${PREFIX} Heartbeat failed for ${sessionId.slice(0, 8)}:`, err)
+      )
+    );
   }
+  await Promise.all(heartbeatPromises);
 
   lastSyncCycleMs = Date.now() - cycleStart;
 }
@@ -153,7 +253,6 @@ async function runSyncCycle(): Promise<void> {
 function startSyncLoop(): void {
   if (syncLoopHandle) return;
 
-  // Run sync every 5 seconds (matches main thread interval)
   syncLoopHandle = setInterval(async () => {
     try {
       await runSyncCycle();
@@ -172,7 +271,7 @@ function reportStats(): void {
   sendToMain({
     type: 'worker_stats',
     workerId: WORKER_ID,
-    sessionCount: assignedSessions.size,
+    sessionCount: activeBots.size,
     syncCycleMs: lastSyncCycleMs,
     memMB: Math.round(memUsage.rss / 1024 / 1024),
   });
@@ -183,7 +282,7 @@ const statsHandle = setInterval(reportStats, 30_000);
 
 // ─── Graceful Shutdown ──────────────────────────────────────────────────────
 
-function gracefulShutdown(): void {
+async function gracefulShutdown(): Promise<void> {
   isShuttingDown = true;
 
   if (syncLoopHandle) {
@@ -192,6 +291,13 @@ function gracefulShutdown(): void {
   }
 
   clearInterval(statsHandle);
+
+  // Stop all bots gracefully
+  const stopPromises: Promise<void>[] = [];
+  for (const [sessionId] of activeBots) {
+    stopPromises.push(stopBotForSession(sessionId));
+  }
+  await Promise.allSettled(stopPromises);
 
   console.log(`${PREFIX} Shutdown complete — ${assignedSessions.size} session(s) will be redistributed`);
   process.exit(0);

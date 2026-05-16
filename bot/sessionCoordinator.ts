@@ -652,3 +652,9 @@ export function getOwnedSessions(): string[] {
 export function getInstanceId(): string {
   return INSTANCE_ID;
 }
+
+/** Remove a session from the owned set without releasing the DB lock.
+ *  Used during worker thread handoff — the worker will re-acquire the lock. */
+export function untrackSession(sessionId: string): void {
+  ownedSessions.delete(sessionId);
+}

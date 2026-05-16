@@ -707,7 +707,7 @@ const DEAF_SESSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // check every 5 min
 // still authenticated before WhatsApp silently drops them.
 const AUTH_HEALTH_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
 
-class EvolutionBot {
+export class EvolutionBot {
   private sessionId: string;
   private userId: string;
   private phoneNumber: string;
@@ -1634,6 +1634,24 @@ let lastSyncCycleDurationMs = 0;
 
 export function getActiveSessionCount(): number {
   return activeBots.size;
+}
+
+/** Stop a bot and remove it from the active bots map.
+ *  Used during worker thread handoff — preserves Evolution instances. */
+export async function stopAndRemoveBot(sessionId: string): Promise<boolean> {
+  const bot = activeBots.get(sessionId);
+  if (!bot) return false;
+  try {
+    if (bot instanceof EvolutionBot) {
+      await bot.stop(true);
+    } else {
+      await bot.stop();
+    }
+  } catch (err) {
+    console.error(`[BOT] Error stopping bot ${sessionId} for worker handoff:`, err);
+  }
+  activeBots.delete(sessionId);
+  return true;
 }
 
 export function getLastSyncCycleDuration(): number {
