@@ -667,6 +667,70 @@ export async function auditSessions(): Promise<void> {
   }
 }
 
+// ─── Auto-Cleanup Stuck Pairing Sessions ─────────────────────────────────────
+
+/**
+ * Clean up sessions stuck in pairing_sent or qr_pending for over 48 hours.
+ * These sessions never completed pairing — the user abandoned the flow.
+ * Marking them inactive frees up resources and keeps the dashboard clean.
+ */
+export async function cleanupStuckPairingSessions(): Promise<number> {
+  if (IS_WORKER || isCircuitOpen() || isShutdown()) return 0;
+
+  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+  const { data: stuck, error } = await supabase
+    .from('bot_sessions')
+    .select('id, state, phone_number, session_name, updated_at')
+    .in('state', ['pairing_sent', 'qr_pending'])
+    .lt('updated_at', cutoff);
+
+  if (error || !stuck || stuck.length === 0) return 0;
+
+  console.log(`[CLEANUP] Found ${stuck.length} session(s) stuck in pairing for 48+ hours`);
+
+  let cleaned = 0;
+  for (const session of stuck) {
+    const sid = session.id.slice(0, 8);
+    const label = session.session_name || session.phone_number || sid;
+    const age = Math.round((Date.now() - new Date(session.updated_at).getTime()) / 3600000);
+
+    // Delete the Evolution API instance if it exists
+    try {
+      await deleteInstanceAndVerify(session.id);
+    } catch {
+      // Non-fatal — instance may not exist
+    }
+
+    const { error: updateErr } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'inactive',
+        locked_by: null,
+        locked_at: null,
+        heartbeat_at: null,
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        auth_state: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.id)
+      .in('state', ['pairing_sent', 'qr_pending']);
+
+    if (!updateErr) {
+      cleaned++;
+      console.log(`[CLEANUP] Session ${sid} ("${label}") was ${session.state} for ${age}h — marked inactive`);
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[CLEANUP] Cleaned up ${cleaned} stuck pairing session(s)`);
+  }
+  return cleaned;
+}
+
 export function getOwnedSessions(): string[] {
   return Array.from(ownedSessions);
 }

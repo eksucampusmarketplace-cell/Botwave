@@ -1652,6 +1652,19 @@ export function startEvolutionWebSocket(): void {
       console.warn(`[EVO-WS] Connection error: ${err.message} — will retry automatically`);
     });
 
+    // Catch parse errors from malformed WebSocket frames.
+    // Evolution API sometimes sends non-JSON payloads (HTML error pages,
+    // partial frames during restarts) that crash the socket.io parser.
+    // This handler prevents those from killing the connection entirely.
+    evoSocketClient.on('error', (err: Error) => {
+      const msg = err.message || String(err);
+      if (msg.includes('parse') || msg.includes('SyntaxError') || msg.includes('Unexpected token')) {
+        console.warn(`[EVO-WS] Parse error (non-fatal, ignoring): ${msg}`);
+      } else {
+        console.error(`[EVO-WS] Socket error: ${msg}`);
+      }
+    });
+
     // Listen for connection.update events — instant disconnect detection + 428 cooldown
     evoSocketClient.on('connection.update', (msg: Record<string, unknown>) => {
       const instanceName = msg.instance as string;

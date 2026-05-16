@@ -3,7 +3,7 @@ import { isMainThread } from 'worker_threads';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './autoScaler';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
@@ -227,6 +227,20 @@ async function start() {
         console.error('[AUTO-RECOVERY] Error:', err);
       }
     }, 300_000));
+
+    // Cleanup: mark sessions stuck in pairing_sent/qr_pending for 48+ hours
+    // as inactive. Runs every 30 minutes — these are abandoned pairing attempts.
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        const cleaned = await cleanupStuckPairingSessions();
+        if (cleaned > 0) {
+          console.log(`[CLEANUP] Cleaned ${cleaned} stuck pairing session(s)`);
+        }
+      } catch (err) {
+        console.error('[CLEANUP] Error cleaning stuck sessions:', err);
+      }
+    }, 1_800_000));
   }
 
   // Reminder + Scheduled Message delivery loop (every 30s)

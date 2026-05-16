@@ -29,8 +29,32 @@ function normalizePhoneNumber(raw: string): string {
   return num;
 }
 
+/**
+ * Validate that a phone number is plausibly real after normalization.
+ * Rejects clearly invalid formats:
+ *  - Country code starting with 0 (e.g. +012...)
+ *  - Too short (< 8 digits after +)
+ *  - Too long (> 15 digits — E.164 max)
+ *  - All same digit (e.g. +1111111111)
+ */
+function validatePhoneNumber(phone: string): boolean {
+  const digits = phone.replace(/\D/g, '');
+
+  if (digits.length < 8 || digits.length > 15) return false;
+
+  // Country codes never start with 0
+  if (digits.startsWith('0')) return false;
+
+  // Reject all-same-digit numbers
+  if (/^(\d)\1+$/.test(digits)) return false;
+
+  return true;
+}
+
 const createSessionSchema = z.object({
-  phoneNumber: z.string().min(10).transform(normalizePhoneNumber),
+  phoneNumber: z.string().min(10).transform(normalizePhoneNumber).refine(validatePhoneNumber, {
+    message: 'Invalid phone number format. Use international format like +234XXXXXXXXXX',
+  }),
   sessionName: z.string().min(1).max(50),
 });
 

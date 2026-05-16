@@ -115,6 +115,51 @@ export default function AdminOverviewPage() {
         ))}
       </div>
 
+      {/* Session Health */}
+      <div className="bg-white/5 border border-white/5 rounded-xl p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-white font-semibold text-sm">Session Health</h2>
+          <span className="text-[10px] text-gray-500 font-mono">live</span>
+        </div>
+        {(() => {
+          const active = sessions.filter(s => s.state === 'active').length;
+          const reauth = sessions.filter(s => s.state === 'needs_reauth').length;
+          const qrPending = sessions.filter(s => s.state === 'qr_pending').length;
+          const pairingSent = sessions.filter(s => s.state === 'pairing_sent').length;
+          const total = sessions.length || 1;
+          const healthPct = Math.round((active / total) * 100);
+          const barColor = healthPct >= 70 ? 'bg-green-500' : healthPct >= 40 ? 'bg-yellow-500' : 'bg-red-500';
+          return (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${healthPct}%` }} />
+                </div>
+                <span className={`text-sm font-bold ${healthPct >= 70 ? 'text-green-400' : healthPct >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>{healthPct}%</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <span className="block text-lg font-bold text-green-400">{active}</span>
+                  <span className="text-[10px] text-gray-500 font-mono">ACTIVE</span>
+                </div>
+                <div>
+                  <span className="block text-lg font-bold text-yellow-400">{reauth}</span>
+                  <span className="text-[10px] text-gray-500 font-mono">NEEDS REAUTH</span>
+                </div>
+                <div>
+                  <span className="block text-lg font-bold text-blue-400">{pairingSent}</span>
+                  <span className="text-[10px] text-gray-500 font-mono">PAIRING</span>
+                </div>
+                <div>
+                  <span className="block text-lg font-bold text-gray-400">{qrPending}</span>
+                  <span className="text-[10px] text-gray-500 font-mono">QR PENDING</span>
+                </div>
+              </div>
+            </>
+          );
+        })()}
+      </div>
+
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
