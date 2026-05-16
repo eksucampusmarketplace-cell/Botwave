@@ -181,6 +181,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const rawParticipant = message.key.participant;
     const participantPn = (message.key as any).participantPn;
     const senderJid = normalizeJid(participantPn || rawParticipant || chatJid);
+    // Normalize owner JID to phone number only for comparison
+    const ownerPhone = (sock as any).user?.id?.replace(/:\d+@/, '@').replace(/@.*/, '') ?? null;
+    const senderPhone = senderJid.replace(/@.*/, '');
+    const isOwnerByPhone = ownerPhone && senderPhone === ownerPhone;
     const isGroup = chatJid.endsWith('@g.us');
     const pushName = message.pushName || 'User';
     const sessionId = (sock as any).sessionId || queue?.['sessionId'];
@@ -217,6 +221,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const ownerLidEarly = (sock as any).user?.lid ? normalizeJid((sock as any).user.lid) : null;
     const senderLidEarly = rawParticipant && rawParticipant.endsWith('@lid') ? normalizeJid(rawParticipant) : null;
     const isOwnerEarly = fromMe ||
+      isOwnerByPhone ||
       (ownerJidEarly && senderJid === ownerJidEarly) ||
       (ownerLidEarly && senderLidEarly && senderLidEarly === ownerLidEarly);
 
