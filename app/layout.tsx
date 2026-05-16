@@ -304,7 +304,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
-        <div id="google_translate_element" style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 9999 }} />
+        <div id="google_translate_element" />
         <ThemeProvider>
           {children}
         </ThemeProvider>

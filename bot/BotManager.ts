@@ -1018,9 +1018,24 @@ class EvolutionBot {
 
       // Create instance on Evolution API (includes proxy setup with retry).
       // Proxy is set BEFORE pairing so WhatsApp sees a consistent IP.
-      const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
+      // Retry with exponential backoff on 403 "name already in use" — this
+      // happens when the old instance hasn't fully cleaned up yet after a
+      // container restart. Waiting a few seconds usually resolves it.
+      const MAX_CREATE_RETRIES = 4;
+      let createResult: Record<string, unknown> | null = null;
+      for (let attempt = 0; attempt < MAX_CREATE_RETRIES; attempt++) {
+        createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
+        if (createResult?.status === 403) {
+          const retryDelay = Math.min(3000 * Math.pow(2, attempt), 30000);
+          console.warn(`[EVO] Instance creation 403 for ${this.sessionId} (attempt ${attempt + 1}/${MAX_CREATE_RETRIES}) — retrying in ${retryDelay}ms after cleanup`);
+          await new Promise(r => setTimeout(r, retryDelay));
+          await deleteInstanceAndVerify(this.sessionId);
+          continue;
+        }
+        break;
+      }
       if (createResult?.status === 403 || createResult?.error) {
-        console.error(`[EVO] Failed to create instance for ${this.sessionId}:`, JSON.stringify(createResult));
+        console.error(`[EVO] Failed to create instance for ${this.sessionId} after ${MAX_CREATE_RETRIES} attempts:`, JSON.stringify(createResult));
         await updateSessionStatus(this.sessionId, 'inactive');
         this.isReconnecting = false;
         return;

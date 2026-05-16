@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('user_settings')
-      .select('afk_enabled, afk_message, bot_name, skip_probability, welcome_message, command_prefix, timezone')
+      .select('afk_enabled, afk_message, bot_name, skip_probability, welcome_message, command_prefix, timezone, language_preference')
       .eq('user_id', user.id)
       .single();
 
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       welcomeMessage: data?.welcome_message ?? '',
       commandPrefix: data?.command_prefix ?? '!',
       timezone: data?.timezone ?? '',
+      languagePreference: data?.language_preference ?? 'en',
     };
     await cacheApiSettings(user.id, result);
     return NextResponse.json(result);
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { afkEnabled, afkMessage, botName, skipProbability, welcomeMessage, commandPrefix, timezone } = body;
+    const { afkEnabled, afkMessage, botName, skipProbability, welcomeMessage, commandPrefix, timezone, languagePreference } = body;
 
     const updateData: Record<string, unknown> = {
       user_id: user.id,
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
     if (welcomeMessage !== undefined) updateData.welcome_message = welcomeMessage;
     if (commandPrefix !== undefined) updateData.command_prefix = commandPrefix || '!';
     if (timezone !== undefined) updateData.timezone = timezone;
+    if (languagePreference !== undefined) updateData.language_preference = languagePreference;
     if (skipProbability !== undefined) {
       const clamped = Math.max(0, Math.min(1, Number(skipProbability) || 0.15));
       updateData.skip_probability = clamped;
