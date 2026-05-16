@@ -51,8 +51,9 @@ export async function translateText(text: string, targetLang: string): Promise<s
     const langCode = targetLang === 'pcm' ? 'en' : targetLang;
     const langpair = `en|${langCode}`;
 
+    // Adding email key gives 50,000 words/day (vs 5,000 anonymous)
     const response = await axios.get(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`,
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}&de=eksucampusmarketplace@gmail.com`,
       { timeout: 8000 },
     );
 
