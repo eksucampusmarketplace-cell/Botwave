@@ -3,6 +3,7 @@ import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidate
 import { trackMap } from './memoryGuard';
 import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './redisSessionCache';
 import { queueWrite } from './writeQueue';
+import { sendAlertEmail, buildAlertHtml } from '../lib/email-service';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -338,6 +339,27 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updatePayload.pairing_code = null;
     updatePayload.auth_state = null;
     clearedFields.push('qr_code', 'pairing_code', 'auth_state');
+
+    // Fire-and-forget email alert so the admin knows a session disconnected
+    if (preState?.state === 'active') {
+      const { data: sessionInfo } = await supabase
+        .from('bot_sessions')
+        .select('session_name, phone_number, user_id')
+        .eq('id', sessionId)
+        .single();
+
+      const label = sessionInfo?.session_name || sessionInfo?.phone_number || sessionId.slice(0, 8);
+      sendAlertEmail({
+        subject: `Session Disconnected: ${label}`,
+        text: `Session "${label}" (${sessionId}) has entered needs_reauth. The user needs to re-scan the QR code to reconnect.`,
+        html: buildAlertHtml('Session Disconnected', 'warning', {
+          'Session': label,
+          'Session ID': sessionId.slice(0, 8),
+          'Previous State': preState.state,
+          'Action Required': 'User must re-scan QR code',
+        }),
+      }).catch(() => {});
+    }
   }
 
   let query = supabase

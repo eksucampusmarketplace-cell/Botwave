@@ -31,11 +31,49 @@ const emailJobs: Map<string, EmailJob> = new Map();
 const recentlyEmailed: Map<string, number> = new Map();
 const DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-// Auto-send state
+// Auto-send state (in-memory; restored from DB on first request)
 let autoSendEnabled = false;
 let autoSendIntervalHours = 12;
 let autoSendInactiveHours = 12;
 let autoSendTimer: ReturnType<typeof setInterval> | null = null;
+let autoSendRestored = false;
+
+async function persistAutoSendConfig(): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    await supabase.from('system_config').upsert({
+      key: 'email_auto_send',
+      value: { enabled: autoSendEnabled, intervalHours: autoSendIntervalHours, inactiveHours: autoSendInactiveHours },
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('[EMAIL-BROADCAST] Failed to persist auto-send config:', err);
+  }
+}
+
+async function restoreAutoSendConfig(): Promise<void> {
+  if (autoSendRestored) return;
+  autoSendRestored = true;
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'email_auto_send')
+      .single();
+    if (data?.value) {
+      const config = data.value as { enabled?: boolean; intervalHours?: number; inactiveHours?: number };
+      autoSendIntervalHours = config.intervalHours ?? 12;
+      autoSendInactiveHours = config.inactiveHours ?? 12;
+      if (config.enabled && !autoSendEnabled) {
+        console.log('[EMAIL-BROADCAST] Restoring auto-send from DB config');
+        startAutoSend();
+      }
+    }
+  } catch {
+    // Table may not exist yet — non-fatal
+  }
+}
 
 function wasRecentlyEmailed(userId: string): boolean {
   const lastSent = recentlyEmailed.get(userId);
@@ -254,6 +292,7 @@ function startAutoSend(): void {
   autoSendTick();
   autoSendTimer = setInterval(autoSendTick, intervalMs);
   console.log(`[EMAIL-BROADCAST] Auto-send enabled: every ${autoSendIntervalHours}h for users inactive ${autoSendInactiveHours}h+`);
+  persistAutoSendConfig();
 }
 
 function stopAutoSend(): void {
@@ -263,6 +302,7 @@ function stopAutoSend(): void {
     autoSendTimer = null;
   }
   console.log('[EMAIL-BROADCAST] Auto-send disabled');
+  persistAutoSendConfig();
 }
 
 export async function GET(request: NextRequest) {
@@ -272,6 +312,9 @@ export async function GET(request: NextRequest) {
     if (!tokenValidation) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Restore auto-send state from DB after deploy/restart
+    await restoreAutoSendConfig();
 
     const inactiveHours = parseInt(request.nextUrl.searchParams.get('hours') || '12');
     const { allUsers, inactiveUsers, usersWithSessions, eligibleUsers } = await getEnrichedUsers(inactiveHours);
