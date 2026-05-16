@@ -1,9 +1,10 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
-import { sendReply, pickResponse, getHelpHint, botStartTime, axios } from './helpers';
+import { sendReply, pickResponse, getHelpHint, botStartTime, axios, requestLangMap } from './helpers';
 import { helpIntros, pingReplies, unknownCommandReplies } from '../utils/responsePools';
 import { currentTimeStr, currentDateStr } from '../utils/antiban';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { getAllCommands } from './registry';
+import { translateText } from '../utils/translate';
 
 async function sendHelp(
   context: MessageContext,
@@ -736,49 +737,57 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
       },
     ];
 
+    // Detect user's language for translating the docx content
+    const userLang = requestLangMap.get(context.chatJid);
+    const t = async (text: string): Promise<string> => {
+      if (!userLang || userLang === 'en') return text;
+      try { return await translateText(text, userLang); } catch { return text; }
+    };
+
     const children: Paragraph[] = [];
 
     // Title
     children.push(new Paragraph({
-      children: [new TextRun({ text: 'BotWave Command Guide', bold: true, size: 48, font: 'Calibri' })],
+      children: [new TextRun({ text: await t('BotWave Command Guide'), bold: true, size: 48, font: 'Calibri' })],
       heading: HeadingLevel.TITLE,
       alignment: AlignmentType.CENTER,
     }));
     children.push(new Paragraph({
-      children: [new TextRun({ text: 'Complete reference with deep explanations for every command', italics: true, size: 24, font: 'Calibri' })],
+      children: [new TextRun({ text: await t('Complete reference with deep explanations for every command'), italics: true, size: 24, font: 'Calibri' })],
       alignment: AlignmentType.CENTER,
     }));
     children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
     children.push(new Paragraph({
-      children: [new TextRun({ text: 'All commands start with the "!" prefix. Only the bot owner can use commands.', size: 22, font: 'Calibri' })],
+      children: [new TextRun({ text: await t('All commands start with the "!" prefix. Only the bot owner can use commands.'), size: 22, font: 'Calibri' })],
     }));
     children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
 
     for (const section of sections) {
-      // Section heading
+      // Section heading (translated)
       children.push(new Paragraph({
-        children: [new TextRun({ text: section.title, bold: true, size: 32, font: 'Calibri' })],
+        children: [new TextRun({ text: await t(section.title), bold: true, size: 32, font: 'Calibri' })],
         heading: HeadingLevel.HEADING_1,
       }));
       children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
 
       for (const cmd of section.commands) {
-        // Command name
+        // Command name (keep as-is — these are code syntax)
         children.push(new Paragraph({
           children: [new TextRun({ text: cmd.name, bold: true, size: 26, font: 'Calibri' })],
           heading: HeadingLevel.HEADING_2,
         }));
 
-        // Usage
+        // Usage (keep as-is — code syntax)
         children.push(new Paragraph({
           children: [
-            new TextRun({ text: 'Usage: ', bold: true, size: 22, font: 'Calibri' }),
+            new TextRun({ text: await t('Usage: '), bold: true, size: 22, font: 'Calibri' }),
             new TextRun({ text: cmd.usage, size: 22, font: 'Courier New' }),
           ],
         }));
 
-        // Description (preserve newlines)
-        const descLines = cmd.description.split('\n');
+        // Description (translated, preserve newlines)
+        const translatedDesc = await t(cmd.description);
+        const descLines = translatedDesc.split('\n');
         for (const line of descLines) {
           children.push(new Paragraph({
             children: [new TextRun({ text: line, size: 22, font: 'Calibri' })],
@@ -793,7 +802,7 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
     children.push(new Paragraph({ children: [new TextRun({ text: '' })] }));
     children.push(new Paragraph({
       children: [new TextRun({
-        text: 'Privacy: Your chats are private. The bot owner cannot read or access your messages. BotWave only responds to commands — it does not store, read, or share any chat content.',
+        text: await t('Privacy: Your chats are private. The bot owner cannot read or access your messages. BotWave only responds to commands — it does not store, read, or share any chat content.'),
         size: 20, italics: true, font: 'Calibri',
       })],
       alignment: AlignmentType.CENTER,

@@ -22,7 +22,7 @@ import type { MessageContext, TemplateVars } from './registry';
 
 // ─── Per-request Language Context ─────────────────────────────────────────────
 // Set by MessageHandler before executing a command, read by sendReply to auto-translate.
-const requestLangMap = new Map<string, string>();
+export const requestLangMap = new Map<string, string>();
 
 // Persistent in-memory fallback: userId -> language code.
 // Survives DB/Redis failures within the same bot process lifetime.
@@ -122,9 +122,17 @@ export async function sendReply(
           console.log(`[LANG] Translated reply for ${jid} to ${targetLang}`);
         }
         processedContent = translated;
-      } else if (processedContent?.text && typeof processedContent.text === 'string') {
-        const translated = await translateText(processedContent.text, targetLang);
-        processedContent = { ...processedContent, text: translated };
+      } else if (processedContent && typeof processedContent === 'object') {
+        // Translate text field
+        if (processedContent.text && typeof processedContent.text === 'string') {
+          const translated = await translateText(processedContent.text, targetLang);
+          processedContent = { ...processedContent, text: translated };
+        }
+        // Translate caption field (used by document/media messages)
+        if (processedContent.caption && typeof processedContent.caption === 'string') {
+          const translatedCaption = await translateText(processedContent.caption, targetLang);
+          processedContent = { ...processedContent, caption: translatedCaption };
+        }
       }
     } catch (err: any) {
       console.error(`[LANG] Translation to ${targetLang} failed for ${jid}:`, err?.message || err);
