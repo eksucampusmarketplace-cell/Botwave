@@ -17,11 +17,45 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
   const [timeLeft, setTimeLeft] = useState(180);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'qr' | 'code'>(qrCode ? 'qr' : 'code');
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
+  const [showQrFallback, setShowQrFallback] = useState(false);
 
   useEffect(() => {
     if (qrCode && !pairingCode) setActiveTab('qr');
     else if (pairingCode && !qrCode) setActiveTab('code');
   }, [qrCode, pairingCode]);
+
+  // Track how long loading has been going (no code yet)
+  useEffect(() => {
+    if (sessionState === 'active') return;
+    const hasContent = pairingCode || qrCode;
+    if (hasContent) {
+      setLoadingElapsed(0);
+      return;
+    }
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setLoadingElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [pairingCode, qrCode, sessionState]);
+
+  // Track how long pairing code has been shown without connecting
+  useEffect(() => {
+    if (sessionState === 'active' || !pairingCode) {
+      setShowQrFallback(false);
+      return;
+    }
+    if (sessionState === 'pairing_sent' || (pairingCode && sessionState !== 'active')) {
+      const start = Date.now();
+      const interval = setInterval(() => {
+        if (Math.floor((Date.now() - start) / 1000) >= 60) {
+          setShowQrFallback(true);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [pairingCode, sessionState]);
 
   useEffect(() => {
     let expiresAt: number;
@@ -263,6 +297,27 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                   </p>
                 </div>
               )}
+
+              {/* QR fallback alert after pairing code fails to connect */}
+              {showQrFallback && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-yellow-950/30 border-2 border-yellow-600/40 p-3 sm:p-4 mb-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-yellow-500 text-sm mt-0.5">!</span>
+                    <div>
+                      <p className="font-mono text-[11px] text-yellow-500 font-bold tracking-[1px] mb-1">
+                        CODE NOT CONNECTING?
+                      </p>
+                      <p className="font-mono text-[10px] text-yellow-600/80 leading-relaxed">
+                        Try <span className="text-white font-bold">scanning the QR code</span> instead — you can even use a <span className="text-white font-bold">friend&apos;s phone</span> to scan it for you. Just switch to the <span className="text-yellow-500 font-bold">SCAN QR CODE</span> tab above.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
 
@@ -332,11 +387,13 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               <div className="flex items-center justify-center gap-2 mb-4">
                 <div className="w-4 h-4 border-2 border-cyan/60 border-t-transparent rounded-full animate-spin" />
                 <span className="font-mono text-xs text-cyan/60 tracking-[1px]">
-                  Generating link code...
+                  {loadingElapsed >= 20 ? 'Almost there, please wait...' : 'Generating link code...'}
                 </span>
               </div>
               <p className="font-mono text-[10px] text-[#3a7a5a]">
-                This may take 10-20 seconds.
+                {loadingElapsed >= 20
+                  ? 'Taking a bit longer than usual — hang tight, your code is being generated.'
+                  : 'This may take 10-20 seconds.'}
               </p>
             </div>
           )}
