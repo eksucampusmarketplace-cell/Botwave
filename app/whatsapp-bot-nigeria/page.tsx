@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/whatsapp-bot-nigeria',
+    languages: {
+      'en-NG': '/whatsapp-bot-nigeria',
+      'en-ZA': '/whatsapp-bot-south-africa',
+      'en-IN': '/whatsapp-bot-india',
+      'en-US': '/whatsapp-bot-usa',
+      'x-default': '/',
+    },
   },
 };
 
