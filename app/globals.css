@@ -343,6 +343,13 @@ body {
   border-color: rgba(16, 185, 129, 0.5);
   transform: scale(1.05);
 }
+#gtx-toggle.gtx-lang-active {
+  opacity: 0.4;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+#gtx-toggle.gtx-lang-active:hover {
+  opacity: 0.7;
+}
 
 /* Dropdown area */
 #google_translate_element {

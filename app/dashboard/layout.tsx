@@ -1,5 +1,4 @@
 import QrAlertBanner from '@/components/ui/QrAlertBanner';
-import SupportChat from '@/components/ui/SupportChat';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +11,6 @@ export default function DashboardLayout({
     <>
       <QrAlertBanner />
       {children}
-      <SupportChat />
     </>
   );
 }
