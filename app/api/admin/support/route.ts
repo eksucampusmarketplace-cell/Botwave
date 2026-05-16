@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyAdminToken } from '@/lib/admin-auth';
+import { sendSupportReplyEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -149,6 +150,35 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', body.ticketId);
+
+      // Send email notification to the user (fire-and-forget)
+      try {
+        const { data: ticket } = await supabase
+          .from('support_tickets')
+          .select('user_id, subject')
+          .eq('id', body.ticketId)
+          .single();
+
+        if (ticket) {
+          const { data: { user: authUser } } = await supabase.auth.admin.getUserById(ticket.user_id);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', ticket.user_id)
+            .single();
+
+          if (authUser?.email) {
+            sendSupportReplyEmail(
+              authUser.email,
+              profile?.username || 'User',
+              ticket.subject || 'Support Ticket',
+              body.message,
+            ).catch(err => console.error('[SUPPORT] Failed to send reply notification:', err));
+          }
+        }
+      } catch (emailErr) {
+        console.error('[SUPPORT] Email notification error:', emailErr);
+      }
 
       return NextResponse.json({ success: true, data: msg });
     }
