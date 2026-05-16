@@ -23,6 +23,7 @@ async function sendHelp(
 !ping — Bot status
 !sticker — Make sticker
 !joke / !quote / !meme — Fun
+!lang [code] — Set your language (e.g. !lang fr)
 
 *AI & SMART*
 !ai [message] — AI chat (Gemini)
@@ -141,6 +142,11 @@ async function sendHelpDocx(context: MessageContext, sock: any): Promise<void> {
             name: '!help',
             usage: '!help  or  !help doc',
             description: 'Shows the full command menu in chat. Use "!help doc" to receive this comprehensive .docx guide with deep explanations of every command, usage examples, and tips.',
+          },
+          {
+            name: '!lang',
+            usage: '!lang [code]  |  !lang list  |  !lang set [code]  |  !lang reset',
+            description: 'Set your preferred language for bot responses. Use "!lang list" to see all 20 supported languages. Set your language with "!lang fr" (French), "!lang yo" (Yoruba), "!lang hi" (Hindi), etc. All bot responses will be automatically translated to your chosen language. Use "!lang reset" to switch back to English.',
           },
           {
             name: '!ping',

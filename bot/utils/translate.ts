@@ -1,5 +1,23 @@
 import axios from 'axios';
 
+// ─── Smart Email Rotation ────────────────────────────────────────────────────
+// Each email gives 50,000 words/day on MyMemory's free tier.
+// Rotating across multiple emails = multiplied daily quota.
+const API_EMAILS = [
+  'eksucampusmarketplace@gmail.com',
+  'edwardblake0900@gmail.com',
+  'botwave.translate1@gmail.com',
+  'botwave.translate2@gmail.com',
+  'botwave.translate3@gmail.com',
+];
+let emailIndex = 0;
+
+function getNextEmail(): string {
+  const email = API_EMAILS[emailIndex % API_EMAILS.length];
+  emailIndex++;
+  return email;
+}
+
 // Supported languages with display names
 export const SUPPORTED_LANGUAGES: Record<string, string> = {
   en: 'English',
@@ -51,9 +69,10 @@ export async function translateText(text: string, targetLang: string): Promise<s
     const langCode = targetLang === 'pcm' ? 'en' : targetLang;
     const langpair = `en|${langCode}`;
 
-    // Adding email key gives 50,000 words/day (vs 5,000 anonymous)
+    // Rotate emails for 50k words/day per email (5 emails = 250k words/day)
+    const email = getNextEmail();
     const response = await axios.get(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}&de=eksucampusmarketplace@gmail.com`,
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}&de=${email}`,
       { timeout: 8000 },
     );
 

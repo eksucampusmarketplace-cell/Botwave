@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { PWARegister } from '@/components/pwa/PWARegister';
 import ThemeProvider from '@/components/ui/ThemeProvider';
+import LanguageBanner from '@/components/ui/LanguageBanner';
 
 export const viewport: Viewport = {
   themeColor: '#0a0a0f',
@@ -308,6 +309,7 @@ export default function RootLayout({
           {children}
         </ThemeProvider>
         <PWARegister />
+        <LanguageBanner />
       </body>
     </html>
   );
