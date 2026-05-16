@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2026)',
-  description: 'Telegram bots are popular worldwide, but in Africa WhatsApp dominates. We compare WhatsApp bots vs Telegram bots for features, reach, cost, and ease of setup. BotWave vs Evolution API vs Baileys.',
+  description: 'Telegram bots have more features, but WhatsApp has 10x the users in Africa. We compared both platforms on features, reach & cost — the winner might surprise you →',
   keywords: ['whatsapp bot vs telegram bot', 'telegram bot alternative', 'whatsapp bot africa', 'whatsapp vs telegram', 'botwave vs evolution api', 'best messaging bot africa'],
   openGraph: {
     title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?',
     description: 'Telegram bots have more features, but WhatsApp has 10x the users in Africa. Here\'s which one actually matters for your community.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-vs-telegram-bot-africa',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=WhatsApp+Bot+vs+Telegram+Bot%3A+Which+is+Better+for+Africa%3F', width: 1200, height: 630 }],
   },
 };
 
@@ -132,6 +132,12 @@ If you're a developer who wants to build custom WhatsApp integrations, Evolution
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms in 2026 Compared — BotWave vs ManyChat vs Chatfuel' },
+  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026)' },
+  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026)' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 5, 2026" readTime="7 min read" />;
+  return <BlogArticle content={content} date="May 5, 2026" readTime="7 min read" slug="whatsapp-bot-vs-telegram-bot-africa" relatedPosts={relatedPosts} />;
 }

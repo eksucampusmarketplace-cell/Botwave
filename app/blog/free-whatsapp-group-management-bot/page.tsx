@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games',
-  description: 'Manage your WhatsApp groups like a pro with a free bot. Anti-spam, welcome messages, polls, trivia games, and moderation tools. No coding needed.',
+  description: 'Your WhatsApp groups deserve better. Get free anti-spam, welcome messages, polls, trivia games & moderation — all automatic. 10,000+ groups already use BotWave →',
   keywords: ['whatsapp group management bot', 'whatsapp group bot free', 'whatsapp anti spam bot', 'whatsapp group admin bot', 'whatsapp group moderation', 'manage whatsapp group', 'whatsapp group tools'],
   openGraph: {
     title: 'Free WhatsApp Group Management Bot (2026)',
     description: 'Anti-spam, polls, games, welcome messages — manage your WhatsApp groups for free with BotWave.',
     url: 'https://www.botwave.online/blog/free-whatsapp-group-management-bot',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Free+WhatsApp+Group+Management+Bot+(2026)', width: 1200, height: 630 }],
   },
 };
 
@@ -178,6 +178,12 @@ For larger groups with heavy usage, plans start at ₦500/month.
 **[Set Up Your Group Bot Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically' },
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+  { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 8, 2026" readTime="7 min read" />;
+  return <BlogArticle content={content} date="May 8, 2026" readTime="7 min read" slug="free-whatsapp-group-management-bot" relatedPosts={relatedPosts} />;
 }

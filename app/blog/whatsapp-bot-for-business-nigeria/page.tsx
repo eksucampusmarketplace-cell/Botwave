@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot for Business in Nigeria (2026) — Automate Sales & Support',
-  description: 'How Nigerian businesses use WhatsApp bots to automate customer support, send order updates, run promotions, and manage inquiries. Free setup with BotWave.',
+  description: 'Stop answering "How much?" 50 times a day. Nigerian businesses use BotWave to automate support, orders & promotions on WhatsApp. Free setup, Naira pricing. Start now →',
   keywords: ['whatsapp bot business nigeria', 'whatsapp automation nigeria', 'whatsapp business bot', 'automate whatsapp business', 'whatsapp customer support bot', 'nigerian business whatsapp bot', 'whatsapp bot for sales'],
   openGraph: {
     title: 'WhatsApp Bot for Business in Nigeria (2026)',
     description: 'Automate your Nigerian business on WhatsApp — customer support, order updates, promotions. Free with BotWave.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-for-business-nigeria',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=WhatsApp+Bot+for+Business+in+Nigeria+(2026)', width: 1200, height: 630 }],
   },
 };
 
@@ -155,6 +155,12 @@ Setting up a WhatsApp bot for your Nigerian business takes under 2 minutes with 
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management' },
+  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free (2026 Guide)' },
+  { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 10, 2026" readTime="8 min read" />;
+  return <BlogArticle content={content} date="May 10, 2026" readTime="8 min read" slug="whatsapp-bot-for-business-nigeria" relatedPosts={relatedPosts} />;
 }

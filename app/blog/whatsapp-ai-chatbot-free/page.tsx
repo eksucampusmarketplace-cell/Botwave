@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp',
-  description: 'Get a free AI chatbot on WhatsApp powered by Google Gemini. Ask questions, get homework help, translate languages, write messages — all inside WhatsApp.',
+  description: 'Get ChatGPT-like AI on your WhatsApp for free. Ask anything, get homework help, translate 100+ languages, write messages — powered by Google Gemini. No app needed. Try it now →',
   keywords: ['whatsapp ai chatbot', 'whatsapp ai bot free', 'chatgpt whatsapp', 'ai on whatsapp', 'whatsapp chatbot free', 'google gemini whatsapp', 'ai assistant whatsapp', 'free whatsapp ai'],
   openGraph: {
     title: 'Free WhatsApp AI Chatbot (2026) — AI on WhatsApp',
     description: 'ChatGPT-like AI on your WhatsApp. Ask anything, translate, write, learn — all free with BotWave.',
     url: 'https://www.botwave.online/blog/whatsapp-ai-chatbot-free',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Free+WhatsApp+AI+Chatbot+(2026)+%E2%80%94+ChatGPT-Like+AI+on+WhatsApp', width: 1200, height: 630 }],
   },
 };
 
@@ -150,6 +150,12 @@ Stop switching between apps to ask AI questions. Get it right inside WhatsApp wh
 **[Get Free AI Chat →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
+  { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms in 2026 Compared' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 13, 2026" readTime="6 min read" />;
+  return <BlogArticle content={content} date="May 13, 2026" readTime="6 min read" slug="whatsapp-ai-chatbot-free" relatedPosts={relatedPosts} />;
 }

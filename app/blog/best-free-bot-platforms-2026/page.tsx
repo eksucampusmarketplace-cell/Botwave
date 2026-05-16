@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Best Free Bot Platforms in 2026 Compared — BotWave vs ManyChat vs Chatfuel',
-  description: 'Honest comparison of the best free bot platforms in 2026. BotWave, ManyChat, Chatfuel, Tidio, and more. Features, pricing, and which is best for WhatsApp.',
+  description: 'We tested BotWave, ManyChat, Chatfuel & Tidio side-by-side. See which free bot platform actually delivers in 2026 — features, pricing, and real results compared →',
   keywords: ['best free bot platform', 'bot platform comparison 2026', 'free chatbot platform', 'manychat alternative', 'chatfuel alternative', 'best whatsapp bot platform', 'free bot maker 2026'],
   openGraph: {
     title: 'Best Free Bot Platforms in 2026 Compared',
     description: 'BotWave vs ManyChat vs Chatfuel vs Tidio — which free bot platform is actually worth using in 2026?',
     url: 'https://www.botwave.online/blog/best-free-bot-platforms-2026',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Best+Free+Bot+Platforms+in+2026+Compared', width: 1200, height: 630 }],
   },
 };
 
@@ -173,6 +173,12 @@ If you're on Instagram, ManyChat is better. If you're a developer on Telegram, u
 **[Try BotWave Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 11, 2026" readTime="9 min read" />;
+  return <BlogArticle content={content} date="May 11, 2026" readTime="9 min read" slug="best-free-bot-platforms-2026" relatedPosts={relatedPosts} />;
 }

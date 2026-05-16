@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Complete WhatsApp Bot Commands List (2026) — 100+ BotWave Commands',
-  description: 'Full list of all BotWave WhatsApp bot commands for 2026. Stickers, AI chat, games, polls, media downloads, group management, music, logo generator, study tools, and more. With examples for every command.',
+  description: 'The ultimate reference: all 100+ BotWave commands with examples. Stickers, AI chat, games, music, logos, study tools, media downloads & more. Bookmark this guide →',
   keywords: ['whatsapp bot commands', 'whatsapp bot commands list', 'botwave commands', 'whatsapp bot help', 'whatsapp bot features', 'all whatsapp bot commands 2026', 'whatsapp sticker bot', 'whatsapp ai bot', 'whatsapp game bot', 'whatsapp group bot', 'whatsapp download bot', 'whatsapp music bot', 'whatsapp logo maker bot'],
   openGraph: {
     title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands',
     description: 'All 100+ BotWave commands explained with examples. Stickers, AI, games, polls, media, music, logos, study tools, and more.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-commands-list-2026',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Complete+WhatsApp+Bot+Commands+List+(2026)+%E2%80%94+100%2B+Commands', width: 1200, height: 630 }],
   },
 };
 
@@ -1857,6 +1857,12 @@ All basic commands are included in BotWave's free tier. Sign up, connect your Wh
 **[Get Started Free](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
+  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 16, 2026" readTime="45 min read" />;
+  return <BlogArticle content={content} date="May 16, 2026" readTime="45 min read" slug="whatsapp-bot-commands-list-2026" relatedPosts={relatedPosts} />;
 }

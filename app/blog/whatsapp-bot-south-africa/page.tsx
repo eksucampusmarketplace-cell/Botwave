@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management',
-  description: 'Free WhatsApp bot for South African businesses, communities, and groups. Auto-replies, AI chat, anti-spam, stickers, and group management. Works with any SA number.',
+  description: 'Free WhatsApp bot for South Africa — auto-replies, AI chat, anti-spam, stickers & group management. Works with Vodacom, MTN, Cell C. Set up in 2 minutes, no coding needed. Try it free →',
   keywords: ['whatsapp bot south africa', 'whatsapp automation south africa', 'free whatsapp bot sa', 'whatsapp business bot south africa', 'whatsapp group bot south africa', 'chatbot south africa'],
   openGraph: {
     title: 'WhatsApp Bot for South Africa (2026)',
     description: 'Free WhatsApp bot for SA businesses and communities. Auto-replies, AI chat, group management. No coding.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-south-africa',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=WhatsApp+Bot+for+South+Africa+(2026)+%E2%80%94+Free+Automation+%26+Group+Management', width: 1200, height: 630 }],
   },
 };
 
@@ -165,6 +165,12 @@ Whether you're in Johannesburg, Cape Town, Durban, or anywhere in South Africa �
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026)' },
+  { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 15, 2026" readTime="6 min read" />;
+  return <BlogArticle content={content} date="May 15, 2026" readTime="6 min read" slug="whatsapp-bot-south-africa" relatedPosts={relatedPosts} />;
 }

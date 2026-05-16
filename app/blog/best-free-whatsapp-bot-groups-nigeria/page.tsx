@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
-  description: 'Looking for the best free WhatsApp bot for managing groups in Nigeria? BotWave offers anti-spam, polls, games, AI chat, stickers, and 50+ commands. Free forever.',
+  description: 'The best WhatsApp group bot for Nigeria — anti-spam, polls, games, AI chat, stickers & 100+ commands. Free forever, no catch. See why Nigerian groups are switching →',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],
   openGraph: {
     title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
     description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
     url: 'https://www.botwave.online/blog/best-free-whatsapp-bot-groups-nigeria',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Best+Free+WhatsApp+Bot+for+Groups+in+Nigeria+(2026)', width: 1200, height: 630 }],
   },
 };
 
@@ -116,6 +116,12 @@ If you're managing a WhatsApp group in Nigeria, BotWave is the best free option 
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games' },
+  { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 3, 2026" readTime="6 min read" />;
+  return <BlogArticle content={content} date="May 3, 2026" readTime="6 min read" slug="best-free-whatsapp-bot-groups-nigeria" relatedPosts={relatedPosts} />;
 }
