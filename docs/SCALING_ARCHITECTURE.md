@@ -1,10 +1,10 @@
 # BotWave Scaling Architecture
 
-> **Status**: Ready to build — dormant until triggered.
+> **Status**: Architecture plan — see [Decision Matrix](#decision-matrix-which-approach-when) for build order.
 > **Current mode**: Standalone (single main process handles all sessions).
-> **Built-in behavior**: Workers are deployed in the code but stay dormant. The main
-> thread runs everything in standalone mode until it detects scaling pressure, then
-> automatically spawns workers. No manual intervention needed.
+> **Recommendation**: At current scale (5-25 sessions), do nothing. At 50+, add
+> concurrent heartbeat batching (~50 lines). At 500+, consider worker_threads.
+> See the "Do We Even Need worker_threads?" section for the full analysis.
 
 ---
 
@@ -22,7 +22,7 @@
 10. [Scale Transitions: What Happens at Each Stage](#scale-transitions-what-happens-at-each-stage)
 11. [Crash Handling](#crash-handling)
 12. [Evolution API Crash Behavior](#evolution-api-crash-behavior)
-13. [What Could Break with Worker Threads](#what-could-break-with-worker-threads)
+13. [What Could Break with Worker Threads](#what-could-break-with-worker-threads) (12 risks)
 14. [Compared to Old 3-Worker Containers](#compared-to-old-3-worker-containers-what-broke-before)
 15. [What NOT to Do](#what-not-to-do)
 16. [Memory Planning](#memory-planning)
@@ -67,15 +67,22 @@ The main process runs `syncSessionsWithDb()` every 5 seconds:
    - Waits 2-8s jitter between each session start
 4. Refreshes heartbeats for all active bots
 
-### The bottleneck at scale
+### The bottleneck at scale (original estimate — see correction below)
 
-Each session in the sync loop takes ~2-5s (instance creation, pairing code, DB updates,
-stagger delays). At 200 sessions:
+> ⚠️ **This estimate is WRONG.** It was written before analyzing the actual code.
+> See ["Do We Even Need worker_threads?"](#-wait--do-we-even-need-worker_threads)
+> for the corrected math showing the real cycle time is ~42s, not 10 minutes.
 
-- 200 sessions × ~3s avg = **~10 minutes per full sync cycle**
-- Heartbeat expiry is 180s (3 min) — sessions get detected as orphaned before the
-  loop gets back to them
-- Orphan recovery fires constantly, wasting cycles
+~~Each session in the sync loop takes ~2-5s (instance creation, pairing code, DB updates,
+stagger delays). At 200 sessions:~~
+
+- ~~200 sessions × ~3s avg = **~10 minutes per full sync cycle**~~
+- ~~Heartbeat expiry is 180s (3 min) — sessions get detected as orphaned before the
+  loop gets back to them~~
+- ~~Orphan recovery fires constantly, wasting cycles~~
+
+**Corrected**: Active sessions take ~0ms (Map lookup → skip). Only new pairing
+sessions are slow (~20s each), capped at 2 per cycle. Real total: **~42 seconds.**
 
 ### What breaks at 200 sessions
 
@@ -83,7 +90,7 @@ stagger delays). At 200 sessions:
 |---------|--------|
 | Evolution API memory | 200 WebSocket connections from one container is heavy on RAM |
 | WhatsApp rate limits (428) | Too many pairing code requests in parallel |
-| Sync loop cycle time | Exceeds heartbeat timeout, causing false orphan detection |
+| ~~Sync loop cycle time~~ | ~~Exceeds heartbeat timeout~~ (debunked — real time is ~42s, see above) |
 | Docker container memory | Each Baileys instance holds message stores in memory |
 
 ---
@@ -221,28 +228,30 @@ for (const session of sessions) {
 ### The fix: Concurrent batching
 
 ```typescript
-// NEW: Process sessions in concurrent batches
-// Active sessions: process all at once (they're instant — just Map.has checks)
-// New sessions: process with concurrency limit (respect rate limits)
+// NEW: The ONE change that matters — parallel heartbeat refresh.
+// New sessions are still sequential because rate limits serialize them anyway
+// (8s rate limit + 15s stagger + MAX_CONCURRENT_PAIRING=2 = no gain from
+// concurrency). The only real win is batching heartbeats.
 
-const active = sessions.filter(s => activeBots.has(s.id));
-const needsWork = sessions.filter(s => !activeBots.has(s.id));
+// Session processing loop stays the same (sequential, rate-limited)
+for (const session of sessions) {
+  if (activeBots.has(session.id)) continue;  // ~0ms, skip active
+  await processNewSession(session);           // rate-limited, intentionally slow
+}
 
-// Active sessions: instant, no I/O, safe to batch
-// (skip loop — they're already handled by the existing `continue` logic)
-
-// New sessions: process up to 3 concurrently (still respects rate limiter)
-await pMap(needsWork, async (session) => {
-  await processNewSession(session);
-}, { concurrency: 3 });
-
-// Heartbeat refresh: batch all at once (parallel Redis calls)
+// CHANGED: Heartbeat refresh — batch all at once (parallel Redis calls)
+// This is the key fix. Sequential: 200 × 10ms = 2s. Parallel: ~50ms.
 await Promise.all(
   Array.from(activeBots.keys()).map(async (id) => {
     await tryAcquireLock(id);
     await refreshHeartbeat(id);
   })
 );
+
+// NOTE: Don't use pMap or concurrency for new sessions — the rate limiter
+// (1 createInstance per 8s) and SESSION_STAGGER_DELAY (15s) already serialize
+// them. Running 3 "concurrently" would just mean 2 blocking on waitForRateLimit.
+// It adds complexity without improving throughput.
 ```
 
 ### What this changes
@@ -718,8 +727,12 @@ async function autoScaleLoop() {
   // ── Determine desired worker count ──
   let desired = 0;
 
-  // Signal 1: Session count threshold
-  if (sessionCount > SCALE_THRESHOLD) {
+  // Signal 1: Session count threshold (with hysteresis to prevent flapping)
+  // Scale UP at 30, scale DOWN at 15 — 15-session dead zone prevents oscillation
+  const scaleUpThreshold = 30;   // Don't spawn workers until clearly needed
+  const scaleDownThreshold = 15; // Don't kill workers until clearly unneeded
+  const effectiveThreshold = currentWorkers > 0 ? scaleDownThreshold : scaleUpThreshold;
+  if (sessionCount > effectiveThreshold) {
     if (sessionCount <= 50) desired = 3;
     else if (sessionCount <= 100) desired = Math.ceil(sessionCount / 10);
     else desired = Math.ceil(sessionCount / 5);
@@ -758,7 +771,7 @@ async function autoScaleLoop() {
 |-----------|----------|------------|----------|
 | Normal low load | 5 | 15s | 0 workers (standalone) |
 | Normal medium | 20 | 60s | 0 workers (standalone, under threshold) |
-| Threshold crossed | 26 | 78s | 3 workers (session count signal) |
+| Threshold crossed | 31 | 78s | 3 workers (session count signal, hysteresis UP=30) |
 | Growing | 50 | N/A | 5 workers (ceil(50/10)) |
 | Slow Evolution API | 15 | 95s | 3 workers (sync time signal — even though sessions < 25) |
 | Emergency | 30 | 140s | 6 workers (heartbeat danger signal, aggressive) |
@@ -769,8 +782,8 @@ async function autoScaleLoop() {
 ### Scale-up cooldown prevents flapping
 
 ```
-T+0s     Auto-scaler: 26 sessions → spawn 3 workers
-T+30s    Auto-scaler: 28 sessions → want 3 workers (already have 3, no change)
+T+0s     Auto-scaler: 31 sessions → spawn 3 workers (crosses UP threshold of 30)
+T+30s    Auto-scaler: 33 sessions → want 3 workers (already have 3, no change)
 T+60s    Auto-scaler: 35 sessions → want 3 workers (still fine)
 T+90s    Auto-scaler: 52 sessions → want 6 workers (cooldown expired, scale up)
 T+120s   Auto-scaler: 55 sessions → want 6 workers (already have 6, no change)
@@ -818,7 +831,7 @@ BEFORE: Main thread doing everything (current behavior)
 AFTER: Main is orchestrator only, workers handle sync loops
 
 Total transition time: ~2 seconds
-Session downtime: 0 (no disconnects)
+Session downtime: ~5s heartbeat gap (see risk #5 in What Could Break)
 ```
 
 ### Workers → Standalone (scaling back down)
@@ -933,8 +946,9 @@ Workers just start/stop managing the bot object locally.
 
 ```
 1. apiFetch detects 5 consecutive failures
-2. markEvolutionDown() called (shared state — all threads see it)
-3. Main sends to ALL workers: { type: 'pause' }
+2. Worker that detected it sends { type: 'report_evo_failure' } to main
+3. Main calls markEvolutionDown() on ITS copy (or sets SharedArrayBuffer flag)
+4. Main sends to ALL workers: { type: 'pause' }
 4. All workers stop their sync loops
 5. All workers log: "[WT-N] Paused — Evolution API down"
 6. Main's keep-alive loop continues polling Evolution (lightweight pings)
@@ -1130,6 +1144,107 @@ Evolution API or anything else.
 With the concurrent sync loop alternative (see above), you may never need
 worker_threads at all — `Promise.all` for heartbeats handles 1000+ sessions.
 
+### 11. Anti-Ban In-Memory State Lost on Worker Crash/Rebalance
+
+> **This is the issue the doc completely missed until the third review.**
+
+**Risk**: The bot's anti-ban system relies on module-level `Map` objects that
+track per-session and per-user state. These are ALL in-memory, per-V8-Isolate:
+
+```
+MessageHandler.ts:
+  userMessageTracker: Map<string, number[]>      — user rate limits (60/min)
+  sessionMessageTracker: Map<string, number[]>   — session rate limits (30/min)
+  spamTracker: Map<string, { count, lastTime }>  — spam flood detection
+
+advancedAntiban.ts:
+  groupLastReply: Map<string, number>            — group cooldowns (3-8s)
+  presenceTimers: Map<string, NodeJS.Timeout>    — online/offline simulation
+  contactReplyTracker: Map<string, number[]>     — per-contact throttling
+  groupActivityTracker: Map<string, number[]>    — group activity tracking
+  burstTracker: Map<string, number[]>            — burst detection
+```
+
+**What happens with workers**: Each worker gets its OWN copy of every Map
+(same V8 Isolate issue as rate limiter). When a session moves from Worker A
+to Worker B (rebalance, crash recovery):
+
+1. **All rate limit counters reset to 0** — the session could briefly exceed
+   rate limits (60 msgs/min user cap, 30 msgs/min session cap)
+2. **Spam tracker resets** — a user mid-spam-flood gets a clean slate
+3. **Group cooldowns lost** — bot might reply to same group twice in <3s
+4. **Presence simulation timers destroyed** — new timer created on new worker
+   with different phase, causing presence "glitch" visible to WhatsApp
+5. **Contact throttling resets** — repeated contacts could get faster replies
+   than the anti-ban system intends
+
+**Impact**: Medium-High. WhatsApp's anti-automation detection looks for exactly
+these patterns — sudden behavior changes (rate limit reset), inconsistent
+presence (timer restart), rapid-fire replies after a pause (spam tracker reset).
+A worker crash followed by immediate high message volume could look suspicious.
+
+**Mitigation options**:
+- **Option A (simple)**: Accept the risk. Rate limits reset to 0 = more
+  restrictive for 60s until the window fills. Spam tracker reset = user gets
+  one more warning before being blocked. Presence restarts = minor glitch.
+  In practice, worker crashes should be rare enough that this doesn't matter.
+- **Option B (proper)**: Persist critical anti-ban state to Redis with short
+  TTLs. When a worker picks up a session, it loads rate limit counts from
+  Redis instead of starting fresh. Adds ~5ms per message (Redis read) but
+  survives crashes and rebalancing.
+- **Option C (for concurrent sync loop)**: Not an issue. Single thread = single
+  set of Maps. No state transfer needed. **This is another reason to prefer
+  the concurrent sync loop over worker_threads.**
+
+### 12. Message Handling Runs Inside Workers — Not Just Sync
+
+> **The doc focuses entirely on the sync loop but ignores the bot's PRIMARY
+> function: processing WhatsApp messages.**
+
+**Missing context**: When a worker owns an `EvolutionBot` instance, it also
+owns the `EvolutionSocketAdapter` which processes incoming messages. The full
+message flow is:
+
+```
+WhatsApp message arrives
+  → Evolution API receives it via Baileys WebSocket
+  → Evolution API sends webhook to botwave-web (DB update)
+  → Evolution API notifies the bot process
+  → EvolutionBot.pollForMessages() picks it up
+  → handleMessage() runs (MessageHandler.ts)
+  → Anti-ban checks (rate limits, spam, cooldowns)
+  → Command processing (!help, !ai, !sticker, etc.)
+  → humanSend() (read receipt → typing indicator → send)
+```
+
+**All of this runs in the WORKER thread** that owns the session. This means:
+
+1. **CPU-bound command handlers run in the worker** — AI responses (Gemini
+   calls), sticker creation (image processing), media downloads. At high
+   message volume, a single worker could get backed up processing commands
+   for 15 sessions simultaneously.
+
+2. **The `humanSend()` flow includes long `await` delays** (0.2-2s read delay,
+   0.2-0.5s think delay, typing indicator duration, anti-pattern delays up to
+   120s). These are all `async/await` — they don't block the event loop, but
+   they DO occupy the worker's attention and create overlapping async contexts.
+
+3. **Each worker has its own event loop**. If a worker is processing a burst
+   of messages for 15 sessions, the event loop handles all callbacks
+   concurrently. This is fine for I/O, but if any command handler does
+   synchronous work (image manipulation, JSON parsing of large payloads),
+   it blocks ALL 15 sessions on that worker.
+
+**Impact on auto-scaler**: The auto-scaler currently monitors session count
+and sync cycle time, but NOT message processing latency. A worker could have
+5 sessions but be overwhelmed with messages. The auto-scaler wouldn't know
+to add more workers.
+
+**Recommendation**: If implementing workers, add a `messageQueueDepth` metric
+to the `worker_stats` message. If any worker's message queue is consistently
+backing up, it's a sign that worker needs fewer sessions — even if the sync
+loop is fast.
+
 ---
 
 ## Compared to Old 3-Worker Containers (What Broke Before)
@@ -1267,6 +1382,8 @@ When building the worker thread system:
 - [ ] Graceful shutdown: workers finish current cycle before exiting
 - [ ] **Session handoff during transitions**: extend heartbeat temporarily, main does final refresh before handoff
 - [ ] **DB connection monitoring**: track concurrent Supabase requests across workers, add backpressure if needed
+- [ ] **Anti-ban state on crash**: decide on Option A (accept reset) or Option B (Redis persist) for rate limit/spam/cooldown Maps
+- [ ] **Message queue monitoring**: add `messageQueueDepth` to `worker_stats` for auto-scaler awareness
 
 ### Phase 3: Observability (nice to have)
 - [ ] Add `[WT-N]` prefix to all worker log lines
@@ -1275,7 +1392,7 @@ When building the worker thread system:
 - [ ] Log all scaling decisions with metrics that triggered them
 
 ### Phase 4: Config & Deploy
-- [ ] Add `MAX_WORKER_THREADS` env var (default: 200, safety ceiling)
+- [ ] Add `MAX_WORKER_THREADS` env var (default: 40, safety ceiling)
 - [ ] Add `SCALE_THRESHOLD` env var (default: 25, can override)
 - [ ] Increase bot container memory limit in docker-compose (1G → 4G)
 - [ ] Test at 5 sessions (verify dormant — 0 workers)
