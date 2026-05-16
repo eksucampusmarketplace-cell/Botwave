@@ -115,6 +115,21 @@ export async function sendSubscriptionEmail(
   });
 }
 
+export async function sendSupportReplyEmail(
+  to: string,
+  username: string,
+  ticketSubject: string,
+  replyPreview: string,
+): Promise<string> {
+  const { supportReplyTemplate } = await import('./templates/support-reply');
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: `Reply on your support ticket: ${ticketSubject}`,
+    html: supportReplyTemplate(username, ticketSubject, replyPreview),
+  });
+}
+
 export async function sendReengagementEmail(
   to: string,
   username: string,
