@@ -13,18 +13,19 @@
 1. [Current Architecture (Standalone)](#current-architecture-standalone)
 2. [Dormant-Until-Needed: How Workers Wake Up](#dormant-until-needed-how-workers-wake-up)
 3. [Full System Architecture](#full-system-architecture)
-4. [Communication Protocol (Main ↔ Workers)](#communication-protocol-main--workers)
-5. [Auto-Scaling: How It Decides](#auto-scaling-how-it-decides)
-6. [Scale Transitions: What Happens at Each Stage](#scale-transitions-what-happens-at-each-stage)
-7. [Crash Handling](#crash-handling)
-8. [Evolution API Crash Behavior](#evolution-api-crash-behavior)
-9. [What Could Break with Worker Threads](#what-could-break-with-worker-threads)
-10. [Compared to Old 3-Worker Containers](#compared-to-old-3-worker-containers-what-broke-before)
-11. [What NOT to Do](#what-not-to-do)
-12. [Memory Planning](#memory-planning)
-13. [Resilience Features (Already Implemented)](#resilience-features-already-implemented)
-14. [Files That Change](#files-that-change)
-15. [Implementation Checklist](#implementation-checklist)
+4. [⚠️ CRITICAL: V8 Isolate Reality (What the Old Doc Got Wrong)](#-critical-v8-isolate-reality-what-the-old-doc-got-wrong)
+5. [Communication Protocol (Main ↔ Workers)](#communication-protocol-main--workers)
+6. [Auto-Scaling: How It Decides](#auto-scaling-how-it-decides)
+7. [Scale Transitions: What Happens at Each Stage](#scale-transitions-what-happens-at-each-stage)
+8. [Crash Handling](#crash-handling)
+9. [Evolution API Crash Behavior](#evolution-api-crash-behavior)
+10. [What Could Break with Worker Threads](#what-could-break-with-worker-threads)
+11. [Compared to Old 3-Worker Containers](#compared-to-old-3-worker-containers-what-broke-before)
+12. [What NOT to Do](#what-not-to-do)
+13. [Memory Planning](#memory-planning)
+14. [Resilience Features (Already Implemented)](#resilience-features-already-implemented)
+15. [Files That Change](#files-that-change)
+16. [Implementation Checklist](#implementation-checklist)
 
 ---
 
@@ -227,11 +228,11 @@ When load drops, they go away. You never have to touch it.
 │    └───┬───┘ └───┬───┘ └───┬───┘      └───┬───┘                │
 │        │         │         │               │                    │
 │        ▼         ▼         ▼               ▼                    │
-│  SHARED (same V8 heap — zero copy):                             │
-│  ├── Rate limiter (1 createInstance per 8s globally)            │
-│  ├── 428 cooldown flag                                          │
-│  ├── Evolution down/recovered state                             │
-│  └── Reconnect queue counter                                    │
+│  SHARED STATE (managed by main thread, NOT shared memory):       │
+│  ├── Rate limiter gate — workers ask main before createInstance  │
+│  ├── 428 cooldown flag — main broadcasts pause/resume to workers │
+│  ├── Evolution down/recovered — main detects, tells workers      │
+│  └── Reconnect queue — main controls slot assignment             │
 │                    │                                             │
 │                    │ HTTP (Docker network)                       │
 │                    ▼                                             │
@@ -244,10 +245,127 @@ When load drops, they go away. You never have to touch it.
 
 ---
 
+## ⚠️ CRITICAL: V8 Isolate Reality (What the Old Doc Got Wrong)
+
+> **The previous version of this doc claimed worker_threads share the V8 heap.
+> THIS IS WRONG.** Each worker thread gets its own V8 Isolate with its own
+> heap, its own garbage collector, and its own module-level variables. This
+> changes the entire design of shared state.
+
+### What "separate V8 Isolate" means in practice
+
+When you `new Worker('./workerThread.js')`, Node.js creates a brand new V8
+isolate. That worker loads all the same modules fresh — its own copy of
+`evolutionClient.ts`, its own copy of `BotManager.ts`, etc. Every module-level
+variable (`let consecutiveFailures = 0`, `let global428CooldownUntil = 0`,
+`let evolutionWasDown = false`, `let lastInstanceCreatedAt = 0`) is a separate
+copy per worker.
+
+**This means the following things DO NOT work as previously described:**
+
+| What we said was shared | Reality | Consequence |
+|------------------------|---------|-------------|
+| Rate limiter (`lastInstanceCreatedAt`) | Each worker has its own copy | 3 workers could fire 3 `createInstance` calls simultaneously |
+| 428 cooldown (`global428CooldownUntil`) | Each worker has its own copy | Worker 0 gets a 428, workers 1-2 don't know and keep hammering |
+| Evolution down flag (`evolutionWasDown`) | Each worker has its own copy | Worker 0 detects Evolution down, workers 1-2 keep trying |
+| Reconnect queue counter | Each worker has its own copy | Stagger breaks — all workers start at slot 0 |
+| `consecutiveFailures` | Each worker has its own copy | Each worker independently counts to 5, slower detection |
+
+### The fix: Main Thread as the Single Source of Truth
+
+All shared state MUST flow through the main thread via `postMessage`. Workers
+don't make global decisions — they ask the main thread.
+
+```
+OLD (BROKEN) DESIGN:
+  Worker 0: calls createInstance → checks its own lastInstanceCreatedAt → proceeds
+  Worker 1: calls createInstance → checks its own lastInstanceCreatedAt → proceeds
+  Worker 2: calls createInstance → checks its own lastInstanceCreatedAt → proceeds
+  Result: 3 simultaneous createInstance calls, Evolution gets slammed
+
+NEW (CORRECT) DESIGN:
+  Worker 0: sends { type: 'request_create_instance', sessionId } to main
+  Main: checks global rate limiter → approved → sends { type: 'create_approved' }
+  Worker 0: proceeds with createInstance
+  Worker 1: sends { type: 'request_create_instance', sessionId } to main
+  Main: rate limiter says wait 6s → sends { type: 'create_queued', waitMs: 6000 }
+  Worker 1: waits 6s, then creates
+```
+
+### New message types needed (added to protocol below)
+
+```typescript
+// Worker → Main: "I need to create an instance"
+{ type: 'request_create_instance', sessionId: string }
+
+// Main → Worker: "Go ahead" or "Wait"
+{ type: 'create_approved', sessionId: string }
+{ type: 'create_queued', sessionId: string, waitMs: number }
+
+// Worker → Main: "I saw a 428 from WhatsApp"
+{ type: 'report_428', source: string }
+
+// Main → ALL Workers: "428 detected, everyone stop"
+// (reuses existing 'pause' message)
+
+// Worker → Main: "Evolution API returned 5xx / ECONNREFUSED"
+{ type: 'report_evo_failure' }
+
+// Worker → Main: "Evolution API responded OK after failures"
+{ type: 'report_evo_success' }
+```
+
+### What CAN be shared via SharedArrayBuffer
+
+Only raw bytes can be shared — not JS objects. For simple flags and counters,
+`SharedArrayBuffer` + `Atomics` works:
+
+```typescript
+// Main thread creates shared flags
+const sharedFlags = new SharedArrayBuffer(16); // 4 Int32 slots
+const flags = new Int32Array(sharedFlags);
+// flags[0] = is428CooldownActive (0 or 1)
+// flags[1] = isEvolutionDown (0 or 1)
+// flags[2] = cooldownExpiresAt (unix timestamp in seconds)
+// flags[3] = reserved
+
+// Pass to each worker via workerData
+const worker = new Worker('./workerThread.js', {
+  workerData: { sharedFlags }
+});
+
+// Worker reads flags directly (no postMessage needed)
+const is428Active = Atomics.load(flags, 0) === 1;
+
+// Main writes flags
+Atomics.store(flags, 0, 1); // All workers see it immediately
+```
+
+**However**, the rate limiter queue (which needs request/response semantics)
+MUST use `postMessage` — you can't do request/response with shared memory
+alone.
+
+### Memory reality
+
+Each worker thread loads its own copy of all modules:
+- V8 isolate overhead: ~10-30MB per worker (not 5-10MB as previously stated)
+- Module loading: each worker loads BotManager, evolutionClient, handlers, etc.
+- Estimated per-worker memory: **30-50MB** (isolate + modules + activeBots)
+
+At 40 workers: 40 × 40MB = **~1.6GB** just for worker threads
+At 10 workers: 10 × 40MB = **~400MB**
+
+This is still manageable on a 16GB VPS, but it's 3-5x more than previously
+estimated. The memory planning table has been updated below.
+
+---
+
 ## Communication Protocol (Main ↔ Workers)
 
-All communication uses `parentPort.postMessage()` — instant, zero network,
-zero serialization cost. These are the exact message types:
+All communication uses `parentPort.postMessage()`. Messages are serialized via
+V8's Structured Clone Algorithm — fast for small objects (our messages are tiny
+JSON-like objects, well under 1KB, so serialization cost is negligible). These
+are the exact message types:
 
 ### Main → Worker messages
 
@@ -269,6 +387,10 @@ zero serialization cost. These are the exact message types:
 
 // "Report your stats now" (on-demand, for /api/scaling/status endpoint)
 { type: 'report_stats' }
+
+// Rate limiter responses (see V8 Isolate section above)
+{ type: 'create_approved', sessionId: string }
+{ type: 'create_queued', sessionId: string, waitMs: number }
 ```
 
 ### Worker → Main messages
@@ -294,6 +416,14 @@ zero serialization cost. These are the exact message types:
   syncCycleMs: number,    // How long my last sync loop took
   memMB: number           // My heap usage
 }
+
+// Rate limiter request (worker asks main before creating an instance)
+{ type: 'request_create_instance', sessionId: string }
+
+// Failure reporting (so main can track global health)
+{ type: 'report_428', source: string }      // WhatsApp rate limited this worker
+{ type: 'report_evo_failure' }               // Evolution API returned 5xx/timeout
+{ type: 'report_evo_success' }               // Evolution API responded OK
 ```
 
 ### Example: Full lifecycle of a new session through workers
@@ -307,6 +437,8 @@ T+0s    Main → WT1: { type: 'assign_session', sessionId: 'abc123', phone: '+23
 T+0s    WT1 receives message, adds 'abc123' to its local session list
 
 T+1s    WT1: acquires Redis lock for abc123
+T+1s    WT1 → Main: { type: 'request_create_instance', sessionId: 'abc123' }
+T+1s    Main: rate limiter clear → Main → WT1: { type: 'create_approved' }
 T+2s    WT1: calls createInstance on Evolution API
 T+3s    WT1: instance created, requests pairing code
 T+7s    WT1: pairing code "ABCD1234" received, saved to DB
@@ -637,11 +769,16 @@ cannot read worker-local Maps directly.
 at a time. With N workers running in parallel, you could have N simultaneous
 `createInstance` calls hitting Evolution API.
 
-**Status**: This is actually fine. The rate limiter (`waitForRateLimit` in
-`evolutionClient.ts`) is per-process — worker_threads share the same V8 heap, so
-the `lastInstanceCreatedAt` timestamp and `RATE_LIMIT_INTERVAL_MS` gate are
-shared across all threads. Only one instance creation can happen per 8-second
-window regardless of thread count.
+**Status**: ⚠️ **NOT automatically safe.** The rate limiter (`waitForRateLimit`
+in `evolutionClient.ts`) uses a module-level `lastInstanceCreatedAt` variable.
+Since each worker thread gets its own V8 Isolate, each has its own copy of this
+variable. Without the fix described in the V8 Isolate section above, 3 workers
+could fire 3 `createInstance` calls simultaneously.
+
+**Fix**: Workers MUST request permission from main thread before creating
+instances. Main thread holds the single rate limiter and serializes all
+`createInstance` calls across workers. See `request_create_instance` /
+`create_approved` messages in the communication protocol.
 
 ### 3. Heartbeat Conflicts
 
@@ -664,13 +801,67 @@ sync loop takes ~60s so expiry should be 200s+.
 
 ### 4. Memory Overhead
 
-**Risk**: Each worker_thread has its own event loop and call stack.
+**Risk**: Each worker_thread has its own V8 Isolate, event loop, and full copy
+of all loaded modules.
 
-**Status**: Negligible. worker_threads share the V8 heap (unlike `cluster` which
-forks entirely separate processes). Each thread adds ~5-10MB overhead. Even at
-40 workers (max practical), that's ~200-400MB — well within VPS capacity. The
-real memory consumer is Evolution API (Baileys WebSocket connections), not the
-bot threads.
+**Status**: ⚠️ **More significant than previously stated.** worker_threads do
+NOT share the V8 heap — each gets its own Isolate. Each worker loads its own
+copy of BotManager, evolutionClient, all handlers, etc. Estimated per-worker
+memory is **30-50MB** (not 5-10MB as previously stated).
+
+- At 10 workers: ~300-500MB
+- At 20 workers: ~600MB-1GB
+- At 40 workers: ~1.2-2GB
+
+Still manageable on a 16GB VPS, but this is a real cost. The practical max is
+closer to **20-30 workers** before the bot process itself becomes a significant
+memory consumer alongside Evolution API.
+
+**Mitigation**: Each worker should load ONLY the modules it needs (a slim
+`workerThread.ts` that imports just `syncSessionsWithDb` and `evolutionClient`,
+not the entire bot codebase). This could cut per-worker memory to ~15-25MB.
+
+### 5. Session Handoff During Scale Transitions
+
+**Risk**: When transitioning from standalone to workers (or vice versa), there's
+a window where bot objects need to be transferred. But you can't transfer a Bot
+object across threads — it has event listeners, timers, WebSocket references,
+etc. that are bound to a specific event loop.
+
+**Impact**: During the transition, the worker creates NEW bot objects for its
+assigned sessions. The old bot objects on main are destroyed. This means:
+- Brief gap (~5s) where heartbeats aren't being refreshed for some sessions
+- Evolution API instances survive (they're on Evolution API, not in the bot)
+- Worker picks up management of the existing Evolution instance, doesn't recreate
+
+**Mitigation**: 
+- Extend `LOCK_EXPIRY_MS` temporarily during transitions (2x normal)
+- Main refreshes all heartbeats one final time before handing off
+- Workers start by checking Evolution instance status, not creating new ones
+
+### 6. Webhook Delivery While Transitioning
+
+**Risk**: Webhooks from Evolution API hit `botwave-web`, which updates the DB.
+Workers read from DB on their sync loop. But during a transition, a webhook
+might arrive for a session that's mid-handoff — neither the old owner (main)
+nor the new owner (worker) is actively managing it.
+
+**Impact**: Low. The webhook updates DB state regardless of who's managing the
+session. The next sync loop cycle (from whichever thread picks it up) will see
+the updated state. Worst case: a 5-10s delay in processing a webhook event
+during transition.
+
+### 7. Database Connection Pool Exhaustion
+
+**Risk**: Each worker creates its own Supabase client (separate module load =
+separate client instance). With 20 workers, that's 20+ concurrent DB
+connections.
+
+**Mitigation**: Use a single shared Supabase connection from the main thread,
+or have workers request DB operations through main via `postMessage`. 
+Alternative: Supabase JS client uses HTTP (not persistent connections), so this
+is less of a concern than with traditional connection pools — but request
+concurrency should still be monitored.
 
 ---
 
@@ -681,7 +872,7 @@ bot threads.
 | Network issues | Docker networking failed between containers | No network — same process |
 | Health check timeouts | Container health checks expired, sessions got stuck | No health checks needed — main monitors threads directly |
 | Session stuck on dead worker | Worker container dies, sessions locked until orphan recovery | Thread dies, main respawns immediately, sessions reassigned |
-| Coordination bugs | Redis locks + HTTP between containers = complex | Shared memory + `parentPort` messages = simpler |
+| Coordination bugs | Redis locks + HTTP between containers = complex | `parentPort` messages + main-thread gating = simpler |
 | Deploy complexity | 4 containers to build/deploy/monitor | 1 container, workers auto-scale |
 | Scaling | Fixed at 3, manual config to change | Dynamic — auto-scales 0 to 200 based on load signals |
 | Resource waste | 3 containers always running even with 5 sessions | 0 workers at low load, scales up only when needed |
@@ -696,9 +887,15 @@ bot threads.
   problem: network issues between containers, health check timeouts, sessions
   getting stuck when workers went down, coordination bugs across Docker networks.
 
-- **DO NOT use `cluster` module.** Cluster forks separate processes with separate
-  V8 heaps. `worker_threads` share the same V8 heap and can share memory directly
-  via `SharedArrayBuffer`. Cluster would multiply memory usage unnecessarily.
+- **DO NOT use `cluster` module.** Cluster forks entirely separate OS processes.
+  `worker_threads` creates separate V8 Isolates within the same process — they
+  can share raw byte buffers via `SharedArrayBuffer` but NOT JS objects or module
+  state. Still lighter than cluster (shared process, shared libuv thread pool).
+
+- **DO NOT assume module-level variables are shared across workers.** They are
+  NOT. Every `let`, `const`, `Map`, `Set` at the module level is a separate copy
+  in each worker. All shared state MUST go through the main thread (see the
+  V8 Isolate Reality section above).
 
 - **DO NOT split Evolution API into multiple containers** before 200+ sessions.
   One Evolution API container with enough memory is simpler and avoids the
@@ -717,15 +914,20 @@ bot threads.
 
 Based on current observations:
 
-| Sessions | Evolution API RAM | Bot Process RAM | Workers | VPS Total |
-|----------|-------------------|-----------------|---------|-----------|
-| 5-25     | 1.5 GB            | 512 MB          | 0       | 4 GB      |
-| 25-50    | 2 GB              | 1 GB            | 3       | 8 GB      |
-| 50-100   | 3 GB              | 1.5 GB          | 5-10    | 12 GB     |
-| 100-200  | 4 GB              | 2-4 GB          | 20-40   | 16 GB     |
+| Sessions | Evolution API RAM | Bot Process RAM | Workers | Per-Worker | VPS Total |
+|----------|-------------------|-----------------|---------|------------|-----------|
+| 5-25     | 1.5 GB            | 512 MB          | 0       | N/A        | 4 GB      |
+| 25-50    | 2 GB              | 1-1.5 GB        | 3       | ~40 MB     | 8 GB      |
+| 50-100   | 3 GB              | 1.5-2.5 GB      | 5-10    | ~40 MB     | 12 GB     |
+| 100-200  | 4 GB              | 2-4 GB          | 10-20   | ~40 MB     | 16 GB     |
 
 Each Baileys WebSocket connection uses ~20-40 MB of RAM in Evolution API
-(auth state, message store, connection buffers). Each worker thread uses ~5-10MB.
+(auth state, message store, connection buffers).
+
+Each worker thread uses **~30-50 MB** (V8 Isolate + module loading + activeBots
+Map). This is higher than the 5-10MB previously estimated because each worker
+loads its own copy of all imported modules. With slim worker modules that only
+import what they need, this could be reduced to ~15-25MB.
 
 ---
 
@@ -762,11 +964,13 @@ These features are already in the codebase and handle most failure scenarios:
 | `bot/autoScaler.ts` | **NEW** — scaling logic, worker lifecycle, signal detection | Medium — new code |
 | `bot/index.ts` | Modified — starts auto-scaler, delegates to workers when scaled | Low — wraps existing code |
 | `bot/BotManager.ts` | Modified — `syncSessionsWithDb` accepts session subset from worker | Low — refactor only |
-| `bot/evolutionClient.ts` | No changes — shared across threads automatically | None |
+| `bot/evolutionClient.ts` | Modified — workers delegate rate limiting and health tracking to main thread via messages. Module-level state (rate limiter, 428 cooldown, Evolution down flag) is NOT shared across threads | Medium — state management refactor |
 | `bot/sessionCoordinator.ts` | No changes — Redis locks work across threads | None |
 | `deploy/docker-compose.yml` | Modified — increase bot memory limit, add MAX_WORKER_THREADS | Low — config only |
 
-**Estimated effort**: 2-3 sessions to build, test, and verify.
+**Estimated effort**: 3-5 sessions to build, test, and verify (increased from
+2-3 due to V8 Isolate complexity — rate limiter gating and shared state
+management add significant implementation work).
 
 ---
 
@@ -775,10 +979,13 @@ These features are already in the codebase and handle most failure scenarios:
 When building the worker thread system:
 
 ### Phase 1: Core (must have)
-- [ ] Create `bot/workerThread.ts` — worker entry point with own sync loop
+- [ ] Create `bot/workerThread.ts` — slim worker entry point (import ONLY needed modules)
 - [ ] Create `bot/autoScaler.ts` — signal detection, worker lifecycle, scaling decisions
 - [ ] Add `parentPort` message protocol (all message types listed above)
 - [ ] Each worker gets its own `activeBots` Map — no shared mutable state
+- [ ] **Main-thread rate limiter gate**: workers send `request_create_instance`, main responds with `create_approved` or `create_queued`
+- [ ] **SharedArrayBuffer for flags**: 428 cooldown and Evolution down state shared via `Atomics` (see V8 Isolate section)
+- [ ] **Workers report health events to main**: `report_428`, `report_evo_failure`, `report_evo_success` — main aggregates and broadcasts
 - [ ] Main thread orchestrator: session assignment (least-loaded strategy)
 - [ ] Main thread mode switch: standalone ↔ scaled (sync loop on/off)
 - [ ] Main thread fallback: if all workers die, revert to standalone mode immediately
@@ -791,6 +998,8 @@ When building the worker thread system:
 - [ ] Evolution API down: main sends 'pause' to all workers
 - [ ] Evolution API recovered: staggered 'resume' to workers (10s apart)
 - [ ] Graceful shutdown: workers finish current cycle before exiting
+- [ ] **Session handoff during transitions**: extend heartbeat temporarily, main does final refresh before handoff
+- [ ] **DB connection monitoring**: track concurrent Supabase requests across workers, add backpressure if needed
 
 ### Phase 3: Observability (nice to have)
 - [ ] Add `[WT-N]` prefix to all worker log lines
