@@ -157,6 +157,28 @@ export async function refreshHeartbeat(sessionId: string): Promise<void> {
 }
 
 /**
+ * Force-update heartbeat directly in Supabase, re-acquiring the lock if lost.
+ * Used by worker threads whose normal heartbeats go to Redis only. Without
+ * periodic Supabase syncs, the orphan detector (which queries Supabase) would
+ * see stale heartbeat_at values and reclaim the session.
+ */
+export async function refreshHeartbeatToSupabase(sessionId: string): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      heartbeat_at: now,
+      locked_by: INSTANCE_ID,
+      locked_at: now,
+    })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error(`[COORD] Supabase heartbeat failed for ${sessionId}:`, error);
+  }
+}
+
+/**
  * Start the heartbeat loop — updates all owned sessions every 30s.
  */
 export function startHeartbeatLoop(): void {

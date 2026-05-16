@@ -37,7 +37,7 @@ const PREFIX = `[WT-${WORKER_ID}]`;
 
 import { initDatabase } from './database';
 import { EvolutionBot, BotWaveBot } from './BotManager';
-import { tryAcquireLock, refreshHeartbeat } from './sessionCoordinator';
+import { tryAcquireLock, refreshHeartbeat, refreshHeartbeatToSupabase } from './sessionCoordinator';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 
@@ -59,6 +59,8 @@ let isShuttingDown = false;
 let syncLoopHandle: ReturnType<typeof setInterval> | null = null;
 let lastSyncCycleMs = 0;
 let dbInitialized = false;
+let syncCycleCount = 0;
+const SUPABASE_SYNC_EVERY_N_CYCLES = 6; // Force Supabase heartbeat every 30s (6 * 5s)
 
 // ─── Shared Flag Readers ────────────────────────────────────────────────────
 
@@ -235,12 +237,18 @@ async function runSyncCycle(): Promise<void> {
   }
 
   const cycleStart = Date.now();
+  syncCycleCount++;
 
-  // Refresh heartbeats for all active bots in parallel
+  // Every Nth cycle, force heartbeats to Supabase (not just Redis).
+  // The orphan detector queries Supabase, so Redis-only heartbeats
+  // cause false orphan detection and session reclamation.
+  const forceSupabase = syncCycleCount % SUPABASE_SYNC_EVERY_N_CYCLES === 0;
+
   const heartbeatPromises: Promise<void>[] = [];
   for (const [sessionId] of activeBots) {
+    const hbFn = forceSupabase ? refreshHeartbeatToSupabase : refreshHeartbeat;
     heartbeatPromises.push(
-      refreshHeartbeat(sessionId).catch(err =>
+      hbFn(sessionId).catch(err =>
         console.error(`${PREFIX} Heartbeat failed for ${sessionId.slice(0, 8)}:`, err)
       )
     );
