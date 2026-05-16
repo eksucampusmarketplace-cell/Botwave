@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 5 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 Every WhatsApp group admin knows the pain. You wake up to 47 spam messages — betting links, fake giveaways, crypto scams, and chain messages. You delete them manually, warn the offenders, maybe remove someone. Next day, it happens again. There's a better way.
 
 ## The Spam Problem in WhatsApp Groups

@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 5 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 Everyone thinks creating a WhatsApp bot requires coding skills, expensive servers, or paying $20-50/month for some sketchy service. That's not true anymore. With BotWave, you can have a fully functional WhatsApp bot running in under 2 minutes — completely free.
 
 ## What You'll Get

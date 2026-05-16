@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 7 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 Running a WhatsApp group with more than 20 people is a nightmare. Spam messages, irrelevant links, people fighting, no engagement — it's exhausting being a group admin. A group management bot fixes all of this automatically.
 
 ## The Problem Every Group Admin Faces

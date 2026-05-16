@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 8 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 WhatsApp is the backbone of Nigerian business. From fashion vendors on Instagram selling through WhatsApp DMs, to POS agents managing hundreds of customers, to restaurants taking delivery orders — everything runs through WhatsApp. But answering the same questions 50 times a day? That's where a WhatsApp bot changes the game.
 
 ## Why Nigerian Businesses Need a WhatsApp Bot

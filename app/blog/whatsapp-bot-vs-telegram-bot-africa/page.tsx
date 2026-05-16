@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 7 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 If you're building a community, running a business, or managing a group in Africa, you've probably wondered: should I use a Telegram bot or a WhatsApp bot? Both platforms have bots, but they're very different — especially when it comes to the African market.
 
 ## The Numbers Don't Lie

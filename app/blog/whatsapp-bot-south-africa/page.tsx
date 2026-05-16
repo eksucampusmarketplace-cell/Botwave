@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 South Africa has over 30 million WhatsApp users — making it one of the most active WhatsApp markets on the continent. Whether you're running a spaza shop in Soweto, managing a stokvel group, or operating a small business in Cape Town, a WhatsApp bot can automate your most repetitive tasks for free.
 
 ## Why South Africans Need WhatsApp Bots

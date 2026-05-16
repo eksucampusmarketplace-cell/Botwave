@@ -19,6 +19,8 @@ const content = `
 
 **Last updated: May 2026** | 7 min read
 
+[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+
 If you're a Nigerian university student, you know the drill. Every course has a WhatsApp group. Your department has a group. Your hostel has a group. Your study group has a group. And they're all chaotic — spam, off-topic chatter, missed announcements, and dead-group syndrome. A WhatsApp bot fixes all of this.
 
 ## Why Every Campus Group Needs a Bot
