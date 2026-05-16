@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [commandPrefix, setCommandPrefix] = useState('!');
   const [timezone, setTimezone] = useState('');
+  const [languagePreference, setLanguagePreference] = useState('en');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export default function SettingsPage() {
         if (data.welcomeMessage) setWelcomeMessage(data.welcomeMessage);
         if (data.commandPrefix) setCommandPrefix(data.commandPrefix);
         if (data.timezone) setTimezone(data.timezone);
+        if (data.languagePreference) setLanguagePreference(data.languagePreference);
       } catch {
         // ignore
       }
@@ -132,6 +134,7 @@ export default function SettingsPage() {
           welcomeMessage,
           commandPrefix,
           timezone,
+          languagePreference,
         }),
       });
 
@@ -289,6 +292,38 @@ export default function SettingsPage() {
                     <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
                     <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
                     <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">BOT LANGUAGE</label>
+                  <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
+                    Set the language for bot responses. Commands stay in English (e.g. !help), but the bot replies in your chosen language. You can also set this via !lang in WhatsApp.
+                  </p>
+                  <select
+                    value={languagePreference}
+                    onChange={(e) => setLanguagePreference(e.target.value)}
+                    className="w-full bg-dark border border-green/20 px-4 py-3 text-white font-mono text-sm focus:border-green focus:outline-none"
+                  >
+                    <option value="en">English</option>
+                    <option value="fr">French (Fran\u00e7ais)</option>
+                    <option value="yo">Yoruba (\u00c8d\u00e8 Yor\u00f9b\u00e1)</option>
+                    <option value="ha">Hausa (Harshen Hausa)</option>
+                    <option value="ig">Igbo (As\u1ee5s\u1ee5 Igbo)</option>
+                    <option value="pcm">Nigerian Pidgin</option>
+                    <option value="hi">Hindi (\u0939\u093f\u0928\u094d\u0926\u0940)</option>
+                    <option value="zu">Zulu (isiZulu)</option>
+                    <option value="af">Afrikaans</option>
+                    <option value="ar">Arabic (\u0627\u0644\u0639\u0631\u0628\u064a\u0629)</option>
+                    <option value="es">Spanish (Espa\u00f1ol)</option>
+                    <option value="pt">Portuguese (Portugu\u00eas)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="sw">Swahili (Kiswahili)</option>
+                    <option value="am">Amharic (\u12a0\u121b\u122d\u129b)</option>
+                    <option value="zh">Chinese (\u4e2d\u6587)</option>
+                    <option value="ja">Japanese (\u65e5\u672c\u8a9e)</option>
+                    <option value="ko">Korean (\ud55c\uad6d\uc5b4)</option>
+                    <option value="ru">Russian (\u0420\u0443\u0441\u0441\u043a\u0438\u0439)</option>
+                    <option value="tr">Turkish (T\u00fcrk\u00e7e)</option>
                   </select>
                 </div>
               </div>
