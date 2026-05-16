@@ -84,11 +84,15 @@ export default function InfrastructurePage() {
       if (redisData.success) setRedis(redisData.data);
 
       try {
-        const scalingRes = await fetch('/api/scaling/status');
+        const scalingRes = await fetch('/api/admin/scaling/status');
         if (scalingRes.ok) {
-          const scalingData = await scalingRes.json();
-          setScaling(scalingData);
-          setScalingError(null);
+          const scalingJson = await scalingRes.json();
+          if (scalingJson.success) {
+            setScaling(scalingJson.data);
+            setScalingError(null);
+          } else {
+            setScalingError(scalingJson.error || 'Auto-scaler endpoint not available');
+          }
         } else {
           setScalingError('Auto-scaler endpoint not available');
         }
@@ -223,7 +227,7 @@ export default function InfrastructurePage() {
             <div className="w-3 h-3 rounded-full bg-gray-500" />
             <div>
               <p className="text-gray-400 text-sm font-medium">{scalingError}</p>
-              <p className="text-gray-500 text-xs mt-1">Deploy PR #348 (worker_threads) to enable auto-scaling monitoring</p>
+              <p className="text-gray-500 text-xs mt-1">The bot container may be restarting or the auto-scaler endpoint is unreachable</p>
             </div>
           </div>
         </div>
