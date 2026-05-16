@@ -157,6 +157,17 @@ export default function DashboardNav() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Globe translate toggle */}
+            <button
+              onClick={() => {
+                const wrapper = document.getElementById('gtx-wrapper');
+                if (wrapper) wrapper.classList.toggle('gtx-collapsed');
+              }}
+              className="gtx-nav-toggle flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
+              title="Translate"
+            >
+              <span className="text-sm">{'\u{1F310}'}</span>
+            </button>
             {/* Theme toggle — always visible */}
             <button
               onClick={toggleTheme}

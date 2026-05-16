@@ -291,9 +291,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
-        <div id="gtx-wrapper">
+        <div id="gtx-wrapper" className="gtx-collapsed">
           <div id="google_translate_element" />
-          <button id="gtx-toggle" aria-label="Change language" />
         </div>
         <ThemeProvider>
           {children}
@@ -314,28 +313,26 @@ export default function RootLayout({
               setTimeout(function() {
                 var combo = document.querySelector('#google_translate_element .goog-te-combo');
                 var wrapper = document.getElementById('gtx-wrapper');
-                var toggle = document.getElementById('gtx-toggle');
-                if (combo && wrapper && toggle) {
+                if (combo && wrapper) {
                   wrapper.classList.add('gtx-collapsed');
 
                   function updateGlobeDim() {
-                    if (combo.value && combo.value !== 'en' && combo.value !== '') {
-                      toggle.classList.add('gtx-lang-active');
-                    } else {
-                      toggle.classList.remove('gtx-lang-active');
-                    }
+                    var toggles = document.querySelectorAll('.gtx-nav-toggle');
+                    toggles.forEach(function(t) {
+                      if (combo.value && combo.value !== 'en' && combo.value !== '') {
+                        t.classList.add('gtx-lang-active');
+                      } else {
+                        t.classList.remove('gtx-lang-active');
+                      }
+                    });
                   }
 
                   combo.addEventListener('change', function() {
                     updateGlobeDim();
                     setTimeout(function() { wrapper.classList.add('gtx-collapsed'); }, 300);
                   });
-                  toggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    wrapper.classList.toggle('gtx-collapsed');
-                  });
                   document.addEventListener('click', function(e) {
-                    if (!wrapper.contains(e.target)) {
+                    if (!wrapper.contains(e.target) && !e.target.closest('.gtx-nav-toggle')) {
                       wrapper.classList.add('gtx-collapsed');
                     }
                   });

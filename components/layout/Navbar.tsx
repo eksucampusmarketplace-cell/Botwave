@@ -49,6 +49,16 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           <button
+            onClick={() => {
+              const wrapper = document.getElementById('gtx-wrapper');
+              if (wrapper) wrapper.classList.toggle('gtx-collapsed');
+            }}
+            className="gtx-nav-toggle w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] flex items-center justify-center transition-colors"
+            title="Translate"
+          >
+            <span className="text-sm">{'\u{1F310}'}</span>
+          </button>
+          <button
             onClick={toggleTheme}
             className="w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] flex items-center justify-center transition-colors"
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -109,6 +119,16 @@ export default function Navbar() {
                 </Link>
               ))}
               <hr className="border-[var(--border)] my-1" />
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  const wrapper = document.getElementById('gtx-wrapper');
+                  if (wrapper) wrapper.classList.toggle('gtx-collapsed');
+                }}
+                className="gtx-nav-toggle text-sm text-[var(--text-secondary)] py-2 text-left font-medium"
+              >
+                {'\u{1F310}'} Translate
+              </button>
               <button
                 onClick={() => { setMobileOpen(false); toggleTheme(); }}
                 className="text-sm text-[var(--text-secondary)] py-2 text-left font-medium"
