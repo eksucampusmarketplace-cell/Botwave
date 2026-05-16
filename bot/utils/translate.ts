@@ -99,6 +99,38 @@ export async function translateText(text: string, targetLang: string): Promise<s
 }
 
 /**
+ * Translate multiple strings concurrently with a concurrency limit.
+ * Much faster than sequential translateText calls for bulk translations.
+ * Returns a Map from original text to translated text.
+ */
+export async function translateBatch(
+  texts: string[],
+  targetLang: string,
+  concurrency: number = 8,
+): Promise<Map<string, string>> {
+  const results = new Map<string, string>();
+  if (!targetLang || targetLang === 'en' || texts.length === 0) {
+    for (const t of texts) results.set(t, t);
+    return results;
+  }
+
+  // Deduplicate inputs
+  const unique = [...new Set(texts)];
+
+  // Process in concurrent batches
+  for (let i = 0; i < unique.length; i += concurrency) {
+    const batch = unique.slice(i, i + concurrency);
+    const promises = batch.map(async (text) => {
+      const translated = await translateText(text, targetLang);
+      results.set(text, translated);
+    });
+    await Promise.all(promises);
+  }
+
+  return results;
+}
+
+/**
  * Check if a language code is supported.
  */
 export function isValidLanguage(code: string): boolean {
