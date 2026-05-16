@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically',
-  description: 'Keep your WhatsApp groups spam-free with an automatic anti-spam bot. Blocks scam links, betting ads, chain messages, and offensive content. Free setup.',
+  description: 'Tired of spam in your WhatsApp groups? This free bot blocks scam links, betting ads, chain messages & offensive content automatically. Set up in 2 minutes →',
   keywords: ['whatsapp anti spam bot', 'whatsapp spam blocker', 'whatsapp group spam', 'stop whatsapp spam', 'whatsapp group protection', 'block spam whatsapp group', 'whatsapp spam filter'],
   openGraph: {
     title: 'WhatsApp Anti-Spam Bot for Groups (2026)',
     description: 'Automatically block spam, scam links, and offensive content in your WhatsApp groups. Free with BotWave.',
     url: 'https://www.botwave.online/blog/whatsapp-anti-spam-bot-for-groups',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=WhatsApp+Anti-Spam+Bot+for+Groups+(2026)', width: 1200, height: 630 }],
   },
 };
 
@@ -137,6 +137,12 @@ You shouldn't have to spend 30 minutes every morning cleaning up your WhatsApp g
 **[Get Anti-Spam Protection Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games' },
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 6, 2026" readTime="5 min read" />;
+  return <BlogArticle content={content} date="May 6, 2026" readTime="5 min read" slug="whatsapp-anti-spam-bot-for-groups" relatedPosts={relatedPosts} />;
 }

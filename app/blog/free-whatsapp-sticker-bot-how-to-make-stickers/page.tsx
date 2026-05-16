@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly (2026)',
-  description: 'Create custom WhatsApp stickers from any image in seconds. No app download needed. Just send an image and type !sticker. Free with BotWave.',
+  description: 'Ditch sticker maker apps. Reply to any image with !sticker and get a custom WhatsApp sticker instantly — no downloads, no cropping, no hassle. Works in groups too. Try free →',
   keywords: ['whatsapp sticker bot', 'make whatsapp stickers', 'whatsapp sticker maker', 'custom whatsapp stickers', 'free sticker bot', 'whatsapp sticker creator', 'how to make whatsapp stickers'],
   openGraph: {
     title: 'Free WhatsApp Sticker Bot — Make Custom Stickers Instantly',
     description: 'Turn any image into a WhatsApp sticker with one command. No app needed. Free.',
     url: 'https://www.botwave.online/blog/free-whatsapp-sticker-bot-how-to-make-stickers',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=Free+WhatsApp+Sticker+Bot+%E2%80%94+Make+Custom+Stickers+Instantly', width: 1200, height: 630 }],
   },
 };
 
@@ -122,6 +122,12 @@ Stop downloading sticker maker apps that take up space on your phone. BotWave do
 **[Get Your Free Sticker Bot →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 7, 2026" readTime="4 min read" />;
+  return <BlogArticle content={content} date="May 7, 2026" readTime="4 min read" slug="free-whatsapp-sticker-bot-how-to-make-stickers" relatedPosts={relatedPosts} />;
 }

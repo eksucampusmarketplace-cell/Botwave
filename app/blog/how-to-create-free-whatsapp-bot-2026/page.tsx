@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)',
-  description: 'Step-by-step guide to creating your own WhatsApp bot for free using BotWave. Set up stickers, AI chat, games, polls, and 50+ commands in under 2 minutes. No coding required.',
+  description: 'Your own WhatsApp bot — live in under 2 minutes. Free. No coding. Stickers, AI chat, games, polls & 100+ commands. Follow this step-by-step guide to get started now →',
   keywords: ['how to create whatsapp bot', 'free whatsapp bot', 'whatsapp bot tutorial', 'make whatsapp bot 2026', 'whatsapp bot no coding', 'botwave tutorial'],
   openGraph: {
     title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding)',
     description: 'Your WhatsApp bot can be live in 2 minutes. Free. No coding. Here\'s exactly how.',
     url: 'https://www.botwave.online/blog/how-to-create-free-whatsapp-bot-2026',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=How+to+Create+a+Free+WhatsApp+Bot+in+2026+(No+Coding)', width: 1200, height: 630 }],
   },
 };
 
@@ -113,6 +113,12 @@ Creating a WhatsApp bot in 2026 doesn't require any coding, any money, or any te
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free (2026 Guide)' },
+  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 1, 2026" readTime="5 min read" />;
+  return <BlogArticle content={content} date="May 1, 2026" readTime="5 min read" slug="how-to-create-free-whatsapp-bot-2026" relatedPosts={relatedPosts} />;
 }

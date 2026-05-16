@@ -3,14 +3,14 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot for Schools & Campus Groups (2026) — Study, Manage, Engage',
-  description: 'How Nigerian students and lecturers use WhatsApp bots for class groups, study sessions, campus announcements, and group management. Free with BotWave.',
+  description: 'Turn your campus WhatsApp group into a smart hub — study tools, AI homework help, anti-spam, polls & attendance. Used by Nigerian universities. Free setup in 2 minutes →',
   keywords: ['whatsapp bot for school', 'whatsapp bot campus', 'whatsapp class group bot', 'student whatsapp bot', 'university whatsapp bot', 'whatsapp bot education', 'nigerian campus whatsapp bot'],
   openGraph: {
     title: 'WhatsApp Bot for Schools & Campus Groups (2026)',
     description: 'Manage class groups, run study sessions, and keep campus WhatsApp groups organized. Free bot for students.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-for-schools-campus-groups',
     type: 'article',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og?title=WhatsApp+Bot+for+Schools+%26+Campus+Groups+(2026)', width: 1200, height: 630 }],
   },
 };
 
@@ -154,6 +154,12 @@ Most campus groups stay within the free tier. If your group is very active, the 
 **[Set Up Your Campus Bot Free →](https://www.botwave.online/signup)**
 `;
 
+const relatedPosts = [
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
+];
+
 export default function Article() {
-  return <BlogArticle content={content} date="May 14, 2026" readTime="7 min read" />;
+  return <BlogArticle content={content} date="May 14, 2026" readTime="7 min read" slug="whatsapp-bot-for-schools-campus-groups" relatedPosts={relatedPosts} />;
 }

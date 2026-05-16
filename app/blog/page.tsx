@@ -31,10 +31,10 @@ const posts = [
   },
   {
     slug: 'whatsapp-bot-commands-list-2026',
-    title: 'Complete WhatsApp Bot Commands List (2026) — 50+ BotWave Commands',
-    excerpt: 'Full list of all BotWave WhatsApp bot commands. Stickers, AI chat, games, polls, media downloads, group management, and more. With examples.',
+    title: 'Complete WhatsApp Bot Commands List (2026) — 100+ BotWave Commands',
+    excerpt: 'Full list of all 100+ BotWave WhatsApp bot commands. Stickers, AI chat, games, polls, media downloads, group management, music, logos, study tools, and more. With examples for every command.',
     date: '2026-05-12',
-    readTime: '10 min read',
+    readTime: '45 min read',
     tags: ['Commands', 'Reference', 'Tutorial'],
   },
   {
