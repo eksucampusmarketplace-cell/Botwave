@@ -35,23 +35,14 @@ interface RedisData {
   };
 }
 
-interface WorkerInfo {
-  name: string;
-  status: string;
-  state: string;
-}
-
-interface ScalingConfig {
-  currentWorkers: number;
+interface ScalingStatus {
+  mode: string;
+  activeWorkers: number;
   maxWorkers: number;
-  sessionsPerWorker: number;
-  recommendedWorkers: number;
-  totalActiveSessions: number;
-}
-
-interface WorkersData {
-  workers: WorkerInfo[];
-  scaling: ScalingConfig;
+  totalSessions: number;
+  scaleThreshold: number;
+  syncCycleDurationMs: number;
+  lastScaleEvent: string | null;
 }
 
 const formatUptime = (seconds: number) => {
@@ -81,29 +72,28 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 export default function InfrastructurePage() {
   const router = useRouter();
   const [redis, setRedis] = useState<RedisData | null>(null);
-  const [workers, setWorkers] = useState<WorkersData | null>(null);
+  const [scaling, setScaling] = useState<ScalingStatus | null>(null);
+  const [scalingError, setScalingError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scaling, setScaling] = useState(false);
-  const [targetWorkers, setTargetWorkers] = useState(3);
 
   const fetchData = useCallback(async () => {
     try {
-      const [redisRes, workersRes] = await Promise.all([
-        fetch('/api/admin/redis'),
-        fetch('/api/admin/workers'),
-      ]);
-
+      const redisRes = await fetch('/api/admin/redis');
       if (redisRes.status === 401) { router.push('/admin/login'); return; }
-
-      const [redisData, workersData] = await Promise.all([
-        redisRes.json(),
-        workersRes.json(),
-      ]);
-
+      const redisData = await redisRes.json();
       if (redisData.success) setRedis(redisData.data);
-      if (workersData.success) {
-        setWorkers(workersData.data);
-        setTargetWorkers(workersData.data.scaling.currentWorkers);
+
+      try {
+        const scalingRes = await fetch('/api/scaling/status');
+        if (scalingRes.ok) {
+          const scalingData = await scalingRes.json();
+          setScaling(scalingData);
+          setScalingError(null);
+        } else {
+          setScalingError('Auto-scaler endpoint not available');
+        }
+      } catch {
+        setScalingError('Auto-scaler not deployed yet');
       }
     } catch (err) {
       console.error('Error fetching infrastructure data:', err);
@@ -118,37 +108,6 @@ export default function InfrastructurePage() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const handleScale = async () => {
-    setScaling(true);
-    try {
-      const res = await fetch('/api/admin/workers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'scale', targetCount: targetWorkers }),
-      });
-      if (res.ok) {
-        await fetchData();
-      }
-    } catch (err) {
-      console.error('Scale error:', err);
-    } finally {
-      setScaling(false);
-    }
-  };
-
-  const handleRestart = async (workerName: string) => {
-    try {
-      await fetch('/api/admin/workers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'restart', workerName }),
-      });
-      await fetchData();
-    } catch (err) {
-      console.error('Restart error:', err);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -161,7 +120,7 @@ export default function InfrastructurePage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Infrastructure</h1>
-        <p className="text-gray-500 text-sm mt-1 font-mono">Redis monitoring &middot; Worker scaling &middot; auto-refreshes every 10s</p>
+        <p className="text-gray-500 text-sm mt-1 font-mono">Redis monitoring &middot; Auto-scaler status &middot; auto-refreshes every 10s</p>
       </div>
 
       {/* ── Redis Section ─────────────────────────────── */}
@@ -255,93 +214,61 @@ export default function InfrastructurePage() {
         </>
       )}
 
-      {/* ── Workers Section ─────────────────────────── */}
-      <h2 className="text-lg font-bold text-white mb-3 mt-8">Workers</h2>
+      {/* ── Auto-Scaler Status Section ─────────────────── */}
+      <h2 className="text-lg font-bold text-white mb-3 mt-8">Auto-Scaler</h2>
 
-      {workers && (
-        <>
-          {/* Scaling Recommendation */}
-          <div className={`border rounded-xl p-4 mb-4 ${
-            workers.scaling.recommendedWorkers > workers.scaling.currentWorkers
-              ? 'bg-yellow-500/10 border-yellow-500/20'
-              : workers.scaling.recommendedWorkers < workers.scaling.currentWorkers
-                ? 'bg-blue-500/10 border-blue-500/20'
-                : 'bg-green-500/10 border-green-500/20'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-sm font-bold">
-                  {workers.scaling.currentWorkers} worker{workers.scaling.currentWorkers !== 1 ? 's' : ''} running
-                  &middot; {workers.scaling.totalActiveSessions} active sessions
-                </p>
-                <p className="text-gray-400 text-xs mt-1">
-                  {workers.scaling.sessionsPerWorker} sessions/worker capacity &middot;
-                  Recommended: {workers.scaling.recommendedWorkers} worker{workers.scaling.recommendedWorkers !== 1 ? 's' : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={targetWorkers}
-                  onChange={e => setTargetWorkers(parseInt(e.target.value))}
-                  className="bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm font-mono"
-                >
-                  {Array.from({ length: workers.scaling.maxWorkers }, (_, i) => i + 1).map(n => (
-                    <option key={n} value={n}>{n} worker{n !== 1 ? 's' : ''}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleScale}
-                  disabled={scaling || targetWorkers === workers.scaling.currentWorkers}
-                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm font-bold px-4 py-1.5 rounded-lg transition-colors"
-                >
-                  {scaling ? 'Scaling...' : 'Scale'}
-                </button>
-              </div>
+      {scalingError && (
+        <div className="bg-gray-500/10 border border-gray-500/20 rounded-xl p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-gray-500" />
+            <div>
+              <p className="text-gray-400 text-sm font-medium">{scalingError}</p>
+              <p className="text-gray-500 text-xs mt-1">Deploy PR #348 (worker_threads) to enable auto-scaling monitoring</p>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Worker List */}
-          <div className="bg-white/5 border border-white/5 rounded-xl overflow-hidden mb-6">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">CONTAINER</th>
-                  <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">STATUS</th>
-                  <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">STATE</th>
-                  <th className="text-right text-gray-400 text-xs font-mono px-4 py-3">ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workers.workers.map((w, i) => (
-                  <tr key={w.name} className={`border-b border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
-                    <td className="px-4 py-3 text-white font-mono text-xs">{w.name}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{w.status}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-mono ${
-                        w.state === 'running' ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${w.state === 'running' ? 'bg-green-400' : 'bg-red-400'}`} />
-                        {w.state}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleRestart(w.name)}
-                        className="text-gray-400 hover:text-white text-xs font-mono transition-colors"
-                      >
-                        Restart
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {workers.workers.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-gray-500 text-sm">No workers found</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {scaling && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`border border-white/5 rounded-xl p-4 ${scaling.mode === 'standalone' ? 'bg-blue-500/10' : 'bg-green-500/10'}`}>
+              <p className="text-gray-400 text-[10px] font-mono tracking-wider mb-1">MODE</p>
+              <p className={`text-lg font-bold ${scaling.mode === 'standalone' ? 'text-blue-400' : 'text-green-400'}`}>
+                {scaling.mode === 'standalone' ? 'Standalone' : 'Scaled'}
+              </p>
+              <p className="text-gray-500 text-[10px] mt-1">
+                {scaling.mode === 'standalone' ? 'Main thread handles all' : 'Workers active'}
+              </p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="bg-purple-500/10 border border-white/5 rounded-xl p-4">
+              <p className="text-gray-400 text-[10px] font-mono tracking-wider mb-1">WORKER THREADS</p>
+              <p className="text-lg font-bold text-purple-400">{scaling.activeWorkers} / {scaling.maxWorkers}</p>
+              <p className="text-gray-500 text-[10px] mt-1">Active / Max capacity</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="bg-cyan-500/10 border border-white/5 rounded-xl p-4">
+              <p className="text-gray-400 text-[10px] font-mono tracking-wider mb-1">SESSIONS</p>
+              <p className="text-lg font-bold text-cyan-400">{scaling.totalSessions}</p>
+              <p className="text-gray-500 text-[10px] mt-1">Scale at {scaling.scaleThreshold}+</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="bg-yellow-500/10 border border-white/5 rounded-xl p-4">
+              <p className="text-gray-400 text-[10px] font-mono tracking-wider mb-1">SYNC CYCLE</p>
+              <p className="text-lg font-bold text-yellow-400">{scaling.syncCycleDurationMs}ms</p>
+              <p className="text-gray-500 text-[10px] mt-1">Last cycle duration</p>
+            </motion.div>
           </div>
+
+          {scaling.lastScaleEvent && (
+            <div className="bg-white/5 border border-white/5 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-xs font-mono">LAST SCALE EVENT</span>
+                <span className="text-white text-xs">{new Date(scaling.lastScaleEvent).toLocaleString()}</span>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

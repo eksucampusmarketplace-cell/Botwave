@@ -26,24 +26,6 @@ interface Session {
   username: string;
 }
 
-interface SystemInfo {
-  cpuPercent: number;
-  memUsedMb: number;
-  memTotalMb: number;
-  memPercent: number;
-  uptimeSeconds: number;
-  loadAvg: number[];
-}
-
-const formatUptime = (seconds: number) => {
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-};
-
 export default function AdminOverviewPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({
@@ -51,26 +33,23 @@ export default function AdminOverviewPage() {
     totalMessages: 0, totalCommands: 0, systemStatus: 'Loading', evolutionStatus: 'Unknown',
   });
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [system, setSystem] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, sessRes, sysRes] = await Promise.all([
+      const [statsRes, sessRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/admin/sessions'),
-        fetch('/api/admin/system'),
       ]);
 
       if (statsRes.status === 401) { router.push('/admin/login'); return; }
 
-      const [statsData, sessData, sysData] = await Promise.all([
-        statsRes.json(), sessRes.json(), sysRes.json().catch(() => null),
+      const [statsData, sessData] = await Promise.all([
+        statsRes.json(), sessRes.json(),
       ]);
 
       if (statsData.success) setStats(statsData.data);
       if (sessData.success) setSessions(sessData.data);
-      if (sysData?.success) setSystem(sysData.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -135,54 +114,6 @@ export default function AdminOverviewPage() {
           </motion.div>
         ))}
       </div>
-
-      {/* System Resources */}
-      {system && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-          <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-xs font-mono">CPU USAGE</span>
-              <span className={`text-sm font-bold ${system.cpuPercent > 80 ? 'text-red-400' : system.cpuPercent > 50 ? 'text-yellow-400' : 'text-green-400'}`}>
-                {system.cpuPercent.toFixed(1)}%
-              </span>
-            </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all ${system.cpuPercent > 80 ? 'bg-red-500' : system.cpuPercent > 50 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                style={{ width: `${Math.min(system.cpuPercent, 100)}%` }}
-              />
-            </div>
-            <p className="text-gray-500 text-xs mt-1">Load: {system.loadAvg.map(l => l.toFixed(2)).join(', ')}</p>
-          </div>
-
-          <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-xs font-mono">MEMORY</span>
-              <span className={`text-sm font-bold ${system.memPercent > 85 ? 'text-red-400' : system.memPercent > 60 ? 'text-yellow-400' : 'text-green-400'}`}>
-                {system.memPercent.toFixed(1)}%
-              </span>
-            </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all ${system.memPercent > 85 ? 'bg-red-500' : system.memPercent > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                style={{ width: `${Math.min(system.memPercent, 100)}%` }}
-              />
-            </div>
-            <p className="text-gray-500 text-xs mt-1">{system.memUsedMb}MB / {system.memTotalMb}MB</p>
-          </div>
-
-          <div className="bg-white/5 border border-white/5 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-xs font-mono">UPTIME</span>
-              <span className="text-sm font-bold text-green-400">{formatUptime(system.uptimeSeconds)}</span>
-            </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
-              <div className="h-2 rounded-full bg-green-500" style={{ width: '100%' }} />
-            </div>
-            <p className="text-gray-500 text-xs mt-1">Since last restart</p>
-          </div>
-        </div>
-      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
