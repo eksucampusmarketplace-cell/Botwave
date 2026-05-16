@@ -36,13 +36,8 @@ interface BackupInfo {
   size: number;
 }
 
-interface LogLine {
-  timestamp: string;
-  message: string;
-}
-
 type ServiceTab = 'botwave' | 'evolution';
-type SubTab = 'containers' | 'env' | 'logs' | 'history' | 'help';
+type SubTab = 'containers' | 'env' | 'history' | 'help';
 
 // ── Sensitive key patterns (values are masked) ─────────
 const SENSITIVE_PATTERNS = [
@@ -136,9 +131,6 @@ const VPS_HELP = [
 const CONTAINER_LABELS: Record<string, string> = {
   botwave_web: 'Web (Next.js)',
   botwave_bot_main: 'Bot (Main)',
-  botwave_worker_1: 'Worker 1',
-  botwave_worker_2: 'Worker 2',
-  botwave_worker_3: 'Worker 3',
   evolution_api: 'Evolution API',
   evolution_postgres: 'Postgres DB',
   botwave_redis: 'Redis Cache',
@@ -177,11 +169,6 @@ export default function DeploymentTab() {
   const [deployHistory, setDeployHistory] = useState<DeployRecord[]>([]);
   const [selectedDeploy, setSelectedDeploy] = useState<DeployRecord | null>(null);
 
-  // Logs state
-  const [logContainer, setLogContainer] = useState('botwave_web');
-  const [logLines, setLogLines] = useState<LogLine[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [logSince, setLogSince] = useState('1h');
 
   // ── Data Fetching ────────────────────────────────────
 
@@ -229,20 +216,6 @@ export default function DeploymentTab() {
     }
   }, []);
 
-  const fetchLogs = useCallback(async () => {
-    setLoadingLogs(true);
-    try {
-      const res = await fetch(`/api/admin/deployment/logs?container=${logContainer}&lines=100&since=${logSince}`);
-      const data = await res.json();
-      if (data.success) {
-        setLogLines(data.data.lines);
-      }
-    } catch (err) {
-      console.error('Failed to fetch logs:', err);
-    } finally {
-      setLoadingLogs(false);
-    }
-  }, [logContainer, logSince]);
 
   useEffect(() => {
     fetchContainers();
@@ -252,10 +225,8 @@ export default function DeploymentTab() {
   useEffect(() => {
     if (subTab === 'env') {
       fetchEnvVars(serviceTab);
-    } else if (subTab === 'logs') {
-      fetchLogs();
     }
-  }, [subTab, serviceTab, fetchEnvVars, fetchLogs]);
+  }, [subTab, serviceTab, fetchEnvVars]);
 
   // ── Env Var Handlers ─────────────────────────────────
 
@@ -414,7 +385,6 @@ export default function DeploymentTab() {
   const subTabs: { id: SubTab; label: string }[] = [
     { id: 'containers', label: 'CONTAINERS' },
     { id: 'env', label: 'ENV VARS' },
-    { id: 'logs', label: 'LOGS' },
     { id: 'history', label: 'DEPLOY HISTORY' },
     { id: 'help', label: 'VPS HELP' },
   ];
@@ -739,83 +709,6 @@ export default function DeploymentTab() {
               </span>
             </motion.div>
           )}
-        </div>
-      )}
-
-      {/* ═══ LOGS TAB ═══ */}
-      {subTab === 'logs' && (
-        <div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div>
-              <label className="text-zinc-600 font-mono text-[9px] tracking-widest block mb-1">CONTAINER</label>
-              <select
-                value={logContainer}
-                onChange={(e) => setLogContainer(e.target.value)}
-                className="bg-zinc-900 border border-zinc-700 text-xs text-white px-3 py-2 font-mono focus:outline-none focus:border-red-600"
-              >
-                <optgroup label="BotWave">
-                  <option value="botwave_web">Web (Next.js)</option>
-                  <option value="botwave_bot_main">Bot (Main)</option>
-                  <option value="botwave_worker_1">Worker 1</option>
-                  <option value="botwave_worker_2">Worker 2</option>
-                  <option value="botwave_worker_3">Worker 3</option>
-                </optgroup>
-                <optgroup label="Evolution">
-                  <option value="evolution_api">Evolution API</option>
-                  <option value="evolution_postgres">Postgres</option>
-                </optgroup>
-                <optgroup label="Infrastructure">
-                  <option value="botwave_redis">Redis</option>
-                  <option value="botwave_nginx">Nginx (HTTPS)</option>
-                </optgroup>
-              </select>
-            </div>
-            <div>
-              <label className="text-zinc-600 font-mono text-[9px] tracking-widest block mb-1">TIME RANGE</label>
-              <select
-                value={logSince}
-                onChange={(e) => setLogSince(e.target.value)}
-                className="bg-zinc-900 border border-zinc-700 text-xs text-white px-3 py-2 font-mono focus:outline-none focus:border-red-600"
-              >
-                <option value="10m">Last 10 min</option>
-                <option value="30m">Last 30 min</option>
-                <option value="1h">Last 1 hour</option>
-                <option value="6h">Last 6 hours</option>
-                <option value="24h">Last 24 hours</option>
-              </select>
-            </div>
-            <div className="self-end">
-              <button
-                onClick={fetchLogs}
-                disabled={loadingLogs}
-                className="bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-white font-mono text-xs px-4 py-2 transition-colors"
-              >
-                {loadingLogs ? 'LOADING...' : 'FETCH LOGS'}
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-black border border-zinc-800 p-4 max-h-[500px] overflow-y-auto">
-            <p className="text-zinc-600 font-mono text-[9px] tracking-widest mb-3">
-              {CONTAINER_LABELS[logContainer] || logContainer} — {logLines.length} lines
-            </p>
-            {logLines.length === 0 ? (
-              <p className="text-zinc-600 font-mono text-xs">No logs found for this time range.</p>
-            ) : (
-              <div className="space-y-0">
-                {logLines.map((line, i) => (
-                  <div key={i} className="font-mono text-[11px] leading-relaxed hover:bg-zinc-900/50">
-                    {line.timestamp && <span className="text-zinc-600 mr-2">{line.timestamp}</span>}
-                    <span className={
-                      line.message.toLowerCase().includes('error') ? 'text-red-400' :
-                      line.message.toLowerCase().includes('warn') ? 'text-yellow-400' :
-                      'text-zinc-300'
-                    }>{line.message}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
