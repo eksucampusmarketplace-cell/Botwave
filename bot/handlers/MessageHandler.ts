@@ -38,7 +38,7 @@ import {
 } from '../utils/advancedAntiban';
 import { getCommand, type MessageContext, type TemplateVars } from '../commands/registry';
 import { sendUnknownCommand } from '../commands';
-import { sendReply, setRequestLanguage, clearRequestLanguage } from '../commands/helpers';
+import { sendReply, setRequestLanguage, clearRequestLanguage, getUserLangFallback } from '../commands/helpers';
 import { hasActiveAIChat, handleAIReply } from '../commands/info';
 import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../commands/social';
 // import {
@@ -560,11 +560,20 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   if (context.userId) {
     try {
       const userSettings = await getUserSettings(context.userId);
-      const lang = (userSettings as any)?.language_preference;
+      const lang = (userSettings as any)?.language_preference || getUserLangFallback(context.userId);
       if (lang && lang !== 'en') {
         setRequestLanguage(context.chatJid, lang);
+        console.log(`[LANG] Set request language for ${context.chatJid}: ${lang} (userId=${context.userId})`);
       }
-    } catch { /* non-critical */ }
+    } catch (langErr: any) {
+      console.error(`[LANG] Failed to load language preference for userId=${context.userId}:`, langErr?.message || langErr);
+      // Fallback to in-memory cache even on DB error
+      const fallbackLang = getUserLangFallback(context.userId);
+      if (fallbackLang && fallbackLang !== 'en') {
+        setRequestLanguage(context.chatJid, fallbackLang);
+        console.log(`[LANG] Using in-memory fallback language for ${context.chatJid}: ${fallbackLang}`);
+      }
+    }
   }
 
   try {
