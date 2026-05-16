@@ -122,12 +122,26 @@ skipped instantly. They don't hit Evolution API. They don't do any I/O.
 
 #### Heartbeat refresh (end of sync loop)
 
+> ⚠️ **Timing corrected in fourth review** — `tryAcquireLock` is a Supabase
+> query, NOT Redis. See actual code in `sessionCoordinator.ts:50-110`.
+
 ```
-1. tryAcquireLock(id)    →  Redis call (~5ms)
-2. refreshHeartbeat(id)  →  Redis call (~5ms)
+1. tryAcquireLock(id)    →  Supabase SELECT locked_by, locked_at, heartbeat_at (~20-50ms)
+                            If already ours: calls refreshHeartbeat internally
+                            If stale: Supabase RPC acquire_session_lock (~20-50ms more)
+2. refreshHeartbeat(id)  →  Redis SET (~5ms) or Supabase fallback (~20-50ms)
+3. If lock LOST:         →  detectConflict (Supabase SELECT, ~20-50ms)
+                            + bot.stop() if conflict confirmed
 ```
 
-**Time per heartbeat: ~10ms.** At 200 sessions: 200 × 10ms = **2 seconds.**
+**Time per heartbeat: ~25-55ms** (happy path, lock already ours).
+At 200 sessions: 200 × ~35ms = **~7 seconds** (not 2 seconds).
+
+**Important**: There is ALSO a dedicated `startHeartbeatLoop()` in
+`sessionCoordinator.ts` that runs every 60s with batch Redis operations
+(`redisSetHeartbeatBatch` — single pipeline for ALL sessions). The sync loop
+heartbeat phase is doing **lock verification + conflict detection**, not just
+heartbeat updates. These are two separate concerns mixed into one loop.
 
 #### New/pairing sessions (the actual bottleneck)
 
@@ -153,10 +167,10 @@ At 200 sessions with typical mix (180 active, 15 pairing_sent, 5 qr_pending):
 | Active sessions (skip) | 180 | ~0ms | ~0s |
 | Pairing_sent (check status) | 15 | ~5ms | ~0.1s |
 | New pairing (MAX 2 per cycle) | 2 | ~20s | ~40s |
-| Heartbeat refresh | 200 | ~10ms | ~2s |
-| **Total sync cycle** | | | **~42s** |
+| Heartbeat + lock verify | 200 | ~35ms (Supabase + Redis) | **~7s** |
+| **Total sync cycle** | | | **~47s** |
 
-**42 seconds. NOT 10 minutes.** The original "200 × 3s = 10 min" estimate was
+**~47 seconds. NOT 10 minutes.** The original "200 × 3s = 10 min" estimate was
 wrong because it assumed every session goes through the slow path. In reality:
 
 - Active sessions are instant (Map.has() → skip)
@@ -239,16 +253,44 @@ for (const session of sessions) {
   await processNewSession(session);           // rate-limited, intentionally slow
 }
 
-// CHANGED: Heartbeat refresh — batch all at once (parallel Redis calls)
-// This is the key fix. Sequential: 200 × 10ms = 2s. Parallel: ~50ms.
-await Promise.all(
-  Array.from(activeBots.keys()).map(async (id) => {
-    await tryAcquireLock(id);
-    await refreshHeartbeat(id);
-  })
-);
+// CHANGED: Heartbeat + lock verification — batched with concurrency limit.
+// Sequential: 200 × 35ms = 7s. Batched (20 at a time): ~700ms.
+//
+// ⚠️ CANNOT just use bare Promise.all(allSessions) for all 200:
+//   1. tryAcquireLock does a Supabase SELECT (not Redis!) — 200 concurrent
+//      Supabase queries could hit connection pool limits or rate limits
+//   2. If a lock is lost, the callback calls detectConflict (another Supabase
+//      query) and bot.stop() — concurrent bot.stop() calls could have side effects
+//   3. The simplified version in earlier drafts (just tryAcquireLock + refreshHeartbeat)
+//      SKIPS conflict detection and bot cleanup — that changes behavior, not just speed
+//
+// Solution: batch in groups of 20 to limit concurrent Supabase queries.
+const HEARTBEAT_BATCH_SIZE = 20;
+const allIds = Array.from(activeBots.keys());
+for (let i = 0; i < allIds.length; i += HEARTBEAT_BATCH_SIZE) {
+  const batch = allIds.slice(i, i + HEARTBEAT_BATCH_SIZE);
+  await Promise.all(
+    batch.map(async (id) => {
+      const bot = activeBots.get(id);
+      if (!bot) return;
+      const status = bot.getStatus();
+      if (!status.isReady && !status.isReconnecting && !status.isPairingSent) return;
 
-// NOTE: Don't use pMap or concurrency for new sessions — the rate limiter
+      const reacquired = await tryAcquireLock(id);
+      if (!reacquired) {
+        const conflict = await detectConflict(id);
+        if (conflict) {
+          await bot.stop();
+          activeBots.delete(id);
+          return;
+        }
+      }
+      await refreshHeartbeat(id);
+    })
+  );
+}
+
+// NOTE: Don't use concurrency for new sessions — the rate limiter
 // (1 createInstance per 8s) and SESSION_STAGGER_DELAY (15s) already serialize
 // them. Running 3 "concurrently" would just mean 2 blocking on waitForRateLimit.
 // It adds complexity without improving throughput.
@@ -256,10 +298,10 @@ await Promise.all(
 
 ### What this changes
 
-| Metric | Current (sequential) | Concurrent sync loop | worker_threads |
+| Metric | Current (sequential) | Batched sync loop | worker_threads |
 |--------|---------------------|---------------------|----------------|
-| Heartbeat refresh (200 sessions) | ~2s (sequential Redis) | **~50ms** (parallel Redis) | ~50ms per worker |
-| New session setup | 2 per cycle, ~40s | 3 per cycle, ~25s | Same (rate limited) |
+| Heartbeat + lock verify (200 sessions) | ~7s (sequential Supabase) | **~700ms** (batches of 20) | ~700ms per worker |
+| New session setup | 2 per cycle, ~40s | Same (rate limited) | Same (rate limited) |
 | Complexity | Simple | Small refactor | Major rewrite |
 | Risk of breaking things | N/A | Low | High |
 | Memory overhead | 0 | 0 | 300MB-1GB |
@@ -272,14 +314,15 @@ await Promise.all(
 The real scaling ceiling is heartbeat refresh time vs. heartbeat timeout:
 
 ```
-Current (sequential):   200 sessions × 10ms = 2s     ✅ Fine
-                        500 sessions × 10ms = 5s     ✅ Fine
-                       1000 sessions × 10ms = 10s    ✅ Fine
-                       5000 sessions × 10ms = 50s    ⚠️ Getting close to 180s
+Current (sequential):   200 sessions × 35ms = 7s      ✅ Fine
+                        500 sessions × 35ms = 17.5s   ✅ Fine
+                       1000 sessions × 35ms = 35s     ⚠️ Getting heavy
+                       5000 sessions × 35ms = 175s    ❌ Exceeds 180s timeout!
 
-With Promise.all:       200 sessions = ~50ms          ✅ 
-                       1000 sessions = ~200ms         ✅
-                       5000 sessions = ~500ms         ✅
+With batched lock verify (groups of 20):
+                        200 sessions = ~700ms   ✅
+                       1000 sessions = ~1.75s   ✅
+                       5000 sessions = ~8.75s   ✅
 ```
 
 By batching heartbeat refreshes with `Promise.all`, a single Node.js process
@@ -309,7 +352,7 @@ you connect 200 sessions at once" problem. Workers don't fix it.
 ### Recommended build order
 
 1. **Now**: Do nothing. 5-25 sessions works fine.
-2. **At 50+ sessions**: Implement concurrent sync loop (~50 lines of code change)
+2. **At 50+ sessions**: Implement batched heartbeat loop (~80 lines of code change)
 3. **At 500+ sessions**: If the concurrent sync loop isn't enough, THEN build
    the worker_threads architecture below.
 
@@ -350,12 +393,14 @@ creation:
 #### Signal 1: Session count threshold
 
 ```
-IF activeSessionCount > SCALE_THRESHOLD (default: 25)
+IF activeSessionCount > SCALE_UP_THRESHOLD (default: 30)
 THEN spawn workers
+(Scale DOWN threshold: 15 — hysteresis prevents flapping)
 ```
 
-This is the simplest trigger. When you have more than 25 active sessions, the
-sync loop starts taking too long. Workers split the load.
+This is the simplest trigger. When you have more than 30 active sessions,
+workers spawn. (Scale down at 15 — the 15-session dead zone prevents
+constant up/down flapping around the threshold.)
 
 #### Signal 2: Sync cycle time pressure
 
@@ -365,11 +410,11 @@ THEN spawn workers
 ```
 
 This catches the case where you have 20 sessions but Evolution API is slow
-(high latency, timeouts). The session count is under 25, but the sync loop is
+(high latency, timeouts). The session count is under 30, but the sync loop is
 still too slow. Workers help by running multiple sync loops in parallel.
 
 **This is the smart signal** — it triggers based on actual pressure, not just a
-number. If Evolution API is fast, 25 sessions might be fine in standalone. If
+number. If Evolution API is fast, 30 sessions might be fine in standalone. If
 Evolution API is slow, even 15 sessions might need workers.
 
 #### Signal 3: Heartbeat expiry danger
@@ -404,7 +449,7 @@ When the load drops, workers are gracefully shut down:
 ```
 DORMANT (0 workers)                     ← You are here
     │
-    │  Signal detected (sessions > 25 OR sync too slow OR heartbeat danger)
+    │  Signal detected (sessions > 30 OR sync too slow OR heartbeat danger)
     ▼
 SCALING UP (spawning workers)
     │
@@ -422,7 +467,7 @@ DORMANT (0 workers)                     ← Full circle, zero overhead
 ```
 
 **Building it now means**: The code is deployed. The auto-scaler monitors. When
-you grow to 25+ sessions (or Evolution gets slow), workers spawn automatically.
+you grow to 30+ sessions (or Evolution gets slow), workers spawn automatically.
 When load drops, they go away. You never have to touch it.
 
 ---
@@ -816,7 +861,7 @@ gradually instead of all dumping back to main at once.
 ```
 BEFORE: Main thread doing everything (current behavior)
 
-1. Auto-scaler detects signal (sessions > 25 or sync too slow)
+1. Auto-scaler detects signal (sessions > 30 or sync too slow)
 2. Main thread logs: "[SCALE] Scaling trigger: 28 sessions, spawning 3 workers"
 3. Main spawns Worker 0, Worker 1, Worker 2
 4. Main STOPS its own sync loop (sets syncLoopActive = false)
@@ -1142,7 +1187,7 @@ Evolution API or anything else.
 `ceil(sessions / 5)` at 200 sessions = 40 workers = 1.2-2GB. Still heavy.
 
 With the concurrent sync loop alternative (see above), you may never need
-worker_threads at all — `Promise.all` for heartbeats handles 1000+ sessions.
+worker_threads at all — batched lock verification + heartbeats handles 1000+ sessions.
 
 ### 11. Anti-Ban In-Memory State Lost on Worker Crash/Rebalance
 
@@ -1393,7 +1438,7 @@ When building the worker thread system:
 
 ### Phase 4: Config & Deploy
 - [ ] Add `MAX_WORKER_THREADS` env var (default: 40, safety ceiling)
-- [ ] Add `SCALE_THRESHOLD` env var (default: 25, can override)
+- [ ] Add `SCALE_UP_THRESHOLD` / `SCALE_DOWN_THRESHOLD` env vars (default: 30/15, can override)
 - [ ] Increase bot container memory limit in docker-compose (1G → 4G)
 - [ ] Test at 5 sessions (verify dormant — 0 workers)
 - [ ] Test at 30 sessions (verify scale-up triggers)
