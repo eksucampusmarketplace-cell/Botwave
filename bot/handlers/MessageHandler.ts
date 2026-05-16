@@ -349,9 +349,8 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    if (isCommand && !isOwnerEarly) {
-      return;
-    }
+    // Owner-only commands are enforced per-command via the ownerOnly flag
+    // in the command registry — no blanket block here.
 
     if (isCommand && userId) {
       const quotaOk = await incrementQuotaUsage(userId);
@@ -554,6 +553,16 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   try {
     const handler = getCommand(commandName);
     if (handler) {
+      if (handler.ownerOnly && !context.isOwner) {
+        await sendReply(
+          context.chatJid,
+          `Only the bot owner can use !${commandName}.`,
+          sock,
+          context.rawMessage.key,
+          context.queue,
+        );
+        return;
+      }
       const startMs = Date.now();
       await handler.execute(context, args, sock, vars, commandName);
       const durationMs = Date.now() - startMs;
