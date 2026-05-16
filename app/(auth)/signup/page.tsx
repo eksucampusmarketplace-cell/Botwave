@@ -94,7 +94,8 @@ function SignupContent() {
     else if (document.referrer) {
       try {
         const refHost = new URL(document.referrer).hostname;
-        if (refHost.includes('google')) source = 'google_organic';
+        if (refHost.includes('chatgpt') || refHost.includes('openai')) source = 'chatgpt';
+        else if (refHost.includes('google')) source = 'google_organic';
         else if (refHost.includes('whatsapp')) source = 'whatsapp';
         else if (refHost.includes('facebook') || refHost.includes('fb.')) source = 'facebook';
         else if (refHost.includes('twitter') || refHost.includes('x.com')) source = 'twitter';
