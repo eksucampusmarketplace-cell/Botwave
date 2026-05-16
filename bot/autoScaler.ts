@@ -22,7 +22,9 @@ import {
   markEvolutionRecovered,
   isEvolutionHealthy,
 } from './evolutionClient';
-import { refreshHeartbeat, tryAcquireLock } from './sessionCoordinator';
+import { refreshHeartbeat, tryAcquireLock, untrackSession } from './sessionCoordinator';
+import { getSessionsNeedingBot } from './database';
+import { stopAndRemoveBot } from './BotManager';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -88,6 +90,12 @@ let createQueueTimer: ReturnType<typeof setTimeout> | null = null;
 // Callbacks for integration with index.ts
 let onStandaloneSyncStart: (() => void) | null = null;
 let onStandaloneSyncStop: (() => void) | null = null;
+
+// Track pending worker readiness for session distribution
+let pendingWorkerReadyCount = 0;
+
+// Cache session data so redistributeSessions can re-assign with full info
+const sessionDataCache = new Map<string, { phone: string; state: string; userId: string }>();
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
@@ -234,14 +242,22 @@ function handleWorkerExit(workerId: number, code: number): void {
 function redistributeSessions(sessionIds: string[], excludeWorkerId: number): void {
   if (workers.size === 0) {
     console.log(`[SCALE] No workers available — ${sessionIds.length} session(s) will be picked up by standalone sync`);
+    // Clear cached data for these sessions
+    for (const sid of sessionIds) sessionDataCache.delete(sid);
     return;
   }
 
-  // Distribute to least-loaded workers
   for (const sessionId of sessionIds) {
     const target = getLeastLoadedWorker(excludeWorkerId);
     if (target) {
-      assignSessionToWorker(target, sessionId, '', '', '');
+      const cached = sessionDataCache.get(sessionId);
+      assignSessionToWorker(
+        target,
+        sessionId,
+        cached?.phone || '',
+        cached?.state || 'active',
+        cached?.userId || '',
+      );
     }
   }
 }
@@ -266,6 +282,7 @@ function assignSessionToWorker(
   userId: string
 ): void {
   workerInfo.sessions.add(sessionId);
+  sessionDataCache.set(sessionId, { phone, state, userId });
   sendToWorker(workerInfo.id, {
     type: 'assign_session',
     sessionId,
@@ -307,7 +324,14 @@ function handleWorkerMessage(workerId: number, msg: WorkerToMainMsg): void {
     case 'worker_ready':
       if (info) {
         info.ready = true;
-        console.log(`[SCALE] Worker ${workerId} ready`);
+        pendingWorkerReadyCount = Math.max(0, pendingWorkerReadyCount - 1);
+        console.log(`[SCALE] Worker ${workerId} ready (pending: ${pendingWorkerReadyCount})`);
+        // When all newly spawned workers are ready, distribute sessions
+        if (pendingWorkerReadyCount === 0 && isScaledMode) {
+          distributeSessionsToWorkers().catch(err =>
+            console.error('[SCALE] Failed to distribute sessions:', err)
+          );
+        }
       }
       break;
 
@@ -479,17 +503,60 @@ function scaleUp(count: number): void {
     console.log('[SCALE] Entering scaled mode — standalone sync loop stopped');
   }
 
-  // Find available worker IDs
+  // Find available worker IDs and spawn workers
   let nextId = 0;
   for (let i = 0; i < count; i++) {
     while (workers.has(nextId)) nextId++;
-    spawnWorker(nextId);
+    const info = spawnWorker(nextId);
+    if (info) pendingWorkerReadyCount++;
     nextId++;
   }
+  // Session distribution happens when workers report ready (see handleWorkerMessage)
+}
 
-  // Distribute existing sessions to new workers
-  // Workers will pick up sessions via their own sync loop from DB,
-  // but we also explicitly assign any sessions we know about
+// ─── Session Distribution ────────────────────────────────────────────────────
+
+async function distributeSessionsToWorkers(): Promise<void> {
+  const readyWorkers = Array.from(workers.values()).filter(w => w.ready);
+  if (readyWorkers.length === 0) {
+    console.log('[SCALE] No ready workers — cannot distribute sessions');
+    return;
+  }
+
+  // Get sessions from DB
+  const sessions = await getSessionsNeedingBot();
+  if (sessions.length === 0) {
+    console.log('[SCALE] No sessions to distribute');
+    return;
+  }
+
+  console.log(`[SCALE] Distributing ${sessions.length} session(s) across ${readyWorkers.length} worker(s)`);
+
+  // Stop bots on main thread and hand off to workers
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+
+    // Stop bot on main thread (preserves Evolution API instances)
+    await stopAndRemoveBot(session.id);
+    untrackSession(session.id);
+
+    // Assign to worker via round-robin
+    const worker = readyWorkers[i % readyWorkers.length];
+    assignSessionToWorker(
+      worker,
+      session.id,
+      session.phone_number || '',
+      session.state,
+      session.user_id || '',
+    );
+
+    // Stagger assignments to avoid thundering herd on Evolution API
+    if (i < sessions.length - 1) {
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  console.log(`[SCALE] Distribution complete — ${sessions.length} session(s) assigned to ${readyWorkers.length} worker(s)`);
 }
 
 function scaleDown(count: number): void {
@@ -514,14 +581,14 @@ function scaleDown(count: number): void {
     for (const sid of sessionIds) {
       const target = getLeastLoadedWorker(w.id);
       if (target) {
-        target.sessions.add(sid);
-        sendToWorker(target.id, {
-          type: 'assign_session',
-          sessionId: sid,
-          phone: '',
-          state: '',
-          userId: '',
-        });
+        const cached = sessionDataCache.get(sid);
+        assignSessionToWorker(
+          target,
+          sid,
+          cached?.phone || '',
+          cached?.state || 'active',
+          cached?.userId || '',
+        );
       }
     }
   }
