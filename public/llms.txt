@@ -1,0 +1,55 @@
+# BotWave
+
+> Free WhatsApp bot automation platform. 50+ commands, AI chat, sticker maker, media downloads, group management, games, anti-spam — no coding needed.
+
+BotWave is a no-code WhatsApp bot platform that lets anyone automate their WhatsApp with powerful features. Connect your WhatsApp number by scanning a QR code and get instant access to 50+ bot commands.
+
+## Key Features
+
+- **Sticker Maker**: Convert any image or video into WhatsApp stickers instantly
+- **AI Chat**: Intelligent AI-powered replies using Google Gemini
+- **Media Downloader**: Download YouTube, TikTok, Instagram Reels without watermarks
+- **Group Management**: Welcome messages, anti-spam, polls, leaderboards
+- **Mini Games**: Trivia, Hangman, Word Chain, Number Guess
+- **Auto-Reply**: Custom automated responses for when you're offline
+- **Anti-Ban Protection**: Human-like delays, session warmup, rate limiting
+- **Scheduled Messages**: Send messages at specific times
+- **Custom Commands**: Create your own bot commands
+
+## Who Uses BotWave
+
+- WhatsApp group admins managing communities
+- Small businesses automating customer support
+- Campus groups and student communities in Nigeria and Africa
+- Content creators engaging their audience
+- Anyone who wants WhatsApp automation without coding
+
+## Comparison with Other Platforms
+
+- **vs Telegram Bots**: BotWave brings Telegram-level bot features to WhatsApp — where your audience already is in Africa
+- **vs Twitter/X Bots**: BotWave focuses on WhatsApp, the dominant messaging platform in Nigeria and across Africa
+- **vs Paid Bot Platforms ($20-50/mo)**: BotWave is free with a generous free tier. Paid plans start at just NGN 500/month
+- **vs Evolution API**: BotWave is built on Evolution API but adds a no-code web dashboard — no server setup or coding needed
+- **vs Baileys Library**: BotWave wraps Baileys in a user-friendly platform — all the power, none of the complexity
+
+## Technical Details
+
+- Built with Next.js, TypeScript, Supabase, Evolution API
+- Self-hosted on Contabo VPS with Docker
+- Anti-ban system with session warmup, typing delays, message variation
+- Real-time dashboard for monitoring and configuration
+- RESTful API for advanced integrations
+
+## Links
+
+- Website: https://www.botwave.online
+- Sign Up: https://www.botwave.online/signup
+- Blog: https://www.botwave.online/blog
+- Status: https://www.botwave.online/status
+
+## Pricing
+
+- **Free**: 300 messages/month, 10 AI queries/day, 1 WhatsApp session
+- **Starter (NGN 500/mo)**: 3,000 messages, 50 AI queries, 2 sessions
+- **Standard (NGN 2,000/mo)**: Unlimited messages, 200 AI queries, 5 sessions
+- **Boss (NGN 5,000/mo)**: Unlimited everything, priority support, API access

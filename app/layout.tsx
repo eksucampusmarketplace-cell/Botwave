@@ -135,14 +135,19 @@ export default function RootLayout({
               '@type': 'SoftwareApplication',
               name: 'BotWave',
               applicationCategory: 'UtilitiesApplication',
+              applicationSubCategory: 'Chat Bot Platform',
               operatingSystem: 'Web',
               offers: {
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'NGN',
               },
-              description: 'Free WhatsApp bot automation platform. Create stickers, AI chat, media downloads, group management, games and more.',
+              description: 'Free WhatsApp bot automation platform. 50+ commands — stickers, AI chat, media downloads, group management, games, anti-spam. Alternative to Telegram bots, Twitter bots, and paid bot platforms. No coding needed. Works in Nigeria and worldwide.',
               url: 'https://www.botwave.online',
+              sameAs: [
+                'https://www.botwave.online/blog',
+              ],
+              keywords: 'whatsapp bot, free whatsapp bot, telegram bot alternative, whatsapp automation, bot maker, chatbot platform, whatsapp bot nigeria, messaging bot, no code bot builder, whatsapp group bot, ai chatbot whatsapp',
               author: {
                 '@type': 'Person',
                 name: 'Decisive Analyst',

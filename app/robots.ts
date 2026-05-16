@@ -10,5 +10,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://www.botwave.online/sitemap.xml',
+    host: 'https://www.botwave.online',
   };
 }
