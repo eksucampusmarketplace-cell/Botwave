@@ -1,13 +1,22 @@
 import './env';
-import { initializeBot, syncSessionsWithDb, getActiveBotSocket } from './BotManager';
+import { isMainThread } from 'worker_threads';
+import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth } from './sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
+import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './autoScaler';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
 import { disconnectRedis } from './redis';
 import { isCircuitOpen } from './circuitBreaker';
 import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './gracefulShutdown';
+
+// Guard: only run the main bot process on the main thread.
+// Worker threads use workerThread.ts as their entry point.
+if (!isMainThread) {
+  console.error('[BOT] index.ts must only run on the main thread. Workers use workerThread.ts.');
+  process.exit(1);
+}
 import { trackMap, startMemoryGuard, stopMemoryGuard } from './memoryGuard';
 import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from './writeQueue';
 import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './adaptivePoller';
@@ -29,6 +38,7 @@ async function start() {
   onShutdown('sessionCache', async () => { await disconnectSessionCache(); });
   onShutdown('redis', async () => { await disconnectRedis(); });
   onShutdown('healthMonitor', async () => { stopHealthMonitor(); });
+  onShutdown('autoScaler', async () => { stopAutoScaler(); });
   onShutdown('bot', async () => { await bot.stop(true); });
 
   await bot.start();
@@ -87,19 +97,42 @@ async function start() {
   // Adaptive polling multiplier adjusts intervals during degraded conditions.
   // Base: sync 5s, recovery 60s, orphan 120s, audit 300s, reauth 180s, reminders 30s
 
-  // Periodically sync sessions from database
-  registerInterval(setInterval(async () => {
-    if (isShutdown() || isCircuitOpen()) return;
-    const mult = getPollingMultiplier();
-    if (mult === Infinity) return;
-    try {
-      await syncSessionsWithDb(IS_WORKER);
-      recordPollerSuccess('sessionSync');
-    } catch (error) {
-      recordPollerError('sessionSync');
-      console.error('Error syncing sessions:', error);
+  // ── Auto-Scaler Integration ──
+  // The auto-scaler is dormant by default (0 workers). It monitors session
+  // count and sync cycle duration, spawning worker threads when load increases.
+  // Standalone sync loop runs only when NOT in scaled mode.
+  let standaloneSyncHandle: ReturnType<typeof setInterval> | null = null;
+
+  function startStandaloneSync(): void {
+    if (standaloneSyncHandle) return;
+    console.log('[BOT] Starting standalone sync loop (5s)');
+    standaloneSyncHandle = registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      const mult = getPollingMultiplier();
+      if (mult === Infinity) return;
+      try {
+        await syncSessionsWithDb(IS_WORKER);
+        // Feed metrics to auto-scaler after each sync
+        updateScalingMetrics(getLastSyncCycleDuration(), getActiveSessionCount());
+        recordPollerSuccess('sessionSync');
+      } catch (error) {
+        recordPollerError('sessionSync');
+        console.error('Error syncing sessions:', error);
+      }
+    }, 5_000));
+  }
+
+  function stopStandaloneSync(): void {
+    if (standaloneSyncHandle) {
+      clearInterval(standaloneSyncHandle);
+      standaloneSyncHandle = null;
+      console.log('[BOT] Standalone sync loop stopped (scaled mode active)');
     }
-  }, 5_000));
+  }
+
+  setStandaloneSyncCallbacks(startStandaloneSync, stopStandaloneSync);
+  startStandaloneSync();
+  startAutoScaler();
 
   // Main service: recover sessions stuck on dead workers every 60s
   if (!IS_WORKER) {
@@ -369,6 +402,10 @@ const healthServer = createHttpServer(async (req, res) => {
       uptime: Math.round(process.uptime()),
       memory: { rssMB: Math.round(memUsage.rss / 1024 / 1024) },
     }));
+  } else if (url === '/api/scaling/status' && req.method === 'GET') {
+    const status = getScalingStatus();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(status));
   } else if (url === '/api/internal/trigger-sync' && req.method === 'POST') {
     const secret = req.headers['x-internal-secret'];
     if (!process.env.INTERNAL_SECRET || secret !== process.env.INTERNAL_SECRET) {

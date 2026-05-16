@@ -1616,6 +1616,18 @@ class EvolutionBot {
 type AnyBot = BotWaveBot | EvolutionBot;
 const activeBots: Map<string, AnyBot> = new Map();
 
+// ─── Worker Thread Integration ────────────────────────────────────────────────
+// Exports for auto-scaler to read scaling signals.
+let lastSyncCycleDurationMs = 0;
+
+export function getActiveSessionCount(): number {
+  return activeBots.size;
+}
+
+export function getLastSyncCycleDuration(): number {
+  return lastSyncCycleDurationMs;
+}
+
 export function getActiveBotSocket(sessionId: string): any | null {
   const bot = activeBots.get(sessionId);
   return bot?.getSocket() ?? null;
@@ -1682,11 +1694,13 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
   // this function can take longer due to stagger delays (5s per session).
   // Without this guard, concurrent cycles can race on activeBots state.
   if (isSyncing) return;
+  const syncStart = Date.now();
   isSyncing = true;
   try {
     await _syncSessionsWithDbInner(isWorker);
   } finally {
     isSyncing = false;
+    lastSyncCycleDurationMs = Date.now() - syncStart;
   }
 }
 

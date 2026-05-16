@@ -158,11 +158,13 @@ services:
       - NODE_ENV=production
       - IS_WORKER=false
       - SELF_URL=http://botwave-bot:10000
-      - WORKER_URLS=http://botwave-worker-1:10000,http://botwave-worker-2:10000,http://botwave-worker-3:10000
+      - WORKER_URLS=
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
       - WEBHOOK_BASE_URL=http://botwave-web:10000
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
+      - MAX_WORKER_THREADS=${MAX_WORKER_THREADS:-40}
+      - SCALE_THRESHOLD=${SCALE_THRESHOLD:-25}
     command: ["node", "dist/bot/bot/index.js"]
     networks:
       - botwave-net
@@ -174,9 +176,9 @@ services:
     deploy:
       resources:
         limits:
+          memory: 4G
+        reservations:
           memory: 1G
-        reservations:
-          memory: 512M
     logging: *default-logging
     healthcheck:
       test: ["CMD", "node", "-e", "process.exit(0)"]
@@ -185,116 +187,10 @@ services:
       retries: 3
       start_period: 20s
 
-  # ── BotWave Worker 1 ───────────────────────────────────
-  botwave-worker-1:
-    container_name: botwave_worker_1
-    <<: *botwave-build
-    restart: unless-stopped
-    env_file:
-      - .env.botwave
-    environment:
-      - NODE_ENV=production
-      - IS_WORKER=true
-      - SELF_URL=http://botwave-worker-1:10000
-      - REDIS_URL=redis://redis:6379
-      - EVOLUTION_API_URL=http://evolution-api:8080
-      - WEBHOOK_BASE_URL=http://botwave-web:10000
-      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
-    command: ["node", "dist/bot/bot/index.js"]
-    networks:
-      - botwave-net
-    depends_on:
-      redis:
-        condition: service_healthy
-      evolution-api:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
-  # ── BotWave Worker 2 ───────────────────────────────────
-  botwave-worker-2:
-    container_name: botwave_worker_2
-    <<: *botwave-build
-    restart: unless-stopped
-    env_file:
-      - .env.botwave
-    environment:
-      - NODE_ENV=production
-      - IS_WORKER=true
-      - SELF_URL=http://botwave-worker-2:10000
-      - REDIS_URL=redis://redis:6379
-      - EVOLUTION_API_URL=http://evolution-api:8080
-      - WEBHOOK_BASE_URL=http://botwave-web:10000
-      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
-    command: ["node", "dist/bot/bot/index.js"]
-    networks:
-      - botwave-net
-    depends_on:
-      redis:
-        condition: service_healthy
-      evolution-api:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
-  # ── BotWave Worker 3 ───────────────────────────────────
-  botwave-worker-3:
-    container_name: botwave_worker_3
-    <<: *botwave-build
-    restart: unless-stopped
-    env_file:
-      - .env.botwave
-    environment:
-      - NODE_ENV=production
-      - IS_WORKER=true
-      - SELF_URL=http://botwave-worker-3:10000
-      - REDIS_URL=redis://redis:6379
-      - EVOLUTION_API_URL=http://evolution-api:8080
-      - WEBHOOK_BASE_URL=http://botwave-web:10000
-      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
-    command: ["node", "dist/bot/bot/index.js"]
-    networks:
-      - botwave-net
-    depends_on:
-      redis:
-        condition: service_healthy
-      evolution-api:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+  # NOTE: Docker container workers (worker-1, worker-2, worker-3) have been
+  # replaced by in-process worker_threads managed by the auto-scaler in
+  # botwave-bot. The auto-scaler spawns/kills worker threads dynamically
+  # based on session count — no separate containers needed.
 
   # ── BotWave Postgres (Supabase data) ────────────────────
   botwave-postgres:
