@@ -1,5 +1,5 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
-import { sendReply } from './helpers';
+import { sendReply, setUserLangFallback, getUserLangFallback } from './helpers';
 import { getUserSettings, upsertUserSettings } from '../database';
 import { SUPPORTED_LANGUAGES, isValidLanguage, getLanguageName, translateText } from '../utils/translate';
 
@@ -18,7 +18,7 @@ async function handleLang(
     let currentLang = 'en';
     if (context.userId) {
       const settings = await getUserSettings(context.userId);
-      currentLang = (settings as any)?.language_preference || 'en';
+      currentLang = (settings as any)?.language_preference || getUserLangFallback(context.userId) || 'en';
     }
 
     const langName = getLanguageName(currentLang);
@@ -80,7 +80,14 @@ async function handleLang(
       return;
     }
 
-    await upsertUserSettings(context.userId, { language_preference: langCode });
+    // Save to DB and in-memory fallback
+    setUserLangFallback(context.userId, langCode);
+    const result = await upsertUserSettings(context.userId, { language_preference: langCode });
+    if (!result) {
+      console.error(`[LANG] DB save failed for language_preference=${langCode} userId=${context.userId} — using in-memory fallback`);
+    } else {
+      console.log(`[LANG] Saved language_preference=${langCode} for userId=${context.userId}`);
+    }
 
     const langName = getLanguageName(langCode);
     let confirmMsg = `Language set to *${langName}* (${langCode})`;
@@ -108,6 +115,7 @@ async function handleLang(
       return;
     }
 
+    setUserLangFallback(context.userId, 'en');
     await upsertUserSettings(context.userId, { language_preference: 'en' });
     await sendReply(
       context.chatJid,
@@ -128,7 +136,14 @@ async function handleLang(
       return;
     }
 
-    await upsertUserSettings(context.userId, { language_preference: sub });
+    // Save to DB and in-memory fallback
+    setUserLangFallback(context.userId, sub);
+    const result = await upsertUserSettings(context.userId, { language_preference: sub });
+    if (!result) {
+      console.error(`[LANG] DB save failed for language_preference=${sub} userId=${context.userId} — using in-memory fallback`);
+    } else {
+      console.log(`[LANG] Saved language_preference=${sub} for userId=${context.userId}`);
+    }
 
     const langName = getLanguageName(sub);
     let confirmMsg = `Language set to *${langName}* (${sub})`;

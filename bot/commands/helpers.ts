@@ -24,6 +24,22 @@ import type { MessageContext, TemplateVars } from './registry';
 // Set by MessageHandler before executing a command, read by sendReply to auto-translate.
 const requestLangMap = new Map<string, string>();
 
+// Persistent in-memory fallback: userId -> language code.
+// Survives DB/Redis failures within the same bot process lifetime.
+const userLangFallback = new Map<string, string>();
+
+export function setUserLangFallback(userId: string, lang: string): void {
+  if (lang && lang !== 'en') {
+    userLangFallback.set(userId, lang);
+  } else {
+    userLangFallback.delete(userId);
+  }
+}
+
+export function getUserLangFallback(userId: string): string | undefined {
+  return userLangFallback.get(userId);
+}
+
 export function setRequestLanguage(chatJid: string, lang: string): void {
   if (lang && lang !== 'en') {
     requestLangMap.set(chatJid, lang);
@@ -101,11 +117,18 @@ export async function sendReply(
   if (targetLang && targetLang !== 'en') {
     try {
       if (typeof processedContent === 'string') {
-        processedContent = await translateText(processedContent, targetLang);
+        const translated = await translateText(processedContent, targetLang);
+        if (translated !== processedContent) {
+          console.log(`[LANG] Translated reply for ${jid} to ${targetLang}`);
+        }
+        processedContent = translated;
       } else if (processedContent?.text && typeof processedContent.text === 'string') {
-        processedContent = { ...processedContent, text: await translateText(processedContent.text, targetLang) };
+        const translated = await translateText(processedContent.text, targetLang);
+        processedContent = { ...processedContent, text: translated };
       }
-    } catch { /* translation failed, send original */ }
+    } catch (err: any) {
+      console.error(`[LANG] Translation to ${targetLang} failed for ${jid}:`, err?.message || err);
+    }
   }
 
   if (typeof processedContent === 'string') {
