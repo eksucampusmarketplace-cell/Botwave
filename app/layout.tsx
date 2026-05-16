@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { PWARegister } from '@/components/pwa/PWARegister';
 import ThemeProvider from '@/components/ui/ThemeProvider';
 import LanguageBanner from '@/components/ui/LanguageBanner';
+import SupportChat from '@/components/ui/SupportChat';
 
 export const viewport: Viewport = {
   themeColor: '#0a0a0f',
@@ -287,44 +289,6 @@ export default function RootLayout({
             }),
           }}
         />
-        <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              function googleTranslateElementInit() {
-                new google.translate.TranslateElement({
-                  pageLanguage: 'en',
-                  includedLanguages: 'en,fr,yo,ha,ig,zu,af,hi,ar,es,pt,de,sw,am,pcm',
-                  layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
-                  autoDisplay: false,
-                }, 'google_translate_element');
-
-                // Collapse after language selection
-                setTimeout(function() {
-                  var combo = document.querySelector('#google_translate_element .goog-te-combo');
-                  var wrapper = document.getElementById('gtx-wrapper');
-                  var toggle = document.getElementById('gtx-toggle');
-                  if (combo && wrapper && toggle) {
-                    // Start collapsed
-                    wrapper.classList.add('gtx-collapsed');
-                    combo.addEventListener('change', function() {
-                      setTimeout(function() { wrapper.classList.add('gtx-collapsed'); }, 300);
-                    });
-                    toggle.addEventListener('click', function(e) {
-                      e.stopPropagation();
-                      wrapper.classList.toggle('gtx-collapsed');
-                    });
-                    document.addEventListener('click', function(e) {
-                      if (!wrapper.contains(e.target)) {
-                        wrapper.classList.add('gtx-collapsed');
-                      }
-                    });
-                  }
-                }, 1500);
-              }
-            `,
-          }}
-        />
       </head>
       <body className="font-sans antialiased">
         <div id="gtx-wrapper">
@@ -336,6 +300,56 @@ export default function RootLayout({
         </ThemeProvider>
         <PWARegister />
         <LanguageBanner />
+        <SupportChat />
+        <Script id="google-translate-init" strategy="beforeInteractive">
+          {`
+            function googleTranslateElementInit() {
+              new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,fr,yo,ha,ig,zu,af,hi,ar,es,pt,de,sw,am,pcm',
+                layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
+                autoDisplay: false,
+              }, 'google_translate_element');
+
+              setTimeout(function() {
+                var combo = document.querySelector('#google_translate_element .goog-te-combo');
+                var wrapper = document.getElementById('gtx-wrapper');
+                var toggle = document.getElementById('gtx-toggle');
+                if (combo && wrapper && toggle) {
+                  wrapper.classList.add('gtx-collapsed');
+
+                  function updateGlobeDim() {
+                    if (combo.value && combo.value !== 'en' && combo.value !== '') {
+                      toggle.classList.add('gtx-lang-active');
+                    } else {
+                      toggle.classList.remove('gtx-lang-active');
+                    }
+                  }
+
+                  combo.addEventListener('change', function() {
+                    updateGlobeDim();
+                    setTimeout(function() { wrapper.classList.add('gtx-collapsed'); }, 300);
+                  });
+                  toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    wrapper.classList.toggle('gtx-collapsed');
+                  });
+                  document.addEventListener('click', function(e) {
+                    if (!wrapper.contains(e.target)) {
+                      wrapper.classList.add('gtx-collapsed');
+                    }
+                  });
+
+                  updateGlobeDim();
+                }
+              }, 1500);
+            }
+          `}
+        </Script>
+        <Script
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
