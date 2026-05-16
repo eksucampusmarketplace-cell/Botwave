@@ -298,13 +298,39 @@ export default function RootLayout({
                   layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
                   autoDisplay: false,
                 }, 'google_translate_element');
+
+                // Collapse after language selection
+                setTimeout(function() {
+                  var combo = document.querySelector('#google_translate_element .goog-te-combo');
+                  var wrapper = document.getElementById('gtx-wrapper');
+                  var toggle = document.getElementById('gtx-toggle');
+                  if (combo && wrapper && toggle) {
+                    // Start collapsed
+                    wrapper.classList.add('gtx-collapsed');
+                    combo.addEventListener('change', function() {
+                      setTimeout(function() { wrapper.classList.add('gtx-collapsed'); }, 300);
+                    });
+                    toggle.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      wrapper.classList.toggle('gtx-collapsed');
+                    });
+                    document.addEventListener('click', function(e) {
+                      if (!wrapper.contains(e.target)) {
+                        wrapper.classList.add('gtx-collapsed');
+                      }
+                    });
+                  }
+                }, 1500);
               }
             `,
           }}
         />
       </head>
       <body className="font-sans antialiased">
-        <div id="google_translate_element" />
+        <div id="gtx-wrapper">
+          <div id="google_translate_element" />
+          <button id="gtx-toggle" aria-label="Change language" />
+        </div>
         <ThemeProvider>
           {children}
         </ThemeProvider>
