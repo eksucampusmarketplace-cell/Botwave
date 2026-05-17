@@ -2,17 +2,32 @@
 
 import { motion } from 'framer-motion';
 
+type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
+
 interface SessionCardProps {
   name: string;
   phone: string;
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth';
   lastActive: string;
+  platform?: Platform;
   onConnect: () => void;
   onDisconnect?: () => void;
   onDelete?: () => void;
 }
 
-export default function SessionCard({ name, phone, status, lastActive, onConnect, onDisconnect, onDelete }: SessionCardProps) {
+const platformIcons: Record<Platform, string> = {
+  whatsapp: '📱',
+  telegram_bot: '🤖',
+  telegram_userbot: '👤',
+};
+
+const platformLabels: Record<Platform, string> = {
+  whatsapp: 'WhatsApp',
+  telegram_bot: 'TG Bot',
+  telegram_userbot: 'TG User',
+};
+
+export default function SessionCard({ name, phone, status, lastActive, platform, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   const statusColors = {
     connected: 'bg-green text-dark',
     active: 'bg-green text-dark',
@@ -45,10 +60,17 @@ export default function SessionCard({ name, phone, status, lastActive, onConnect
 
       <div className="flex items-center gap-4">
         <div className={`w-10 h-10 flex items-center justify-center font-display text-sm font-bold ${statusColors[status]}`}>
-          {name[0]}
+          {platform ? platformIcons[platform] : name[0]}
         </div>
         <div>
-          <h3 className="font-display text-xs tracking-[2px] text-white">{name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-xs tracking-[2px] text-white">{name}</h3>
+            {platform && (
+              <span className="font-mono text-[8px] tracking-[1px] px-1.5 py-0.5 bg-green/10 text-green border border-green/20">
+                {platformLabels[platform]}
+              </span>
+            )}
+          </div>
           <p className="font-mono text-xs text-[#5a9a7a] mt-1">{phone}</p>
           <p className="font-mono text-[10px] text-[#3a7a5a] mt-1">LAST: {lastActive}</p>
         </div>

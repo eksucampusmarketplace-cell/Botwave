@@ -51,11 +51,22 @@ function validatePhoneNumber(phone: string): boolean {
   return true;
 }
 
+const platformEnum = z.enum(['whatsapp', 'telegram_bot', 'telegram_userbot']).default('whatsapp');
+
 const createSessionSchema = z.object({
-  phoneNumber: z.string().min(7).transform(normalizePhoneNumber).refine(validatePhoneNumber, {
-    message: 'Invalid phone number. Please enter a real phone number with country code (e.g. +234XXXXXXXXXX, +1XXXXXXXXXX, +44XXXXXXXXXX)',
-  }),
+  phoneNumber: z.string().min(1).transform(normalizePhoneNumber).refine(
+    (val) => validatePhoneNumber(val),
+    {
+      message: 'Invalid phone number. Please enter a real phone number with country code (e.g. +234XXXXXXXXXX, +1XXXXXXXXXX, +44XXXXXXXXXX)',
+    },
+  ).optional(),
   sessionName: z.string().min(1).max(50),
+  platform: platformEnum,
+  telegramBotToken: z.string().optional(),
+  telegramBotUsername: z.string().optional(),
+  telegramApiId: z.number().optional(),
+  telegramApiHash: z.string().optional(),
+  telegramSessionString: z.string().optional(),
 });
 
 export async function GET() {
@@ -138,7 +149,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { phoneNumber, sessionName } = validation.data;
+    const { phoneNumber, sessionName, platform, telegramBotToken, telegramBotUsername, telegramApiId, telegramApiHash, telegramSessionString } = validation.data;
 
     // Enforce session limit: check how many sessions this user already has
     const adminClient = await createAdminClient();
@@ -153,7 +164,7 @@ export async function POST(request: NextRequest) {
 
       if (count !== null && count >= MAX_SESSIONS_PER_USER) {
         return NextResponse.json(
-          { error: `Session limit reached. You can only connect ${MAX_SESSIONS_PER_USER} WhatsApp number${MAX_SESSIONS_PER_USER === 1 ? '' : 's'}. Please delete an existing session first.` },
+          { error: `Session limit reached. You can only connect ${MAX_SESSIONS_PER_USER} session${MAX_SESSIONS_PER_USER === 1 ? '' : 's'}. Please delete an existing session first.` },
           { status: 403 }
         );
       }
@@ -162,15 +173,29 @@ export async function POST(request: NextRequest) {
     const workerUrl = await assignWorkerAsync();
     console.log(`[API] POST session: user=${user.id.slice(0,8)} phone=${phoneNumber} name=${sessionName} assignedWorker=${workerUrl ?? 'main'}`);
 
+    const initialState = platform === 'whatsapp' ? 'qr_pending' : 'active';
+
+    const insertData: Record<string, unknown> = {
+      user_id: user.id,
+      phone_number: phoneNumber || '',
+      session_name: sessionName,
+      state: initialState,
+      platform,
+      worker_url: workerUrl,
+    };
+
+    if (platform === 'telegram_bot') {
+      insertData.telegram_bot_token = telegramBotToken;
+      insertData.telegram_bot_username = telegramBotUsername;
+    } else if (platform === 'telegram_userbot') {
+      insertData.telegram_api_id = telegramApiId;
+      insertData.telegram_api_hash = telegramApiHash;
+      insertData.telegram_session_string = telegramSessionString;
+    }
+
     const { data: session, error } = await supabase
       .from('bot_sessions')
-      .insert({
-        user_id: user.id,
-        phone_number: phoneNumber,
-        session_name: sessionName,
-        state: 'qr_pending',
-        worker_url: workerUrl,
-      })
+      .insert(insertData)
       .select()
       .single();
 

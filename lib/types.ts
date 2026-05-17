@@ -20,6 +20,8 @@ export type SessionState =
   | 'pairing_sent'
   | 'needs_reauth';
 
+export type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
+
 export interface BotSession {
   id: string;
   user_id: string;
@@ -35,6 +37,12 @@ export interface BotSession {
   qr_generated_at?: string;
   pairing_code?: string;
   queue_position?: number | null;
+  platform?: Platform;
+  telegram_bot_token?: string;
+  telegram_bot_username?: string;
+  telegram_api_id?: number;
+  telegram_api_hash?: string;
+  telegram_session_string?: string;
 }
 
 // ─── Feature Types ────────────────────────────────────────────────────────────
