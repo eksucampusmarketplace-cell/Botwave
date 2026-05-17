@@ -96,7 +96,7 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
     try {
       await ctx.api.sendPoll(ctx.chat!.id, question, options, {
         type: 'quiz',
-        correct_option_id: 0,
+        correct_option_ids: [0],
         is_anonymous: isAnon,
       });
     } catch (err) {

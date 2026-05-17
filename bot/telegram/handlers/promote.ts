@@ -19,7 +19,7 @@ export function registerPromoteHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const title = target.rest || '';
+    const title = target.reason || '';
 
     try {
       await ctx.promoteChatMember(target.userId, {
@@ -102,15 +102,15 @@ export function registerPromoteHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const target = resolveTarget(ctx);
-    if (!target.userId || !target.rest) {
+    if (!target.userId || !target.reason) {
       await ctx.reply('Usage: /settitle <reply|@username|userid> <title>');
       return;
     }
 
     try {
-      await ctx.setChatAdministratorCustomTitle(target.userId, target.rest);
+      await ctx.setChatAdministratorCustomTitle(target.userId, target.reason);
       await ctx.reply(
-        `✅ Custom title set to "${escapeHtml(target.rest)}" for user <code>${target.userId}</code>.`,
+        `✅ Custom title set to "${escapeHtml(target.reason)}" for user <code>${target.userId}</code>.`,
         { parse_mode: 'HTML' },
       );
     } catch {

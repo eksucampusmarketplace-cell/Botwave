@@ -18,7 +18,7 @@ function appendFooter(text: string): string {
 function formatMessage(template: string, vars: Record<string, string>): string {
   let result = template;
   for (const [key, val] of Object.entries(vars)) {
-    result = result.replaceAll(`{${key}}`, val);
+    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
   }
   return result;
 }
@@ -183,7 +183,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
         return;
       }
 
-      const template = config.start_group_dm_text || DEFAULT_START_GROUP_DM;
+      const template = (config as any).start_group_dm_text || DEFAULT_START_GROUP_DM;
       const dmText = formatMessage(template, {
         first_name: user.first_name || 'there',
         bot_name: botName,

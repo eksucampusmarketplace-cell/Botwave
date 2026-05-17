@@ -2,7 +2,8 @@
  * Resolve target user from reply, @username, or numeric ID.
  */
 
-import { Context, type User } from 'grammy';
+import { Context } from 'grammy';
+import type { User } from '@grammyjs/types';
 
 export interface ResolvedTarget {
   user: User | null;
