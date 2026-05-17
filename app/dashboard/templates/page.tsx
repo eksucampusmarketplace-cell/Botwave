@@ -145,7 +145,7 @@ export default function TemplatesPage() {
               </button>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
               >
                 {showForm ? 'Cancel' : '+ New Template'}
               </button>
@@ -167,9 +167,9 @@ export default function TemplatesPage() {
                   <div>
                     <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>How to trigger:</p>
                     <ul className="space-y-1.5">
-                      <li>Use <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">!template [name]</code> in WhatsApp</li>
-                      <li>Or <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">!template shipped @user</code> to send to someone</li>
-                      <li>Variables like <code className="text-emerald-400">{'{name}'}</code> are auto-replaced with real values</li>
+                      <li>Use <code className="text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">!template [name]</code> in WhatsApp</li>
+                      <li>Or <code className="text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">!template shipped @user</code> to send to someone</li>
+                      <li>Variables like <code className="text-blue-500">{'{name}'}</code> are auto-replaced with real values</li>
                     </ul>
                   </div>
                   <div>
@@ -177,7 +177,7 @@ export default function TemplatesPage() {
                     <div className="p-3 rounded-lg font-mono text-[11px]" style={{ background: 'var(--bg)' }}>
                       <p style={{ color: 'var(--text-muted)' }}>Template name: <span className="text-cyan-400">order_shipped</span></p>
                       <p className="mt-1" style={{ color: 'var(--text-muted)' }}>Content:</p>
-                      <p className="text-emerald-400">Hi {'{name}'}, your order #{'{order_id}'} has been shipped! Expected delivery: {'{date}'}</p>
+                      <p className="text-blue-500">Hi {'{name}'}, your order #{'{order_id}'} has been shipped! Expected delivery: {'{date}'}</p>
                       <p className="mt-2" style={{ color: 'var(--text-muted)' }}>Trigger: <span className="text-cyan-400">!template order_shipped</span></p>
                     </div>
                   </div>
@@ -202,13 +202,13 @@ export default function TemplatesPage() {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-medium block mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Template Name <span className="text-emerald-400">(used to trigger: !template [name])</span>
+                    Template Name <span className="text-blue-500">(used to trigger: !template [name])</span>
                   </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. order_confirmation"
-                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                 </div>
@@ -221,7 +221,7 @@ export default function TemplatesPage() {
                     onChange={(e) => setContent(e.target.value)}
                     placeholder={'Hi {name}, your order #{order_id} has been shipped!\nExpected delivery: {date}\n\nThank you for shopping with us!'}
                     rows={5}
-                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none font-mono"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none font-mono"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                   {content && extractVariables(content).length > 0 && (
@@ -239,7 +239,7 @@ export default function TemplatesPage() {
                     </label>
                     <button
                       onClick={() => setShowPresets(!showPresets)}
-                      className="text-[10px] px-2 py-1 rounded border transition-colors hover:border-emerald-500/30"
+                      className="text-[10px] px-2 py-1 rounded border transition-colors hover:border-blue-500/30"
                       style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
                     >
                       {showPresets ? 'Hide Presets' : 'Use a Preset'}
@@ -252,7 +252,7 @@ export default function TemplatesPage() {
                         <button
                           key={p.name}
                           onClick={() => applyPreset(p)}
-                          className="text-left p-3 rounded-lg border transition-colors hover:border-emerald-500/30"
+                          className="text-left p-3 rounded-lg border transition-colors hover:border-blue-500/30"
                           style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}
                         >
                           <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{p.label}</span>
@@ -269,7 +269,7 @@ export default function TemplatesPage() {
                         onClick={() => setActiveCategory(cat)}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${
                           activeCategory === cat
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-500'
                             : ''
                         }`}
                         style={activeCategory !== cat ? { color: 'var(--text-muted)', borderColor: 'var(--border)' } : undefined}
@@ -283,11 +283,11 @@ export default function TemplatesPage() {
                       <button
                         key={v.name}
                         onClick={() => insertVariable(v.name)}
-                        className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/5"
+                        className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition-colors hover:border-blue-500/30 hover:bg-blue-500/5"
                         style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                         title={v.desc}
                       >
-                        <code className="text-emerald-400">{`{${v.name}}`}</code>
+                        <code className="text-blue-500">{`{${v.name}}`}</code>
                         <span className="text-[10px] hidden sm:inline" style={{ color: 'var(--text-muted)' }}>{v.desc}</span>
                       </button>
                     ))}
@@ -296,7 +296,7 @@ export default function TemplatesPage() {
 
                 <button
                   onClick={handleCreate}
-                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500"
+                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500"
                 >
                   Save Template
                 </button>
@@ -314,7 +314,7 @@ export default function TemplatesPage() {
                 Create your first message template to get started
               </p>
               <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                Use them in WhatsApp with: <code className="text-emerald-400">!template [name]</code>
+                Use them in WhatsApp with: <code className="text-blue-500">!template [name]</code>
               </p>
             </div>
           ) : (
@@ -331,7 +331,7 @@ export default function TemplatesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t.name}</h3>
-                        <code className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <code className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
                           !template {t.name}
                         </code>
                       </div>
@@ -339,7 +339,7 @@ export default function TemplatesPage() {
                       {t.variables?.length > 0 && (
                         <div className="flex gap-1.5 mt-2 flex-wrap">
                           {t.variables.map((v) => (
-                            <span key={v} className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span key={v} className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
                               {'{' + v + '}'}
                             </span>
                           ))}

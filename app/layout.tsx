@@ -7,7 +7,7 @@ import LanguageBanner from '@/components/ui/LanguageBanner';
 import SupportChat from '@/components/ui/SupportChat';
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0f',
+  themeColor: '#ffffff',
 };
 
 export const metadata: Metadata = {
@@ -122,7 +122,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme="light">
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"

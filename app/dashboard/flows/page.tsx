@@ -22,7 +22,7 @@ interface Flow {
 }
 
 const NODE_TYPES = [
-  { type: 'message', label: 'Send Message', icon: '💬', desc: 'Send a text message to the user', color: 'emerald' },
+  { type: 'message', label: 'Send Message', icon: '💬', desc: 'Send a text message to the user', color: 'blue' },
   { type: 'question', label: 'Ask Question', icon: '❓', desc: 'Ask and wait for the user to reply', color: 'cyan' },
   { type: 'condition', label: 'Condition', icon: '🔀', desc: 'Branch based on what user replied', color: 'violet' },
   { type: 'delay', label: 'Delay', icon: '⏱️', desc: 'Wait X seconds before the next step', color: 'amber' },
@@ -171,7 +171,7 @@ export default function FlowsPage() {
               </button>
               <button
                 onClick={() => showForm ? resetForm() : setShowForm(true)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
               >
                 {showForm ? 'Cancel' : '+ New Flow'}
               </button>
@@ -245,7 +245,7 @@ export default function FlowsPage() {
                       value={flowName}
                       onChange={(e) => setFlowName(e.target.value)}
                       placeholder="e.g. Order Flow, Support Flow"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -257,7 +257,7 @@ export default function FlowsPage() {
                       value={trigger}
                       onChange={(e) => setTrigger(e.target.value)}
                       placeholder="e.g. order, help, buy, support"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-mono"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 font-mono"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -273,7 +273,7 @@ export default function FlowsPage() {
                       <button
                         key={nt.type}
                         onClick={() => addNode(nt.type)}
-                        className="flex flex-col items-center gap-1.5 p-4 rounded-xl border transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5"
+                        className="flex flex-col items-center gap-1.5 p-4 rounded-xl border transition-all hover:border-blue-500/30 hover:bg-blue-500/5"
                         style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}
                       >
                         <span className="text-2xl">{nt.icon}</span>
@@ -293,13 +293,13 @@ export default function FlowsPage() {
                     {nodes.map((node, i) => (
                       <div key={node.id} className="flex gap-3 items-start p-4 rounded-xl border" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
                         <div className="flex flex-col items-center gap-1 shrink-0">
-                          <span className="text-xs font-mono w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">{i + 1}</span>
+                          <span className="text-xs font-mono w-7 h-7 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">{i + 1}</span>
                           <span className="text-lg">{NODE_TYPES.find((nt) => nt.type === node.type)?.icon}</span>
                           <div className="flex flex-col gap-0.5 mt-1">
                             <button
                               onClick={() => moveNode(i, 'up')}
                               disabled={i === 0}
-                              className="text-[10px] px-1 rounded hover:text-emerald-400 disabled:opacity-20"
+                              className="text-[10px] px-1 rounded hover:text-blue-500 disabled:opacity-20"
                               style={{ color: 'var(--text-muted)' }}
                             >
                               ▲
@@ -307,7 +307,7 @@ export default function FlowsPage() {
                             <button
                               onClick={() => moveNode(i, 'down')}
                               disabled={i === nodes.length - 1}
-                              className="text-[10px] px-1 rounded hover:text-emerald-400 disabled:opacity-20"
+                              className="text-[10px] px-1 rounded hover:text-blue-500 disabled:opacity-20"
                               style={{ color: 'var(--text-muted)' }}
                             >
                               ▼
@@ -326,7 +326,7 @@ export default function FlowsPage() {
                               'Delay in seconds (e.g. 5)'
                             }
                             rows={node.type === 'delay' ? 1 : 3}
-                            className="w-full mt-1 px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none"
+                            className="w-full mt-1 px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none"
                             style={{ background: 'var(--surface)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                           />
                         </div>
@@ -353,7 +353,7 @@ export default function FlowsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSave}
-                    className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500"
+                    className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500"
                   >
                     {editingId ? 'Update Flow' : 'Save Flow'}
                   </button>
@@ -396,12 +396,12 @@ export default function FlowsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{flow.name}</h3>
-                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${flow.enabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${flow.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-400'}`}>
                           {flow.enabled ? 'Active' : 'Disabled'}
                         </span>
                       </div>
                       <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                        Trigger: <code className="text-emerald-400">{flow.trigger}</code> &bull; {(flow.nodes || []).length} steps
+                        Trigger: <code className="text-blue-500">{flow.trigger}</code> &bull; {(flow.nodes || []).length} steps
                       </p>
                       {(flow.nodes || []).length > 0 && (
                         <div className="flex gap-2 mt-2 flex-wrap">

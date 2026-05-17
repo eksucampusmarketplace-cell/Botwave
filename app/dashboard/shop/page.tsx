@@ -102,7 +102,7 @@ export default function ShopPage() {
               {!error && (
                 <button
                   onClick={() => setShowForm(!showForm)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
                 >
                   {showForm ? 'Cancel' : '+ Add Product'}
                 </button>
@@ -133,9 +133,9 @@ export default function ShopPage() {
                         { step: '4', cmd: '!checkout', desc: 'Places the order. You get notified.' },
                       ].map((s) => (
                         <div key={s.step} className="flex gap-2 items-start">
-                          <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{s.step}</span>
+                          <span className="w-5 h-5 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{s.step}</span>
                           <div>
-                            <code className="text-emerald-400">{s.cmd}</code>
+                            <code className="text-blue-500">{s.cmd}</code>
                             <p style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
                           </div>
                         </div>
@@ -167,7 +167,7 @@ export default function ShopPage() {
               <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
                 E-commerce features require Boss plan.
               </p>
-              <a href="/dashboard/pricing" className="inline-block mt-3 px-4 py-2 rounded-lg text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors">
+              <a href="/dashboard/pricing" className="inline-block mt-3 px-4 py-2 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors">
                 View Plans
               </a>
             </div>
@@ -193,7 +193,7 @@ export default function ShopPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. BotWave T-Shirt"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -206,7 +206,7 @@ export default function ShopPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="e.g. 5000"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -218,7 +218,7 @@ export default function ShopPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Product description... customers see this when they view details"
                     rows={2}
-                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                 </div>
@@ -231,7 +231,7 @@ export default function ShopPage() {
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
                       placeholder="https://example.com/product.jpg"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                     <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Paste a direct image link. Customers see this photo when browsing your shop.</p>
@@ -244,7 +244,7 @@ export default function ShopPage() {
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       placeholder="e.g. Clothing, Electronics, Food"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -269,13 +269,13 @@ export default function ShopPage() {
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="Unlimited"
-                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                 </div>
                 <button
                   onClick={handleCreate}
-                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500"
+                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500"
                 >
                   Add Product
                 </button>
@@ -293,7 +293,7 @@ export default function ShopPage() {
                 Add products and your customers can browse and order via WhatsApp
               </p>
               <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                Customers use <code className="text-emerald-400">!shop</code> to browse, <code className="text-emerald-400">!buy [item]</code> to order
+                Customers use <code className="text-blue-500">!shop</code> to browse, <code className="text-blue-500">!buy [item]</code> to order
               </p>
             </div>
           ) : !error && (
@@ -319,7 +319,7 @@ export default function ShopPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{p.name}</h3>
-                          <p className="text-xl font-bold text-emerald-400 mt-1">
+                          <p className="text-xl font-bold text-blue-500 mt-1">
                             {'\u20A6'}{p.price.toLocaleString()}
                           </p>
                         </div>
@@ -338,7 +338,7 @@ export default function ShopPage() {
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                           Stock: {p.stock === -1 ? 'Unlimited' : p.stock}
                         </p>
-                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${p.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${p.active ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-400'}`}>
                           {p.active ? 'Active' : 'Hidden'}
                         </span>
                       </div>
@@ -361,7 +361,7 @@ export default function ShopPage() {
                   { cmd: '!checkout', desc: 'Place order' },
                 ].map((c) => (
                   <div key={c.cmd} className="p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
-                    <code className="text-xs text-emerald-400 font-mono">{c.cmd}</code>
+                    <code className="text-xs text-blue-500 font-mono">{c.cmd}</code>
                     <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
                   </div>
                 ))}

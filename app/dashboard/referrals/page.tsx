@@ -98,7 +98,7 @@ export default function ReferralsPage() {
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Your Referral Code</p>
                 {data.code ? (
                   <div className="flex items-center justify-center gap-3">
-                    <code className="text-3xl font-bold tracking-widest text-emerald-400">{data.code}</code>
+                    <code className="text-3xl font-bold tracking-widest text-blue-500">{data.code}</code>
                     <button
                       onClick={copyCode}
                       className="px-3 py-1.5 text-xs rounded-lg border transition-colors"
@@ -113,7 +113,7 @@ export default function ReferralsPage() {
                   </p>
                 )}
                 <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>
-                  You earn <span className="text-emerald-400 font-bold">{'\u20A6'}20</span> for each friend who joins.
+                  You earn <span className="text-blue-500 font-bold">{'\u20A6'}20</span> for each friend who joins.
                   They get <span className="text-cyan-400 font-bold">{'\u20A6'}10</span> too!
                 </p>
               </div>
@@ -121,11 +121,11 @@ export default function ReferralsPage() {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-5 rounded-xl border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                  <p className="text-3xl font-bold text-emerald-400">{data.totalReferred}</p>
+                  <p className="text-3xl font-bold text-blue-500">{data.totalReferred}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Friends Referred</p>
                 </div>
                 <div className="p-5 rounded-xl border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                  <p className="text-3xl font-bold text-emerald-400">{'\u20A6'}{data.totalEarned}</p>
+                  <p className="text-3xl font-bold text-blue-500">{'\u20A6'}{data.totalEarned}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Total Earned</p>
                 </div>
               </div>
@@ -138,18 +138,18 @@ export default function ReferralsPage() {
                     value={applyCode}
                     onChange={(e) => setApplyCode(e.target.value.toUpperCase())}
                     placeholder="Enter code (e.g. BW-ABC123)"
-                    className="flex-1 px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-mono"
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 font-mono"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                   <button
                     onClick={handleApply}
-                    className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                    className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
                   >
                     Apply
                   </button>
                 </div>
                 {applyMsg && (
-                  <p className="text-xs mt-2 text-emerald-400">{applyMsg}</p>
+                  <p className="text-xs mt-2 text-blue-500">{applyMsg}</p>
                 )}
                 {applyError && (
                   <p className="text-xs mt-2 text-red-400">{applyError}</p>
@@ -167,7 +167,7 @@ export default function ReferralsPage() {
                     { step: '4', text: 'Cash out at \u20A6100 for free airtime via Inlomax' },
                   ].map((s) => (
                     <div key={s.step} className="flex items-start gap-3">
-                      <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-bold shrink-0">
                         {s.step}
                       </span>
                       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{s.text}</p>
@@ -200,7 +200,7 @@ export default function ReferralsPage() {
                           {r.status === 'revoked' && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">Revoked</span>
                           )}
-                          <span className={`text-sm font-mono ${r.status === 'revoked' ? 'text-red-400 line-through' : 'text-emerald-400'}`}>
+                          <span className={`text-sm font-mono ${r.status === 'revoked' ? 'text-red-400 line-through' : 'text-blue-500'}`}>
                             +{'\u20A6'}{r.reward_amount}
                           </span>
                         </div>

@@ -292,7 +292,7 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto px-4 pt-24 pb-12">
         <div className="text-center mb-12">
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[4px] mt-6 mb-4">
-            CHOOSE YOUR <span className="text-green">PLAN</span>
+            CHOOSE YOUR <span className="text-blue-600 dark:text-blue-400">PLAN</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] tracking-[2px]">
             {'// UNLOCK MORE POWER FOR YOUR BOT'}
@@ -305,7 +305,7 @@ export default function PricingPage() {
             animate={{ opacity: 1, y: 0 }}
             className={`max-w-md mx-auto mb-8 p-4 border font-mono text-sm text-center ${
               message.type === 'success'
-                ? 'bg-green/10 border-green/30 text-green'
+                ? 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400'
                 : 'bg-red-500/10 border-red-400/30 text-red-400'
             }`}
           >
@@ -326,27 +326,27 @@ export default function PricingPage() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className={`relative bg-card border p-6 flex flex-col ${
                   isPopular
-                    ? 'border-green/40 shadow-[0_0_30px_rgba(0,255,136,0.1)]'
-                    : 'border-green/10'
+                    ? 'border-blue-500/40 shadow-[0_0_30px_rgba(0,255,136,0.1)]'
+                    : 'border-blue-500/10'
                 }`}
               >
                 {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green text-dark font-mono text-[10px] font-bold tracking-[2px] px-3 py-1">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-dark font-mono text-[10px] font-bold tracking-[2px] px-3 py-1">
                     POPULAR
                   </div>
                 )}
 
-                <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-green/30" />
-                <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-green/30" />
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-green/30" />
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-green/30" />
+                <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-blue-500/30" />
+                <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-blue-500/30" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-blue-500/30" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-blue-500/30" />
 
                 <h3 className="font-display text-lg font-bold text-white tracking-[3px] mb-2">
                   {plan.name.toUpperCase()}
                 </h3>
 
                 <div className="mb-6">
-                  <span className="font-display text-3xl font-black text-green">
+                  <span className="font-display text-3xl font-black text-blue-600 dark:text-blue-400">
                     {plan.price === 0 ? 'FREE' : `₦${plan.price.toLocaleString()}`}
                   </span>
                   {plan.price > 0 && (
@@ -357,7 +357,7 @@ export default function PricingPage() {
                 <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="font-mono text-xs text-gray-300 flex items-start gap-2">
-                      <span className="text-green mt-0.5">{'>'}</span>
+                      <span className="text-blue-600 dark:text-blue-400 mt-0.5">{'>'}</span>
                       {feature}
                     </li>
                   ))}
@@ -368,10 +368,10 @@ export default function PricingPage() {
                   disabled={isCurrent || key === 'free' || loading !== null}
                   className={`w-full py-3 font-mono text-xs tracking-[2px] transition-all ${
                     isCurrent
-                      ? 'bg-green/20 text-green border border-green/30 cursor-default'
+                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 cursor-default'
                       : key === 'free'
-                        ? 'bg-dark border border-green/10 text-[#5a9a7a] cursor-default'
-                        : 'bg-green text-dark font-bold hover:bg-green/90 hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] active:scale-[0.98]'
+                        ? 'bg-dark border border-blue-500/10 text-[#5a9a7a] cursor-default'
+                        : 'bg-blue-500 text-dark font-bold hover:bg-blue-500/90 hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] active:scale-[0.98]'
                   } ${loading === key ? 'opacity-50' : ''}`}
                 >
                   {isCurrent
@@ -391,7 +391,7 @@ export default function PricingPage() {
         <div className="mt-12 max-w-2xl mx-auto">
           <button
             onClick={() => { setShowHistory(!showHistory); if (!showHistory) fetchPaymentHistory(); }}
-            className="w-full text-center font-mono text-xs text-[#5a9a7a] tracking-[1px] hover:text-green transition-colors py-2"
+            className="w-full text-center font-mono text-xs text-[#5a9a7a] tracking-[1px] hover:text-blue-600 dark:text-blue-400 transition-colors py-2"
           >
             {showHistory ? '▲ HIDE PAYMENT HISTORY' : '▼ VIEW PAYMENT HISTORY'}
           </button>
@@ -406,15 +406,15 @@ export default function PricingPage() {
                 <p className="font-mono text-xs text-[#5a9a7a] text-center py-4">No payment history yet</p>
               ) : (
                 payments.map((p) => (
-                  <div key={p.id} className="flex justify-between items-center p-3 border border-green/10 bg-card font-mono text-xs">
+                  <div key={p.id} className="flex justify-between items-center p-3 border border-blue-500/10 bg-card font-mono text-xs">
                     <div>
                       <span className="text-white capitalize">{p.plan}</span>
                       <span className="text-[#5a9a7a] ml-2">{new Date(p.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-green">₦{p.amount?.toLocaleString()}</span>
+                      <span className="text-blue-600 dark:text-blue-400">₦{p.amount?.toLocaleString()}</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] ${
-                        p.status === 'completed' ? 'bg-green/10 text-green' :
+                        p.status === 'completed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
                         p.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                         'bg-red-500/10 text-red-400'
                       }`}>

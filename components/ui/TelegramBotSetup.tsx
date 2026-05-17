@@ -65,37 +65,37 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-xs tracking-[2px] text-white">
-          TELEGRAM BOT SETUP
+        <h3 className="text-sm font-bold text-[var(--text-primary)]">
+          Telegram Bot Setup
         </h3>
         <button
           onClick={onCancel}
-          className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors"
+          className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
-          CANCEL
+          Cancel
         </button>
       </div>
 
       {step === 'token' && (
         <div className="space-y-4">
           <div>
-            <label className="font-mono text-[10px] text-[#5a9a7a] block mb-2">
-              BOT TOKEN FROM @BOTFATHER
+            <label className="text-sm text-[var(--text-secondary)] block mb-2 font-medium">
+              Bot Token from @BotFather
             </label>
             <input
               type="text"
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="123456789:ABCDefGhIjKlMnOpQrStUvWxYz"
-              className="w-full bg-dark border border-green/20 p-3 font-mono text-xs text-white placeholder:text-[#3a5a4a] focus:border-green outline-none"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] rounded-xl focus:border-blue-500 outline-none transition-colors"
             />
           </div>
 
           {error && (
-            <p className="font-mono text-[10px] text-red-400">{error}</p>
+            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
           )}
 
-          <div className="font-mono text-[10px] text-[#3a7a5a] space-y-1">
+          <div className="text-sm text-[var(--text-muted)] space-y-1">
             <p>1. Open Telegram and search for @BotFather</p>
             <p>2. Send /newbot and follow the instructions</p>
             <p>3. Copy the token and paste it above</p>
@@ -105,41 +105,41 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleValidate}
-            className="w-full font-display text-[10px] tracking-[2px] px-4 py-3 bg-green text-dark font-bold hover:bg-cyan transition-colors"
+            className="w-full text-sm px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
-            VALIDATE TOKEN
+            Validate Token
           </motion.button>
         </div>
       )}
 
       {step === 'validating' && (
         <div className="text-center py-8">
-          <div className="animate-pulse font-mono text-xs text-green">
-            VALIDATING TOKEN...
+          <div className="animate-pulse text-sm text-blue-600 dark:text-blue-400 font-medium">
+            Validating token...
           </div>
         </div>
       )}
 
       {step === 'confirm' && botInfo && (
         <div className="space-y-4">
-          <div className="bg-green/5 border border-green/20 p-4 space-y-2">
-            <p className="font-display text-xs tracking-[2px] text-green">BOT VERIFIED</p>
-            <p className="font-mono text-xs text-white">@{botInfo.username}</p>
-            <p className="font-mono text-[10px] text-[#5a9a7a]">
+          <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 p-4 rounded-xl space-y-2">
+            <p className="text-sm font-semibold text-green-600 dark:text-green-400">Bot Verified</p>
+            <p className="text-sm text-[var(--text-primary)]">@{botInfo.username}</p>
+            <p className="text-xs text-[var(--text-muted)]">
               Groups: {botInfo.canJoinGroups ? 'Yes' : 'No'} | 
               Read All: {botInfo.canReadAllGroupMessages ? 'Yes' : 'No'}
             </p>
           </div>
 
           <div>
-            <label className="font-mono text-[10px] text-[#5a9a7a] block mb-2">
-              SESSION NAME
+            <label className="text-sm text-[var(--text-secondary)] block mb-2 font-medium">
+              Session Name
             </label>
             <input
               type="text"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
-              className="w-full bg-dark border border-green/20 p-3 font-mono text-xs text-white focus:border-green outline-none"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-sm text-[var(--text-primary)] rounded-xl focus:border-blue-500 outline-none transition-colors"
             />
           </div>
 
@@ -147,9 +147,9 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleConfirm}
-            className="w-full font-display text-[10px] tracking-[2px] px-4 py-3 bg-green text-dark font-bold hover:bg-cyan transition-colors"
+            className="w-full text-sm px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
-            CONNECT BOT
+            Connect Bot
           </motion.button>
         </div>
       )}

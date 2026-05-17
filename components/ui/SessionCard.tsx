@@ -29,14 +29,14 @@ const platformLabels: Record<Platform, string> = {
 
 export default function SessionCard({ name, phone, status, lastActive, platform, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   const statusColors = {
-    connected: 'bg-green text-dark',
-    active: 'bg-green text-dark',
-    disconnected: 'bg-red-400/20 text-red-400',
-    inactive: 'bg-red-400/20 text-red-400',
+    connected: 'bg-green-500 text-white',
+    active: 'bg-green-500 text-white',
+    disconnected: 'bg-red-100 dark:bg-red-400/20 text-red-600 dark:text-red-400',
+    inactive: 'bg-red-100 dark:bg-red-400/20 text-red-600 dark:text-red-400',
     needs_reauth: 'bg-red-600 text-white',
-    pending: 'bg-cyan/20 text-cyan',
-    qr_pending: 'bg-cyan/20 text-cyan',
-    pairing_sent: 'bg-cyan/20 text-cyan',
+    pending: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
+    qr_pending: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
+    pairing_sent: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
   };
 
   const statusLabels = {
@@ -53,31 +53,29 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      className="bg-dark border border-green/10 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden"
+      className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-sm"
     >
-      <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-green/20" />
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green/20" />
 
       <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 flex items-center justify-center font-display text-sm font-bold ${statusColors[status]}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${statusColors[status]}`}>
           {platform ? platformIcons[platform] : name[0]}
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-display text-xs tracking-[2px] text-white">{name}</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">{name}</h3>
             {platform && (
-              <span className="font-mono text-[8px] tracking-[1px] px-1.5 py-0.5 bg-green/10 text-green border border-green/20">
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
                 {platformLabels[platform]}
               </span>
             )}
           </div>
-          <p className="font-mono text-xs text-[#5a9a7a] mt-1">{phone}</p>
-          <p className="font-mono text-[10px] text-[#3a7a5a] mt-1">LAST: {lastActive}</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">{phone}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Last active: {lastActive}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <span className={`font-mono text-[10px] tracking-[2px] px-3 py-1 ${statusColors[status]}`}>
+        <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColors[status]}`}>
           {statusLabels[status]}
         </span>
         {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'qr_pending' || status === 'pairing_sent' || status === 'pending') && (
@@ -85,7 +83,7 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onConnect}
-            className="font-display text-[10px] tracking-[2px] px-4 py-2 bg-green text-dark font-bold hover:bg-cyan transition-colors"
+            className="text-xs font-semibold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             CONNECT
           </motion.button>
@@ -95,7 +93,7 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onDisconnect}
-            className="font-display text-[10px] tracking-[2px] px-3 py-2 border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+            className="text-xs font-semibold px-3 py-2 border border-yellow-500/30 text-yellow-600 dark:text-yellow-500 rounded-lg hover:bg-yellow-500/10 transition-colors"
           >
             DISCONNECT
           </motion.button>
@@ -105,7 +103,7 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onDelete}
-            className="font-display text-[10px] tracking-[2px] px-3 py-2 border border-red-400/30 text-red-400 hover:bg-red-400/10 transition-colors"
+            className="text-xs font-semibold px-3 py-2 border border-red-400/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-400/10 transition-colors"
           >
             &#10005;
           </motion.button>

@@ -103,7 +103,7 @@ export default function MessagesPage() {
           className="mb-8"
         >
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            MESSAGE <span className="text-green">HISTORY</span>
+            MESSAGE <span className="text-blue-600 dark:text-blue-400">HISTORY</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Browse all messages processed by your bot ({total.toLocaleString()} total)
@@ -115,7 +115,7 @@ export default function MessagesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="bg-card border border-green/10 p-4 mb-6 relative"
+          className="bg-card border border-blue-500/10 p-4 mb-6 relative"
         >
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <input
@@ -123,12 +123,12 @@ export default function MessagesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search messages or senders..."
-              className="flex-1 bg-dark border border-green/20 px-4 py-2 text-white font-mono text-sm focus:border-green focus:outline-none transition-colors"
+              className="flex-1 bg-dark border border-blue-500/20 px-4 py-2 text-white font-mono text-sm focus:border-blue-500 focus:outline-none transition-colors"
             />
             <select
               value={typeFilter}
               onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-              className="bg-dark border border-green/20 px-4 py-2 text-white font-mono text-sm focus:border-green focus:outline-none"
+              className="bg-dark border border-blue-500/20 px-4 py-2 text-white font-mono text-sm focus:border-blue-500 focus:outline-none"
             >
               <option value="">ALL TYPES</option>
               <option value="text">TEXT</option>
@@ -140,7 +140,7 @@ export default function MessagesPage() {
             </select>
             <button
               type="submit"
-              className="px-6 py-2 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
+              className="px-6 py-2 bg-blue-500 text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-blue-400 transition-colors"
             >
               SEARCH
             </button>
@@ -152,10 +152,10 @@ export default function MessagesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-card border border-green/10 relative"
+          className="bg-card border border-blue-500/10 relative"
         >
-          <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-          <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
+          <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+          <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
 
           {loading ? (
             <div className="p-8 text-center">
@@ -172,7 +172,7 @@ export default function MessagesPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-green/10">
+                  <tr className="border-b border-blue-500/10">
                     <th className="px-4 py-3 text-left font-mono text-[10px] text-[#5a9a7a] tracking-[2px]">TYPE</th>
                     <th className="px-4 py-3 text-left font-mono text-[10px] text-[#5a9a7a] tracking-[2px]">SENDER</th>
                     <th className="px-4 py-3 text-left font-mono text-[10px] text-[#5a9a7a] tracking-[2px] hidden md:table-cell">CONTENT</th>
@@ -182,7 +182,7 @@ export default function MessagesPage() {
                 </thead>
                 <tbody>
                   {messages.map((msg) => (
-                    <tr key={msg.id} className="border-b border-green/5 hover:bg-green/5 transition-colors">
+                    <tr key={msg.id} className="border-b border-blue-500/5 hover:bg-blue-500/5 transition-colors">
                       <td className="px-4 py-3 text-lg" title={msg.message_type}>
                         {typeIcons[msg.message_type] || '📨'}
                       </td>
@@ -198,7 +198,7 @@ export default function MessagesPage() {
                         <span className="font-mono text-[10px] text-[#5a9a7a]">{formatTime(msg.timestamp)}</span>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className={`font-mono text-[10px] px-2 py-1 ${msg.is_group ? 'bg-cyan/10 text-cyan' : 'bg-green/10 text-green'}`}>
+                        <span className={`font-mono text-[10px] px-2 py-1 ${msg.is_group ? 'bg-blue-400/10 text-blue-500 dark:text-blue-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'}`}>
                           {msg.is_group ? 'GROUP' : 'DM'}
                         </span>
                       </td>
@@ -211,11 +211,11 @@ export default function MessagesPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-green/10">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-blue-500/10">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="font-mono text-xs text-green hover:text-cyan transition-colors disabled:opacity-30 tracking-[2px]"
+                className="font-mono text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:text-blue-400 transition-colors disabled:opacity-30 tracking-[2px]"
               >
                 ← PREV
               </button>
@@ -225,7 +225,7 @@ export default function MessagesPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="font-mono text-xs text-green hover:text-cyan transition-colors disabled:opacity-30 tracking-[2px]"
+                className="font-mono text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:text-blue-400 transition-colors disabled:opacity-30 tracking-[2px]"
               >
                 NEXT →
               </button>

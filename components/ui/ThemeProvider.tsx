@@ -19,13 +19,15 @@ export function useTheme() {
 }
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     const saved = localStorage.getItem('botwave_theme') as Theme | null;
     if (saved === 'light' || saved === 'dark') {
       setTheme(saved);
       document.documentElement.setAttribute('data-theme', saved);
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
     }
   }, []);
 

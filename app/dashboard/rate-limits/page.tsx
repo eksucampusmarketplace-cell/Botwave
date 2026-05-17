@@ -27,7 +27,7 @@ const PLAN_MONTHLY_LIMITS: Record<string, number> = {
   boss: -1,
 };
 
-function ProgressBar({ value, max, label, color = 'emerald', subtitle }: { value: number; max: number; label: string; color?: string; subtitle?: string }) {
+function ProgressBar({ value, max, label, color = 'blue', subtitle }: { value: number; max: number; label: string; color?: string; subtitle?: string }) {
   const percentage = max === -1 ? 10 : Math.min((value / max) * 100, 100);
   const isUnlimited = max === -1;
   const isWarning = !isUnlimited && percentage > 80;
@@ -130,7 +130,7 @@ export default function RateLimitsPage() {
             </div>
             <button
               onClick={fetchData}
-              className="px-3 py-2 rounded-lg text-xs font-medium border transition-colors hover:border-emerald-500/30"
+              className="px-3 py-2 rounded-lg text-xs font-medium border transition-colors hover:border-blue-500/30"
               style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
             >
               Refresh
@@ -147,7 +147,7 @@ export default function RateLimitsPage() {
               <div className="p-4 rounded-xl border flex items-center justify-between" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <div>
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Current Plan</span>
-                  <h2 className="text-lg font-bold text-emerald-400 capitalize">{data.plan}</h2>
+                  <h2 className="text-lg font-bold text-blue-500 capitalize">{data.plan}</h2>
                 </div>
                 <div className="flex gap-6">
                   {data.warmupDay > 0 && data.warmupDay <= 7 && (
@@ -207,7 +207,7 @@ export default function RateLimitsPage() {
                 <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Anti-Ban Protection (Active)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                    <p className="text-xs mb-1 font-medium text-emerald-400">Anti-spam</p>
+                    <p className="text-xs mb-1 font-medium text-blue-500">Anti-spam</p>
                     <p className="text-sm" style={{ color: 'var(--text-primary)' }}>5 msgs in 10 sec triggers warning</p>
                     <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Protects you from WhatsApp rate limits</p>
                   </div>
@@ -226,12 +226,12 @@ export default function RateLimitsPage() {
 
               {/* Upgrade prompt for free users */}
               {data.plan === 'free' && (
-                <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-center">
-                  <p className="text-sm font-medium text-emerald-400">Need more messages?</p>
+                <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 text-center">
+                  <p className="text-sm font-medium text-blue-500">Need more messages?</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     Upgrade to Lite (2,000/month), Standard (10,000/month), or Boss (unlimited)
                   </p>
-                  <a href="/dashboard/pricing" className="inline-block mt-3 px-4 py-2 rounded-lg text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors">
+                  <a href="/dashboard/pricing" className="inline-block mt-3 px-4 py-2 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors">
                     View Plans
                   </a>
                 </div>

@@ -397,7 +397,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-dark relative">
+    <main className="min-h-screen bg-[var(--bg)] relative">
       <ParticleBackground />
       <DashboardNav />
       <OnboardingTour />
@@ -410,29 +410,29 @@ export default function DashboardPage() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <span className={`w-2 h-2 rounded-full animate-pulse ${sessions.some(s => s.state === 'active') ? 'bg-green' : sessions.some(s => s.state === 'needs_reauth') ? 'bg-yellow-500' : 'bg-red-400'}`} />
-            <span className={`font-mono text-xs tracking-[4px] ${sessions.some(s => s.state === 'active') ? 'text-green' : sessions.some(s => s.state === 'needs_reauth') ? 'text-yellow-500' : 'text-red-400'}`}>
-              {sessions.some(s => s.state === 'active') ? '// SYSTEM ACTIVE' : sessions.some(s => s.state === 'needs_reauth') ? '// RECONNECT REQUIRED' : sessions.length > 0 ? '// SYSTEM OFFLINE' : '// NO SESSIONS'}
+            <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${sessions.some(s => s.state === 'active') ? 'bg-green-500' : sessions.some(s => s.state === 'needs_reauth') ? 'bg-yellow-500' : 'bg-red-400'}`} />
+            <span className={`text-sm font-medium ${sessions.some(s => s.state === 'active') ? 'text-green-600 dark:text-green-400' : sessions.some(s => s.state === 'needs_reauth') ? 'text-yellow-600 dark:text-yellow-500' : 'text-red-500 dark:text-red-400'}`}>
+              {sessions.some(s => s.state === 'active') ? 'System Active' : sessions.some(s => s.state === 'needs_reauth') ? 'Reconnect Required' : sessions.length > 0 ? 'System Offline' : 'No Sessions'}
             </span>
           </div>
-          <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            CONTROL <span className="text-green">PANEL</span>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
+            Control <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Panel</span>
           </h1>
           <div className="flex items-center gap-4 mt-2">
-            <p className="font-mono text-sm text-[#5a9a7a]">
+            <p className="text-base text-[var(--text-secondary)]">
               Manage your WhatsApp &amp; Telegram sessions and bot features
             </p>
             {sseConnected && (
-              <span className="flex items-center gap-1 font-mono text-[10px] text-cyan tracking-[1px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
-                LIVE
+              <span className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                Live
               </span>
             )}
           </div>
         </motion.div>
 
-        <div className="bg-card border border-cyan/20 p-4 mb-6">
-          <p className="font-mono text-xs text-cyan">
+        <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 p-4 mb-6 rounded-xl">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
             Your bot runs 24/7 on BotWave&apos;s servers. You do not need to keep this app open or keep your phone on. Your session stays active as long as you remain connected.
           </p>
         </div>
@@ -444,13 +444,10 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-6">
-                SESSIONS
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">
+                Sessions
               </h2>
 
               <div className="space-y-4">
@@ -471,9 +468,9 @@ export default function DashboardPage() {
                 <button
                   data-tour="add-session"
                   onClick={() => setShowAddModal(true)}
-                  className="w-full border-2 border-dashed border-green/20 p-4 text-center font-mono text-xs text-[#5a9a7a] hover:border-green/40 hover:text-green transition-all tracking-[2px]"
+                  className="w-full border-2 border-dashed border-[var(--border)] p-4 rounded-xl text-center text-sm text-[var(--text-muted)] hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all font-medium"
                 >
-                  + ADD NEW SESSION
+                  + Add New Session
                 </button>
               </div>
             </motion.section>
@@ -483,11 +480,9 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">TOOLS</h2>
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Tools</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates', desc: 'Reusable message snippets with variables' },
@@ -503,15 +498,14 @@ export default function DashboardPage() {
                   <a
                     key={link.href}
                     href={link.href}
-                    className="flex flex-col gap-1 p-3 border border-green/10 hover:border-green/30 transition-colors font-mono text-xs"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="flex flex-col gap-1 p-3 border border-[var(--border)] rounded-xl hover:border-blue-300 dark:hover:border-blue-500/30 transition-colors text-sm text-[var(--text-secondary)]"
                   >
                     <span className="flex items-center gap-2">
                       <span className="text-base">{link.icon}</span>
                       {link.label}
                     </span>
                     {'desc' in link && link.desc && (
-                      <span className="text-[10px] opacity-50">{link.desc}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{link.desc}</span>
                     )}
                   </a>
                 ))}
@@ -523,20 +517,17 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display text-sm tracking-[3px] text-green">
-                  FEATURE TOGGLES
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                  Feature Toggles
                 </h2>
                 {sessions.length > 1 && (
                   <select
                     value={selectedFeatureSession}
                     onChange={(e) => setSelectedFeatureSession(e.target.value)}
-                    className="bg-dark border border-green/20 px-3 py-1.5 text-white font-mono text-xs focus:border-green focus:outline-none"
+                    className="bg-[var(--bg)] border border-[var(--border)] px-3 py-1.5 text-[var(--text-primary)] text-sm rounded-lg focus:border-blue-500 focus:outline-none"
                   >
                     {sessions.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -596,29 +587,24 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <div className="absolute bottom-0 left-0 w-5 h-5 border-l-2 border-b-2 border-green/30" />
-              <div className="absolute bottom-0 right-0 w-5 h-5 border-r-2 border-b-2 border-green/30" />
-
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-6" data-tour="stats">
-                QUICK STATS
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6" data-tour="stats">
+                Quick Stats
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">MESSAGES</span>
-                  <span className="font-display text-xl text-green">{stats.totalMessages.toLocaleString()}</span>
+                  <span className="text-sm text-[var(--text-secondary)] font-medium">Messages</span>
+                  <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">{stats.totalMessages.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">COMMANDS</span>
-                  <span className="font-display text-xl text-green">{stats.totalCommands.toLocaleString()}</span>
+                  <span className="text-sm text-[var(--text-secondary)] font-medium">Commands</span>
+                  <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">{stats.totalCommands.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-[#5a9a7a] tracking-[2px]">UPTIME</span>
-                  <span className="font-display text-xl text-cyan">{stats.uptimePercent}%</span>
+                  <span className="text-sm text-[var(--text-secondary)] font-medium">Uptime</span>
+                  <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600">{stats.uptimePercent}%</span>
                 </div>
               </div>
             </motion.div>
@@ -627,17 +613,17 @@ export default function DashboardPage() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-dark/90 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-green/20 p-5 sm:p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-5 sm:p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl"
           >
-            <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">New Session</h2>
 
             {error && (
-              <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
-                <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
+              <div className="bg-red-50 dark:bg-red-400/10 border border-red-200 dark:border-red-400/30 p-3 mb-4 rounded-xl">
+                <p className="text-sm text-red-600 dark:text-red-400">
                   Error: {error}
                 </p>
               </div>
@@ -650,7 +636,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setShowAddModal(false); setError(null); }}
-                  className="w-full border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                  className="w-full border border-red-300 dark:border-red-400/50 text-red-500 dark:text-red-400 p-3 rounded-xl text-sm font-medium hover:bg-red-50 dark:hover:bg-red-400/10 transition-colors"
                 >
                   CANCEL
                 </button>
@@ -663,64 +649,64 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
-                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                  className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2"
                 >
-                  &larr; BACK TO PLATFORMS
+                  &larr; Back to platforms
                 </button>
                 {!showConfirm ? (
                   <>
                     <div>
-                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
+                      <label className="block text-sm text-[var(--text-secondary)] mb-1.5 font-medium">Session Name</label>
                       <input
                         type="text"
                         required
                         value={newSession.name}
                         onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
-                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-[var(--text-primary)] text-sm rounded-xl focus:border-blue-500 outline-none transition-colors"
                         placeholder="e.g. Personal"
                         disabled={isCreating}
                       />
                     </div>
                     <div>
-                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
+                      <label className="block text-sm text-[var(--text-secondary)] mb-1.5 font-medium">Phone Number</label>
                       <input
                         type="text"
                         required
                         value={newSession.phone}
                         onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
-                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-[var(--text-primary)] text-sm rounded-xl focus:border-blue-500 outline-none transition-colors"
                         placeholder="+2348012345678"
                         disabled={isCreating}
                       />
-                      <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1.5">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
                     </div>
                     <div className="flex gap-4 pt-4">
                       <button
                         type="button"
                         onClick={() => { setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
-                        className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                        className="flex-1 border border-[var(--border)] text-[var(--text-secondary)] p-3 rounded-xl text-sm font-medium hover:bg-[var(--bg-alt)] disabled:opacity-50 transition-colors"
                         disabled={isCreating}
                       >
-                        BACK
+                        Back
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-600 text-white p-3 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isCreating}
                       >
-                        CONTINUE
+                        Continue
                       </button>
                     </div>
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-cyan/10 border border-cyan/30 p-4">
-                      <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
+                    <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 p-4 rounded-xl">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 font-semibold mb-3">Confirm Session Details</p>
                       <div className="space-y-2">
-                        <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
-                        <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                        <p className="text-sm text-[var(--text-primary)]">Name: <span className="font-semibold text-blue-600 dark:text-blue-400">{newSession.name}</span></p>
+                        <p className="text-sm text-[var(--text-primary)]">Phone: <span className="font-semibold text-blue-600 dark:text-blue-400">{newSession.phone}</span></p>
                       </div>
-                      <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
+                      <p className="text-xs text-[var(--text-muted)] mt-3">
                         Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
                       </p>
                     </div>
@@ -728,16 +714,16 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirm(false)}
-                        className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
+                        className="flex-1 border border-[var(--border)] text-[var(--text-secondary)] p-3 rounded-xl text-sm font-medium hover:bg-[var(--bg-alt)] transition-colors"
                       >
-                        GO BACK
+                        Go Back
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-600 text-white p-3 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isCreating}
                       >
-                        {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
+                        {isCreating ? 'Creating...' : 'Confirm & Create'}
                       </button>
                     </div>
                   </div>
@@ -751,9 +737,9 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setSelectedPlatform(null); setError(null); }}
-                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                  className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2"
                 >
-                  &larr; BACK TO PLATFORMS
+                  &larr; Back to platforms
                 </button>
                 <TelegramBotSetup
                   onComplete={handleTelegramBotComplete}
@@ -768,9 +754,9 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setSelectedPlatform(null); setError(null); }}
-                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                  className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2"
                 >
-                  &larr; BACK TO PLATFORMS
+                  &larr; Back to platforms
                 </button>
                 <TelegramUserbotSetup
                   onComplete={handleUserbotComplete}

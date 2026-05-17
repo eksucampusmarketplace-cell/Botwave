@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
           className="mb-8"
         >
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            ANALYTICS <span className="text-green">DASHBOARD</span>
+            ANALYTICS <span className="text-blue-600 dark:text-blue-400">DASHBOARD</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Last 30 days of bot activity
@@ -101,11 +101,11 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-card border border-green/10 p-6 relative lg:col-span-2"
+              className="bg-card border border-blue-500/10 p-6 relative lg:col-span-2"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">MESSAGE VOLUME (30 DAYS)</h2>
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">MESSAGE VOLUME (30 DAYS)</h2>
               {data.messagesByDay.length === 0 ? (
                 <p className="font-mono text-xs text-[#3a6a5a]">No message data yet</p>
               ) : (
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
                   {data.messagesByDay.map((d) => (
                     <div key={d.date} className="flex flex-col items-center flex-shrink-0 group" style={{ minWidth: '12px' }}>
                       <div
-                        className="w-2.5 bg-green/80 hover:bg-green transition-colors rounded-t-sm"
+                        className="w-2.5 bg-blue-500/80 hover:bg-blue-500 transition-colors rounded-t-sm"
                         style={{ height: `${Math.max((d.count / maxDayCount) * 140, 2)}px` }}
                         title={`${d.date}: ${d.count} messages`}
                       />
@@ -136,11 +136,11 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-card border border-blue-500/10 p-6 relative"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">MESSAGE TYPES</h2>
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">MESSAGE TYPES</h2>
               <div className="space-y-3">
                 {data.messagesByType.map((t) => {
                   const pct = totalMessages > 0 ? ((t.count / totalMessages) * 100).toFixed(1) : '0';
@@ -173,16 +173,16 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-card border border-blue-500/10 p-6 relative"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">PEAK HOURS</h2>
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">PEAK HOURS</h2>
               <div className="flex items-end gap-[3px] h-32">
                 {data.peakHours.map((h) => (
                   <div key={h.hour} className="flex-1 flex flex-col items-center group">
                     <div
-                      className="w-full bg-cyan/60 hover:bg-cyan transition-colors rounded-t-sm"
+                      className="w-full bg-blue-400/60 hover:bg-blue-400 transition-colors rounded-t-sm"
                       style={{ height: `${Math.max((h.count / maxHourCount) * 110, 1)}px` }}
                       title={`${h.label}: ${h.count} messages`}
                     />
@@ -203,16 +203,16 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-card border border-blue-500/10 p-6 relative"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">TOP COMMANDS</h2>
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">TOP COMMANDS</h2>
               <div className="space-y-2">
                 {data.commandBreakdown.map((cmd, i) => (
                   <div key={cmd.command} className="flex items-center gap-3">
                     <span className="font-mono text-[10px] text-[#3a6a5a] w-4">{i + 1}.</span>
-                    <span className="font-mono text-xs text-cyan flex-1">{cmd.command}</span>
+                    <span className="font-mono text-xs text-blue-500 dark:text-blue-400 flex-1">{cmd.command}</span>
                     <span className="font-mono text-xs text-white">{cmd.count}</span>
                   </div>
                 ))}
@@ -227,11 +227,11 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-card border border-green/10 p-6 relative"
+              className="bg-card border border-blue-500/10 p-6 relative"
             >
-              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-              <h2 className="font-display text-sm tracking-[3px] text-green mb-4">MOST ACTIVE GROUPS</h2>
+              <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+              <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+              <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">MOST ACTIVE GROUPS</h2>
               <div className="space-y-2">
                 {data.topGroups.map((g, i) => (
                   <div key={g.jid} className="flex items-center gap-3">
