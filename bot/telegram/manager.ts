@@ -210,7 +210,7 @@ export class TelegramBotInstance {
       // Set menu button to open Mini App (inline WebApp feature)
       try {
         const tgConfig = await getTelegramConfig(this.sessionId);
-        const miniappUrl = tgConfig.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL;
+        const miniappUrl = tgConfig.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
         if (miniappUrl) {
           const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${this.sessionId}`;
           await this.bot.api.setChatMenuButton({
