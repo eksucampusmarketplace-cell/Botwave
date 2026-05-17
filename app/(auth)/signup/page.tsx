@@ -11,7 +11,7 @@ const terminalLines = [
   { cls: 'output', text: '→ Setting up your workspace...' },
   { cls: 'blank', text: '' },
   { cls: 'comment', text: '# What you get:' },
-  { cls: 'flag', text: '  → Unlimited WhatsApp sessions' },
+  { cls: 'flag', text: '  → WhatsApp, Telegram Bot & Userbot' },
   { cls: 'flag', text: '  → 50+ automation commands' },
   { cls: 'flag', text: '  → AI chatbot (BYOK)' },
   { cls: 'flag', text: '  → Sticker maker & media tools' },
@@ -19,7 +19,7 @@ const terminalLines = [
   { cls: 'flag', text: '  → Group management toolkit' },
   { cls: 'flag', text: '  → Mini games & engagement' },
   { cls: 'blank', text: '' },
-  { cls: 'success', text: '→ Free forever. No credit card needed.' },
+  { cls: 'success', text: '→ 3 platforms. Free forever. No credit card.' },
   { cls: 'success', text: '→ Fill in your details to begin →' },
 ];
 
@@ -298,7 +298,7 @@ function SignupContent() {
                   Create Account
                 </h2>
                 <p className="text-sm text-slate-500 font-mono mb-8">
-                  // start automating for free
+                  // automate whatsapp & telegram for free
                 </p>
 
                 {error && (

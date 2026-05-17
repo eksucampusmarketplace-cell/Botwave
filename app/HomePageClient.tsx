@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
@@ -8,49 +8,94 @@ import FeatureCard from '@/components/ui/FeatureCard';
 import HowItWorks from '@/components/ui/HowItWorks';
 import Disclaimer from '@/components/ui/Disclaimer';
 
-const features = [
-  { icon: '🎴', title: 'Sticker Maker', description: 'Convert any image or video into a WhatsApp sticker instantly with a simple command.' },
-  { icon: '🤖', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.' },
-  { icon: '📥', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.' },
-  { icon: '👋', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.' },
-  { icon: '🛡️', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.' },
-  { icon: '🎮', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess — play fun games right inside your group.' },
-  { icon: '📊', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.' },
-  { icon: '🌤️', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes — all accessible with simple commands.' },
-  { icon: '💬', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses." },
-  { icon: '🔒', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands — nothing else is stored or shared.' },
+type PlatformBadge = 'WhatsApp' | 'Telegram Bot' | 'Telegram Userbot';
+
+const features: { icon: string; title: string; description: string; platforms: PlatformBadge[] }[] = [
+  { icon: '🎴', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: '🤖', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: '📥', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: '👋', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: '🛡️', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: '🎮', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess — play fun games right inside your group.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: '📊', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: '🌤️', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes — all accessible with simple commands.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: '💬', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: '🔒', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands — nothing else is stored or shared.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
 ];
 
-const terminalLines = [
-  { type: 'comment', text: '# Initialize BotWave session' },
-  { type: 'cmd', text: '$ botwave init --session "MyBot"' },
-  { type: 'success', text: '→ Session created. Waiting for QR scan...' },
-  { type: 'success', text: '→ Connected! Phone: +234*****890' },
-  { type: 'blank', text: '' },
-  { type: 'comment', text: '# Bot is live. Commands:' },
-  { type: 'cmd', text: '$ !sticker' },
-  { type: 'output', text: '→ Sticker created from image ✓' },
-  { type: 'cmd', text: '$ !ai What is machine learning?' },
-  { type: 'output', text: '→ Machine learning is a subset of AI...' },
-  { type: 'cmd', text: '$ !trivia' },
-  { type: 'output', text: '→ 🎯 Question: What is the capital of Japan?' },
-  { type: 'cmd', text: '$ !whois (reply to message)' },
-  { type: 'output', text: '→ Name: John | Number: +234... | About: ...' },
-  { type: 'blank', text: '' },
-  { type: 'success', text: '→ 247 commands processed today. 0 errors.' },
-];
+type TerminalPlatform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
+
+const terminalData: Record<TerminalPlatform, { label: string; lines: { type: string; text: string }[] }> = {
+  whatsapp: {
+    label: 'WhatsApp',
+    lines: [
+      { type: 'comment', text: '# Initialize WhatsApp session' },
+      { type: 'cmd', text: '$ botwave init --platform whatsapp --session "MyBot"' },
+      { type: 'success', text: '→ Session created. Waiting for QR scan...' },
+      { type: 'success', text: '→ Connected! Phone: +234*****890' },
+      { type: 'blank', text: '' },
+      { type: 'comment', text: '# Bot is live. Commands:' },
+      { type: 'cmd', text: '$ !sticker' },
+      { type: 'output', text: '→ Sticker created from image ✓' },
+      { type: 'cmd', text: '$ !ai What is machine learning?' },
+      { type: 'output', text: '→ Machine learning is a subset of AI...' },
+      { type: 'cmd', text: '$ !trivia' },
+      { type: 'output', text: '→ 🎯 Question: What is the capital of Japan?' },
+      { type: 'blank', text: '' },
+      { type: 'success', text: '→ 247 commands processed today. 0 errors.' },
+    ],
+  },
+  telegram_bot: {
+    label: 'Telegram Bot',
+    lines: [
+      { type: 'comment', text: '# Initialize Telegram Bot session' },
+      { type: 'cmd', text: '$ botwave init --platform telegram-bot --token "BOT_TOKEN"' },
+      { type: 'success', text: '→ Validating token with @BotFather...' },
+      { type: 'success', text: '→ Connected! Bot: @MyGroupBot' },
+      { type: 'blank', text: '' },
+      { type: 'comment', text: '# Bot is live. Commands:' },
+      { type: 'cmd', text: '/sticker' },
+      { type: 'output', text: '→ Sticker created from image ✓' },
+      { type: 'cmd', text: '/ai What is machine learning?' },
+      { type: 'output', text: '→ Machine learning is a subset of AI...' },
+      { type: 'cmd', text: '/trivia' },
+      { type: 'output', text: '→ 🎯 Question: What is the capital of Japan?' },
+      { type: 'blank', text: '' },
+      { type: 'success', text: '→ 183 commands processed today. 0 errors.' },
+    ],
+  },
+  telegram_userbot: {
+    label: 'Telegram Userbot',
+    lines: [
+      { type: 'comment', text: '# Initialize Telegram Userbot session' },
+      { type: 'cmd', text: '$ botwave init --platform telegram-userbot' },
+      { type: 'success', text: '→ Enter API ID and API Hash from my.telegram.org...' },
+      { type: 'success', text: '→ Authenticated! Account: @chrisdev' },
+      { type: 'blank', text: '' },
+      { type: 'comment', text: '# Userbot is live. Commands:' },
+      { type: 'cmd', text: '.ai Summarize this conversation' },
+      { type: 'output', text: '→ Summary: The group discussed 3 key topics...' },
+      { type: 'cmd', text: '.welcome enable' },
+      { type: 'output', text: '→ Auto-welcome enabled for this group ✓' },
+      { type: 'cmd', text: '.antispam on' },
+      { type: 'output', text: '→ Anti-spam filter activated ✓' },
+      { type: 'blank', text: '' },
+      { type: 'success', text: '→ 92 actions processed today. 0 errors.' },
+    ],
+  },
+};
 
 const stats = [
   { value: '20+', label: 'Features' },
   { value: '50+', label: 'Commands' },
   { value: '99.8%', label: 'Uptime' },
-  { value: 'Free', label: 'Forever' },
+  { value: '3', label: 'Platforms' },
 ];
 
 const testimonials = [
-  { text: 'BotWave transformed how we manage our WhatsApp group. The sticker maker and AI chat features are incredibly useful.', name: 'Group Admin', role: 'Community Manager' },
-  { text: 'Setting up was so easy — just scan the QR code and everything works. The spam protection feature alone is worth it.', name: 'Business Owner', role: 'Small Business' },
-  { text: 'My group members love the trivia games and the media downloader. BotWave keeps everyone engaged.', name: 'Tech Enthusiast', role: 'Group Owner' },
+  { text: 'BotWave transformed how we manage our WhatsApp and Telegram groups. The sticker maker and AI chat features are incredibly useful across both platforms.', name: 'Group Admin', role: 'Community Manager' },
+  { text: 'Setting up was so easy — WhatsApp QR scan or Telegram bot token, and everything works. The spam protection feature alone is worth it.', name: 'Business Owner', role: 'Small Business' },
+  { text: 'My group members love the trivia games and the media downloader. BotWave keeps everyone engaged on WhatsApp and Telegram.', name: 'Tech Enthusiast', role: 'Group Owner' },
 ];
 
 const chatMessages = [
@@ -62,18 +107,29 @@ const chatMessages = [
   { from: 'bot', name: 'BotWave', text: '🎯 *TRIVIA TIME!*\n\nWhat programming language was created by Brendan Eich in 1995?\n\nA) Python  B) JavaScript  C) Java  D) Ruby\n\nReply with the letter!', time: '2:33 PM' },
 ];
 
+const terminalPlatforms: TerminalPlatform[] = ['whatsapp', 'telegram_bot', 'telegram_userbot'];
+
 function TerminalBlock() {
+  const [activePlatform, setActivePlatform] = useState<TerminalPlatform>('whatsapp');
   const [visibleLines, setVisibleLines] = useState(0);
 
+  const currentLines = terminalData[activePlatform].lines;
+
+  const handlePlatformSwitch = useCallback((p: TerminalPlatform) => {
+    setActivePlatform(p);
+    setVisibleLines(0);
+  }, []);
+
   useEffect(() => {
+    setVisibleLines(0);
     const interval = setInterval(() => {
       setVisibleLines((prev) => {
-        if (prev >= terminalLines.length) return prev;
+        if (prev >= currentLines.length) return prev;
         return prev + 1;
       });
     }, 400);
     return () => clearInterval(interval);
-  }, []);
+  }, [activePlatform, currentLines.length]);
 
   return (
     <div className="terminal shadow-2xl">
@@ -81,18 +137,34 @@ function TerminalBlock() {
         <div className="terminal-dot" style={{ background: '#ff5f57' }} />
         <div className="terminal-dot" style={{ background: '#febc2e' }} />
         <div className="terminal-dot" style={{ background: '#28c840' }} />
-        <span className="text-xs text-slate-500 ml-3 font-mono">botwave — session</span>
+        <span className="text-xs text-slate-500 ml-3 font-mono">botwave — {terminalData[activePlatform].label.toLowerCase()}</span>
+      </div>
+      {/* Platform tabs */}
+      <div className="flex border-b border-[#1e293b] bg-[#0d1117]">
+        {terminalPlatforms.map((p) => (
+          <button
+            key={p}
+            onClick={() => handlePlatformSwitch(p)}
+            className={`flex-1 px-3 py-2 text-[10px] font-mono tracking-wide transition-all ${
+              activePlatform === p
+                ? 'text-emerald-400 border-b-2 border-emerald-400 bg-emerald-500/5'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            {terminalData[p].label}
+          </button>
+        ))}
       </div>
       <div className="terminal-body min-h-[280px]">
-        {terminalLines.slice(0, visibleLines).map((line, i) => (
-          <div key={i} className={`${line.type === 'blank' ? 'h-3' : ''}`}>
+        {currentLines.slice(0, visibleLines).map((line, i) => (
+          <div key={`${activePlatform}-${i}`} className={`${line.type === 'blank' ? 'h-3' : ''}`}>
             {line.type === 'comment' && <span className="comment">{line.text}</span>}
             {line.type === 'cmd' && <span className="cmd">{line.text}</span>}
             {line.type === 'output' && <span className="output">{line.text}</span>}
             {line.type === 'success' && <span className="success">{line.text}</span>}
           </div>
         ))}
-        {visibleLines < terminalLines.length && (
+        {visibleLines < currentLines.length && (
           <span className="cmd">
             █
           </span>
@@ -210,23 +282,23 @@ const fadeUp = {
 const faqs = [
   {
     q: 'What is BotWave?',
-    a: 'BotWave is a free WhatsApp bot automation platform. You connect your own WhatsApp number by scanning a QR code, and the bot adds powerful features like sticker creation, AI chat, media downloads, games, polls, and group management — all through simple commands.',
+    a: 'BotWave is a free multi-platform bot automation platform for WhatsApp and Telegram. Connect your WhatsApp via QR code, set up a Telegram bot via @BotFather, or automate a Telegram userbot — and get 50+ features like sticker creation, AI chat, media downloads, games, polls, and group management.',
   },
   {
     q: 'Is BotWave free to use?',
     a: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just ₦500/month for more messages and features.',
   },
   {
-    q: 'How do I set up a WhatsApp bot with BotWave?',
-    a: 'Sign up at www.botwave.online, go to your dashboard, and click "Connect WhatsApp". Scan the QR code with your phone and your bot is live — no coding needed. The whole process takes under 2 minutes.',
+    q: 'How do I set up a bot with BotWave?',
+    a: 'Sign up at www.botwave.online, go to your dashboard, and choose your platform. For WhatsApp: scan the QR code. For Telegram Bot: paste your @BotFather token. For Telegram Userbot: enter your API credentials. Your bot is live in under 2 minutes — no coding needed.',
   },
   {
     q: 'Will my WhatsApp number get banned?',
     a: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.',
   },
   {
-    q: 'What commands does the WhatsApp bot support?',
-    a: 'BotWave supports 50+ commands including !sticker (create stickers), !ai (AI chat), !download (media downloader), !trivia (games), !poll (polls), !weather, !translate, !joke, !quote, and many more. Type !help in any chat to see the full list.',
+    q: 'What commands does BotWave support?',
+    a: 'BotWave supports 50+ commands on WhatsApp (!sticker, !ai, !download, !trivia, !poll, !weather, etc.) and Telegram (/sticker, /ai, /download, /trivia, /poll, etc.). Telegram userbots use dot-prefix commands (.ai, .sticker). Type !help or /help to see the full list.',
   },
   {
     q: 'Can I use BotWave for my business?',
@@ -237,12 +309,12 @@ const faqs = [
     a: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (₦) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.',
   },
   {
-    q: 'How is BotWave different from other WhatsApp bots?',
-    a: 'BotWave runs from your own WhatsApp number (not a shared number), includes advanced anti-ban protection, supports AI chat via Google Gemini, has built-in games and group management, and offers a web dashboard to manage everything. Most other bots charge more and offer fewer features.',
+    q: 'How is BotWave different from other bots?',
+    a: 'BotWave is the only platform that supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, includes advanced anti-ban protection for WhatsApp, uses the official Telegram Bot API, supports AI chat via Google Gemini, and has 50+ built-in commands. Most alternatives only support one platform and charge more.',
   },
   {
-    q: 'Is BotWave better than Telegram bots?',
-    a: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp — where your audience already is. No need to move people to Telegram.',
+    q: 'Does BotWave support Telegram?',
+    a: 'Yes! BotWave now supports three platforms: WhatsApp (via QR code), Telegram Bot (via @BotFather token with zero ban risk), and Telegram Userbot (automate your real Telegram account via MTProto). You can run sessions on all three platforms from one dashboard.',
   },
   {
     q: 'Why is BotWave free when other bot platforms charge $20-50/month?',
@@ -257,8 +329,8 @@ const faqs = [
     a: 'Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp\'s automated detection.',
   },
   {
-    q: 'How does BotWave protect my WhatsApp account from bans?',
-    a: 'BotWave has the most advanced anti-ban system of any WhatsApp bot. It includes: session warmup (gradual message increase over 7 days), human-like typing delays and read receipts, message variation (never sends identical messages), rate limiting (prevents spam patterns), activity hours simulation (quiet at night like a real person), and media fingerprint jittering. Your session also runs from your own device IP, not a shared server.',
+    q: 'How does BotWave protect my accounts from bans?',
+    a: 'For WhatsApp: BotWave has the most advanced anti-ban system including session warmup, human-like delays, message variation, rate limiting, and activity simulation. Your session runs from your own device IP. For Telegram Bot: uses the official API with zero ban risk. For Telegram Userbot: built-in rate limiting to stay within Telegram\'s limits.',
   },
   {
     q: 'Do I need to be a developer to use BotWave?',
@@ -300,16 +372,16 @@ export default function HomePage() {
               </div>
 
               <p aria-hidden="true" className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6">
-                Stop Paying for Bots.
+                Automate Your
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 typing-cursor">
-                  BotWave is Free.
+                  WhatsApp & Telegram.
                 </span>
               </p>
 
               <p className="text-lg text-slate-400 max-w-xl mb-8 leading-relaxed">
-                Why pay $20/mo for Telegram bots or Twitter automation when BotWave gives you 50+ WhatsApp commands for free?
-                Stickers, AI chat, media downloads, games, group management — no coding, no credit card. Just scan a QR code.
+                One platform, three ways to connect. WhatsApp QR scan, Telegram Bot token, or Telegram Userbot — 50+ commands,
+                AI chat, games, group management. No coding, no credit card.
               </p>
 
               <div className="flex gap-4 flex-wrap mb-8">
@@ -331,7 +403,7 @@ export default function HomePage() {
               {/* Tech badges */}
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-[10px] text-slate-600 font-mono tracking-wide">POWERED BY</span>
-                {['Node.js', 'WhatsApp API', 'Supabase', 'AI'].map((tech) => (
+                {['Node.js', 'WhatsApp API', 'Telegram API', 'Supabase', 'AI'].map((tech) => (
                   <span key={tech} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded text-[10px] text-slate-400 font-mono">
                     {tech}
                   </span>
@@ -387,10 +459,10 @@ export default function HomePage() {
               CAPABILITIES
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              50+ WhatsApp Bot Commands — All Free
+              50+ Bot Commands — WhatsApp & Telegram
             </h2>
             <p className="text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">
-              From WhatsApp sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp groups.
+              From sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp and Telegram groups.
             </p>
           </motion.div>
 
@@ -420,17 +492,17 @@ export default function HomePage() {
                 LIVE PREVIEW
               </span>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                See the WhatsApp Bot in Action
+                See BotWave in Action
               </h2>
               <p className="text-slate-400 mb-6 leading-relaxed">
-                Watch how BotWave responds to WhatsApp commands instantly. Create stickers, get AI answers, play games — all inside your chat.
+                Watch how BotWave responds to commands instantly on WhatsApp and Telegram. Create stickers, get AI answers, play games — all inside your chat.
               </p>
               <div className="space-y-4">
                 {[
-                  { cmd: '!sticker', desc: 'Convert images to WhatsApp stickers' },
-                  { cmd: '!ai [question]', desc: 'Get AI answers to anything' },
-                  { cmd: '!whois (reply)', desc: 'Look up user info like Sangmata' },
-                  { cmd: '!trivia', desc: 'Start a trivia game in your group' },
+                  { cmd: '!sticker / /sticker', desc: 'Convert images to stickers on any platform' },
+                  { cmd: '!ai / /ai [question]', desc: 'Get AI answers to anything' },
+                  { cmd: '!whois / /whois', desc: 'Look up user info in groups' },
+                  { cmd: '!trivia / /trivia', desc: 'Start a trivia game in your group' },
                 ].map((item) => (
                   <div key={item.cmd} className="flex items-start gap-3">
                     <code className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-xs font-mono whitespace-nowrap">
@@ -600,10 +672,10 @@ export default function HomePage() {
               SECURITY
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Your WhatsApp Account is Safe With BotWave
+              Your Accounts Are Safe With BotWave
             </h2>
             <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry.
+              We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry. Telegram bots use the official API with zero ban risk.
             </p>
           </motion.div>
 
@@ -688,10 +760,10 @@ export default function HomePage() {
                 verdict: 'Overpriced',
               },
               {
-                platform: 'Telegram Bots',
+                platform: 'Telegram-Only Bots',
                 price: 'Free-$30/mo',
-                cons: ['Only works on Telegram', 'Low reach in Africa', 'Complex API setup', 'No WhatsApp support'],
-                verdict: 'Wrong platform',
+                cons: ['Only works on Telegram', 'Complex API setup', 'No WhatsApp support', 'Separate from your WA groups'],
+                verdict: 'Single platform',
               },
               {
                 platform: 'Evolution API (DIY)',
@@ -702,7 +774,7 @@ export default function HomePage() {
               {
                 platform: 'BotWave',
                 price: 'FREE',
-                cons: ['50+ commands included', 'Built-in anti-ban', 'Your own number', 'AI chat + games + tools'],
+                cons: ['WhatsApp + Telegram support', 'Built-in anti-ban', '50+ commands included', 'AI chat + games + tools'],
                 verdict: 'Best choice',
                 highlight: true,
               },
@@ -761,7 +833,7 @@ export default function HomePage() {
               FAQ
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Frequently Asked Questions About WhatsApp Bots
+              Frequently Asked Questions
             </h2>
           </motion.div>
 
@@ -803,10 +875,10 @@ export default function HomePage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Start Automating Your WhatsApp — Free Forever
+              Start Automating Your Groups — Free Forever
             </h2>
             <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-              Join users across Nigeria who automate their WhatsApp with BotWave. No credit card, no coding, no downloads. Sign up and scan a QR code.
+              Join users across Nigeria who automate their WhatsApp and Telegram groups with BotWave. No credit card, no coding, no downloads.
             </p>
             <Link
               href="/signup"
@@ -827,7 +899,7 @@ export default function HomePage() {
               <div className="text-2xl font-bold text-white mb-1">
                 Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Wave</span>
               </div>
-              <p className="text-sm text-slate-500">WhatsApp Automation Platform</p>
+              <p className="text-sm text-slate-500">WhatsApp & Telegram Automation Platform</p>
               <p className="text-xs text-slate-600 mt-1 font-mono">Created by Decisive Analyst</p>
             </div>
 
@@ -839,7 +911,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-2">
-              {['Node.js', 'Baileys', 'Supabase', 'AI'].map((tech) => (
+              {['Node.js', 'Baileys', 'grammy', 'Supabase', 'AI'].map((tech) => (
                 <span key={tech} className="px-2 py-1 bg-white/3 border border-white/5 rounded text-[9px] text-slate-600 font-mono">
                   {tech}
                 </span>

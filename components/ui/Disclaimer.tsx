@@ -5,12 +5,23 @@ import { motion } from 'framer-motion';
 const disclaimerItems = [
   <>
     BotWave is an <strong className="text-amber-400">independent third-party service</strong> and is NOT affiliated
-    with, endorsed by, or connected to WhatsApp LLC or Meta Platforms, Inc. in any way.
+    with, endorsed by, or connected to WhatsApp LLC, Meta Platforms Inc., or Telegram FZ-LLC in any way.
   </>,
   <>
-    WhatsApp&apos;s <strong className="text-amber-400">Terms of Service prohibit automation</strong> on personal
-    accounts. Using BotWave may violate these terms and could result in your account being{' '}
-    <strong className="text-amber-400">temporarily or permanently banned</strong> by WhatsApp.
+    <strong className="text-amber-400">WhatsApp:</strong> WhatsApp&apos;s Terms of Service prohibit automation on personal
+    accounts. Using BotWave with WhatsApp may violate these terms and could result in your account being{' '}
+    <strong className="text-amber-400">temporarily or permanently banned</strong>. BotWave includes advanced anti-ban protection, but no guarantee is made.
+  </>,
+  <>
+    <strong className="text-amber-400">Telegram Bot:</strong> Telegram Bot mode uses the{' '}
+    <strong className="text-amber-400">official Telegram Bot API</strong> via @BotFather.
+    This is fully supported by Telegram with <strong className="text-amber-400">zero ban risk</strong> for the bot itself.
+  </>,
+  <>
+    <strong className="text-amber-400">Telegram Userbot:</strong> Userbot mode automates a{' '}
+    <strong className="text-amber-400">real Telegram account</strong> via the MTProto API.
+    Use responsibly — Telegram enforces rate limits and may restrict accounts that abuse automation.{' '}
+    <strong className="text-amber-400">Use at your own risk.</strong>
   </>,
   <>
     BotWave takes <strong className="text-amber-400">no responsibility</strong> for any account bans, suspensions,
@@ -23,7 +34,7 @@ const disclaimerItems = [
     result in immediate termination of your account.
   </>,
   <>
-    BotWave does <strong className="text-amber-400">not store, read, or sell</strong> your WhatsApp messages.
+    BotWave does <strong className="text-amber-400">not store, read, or sell</strong> your messages on any platform.
     The bot owner <strong className="text-amber-400">cannot see, access, or read</strong> your private chats.
     BotWave only processes messages that contain bot commands — all other messages are ignored.
   </>,

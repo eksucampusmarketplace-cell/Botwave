@@ -6,12 +6,19 @@ interface Feature {
   icon: string;
   title: string;
   description: string;
+  platforms?: string[];
 }
 
 interface FeatureCardProps {
   feature: Feature;
   index: number;
 }
+
+const platformColors: Record<string, string> = {
+  'WhatsApp': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'Telegram Bot': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  'Telegram Userbot': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+};
 
 export default function FeatureCard({ feature, index }: FeatureCardProps) {
   return (
@@ -33,9 +40,22 @@ export default function FeatureCard({ feature, index }: FeatureCardProps) {
         {feature.title}
       </h3>
 
-      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
         {feature.description}
       </p>
+
+      {feature.platforms && feature.platforms.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap">
+          {feature.platforms.map((p) => (
+            <span
+              key={p}
+              className={`px-2 py-0.5 rounded border text-[9px] font-mono tracking-wide ${platformColors[p] || 'bg-white/5 text-slate-400 border-white/10'}`}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

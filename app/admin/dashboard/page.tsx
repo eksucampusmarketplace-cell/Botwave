@@ -21,6 +21,7 @@ interface Session {
   phone_number: string;
   session_name: string;
   state: string;
+  platform?: string;
   last_active: string | null;
   created_at: string;
   username: string;
@@ -190,6 +191,7 @@ export default function AdminOverviewPage() {
             <thead>
               <tr className="border-b border-white/5">
                 <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">SESSION</th>
+                <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">PLATFORM</th>
                 <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">PHONE</th>
                 <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">OWNER</th>
                 <th className="text-left text-gray-400 text-xs font-mono px-4 py-3">STATUS</th>
@@ -201,6 +203,17 @@ export default function AdminOverviewPage() {
               {sessions.slice(0, 20).map(session => (
                 <tr key={session.id} className="border-b border-white/5 hover:bg-white/[0.02]">
                   <td className="px-4 py-3 text-white">{session.session_name}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono ${
+                      session.platform === 'telegram_bot' ? 'bg-cyan-500/10 text-cyan-400' :
+                      session.platform === 'telegram_userbot' ? 'bg-purple-500/10 text-purple-400' :
+                      'bg-emerald-500/10 text-emerald-400'
+                    }`}>
+                      {session.platform === 'telegram_bot' ? '🤖 TG Bot' :
+                       session.platform === 'telegram_userbot' ? '👤 TG User' :
+                       '📱 WhatsApp'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-gray-400 font-mono text-xs">{session.phone_number}</td>
                   <td className="px-4 py-3 text-gray-400">{session.username || '-'}</td>
                   <td className="px-4 py-3">
@@ -233,7 +246,7 @@ export default function AdminOverviewPage() {
               ))}
               {sessions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">No sessions found</td>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">No sessions found</td>
                 </tr>
               )}
             </tbody>
