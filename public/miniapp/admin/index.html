@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotWave Admin Panel</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --bg: var(--tg-theme-bg-color, #1a1a2e);
+  --text: var(--tg-theme-text-color, #fff);
+  --hint: var(--tg-theme-hint-color, #999);
+  --link: var(--tg-theme-link-color, #5eaeff);
+  --btn: var(--tg-theme-button-color, #5eaeff);
+  --btn-text: var(--tg-theme-button-text-color, #fff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #16213e);
+  --card-bg: var(--tg-theme-secondary-bg-color, #1e2a4a);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.container { max-width: 480px; margin: 0 auto; padding: 16px; }
+.header { text-align: center; padding: 20px 0; }
+.header h1 { font-size: 1.4rem; margin-bottom: 4px; }
+.header p { font-size: 0.85rem; color: var(--hint); }
+.tabs { display: flex; gap: 4px; background: var(--secondary-bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; overflow-x: auto; }
+.tab { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--hint); border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.tab.active { background: var(--btn); color: var(--btn-text); }
+.section { display: none; }
+.section.active { display: block; }
+.card { background: var(--card-bg); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+.card p { font-size: 0.82rem; color: var(--hint); margin-bottom: 12px; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 0.9rem; }
+.toggle-desc { font-size: 0.75rem; color: var(--hint); }
+.toggle { position: relative; width: 48px; height: 28px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #444; border-radius: 14px; cursor: pointer; transition: 0.3s; }
+.toggle .slider:before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s; }
+.toggle input:checked + .slider { background: var(--btn); }
+.toggle input:checked + .slider:before { transform: translateX(20px); }
+.input-group { margin-bottom: 12px; }
+.input-group label { display: block; font-size: 0.82rem; color: var(--hint); margin-bottom: 4px; }
+.input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px 12px; background: var(--secondary-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.9rem; outline: none; }
+.input-group textarea { min-height: 80px; resize: vertical; }
+.btn { display: block; width: 100%; padding: 12px; background: var(--btn); color: var(--btn-text); border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.btn:active { opacity: 0.7; }
+.btn-danger { background: #e94560; }
+.btn-outline { background: transparent; border: 1px solid var(--btn); color: var(--btn); }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.list-item .name { font-size: 0.9rem; font-weight: 500; }
+.list-item .meta { font-size: 0.75rem; color: var(--hint); }
+.list-item .actions { display: flex; gap: 8px; }
+.list-item .actions button { padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; }
+.del-btn { background: #e94560; color: #fff; }
+.empty { text-align: center; padding: 24px; color: var(--hint); font-size: 0.85rem; }
+.status-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+.status-pill { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: var(--card-bg); }
+.status-pill.online { color: #4ecca3; }
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--btn); color: var(--btn-text); padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; z-index: 100; }
+.toast.show { opacity: 1; }
+.loading { text-align: center; padding: 20px; color: var(--hint); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>BotWave Admin</h1>
+    <p id="bot-info">Loading...</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-pill online" id="status-pill">Connected</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="config">Settings</button>
+    <button class="tab" data-tab="notes">Notes</button>
+    <button class="tab" data-tab="filters">Filters</button>
+    <button class="tab" data-tab="modlog">Mod Log</button>
+    <button class="tab" data-tab="xp">XP</button>
+  </div>
+
+  <!-- Config Section -->
+  <div class="section active" id="sec-config">
+    <div class="card">
+      <h3>Protection</h3>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Anti-Flood</div>
+          <div class="toggle-desc">Rate-limit messages</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cfg-antiflood"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Anti-Link</div>
+          <div class="toggle-desc">Remove unauthorized links</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cfg-antilink"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Anti-Raid</div>
+          <div class="toggle-desc">Auto-detect mass joins</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cfg-antiraid"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Night Mode</div>
+          <div class="toggle-desc">Restrict messages at night</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cfg-nightmode"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Captcha</div>
+          <div class="toggle-desc">Verify new members</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="cfg-captcha"><span class="slider"></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Welcome Message</h3>
+      <div class="input-group">
+        <textarea id="cfg-welcome" placeholder="Welcome {name} to {group}!"></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Anti-Raid Settings</h3>
+      <div class="input-group">
+        <label>Threshold (joins/min)</label>
+        <input type="number" id="cfg-antiraid-threshold" value="15" min="1">
+      </div>
+      <div class="input-group">
+        <label>Mode</label>
+        <select id="cfg-antiraid-mode">
+          <option value="restrict">Restrict</option>
+          <option value="ban">Ban</option>
+          <option value="captcha">Captcha</option>
+          <option value="lockdown">Lockdown</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Duration (minutes)</label>
+        <input type="number" id="cfg-antiraid-duration" value="15" min="1">
+      </div>
+    </div>
+    <button class="btn" id="save-config">Save Settings</button>
+  </div>
+
+  <!-- Notes Section -->
+  <div class="section" id="sec-notes">
+    <div class="card">
+      <h3>Saved Notes</h3>
+      <div id="notes-list"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Add Note</h3>
+      <div class="input-group">
+        <label>Name</label>
+        <input type="text" id="note-name" placeholder="rules">
+      </div>
+      <div class="input-group">
+        <label>Content</label>
+        <textarea id="note-content" placeholder="Note content..."></textarea>
+      </div>
+      <button class="btn" id="add-note">Save Note</button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="section" id="sec-filters">
+    <div class="card">
+      <h3>Active Filters</h3>
+      <div id="filters-list"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Add Filter</h3>
+      <div class="input-group">
+        <label>Keyword</label>
+        <input type="text" id="filter-keyword" placeholder="hello">
+      </div>
+      <div class="input-group">
+        <label>Response</label>
+        <textarea id="filter-response" placeholder="Hi there!"></textarea>
+      </div>
+      <button class="btn" id="add-filter">Save Filter</button>
+    </div>
+  </div>
+
+  <!-- Mod Log Section -->
+  <div class="section" id="sec-modlog">
+    <div class="card">
+      <h3>Recent Moderation Actions</h3>
+      <div id="modlog-list"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- XP Section -->
+  <div class="section" id="sec-xp">
+    <div class="card">
+      <h3>XP Leaderboard</h3>
+      <div id="xp-list"><div class="loading">Loading...</div></div>
+    </div>
+    <button class="btn btn-danger" id="reset-xp" style="margin-top:12px">Reset All XP</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const API_BASE = '';
+let sessionId = '';
+let initData = tg?.initData || '';
+
+// Extract sessionId from URL or initData
+const urlParams = new URLSearchParams(window.location.search);
+sessionId = urlParams.get('sessionId') || '';
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+async function apiCall(path, opts = {}) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${API_BASE}${path}${sep}sessionId=${sessionId}`;
+  const res = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  return res.json();
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('sec-' + tab.dataset.tab).classList.add('active');
+    loadTabData(tab.dataset.tab);
+  });
+});
+
+// Load config
+async function loadConfig() {
+  try {
+    const res = await apiCall('/api/telegram/config');
+    if (res.success && res.data) {
+      const c = res.data;
+      document.getElementById('cfg-antiflood').checked = c.antiflood_enabled || false;
+      document.getElementById('cfg-antilink').checked = c.antilink_enabled || false;
+      document.getElementById('cfg-antiraid').checked = c.antiraid_enabled || false;
+      document.getElementById('cfg-nightmode').checked = c.night_mode_enabled || false;
+      document.getElementById('cfg-captcha').checked = c.captcha_enabled || false;
+      document.getElementById('cfg-welcome').value = c.welcome_text || '';
+      document.getElementById('cfg-antiraid-threshold').value = c.antiraid_threshold || 15;
+      document.getElementById('cfg-antiraid-mode').value = c.antiraid_mode || 'restrict';
+      document.getElementById('cfg-antiraid-duration').value = c.antiraid_duration_mins || 15;
+      document.getElementById('bot-info').textContent = 'Session: ' + sessionId.slice(0, 8) + '...';
+    }
+  } catch (e) {
+    console.error('Config load error:', e);
+    document.getElementById('bot-info').textContent = 'Error loading config';
+  }
+}
+
+// Save config
+document.getElementById('save-config').addEventListener('click', async () => {
+  try {
+    const res = await apiCall('/api/telegram/config', {
+      method: 'PUT',
+      body: JSON.stringify({
+        sessionId,
+        antiflood_enabled: document.getElementById('cfg-antiflood').checked,
+        antilink_enabled: document.getElementById('cfg-antilink').checked,
+        antiraid_enabled: document.getElementById('cfg-antiraid').checked,
+        night_mode_enabled: document.getElementById('cfg-nightmode').checked,
+        captcha_enabled: document.getElementById('cfg-captcha').checked,
+        welcome_text: document.getElementById('cfg-welcome').value,
+        antiraid_threshold: parseInt(document.getElementById('cfg-antiraid-threshold').value),
+        antiraid_mode: document.getElementById('cfg-antiraid-mode').value,
+        antiraid_duration_mins: parseInt(document.getElementById('cfg-antiraid-duration').value),
+      }),
+    });
+    toast(res.success ? 'Settings saved!' : 'Failed to save');
+  } catch { toast('Error saving settings'); }
+});
+
+// Notes
+async function loadNotes() {
+  const el = document.getElementById('notes-list');
+  try {
+    const res = await apiCall('/api/telegram/notes');
+    if (res.success && res.data?.length) {
+      el.innerHTML = res.data.map(n => `
+        <div class="list-item">
+          <div><div class="name">#${n.name}</div><div class="meta">${(n.content || '').slice(0, 40)}...</div></div>
+          <div class="actions"><button class="del-btn" onclick="deleteNote('${n.name}')">Delete</button></div>
+        </div>
+      `).join('');
+    } else {
+      el.innerHTML = '<div class="empty">No notes yet. Add one below.</div>';
+    }
+  } catch { el.innerHTML = '<div class="empty">Failed to load notes.</div>'; }
+}
+
+document.getElementById('add-note').addEventListener('click', async () => {
+  const name = document.getElementById('note-name').value.trim();
+  const content = document.getElementById('note-content').value.trim();
+  if (!name || !content) { toast('Name and content required'); return; }
+  try {
+    const res = await apiCall('/api/telegram/notes', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, name, content }),
+    });
+    if (res.success) {
+      toast('Note saved!');
+      document.getElementById('note-name').value = '';
+      document.getElementById('note-content').value = '';
+      loadNotes();
+    } else { toast('Failed to save note'); }
+  } catch { toast('Error saving note'); }
+});
+
+window.deleteNote = async function(name) {
+  if (!confirm('Delete note "' + name + '"?')) return;
+  try {
+    await apiCall('/api/telegram/notes?name=' + encodeURIComponent(name), { method: 'DELETE' });
+    toast('Note deleted');
+    loadNotes();
+  } catch { toast('Error deleting note'); }
+};
+
+// Filters
+async function loadFilters() {
+  const el = document.getElementById('filters-list');
+  try {
+    const res = await apiCall('/api/telegram/filters');
+    if (res.success && res.data?.length) {
+      el.innerHTML = res.data.map(f => `
+        <div class="list-item">
+          <div><div class="name">${f.keyword}</div><div class="meta">${(f.response || '').slice(0, 40)}...</div></div>
+          <div class="actions"><button class="del-btn" onclick="deleteFilter('${f.keyword}')">Delete</button></div>
+        </div>
+      `).join('');
+    } else {
+      el.innerHTML = '<div class="empty">No filters yet. Add one below.</div>';
+    }
+  } catch { el.innerHTML = '<div class="empty">Failed to load filters.</div>'; }
+}
+
+document.getElementById('add-filter').addEventListener('click', async () => {
+  const keyword = document.getElementById('filter-keyword').value.trim();
+  const response = document.getElementById('filter-response').value.trim();
+  if (!keyword || !response) { toast('Keyword and response required'); return; }
+  try {
+    const res = await apiCall('/api/telegram/filters', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, keyword, response }),
+    });
+    if (res.success) {
+      toast('Filter saved!');
+      document.getElementById('filter-keyword').value = '';
+      document.getElementById('filter-response').value = '';
+      loadFilters();
+    } else { toast('Failed to save filter'); }
+  } catch { toast('Error saving filter'); }
+});
+
+window.deleteFilter = async function(keyword) {
+  if (!confirm('Delete filter "' + keyword + '"?')) return;
+  try {
+    await apiCall('/api/telegram/filters?keyword=' + encodeURIComponent(keyword), { method: 'DELETE' });
+    toast('Filter deleted');
+    loadFilters();
+  } catch { toast('Error deleting filter'); }
+};
+
+// Mod Log
+async function loadModlog() {
+  const el = document.getElementById('modlog-list');
+  try {
+    const res = await apiCall('/api/telegram/modlog');
+    if (res.success && res.data?.length) {
+      el.innerHTML = res.data.slice(0, 30).map(l => `
+        <div class="list-item">
+          <div>
+            <div class="name">${l.action_type} — ${l.target_user_id || 'N/A'}</div>
+            <div class="meta">${l.reason || 'No reason'} • ${new Date(l.created_at).toLocaleString()}</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      el.innerHTML = '<div class="empty">No moderation actions yet.</div>';
+    }
+  } catch { el.innerHTML = '<div class="empty">Failed to load mod log.</div>'; }
+}
+
+// XP Leaderboard
+async function loadXP() {
+  const el = document.getElementById('xp-list');
+  try {
+    const res = await apiCall('/api/telegram/xp/leaderboard');
+    if (res.success && res.data?.length) {
+      el.innerHTML = res.data.map((u, i) => `
+        <div class="list-item">
+          <div>
+            <div class="name">${i < 3 ? ['🥇','🥈','🥉'][i] : (i+1) + '.'} User ${u.user_id}</div>
+            <div class="meta">Level ${u.level || 1} • ${u.xp || 0} XP</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      el.innerHTML = '<div class="empty">No XP data yet. Members earn XP by chatting.</div>';
+    }
+  } catch { el.innerHTML = '<div class="empty">Failed to load XP data.</div>'; }
+}
+
+document.getElementById('reset-xp').addEventListener('click', async () => {
+  if (!confirm('Reset ALL XP? This cannot be undone.')) return;
+  try {
+    const res = await apiCall('/api/telegram/xp/reset', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    });
+    toast(res.success ? 'XP reset!' : 'Failed to reset');
+    loadXP();
+  } catch { toast('Error resetting XP'); }
+});
+
+function loadTabData(tab) {
+  switch(tab) {
+    case 'notes': loadNotes(); break;
+    case 'filters': loadFilters(); break;
+    case 'modlog': loadModlog(); break;
+    case 'xp': loadXP(); break;
+  }
+}
+
+// Initial load
+loadConfig();
+</script>
+</body>
+</html>

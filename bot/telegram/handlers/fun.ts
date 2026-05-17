@@ -4,6 +4,7 @@
 
 import { Bot } from 'grammy';
 import { mentionUser } from '../utils/format';
+import { setAfk, getAfk, removeAfk } from '../utils/db';
 
 const JOKES = [
   "Why don't scientists trust atoms? Because they make up everything!",
@@ -76,9 +77,6 @@ const EIGHTBALL_RESPONSES = [
   "🔮 Very doubtful.",
 ];
 
-// AFK state per session — in memory
-const afkUsers = new Map<string, { reason: string; since: Date }>();
-
 function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -136,20 +134,18 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('afk', async (ctx) => {
-    if (!ctx.from) return;
+    if (!ctx.from || !ctx.chat) return;
     const reason = (ctx.match?.toString() || '').trim() || 'No reason';
-    const key = `${sessionId}:${ctx.chat!.id}:${ctx.from.id}`;
-    afkUsers.set(key, { reason, since: new Date() });
+    await setAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString(), reason);
     await ctx.reply(`😴 ${ctx.from.first_name} is now AFK: ${reason}`);
   });
 
   bot.command('back', async (ctx) => {
-    if (!ctx.from) return;
-    const key = `${sessionId}:${ctx.chat!.id}:${ctx.from.id}`;
-    const afk = afkUsers.get(key);
+    if (!ctx.from || !ctx.chat) return;
+    const afk = await getAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
     if (afk) {
-      afkUsers.delete(key);
-      const duration = Math.floor((Date.now() - afk.since.getTime()) / 1000);
+      await removeAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
+      const duration = Math.floor((Date.now() - new Date(afk.since).getTime()) / 1000);
       const mins = Math.floor(duration / 60);
       const secs = duration % 60;
       await ctx.reply(`👋 Welcome back, ${ctx.from.first_name}! You were AFK for ${mins}m ${secs}s.`);
@@ -158,25 +154,52 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // AFK mention detection
+  // AFK mention detection — reply-based and @username-based
   bot.on('message:text', async (ctx) => {
-    if (!ctx.from || !ctx.message?.reply_to_message?.from) return;
+    if (!ctx.from || !ctx.chat) return;
 
-    const repliedUser = ctx.message.reply_to_message.from;
-    const key = `${sessionId}:${ctx.chat!.id}:${repliedUser.id}`;
-    const afk = afkUsers.get(key);
-    if (afk) {
-      const duration = Math.floor((Date.now() - afk.since.getTime()) / 1000);
-      const mins = Math.floor(duration / 60);
-      await ctx.reply(
-        `😴 ${repliedUser.first_name} is AFK (${mins}m ago): ${afk.reason}`,
-      );
+    // Check if replying to an AFK user
+    if (ctx.message?.reply_to_message?.from) {
+      const repliedUser = ctx.message.reply_to_message.from;
+      const afk = await getAfk(sessionId, ctx.chat.id.toString(), repliedUser.id.toString());
+      if (afk) {
+        const duration = Math.floor((Date.now() - new Date(afk.since).getTime()) / 1000);
+        const mins = Math.floor(duration / 60);
+        await ctx.reply(
+          `😴 ${repliedUser.first_name} is AFK (${mins}m ago): ${afk.reason}`,
+        );
+      }
+    }
+
+    // Check @username mentions in text
+    const mentions = ctx.message?.entities?.filter(e => e.type === 'mention') || [];
+    for (const entity of mentions) {
+      const mentionedUsername = ctx.message.text?.substring(entity.offset + 1, entity.offset + entity.length);
+      if (mentionedUsername) {
+        // We can't directly resolve username to user_id without extra API calls,
+        // but text_mention entities include the user object
+      }
+    }
+
+    // Check text_mention entities (these include user objects)
+    const textMentions = ctx.message?.entities?.filter(e => e.type === 'text_mention') || [];
+    for (const entity of textMentions) {
+      if (entity.user) {
+        const afk = await getAfk(sessionId, ctx.chat.id.toString(), entity.user.id.toString());
+        if (afk) {
+          const duration = Math.floor((Date.now() - new Date(afk.since).getTime()) / 1000);
+          const mins = Math.floor(duration / 60);
+          await ctx.reply(
+            `😴 ${entity.user.first_name} is AFK (${mins}m ago): ${afk.reason}`,
+          );
+        }
+      }
     }
 
     // Remove own AFK if they send a message
-    const ownKey = `${sessionId}:${ctx.chat!.id}:${ctx.from.id}`;
-    if (afkUsers.has(ownKey)) {
-      afkUsers.delete(ownKey);
+    const ownAfk = await getAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
+    if (ownAfk) {
+      await removeAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
       await ctx.reply(`👋 Welcome back, ${ctx.from.first_name}!`);
     }
   });

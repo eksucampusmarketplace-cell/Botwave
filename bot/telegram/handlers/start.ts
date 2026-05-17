@@ -62,6 +62,11 @@ const DEFAULT_HELP_TEXT =
   `<b>Games:</b> /games, /game\n` +
   `<b>Group:</b> /rules, /setrules, /pin, /unpin, /purge, /del\n` +
   `<b>XP:</b> /xp, /leaderboard\n` +
+  `<b>Federation:</b> /newfed, /joinfed, /fban, /unfban, /fedinfo\n` +
+  `<b>Anti-Raid:</b> /antiraid, /raid\n` +
+  `<b>Tickets:</b> /ticket, /tickets, /close, /assign, /treply\n` +
+  `<b>Stickers:</b> /kang, /stickerinfo, /getsticker\n` +
+  `<b>Broadcast:</b> /broadcast, /broadcaststats\n` +
   `<b>Utility:</b> /ping\n\n` +
   `💡 <b>Tip:</b> Use /panel to open the full management interface.`;
 
@@ -141,6 +146,47 @@ const HELP_CATEGORIES: Record<string, string[]> = {
     '/antiflood — Toggle flood protection',
     '/antilink — Toggle link protection',
     '/help — Show this message',
+  ],
+  '🛡️ Federation': [
+    '/newfed <name> — Create a new federation',
+    '/joinfed <code> — Join group to a federation',
+    '/leavefed — Leave current federation',
+    '/fedinfo — Show federation details',
+    '/myfeds — List federations you own',
+    '/fedchats — List member groups',
+    '/fban <user> [reason] — Ban across all fed groups',
+    '/unfban <user> — Unban from federation',
+    '/fbans — List federation bans',
+    '/fpromote <user> — Add federation admin',
+    '/fdemote <user> — Remove federation admin',
+    '/fedadmins — List federation admins',
+    '/fbroadcast <text> — Broadcast to all fed groups',
+  ],
+  '🚨 Anti-Raid': [
+    '/antiraid — Show anti-raid settings',
+    '/antiraid on/off — Enable/disable',
+    '/antiraid threshold <n> — Set joins/min threshold',
+    '/antiraid mode <restrict|ban|captcha|lockdown>',
+    '/antiraid duration <mins> — Set auto-end duration',
+    '/raid on — Manually trigger raid mode',
+    '/raid off — Manually end raid mode',
+  ],
+  '🎫 Tickets': [
+    '/ticket <subject> — Open a support ticket',
+    '/tickets — List open tickets (admin)',
+    '/close <id> — Close a ticket',
+    '/assign <id> <@admin> — Assign ticket',
+    '/escalate <id> — Escalate priority',
+    '/treply <id> <message> — Reply to ticket',
+  ],
+  '🎨 Stickers': [
+    '/kang — Reply to sticker to steal it',
+    '/stickerinfo — Reply to sticker for info',
+    '/getsticker — Reply to sticker to get as file',
+  ],
+  '📡 Broadcast': [
+    '/broadcast <message> — Send to all groups (owner)',
+    '/broadcaststats — Show last broadcast stats',
   ],
 };
 

@@ -311,7 +311,7 @@ export class TelegramBotInstance {
       'welcome', 'setwelcome', 'goodbye', 'setgoodbye',
       'captcha', 'savenote', 'note', 'delnote', 'notes',
       'addfilter', 'delfilter', 'filters',
-      'joke', 'quote', 'dice', 'coin', '8ball', 'afk',
+      'joke', 'quote', 'dice', 'coin', '8ball', 'afk', 'back',
       'antiflood', 'antilink', 'nightmode',
       'purge', 'del', 'pin', 'unpin',
       'rules', 'setrules',
@@ -324,6 +324,17 @@ export class TelegramBotInstance {
       'lock', 'unlock', 'locks',
       'poll', 'quiz', 'stoppoll',
       'schedule',
+      // Federation
+      'newfed', 'joinfed', 'leavefed', 'fedinfo', 'myfeds', 'fedchats',
+      'fban', 'unfban', 'fbans', 'fpromote', 'fdemote', 'fedadmins', 'fbroadcast',
+      // Anti-Raid
+      'antiraid', 'raid',
+      // Tickets
+      'ticket', 'tickets', 'close', 'assign', 'escalate', 'treply',
+      // Stickers
+      'kang', 'stickerinfo', 'getsticker',
+      // Broadcast
+      'broadcast', 'broadcaststats',
     ]);
 
     if (NATIVE_TG_COMMANDS.has(commandName)) return;

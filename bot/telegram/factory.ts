@@ -28,6 +28,11 @@ import { registerReportHandlers } from './handlers/report';
 import { registerLocksHandlers, checkLocks } from './handlers/locks';
 import { registerPollHandlers } from './handlers/polls';
 import { registerScheduleHandlers } from './handlers/schedule';
+import { registerFederationHandlers, checkFederationBan } from './handlers/federation';
+import { registerAntiraidHandlers, checkRaid } from './handlers/antiraid';
+import { registerTicketHandlers } from './handlers/tickets';
+import { registerStickerHandlers } from './handlers/stickers';
+import { registerBroadcastHandlers } from './handlers/broadcast';
 import { getTelegramConfig } from './utils/db';
 import { isElevated } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -108,6 +113,26 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerLocksHandlers(bot, sessionId);
   registerPollHandlers(bot, sessionId);
   registerScheduleHandlers(bot, sessionId);
+  registerFederationHandlers(bot, sessionId);
+  registerAntiraidHandlers(bot, sessionId);
+  registerTicketHandlers(bot, sessionId);
+  registerStickerHandlers(bot, sessionId);
+  registerBroadcastHandlers(bot, sessionId);
+
+  // Middleware: federation ban check + anti-raid on new chat members
+  bot.on('chat_member', async (ctx) => {
+    if (!ctx.chatMember) return;
+    const newMember = ctx.chatMember.new_chat_member;
+    if (newMember.status !== 'member') return;
+    const chatId = ctx.chat.id.toString();
+    const userId = newMember.user.id;
+
+    // Check federation ban
+    await checkFederationBan(bot, chatId, userId);
+
+    // Check anti-raid
+    await checkRaid(bot, sessionId, chatId, userId);
+  });
 
   // Middleware: auto-filter responses and XP on text messages (runs after commands)
   bot.on('message:text', async (ctx) => {

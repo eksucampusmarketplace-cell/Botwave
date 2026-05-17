@@ -35,6 +35,10 @@ export interface TelegramConfig {
   owner_user_id: string | null;
   miniapp_base_url: string | null;
   night_mode_groups: number[];
+  antiraid_enabled: boolean;
+  antiraid_threshold: number;
+  antiraid_mode: string;
+  antiraid_duration_mins: number;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -59,6 +63,10 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   owner_user_id: null,
   miniapp_base_url: null,
   night_mode_groups: [],
+  antiraid_enabled: false,
+  antiraid_threshold: 15,
+  antiraid_mode: 'restrict',
+  antiraid_duration_mins: 15,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
@@ -878,4 +886,554 @@ export async function markScheduledMessageSent(
       .update({ next_send_at: next.toISOString() })
       .eq('id', messageId);
   }
+}
+
+// ─── Federation (TrustNet) ──────────────────────────────────────────────────
+
+export interface Federation {
+  id: string;
+  session_id: string;
+  name: string;
+  owner_user_id: string;
+  invite_code: string;
+  created_at: string;
+}
+
+export interface FederationMember {
+  federation_id: string;
+  chat_id: string;
+  joined_by: string;
+  created_at: string;
+}
+
+export interface FederationBan {
+  id: string;
+  federation_id: string;
+  user_id: string;
+  reason: string | null;
+  banned_by: string;
+  created_at: string;
+}
+
+export interface FederationAdmin {
+  federation_id: string;
+  user_id: string;
+  added_by: string;
+  created_at: string;
+}
+
+function generateInviteCode(): string {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+export async function createFederation(
+  sessionId: string,
+  name: string,
+  ownerUserId: string,
+): Promise<Federation | null> {
+  const { data, error } = await supabase
+    .from('telegram_federations')
+    .insert({
+      session_id: sessionId,
+      name,
+      owner_user_id: ownerUserId,
+      invite_code: generateInviteCode(),
+    })
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error(`[TG-DB] Failed to create federation:`, error);
+    return null;
+  }
+  return data as Federation;
+}
+
+export async function getFederation(federationId: string): Promise<Federation | null> {
+  const { data } = await supabase
+    .from('telegram_federations')
+    .select('*')
+    .eq('id', federationId)
+    .single();
+  return data as Federation | null;
+}
+
+export async function getFederationByInviteCode(code: string): Promise<Federation | null> {
+  const { data } = await supabase
+    .from('telegram_federations')
+    .select('*')
+    .eq('invite_code', code.toUpperCase())
+    .single();
+  return data as Federation | null;
+}
+
+export async function getUserFederations(ownerUserId: string): Promise<Federation[]> {
+  const { data } = await supabase
+    .from('telegram_federations')
+    .select('*')
+    .eq('owner_user_id', ownerUserId)
+    .order('created_at', { ascending: false });
+  return (data as Federation[]) || [];
+}
+
+export async function getFederationForChat(chatId: string): Promise<Federation | null> {
+  const { data: member } = await supabase
+    .from('telegram_federation_members')
+    .select('federation_id')
+    .eq('chat_id', chatId)
+    .single();
+
+  if (!member) return null;
+  return getFederation(member.federation_id);
+}
+
+export async function joinFederation(
+  federationId: string,
+  chatId: string,
+  joinedBy: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_members')
+    .upsert(
+      { federation_id: federationId, chat_id: chatId, joined_by: joinedBy },
+      { onConflict: 'federation_id,chat_id' },
+    );
+  return !error;
+}
+
+export async function leaveFederation(chatId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_members')
+    .delete()
+    .eq('chat_id', chatId);
+  return !error;
+}
+
+export async function getFederationChats(federationId: string): Promise<FederationMember[]> {
+  const { data } = await supabase
+    .from('telegram_federation_members')
+    .select('*')
+    .eq('federation_id', federationId);
+  return (data as FederationMember[]) || [];
+}
+
+export async function addFederationBan(
+  federationId: string,
+  userId: string,
+  reason: string | null,
+  bannedBy: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_bans')
+    .upsert(
+      { federation_id: federationId, user_id: userId, reason, banned_by: bannedBy },
+      { onConflict: 'federation_id,user_id' },
+    );
+  return !error;
+}
+
+export async function removeFederationBan(
+  federationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_bans')
+    .delete()
+    .eq('federation_id', federationId)
+    .eq('user_id', userId);
+  return !error;
+}
+
+export async function getFederationBans(federationId: string): Promise<FederationBan[]> {
+  const { data } = await supabase
+    .from('telegram_federation_bans')
+    .select('*')
+    .eq('federation_id', federationId)
+    .order('created_at', { ascending: false });
+  return (data as FederationBan[]) || [];
+}
+
+export async function isFederationBanned(
+  federationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('telegram_federation_bans')
+    .select('id')
+    .eq('federation_id', federationId)
+    .eq('user_id', userId)
+    .single();
+  return !!data;
+}
+
+export async function addFederationAdmin(
+  federationId: string,
+  userId: string,
+  addedBy: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_admins')
+    .upsert(
+      { federation_id: federationId, user_id: userId, added_by: addedBy },
+      { onConflict: 'federation_id,user_id' },
+    );
+  return !error;
+}
+
+export async function removeFederationAdmin(
+  federationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_federation_admins')
+    .delete()
+    .eq('federation_id', federationId)
+    .eq('user_id', userId);
+  return !error;
+}
+
+export async function getFederationAdmins(federationId: string): Promise<FederationAdmin[]> {
+  const { data } = await supabase
+    .from('telegram_federation_admins')
+    .select('*')
+    .eq('federation_id', federationId);
+  return (data as FederationAdmin[]) || [];
+}
+
+export async function isFederationAdmin(
+  federationId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('telegram_federation_admins')
+    .select('federation_id')
+    .eq('federation_id', federationId)
+    .eq('user_id', userId)
+    .single();
+  return !!data;
+}
+
+// ─── Anti-Raid ──────────────────────────────────────────────────────────────
+
+export interface AntiraidSession {
+  id: string;
+  session_id: string;
+  chat_id: string;
+  is_active: boolean;
+  triggered_by: string;
+  started_at: string;
+}
+
+export async function trackJoin(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+): Promise<void> {
+  await supabase.from('telegram_antiraid_joins').insert({
+    session_id: sessionId,
+    chat_id: chatId,
+    user_id: userId,
+    joined_at: new Date().toISOString(),
+  });
+}
+
+export async function getRecentJoinCount(
+  sessionId: string,
+  chatId: string,
+  windowMs: number = 60_000,
+): Promise<number> {
+  const since = new Date(Date.now() - windowMs).toISOString();
+  const { count } = await supabase
+    .from('telegram_antiraid_joins')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .gte('joined_at', since);
+  return count || 0;
+}
+
+export async function startRaidSession(
+  sessionId: string,
+  chatId: string,
+  triggeredBy: string,
+): Promise<void> {
+  await supabase.from('telegram_antiraid_sessions').upsert(
+    {
+      session_id: sessionId,
+      chat_id: chatId,
+      is_active: true,
+      triggered_by: triggeredBy,
+      started_at: new Date().toISOString(),
+    },
+    { onConflict: 'session_id,chat_id' },
+  );
+}
+
+export async function endRaidSession(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  await supabase
+    .from('telegram_antiraid_sessions')
+    .update({ is_active: false })
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+}
+
+export async function isRaidActive(
+  sessionId: string,
+  chatId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('telegram_antiraid_sessions')
+    .select('is_active')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .single();
+  return data?.is_active === true;
+}
+
+// ─── Tickets ────────────────────────────────────────────────────────────────
+
+export interface Ticket {
+  id: number;
+  session_id: string;
+  chat_id: string;
+  creator_id: string;
+  subject: string;
+  priority: string;
+  status: string;
+  assigned_to: string | null;
+  created_at: string;
+}
+
+export interface TicketMessage {
+  id: number;
+  ticket_id: number;
+  sender_id: string;
+  message_text: string;
+  is_staff: boolean;
+  is_system: boolean;
+  created_at: string;
+}
+
+export async function createTicket(
+  sessionId: string,
+  chatId: string,
+  creatorId: string,
+  subject: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('telegram_tickets')
+    .insert({
+      session_id: sessionId,
+      chat_id: chatId,
+      creator_id: creatorId,
+      subject,
+      priority: 'normal',
+      status: 'open',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error(`[TG-DB] Failed to create ticket:`, error);
+    return 0;
+  }
+  return data?.id || 0;
+}
+
+export async function getTicket(
+  sessionId: string,
+  ticketId: number,
+): Promise<Ticket | null> {
+  const { data } = await supabase
+    .from('telegram_tickets')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('id', ticketId)
+    .single();
+  return data as Ticket | null;
+}
+
+export async function getOpenTickets(
+  sessionId: string,
+  chatId: string,
+): Promise<Ticket[]> {
+  const { data } = await supabase
+    .from('telegram_tickets')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .in('status', ['open', 'in_progress'])
+    .order('created_at', { ascending: false })
+    .limit(20);
+  return (data as Ticket[]) || [];
+}
+
+export async function closeTicket(
+  sessionId: string,
+  ticketId: number,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_tickets')
+    .update({ status: 'closed' })
+    .eq('session_id', sessionId)
+    .eq('id', ticketId);
+  return !error;
+}
+
+export async function assignTicket(
+  sessionId: string,
+  ticketId: number,
+  assignedTo: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_tickets')
+    .update({ assigned_to: assignedTo, status: 'in_progress' })
+    .eq('session_id', sessionId)
+    .eq('id', ticketId);
+  return !error;
+}
+
+export async function escalateTicket(
+  sessionId: string,
+  ticketId: number,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_tickets')
+    .update({ priority: 'high' })
+    .eq('session_id', sessionId)
+    .eq('id', ticketId);
+  return !error;
+}
+
+export async function addTicketMessage(
+  ticketId: number,
+  senderId: string,
+  messageText: string,
+  isStaff: boolean,
+  isSystem: boolean = false,
+): Promise<void> {
+  await supabase.from('telegram_ticket_messages').insert({
+    ticket_id: ticketId,
+    sender_id: senderId,
+    message_text: messageText,
+    is_staff: isStaff,
+    is_system: isSystem,
+  });
+}
+
+// ─── AFK (Persisted) ───────────────────────────────────────────────────────
+
+export async function setAfk(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+  reason: string,
+): Promise<void> {
+  await supabase.from('telegram_afk').upsert(
+    {
+      session_id: sessionId,
+      chat_id: chatId,
+      user_id: userId,
+      reason,
+      since: new Date().toISOString(),
+    },
+    { onConflict: 'session_id,chat_id,user_id' },
+  );
+}
+
+export async function getAfk(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+): Promise<{ reason: string; since: string } | null> {
+  const { data } = await supabase
+    .from('telegram_afk')
+    .select('reason, since')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .eq('user_id', userId)
+    .single();
+  return data;
+}
+
+export async function removeAfk(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('telegram_afk')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .eq('user_id', userId);
+  return !error;
+}
+
+// ─── Moderation Log (read) ──────────────────────────────────────────────────
+
+export async function getModLog(
+  sessionId: string,
+  chatId: string,
+  limit: number = 20,
+): Promise<Array<{
+  action: string;
+  target_user_id: string | null;
+  moderator_user_id: string | null;
+  reason: string | null;
+  created_at: string;
+}>> {
+  const { data } = await supabase
+    .from('telegram_moderation_log')
+    .select('action, target_user_id, moderator_user_id, reason, created_at')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+// ─── XP Reset ───────────────────────────────────────────────────────────────
+
+export async function resetXp(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  await supabase
+    .from('telegram_xp')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+}
+
+// ─── Broadcast Stats ────────────────────────────────────────────────────────
+
+export async function getActiveChats(sessionId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('telegram_moderation_log')
+    .select('chat_id')
+    .eq('session_id', sessionId);
+
+  const chatIds = new Set<string>();
+  if (data) {
+    for (const row of data) {
+      if (row.chat_id) chatIds.add(row.chat_id);
+    }
+  }
+
+  const { data: xpData } = await supabase
+    .from('telegram_xp')
+    .select('chat_id')
+    .eq('session_id', sessionId);
+
+  if (xpData) {
+    for (const row of xpData) {
+      if (row.chat_id) chatIds.add(row.chat_id);
+    }
+  }
+
+  return Array.from(chatIds);
 }
