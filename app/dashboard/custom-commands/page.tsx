@@ -118,7 +118,7 @@ export default function CustomCommandsPage() {
               </button>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
               >
                 {showForm ? 'Cancel' : '+ New Command'}
               </button>
@@ -139,21 +139,21 @@ export default function CustomCommandsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
                     <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Exact Match</p>
-                    <p>Trigger: <code className="text-emerald-400">!menu</code></p>
+                    <p>Trigger: <code className="text-blue-500">!menu</code></p>
                     <p style={{ color: 'var(--text-muted)' }}>Only triggers on exactly &quot;!menu&quot;</p>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
                     <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Contains</p>
-                    <p>Trigger: <code className="text-emerald-400">price</code></p>
+                    <p>Trigger: <code className="text-blue-500">price</code></p>
                     <p style={{ color: 'var(--text-muted)' }}>Triggers on &quot;what is the price?&quot;, &quot;price list&quot;, etc.</p>
                   </div>
                   <div className="p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
                     <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Starts With</p>
-                    <p>Trigger: <code className="text-emerald-400">order</code></p>
+                    <p>Trigger: <code className="text-blue-500">order</code></p>
                     <p style={{ color: 'var(--text-muted)' }}>Triggers on &quot;order status&quot;, &quot;order now&quot;, etc.</p>
                   </div>
                 </div>
-                <p>Use <code className="text-emerald-400">{'{name}'}</code> in the response to insert the sender&apos;s name automatically.</p>
+                <p>Use <code className="text-blue-500">{'{name}'}</code> in the response to insert the sender&apos;s name automatically.</p>
               </div>
             </motion.div>
           )}
@@ -181,7 +181,7 @@ export default function CustomCommandsPage() {
                       value={command}
                       onChange={(e) => setCommand(e.target.value)}
                       placeholder="e.g. !hello or price"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-mono"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 font-mono"
                       style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     />
                   </div>
@@ -213,7 +213,7 @@ export default function CustomCommandsPage() {
                     onChange={(e) => setResponse(e.target.value)}
                     placeholder={'Hello {name}, welcome to our group!\n\nHere are our services:\n1. Service A\n2. Service B\n\nReply with the number to learn more!'}
                     rows={5}
-                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none font-mono"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30 resize-none font-mono"
                     style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                   />
                 </div>
@@ -242,7 +242,7 @@ export default function CustomCommandsPage() {
                           value={imageUrl}
                           onChange={(e) => setImageUrl(e.target.value)}
                           placeholder="https://example.com/image.jpg"
-                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                           style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                         />
                         {imageUrl && (
@@ -264,7 +264,7 @@ export default function CustomCommandsPage() {
                           value={cooldown}
                           onChange={(e) => setCooldown(e.target.value)}
                           placeholder="0 (no cooldown)"
-                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                          className="w-full px-4 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-blue-500/30"
                           style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                         />
                       </div>
@@ -296,7 +296,7 @@ export default function CustomCommandsPage() {
                         ))}
                         <button
                           onClick={() => setExtraResponses([...extraResponses, ''])}
-                          className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:border-emerald-500/30"
+                          className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:border-blue-500/30"
                           style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
                         >
                           + Add Alternative Response
@@ -318,7 +318,7 @@ export default function CustomCommandsPage() {
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       When someone types <code className="text-cyan-400">{command}</code> ({matchType}), bot responds:
                     </p>
-                    <pre className="text-xs mt-1 whitespace-pre-wrap font-mono text-emerald-400">{response.replace(/\{name\}/g, 'User')}</pre>
+                    <pre className="text-xs mt-1 whitespace-pre-wrap font-mono text-blue-500">{response.replace(/\{name\}/g, 'User')}</pre>
                     {imageUrl && <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>+ image attached</p>}
                     {extraResponses.filter(Boolean).length > 0 && (
                       <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>+ {extraResponses.filter(Boolean).length} random alternative(s)</p>
@@ -331,7 +331,7 @@ export default function CustomCommandsPage() {
 
                 <button
                   onClick={handleCreate}
-                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500"
+                  className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500"
                 >
                   Save Command
                 </button>
@@ -365,11 +365,11 @@ export default function CustomCommandsPage() {
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <code className="text-sm font-mono font-bold text-emerald-400">{c.command}</code>
+                        <code className="text-sm font-mono font-bold text-blue-500">{c.command}</code>
                         <span className="px-2 py-0.5 text-[10px] rounded-full border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                           {c.match_type}
                         </span>
-                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${c.enabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${c.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-400'}`}>
                           {c.enabled ? 'Active' : 'Disabled'}
                         </span>
                       </div>

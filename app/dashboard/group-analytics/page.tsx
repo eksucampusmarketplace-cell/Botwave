@@ -23,7 +23,7 @@ function BarChart({ data, maxValue }: { data: { label: string; value: number }[]
               initial={{ width: 0 }}
               animate={{ width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%` }}
               transition={{ duration: 0.6, delay: i * 0.05 }}
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500"
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
             />
           </div>
           <span className="text-xs font-mono w-10 text-right" style={{ color: 'var(--text-muted)' }}>{item.value}</span>
@@ -124,7 +124,7 @@ export default function GroupAnalyticsPage() {
                     style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
                   >
                     <p className="text-2xl mb-1">{card.icon}</p>
-                    <p className="text-xl font-bold text-emerald-400">{card.value}</p>
+                    <p className="text-xl font-bold text-blue-500">{card.value}</p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{card.label}</p>
                   </motion.div>
                 ))}
@@ -166,7 +166,7 @@ export default function GroupAnalyticsPage() {
                           initial={{ height: 0 }}
                           animate={{ height: `${height}%` }}
                           transition={{ duration: 0.4, delay: i * 0.02 }}
-                          className="flex-1 rounded-t bg-gradient-to-t from-emerald-600 to-emerald-400 min-w-[3px]"
+                          className="flex-1 rounded-t bg-gradient-to-t from-blue-600 to-blue-500 min-w-[3px]"
                           title={`${d.date}: ${d.count} messages`}
                         />
                       );

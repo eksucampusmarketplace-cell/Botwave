@@ -99,15 +99,15 @@ export default function SessionAlerts() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 100, scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            className={`bg-card border p-4 relative ${
-              alert.type === 'error' ? 'border-red-400/30' :
-              alert.type === 'warning' ? 'border-yellow-400/30' :
-              'border-green/30'
+            className={`bg-[var(--card-bg,var(--surface))] border p-4 rounded-xl shadow-lg relative ${
+              alert.type === 'error' ? 'border-red-300 dark:border-red-400/30' :
+              alert.type === 'warning' ? 'border-yellow-300 dark:border-yellow-400/30' :
+              'border-blue-300 dark:border-blue-400/30'
             }`}
           >
             <button
               onClick={() => dismiss(alert.id)}
-              className="absolute top-2 right-2 font-mono text-xs text-[#5a5a5a] hover:text-white transition-colors"
+              className="absolute top-2 right-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
             >
               X
             </button>
@@ -116,14 +116,14 @@ export default function SessionAlerts() {
                 {alert.type === 'error' ? '🔴' : alert.type === 'warning' ? '🟡' : '🟢'}
               </span>
               <div>
-                <p className={`font-mono text-[10px] tracking-[2px] font-bold ${
-                  alert.type === 'error' ? 'text-red-400' :
-                  alert.type === 'warning' ? 'text-yellow-400' :
-                  'text-green'
+                <p className={`text-sm font-bold ${
+                  alert.type === 'error' ? 'text-red-600 dark:text-red-400' :
+                  alert.type === 'warning' ? 'text-yellow-600 dark:text-yellow-400' :
+                  'text-blue-600 dark:text-blue-400'
                 }`}>
                   {alert.title}
                 </p>
-                <p className="font-mono text-[10px] text-[#7abfa0] mt-1">
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
                   {alert.message}
                 </p>
               </div>

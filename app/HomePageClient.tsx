@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
@@ -11,168 +11,39 @@ import Disclaimer from '@/components/ui/Disclaimer';
 type PlatformBadge = 'WhatsApp' | 'Telegram Bot' | 'Telegram Userbot';
 
 const features: { icon: string; title: string; description: string; platforms: PlatformBadge[] }[] = [
-  { icon: '🎴', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: '🤖', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: '📥', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: '👋', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: '🛡️', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: '🎮', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess — play fun games right inside your group.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: '📊', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: '🌤️', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes — all accessible with simple commands.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: '💬', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: '🔒', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands — nothing else is stored or shared.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'sticker', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: 'ai', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'download', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: 'welcome', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'shield', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'game', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess \u2014 play fun games right inside your group.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: 'chart', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['WhatsApp', 'Telegram Bot'] },
+  { icon: 'tools', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes \u2014 all accessible with simple commands.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'reply', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'lock', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands \u2014 nothing else is stored or shared.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
 ];
 
-type TerminalPlatform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
-
-const terminalData: Record<TerminalPlatform, { label: string; lines: { type: string; text: string }[] }> = {
-  whatsapp: {
-    label: 'WhatsApp',
-    lines: [
-      { type: 'comment', text: '# Initialize WhatsApp session' },
-      { type: 'cmd', text: '$ botwave init --platform whatsapp --session "MyBot"' },
-      { type: 'success', text: '→ Session created. Waiting for QR scan...' },
-      { type: 'success', text: '→ Connected! Phone: +234*****890' },
-      { type: 'blank', text: '' },
-      { type: 'comment', text: '# Bot is live. Commands:' },
-      { type: 'cmd', text: '$ !sticker' },
-      { type: 'output', text: '→ Sticker created from image ✓' },
-      { type: 'cmd', text: '$ !ai What is machine learning?' },
-      { type: 'output', text: '→ Machine learning is a subset of AI...' },
-      { type: 'cmd', text: '$ !trivia' },
-      { type: 'output', text: '→ 🎯 Question: What is the capital of Japan?' },
-      { type: 'blank', text: '' },
-      { type: 'success', text: '→ 247 commands processed today. 0 errors.' },
-    ],
-  },
-  telegram_bot: {
-    label: 'Telegram Bot',
-    lines: [
-      { type: 'comment', text: '# Initialize Telegram Bot session' },
-      { type: 'cmd', text: '$ botwave init --platform telegram-bot --token "BOT_TOKEN"' },
-      { type: 'success', text: '→ Validating token with @BotFather...' },
-      { type: 'success', text: '→ Connected! Bot: @MyGroupBot' },
-      { type: 'blank', text: '' },
-      { type: 'comment', text: '# Bot is live. Commands:' },
-      { type: 'cmd', text: '/sticker' },
-      { type: 'output', text: '→ Sticker created from image ✓' },
-      { type: 'cmd', text: '/ai What is machine learning?' },
-      { type: 'output', text: '→ Machine learning is a subset of AI...' },
-      { type: 'cmd', text: '/trivia' },
-      { type: 'output', text: '→ 🎯 Question: What is the capital of Japan?' },
-      { type: 'blank', text: '' },
-      { type: 'success', text: '→ 183 commands processed today. 0 errors.' },
-    ],
-  },
-  telegram_userbot: {
-    label: 'Telegram Userbot',
-    lines: [
-      { type: 'comment', text: '# Initialize Telegram Userbot session' },
-      { type: 'cmd', text: '$ botwave init --platform telegram-userbot' },
-      { type: 'success', text: '→ Enter API ID and API Hash from my.telegram.org...' },
-      { type: 'success', text: '→ Authenticated! Account: @chrisdev' },
-      { type: 'blank', text: '' },
-      { type: 'comment', text: '# Userbot is live. Commands:' },
-      { type: 'cmd', text: '.ai Summarize this conversation' },
-      { type: 'output', text: '→ Summary: The group discussed 3 key topics...' },
-      { type: 'cmd', text: '.welcome enable' },
-      { type: 'output', text: '→ Auto-welcome enabled for this group ✓' },
-      { type: 'cmd', text: '.antispam on' },
-      { type: 'output', text: '→ Anti-spam filter activated ✓' },
-      { type: 'blank', text: '' },
-      { type: 'success', text: '→ 92 actions processed today. 0 errors.' },
-    ],
-  },
-};
-
 const stats = [
-  { value: '20+', label: 'Features' },
-  { value: '50+', label: 'Commands' },
+  { value: '5,000+', label: 'Active Users' },
+  { value: '50+', label: 'Bot Commands' },
   { value: '99.8%', label: 'Uptime' },
   { value: '3', label: 'Platforms' },
 ];
 
 const testimonials = [
-  { text: 'BotWave transformed how we manage our WhatsApp and Telegram groups. The sticker maker and AI chat features are incredibly useful across both platforms.', name: 'Group Admin', role: 'Community Manager' },
-  { text: 'Setting up was so easy — WhatsApp QR scan or Telegram bot token, and everything works. The spam protection feature alone is worth it.', name: 'Business Owner', role: 'Small Business' },
-  { text: 'My group members love the trivia games and the media downloader. BotWave keeps everyone engaged on WhatsApp and Telegram.', name: 'Tech Enthusiast', role: 'Group Owner' },
+  { text: 'BotWave transformed how we manage our WhatsApp and Telegram groups. The sticker maker and AI chat features are incredibly useful across both platforms.', name: 'Group Admin', role: 'Community Manager', initials: 'GA' },
+  { text: 'Setting up was so easy \u2014 WhatsApp QR scan or Telegram bot token, and everything works. The spam protection feature alone is worth it.', name: 'Business Owner', role: 'Small Business', initials: 'BO' },
+  { text: 'My group members love the trivia games and the media downloader. BotWave keeps everyone engaged on WhatsApp and Telegram.', name: 'Tech Enthusiast', role: 'Group Owner', initials: 'TE' },
 ];
 
 const chatMessages = [
   { from: 'user', name: 'You', text: '!sticker', time: '2:31 PM' },
-  { from: 'bot', name: 'BotWave', text: '🎴 Sticker created! Converting your image...', time: '2:31 PM' },
+  { from: 'bot', name: 'BotWave', text: 'Sticker created! Converting your image...', time: '2:31 PM' },
   { from: 'user', name: 'You', text: '!ai explain quantum computing in 2 lines', time: '2:32 PM' },
-  { from: 'bot', name: 'BotWave', text: '🤖 Quantum computing uses qubits that can be 0 and 1 simultaneously, enabling parallel processing. This makes it exponentially faster for certain problems like cryptography and molecular simulation.', time: '2:32 PM' },
+  { from: 'bot', name: 'BotWave', text: 'Quantum computing uses qubits that can be 0 and 1 simultaneously, enabling parallel processing. This makes it exponentially faster for certain problems like cryptography and molecular simulation.', time: '2:32 PM' },
   { from: 'user', name: 'You', text: '!trivia', time: '2:33 PM' },
-  { from: 'bot', name: 'BotWave', text: '🎯 *TRIVIA TIME!*\n\nWhat programming language was created by Brendan Eich in 1995?\n\nA) Python  B) JavaScript  C) Java  D) Ruby\n\nReply with the letter!', time: '2:33 PM' },
+  { from: 'bot', name: 'BotWave', text: 'TRIVIA TIME!\n\nWhat programming language was created by Brendan Eich in 1995?\n\nA) Python  B) JavaScript  C) Java  D) Ruby\n\nReply with the letter!', time: '2:33 PM' },
 ];
-
-const terminalPlatforms: TerminalPlatform[] = ['whatsapp', 'telegram_bot', 'telegram_userbot'];
-
-function TerminalBlock() {
-  const [activePlatform, setActivePlatform] = useState<TerminalPlatform>('whatsapp');
-  const [visibleLines, setVisibleLines] = useState(0);
-
-  const currentLines = terminalData[activePlatform].lines;
-
-  const handlePlatformSwitch = useCallback((p: TerminalPlatform) => {
-    setActivePlatform(p);
-    setVisibleLines(0);
-  }, []);
-
-  useEffect(() => {
-    setVisibleLines(0);
-    const interval = setInterval(() => {
-      setVisibleLines((prev) => {
-        if (prev >= currentLines.length) return prev;
-        return prev + 1;
-      });
-    }, 400);
-    return () => clearInterval(interval);
-  }, [activePlatform, currentLines.length]);
-
-  return (
-    <div className="terminal shadow-2xl">
-      <div className="terminal-header">
-        <div className="terminal-dot" style={{ background: '#ff5f57' }} />
-        <div className="terminal-dot" style={{ background: '#febc2e' }} />
-        <div className="terminal-dot" style={{ background: '#28c840' }} />
-        <span className="text-xs text-slate-500 ml-3 font-mono">botwave — {terminalData[activePlatform].label.toLowerCase()}</span>
-      </div>
-      {/* Platform tabs */}
-      <div className="flex border-b border-[#1e293b] bg-[#0d1117]">
-        {terminalPlatforms.map((p) => (
-          <button
-            key={p}
-            onClick={() => handlePlatformSwitch(p)}
-            className={`flex-1 px-3 py-2 text-[10px] font-mono tracking-wide transition-all ${
-              activePlatform === p
-                ? 'text-emerald-400 border-b-2 border-emerald-400 bg-emerald-500/5'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-            }`}
-          >
-            {terminalData[p].label}
-          </button>
-        ))}
-      </div>
-      <div className="terminal-body min-h-[280px]">
-        {currentLines.slice(0, visibleLines).map((line, i) => (
-          <div key={`${activePlatform}-${i}`} className={`${line.type === 'blank' ? 'h-3' : ''}`}>
-            {line.type === 'comment' && <span className="comment">{line.text}</span>}
-            {line.type === 'cmd' && <span className="cmd">{line.text}</span>}
-            {line.type === 'output' && <span className="output">{line.text}</span>}
-            {line.type === 'success' && <span className="success">{line.text}</span>}
-          </div>
-        ))}
-        {visibleLines < currentLines.length && (
-          <span className="cmd">
-            █
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function ChatPreview() {
   const [visibleMsgs, setVisibleMsgs] = useState(0);
@@ -188,18 +59,18 @@ function ChatPreview() {
   }, []);
 
   return (
-    <div className="bg-[#0b1015] border border-[#1e293b] rounded-xl overflow-hidden shadow-2xl">
-      <div className="bg-[#1a2332] px-4 py-3 flex items-center gap-3 border-b border-[#1e293b]">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">B</div>
+    <div className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-lg">
+      <div className="bg-[var(--bg-alt)] px-5 py-4 flex items-center gap-3 border-b border-[var(--border)]">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-sm font-bold">B</div>
         <div>
-          <div className="text-white text-sm font-semibold">BotWave Demo</div>
-          <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+          <div className="text-[var(--text-primary)] text-base font-semibold">BotWave Demo</div>
+          <div className="text-sm text-green-500 flex items-center gap-1.5">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             online
           </div>
         </div>
       </div>
-      <div className="p-4 space-y-3 min-h-[300px]">
+      <div className="p-5 space-y-3 min-h-[300px]">
         {chatMessages.slice(0, visibleMsgs).map((msg, i) => (
           <motion.div
             key={i}
@@ -208,16 +79,16 @@ function ChatPreview() {
             transition={{ duration: 0.3 }}
             className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[80%] rounded-xl px-3 py-2 ${
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
               msg.from === 'user'
-                ? 'bg-emerald-600/20 border border-emerald-500/20'
-                : 'bg-[#16202d] border border-[#1e293b]'
+                ? 'bg-blue-500 text-white'
+                : 'bg-[var(--bg-alt)] border border-[var(--border)]'
             }`}>
-              <div className={`text-[10px] font-semibold mb-1 ${msg.from === 'user' ? 'text-emerald-400' : 'text-cyan-400'}`}>
+              <div className={`text-xs font-semibold mb-1 ${msg.from === 'user' ? 'text-blue-100' : 'text-[var(--primary)]'}`}>
                 {msg.name}
               </div>
-              <div className="text-sm text-slate-300 whitespace-pre-line leading-relaxed">{msg.text}</div>
-              <div className="text-[9px] text-slate-600 text-right mt-1">{msg.time}</div>
+              <div className={`text-sm whitespace-pre-line leading-relaxed ${msg.from === 'user' ? 'text-white' : 'text-[var(--text-primary)]'}`}>{msg.text}</div>
+              <div className={`text-[10px] text-right mt-1 ${msg.from === 'user' ? 'text-blue-200' : 'text-[var(--text-muted)]'}`}>{msg.time}</div>
             </div>
           </motion.div>
         ))}
@@ -231,7 +102,8 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
   const [hasStarted, setHasStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const numericPrefix = useMemo(() => {
-    const m = target.match(/^(\d+)/);
+    const cleaned = target.replace(/,/g, '');
+    const m = cleaned.match(/^(\d+)/);
     return m ? m[1] : null;
   }, [target]);
 
@@ -253,7 +125,7 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
     if (!hasStarted) return;
     if (!numericPrefix) { setDisplay(target); return; }
     const end = parseInt(numericPrefix);
-    const suffixPart = target.slice(numericPrefix.length);
+    const suffixPart = target.replace(/,/g, '').slice(numericPrefix.length);
     let current = 0;
     const step = Math.max(1, Math.floor(end / 30));
     const interval = setInterval(() => {
@@ -262,7 +134,8 @@ function CountUp({ target, suffix = '' }: { target: string; suffix?: string }) {
         current = end;
         clearInterval(interval);
       }
-      setDisplay(current + suffixPart);
+      const formatted = current.toLocaleString();
+      setDisplay(formatted + suffixPart);
     }, 50);
     return () => clearInterval(interval);
   }, [hasStarted, target, numericPrefix]);
@@ -280,66 +153,16 @@ const fadeUp = {
 };
 
 const faqs = [
-  {
-    q: 'What is BotWave?',
-    a: 'BotWave is a free multi-platform bot automation platform for WhatsApp and Telegram. Connect your WhatsApp via QR code, set up a Telegram bot via @BotFather, or automate a Telegram userbot — and get 50+ features like sticker creation, AI chat, media downloads, games, polls, and group management.',
-  },
-  {
-    q: 'Is BotWave free to use?',
-    a: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just ₦500/month for more messages and features.',
-  },
-  {
-    q: 'How do I set up a bot with BotWave?',
-    a: 'Sign up at www.botwave.online, go to your dashboard, and choose your platform. For WhatsApp: scan the QR code. For Telegram Bot: paste your @BotFather token. For Telegram Userbot: enter your API credentials. Your bot is live in under 2 minutes — no coding needed.',
-  },
-  {
-    q: 'Will my WhatsApp number get banned?',
-    a: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.',
-  },
-  {
-    q: 'What commands does BotWave support?',
-    a: 'BotWave supports 50+ commands on WhatsApp (!sticker, !ai, !download, !trivia, !poll, !weather, etc.) and Telegram (/sticker, /ai, /download, /trivia, /poll, etc.). Telegram userbots use dot-prefix commands (.ai, .sticker). Type !help or /help to see the full list.',
-  },
-  {
-    q: 'Can I use BotWave for my business?',
-    a: 'Absolutely. BotWave works great for businesses — use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.',
-  },
-  {
-    q: 'Does BotWave work in Nigeria?',
-    a: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (₦) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.',
-  },
-  {
-    q: 'How is BotWave different from other bots?',
-    a: 'BotWave is the only platform that supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, includes advanced anti-ban protection for WhatsApp, uses the official Telegram Bot API, supports AI chat via Google Gemini, and has 50+ built-in commands. Most alternatives only support one platform and charge more.',
-  },
-  {
-    q: 'Does BotWave support Telegram?',
-    a: 'Yes! BotWave now supports three platforms: WhatsApp (via QR code), Telegram Bot (via @BotFather token with zero ban risk), and Telegram Userbot (automate your real Telegram account via MTProto). You can run sessions on all three platforms from one dashboard.',
-  },
-  {
-    q: 'Why is BotWave free when other bot platforms charge $20-50/month?',
-    a: 'BotWave is built by a small team that believes bot automation should be accessible to everyone — especially in Nigeria and across Africa where $20-50/month subscriptions are unrealistic. We keep costs low by using efficient open-source technology (Baileys + Evolution API) and smart resource sharing. The free tier covers most users, and optional paid plans help fund the platform for everyone.',
-  },
-  {
-    q: 'What is the difference between BotWave and Evolution API?',
-    a: 'Evolution API is a powerful open-source WhatsApp API platform designed for developers — it requires technical setup, server management, and coding knowledge. BotWave is built on top of Evolution API but wraps it in a simple web dashboard that anyone can use. Think of Evolution API as the engine and BotWave as the car — you get all the power without needing to be a mechanic. No coding, no server setup, just scan QR and go.',
-  },
-  {
-    q: 'Is BotWave safe to use? Will my data be secure?',
-    a: 'Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp\'s automated detection.',
-  },
-  {
-    q: 'How does BotWave protect my accounts from bans?',
-    a: 'For WhatsApp: BotWave has the most advanced anti-ban system including session warmup, human-like delays, message variation, rate limiting, and activity simulation. Your session runs from your own device IP. For Telegram Bot: uses the official API with zero ban risk. For Telegram Userbot: built-in rate limiting to stay within Telegram\'s limits.',
-  },
-  {
-    q: 'Do I need to be a developer to use BotWave?',
-    a: 'No! Unlike tools like Evolution API, Baileys, or other WhatsApp libraries that require coding knowledge, BotWave is 100% no-code. Sign up, scan QR code, and your bot is live. All configuration happens through a web dashboard. AI features work automatically — no setup or API keys needed.',
-  },
-  {
-    q: 'Can BotWave help me grow my community?',
-    a: 'Absolutely. BotWave is built for community management. Use polls for engagement, trivia games to keep groups active, anti-spam to keep groups clean, and the built-in referral system to grow organically. Many campus group admins and small business owners use BotWave to manage groups of hundreds of members effortlessly.',
-  },
+  { q: 'What is BotWave?', a: 'BotWave is a free multi-platform bot automation platform for WhatsApp and Telegram. Connect your WhatsApp via QR code, set up a Telegram bot via @BotFather, or automate a Telegram userbot \u2014 and get 50+ features like sticker creation, AI chat, media downloads, games, polls, and group management.' },
+  { q: 'Is BotWave free to use?', a: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just \u20a6500/month for more messages and features.' },
+  { q: 'How do I set up a bot with BotWave?', a: 'Sign up at www.botwave.online, go to your dashboard, and choose your platform. For WhatsApp: scan the QR code. For Telegram Bot: paste your @BotFather token. For Telegram Userbot: enter your API credentials. Your bot is live in under 2 minutes \u2014 no coding needed.' },
+  { q: 'Will my WhatsApp number get banned?', a: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.' },
+  { q: 'What commands does BotWave support?', a: 'BotWave supports 50+ commands on WhatsApp (!sticker, !ai, !download, !trivia, !poll, !weather, etc.) and Telegram (/sticker, /ai, /download, /trivia, /poll, etc.). Telegram userbots use dot-prefix commands (.ai, .sticker). Type !help or /help to see the full list.' },
+  { q: 'Can I use BotWave for my business?', a: 'Absolutely. BotWave works great for businesses \u2014 use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.' },
+  { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (\u20a6) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.' },
+  { q: 'How is BotWave different from other bots?', a: 'BotWave is the only platform that supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, includes advanced anti-ban protection for WhatsApp, uses the official Telegram Bot API, supports AI chat via Google Gemini, and has 50+ built-in commands. Most alternatives only support one platform and charge more.' },
+  { q: 'Does BotWave support Telegram?', a: 'Yes! BotWave now supports three platforms: WhatsApp (via QR code), Telegram Bot (via @BotFather token with zero ban risk), and Telegram Userbot (automate your real Telegram account via MTProto). You can run sessions on all three platforms from one dashboard.' },
+  { q: 'Is BotWave safe to use? Will my data be secure?', a: "Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp's automated detection." },
 ];
 
 export default function HomePage() {
@@ -348,125 +171,91 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0a0f] via-[#0d1117] to-[#0a0f1a] pt-32 pb-24 px-6">
-        {/* Tech grid overlay */}
-        <div className="absolute inset-0 tech-grid opacity-50" />
-        {/* Glow orbs */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-[10%] w-80 h-80 bg-emerald-500/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-10 right-[10%] w-96 h-96 bg-cyan-500/8 rounded-full blur-[120px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[200px]" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-[var(--hero-from)] to-[var(--hero-to)] pt-32 pb-20 px-6">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-[10%] w-96 h-96 bg-blue-500/5 rounded-full blur-[120px]" />
+          <div className="absolute bottom-10 right-[15%] w-80 h-80 bg-violet-500/5 rounded-full blur-[120px]" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left — Text */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-emerald-400 text-xs font-mono tracking-wide">FREE FOREVER — NO CATCH</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full mb-8">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[var(--text-secondary)] text-sm font-medium">Free Forever &mdash; No Catch</span>
               </div>
 
-              <p aria-hidden="true" className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6">
-                Automate Your
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 typing-cursor">
-                  WhatsApp & Telegram.
-                </span>
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[var(--text-primary)] leading-[1.1] mb-6 tracking-tight">
+                Automate Your<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">WhatsApp &amp; Telegram</span>
+              </h2>
+
+              <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
+                One platform, three ways to connect. WhatsApp QR scan, Telegram Bot token, or Telegram Userbot &mdash; 50+ commands, AI chat, games, group management. No coding, no credit card.
               </p>
 
-              <p className="text-lg text-slate-400 max-w-xl mb-8 leading-relaxed">
-                One platform, three ways to connect. WhatsApp QR scan, Telegram Bot token, or Telegram Userbot — 50+ commands,
-                AI chat, games, group management. No coding, no credit card.
-              </p>
-
-              <div className="flex gap-4 flex-wrap mb-8">
-                <Link
-                  href="/signup"
-                  className="group px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
-                >
-                  Get Started Free
-                  <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
+              <div className="flex gap-4 flex-wrap mb-10">
+                <Link href="/signup" className="group px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-base">
+                  Get Started Free <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </Link>
-                <Link
-                  href="#features"
-                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-lg border border-white/10 hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-0.5"
-                >
+                <Link href="#features" className="px-8 py-4 bg-[var(--bg-alt)] hover:bg-[var(--bg-subtle,var(--bg-alt))] text-[var(--text-primary)] font-semibold rounded-xl border border-[var(--border)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-0.5 text-base">
                   Explore Features
                 </Link>
               </div>
 
-              {/* Tech badges */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[10px] text-slate-600 font-mono tracking-wide">POWERED BY</span>
+                <span className="text-sm text-[var(--text-muted)] font-medium">Powered by</span>
                 {['Node.js', 'WhatsApp API', 'Telegram API', 'Supabase', 'AI'].map((tech) => (
-                  <span key={tech} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded text-[10px] text-slate-400 font-mono">
-                    {tech}
-                  </span>
+                  <span key={tech} className="px-3 py-1.5 bg-[var(--bg-alt)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-secondary)] font-medium">{tech}</span>
                 ))}
               </div>
             </motion.div>
 
-            {/* Right — Terminal */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-            >
-              <TerminalBlock />
+            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
+              <ChatPreview />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Stats — monospace tech style */}
-      <section className="py-12 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      {/* Stats */}
+      <section className="py-16 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-              viewport={{ once: true }}
-              className="text-center p-5 glass-card rounded-xl transition-all duration-300"
-            >
-              <div className="text-3xl md:text-4xl font-bold font-mono text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-1">
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }} className="text-center p-6">
+              <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 mb-2">
                 <CountUp target={stat.value} />
               </div>
-              <div className="text-xs text-slate-500 font-mono tracking-wider uppercase">{stat.label}</div>
+              <div className="text-base text-[var(--text-secondary)] font-medium">{stat.label}</div>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-6 bg-[var(--bg)] relative">
-        <div className="absolute inset-0 dot-grid opacity-30" />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-              CAPABILITIES
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              50+ Bot Commands — WhatsApp & Telegram
-            </h2>
-            <p className="text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">
-              From sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp and Telegram groups.
-            </p>
-          </motion.div>
+      {/* Tech Logos */}
+      <section className="py-12 px-6 bg-[var(--bg)]">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-sm text-[var(--text-muted)] font-medium mb-8 uppercase tracking-wider">Built with industry-leading technology</p>
+          <div className="flex items-center justify-center gap-10 flex-wrap opacity-60">
+            {['Node.js', 'Supabase', 'Google AI', 'WhatsApp', 'Telegram'].map((name) => (
+              <div key={name} className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
+                <div className="w-10 h-10 rounded-full bg-[var(--bg-alt)] border border-[var(--border)] flex items-center justify-center text-sm font-bold">{name[0]}</div>
+                <span className="text-xs font-medium">{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Features */}
+      <section id="features" className="py-24 px-6 bg-[var(--bg)] relative">
+        <div className="max-w-6xl mx-auto relative z-10">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-16">
+            <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Features</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">50+ Bot Commands &mdash; WhatsApp &amp; Telegram</h2>
+            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto leading-relaxed">From sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp and Telegram groups.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <FeatureCard key={index} feature={feature} index={index} />
             ))}
@@ -474,102 +263,65 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works */}
       <HowItWorks />
 
-      {/* Live Demo — Chat Preview */}
-      <section className="py-24 px-6 bg-[var(--bg)] relative">
-        <div className="absolute inset-0 tech-grid opacity-30" />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <span className="inline-block px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-xs font-mono tracking-wide mb-4">
-                LIVE PREVIEW
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                See BotWave in Action
-              </h2>
-              <p className="text-slate-400 mb-6 leading-relaxed">
-                Watch how BotWave responds to commands instantly on WhatsApp and Telegram. Create stickers, get AI answers, play games — all inside your chat.
-              </p>
-              <div className="space-y-4">
-                {[
-                  { cmd: '!sticker / /sticker', desc: 'Convert images to stickers on any platform' },
-                  { cmd: '!ai / /ai [question]', desc: 'Get AI answers to anything' },
-                  { cmd: '!whois / /whois', desc: 'Look up user info in groups' },
-                  { cmd: '!trivia / /trivia', desc: 'Start a trivia game in your group' },
-                ].map((item) => (
-                  <div key={item.cmd} className="flex items-start gap-3">
-                    <code className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-xs font-mono whitespace-nowrap">
-                      {item.cmd}
-                    </code>
-                    <span className="text-sm text-slate-500">{item.desc}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <ChatPreview />
-            </motion.div>
+      {/* Pricing */}
+      <section id="pricing" className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Pricing</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4 tracking-tight">Simple, Transparent Pricing</h2>
+            <p className="text-lg text-[var(--text-secondary)] max-w-xl mx-auto mb-12">Start free, upgrade when you need more. No hidden fees, no surprises.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {[
+              { name: 'Free', price: '\u20a60', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false },
+              { name: 'Standard', price: '\u20a6500', period: '/month', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Coming Soon', highlight: true },
+              { name: 'Boss', price: '\u20a62,000', period: '/month', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Coming Soon', highlight: false },
+            ].map((plan, i) => (
+              <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
+                className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
+                <h3 className={`text-lg font-bold mb-2 ${plan.highlight ? 'text-white' : 'text-[var(--text-primary)]'}`}>{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mb-6">
+                  <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-[var(--text-primary)]'}`}>{plan.price}</span>
+                  <span className={`text-base ${plan.highlight ? 'text-blue-100' : 'text-[var(--text-muted)]'}`}>{plan.period}</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((f) => (
+                    <li key={f} className={`flex items-center gap-3 text-base ${plan.highlight ? 'text-blue-50' : 'text-[var(--text-secondary)]'}`}>
+                      <svg className={`w-5 h-5 flex-shrink-0 ${plan.highlight ? 'text-blue-200' : 'text-blue-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button className={`w-full py-3 rounded-xl font-semibold text-base transition-all ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : plan.name === 'Free' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-[var(--bg-alt)] text-[var(--text-secondary)] border border-[var(--border)] cursor-not-allowed'}`} disabled={plan.cta === 'Coming Soon'}>{plan.cta}</button>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+      <section className="py-24 px-6 bg-[var(--bg)]">
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-              TESTIMONIALS
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              What Our Users Say
-            </h2>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
+            <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Testimonials</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">What Our Users Say</h2>
           </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="glass-card p-8 rounded-xl transition-all duration-300"
-              >
+              <motion.div key={i} custom={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="glass-card p-8 rounded-2xl">
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
-                    <svg key={j} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
+                    <svg key={j} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                   ))}
                 </div>
-                <p className="text-slate-400 leading-relaxed mb-6 text-sm">&ldquo;{t.text}&rdquo;</p>
+                <p className="text-[var(--text-secondary)] leading-relaxed mb-6 text-base">&ldquo;{t.text}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">
-                    {t.name[0]}
-                  </div>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-base">{t.initials}</div>
                   <div>
-                    <div className="font-semibold text-[var(--text-primary)] text-sm">{t.name}</div>
-                    <div className="text-xs text-[var(--text-muted)]">{t.role}</div>
+                    <div className="font-semibold text-[var(--text-primary)] text-base">{t.name}</div>
+                    <div className="text-sm text-[var(--text-muted)]">{t.role}</div>
                   </div>
                 </div>
               </motion.div>
@@ -578,351 +330,98 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Add to Home Screen / PWA Section */}
-      <section id="install" className="py-24 px-6 bg-[var(--bg)]">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-              INSTALL
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Add BotWave to Your Home Screen
-            </h2>
-            <p className="text-[var(--text-secondary)] mt-4 max-w-xl mx-auto">
-              Get app-like access to BotWave without downloading from any app store. Works on iPhone and Android.
-            </p>
+      {/* Security */}
+      <section id="security" className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
+            <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Security</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Your Accounts Are Safe With BotWave</h2>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry.</p>
           </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* iPhone */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-              className="glass-card p-8 rounded-xl"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-2xl">🍎</div>
-                <div>
-                  <h3 className="font-bold text-white">iPhone / iPad</h3>
-                  <p className="text-xs text-slate-500 font-mono">Safari required</p>
-                </div>
-              </div>
-              <ol className="space-y-3">
-                {['Open BotWave in Safari', 'Tap the Share button (square with arrow)', 'Scroll down and tap "Add to Home Screen"', 'Tap "Add" to confirm'].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="w-6 h-6 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center text-xs font-bold font-mono flex-shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm text-slate-400">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </motion.div>
-
-            {/* Android */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              viewport={{ once: true }}
-              className="glass-card p-8 rounded-xl"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-2xl">🤖</div>
-                <div>
-                  <h3 className="font-bold text-white">Android</h3>
-                  <p className="text-xs text-slate-500 font-mono">Chrome recommended</p>
-                </div>
-              </div>
-              <ol className="space-y-3">
-                {['Open BotWave in Chrome', 'Tap the three dots menu (⋮) top right', 'Tap "Add to Home Screen"', 'Tap "Add" to confirm'].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="w-6 h-6 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center text-xs font-bold font-mono flex-shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm text-slate-400">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security & Safety Section */}
-      <section id="security" className="py-24 px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
-        <div className="max-w-5xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-              SECURITY
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Your Accounts Are Safe With BotWave
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              We built BotWave with security-first architecture. Your data stays on your device, and our anti-ban system is the most advanced in the industry. Telegram bots use the official API with zero ban risk.
-            </p>
-          </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              {
-                icon: '🛡️',
-                title: 'Your Device, Your IP',
-                desc: 'Your WhatsApp session runs from your own device via QR code — not from a shared server. This means your real IP is used, drastically reducing ban risk compared to server-based bots.',
-              },
-              {
-                icon: '🔒',
-                title: 'Zero Message Storage',
-                desc: 'BotWave never reads, stores, or logs your WhatsApp messages. All message processing happens in memory and is discarded immediately. Your chats stay private.',
-              },
-              {
-                icon: '🤖',
-                title: 'Advanced Anti-Ban System',
-                desc: 'Session warmup over 7 days, human-like typing delays, message variation (never identical messages), rate limiting, activity hours simulation, and media fingerprint jittering.',
-              },
-              {
-                icon: '⏱️',
-                title: 'Smart Rate Limiting',
-                desc: 'Hard 200 messages/day cap, 10 msgs/min session limit, 20 msgs/min per user. Anti-spam flood detection warns after 5 messages in 10 seconds. Your account stays safe.',
-              },
-              {
-                icon: '🌙',
-                title: 'Human-Like Behavior',
-                desc: 'The bot simulates real human patterns — quiet at night (12am-6am), random "distracted" delays, read-but-skip in groups (15% chance), and presence toggling based on time of day.',
-              },
-              {
-                icon: '🔐',
-                title: 'Secure Infrastructure',
-                desc: 'Credentials stored in Supabase with row-level security. API communication encrypted. No plain-text secrets. Your login and session data is protected at every layer.',
-              },
+              { title: 'Your Device, Your IP', desc: 'Your WhatsApp session runs from your own device via QR code \u2014 not from a shared server. This means your real IP is used, drastically reducing ban risk.' },
+              { title: 'Zero Message Storage', desc: 'BotWave never reads, stores, or logs your WhatsApp messages. All message processing happens in memory and is discarded immediately.' },
+              { title: 'Advanced Anti-Ban System', desc: 'Session warmup over 7 days, human-like typing delays, message variation, rate limiting, activity hours simulation, and media fingerprint jittering.' },
+              { title: 'Smart Rate Limiting', desc: 'Hard 200 messages/day cap, 10 msgs/min session limit, 20 msgs/min per user. Anti-spam flood detection warns after 5 messages in 10 seconds.' },
+              { title: 'Human-Like Behavior', desc: 'The bot simulates real human patterns \u2014 quiet at night, random delays, read-but-skip in groups, and presence toggling based on time of day.' },
+              { title: 'Secure Infrastructure', desc: 'Credentials stored in Supabase with row-level security. API communication encrypted. No plain-text secrets. Your data is protected at every layer.' },
             ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-                viewport={{ once: true }}
-                className="glass-card rounded-xl p-6"
-              >
-                <div className="text-3xl mb-4">{item.icon}</div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.08 }} viewport={{ once: true }} className="glass-card rounded-2xl p-7">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                </div>
+                <h3 className="font-bold text-[var(--text-primary)] text-lg mb-2">{item.title}</h3>
+                <p className="text-base text-[var(--text-secondary)] leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Comparison Section — targets "vs" and "alternative" search queries */}
-      <section className="py-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg)] via-emerald-950/5 to-[var(--bg)]" />
-        <div className="max-w-5xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-xs font-mono tracking-wide mb-4">
-              HONEST COMPARISON
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Why People Are Switching to BotWave
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              Other bot platforms charge you monthly for features BotWave gives away free. Here&apos;s the truth nobody tells you.
-            </p>
+      {/* FAQ */}
+      <section id="faq" className="py-24 px-6 bg-[var(--bg)]">
+        <div className="max-w-3xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
+            <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">FAQ</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Frequently Asked Questions</h2>
           </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                platform: 'Paid WhatsApp Bots',
-                price: '$15-50/mo',
-                cons: ['Shared server = ban risk', 'Limited commands', 'No anti-ban protection', 'No free tier'],
-                verdict: 'Overpriced',
-              },
-              {
-                platform: 'Telegram-Only Bots',
-                price: 'Free-$30/mo',
-                cons: ['Only works on Telegram', 'Complex API setup', 'No WhatsApp support', 'Separate from your WA groups'],
-                verdict: 'Single platform',
-              },
-              {
-                platform: 'Evolution API (DIY)',
-                price: 'Free (self-hosted)',
-                cons: ['Requires coding skills', 'Server setup needed', 'No dashboard UI', 'No built-in commands'],
-                verdict: 'For developers only',
-              },
-              {
-                platform: 'BotWave',
-                price: 'FREE',
-                cons: ['WhatsApp + Telegram support', 'Built-in anti-ban', '50+ commands included', 'AI chat + games + tools'],
-                verdict: 'Best choice',
-                highlight: true,
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className={`rounded-xl p-6 ${
-                  item.highlight
-                    ? 'bg-emerald-500/10 border-2 border-emerald-500/30 ring-1 ring-emerald-500/10'
-                    : 'glass-card border border-[var(--border)]'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-[var(--text-primary)]">{item.platform}</h3>
-                  <span className={`text-sm font-mono font-bold ${item.highlight ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {item.price}
-                  </span>
-                </div>
-                <ul className="space-y-2 mb-4">
-                  {item.cons.map((con, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-slate-400">
-                      <span className={item.highlight ? 'text-emerald-400' : 'text-red-400'}>
-                        {item.highlight ? '✓' : '✗'}
-                      </span>
-                      {con}
-                    </li>
-                  ))}
-                </ul>
-                <div className={`text-xs font-mono font-bold uppercase tracking-wide ${
-                  item.highlight ? 'text-emerald-400' : 'text-slate-600'
-                }`}>
-                  {item.verdict}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section — SEO rich snippets */}
-      <section id="faq" className="py-24 px-6 bg-[var(--bg)] relative">
-        <div className="absolute inset-0 dot-grid opacity-20" />
-        <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-              FAQ
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
-              Frequently Asked Questions
-            </h2>
-          </motion.div>
-
           <div className="space-y-4">
             {faqs.map((faq, i) => (
-              <motion.details
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-                viewport={{ once: true }}
-                className="glass-card rounded-xl group"
-              >
-                <summary className="px-6 py-5 cursor-pointer flex items-center justify-between text-[var(--text-primary)] font-semibold text-sm md:text-base hover:text-emerald-400 transition-colors list-none">
+              <motion.details key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }} viewport={{ once: true }} className="glass-card rounded-2xl group">
+                <summary className="px-6 py-5 cursor-pointer flex items-center justify-between text-[var(--text-primary)] font-semibold text-base md:text-lg hover:text-[var(--primary)] transition-colors list-none">
                   {faq.q}
-                  <span className="text-emerald-400 ml-4 group-open:rotate-45 transition-transform text-xl">+</span>
+                  <span className="text-[var(--primary)] ml-4 group-open:rotate-45 transition-transform text-xl font-light">+</span>
                 </summary>
-                <div className="px-6 pb-5 text-sm text-slate-400 leading-relaxed border-t border-[var(--border)] pt-4">
-                  {faq.a}
-                </div>
+                <div className="px-6 pb-5 text-base text-[var(--text-secondary)] leading-relaxed border-t border-[var(--border)] pt-4">{faq.a}</div>
               </motion.details>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Disclaimer */}
       <Disclaimer />
 
-      {/* CTA Section */}
-      <section className="py-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-[var(--bg)] to-cyan-900/20" />
-        <div className="absolute inset-0 tech-grid opacity-40" />
+      {/* CTA */}
+      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-violet-600 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-[20%] w-96 h-96 bg-white rounded-full blur-[150px]" />
+          <div className="absolute bottom-10 right-[20%] w-80 h-80 bg-white rounded-full blur-[150px]" />
+        </div>
         <div className="max-w-3xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Start Automating Your Groups — Free Forever
-            </h2>
-            <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-              Join users across Nigeria who automate their WhatsApp and Telegram groups with BotWave. No credit card, no coding, no downloads.
-            </p>
-            <Link
-              href="/signup"
-              className="group inline-block px-10 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
-            >
-              Get Started Free
-              <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">Start Automating Your Groups &mdash; Free Forever</h2>
+            <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto">Join users across Nigeria who automate their WhatsApp and Telegram groups with BotWave. No credit card, no coding, no downloads.</p>
+            <Link href="/signup" className="group inline-block px-10 py-4 bg-white text-blue-600 font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
+              Get Started Free <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
             </Link>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 bg-[#06060a] border-t border-[var(--border)]">
+      <footer className="py-16 px-6 bg-[var(--bg)] border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left">
-              <div className="text-2xl font-bold text-white mb-1">
-                Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Wave</span>
-              </div>
-              <p className="text-sm text-slate-500">WhatsApp & Telegram Automation Platform</p>
-              <p className="text-xs text-slate-600 mt-1 font-mono">Created by Decisive Analyst</p>
+              <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Wave</span></div>
+              <p className="text-base text-[var(--text-secondary)]">WhatsApp &amp; Telegram Automation Platform</p>
+              <p className="text-sm text-[var(--text-muted)] mt-1">Created by Decisive Analyst</p>
             </div>
-
-            <div className="flex gap-6 text-sm">
-              <Link href="#features" className="text-slate-500 hover:text-emerald-400 transition-colors">Features</Link>
-              <Link href="#how" className="text-slate-500 hover:text-emerald-400 transition-colors">How it Works</Link>
-              <Link href="#install" className="text-slate-500 hover:text-emerald-400 transition-colors">Install</Link>
-              <Link href="#disclaimer" className="text-slate-500 hover:text-emerald-400 transition-colors">Disclaimer</Link>
+            <div className="flex gap-8 text-base">
+              <Link href="#features" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">Features</Link>
+              <Link href="#how" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">How it Works</Link>
+              <Link href="#pricing" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">Pricing</Link>
+              <Link href="#faq" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">FAQ</Link>
             </div>
-
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {['Node.js', 'Baileys', 'grammy', 'Supabase', 'AI'].map((tech) => (
-                <span key={tech} className="px-2 py-1 bg-white/3 border border-white/5 rounded text-[9px] text-slate-600 font-mono">
-                  {tech}
-                </span>
+                <span key={tech} className="px-2.5 py-1.5 bg-[var(--bg-alt)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-muted)] font-medium">{tech}</span>
               ))}
             </div>
           </div>
-
-          <div className="border-t border-[#1a1a24] mt-8 pt-6 text-center">
-            <p className="text-xs text-slate-700 font-mono">
-              &copy; {new Date().getFullYear()} BotWave &middot; Built with ❤ by Decisive Analyst
-            </p>
+          <div className="border-t border-[var(--border)] mt-8 pt-6 text-center">
+            <p className="text-sm text-[var(--text-muted)]">&copy; {new Date().getFullYear()} BotWave &middot; Built with care by Decisive Analyst</p>
           </div>
         </div>
       </footer>

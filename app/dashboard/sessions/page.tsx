@@ -293,7 +293,7 @@ export default function SessionsPage() {
           className="mb-12"
         >
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            BOT <span className="text-green">SESSIONS</span>
+            BOT <span className="text-blue-600 dark:text-blue-400">SESSIONS</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Manage your connected WhatsApp &amp; Telegram sessions
@@ -302,7 +302,7 @@ export default function SessionsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="col-span-full text-center font-mono text-green py-12">
+            <div className="col-span-full text-center font-mono text-blue-600 dark:text-blue-400 py-12">
               LOADING_SESSIONS...
             </div>
           ) : sessions.length > 0 ? (
@@ -320,17 +320,17 @@ export default function SessionsPage() {
               />
             ))
           ) : (
-            <div className="col-span-full text-center font-mono text-[#5a9a7a] py-12 border-2 border-dashed border-green/10">
+            <div className="col-span-full text-center font-mono text-[#5a9a7a] py-12 border-2 border-dashed border-blue-500/10">
               NO_SESSIONS_FOUND
             </div>
           )}
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="h-[120px] border-2 border-dashed border-green/20 flex flex-col items-center justify-center gap-2 hover:border-green/40 hover:bg-green/5 transition-all group"
+            className="h-[120px] border-2 border-dashed border-blue-500/20 flex flex-col items-center justify-center gap-2 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all group"
           >
-            <span className="text-2xl text-[#5a9a7a] group-hover:text-green transition-colors">+</span>
-            <span className="font-mono text-xs text-[#5a9a7a] group-hover:text-green tracking-[2px]">ADD NEW SESSION</span>
+            <span className="text-2xl text-[#5a9a7a] group-hover:text-blue-600 dark:text-blue-400 transition-colors">+</span>
+            <span className="font-mono text-xs text-[#5a9a7a] group-hover:text-blue-600 dark:text-blue-400 tracking-[2px]">ADD NEW SESSION</span>
           </button>
         </div>
 
@@ -339,25 +339,25 @@ export default function SessionsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-10 border border-green/15 bg-[#0a0f0a]"
+          className="mt-10 border border-blue-500/15 bg-[#0a0f0a]"
         >
-          <div className="px-5 py-3 border-b border-green/15 flex items-center gap-2">
-            <span className="text-green text-sm">?</span>
-            <span className="font-mono text-[11px] text-green/70 tracking-[2px]">HOW TO CONNECT</span>
+          <div className="px-5 py-3 border-b border-blue-500/15 flex items-center gap-2">
+            <span className="text-blue-600 dark:text-blue-400 text-sm">?</span>
+            <span className="font-mono text-[11px] text-blue-600 dark:text-blue-400/70 tracking-[2px]">HOW TO CONNECT</span>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-lg text-cyan font-bold">1</span>
+                <span className="font-mono text-lg text-blue-500 dark:text-blue-400 font-bold">1</span>
                 <span className="font-mono text-xs text-white font-bold tracking-[1px]">ADD A SESSION</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                Click <span className="text-green">+ ADD NEW SESSION</span> and choose your platform: <span className="text-white">WhatsApp</span>, <span className="text-white">Telegram Bot</span>, or <span className="text-white">Telegram Userbot</span>.
+                Click <span className="text-blue-600 dark:text-blue-400">+ ADD NEW SESSION</span> and choose your platform: <span className="text-white">WhatsApp</span>, <span className="text-white">Telegram Bot</span>, or <span className="text-white">Telegram Userbot</span>.
               </p>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-lg text-cyan font-bold">2</span>
+                <span className="font-mono text-lg text-blue-500 dark:text-blue-400 font-bold">2</span>
                 <span className="font-mono text-xs text-white font-bold tracking-[1px]">AUTHENTICATE</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
@@ -366,11 +366,11 @@ export default function SessionsPage() {
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-lg text-cyan font-bold">3</span>
+                <span className="font-mono text-lg text-blue-500 dark:text-blue-400 font-bold">3</span>
                 <span className="font-mono text-xs text-white font-bold tracking-[1px]">GO LIVE</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                Once connected, your bot is <span className="text-green">live</span>. Manage settings, view analytics, and configure auto-replies from the dashboard.
+                Once connected, your bot is <span className="text-blue-600 dark:text-blue-400">live</span>. Manage settings, view analytics, and configure auto-replies from the dashboard.
               </p>
             </div>
           </div>
@@ -382,9 +382,9 @@ export default function SessionsPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-green/20 p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
+            className="bg-card border border-blue-500/20 p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
           >
-            <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
+            <h2 className="font-display text-xl text-blue-600 dark:text-blue-400 mb-6 tracking-[2px]">NEW SESSION</h2>
 
             {error && (
               <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
@@ -427,7 +427,7 @@ export default function SessionsPage() {
                         required
                         value={newSession.name}
                         onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
-                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none"
                         placeholder="e.g. Personal"
                         disabled={isCreating}
                       />
@@ -439,7 +439,7 @@ export default function SessionsPage() {
                         required
                         value={newSession.phone}
                         onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
-                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none"
                         placeholder="+2348012345678"
                         disabled={isCreating}
                       />
@@ -456,7 +456,7 @@ export default function SessionsPage() {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-500 text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isCreating}
                       >
                         CONTINUE
@@ -465,11 +465,11 @@ export default function SessionsPage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-cyan/10 border border-cyan/30 p-4">
-                      <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
+                    <div className="bg-blue-400/10 border border-cyan/30 p-4">
+                      <p className="font-mono text-xs text-blue-500 dark:text-blue-400 tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
                       <div className="space-y-2">
-                        <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
-                        <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                        <p className="font-mono text-xs text-white">Name: <span className="text-blue-600 dark:text-blue-400">{newSession.name}</span></p>
+                        <p className="font-mono text-xs text-white">Phone: <span className="text-blue-600 dark:text-blue-400">{newSession.phone}</span></p>
                       </div>
                       <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
                         Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
@@ -485,7 +485,7 @@ export default function SessionsPage() {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-blue-500 text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isCreating}
                       >
                         {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
@@ -514,7 +514,7 @@ export default function SessionsPage() {
 
             {isCreating && selectedPlatform !== 'whatsapp' && (
               <div className="text-center py-4">
-                <div className="animate-pulse font-mono text-xs text-green">CREATING SESSION...</div>
+                <div className="animate-pulse font-mono text-xs text-blue-600 dark:text-blue-400">CREATING SESSION...</div>
               </div>
             )}
           </motion.div>

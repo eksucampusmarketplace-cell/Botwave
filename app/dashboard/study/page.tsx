@@ -583,10 +583,10 @@ export default function StudyPage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm"
+              className="mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-500 text-sm"
             >
               {success}
-              <button onClick={() => setSuccess(null)} className="ml-2 text-emerald-300 hover:text-emerald-100">&times;</button>
+              <button onClick={() => setSuccess(null)} className="ml-2 text-blue-300 hover:text-blue-100">&times;</button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -647,7 +647,7 @@ export default function StudyPage() {
                       <span className="uppercase">{m.file_type}</span>
                       <span>{m.word_count.toLocaleString()} words</span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        m.status === 'analyzed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'
+                        m.status === 'analyzed' ? 'bg-blue-500/20 text-blue-500' : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
                         {m.status}
                       </span>
@@ -1038,7 +1038,7 @@ export default function StudyPage() {
                   <div className="space-y-4">
                     <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6 text-center">
                       <div className={`text-5xl font-bold mb-2 ${
-                        quizResult.scorePercent >= 70 ? 'text-emerald-400' : quizResult.scorePercent >= 50 ? 'text-yellow-400' : 'text-red-400'
+                        quizResult.scorePercent >= 70 ? 'text-blue-500' : quizResult.scorePercent >= 50 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                         {quizResult.scorePercent}%
                       </div>
@@ -1059,10 +1059,10 @@ export default function StudyPage() {
                     {/* Detailed answers */}
                     {quizResult.answers.map((a, i) => (
                       <div key={i} className={`bg-[var(--surface)] rounded-2xl border p-4 ${
-                        a.isCorrect ? 'border-emerald-500/30' : 'border-red-500/30'
+                        a.isCorrect ? 'border-blue-500/30' : 'border-red-500/30'
                       }`}>
                         <div className="flex items-start gap-2">
-                          <span className={`text-sm shrink-0 ${a.isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <span className={`text-sm shrink-0 ${a.isCorrect ? 'text-blue-500' : 'text-red-400'}`}>
                             {a.isCorrect ? '\u2713' : '\u2717'}
                           </span>
                           <div>
@@ -1070,7 +1070,7 @@ export default function StudyPage() {
                             {!a.isCorrect && (
                               <p className="text-xs text-red-400 mt-1">Your answer: {a.userAnswer}</p>
                             )}
-                            <p className="text-xs text-emerald-400 mt-1">Correct: {a.correctAnswer}</p>
+                            <p className="text-xs text-blue-500 mt-1">Correct: {a.correctAnswer}</p>
                             {a.explanation && (
                               <p className="text-xs text-[var(--text-muted)] mt-2 italic">{a.explanation}</p>
                             )}
@@ -1123,7 +1123,7 @@ export default function StudyPage() {
                               {q.question_type === 'mcq' ? 'MCQ' : q.question_type === 'true_false' ? 'TRUE/FALSE' : 'FILL IN BLANK'}
                             </span>
                             <span className={`ml-2 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded ${
-                              q.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                              q.difficulty === 'easy' ? 'bg-blue-500/10 text-blue-500' :
                               q.difficulty === 'hard' ? 'bg-red-500/10 text-red-400' :
                               'bg-yellow-500/10 text-yellow-400'
                             }`}>
@@ -1200,7 +1200,7 @@ export default function StudyPage() {
                         Card {flashcardIndex + 1} of {flashcards.length}
                       </h3>
                       <span className={`text-xs px-2 py-1 rounded-lg ${
-                        flashcards[flashcardIndex]?.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400' :
+                        flashcards[flashcardIndex]?.difficulty === 'easy' ? 'bg-blue-500/10 text-blue-500' :
                         flashcards[flashcardIndex]?.difficulty === 'hard' ? 'bg-red-500/10 text-red-400' :
                         'bg-yellow-500/10 text-yellow-400'
                       }`}>
@@ -1285,7 +1285,7 @@ export default function StudyPage() {
                         <div key={a.id} className="flex items-center justify-between p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                              a.score_percent >= 70 ? 'bg-emerald-500/15 text-emerald-400' :
+                              a.score_percent >= 70 ? 'bg-blue-500/15 text-blue-500' :
                               a.score_percent >= 50 ? 'bg-yellow-500/15 text-yellow-400' :
                               'bg-red-500/15 text-red-400'
                             }`}>

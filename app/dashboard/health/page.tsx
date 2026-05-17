@@ -45,11 +45,11 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 const eventTypeColors: Record<string, string> = {
-  connected: 'text-green',
+  connected: 'text-blue-600 dark:text-blue-400',
   disconnected: 'text-red-400',
   reconnecting: 'text-yellow-500',
   error: 'text-red-400',
-  message_sent: 'text-green/60',
+  message_sent: 'text-blue-600 dark:text-blue-400/60',
   message_failed: 'text-red-400/60',
   webhook_retry: 'text-yellow-500',
   webhook_dead_letter: 'text-red-400',
@@ -96,7 +96,7 @@ export default function HealthPage() {
           className="mb-8"
         >
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            BOT <span className="text-green">HEALTH</span>
+            BOT <span className="text-blue-600 dark:text-blue-400">HEALTH</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Live monitoring &bull; Last 24 hours
@@ -116,21 +116,21 @@ export default function HealthPage() {
             {/* Metric Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {[
-                { label: 'ERRORS', value: data.errors24h, color: data.errors24h > 0 ? 'text-red-400' : 'text-green' },
-                { label: 'RECONNECTS', value: data.reconnects24h, color: data.reconnects24h > 5 ? 'text-yellow-500' : 'text-green' },
-                { label: 'MSGS SENT', value: data.messagesDelivered24h, color: 'text-green' },
-                { label: 'MSGS FAILED', value: data.messagesFailed24h, color: data.messagesFailed24h > 0 ? 'text-red-400' : 'text-green' },
-                { label: 'RETRIES', value: data.webhookRetries, color: data.webhookRetries > 0 ? 'text-yellow-500' : 'text-green' },
-                { label: 'DEAD LETTERS', value: data.webhookDeadLetters, color: data.webhookDeadLetters > 0 ? 'text-red-400' : 'text-green' },
+                { label: 'ERRORS', value: data.errors24h, color: data.errors24h > 0 ? 'text-red-400' : 'text-blue-600 dark:text-blue-400' },
+                { label: 'RECONNECTS', value: data.reconnects24h, color: data.reconnects24h > 5 ? 'text-yellow-500' : 'text-blue-600 dark:text-blue-400' },
+                { label: 'MSGS SENT', value: data.messagesDelivered24h, color: 'text-blue-600 dark:text-blue-400' },
+                { label: 'MSGS FAILED', value: data.messagesFailed24h, color: data.messagesFailed24h > 0 ? 'text-red-400' : 'text-blue-600 dark:text-blue-400' },
+                { label: 'RETRIES', value: data.webhookRetries, color: data.webhookRetries > 0 ? 'text-yellow-500' : 'text-blue-600 dark:text-blue-400' },
+                { label: 'DEAD LETTERS', value: data.webhookDeadLetters, color: data.webhookDeadLetters > 0 ? 'text-red-400' : 'text-blue-600 dark:text-blue-400' },
               ].map((metric, i) => (
                 <motion.div
                   key={metric.label}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: i * 0.05 }}
-                  className="bg-card border border-green/10 p-4 relative"
+                  className="bg-card border border-blue-500/10 p-4 relative"
                 >
-                  <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 border-green/30" />
+                  <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2 border-blue-500/30" />
                   <p className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-1">{metric.label}</p>
                   <p className={`font-display text-2xl ${metric.color}`}>{metric.value}</p>
                 </motion.div>
@@ -143,20 +143,20 @@ export default function HealthPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-card border border-green/10 p-6 relative"
+                className="bg-card border border-blue-500/10 p-6 relative"
               >
-                <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-                <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-                <h2 className="font-display text-sm tracking-[3px] text-green mb-4">SESSION STATUS</h2>
+                <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+                <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+                <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">SESSION STATUS</h2>
 
                 {data.uptimeBySession.length === 0 ? (
                   <p className="font-mono text-xs text-[#3a6a5a]">No sessions found</p>
                 ) : (
                   <div className="space-y-3">
                     {data.uptimeBySession.map(s => (
-                      <div key={s.sessionId} className="flex items-center justify-between p-3 bg-dark/50 border border-green/5">
+                      <div key={s.sessionId} className="flex items-center justify-between p-3 bg-dark/50 border border-blue-500/5">
                         <div className="flex items-center gap-3">
-                          <div className={`w-2.5 h-2.5 rounded-full ${s.isOnline ? 'bg-green' : 'bg-red-400'}`} />
+                          <div className={`w-2.5 h-2.5 rounded-full ${s.isOnline ? 'bg-blue-500' : 'bg-red-400'}`} />
                           <div>
                             <p className="font-mono text-xs text-white">{s.sessionName}</p>
                             <p className="font-mono text-[10px] text-[#3a6a5a]">
@@ -165,7 +165,7 @@ export default function HealthPage() {
                           </div>
                         </div>
                         <span className={`font-mono text-[10px] tracking-[1px] px-2 py-0.5 border ${
-                          s.isOnline ? 'text-green border-green/30' : 'text-red-400 border-red-400/30'
+                          s.isOnline ? 'text-blue-600 dark:text-blue-400 border-blue-500/30' : 'text-red-400 border-red-400/30'
                         }`}>
                           {s.state.toUpperCase().replace('_', ' ')}
                         </span>
@@ -180,18 +180,18 @@ export default function HealthPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="bg-card border border-green/10 p-6 relative"
+                className="bg-card border border-blue-500/10 p-6 relative"
               >
-                <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-green/30" />
-                <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-green/30" />
-                <h2 className="font-display text-sm tracking-[3px] text-green mb-4">EVENT LOG</h2>
+                <div className="absolute top-0 left-0 w-5 h-5 border-l-2 border-t-2 border-blue-500/30" />
+                <div className="absolute top-0 right-0 w-5 h-5 border-r-2 border-t-2 border-blue-500/30" />
+                <h2 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">EVENT LOG</h2>
 
                 {data.recentEvents.length === 0 ? (
                   <p className="font-mono text-xs text-[#3a6a5a]">No events in the last 24 hours</p>
                 ) : (
                   <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {data.recentEvents.map(evt => (
-                      <div key={evt.id} className="flex items-start gap-2 py-1.5 border-b border-green/5 last:border-0">
+                      <div key={evt.id} className="flex items-start gap-2 py-1.5 border-b border-blue-500/5 last:border-0">
                         <span className="font-mono text-[10px] text-[#3a6a5a] whitespace-nowrap mt-0.5">
                           {new Date(evt.created_at).toLocaleTimeString()}
                         </span>

@@ -40,20 +40,20 @@ export default function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-mono tracking-wide mb-4">
-            GETTING STARTED
+          <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">
+            Getting Started
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">
             How It Works
           </h2>
-          <p className="text-[var(--text-secondary)] mt-4 max-w-xl mx-auto">
+          <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-xl mx-auto leading-relaxed">
             Get your WhatsApp or Telegram bot running in under 2 minutes. No technical skills needed.
           </p>
         </motion.div>
 
         <div className="flex flex-col gap-6 relative">
           {/* Vertical line */}
-          <div className="absolute left-[1.75rem] top-8 bottom-8 w-px bg-gradient-to-b from-emerald-500/40 via-cyan-500/40 to-emerald-500/0 hidden md:block" />
+          <div className="absolute left-[1.75rem] top-8 bottom-8 w-px bg-gradient-to-b from-blue-500/40 via-violet-500/40 to-blue-500/0 hidden md:block" />
 
           {steps.map((step, index) => (
             <motion.div
@@ -64,13 +64,13 @@ export default function HowItWorks() {
               viewport={{ once: true }}
               className="flex gap-6 items-start"
             >
-              <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold font-mono shrink-0 relative z-10">
+              <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0 relative z-10">
                 {step.number}
               </div>
-              <div className="flex-1 glass-card p-6 rounded-xl">
-                <h3 className="font-semibold text-[var(--text-primary)] text-lg mb-1">{step.title}</h3>
-                <code className="text-xs text-emerald-400/70 font-mono block mb-3">{step.cmd}</code>
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{step.description}</p>
+              <div className="flex-1 glass-card p-6 rounded-2xl">
+                <h3 className="font-bold text-[var(--text-primary)] text-lg mb-1">{step.title}</h3>
+                <code className="text-xs text-blue-500/70 dark:text-blue-400/70 font-mono block mb-3">{step.cmd}</code>
+                <p className="text-base text-[var(--text-secondary)] leading-relaxed">{step.description}</p>
               </div>
             </motion.div>
           ))}

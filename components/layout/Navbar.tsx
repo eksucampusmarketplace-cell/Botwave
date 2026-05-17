@@ -19,10 +19,10 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold text-[var(--text-primary)]">
-            Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Wave</span>
+            Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Wave</span>
           </span>
-          <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] text-emerald-400 font-mono">
-            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+          <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] text-blue-500 font-medium">
+            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
             ONLINE
           </span>
         </Link>
@@ -73,7 +73,7 @@ export default function Navbar() {
           </Link>
           <Link
             href="/signup"
-            className="text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20"
+            className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
           >
             Get Started
           </Link>
@@ -141,7 +141,7 @@ export default function Navbar() {
               <Link
                 href="/signup"
                 onClick={() => setMobileOpen(false)}
-                className="text-sm text-white bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg text-center font-medium"
+                className="text-sm text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-xl text-center font-medium"
               >
                 Get Started
               </Link>

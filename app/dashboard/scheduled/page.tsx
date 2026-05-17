@@ -125,7 +125,7 @@ export default function ScheduledPage() {
           className="mb-8"
         >
           <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[2px]">
-            SCHEDULED <span className="text-green">MESSAGES</span>
+            SCHEDULED <span className="text-blue-600 dark:text-blue-400">MESSAGES</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Schedule messages to be sent at a specific time
@@ -140,8 +140,8 @@ export default function ScheduledPage() {
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 font-mono text-xs tracking-[2px] border transition-colors ${
                   filter === f
-                    ? 'border-green bg-green/10 text-green'
-                    : 'border-green/20 text-[#5a9a7a] hover:border-green/40'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    : 'border-blue-500/20 text-[#5a9a7a] hover:border-blue-500/40'
                 }`}
               >
                 {f.toUpperCase()}
@@ -150,7 +150,7 @@ export default function ScheduledPage() {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="px-6 py-2 bg-green text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
+            className="px-6 py-2 bg-blue-500 text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-blue-400 transition-colors"
           >
             + SCHEDULE NEW
           </button>
@@ -158,10 +158,10 @@ export default function ScheduledPage() {
 
         {loading ? (
           <div className="text-center py-20">
-            <div className="inline-block w-8 h-8 border-2 border-green/30 border-t-green rounded-full animate-spin" />
+            <div className="inline-block w-8 h-8 border-2 border-blue-500/30 border-t-green rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="bg-card border border-green/10 p-12 text-center">
+          <div className="bg-card border border-blue-500/10 p-12 text-center">
             <p className="font-mono text-sm text-[#5a9a7a]">No scheduled messages found</p>
             <p className="font-mono text-xs text-[#3a6a5a] mt-2">Click &quot;Schedule New&quot; to create one</p>
           </div>
@@ -172,17 +172,17 @@ export default function ScheduledPage() {
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-green/10 p-4 relative"
+                className="bg-card border border-blue-500/10 p-4 relative"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2 py-0.5 font-mono text-[10px] tracking-[1px] ${
                         msg.sent
-                          ? 'bg-green/10 text-green border border-green/20'
+                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                           : isPast(msg.send_at)
                           ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                          : 'bg-cyan/10 text-cyan border border-cyan/20'
+                          : 'bg-blue-400/10 text-blue-500 dark:text-blue-400 border border-cyan/20'
                       }`}>
                         {msg.sent ? 'SENT' : isPast(msg.send_at) ? 'OVERDUE' : 'PENDING'}
                       </span>
@@ -220,16 +220,16 @@ export default function ScheduledPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-green/20 p-6 sm:p-8 max-w-md w-full relative"
+              className="bg-card border border-blue-500/20 p-6 sm:p-8 max-w-md w-full relative"
             >
-              <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">SCHEDULE MESSAGE</h2>
+              <h2 className="font-display text-xl text-blue-600 dark:text-blue-400 mb-6 tracking-[2px]">SCHEDULE MESSAGE</h2>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
                   <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION</label>
                   <select
                     value={form.sessionId}
                     onChange={(e) => setForm({ ...form, sessionId: e.target.value })}
-                    className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                    className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none"
                     required
                   >
                     {sessions.map((s) => (
@@ -244,7 +244,7 @@ export default function ScheduledPage() {
                     required
                     value={form.targetJid}
                     onChange={(e) => setForm({ ...form, targetJid: e.target.value })}
-                    className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                    className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none"
                     placeholder="e.g. 2348012345678@s.whatsapp.net"
                   />
                 </div>
@@ -254,7 +254,7 @@ export default function ScheduledPage() {
                     required
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none min-h-[80px] resize-y"
+                    className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none min-h-[80px] resize-y"
                     placeholder="Your scheduled message..."
                     maxLength={2000}
                   />
@@ -266,7 +266,7 @@ export default function ScheduledPage() {
                     required
                     value={form.sendAt}
                     onChange={(e) => setForm({ ...form, sendAt: e.target.value })}
-                    className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                    className="w-full bg-dark border border-blue-500/20 p-3 text-white font-mono text-sm focus:border-blue-500 outline-none"
                   />
                 </div>
                 <div className="flex gap-4 pt-4">
@@ -280,7 +280,7 @@ export default function ScheduledPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50"
+                    className="flex-1 bg-blue-500 text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-blue-400 transition-colors disabled:opacity-50"
                   >
                     {saving ? 'SCHEDULING...' : 'SCHEDULE'}
                   </button>
