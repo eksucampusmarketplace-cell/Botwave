@@ -133,6 +133,65 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`🎯 You rolled: <b>${result}</b> (1-${max})`, { parse_mode: 'HTML' });
   });
 
+  // /runs — Show a random fun action
+  bot.command('runs', async (ctx) => {
+    const actions = [
+      'runs away', 'hides behind a wall', 'does a backflip', 'moonwalks out',
+      'slides into the shadows', 'vanishes in a puff of smoke', 'teleports away',
+      'ducks under a table', 'does the robot dance', 'ninja rolls out',
+    ];
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    await ctx.reply(`🏃 *${ctx.from?.first_name || 'User'} ${action}!*`, { parse_mode: 'Markdown' });
+  });
+
+  // /donate — Show donation info
+  bot.command('donate', async (ctx) => {
+    await ctx.reply(
+      `❤\ufe0f <b>Support Botwave</b>\n\n` +
+      `Thank you for using Botwave! If you enjoy the bot, ` +
+      `consider supporting its development.\n\n` +
+      `Contact the bot owner for donation details.`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  // /markdownhelp — Show markdown formatting help
+  bot.command('markdownhelp', async (ctx) => {
+    await ctx.reply(
+      `<b>Markdown/HTML Formatting Help</b>\n\n` +
+      `<b>Bold</b>: &lt;b&gt;text&lt;/b&gt; or *text*\n` +
+      `<i>Italic</i>: &lt;i&gt;text&lt;/i&gt; or _text_\n` +
+      `<code>Code</code>: &lt;code&gt;text&lt;/code&gt; or \`text\`\n` +
+      `<u>Underline</u>: &lt;u&gt;text&lt;/u&gt;\n` +
+      `<s>Strikethrough</s>: &lt;s&gt;text&lt;/s&gt; or ~text~\n` +
+      `<a href="https://example.com">Link</a>: &lt;a href="url"&gt;text&lt;/a&gt;\n` +
+      `<pre>Pre</pre>: &lt;pre&gt;text&lt;/pre&gt; or \`\`\`text\`\`\`\n\n` +
+      `<b>Placeholders:</b>\n` +
+      `{first} - first name\n` +
+      `{last} - last name\n` +
+      `{fullname} - full name\n` +
+      `{username} - @username\n` +
+      `{id} - user ID\n` +
+      `{chatname} - group name`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  // /limits — Show bot rate limits and usage info
+  bot.command('limits', async (ctx) => {
+    await ctx.reply(
+      `ℹ\ufe0f <b>Bot Limits</b>\n\n` +
+      `• Messages: 30/sec (global), 20/min (per group)\n` +
+      `• Bulk actions: 200 messages max per purge\n` +
+      `• Notes: unlimited per group\n` +
+      `• Filters: unlimited per group\n` +
+      `• Blacklist: unlimited triggers\n` +
+      `• Federation groups: unlimited\n` +
+      `• Warning limit: configurable (default 3)`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
   bot.command('afk', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const reason = (ctx.match?.toString() || '').trim() || 'No reason';

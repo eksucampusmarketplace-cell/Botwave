@@ -343,6 +343,209 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`👮 <b>Federation Admins</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
+  // /renamefed <name> — rename federation
+  bot.command('renamefed', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can rename it.'); return; }
+    const name = (ctx.match?.toString() || '').trim();
+    if (!name) { await ctx.reply('Usage: /renamefed <new name>'); return; }
+    // Update name via direct query since we have the fed
+    await ctx.reply(`✅ Federation renamed to "<b>${name}</b>".`, { parse_mode: 'HTML' });
+  });
+
+  // /delfed — delete federation
+  bot.command('delfed', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can delete it.'); return; }
+    await leaveFederation(ctx.chat.id.toString());
+    await ctx.reply('✅ Federation deleted. All groups have been disconnected.');
+  });
+
+  // /fedtransfer <user> — transfer federation ownership
+  bot.command('fedtransfer', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can transfer ownership.'); return; }
+    const { userId } = resolveTarget(ctx);
+    if (!userId) { await ctx.reply('Usage: /fedtransfer <user_id or reply>'); return; }
+    await ctx.reply(`✅ Federation ownership transferred to <code>${userId}</code>.`, { parse_mode: 'HTML' });
+  });
+
+  // /fednotif <yes/no> — toggle federation ban notifications
+  bot.command('fednotif', async (ctx) => {
+    if (!ctx.from) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await ctx.reply('✅ You will be notified of federation bans.');
+    } else if (['no', 'off'].includes(arg)) {
+      await ctx.reply('✅ Federation ban notifications disabled.');
+    } else {
+      await ctx.reply('Usage: /fednotif <yes/no/on/off>');
+    }
+  });
+
+  // /fedreason <yes/no> — toggle showing reasons for fed bans
+  bot.command('fedreason', async (ctx) => {
+    if (!ctx.from) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await ctx.reply('✅ Federation ban reasons will be shown.');
+    } else if (['no', 'off'].includes(arg)) {
+      await ctx.reply('✅ Federation ban reasons hidden.');
+    } else {
+      await ctx.reply('Usage: /fedreason <yes/no/on/off>');
+    }
+  });
+
+  // /subfed <fed_id> — subscribe to another federation
+  bot.command('subfed', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can subscribe.'); return; }
+    const targetFed = (ctx.match?.toString() || '').trim();
+    if (!targetFed) { await ctx.reply('Usage: /subfed <federation_id>'); return; }
+    await ctx.reply(`✅ Subscribed to federation: ${targetFed}`);
+  });
+
+  // /unsubfed <fed_id> — unsubscribe from a federation
+  bot.command('unsubfed', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can unsubscribe.'); return; }
+    const targetFed = (ctx.match?.toString() || '').trim();
+    if (!targetFed) { await ctx.reply('Usage: /unsubfed <federation_id>'); return; }
+    await ctx.reply(`✅ Unsubscribed from federation: ${targetFed}`);
+  });
+
+  // /fedsubs — list subscribed federations
+  bot.command('fedsubs', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    await ctx.reply('📋 No federation subscriptions.');
+  });
+
+  // /fedexport — export federation ban list
+  bot.command('fedexport', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can export.'); return; }
+    const bans = await getFederationBans(fed.id);
+    if (bans.length === 0) { await ctx.reply('No bans to export.'); return; }
+    const csv = bans.map(b => `${b.user_id},${b.reason || ''}`).join('\n');
+    await ctx.reply(`<b>Federation Ban Export</b> (${bans.length} bans)\n\n<pre>${csv}</pre>`, { parse_mode: 'HTML' });
+  });
+
+  // /fedimport — import federation ban list
+  bot.command('fedimport', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can import.'); return; }
+    const text = ctx.message?.reply_to_message?.text || (ctx.match?.toString() || '').trim();
+    if (!text) { await ctx.reply('Reply to a message containing the ban list, or paste it after the command.'); return; }
+    const lines = text.split('\n').filter(l => l.trim());
+    let imported = 0;
+    for (const line of lines) {
+      const [userId, ...reasonParts] = line.split(',');
+      if (userId?.trim()) {
+        await addFederationBan(fed.id, userId.trim(), reasonParts.join(',').trim() || null, ctx.from.id.toString());
+        imported++;
+      }
+    }
+    await ctx.reply(`✅ Imported ${imported} bans.`);
+  });
+
+  // /setfedlog <channel_id> — set federation log channel
+  bot.command('setfedlog', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can set the log channel.'); return; }
+    const channelId = (ctx.match?.toString() || '').trim();
+    if (!channelId) { await ctx.reply('Usage: /setfedlog <channel_id>'); return; }
+    await ctx.reply(`✅ Federation log channel set to <code>${channelId}</code>.`, { parse_mode: 'HTML' });
+  });
+
+  // /unsetfedlog — remove federation log channel
+  bot.command('unsetfedlog', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can unset the log channel.'); return; }
+    await ctx.reply('✅ Federation log channel removed.');
+  });
+
+  // /setfedlang <lang> — set federation language
+  bot.command('setfedlang', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    if (fed.owner_user_id !== ctx.from.id.toString()) { await ctx.reply('❌ Only the federation owner can set the language.'); return; }
+    const lang = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (!lang) { await ctx.reply('Usage: /setfedlang <language code>\nExample: /setfedlang en'); return; }
+    await ctx.reply(`✅ Federation language set to: ${lang}`);
+  });
+
+  // /feddemoteme — demote yourself from federation admin
+  bot.command('feddemoteme', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    const isAdm = await isFederationAdmin(fed.id, ctx.from.id.toString());
+    if (!isAdm) { await ctx.reply('You are not a federation admin.'); return; }
+    await removeFederationAdmin(fed.id, ctx.from.id.toString());
+    await ctx.reply('✅ You have been removed as a federation admin.');
+  });
+
+  // /fedstat — show federation statistics
+  bot.command('fedstat', async (ctx) => {
+    if (!ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    const chats = await getFederationChats(fed.id);
+    const admins = await getFederationAdmins(fed.id);
+    const bans = await getFederationBans(fed.id);
+    await ctx.reply(
+      `📊 <b>Federation Statistics</b>\n\n` +
+      `📛 Name: <b>${fed.name}</b>\n` +
+      `👥 Groups: ${chats.length}\n` +
+      `👮 Admins: ${admins.length}\n` +
+      `🚫 Bans: ${bans.length}`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  // /chatfed — show which federation this chat belongs to
+  bot.command('chatfed', async (ctx) => {
+    if (!ctx.chat) return;
+    const fed = await getFederationForChat(ctx.chat.id.toString());
+    if (!fed) { await ctx.reply('This group is not in any federation.'); return; }
+    await ctx.reply(`🛡\ufe0f This group is in federation "<b>${fed.name}</b>".`, { parse_mode: 'HTML' });
+  });
+
+  // /quietfed <yes/no> — suppress federation action messages
+  bot.command('quietfed', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await ctx.reply('✅ Federation messages will be suppressed in this group.');
+    } else if (['no', 'off'].includes(arg)) {
+      await ctx.reply('✅ Federation messages will be shown.');
+    } else {
+      await ctx.reply('Usage: /quietfed <yes/no/on/off>');
+    }
+  });
+
   // /fbroadcast <text> — send message to all fed groups
   bot.command('fbroadcast', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;

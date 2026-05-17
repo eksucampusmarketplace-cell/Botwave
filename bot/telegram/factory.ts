@@ -57,6 +57,12 @@ import { registerAutoReplyHandlers } from './handlers/autoreply';
 import { registerMediaDownloadHandlers } from './handlers/mediadownload';
 import { registerImageEditHandlers } from './handlers/imageedit';
 import { registerInfoLookupHandlers } from './handlers/infolookup';
+import { registerApprovalHandlers } from './handlers/approval';
+import { registerCleanCommandHandlers } from './handlers/cleancommand';
+import { registerCleanServiceHandlers } from './handlers/cleanservice';
+import { registerConnectionsHandlers } from './handlers/connections';
+import { registerDisablingHandlers } from './handlers/disabling';
+import { registerTopicsHandlers } from './handlers/topics';
 import { getTelegramConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -168,6 +174,12 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerMediaDownloadHandlers(bot, sessionId);
   registerImageEditHandlers(bot, sessionId);
   registerInfoLookupHandlers(bot, sessionId);
+  registerApprovalHandlers(bot, sessionId);
+  registerCleanCommandHandlers(bot, sessionId);
+  registerCleanServiceHandlers(bot, sessionId);
+  registerConnectionsHandlers(bot, sessionId);
+  registerDisablingHandlers(bot, sessionId);
+  registerTopicsHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {

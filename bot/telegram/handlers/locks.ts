@@ -5,7 +5,8 @@
 
 import { Bot, type Context } from 'grammy';
 import { requireAdmin, isAdmin } from '../utils/permissions';
-import { getLocks, setLock, clearAllLocks } from '../utils/db';
+import { getLocks, setLock, clearAllLocks, getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { escapeHtml } from '../utils/format';
 
 const VALID_LOCK_TYPES = [
   'photo',
@@ -139,6 +140,60 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     } catch {
       await ctx.reply('❌ Failed to close group. Am I admin?');
     }
+  });
+
+  // /lockwarns <yes/no> — Warn users when they send locked content
+  bot.command('lockwarns', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { lock_warns: true } as Record<string, unknown>);
+      await ctx.reply('✅ Users will be warned when sending locked content.');
+    } else if (['no', 'off'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { lock_warns: false } as Record<string, unknown>);
+      await ctx.reply('✅ Lock warnings disabled.');
+    } else {
+      await ctx.reply('Usage: /lockwarns <yes/no/on/off>');
+    }
+  });
+
+  // /locktypes — List all available lock types
+  bot.command('locktypes', async (ctx) => {
+    const types = VALID_LOCK_TYPES.map(t => `• <code>${t}</code>`).join('\n');
+    await ctx.reply(`<b>Available Lock Types</b>\n\n${types}\n\n• <code>all</code> (lock everything)`, { parse_mode: 'HTML' });
+  });
+
+  // /allowlist <url/domain> — Whitelist a URL from link lock
+  bot.command('allowlist', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const url = (ctx.match?.toString() || '').trim();
+    if (!url) { await ctx.reply('Usage: /allowlist <url or domain>'); return; }
+    const config = await getTelegramConfig(sessionId);
+    const current: string[] = (config as Record<string, unknown>).lock_allowlist as string[] || [];
+    if (!current.includes(url.toLowerCase())) {
+      current.push(url.toLowerCase());
+      await updateTelegramConfig(sessionId, { lock_allowlist: current } as Record<string, unknown>);
+    }
+    await ctx.reply(`✅ Added <code>${escapeHtml(url)}</code> to allowlist.`, { parse_mode: 'HTML' });
+  });
+
+  // /rmallowlist <url/domain> — Remove from allowlist
+  bot.command('rmallowlist', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const url = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (!url) { await ctx.reply('Usage: /rmallowlist <url or domain>'); return; }
+    const config = await getTelegramConfig(sessionId);
+    const current: string[] = (config as Record<string, unknown>).lock_allowlist as string[] || [];
+    const filtered = current.filter(u => u !== url);
+    await updateTelegramConfig(sessionId, { lock_allowlist: filtered } as Record<string, unknown>);
+    await ctx.reply(`✅ Removed from allowlist.`);
+  });
+
+  // /rmallowlistall — Clear entire allowlist
+  bot.command('rmallowlistall', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    await updateTelegramConfig(sessionId, { lock_allowlist: [] } as Record<string, unknown>);
+    await ctx.reply('✅ Allowlist cleared.');
   });
 }
 

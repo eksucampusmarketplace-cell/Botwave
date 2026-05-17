@@ -1,6 +1,7 @@
 /**
- * Moderation handlers: ban, unban, tban, mute, unmute, tmute, kick,
- * warn, unwarn, warns, resetwarns.
+ * Moderation handlers: ban, dban, sban, unban, tban, mute, dmute, smute, unmute, tmute,
+ * kick, dkick, skick, kickme, warn, dwarn, swarn, unwarn, warns, resetwarns,
+ * resetallwarns, warnings, warnmode, warnlimit, warntime, rmwarn.
  */
 
 import { Bot, type Context, InlineKeyboard } from 'grammy';
@@ -90,6 +91,31 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     logModAction(sessionId, ctx.chat!.id.toString(), 'ban', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
   });
 
+  // ─── Delete + Ban ──────────────────────────────────────────────────
+  bot.command('dban', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /dban [reply] [reason]');
+    if (!resolved) return;
+    const { targetId, targetName, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    if (ctx.message?.reply_to_message) {
+      try { await ctx.api.deleteMessage(ctx.chat!.id, ctx.message.reply_to_message.message_id); } catch {}
+    }
+    await ctx.banChatMember(targetId);
+    await ctx.reply(`🚫 ${targetName} has been banned.\n📝 Reason: ${escapeHtml(reason || 'No reason given')}`, { parse_mode: 'HTML' });
+    logModAction(sessionId, ctx.chat!.id.toString(), 'dban', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
+  });
+
+  // ─── Silent Ban ───────────────────────────────────────────────────
+  bot.command('sban', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /sban [reply/@user/id] [reason]');
+    if (!resolved) return;
+    const { targetId, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    try { await ctx.deleteMessage(); } catch {}
+    await ctx.banChatMember(targetId);
+    logModAction(sessionId, ctx.chat!.id.toString(), 'sban', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
+  });
+
   // ─── Unban ─────────────────────────────────────────────────────────
   bot.command('unban', async (ctx) => {
     const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /unban [reply/@user/id]');
@@ -150,6 +176,31 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
       { parse_mode: 'HTML' },
     );
     logModAction(sessionId, ctx.chat!.id.toString(), 'tban', targetId.toString(), ctx.from?.id.toString() || null, actualReason || null, { duration });
+  });
+
+  // ─── Delete + Mute ────────────────────────────────────────────────
+  bot.command('dmute', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /dmute [reply] [reason]');
+    if (!resolved) return;
+    const { targetId, targetName, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    if (ctx.message?.reply_to_message) {
+      try { await ctx.api.deleteMessage(ctx.chat!.id, ctx.message.reply_to_message.message_id); } catch {}
+    }
+    await ctx.restrictChatMember(targetId, { can_send_messages: false });
+    await ctx.reply(`🔇 ${targetName} has been muted.\n📝 Reason: ${escapeHtml(reason || 'No reason given')}`, { parse_mode: 'HTML' });
+    logModAction(sessionId, ctx.chat!.id.toString(), 'dmute', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
+  });
+
+  // ─── Silent Mute ──────────────────────────────────────────────────
+  bot.command('smute', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /smute [reply/@user/id] [reason]');
+    if (!resolved) return;
+    const { targetId, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    try { await ctx.deleteMessage(); } catch {}
+    await ctx.restrictChatMember(targetId, { can_send_messages: false });
+    logModAction(sessionId, ctx.chat!.id.toString(), 'smute', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
   });
 
   // ─── Mute ──────────────────────────────────────────────────────────
@@ -237,6 +288,45 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     logModAction(sessionId, ctx.chat!.id.toString(), 'kick', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
   });
 
+  // ─── Delete + Kick ────────────────────────────────────────────────
+  bot.command('dkick', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /dkick [reply] [reason]');
+    if (!resolved) return;
+    const { targetId, targetName, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    if (ctx.message?.reply_to_message) {
+      try { await ctx.api.deleteMessage(ctx.chat!.id, ctx.message.reply_to_message.message_id); } catch {}
+    }
+    await ctx.banChatMember(targetId);
+    await ctx.unbanChatMember(targetId);
+    await ctx.reply(`👢 ${targetName} has been kicked.\n📝 Reason: ${escapeHtml(reason || 'No reason given')}`, { parse_mode: 'HTML' });
+    logModAction(sessionId, ctx.chat!.id.toString(), 'dkick', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
+  });
+
+  // ─── Silent Kick ──────────────────────────────────────────────────
+  bot.command('skick', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /skick [reply/@user/id] [reason]');
+    if (!resolved) return;
+    const { targetId, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    try { await ctx.deleteMessage(); } catch {}
+    await ctx.banChatMember(targetId);
+    await ctx.unbanChatMember(targetId);
+    logModAction(sessionId, ctx.chat!.id.toString(), 'skick', targetId.toString(), ctx.from?.id.toString() || null, reason || null);
+  });
+
+  // ─── Kickme ───────────────────────────────────────────────────────
+  bot.command('kickme', async (ctx) => {
+    if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') return;
+    try {
+      await ctx.banChatMember(ctx.from.id);
+      await ctx.unbanChatMember(ctx.from.id);
+      await ctx.reply(`👢 ${mentionUser(ctx.from)} has left the chat.`, { parse_mode: 'HTML' });
+    } catch {
+      await ctx.reply('❌ Failed to kick. Am I admin?');
+    }
+  });
+
   // ─── Warn ──────────────────────────────────────────────────────────
   bot.command('warn', async (ctx) => {
     const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /warn [reply/@user/id] [reason]');
@@ -277,8 +367,47 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     logModAction(sessionId, chatId, 'warn', targetId.toString(), ctx.from?.id.toString() || null, reason || null, { count });
   });
 
-  // ─── Unwarn ────────────────────────────────────────────────────────
-  bot.command('unwarn', async (ctx) => {
+  // ─── Delete + Warn ────────────────────────────────────────────────
+  bot.command('dwarn', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /dwarn [reply] [reason]');
+    if (!resolved) return;
+    const { targetId, targetName, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    if (ctx.message?.reply_to_message) {
+      try { await ctx.api.deleteMessage(ctx.chat!.id, ctx.message.reply_to_message.message_id); } catch {}
+    }
+    const config = await getTelegramConfig(sessionId);
+    const chatId = ctx.chat!.id.toString();
+    const count = await addWarning(sessionId, chatId, targetId.toString(), ctx.from!.id.toString(), reason || null);
+    await ctx.reply(`⚠️ ${targetName} warned.\nCount: ${count}/${config.warn_limit}\nReason: ${escapeHtml(reason || 'No reason given')}`, { parse_mode: 'HTML' });
+    if (count >= config.warn_limit) {
+      if (config.warn_action === 'ban') { await ctx.banChatMember(targetId); await ctx.reply(`🚫 ${targetName} banned (warn limit).`, { parse_mode: 'HTML' }); }
+      else { await ctx.restrictChatMember(targetId, { can_send_messages: false }); await ctx.reply(`🔇 ${targetName} muted (warn limit).`, { parse_mode: 'HTML' }); }
+      await resetWarnings(sessionId, chatId, targetId.toString());
+    }
+    logModAction(sessionId, chatId, 'dwarn', targetId.toString(), ctx.from?.id.toString() || null, reason || null, { count });
+  });
+
+  // ─── Silent Warn ──────────────────────────────────────────────────
+  bot.command('swarn', async (ctx) => {
+    const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /swarn [reply/@user/id] [reason]');
+    if (!resolved) return;
+    const { targetId, reason } = resolved;
+    if (!(await checkPermissions(ctx, targetId, sessionId))) return;
+    try { await ctx.deleteMessage(); } catch {}
+    const config = await getTelegramConfig(sessionId);
+    const chatId = ctx.chat!.id.toString();
+    const count = await addWarning(sessionId, chatId, targetId.toString(), ctx.from!.id.toString(), reason || null);
+    if (count >= config.warn_limit) {
+      if (config.warn_action === 'ban') { await ctx.banChatMember(targetId); }
+      else { await ctx.restrictChatMember(targetId, { can_send_messages: false }); }
+      await resetWarnings(sessionId, chatId, targetId.toString());
+    }
+    logModAction(sessionId, chatId, 'swarn', targetId.toString(), ctx.from?.id.toString() || null, reason || null, { count });
+  });
+
+  // ─── Unwarn / rmwarn ──────────────────────────────────────────────
+  bot.command(['unwarn', 'rmwarn'], async (ctx) => {
     const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /unwarn [reply/@user/id]');
     if (!resolved) return;
     const { targetId, targetName } = resolved;
@@ -323,8 +452,8 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(text, { parse_mode: 'HTML' });
   });
 
-  // ─── Reset Warns ───────────────────────────────────────────────────
-  bot.command('resetwarns', async (ctx) => {
+  // ─── Reset Warns (single user) ────────────────────────────────────
+  bot.command(['resetwarns', 'resetwarn'], async (ctx) => {
     const resolved = await resolveTargetId(ctx, sessionId, 'Usage: /resetwarns [reply/@user/id]');
     if (!resolved) return;
     const { targetId, targetName } = resolved;
@@ -333,5 +462,83 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     const chatId = ctx.chat!.id.toString();
     await resetWarnings(sessionId, chatId, targetId.toString());
     await ctx.reply(`✅ All warnings cleared for ${targetName}.`, { parse_mode: 'HTML' });
+  });
+
+  // ─── Reset All Warns ──────────────────────────────────────────────
+  bot.command('resetallwarns', async (ctx) => {
+    if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
+    const chatId = ctx.chat!.id.toString();
+    // Reset all warns for all users in this chat
+    const { supabase } = await import('../utils/supabase');
+    await supabase.from('telegram_warnings').delete().eq('session_id', sessionId).eq('chat_id', chatId);
+    await ctx.reply('✅ All warnings for all users have been reset.');
+  });
+
+  // ─── Warnings (chat settings) ─────────────────────────────────────
+  bot.command('warnings', async (ctx) => {
+    const config = await getTelegramConfig(sessionId);
+    await ctx.reply(
+      `⚠️ <b>Warning Settings</b>\n\n` +
+      `Limit: ${config.warn_limit}\n` +
+      `Action: ${config.warn_action || 'mute'}\n` +
+      `Time: ${(config as Record<string, unknown>).warn_time || 'No expiry'}`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  // ─── Warn Mode ────────────────────────────────────────────────────
+  bot.command('warnmode', async (ctx) => {
+    if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    const validModes = ['ban', 'mute', 'kick', 'tban', 'tmute'];
+    if (!arg || !validModes.includes(arg)) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `⚠️ <b>Warn Mode</b>\n\nCurrent: ${config.warn_action || 'mute'}\n\nUsage: /warnmode <${validModes.join('/')}>`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+    const { updateTelegramConfig } = await import('../utils/db');
+    await updateTelegramConfig(sessionId, { warn_action: arg });
+    await ctx.reply(`✅ Warn mode set to: ${arg}`);
+  });
+
+  // ─── Warn Limit ───────────────────────────────────────────────────
+  bot.command('warnlimit', async (ctx) => {
+    if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim();
+    if (!arg) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(`⚠️ Current warn limit: ${config.warn_limit}\n\nUsage: /warnlimit <number>`);
+      return;
+    }
+    const num = parseInt(arg, 10);
+    if (!num || num < 1 || num > 999) {
+      await ctx.reply('Warn limit must be between 1 and 999.');
+      return;
+    }
+    const { updateTelegramConfig } = await import('../utils/db');
+    await updateTelegramConfig(sessionId, { warn_limit: num });
+    await ctx.reply(`✅ Warn limit set to ${num}.`);
+  });
+
+  // ─── Warn Time ────────────────────────────────────────────────────
+  bot.command('warntime', async (ctx) => {
+    if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (!arg) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(`⚠️ Current warn time: ${(config as Record<string, unknown>).warn_time || 'No expiry'}\n\nUsage: /warntime <time/off>\nExamples: 4m, 3h, 6d, 5w`);
+      return;
+    }
+    const { updateTelegramConfig } = await import('../utils/db');
+    if (['off', 'no', '0'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { warn_time: null } as Record<string, unknown>);
+      await ctx.reply('✅ Warn time disabled. Warnings will no longer expire.');
+    } else {
+      await updateTelegramConfig(sessionId, { warn_time: arg } as Record<string, unknown>);
+      await ctx.reply(`✅ Warnings will now expire after ${arg}.`);
+    }
   });
 }

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 
-type Tab = 'config' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled';
+type Tab = 'general' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
@@ -13,38 +13,139 @@ interface ModLog { action_type: string; target_user_id: string; reason: string; 
 interface XpEntry { user_id: string; xp: number; level: number; }
 interface ScheduledMsg { id: string; chat_id: string; message: string; scheduled_at: string; status: string; }
 
+const TIMEZONES = [
+  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
+  'Asia/Dubai', 'Asia/Tehran', 'Asia/Kolkata', 'Asia/Shanghai', 'Asia/Tokyo',
+  'Australia/Sydney', 'Pacific/Auckland', 'Africa/Cairo', 'Africa/Lagos',
+];
+
+const PENALTY_OPTIONS = [
+  { value: 'warn', label: 'Warn' },
+  { value: 'mute', label: 'Mute' },
+  { value: 'ban', label: 'Ban' },
+  { value: 'kick', label: 'Kick' },
+  { value: 'tban', label: 'Temp Ban' },
+  { value: 'tmute', label: 'Temp Mute' },
+];
+
 export default function TelegramConfigPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const [activeTab, setActiveTab] = useState<Tab>('config');
+  const [activeTab, setActiveTab] = useState<Tab>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Config state
-  const [config, setConfig] = useState({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [config, setConfig] = useState<Record<string, any>>({
     antiflood_enabled: false,
+    antiflood_max_per_min: 10,
     antilink_enabled: false,
     antiraid_enabled: false,
-    night_mode_enabled: false,
-    captcha_enabled: false,
-    welcome_text: '',
-    goodbye_text: '',
     antiraid_threshold: 15,
     antiraid_mode: 'restrict',
     antiraid_duration_mins: 15,
+    night_mode_enabled: false,
+    captcha_enabled: false,
+    welcome_message: '',
+    goodbye_message: '',
     log_channel_id: '',
-    blacklist_mode: 'delete',
+    bot_language: 'en',
+    timezone: 'UTC',
+    welcome_enabled: true,
+    rules_enabled: false,
+    admonition_enabled: false,
+    noiseless_mode: false,
+    auto_delete_bot_msgs: false,
+    auto_delete_minutes: 1,
+    check_admin_violations: false,
+    verify_user_realness: false,
+    ignore_public_commands: false,
+    remove_join_leave_notifs: false,
+    anon_admin: false,
+    admin_error_messages: true,
+    warnings_enabled: false,
+    max_warnings: 20,
+    warning_keep_days: 3,
+    default_violation_penalty: 'warn',
+    prohibit_unofficial_ads: false,
+    prohibit_bots_deletion: false,
+    prohibit_bot_inviter_removal: false,
+    prohibit_userbots: false,
+    strict_mode: false,
+    prohibit_porn_words: false,
+    prohibit_website_links: false,
+    prohibit_telegram_links: false,
+    prohibit_usernames: false,
+    prohibit_hashtags: false,
+    prohibit_text: false,
+    prohibit_forwarding: false,
+    prohibit_forward_channels: false,
+    prohibit_pictures: false,
+    prohibit_videos: false,
+    prohibit_stickers: false,
+    prohibit_emojis: false,
+    prohibit_emoji_only: false,
+    prohibit_location: false,
+    prohibit_contact: false,
+    prohibit_audio: false,
+    prohibit_voice: false,
+    prohibit_files: false,
+    prohibit_apps: false,
+    prohibit_gifs: false,
+    prohibit_polls: false,
+    prohibit_glass_buttons: false,
+    prohibit_games: false,
+    prohibit_bot_commands: false,
+    prohibit_textless_posts: false,
+    prohibit_english: false,
+    prohibit_arabic_farsi: false,
+    prohibit_regular_reply: false,
+    prohibit_external_reply: false,
+    message_regex_pattern: '',
+    forbidden_words: '',
+    necessary_words: '',
+    min_message_words: 0,
+    max_message_words: 0,
+    message_count_limit: 0,
+    message_count_timeframe_mins: 1,
+    max_repeated_messages: 0,
+    repeated_msg_timeframe_mins: 1,
+    silent_time_1_enabled: false,
+    silent_time_1_start: '00:00',
+    silent_time_1_end: '06:00',
+    silent_time_2_enabled: false,
+    silent_time_2_start: '00:00',
+    silent_time_2_end: '06:00',
+    silent_time_3_enabled: false,
+    silent_time_3_start: '00:00',
+    silent_time_3_end: '06:00',
+    temporary_lock_enabled: false,
+    forced_add_count: 0,
+    forced_add_timeframe_days: 0,
+    mandatory_channels: '',
+    custom_welcome_text: 'Greetings, esteemed {user}! Welcome to {group}! We wish you a delightful experience during your presence here.',
+    custom_rules_text: '',
+    custom_silent_start_text: 'Silent time has been successfully activated. This group is currently in silent mode from {starttime} until {endtime}.',
+    custom_silent_end_text: 'Silent time has been deactivated. The next silent time period will begin at {starttime}.',
+    custom_admonition_text: 'Reason: {reason} | Penalty: {penalty} | {user_warnings} warnings out of {warnings_count} | Each warning will be deleted after {warningstime}',
+    custom_forced_add_text: 'To be able to send messages to this group, you need to add {number} members. So far, you have added {added} members.',
+    custom_mandatory_channel_text: 'Before sending messages to this group, please join the following channel(s)/group(s): {channel_names}',
+    antiflood_action: 'mute',
+    antiflood_timed_count: 0,
+    antiflood_timed_duration_secs: 0,
+    antiflood_clear_messages: false,
+    antiraid_time: '6h',
+    antiraid_action_time: '1h',
+    auto_antiraid_threshold: 0,
   });
 
-  // Data state
   const [notes, setNotes] = useState<Note[]>([]);
   const [filters, setFilters] = useState<Filter[]>([]);
   const [modlog, setModlog] = useState<ModLog[]>([]);
   const [xpData, setXpData] = useState<XpEntry[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledMsg[]>([]);
-
-  // Form state
   const [newNoteName, setNewNoteName] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newFilterKeyword, setNewFilterKeyword] = useState('');
@@ -62,38 +163,46 @@ export default function TelegramConfigPage() {
   }, [sessionId]);
 
   const fetchNotes = useCallback(async () => {
-    const res = await fetch(`/api/telegram/notes?sessionId=${sessionId}`);
-    const data = await res.json();
-    if (data.success) setNotes(data.data || []);
+    try {
+      const res = await fetch(`/api/telegram/notes?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setNotes(data.data || []);
+    } catch {}
   }, [sessionId]);
 
   const fetchFilters = useCallback(async () => {
-    const res = await fetch(`/api/telegram/filters?sessionId=${sessionId}`);
-    const data = await res.json();
-    if (data.success) setFilters(data.data || []);
+    try {
+      const res = await fetch(`/api/telegram/filters?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setFilters(data.data || []);
+    } catch {}
   }, [sessionId]);
 
   const fetchModlog = useCallback(async () => {
-    const res = await fetch(`/api/telegram/modlog?sessionId=${sessionId}`);
-    const data = await res.json();
-    if (data.success) setModlog(data.data || []);
+    try {
+      const res = await fetch(`/api/telegram/modlog?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setModlog(data.data || []);
+    } catch {}
   }, [sessionId]);
 
   const fetchXP = useCallback(async () => {
-    const res = await fetch(`/api/telegram/xp/leaderboard?sessionId=${sessionId}`);
-    const data = await res.json();
-    if (data.success) setXpData(data.data || []);
+    try {
+      const res = await fetch(`/api/telegram/xp/leaderboard?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setXpData(data.data || []);
+    } catch {}
   }, [sessionId]);
 
   const fetchScheduled = useCallback(async () => {
-    const res = await fetch(`/api/telegram/scheduled?sessionId=${sessionId}`);
-    const data = await res.json();
-    if (data.success) setScheduled(data.data || []);
+    try {
+      const res = await fetch(`/api/telegram/scheduled?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setScheduled(data.data || []);
+    } catch {}
   }, [sessionId]);
 
-  useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
   useEffect(() => {
     switch (activeTab) {
@@ -106,9 +215,7 @@ export default function TelegramConfigPage() {
   }, [activeTab, fetchNotes, fetchFilters, fetchModlog, fetchXP, fetchScheduled]);
 
   const saveConfig = async () => {
-    setSaving(true);
-    setError('');
-    setSuccess('');
+    setSaving(true); setError(''); setSuccess('');
     try {
       const res = await fetch('/api/telegram/config', {
         method: 'PUT',
@@ -125,14 +232,8 @@ export default function TelegramConfigPage() {
 
   const addNote = async () => {
     if (!newNoteName || !newNoteContent) return;
-    await fetch('/api/telegram/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, name: newNoteName, content: newNoteContent }),
-    });
-    setNewNoteName('');
-    setNewNoteContent('');
-    fetchNotes();
+    await fetch('/api/telegram/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, name: newNoteName, content: newNoteContent }) });
+    setNewNoteName(''); setNewNoteContent(''); fetchNotes();
   };
 
   const deleteNote = async (name: string) => {
@@ -142,14 +243,8 @@ export default function TelegramConfigPage() {
 
   const addFilter = async () => {
     if (!newFilterKeyword || !newFilterResponse) return;
-    await fetch('/api/telegram/filters', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, keyword: newFilterKeyword, response: newFilterResponse }),
-    });
-    setNewFilterKeyword('');
-    setNewFilterResponse('');
-    fetchFilters();
+    await fetch('/api/telegram/filters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, keyword: newFilterKeyword, response: newFilterResponse }) });
+    setNewFilterKeyword(''); setNewFilterResponse(''); fetchFilters();
   };
 
   const deleteFilter = async (keyword: string) => {
@@ -159,11 +254,7 @@ export default function TelegramConfigPage() {
 
   const resetXP = async () => {
     if (!confirm('Reset all XP data? This cannot be undone.')) return;
-    await fetch('/api/telegram/xp/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId }),
-    });
+    await fetch('/api/telegram/xp/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId }) });
     fetchXP();
   };
 
@@ -173,15 +264,97 @@ export default function TelegramConfigPage() {
   };
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'config', label: 'Settings', icon: '⚙️' },
-    { id: 'notes', label: 'Notes', icon: '📝' },
-    { id: 'filters', label: 'Filters', icon: '🔍' },
-    { id: 'modlog', label: 'Mod Log', icon: '📋' },
-    { id: 'xp', label: 'XP', icon: '⭐' },
-    { id: 'scheduled', label: 'Scheduled', icon: '⏰' },
+    { id: 'general', label: 'General', icon: '\u2699\ufe0f' },
+    { id: 'protection', label: 'Antiflood & AntiRaid', icon: '\ud83d\udee1\ufe0f' },
+    { id: 'prohibitions', label: 'Prohibitions', icon: '\ud83d\udeab' },
+    { id: 'numerical', label: 'Limits', icon: '\ud83d\udd22' },
+    { id: 'silence', label: 'Silent Times', icon: '\ud83e\udd2b' },
+    { id: 'memberships', label: 'Memberships', icon: '\ud83d\udc65' },
+    { id: 'texts', label: 'Custom Texts', icon: '\ud83d\udcdd' },
+    { id: 'notes', label: 'Notes', icon: '\ud83d\uddd2\ufe0f' },
+    { id: 'filters', label: 'Filters', icon: '\ud83d\udd0d' },
+    { id: 'modlog', label: 'Mod Log', icon: '\ud83d\udccb' },
+    { id: 'xp', label: 'XP', icon: '\u2b50' },
+    { id: 'scheduled', label: 'Scheduled', icon: '\u23f0' },
+    { id: 'stats', label: 'Statistics', icon: '\ud83d\udcca' },
   ];
 
   const inputStyle = { background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' };
+  const updateConfig = (key: string, value: unknown) => setConfig(prev => ({ ...prev, [key]: value }));
+
+  const Toggle = ({ configKey, label, desc }: { configKey: string; label: string; desc?: string }) => (
+    <div className="flex items-center justify-between py-3 border-b last:border-b-0" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex-1 mr-4">
+        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{label}</div>
+        {desc && <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{desc}</div>}
+      </div>
+      <button onClick={() => updateConfig(configKey, !config[configKey])}
+        className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${config[configKey] ? 'bg-blue-600' : 'bg-gray-600'}`}>
+        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${config[configKey] ? 'translate-x-6' : 'translate-x-1'}`} />
+      </button>
+    </div>
+  );
+
+  const NumberInput = ({ configKey, label, desc, min = 0, max }: { configKey: string; label: string; desc?: string; min?: number; max?: number }) => (
+    <div className="mb-4">
+      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      {desc && <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{desc}</div>}
+      <input type="number" value={config[configKey] || 0} min={min} max={max}
+        onChange={e => updateConfig(configKey, parseInt(e.target.value) || 0)}
+        className="w-full p-2 rounded-xl text-sm" style={inputStyle} />
+    </div>
+  );
+
+  const TextInput = ({ configKey, label, desc, placeholder }: { configKey: string; label: string; desc?: string; placeholder?: string }) => (
+    <div className="mb-4">
+      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      {desc && <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{desc}</div>}
+      <input type="text" value={config[configKey] || ''} onChange={e => updateConfig(configKey, e.target.value)}
+        className="w-full p-2 rounded-xl text-sm" style={inputStyle} placeholder={placeholder} />
+    </div>
+  );
+
+  const TextArea = ({ configKey, label, desc, placeholder, rows = 3 }: { configKey: string; label: string; desc?: string; placeholder?: string; rows?: number }) => (
+    <div className="mb-4">
+      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      {desc && <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{desc}</div>}
+      <textarea value={config[configKey] || ''} rows={rows} onChange={e => updateConfig(configKey, e.target.value)}
+        className="w-full p-3 rounded-xl text-sm resize-none" style={inputStyle} placeholder={placeholder} />
+    </div>
+  );
+
+  const SelectInput = ({ configKey, label, desc, options }: { configKey: string; label: string; desc?: string; options: { value: string; label: string }[] }) => (
+    <div className="mb-4">
+      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      {desc && <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{desc}</div>}
+      <select value={config[configKey] || options[0]?.value} onChange={e => updateConfig(configKey, e.target.value)}
+        className="w-full p-2 rounded-xl text-sm" style={inputStyle}>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
+  const TimeInput = ({ configKey, label }: { configKey: string; label: string }) => (
+    <div className="mb-4">
+      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+      <input type="time" value={config[configKey] || '00:00'} onChange={e => updateConfig(configKey, e.target.value)}
+        className="w-full p-2 rounded-xl text-sm" style={inputStyle} />
+    </div>
+  );
+
+  const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="rounded-2xl p-6 mb-6" style={{ background: 'var(--card-bg)' }}>
+      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h2>
+      {children}
+    </div>
+  );
+
+  const SaveButton = () => (
+    <button onClick={saveConfig} disabled={saving}
+      className="w-full p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors disabled:opacity-50 mb-6">
+      {saving ? 'Saving...' : 'Save Settings'}
+    </button>
+  );
 
   if (loading) {
     return (
@@ -198,7 +371,7 @@ export default function TelegramConfigPage() {
       <div className="pt-24 px-4 md:px-8 max-w-5xl mx-auto pb-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>
-            Telegram <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">Config</span>
+            Telegram <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">Dashboard</span>
           </h1>
           <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
             Session: {sessionId?.toString().slice(0, 8)}...
@@ -208,112 +381,265 @@ export default function TelegramConfigPage() {
         {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>}
         {success && <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm">{success}</div>}
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === t.id ? 'bg-blue-600 text-white' : ''
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeTab === t.id ? 'bg-blue-600 text-white' : ''}`}
               style={activeTab !== t.id ? { background: 'var(--card-bg)', color: 'var(--text-secondary)' } : undefined}>
               {t.icon} {t.label}
             </button>
           ))}
         </div>
 
-        {/* Config Tab */}
-        {activeTab === 'config' && (
-          <div className="space-y-6">
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Protection</h2>
-              {[
-                { key: 'antiflood_enabled', label: 'Anti-Flood', desc: 'Rate limit messages' },
-                { key: 'antilink_enabled', label: 'Anti-Link', desc: 'Remove unauthorized links' },
-                { key: 'antiraid_enabled', label: 'Anti-Raid', desc: 'Detect mass joins' },
-                { key: 'night_mode_enabled', label: 'Night Mode', desc: 'Restrict messages at night' },
-                { key: 'captcha_enabled', label: 'Captcha', desc: 'Verify new members' },
-              ].map(f => (
-                <div key={f.key} className="flex items-center justify-between py-3 border-b last:border-b-0" style={{ borderColor: 'var(--border)' }}>
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{f.label}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{f.desc}</div>
-                  </div>
-                  <button onClick={() => setConfig(c => ({ ...c, [f.key]: !c[f.key as keyof typeof c] }))}
-                    className={`w-12 h-7 rounded-full transition-colors ${config[f.key as keyof typeof config] ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                    <div className={`w-5 h-5 rounded-full bg-white transition-transform ${config[f.key as keyof typeof config] ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-              ))}
-            </div>
+        {activeTab === 'general' && (
+          <div className="space-y-0">
+            <SectionCard title="Language & Timezone">
+              <SelectInput configKey="bot_language" label="Language" options={[
+                { value: 'en', label: 'English' }, { value: 'fa', label: 'Farsi / Persian' },
+                { value: 'ar', label: 'Arabic' }, { value: 'tr', label: 'Turkish' },
+                { value: 'es', label: 'Spanish' }, { value: 'fr', label: 'French' },
+                { value: 'de', label: 'German' }, { value: 'ru', label: 'Russian' },
+                { value: 'zh', label: 'Chinese' }, { value: 'ja', label: 'Japanese' },
+              ]} />
+              <SelectInput configKey="timezone" label="Time Zone" desc="Timings will be calculated based on this timezone."
+                options={TIMEZONES.map(tz => ({ value: tz, label: tz }))} />
+            </SectionCard>
 
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Anti-Raid Settings</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Threshold (joins/min)</label>
-                  <input type="number" value={config.antiraid_threshold} min={1}
-                    onChange={e => setConfig(c => ({ ...c, antiraid_threshold: parseInt(e.target.value) || 15 }))}
-                    className="w-full p-2 rounded-xl text-sm" style={inputStyle} />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Mode</label>
-                  <select value={config.antiraid_mode}
-                    onChange={e => setConfig(c => ({ ...c, antiraid_mode: e.target.value }))}
-                    className="w-full p-2 rounded-xl text-sm" style={inputStyle}>
-                    <option value="restrict">Restrict</option>
-                    <option value="ban">Ban</option>
-                    <option value="captcha">Captcha</option>
-                    <option value="lockdown">Lockdown</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Duration (min)</label>
-                  <input type="number" value={config.antiraid_duration_mins} min={1}
-                    onChange={e => setConfig(c => ({ ...c, antiraid_duration_mins: parseInt(e.target.value) || 15 }))}
-                    className="w-full p-2 rounded-xl text-sm" style={inputStyle} />
-                </div>
-              </div>
-            </div>
+            <SectionCard title="Welcome & Rules">
+              <Toggle configKey="welcome_enabled" label="Sending welcome message" desc="Send a welcome message when new members join." />
+              <Toggle configKey="rules_enabled" label="Sending the rules" desc="Enable sending group rules." />
+              <Toggle configKey="admonition_enabled" label="Sending admonition message" desc="Send admonition messages when users violate rules." />
+            </SectionCard>
 
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Messages</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Welcome Message</label>
-                  <textarea value={config.welcome_text || ''} rows={3}
-                    onChange={e => setConfig(c => ({ ...c, welcome_text: e.target.value }))}
-                    className="w-full p-3 rounded-xl text-sm resize-none" style={inputStyle}
-                    placeholder="Welcome {name} to {group}!" />
+            <SectionCard title="Bot Behavior">
+              <Toggle configKey="noiseless_mode" label="Noiseless mode" desc="Bot messages are sent silently to the group." />
+              <Toggle configKey="auto_delete_bot_msgs" label="Auto deletion of bot messages" desc="Automatically delete messages sent by the bot." />
+              {config.auto_delete_bot_msgs && (
+                <div className="ml-4 mt-2 mb-2">
+                  <NumberInput configKey="auto_delete_minutes" label="Deletion time of bot messages (minutes)" min={1} max={1440} />
                 </div>
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Goodbye Message</label>
-                  <textarea value={config.goodbye_text || ''} rows={2}
-                    onChange={e => setConfig(c => ({ ...c, goodbye_text: e.target.value }))}
-                    className="w-full p-3 rounded-xl text-sm resize-none" style={inputStyle}
-                    placeholder="{name} has left the group." />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Log Channel ID</label>
-                  <input type="text" value={config.log_channel_id || ''}
-                    onChange={e => setConfig(c => ({ ...c, log_channel_id: e.target.value }))}
-                    className="w-full p-2 rounded-xl text-sm" style={inputStyle}
-                    placeholder="-1001234567890" />
-                </div>
-              </div>
-            </div>
+              )}
+              <Toggle configKey="check_admin_violations" label="Check rules violation by admins" desc="Apply rules to admins as well." />
+              <Toggle configKey="verify_user_realness" label="Verification of user realness" desc="Every member joining must verify by tapping a designated button." />
+              <Toggle configKey="ignore_public_commands" label="Ignoring public commands" desc="Restrict regular members from using info commands." />
+              <Toggle configKey="remove_join_leave_notifs" label="Removal of join and leave notifications" />
+            </SectionCard>
 
-            <button onClick={saveConfig} disabled={saving}
-              className="w-full p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors disabled:opacity-50">
-              {saving ? 'Saving...' : 'Save Settings'}
-            </button>
+            <SectionCard title="Warnings">
+              <Toggle configKey="warnings_enabled" label="Keeping the count of warnings" desc="Each violation of the rules will be counted as a warning." />
+              {config.warnings_enabled && (
+                <div className="mt-3 space-y-0">
+                  <NumberInput configKey="max_warnings" label="Maximum allowed warnings" desc="If the number of warnings reaches this threshold, the user will be restricted." min={1} max={100} />
+                  <NumberInput configKey="warning_keep_days" label="Timeframe of keeping warnings (days)" desc="Number of days to keep each warning given to each user." min={1} max={365} />
+                  <SelectInput configKey="default_violation_penalty" label="Default penalty for rules violation" desc="Action the bot takes when someone violates the rules." options={PENALTY_OPTIONS} />
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Admin Settings">
+              <Toggle configKey="anon_admin" label="Anonymous Admin" desc="Allow anonymous admins to use all commands without checking permissions. Not recommended." />
+              <Toggle configKey="admin_error_messages" label="Admin Error Messages" desc="Send error messages when normal users use admin commands." />
+              <TextInput configKey="log_channel_id" label="Log Channel ID" placeholder="-1001234567890" desc="Channel ID where moderation logs will be sent." />
+            </SectionCard>
+
+            <SectionCard title="Messages">
+              <TextArea configKey="welcome_message" label="Welcome Message" placeholder="Welcome to the group!" desc="Variables: {name}, {username}, {group}, {count}, {mention}" />
+              <TextArea configKey="goodbye_message" label="Goodbye Message" placeholder="Goodbye!" desc="Variables: {name}, {username}, {group}" />
+            </SectionCard>
+
+            <SaveButton />
           </div>
         )}
 
-        {/* Notes Tab */}
+        {activeTab === 'protection' && (
+          <div className="space-y-0">
+            <SectionCard title="Anti-Flood">
+              <Toggle configKey="antiflood_enabled" label="Anti-Flood" desc="Take action on users that send too many messages in a row." />
+              {config.antiflood_enabled && (
+                <div className="mt-3 space-y-0">
+                  <NumberInput configKey="antiflood_max_per_min" label="Max messages per minute" desc="Number of consecutive messages to trigger antiflood." min={1} max={100} />
+                  <SelectInput configKey="antiflood_action" label="Flood mode (action type)" desc="Action to take on a user who has been flooding." options={PENALTY_OPTIONS} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <NumberInput configKey="antiflood_timed_count" label="Timed flood count" desc="Messages in timed window (0 = disabled)" min={0} />
+                    <NumberInput configKey="antiflood_timed_duration_secs" label="Timed flood window (seconds)" desc="Time window for timed antiflood" min={0} />
+                  </div>
+                  <Toggle configKey="antiflood_clear_messages" label="Clear flood messages" desc="Delete the messages that triggered the flood." />
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Anti-Raid">
+              <Toggle configKey="antiraid_enabled" label="Anti-Raid" desc="Temporarily ban new joins during a raid attack." />
+              {config.antiraid_enabled && (
+                <div className="mt-3 space-y-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <NumberInput configKey="antiraid_threshold" label="Threshold (joins/min)" min={1} />
+                    <div className="mb-4">
+                      <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>Mode</label>
+                      <select value={config.antiraid_mode} onChange={e => updateConfig('antiraid_mode', e.target.value)}
+                        className="w-full p-2 rounded-xl text-sm" style={inputStyle}>
+                        <option value="restrict">Restrict</option>
+                        <option value="ban">Ban</option>
+                        <option value="captcha">Captcha</option>
+                        <option value="lockdown">Lockdown</option>
+                      </select>
+                    </div>
+                    <NumberInput configKey="antiraid_duration_mins" label="Duration (minutes)" min={1} />
+                  </div>
+                  <TextInput configKey="antiraid_time" label="Raid time" desc="Duration for antiraid mode. Default: 6h" placeholder="6h" />
+                  <TextInput configKey="antiraid_action_time" label="Raid action time" desc="How long new joiners are temp-banned. Default: 1h" placeholder="1h" />
+                  <NumberInput configKey="auto_antiraid_threshold" label="Auto antiraid threshold" desc="Joins per minute to auto-enable antiraid. 0 = disabled." min={0} />
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Other Protection">
+              <Toggle configKey="antilink_enabled" label="Anti-Link" desc="Remove unauthorized links from messages." />
+              <Toggle configKey="night_mode_enabled" label="Night Mode" desc="Restrict messages during night hours." />
+              <Toggle configKey="captcha_enabled" label="CAPTCHA" desc="Require verification for new members." />
+            </SectionCard>
+
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'prohibitions' && (
+          <div className="space-y-0">
+            <SectionCard title="Ads & Bots">
+              <Toggle configKey="prohibit_unofficial_ads" label="Ads of unofficial Telegram apps" desc="Block advertisements sent by unofficial Telegram apps." />
+              <Toggle configKey="prohibit_bots_deletion" label="Bots deletion" desc="Remove bots added to the group." />
+              <Toggle configKey="prohibit_bot_inviter_removal" label="Bot inviter removal" desc="Remove users who invite bots." />
+              <Toggle configKey="prohibit_userbots" label="Prohibition of user-bots" desc="Block userbot accounts that send unsolicited advertisements." />
+            </SectionCard>
+
+            <SectionCard title="Silence (Content Locks)">
+              <Toggle configKey="strict_mode" label="Strict mode" desc="Prevent accounts distributing unidentifiable content. Caution: may restrict many members." />
+              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+              <Toggle configKey="prohibit_porn_words" label="Prohibition of pornographic words" />
+              <Toggle configKey="prohibit_website_links" label="Prohibition of website links" />
+              <Toggle configKey="prohibit_telegram_links" label="Prohibition of Telegram links" />
+              <Toggle configKey="prohibit_usernames" label="Prohibition of usernames" />
+              <Toggle configKey="prohibit_hashtags" label="Prohibition of hashtags" />
+              <Toggle configKey="prohibit_text" label="Prohibition of text" />
+              <Toggle configKey="prohibit_forwarding" label="Prohibition of forwarding" />
+              <Toggle configKey="prohibit_forward_channels" label="Prohibition of forwarding from channels" />
+              <Toggle configKey="prohibit_pictures" label="Prohibition of pictures" />
+              <Toggle configKey="prohibit_videos" label="Prohibition of videos" />
+              <Toggle configKey="prohibit_stickers" label="Prohibition of stickers" />
+              <Toggle configKey="prohibit_emojis" label="Prohibition of emojis" />
+              <Toggle configKey="prohibit_emoji_only" label="Prohibition of emoji only" desc="Messages that consist solely of emojis without any text." />
+              <Toggle configKey="prohibit_location" label="Prohibition of location" />
+              <Toggle configKey="prohibit_contact" label="Prohibition of contact" />
+              <Toggle configKey="prohibit_audio" label="Prohibition of audio" />
+              <Toggle configKey="prohibit_voice" label="Prohibition of recorded voice" />
+              <Toggle configKey="prohibit_files" label="Prohibition of files" />
+              <Toggle configKey="prohibit_apps" label="Prohibition of apps" />
+              <Toggle configKey="prohibit_gifs" label="Prohibition of GIFs" />
+              <Toggle configKey="prohibit_polls" label="Prohibition of polls" />
+              <Toggle configKey="prohibit_glass_buttons" label="Prohibition of glass buttons" />
+              <Toggle configKey="prohibit_games" label="Prohibition of games" />
+              <Toggle configKey="prohibit_bot_commands" label="Prohibition of bot commands" />
+              <Toggle configKey="prohibit_textless_posts" label="Prohibition of textless posts" />
+              <Toggle configKey="prohibit_english" label="Prohibition of English" />
+              <Toggle configKey="prohibit_arabic_farsi" label="Prohibition of Arabic and Farsi" />
+              <Toggle configKey="prohibit_regular_reply" label="Prohibition of regular users replying" />
+              <Toggle configKey="prohibit_external_reply" label="Prohibition of external reply" />
+            </SectionCard>
+
+            <SectionCard title="Pattern & Word Filters">
+              <TextInput configKey="message_regex_pattern" label="Pattern of messages (REGEX)" desc="Advanced: Specify a REGEX pattern for messages." placeholder="e.g. .*spam.*" />
+              <TextArea configKey="forbidden_words" label="Forbidden words" desc="Each word on a separate line." placeholder="word1\nword2\nword3" rows={4} />
+              <TextArea configKey="necessary_words" label="Necessary words" desc="Every message must contain at least one of these words. Each on a separate line." placeholder="word1\nword2" rows={4} />
+            </SectionCard>
+
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'numerical' && (
+          <div className="space-y-0">
+            <SectionCard title="Message Word Limits">
+              <NumberInput configKey="min_message_words" label="Minimum number of message words" desc="0 = no minimum." min={0} />
+              <NumberInput configKey="max_message_words" label="Maximum number of message words" desc="0 = no maximum." min={0} />
+            </SectionCard>
+
+            <SectionCard title="Message Count Limits">
+              <NumberInput configKey="message_count_limit" label="Limitation of number of messages" desc="Each user is limited to sending this many messages within the counting timeframe. 0 = disabled." min={0} />
+              <NumberInput configKey="message_count_timeframe_mins" label="Timeframe of counting messages (minutes)" desc="Number of messages will be counted in this timeframe." min={1} />
+            </SectionCard>
+
+            <SectionCard title="Repeated Message Limits">
+              <NumberInput configKey="max_repeated_messages" label="Max count of repeated messages" desc="0 = no limit on repeated messages." min={0} />
+              <NumberInput configKey="repeated_msg_timeframe_mins" label="Timeframe of counting repeated messages (minutes)" min={1} />
+            </SectionCard>
+
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'silence' && (
+          <div className="space-y-0">
+            {[1, 2, 3].map(n => (
+              <SectionCard key={n} title={`${['First', 'Second', 'Third'][n - 1]} Silent Time`}>
+                <Toggle configKey={`silent_time_${n}_enabled`} label="Status" desc={`Enable the ${['first', 'second', 'third'][n - 1]} silent time period.`} />
+                {config[`silent_time_${n}_enabled`] && (
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <TimeInput configKey={`silent_time_${n}_start`} label="Start Time" />
+                    <TimeInput configKey={`silent_time_${n}_end`} label="End Time" />
+                  </div>
+                )}
+              </SectionCard>
+            ))}
+            <SectionCard title="Temporary Lock of Group">
+              <Toggle configKey="temporary_lock_enabled" label="Status" desc="If the group is locked, all message types will be restricted." />
+            </SectionCard>
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'memberships' && (
+          <div className="space-y-0">
+            <SectionCard title="Forced Add">
+              <NumberInput configKey="forced_add_count" label="Forced Add" desc="Members must invite this number of members before sending messages. 0 = disabled." min={0} />
+              <NumberInput configKey="forced_add_timeframe_days" label="Forced add timeframe (days)" desc="The count of added members resets after this period." min={0} />
+            </SectionCard>
+            <SectionCard title="Mandatory Channel Membership">
+              <TextArea configKey="mandatory_channels" label="Mandatory channel membership"
+                desc="Ensure botwave has admin privileges in your channel. Provide usernames prefixed with @, each on a separate line."
+                placeholder="@channel1\n@channel2" rows={4} />
+            </SectionCard>
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'texts' && (
+          <div className="space-y-0">
+            <SectionCard title="Welcome Message">
+              <TextArea configKey="custom_welcome_text" label="Welcome message content" desc="Use {user} for username and {group} for group name." rows={4} />
+            </SectionCard>
+            <SectionCard title="Rules Text">
+              <TextArea configKey="custom_rules_text" label="Customized rules text" desc="Use {user} for username and {group} for group name." rows={4} />
+            </SectionCard>
+            <SectionCard title="Silent Time Messages">
+              <TextArea configKey="custom_silent_start_text" label="Customized text of start of silent time" desc="Use {starttime} and {endtime} keywords." rows={3} />
+              <TextArea configKey="custom_silent_end_text" label="Customized text of end of silent time" desc="Use {starttime} and {endtime} keywords." rows={3} />
+            </SectionCard>
+            <SectionCard title="Admonition Text">
+              <TextArea configKey="custom_admonition_text" label="Customized admonition text" desc="Keywords: {reason}, {penalty}, {user_warnings}, {warnings_count}, {warningstime}" rows={4} />
+            </SectionCard>
+            <SectionCard title="Forced Add Text">
+              <TextArea configKey="custom_forced_add_text" label="Customized forced add text" desc="Use {added} for added count and {number} for required count." rows={3} />
+            </SectionCard>
+            <SectionCard title="Mandatory Channel Text">
+              <TextArea configKey="custom_mandatory_channel_text" label="Customized mandatory channel membership text" desc="Use {channel_names} to insert channel names." rows={3} />
+            </SectionCard>
+            <SaveButton />
+          </div>
+        )}
+
         {activeTab === 'notes' && (
           <div className="space-y-6">
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Saved Notes ({notes.length})</h2>
+            <SectionCard title={`Saved Notes (${notes.length})`}>
               {notes.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No notes yet.</p>
               ) : (
@@ -329,23 +655,20 @@ export default function TelegramConfigPage() {
                   ))}
                 </div>
               )}
-            </div>
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Add Note</h3>
+            </SectionCard>
+            <SectionCard title="Add Note">
               <input type="text" value={newNoteName} onChange={e => setNewNoteName(e.target.value)}
                 placeholder="Note name" className="w-full p-2 rounded-xl text-sm mb-3" style={inputStyle} />
               <textarea value={newNoteContent} onChange={e => setNewNoteContent(e.target.value)}
                 placeholder="Note content..." rows={3} className="w-full p-2 rounded-xl text-sm mb-3 resize-none" style={inputStyle} />
               <button onClick={addNote} className="w-full p-2 rounded-xl bg-blue-600 text-white text-sm font-semibold">Save Note</button>
-            </div>
+            </SectionCard>
           </div>
         )}
 
-        {/* Filters Tab */}
         {activeTab === 'filters' && (
           <div className="space-y-6">
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Active Filters ({filters.length})</h2>
+            <SectionCard title={`Active Filters (${filters.length})`}>
               {filters.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No filters yet.</p>
               ) : (
@@ -361,22 +684,19 @@ export default function TelegramConfigPage() {
                   ))}
                 </div>
               )}
-            </div>
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Add Filter</h3>
+            </SectionCard>
+            <SectionCard title="Add Filter">
               <input type="text" value={newFilterKeyword} onChange={e => setNewFilterKeyword(e.target.value)}
                 placeholder="Keyword" className="w-full p-2 rounded-xl text-sm mb-3" style={inputStyle} />
               <textarea value={newFilterResponse} onChange={e => setNewFilterResponse(e.target.value)}
                 placeholder="Response..." rows={3} className="w-full p-2 rounded-xl text-sm mb-3 resize-none" style={inputStyle} />
               <button onClick={addFilter} className="w-full p-2 rounded-xl bg-blue-600 text-white text-sm font-semibold">Save Filter</button>
-            </div>
+            </SectionCard>
           </div>
         )}
 
-        {/* Mod Log Tab */}
         {activeTab === 'modlog' && (
-          <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Moderation Log ({modlog.length})</h2>
+          <SectionCard title={`Moderation Log (${modlog.length})`}>
             {modlog.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No moderation actions yet.</p>
             ) : (
@@ -394,14 +714,12 @@ export default function TelegramConfigPage() {
                 ))}
               </div>
             )}
-          </div>
+          </SectionCard>
         )}
 
-        {/* XP Tab */}
         {activeTab === 'xp' && (
           <div className="space-y-6">
-            <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-              <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>XP Leaderboard</h2>
+            <SectionCard title="XP Leaderboard">
               {xpData.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No XP data yet.</p>
               ) : (
@@ -409,7 +727,7 @@ export default function TelegramConfigPage() {
                   {xpData.map((u, i) => (
                     <div key={u.user_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">{i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}.`}</span>
+                        <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{i + 1}.</span>
                         <div>
                           <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>User {u.user_id}</div>
                           <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Level {u.level || 1}</div>
@@ -420,17 +738,13 @@ export default function TelegramConfigPage() {
                   ))}
                 </div>
               )}
-            </div>
-            <button onClick={resetXP} className="w-full p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
-              Reset All XP
-            </button>
+            </SectionCard>
+            <button onClick={resetXP} className="w-full p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Reset All XP</button>
           </div>
         )}
 
-        {/* Scheduled Tab */}
         {activeTab === 'scheduled' && (
-          <div className="rounded-2xl p-6" style={{ background: 'var(--card-bg)' }}>
-            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Scheduled Messages ({scheduled.length})</h2>
+          <SectionCard title={`Scheduled Messages (${scheduled.length})`}>
             {scheduled.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No scheduled messages.</p>
             ) : (
@@ -448,6 +762,31 @@ export default function TelegramConfigPage() {
                 ))}
               </div>
             )}
+          </SectionCard>
+        )}
+
+        {activeTab === 'stats' && (
+          <div className="space-y-6">
+            <SectionCard title="Group Statistics">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                Statistics are tracked automatically when the bot is active in groups.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-6 rounded-xl text-center" style={{ background: 'var(--bg)' }}>
+                  <div className="text-4xl mb-2">\ud83d\udcc8</div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>--</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>New Members (30 days)</div>
+                </div>
+                <div className="p-6 rounded-xl text-center" style={{ background: 'var(--bg)' }}>
+                  <div className="text-4xl mb-2">\ud83d\udcac</div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>--</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Group Messages (30 days)</div>
+                </div>
+              </div>
+              <p className="text-xs mt-4 text-center" style={{ color: 'var(--text-secondary)' }}>
+                Statistics update in real-time as the bot processes events.
+              </p>
+            </SectionCard>
           </div>
         )}
       </div>
