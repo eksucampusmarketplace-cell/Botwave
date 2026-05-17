@@ -19,6 +19,7 @@ import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAut
 import { EvolutionSocketAdapter } from './evolutionSocket';
 import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, type PairingResult } from './evolutionClient';
 import { queueLink, cancelPendingLinks } from './linkQueue';
+import { TelegramBotInstance } from './TelegramBotManager';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -1625,7 +1626,7 @@ export class EvolutionBot {
 
 // ─── Shared Bot Map + Sync ────────────────────────────────────────────────────
 
-type AnyBot = BotWaveBot | EvolutionBot;
+type AnyBot = BotWaveBot | EvolutionBot | TelegramBotInstance;
 const activeBots: Map<string, AnyBot> = new Map();
 
 // ─── Worker Thread Integration ────────────────────────────────────────────────
@@ -1879,6 +1880,38 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
         }
       }
 
+      // ─── Platform-aware routing ───────────────────────────────────
+      // Telegram bot sessions use grammy long-polling, not Evolution API.
+      // Skip WhatsApp-specific logic for non-WhatsApp platforms.
+      const platform = (session as any).platform || 'whatsapp';
+
+      if (platform === 'telegram_bot') {
+        const botToken = (session as any).telegram_bot_token;
+        if (!botToken) {
+          console.log(`[SYNC] Telegram bot session ${session.id.slice(0, 8)} has no bot token — skipping`);
+          await releaseLock(session.id);
+          continue;
+        }
+        console.log(`[SYNC] Starting Telegram bot for session: ${session.id.slice(0, 8)} | platform: telegram_bot | state: ${session.state}`);
+        const tgBot = new TelegramBotInstance({
+          sessionId: session.id,
+          userId: session.user_id,
+          botToken,
+          botUsername: (session as any).telegram_bot_username || '',
+        });
+        activeBots.set(session.id, tgBot);
+        tgBot.start().catch(err => console.error(`[SYNC] Failed to start Telegram bot ${session.id.slice(0, 8)}:`, err));
+        continue;
+      }
+
+      if (platform === 'telegram_userbot') {
+        // Telegram userbot support not yet implemented — skip
+        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} — not yet supported, skipping`);
+        await releaseLock(session.id);
+        continue;
+      }
+
+      // ─── WhatsApp session (default) ────────────────────────────────
       console.log(`[SYNC] Starting bot for session: ${session.id} | phone: ${session.phone_number} | state: ${session.state} | worker: ${session.worker_url || 'main'} | will_pair: ${session.state === 'qr_pending' || session.state === 'pairing_sent'}`);
       const newBot = USE_EVOLUTION
         ? new EvolutionBot({
@@ -1953,7 +1986,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   //
   // Conflict detection (lock lost → stop bot) must still be handled, but
   // these are rare events so we collect them and process sequentially after.
-  const heartbeatEntries: { id: string; bot: EvolutionBot | BotWaveBot }[] = [];
+  const heartbeatEntries: { id: string; bot: AnyBot }[] = [];
   for (const [id] of activeBots) {
     const bot = activeBots.get(id);
     if (!bot) continue;
