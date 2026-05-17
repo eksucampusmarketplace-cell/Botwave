@@ -33,6 +33,7 @@ export interface TelegramConfig {
   help_text: string | null;
   owner_user_id: string | null;
   miniapp_base_url: string | null;
+  night_mode_groups: number[];
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -55,6 +56,7 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   help_text: null,
   owner_user_id: null,
   miniapp_base_url: null,
+  night_mode_groups: [],
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
