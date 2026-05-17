@@ -5,7 +5,7 @@
 import { Bot } from 'grammy';
 
 export function registerPingHandlers(bot: Bot, _sessionId: string): void {
-  bot.command('ping', async (ctx) => {
+  bot.command(['ping', 'pong', 'alive'], async (ctx) => {
     const start = Date.now();
     const msg = await ctx.reply('Pong!');
     const latency = Date.now() - start;

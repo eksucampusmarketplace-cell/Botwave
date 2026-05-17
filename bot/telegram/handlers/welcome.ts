@@ -46,6 +46,30 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(text, { parse_mode: 'HTML' });
   });
 
+  bot.command('welcome', async (ctx) => {
+    const config = await getTelegramConfig(sessionId);
+    if (!config.welcome_message) {
+      await ctx.reply('No welcome message set. Use /setwelcome <message> to set one.');
+      return;
+    }
+    await ctx.reply(
+      `👋 <b>Current Welcome Message:</b>\n\n${config.welcome_message}`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  bot.command('goodbye', async (ctx) => {
+    const config = await getTelegramConfig(sessionId);
+    if (!config.goodbye_message) {
+      await ctx.reply('No goodbye message set. Use /setgoodbye <message> to set one.');
+      return;
+    }
+    await ctx.reply(
+      `👋 <b>Current Goodbye Message:</b>\n\n${config.goodbye_message}`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
   bot.command('setwelcome', async (ctx) => {
     const text = (ctx.match?.toString() || '').trim();
     if (!text) {

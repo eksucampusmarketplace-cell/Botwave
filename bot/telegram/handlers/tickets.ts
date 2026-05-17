@@ -86,14 +86,14 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /close <ticket_id> — close a ticket
-  bot.command('close', async (ctx) => {
+  // /closeticket <ticket_id> — close a ticket
+  bot.command('closeticket', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const ticketId = parseInt((ctx.match?.toString() || '').trim(), 10);
     if (!ticketId) {
-      await ctx.reply('Usage: /close <ticket_id>');
+      await ctx.reply('Usage: /closeticket <ticket_id>');
       return;
     }
 

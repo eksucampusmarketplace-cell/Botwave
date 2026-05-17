@@ -43,7 +43,7 @@ export function registerInfoHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(msg, { parse_mode: 'HTML' });
   });
 
-  bot.command('chatinfo', async (ctx) => {
+  bot.command(['chatinfo', 'info'], async (ctx) => {
     if (!ctx.chat || ctx.chat.type === 'private') {
       await ctx.reply('Use this command in a group chat.');
       return;

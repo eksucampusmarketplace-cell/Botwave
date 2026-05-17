@@ -74,7 +74,7 @@ const DEFAULT_HELP_TEXT =
   `🛡️ <b>Federation</b>\n` +
   `<code>/newfed</code> <code>/joinfed</code> <code>/fban</code> <code>/unfban</code> <code>/fedinfo</code> <code>/fpromote</code>\n\n` +
   `🚨 <b>Anti-Raid</b>  <code>/antiraid</code> <code>/raid</code>\n\n` +
-  `🎫 <b>Tickets</b>  <code>/ticket</code> <code>/tickets</code> <code>/close</code> <code>/assign</code> <code>/treply</code>\n\n` +
+  `🎫 <b>Tickets</b>  <code>/ticket</code> <code>/tickets</code> <code>/closeticket</code> <code>/assign</code> <code>/treply</code>\n\n` +
   `🎨 <b>Stickers</b>  <code>/kang</code> <code>/stickerinfo</code> <code>/getsticker</code>\n\n` +
   `📡 <b>Broadcast</b> <i>(owner)</i>  <code>/broadcast</code> <code>/broadcaststats</code>\n\n` +
   `📋 <b>Logs</b>  <code>/setlog</code> <code>/unsetlog</code> <code>/logchannel</code> <code>/schedule</code>\n\n` +
@@ -187,7 +187,7 @@ const HELP_CATEGORIES: Record<string, string[]> = {
   '🎫 Tickets': [
     '/ticket &lt;subject&gt; — Open a support ticket',
     '/tickets — List open tickets (admin)',
-    '/close &lt;id&gt; — Close a ticket',
+    '/closeticket &lt;id&gt; — Close a ticket',
     '/assign &lt;id&gt; &lt;@admin&gt; — Assign ticket',
     '/escalate &lt;id&gt; — Escalate priority',
     '/treply &lt;id&gt; &lt;message&gt; — Reply to ticket',
@@ -283,7 +283,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
 
   // ── /help ───────────────────────────────────────────────────────────────
 
-  bot.command('help', async (ctx) => {
+  bot.command(['help', 'h', 'commands'], async (ctx) => {
     await sendHelpMessage(ctx, sessionId);
   });
 
