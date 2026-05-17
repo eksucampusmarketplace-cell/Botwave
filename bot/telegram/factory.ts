@@ -46,6 +46,17 @@ import { registerAnalyticsHandlers, processAnalytics } from './handlers/analytic
 import { registerChannelForceHandlers } from './handlers/channelforce';
 import { registerGroupBoosterHandlers } from './handlers/groupbooster';
 import { registerNameHistoryHandlers } from './handlers/namehistory';
+import { registerGamesHandlers } from './handlers/games';
+import { registerSlowModeHandlers } from './handlers/slowmode';
+import { registerTextToolsHandlers } from './handlers/texttools';
+import { registerQuickToolsHandlers } from './handlers/quicktools';
+import { registerProfileToolsHandlers } from './handlers/profiletools';
+import { registerMediaToolsHandlers } from './handlers/mediatools';
+import { registerFunExtrasHandlers } from './handlers/funextras';
+import { registerAutoReplyHandlers } from './handlers/autoreply';
+import { registerMediaDownloadHandlers } from './handlers/mediadownload';
+import { registerImageEditHandlers } from './handlers/imageedit';
+import { registerInfoLookupHandlers } from './handlers/infolookup';
 import { getTelegramConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -146,6 +157,17 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerChannelForceHandlers(bot, sessionId);
   registerGroupBoosterHandlers(bot, sessionId);
   registerNameHistoryHandlers(bot, sessionId);
+  registerGamesHandlers(bot, sessionId);
+  registerSlowModeHandlers(bot, sessionId);
+  registerTextToolsHandlers(bot, sessionId);
+  registerQuickToolsHandlers(bot, sessionId);
+  registerProfileToolsHandlers(bot, sessionId);
+  registerMediaToolsHandlers(bot, sessionId);
+  registerFunExtrasHandlers(bot, sessionId);
+  registerAutoReplyHandlers(bot, sessionId);
+  registerMediaDownloadHandlers(bot, sessionId);
+  registerImageEditHandlers(bot, sessionId);
+  registerInfoLookupHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {
