@@ -349,7 +349,7 @@ export class TelegramBotInstance {
       // Anti-Raid
       'antiraid', 'raid',
       // Tickets
-      'ticket', 'tickets', 'assign', 'escalate', 'treply',
+      'ticket', 'tickets', 'closeticket', 'assign', 'escalate', 'treply',
       // Stickers
       'kang', 'stickerinfo', 'getsticker',
       // Broadcast

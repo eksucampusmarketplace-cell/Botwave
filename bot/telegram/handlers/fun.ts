@@ -82,11 +82,11 @@ function randomItem<T>(arr: T[]): T {
 }
 
 export function registerFunHandlers(bot: Bot, sessionId: string): void {
-  bot.command('joke', async (ctx) => {
+  bot.command(['joke', 'jokes', 'funny'], async (ctx) => {
     await ctx.reply(`😂 ${randomItem(JOKES)}`);
   });
 
-  bot.command('quote', async (ctx) => {
+  bot.command(['quote', 'quotes', 'q', 'inspire', 'motivation'], async (ctx) => {
     const q = randomItem(QUOTES);
     await ctx.reply(
       `💬 <i>"${q.text}"</i>\n\n— <b>${q.author}</b>`,
@@ -104,7 +104,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`🪙 ${result}!`);
   });
 
-  bot.command('8ball', async (ctx) => {
+  bot.command(['8ball', 'eightball', 'magic', 'magic8ball'], async (ctx) => {
     const question = (ctx.match?.toString() || '').trim();
     if (!question) {
       await ctx.reply('Usage: /8ball <question>');

@@ -7,7 +7,7 @@ import { requireAdmin, requireBotAdmin } from '../utils/permissions';
 import { logModAction } from '../utils/db';
 
 export function registerPurgeHandlers(bot: Bot, sessionId: string): void {
-  bot.command('purge', async (ctx) => {
+  bot.command(['purge', 'del'], async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
 

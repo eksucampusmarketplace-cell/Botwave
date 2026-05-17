@@ -79,7 +79,7 @@ function getAppUrl(baseUrl: string, app: MiniApp): string {
 }
 
 export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
-  bot.command('games', async (ctx) => {
+  bot.command(['games', 'mgame', 'multiplayer'], async (ctx) => {
     const config = await getTelegramConfig(sessionId);
     const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
 
