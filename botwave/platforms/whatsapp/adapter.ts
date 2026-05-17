@@ -5,7 +5,7 @@
  * This allows existing WhatsApp functionality to work through the unified platform layer.
  */
 
-import type { PlatformAdapter, PlatformMessage, PlatformUser, SendOptions } from '../types';
+import type { PlatformAdapter, PlatformMessage, PlatformUser, SendOptions } from '../../core/types';
 
 export class WhatsAppAdapter implements PlatformAdapter {
   readonly platform = 'whatsapp' as const;
