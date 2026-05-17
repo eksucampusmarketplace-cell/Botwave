@@ -50,6 +50,7 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState<BotSession | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
+  const [showConfirm, setShowConfirm] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({ totalMessages: 0, totalCommands: 0, uptimePercent: 0, activeSessions: 0, totalSessions: 0 });
 
   const activeSessionRef = useRef<BotSession | null>(null);
@@ -238,8 +239,13 @@ export default function DashboardPage() {
 
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!showConfirm) {
+      setShowConfirm(true);
+      return;
+    }
     setIsCreating(true);
     setError(null);
+    setShowConfirm(false);
     try {
       const response = await fetch('/api/bot/sessions', {
         method: 'POST',
@@ -264,6 +270,42 @@ export default function DashboardPage() {
       console.error('Error creating session:', err);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleDisconnectSession = async (sessionId: string) => {
+    if (!confirm('Disconnect this session? The bot will stop responding. You can reconnect it later.')) return;
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchDashboardData();
+      } else {
+        setError(data.error || 'Failed to disconnect session');
+      }
+    } catch {
+      setError('Failed to disconnect session');
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm('Delete this session? This cannot be undone.')) return;
+    try {
+      const response = await fetch(`/api/bot/sessions?id=${sessionId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchDashboardData();
+      } else {
+        setError(data.error || 'Failed to delete session');
+      }
+    } catch {
+      setError('Failed to delete session');
     }
   };
 
@@ -354,6 +396,8 @@ export default function DashboardPage() {
                     status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                     lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
                     onConnect={() => handleConnect(session)}
+                    onDisconnect={() => handleDisconnectSession(session.id)}
+                    onDelete={() => handleDeleteSession(session.id)}
                   />
                 ))}
 
@@ -516,48 +560,81 @@ export default function DashboardPage() {
                   </p>
                 </div>
               )}
-              <div>
-                <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
-                <input
-                  type="text"
-                  required
-                  value={newSession.name}
-                  onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
-                  className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                  placeholder="e.g. Personal"
-                  disabled={isCreating}
-                />
-              </div>
-              <div>
-                <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
-                <input
-                  type="text"
-                  required
-                  value={newSession.phone}
-                  onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
-                  className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                  placeholder="+2348012345678"
-                  disabled={isCreating}
-                />
-                <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, not 080)</p>
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
-                  disabled={isCreating}
-                >
-                  CANCEL
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isCreating}
-                >
-                  {isCreating ? 'CREATING...' : 'CREATE'}
-                </button>
-              </div>
+              {!showConfirm ? (
+                <>
+                  <div>
+                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSession.name}
+                      onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
+                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                      placeholder="e.g. Personal"
+                      disabled={isCreating}
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSession.phone}
+                      onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
+                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                      placeholder="+2348012345678"
+                      disabled={isCreating}
+                    />
+                    <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddModal(false); setShowConfirm(false); setError(null); }}
+                      className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                      disabled={isCreating}
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isCreating}
+                    >
+                      CONTINUE
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-cyan/10 border border-cyan/30 p-4">
+                    <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
+                    <div className="space-y-2">
+                      <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
+                      <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                    </div>
+                    <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
+                      Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(false)}
+                      className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
+                    >
+                      GO BACK
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isCreating}
+                    >
+                      {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </form>
           </motion.div>
         </div>
