@@ -33,6 +33,7 @@ import { registerAntiraidHandlers, checkRaid } from './handlers/antiraid';
 import { registerTicketHandlers } from './handlers/tickets';
 import { registerStickerHandlers } from './handlers/stickers';
 import { registerBroadcastHandlers } from './handlers/broadcast';
+import { registerGroupLifecycleHandlers } from './handlers/group_lifecycle';
 import { getTelegramConfig } from './utils/db';
 import { isElevated } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -87,6 +88,9 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
     if (blocked) return;
     await next();
   });
+
+  // Group lifecycle: detect bot being added/removed from groups (must be before commands)
+  registerGroupLifecycleHandlers(bot, sessionId);
 
   // Register all command handlers
   registerStartHandlers(bot, sessionId);

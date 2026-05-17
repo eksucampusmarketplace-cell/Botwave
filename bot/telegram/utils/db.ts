@@ -1398,6 +1398,73 @@ export async function getModLog(
   return data || [];
 }
 
+// ─── Groups ─────────────────────────────────────────────────────────────────
+
+export interface TelegramGroup {
+  session_id: string;
+  chat_id: string;
+  chat_title: string;
+  chat_type: string;
+  added_by_user_id: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function registerGroup(
+  sessionId: string,
+  chatId: string,
+  chatTitle: string,
+  chatType: string,
+  addedByUserId: string | null,
+): Promise<void> {
+  const { error } = await supabase.from('telegram_groups').upsert(
+    {
+      session_id: sessionId,
+      chat_id: chatId,
+      chat_title: chatTitle,
+      chat_type: chatType,
+      added_by_user_id: addedByUserId,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'session_id,chat_id' },
+  );
+  if (error) {
+    console.warn(`[TG-DB] registerGroup ${chatId}: ${error.message}`);
+  }
+}
+
+export async function unregisterGroup(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_groups')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+  if (error) {
+    console.warn(`[TG-DB] unregisterGroup ${chatId}: ${error.message}`);
+  }
+}
+
+export async function getActiveGroups(
+  sessionId: string,
+): Promise<TelegramGroup[]> {
+  const { data, error } = await supabase
+    .from('telegram_groups')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.warn(`[TG-DB] getActiveGroups: ${error.message}`);
+    return [];
+  }
+  return (data as TelegramGroup[]) || [];
+}
+
 // ─── XP Reset ───────────────────────────────────────────────────────────────
 
 export async function resetXp(
