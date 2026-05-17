@@ -9,11 +9,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import { pendingClients } from '@/botwave/platforms/telegram/userbot/pendingAuthStore';
 
 export const dynamic = 'force-dynamic';
-
-// Store pending auth clients temporarily
-const pendingClients = new Map<string, { client: TelegramClient; phoneCodeHash: string }>();
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +99,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export pendingClients for use by verify-code route
-export { pendingClients };
