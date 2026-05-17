@@ -14,6 +14,8 @@ import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementL
 import { getCommand, type MessageContext, type TemplateVars } from './commands/registry';
 import { refreshHeartbeat } from './sessionCoordinator';
 import { registerAllHandlers } from './telegram/factory';
+import { getTelegramConfig, getDueScheduledMessages, markScheduledMessageSent } from './telegram/utils/db';
+import { checkNightMode } from './telegram/handlers/nightmode';
 
 // Import all command modules to trigger self-registration
 import './commands';
@@ -77,6 +79,8 @@ export class TelegramBotInstance {
   private pairingStartedAt: number = 0;
   private stopped: boolean = false;
   private heartbeatHandle: NodeJS.Timeout | null = null;
+  private nightModeHandle: NodeJS.Timeout | null = null;
+  private scheduleHandle: NodeJS.Timeout | null = null;
 
   public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
 
@@ -194,6 +198,52 @@ export class TelegramBotInstance {
             });
         },
       });
+
+      // Set menu button to open Mini App (inline WebApp feature)
+      try {
+        const tgConfig = await getTelegramConfig(this.sessionId);
+        const miniappUrl = tgConfig.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL;
+        if (miniappUrl) {
+          await this.bot.api.setChatMenuButton({
+            menu_button: {
+              type: 'web_app',
+              text: '📱 Open Panel',
+              web_app: { url: miniappUrl },
+            },
+          });
+          console.log(`[TG-BOT] Menu button set to Mini App for ${this.sessionId.slice(0, 8)}`);
+        }
+      } catch (menuErr) {
+        console.warn(`[TG-BOT] Failed to set menu button for ${this.sessionId.slice(0, 8)}:`, menuErr);
+      }
+
+      // Night mode scheduler: check every 60 seconds
+      this.nightModeHandle = setInterval(async () => {
+        if (this.stopped || !this.isReady || !this.bot) return;
+        try {
+          await checkNightMode(this.bot, this.sessionId);
+        } catch (err) {
+          console.error(`[TG-BOT] Night mode check failed for ${this.sessionId.slice(0, 8)}:`, err);
+        }
+      }, 60_000);
+
+      // Scheduled messages: check every 30 seconds
+      this.scheduleHandle = setInterval(async () => {
+        if (this.stopped || !this.isReady || !this.bot) return;
+        try {
+          const due = await getDueScheduledMessages(this.sessionId);
+          for (const msg of due) {
+            try {
+              await this.bot!.api.sendMessage(Number(msg.chat_id), msg.content, { parse_mode: 'HTML' });
+              await markScheduledMessageSent(msg.id);
+            } catch (sendErr) {
+              console.error(`[TG-BOT] Failed to send scheduled message ${msg.id}:`, sendErr);
+            }
+          }
+        } catch (err) {
+          console.error(`[TG-BOT] Scheduled message check failed for ${this.sessionId.slice(0, 8)}:`, err);
+        }
+      }, 30_000);
 
       // Heartbeat: refresh lock periodically so session isn't marked as orphaned
       this.heartbeatHandle = setInterval(() => {
@@ -419,6 +469,14 @@ export class TelegramBotInstance {
     if (this.heartbeatHandle) {
       clearInterval(this.heartbeatHandle);
       this.heartbeatHandle = null;
+    }
+    if (this.nightModeHandle) {
+      clearInterval(this.nightModeHandle);
+      this.nightModeHandle = null;
+    }
+    if (this.scheduleHandle) {
+      clearInterval(this.scheduleHandle);
+      this.scheduleHandle = null;
     }
 
     if (this.bot) {

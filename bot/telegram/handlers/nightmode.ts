@@ -53,6 +53,39 @@ export function registerNightmodeHandlers(bot: Bot, sessionId: string): void {
 }
 
 /**
+ * Run night mode check for a session: lock/unlock groups based on schedule.
+ * Called every 60 seconds from TelegramBotManager.
+ */
+export async function checkNightMode(bot: Bot, sessionId: string): Promise<void> {
+  const config = await getTelegramConfig(sessionId);
+  if (!config.night_mode_enabled) return;
+
+  const active = isNightModeActive(config);
+
+  // Get groups from config (stored as array of chat IDs)
+  const chatIds: number[] = config.night_mode_groups || [];
+  if (chatIds.length === 0) return;
+
+  for (const chatId of chatIds) {
+    try {
+      await bot.api.setChatPermissions(chatId, {
+        can_send_messages: !active,
+        can_send_audios: !active,
+        can_send_documents: !active,
+        can_send_photos: !active,
+        can_send_videos: !active,
+        can_send_video_notes: !active,
+        can_send_voice_notes: !active,
+        can_send_polls: !active,
+        can_send_other_messages: !active,
+      });
+    } catch {
+      // Group may not exist or bot may not have permissions
+    }
+  }
+}
+
+/**
  * Check if night mode is active. Returns true if group should be locked.
  */
 export function isNightModeActive(config: {

@@ -21,6 +21,13 @@ import { registerRulesHandlers } from './handlers/rules';
 import { registerXpHandlers, processXp } from './handlers/xp';
 import { registerMiniAppsHandlers } from './handlers/miniapps';
 import { registerPromoteHandlers } from './handlers/promote';
+import { registerPingHandlers } from './handlers/ping';
+import { registerLogChannelHandlers } from './handlers/logchannel';
+import { registerBlacklistHandlers, checkBlacklist } from './handlers/blacklist';
+import { registerReportHandlers } from './handlers/report';
+import { registerLocksHandlers, checkLocks } from './handlers/locks';
+import { registerPollHandlers } from './handlers/polls';
+import { registerScheduleHandlers } from './handlers/schedule';
 import { getTelegramConfig } from './utils/db';
 import { isElevated } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -62,6 +69,20 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
     await next();
   });
 
+  // Middleware: blacklist check
+  bot.on('message', async (ctx, next) => {
+    const blocked = await checkBlacklist(ctx, sessionId);
+    if (blocked) return;
+    await next();
+  });
+
+  // Middleware: locks check
+  bot.on('message', async (ctx, next) => {
+    const blocked = await checkLocks(ctx, sessionId);
+    if (blocked) return;
+    await next();
+  });
+
   // Register all command handlers
   registerStartHandlers(bot, sessionId);
   registerModerationHandlers(bot, sessionId);
@@ -80,6 +101,13 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerRulesHandlers(bot, sessionId);
   registerXpHandlers(bot, sessionId);
   registerMiniAppsHandlers(bot, sessionId);
+  registerPingHandlers(bot, sessionId);
+  registerLogChannelHandlers(bot, sessionId);
+  registerBlacklistHandlers(bot, sessionId);
+  registerReportHandlers(bot, sessionId);
+  registerLocksHandlers(bot, sessionId);
+  registerPollHandlers(bot, sessionId);
+  registerScheduleHandlers(bot, sessionId);
 
   // Middleware: auto-filter responses and XP on text messages (runs after commands)
   bot.on('message:text', async (ctx) => {
