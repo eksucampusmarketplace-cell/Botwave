@@ -5,7 +5,7 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig } from '../utils/db';
+import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
 
 interface MiniApp {
   id: string;
@@ -154,7 +154,6 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const { updateTelegramConfig } = await import('../utils/db');
     await updateTelegramConfig(sessionId, { miniapp_base_url: url });
     await ctx.reply(`✅ Mini apps base URL set to: <code>${url}</code>`, { parse_mode: 'HTML' });
   });

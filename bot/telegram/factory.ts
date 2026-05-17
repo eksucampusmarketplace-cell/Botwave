@@ -87,7 +87,6 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
 
     // Check keyword filters
     const filterResponse = await checkFilters(
-      bot,
       sessionId,
       ctx.chat.id.toString(),
       ctx.message.text || '',

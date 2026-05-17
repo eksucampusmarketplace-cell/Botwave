@@ -62,7 +62,6 @@ export function registerFiltersHandlers(bot: Bot, sessionId: string): void {
  * Middleware-style filter checker — call this from the main message handler.
  */
 export async function checkFilters(
-  bot: Bot,
   sessionId: string,
   chatId: string,
   text: string,

@@ -92,7 +92,7 @@ export async function processXp(
   const result = await awardXp(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
   if (result.leveledUp) {
     await ctx.reply(
-      `🎉 ${ctx.from.first_name} leveled up to <b>Level ${result.newLevel}</b>!`,
+      `🎉 ${ctx.from.first_name} leveled up to <b>Level ${result.level}</b>!`,
       { parse_mode: 'HTML' },
     );
   }
