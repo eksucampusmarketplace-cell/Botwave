@@ -1,8 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/workerConfig';
 import { getCachedSessions, cacheSessions, invalidateSessions } from '@/lib/redisApiCache';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+
+const ADMIN_EMAIL = 'christolu994@gmail.com';
+const MAX_SESSIONS_PER_USER = 1;
 
 export const dynamic = 'force-dynamic';
 
@@ -30,30 +34,26 @@ function normalizePhoneNumber(raw: string): string {
 }
 
 /**
- * Validate that a phone number is plausibly real after normalization.
- * Rejects clearly invalid formats:
- *  - Country code starting with 0 (e.g. +012...)
- *  - Too short (< 8 digits after +)
- *  - Too long (> 15 digits — E.164 max)
- *  - All same digit (e.g. +1111111111)
+ * Validate phone number using libphonenumber-js for proper international validation.
+ * Falls back to basic checks if parsing fails.
  */
 function validatePhoneNumber(phone: string): boolean {
   const digits = phone.replace(/\D/g, '');
 
   if (digits.length < 8 || digits.length > 15) return false;
-
-  // Country codes never start with 0
   if (digits.startsWith('0')) return false;
-
-  // Reject all-same-digit numbers
   if (/^(\d)\1+$/.test(digits)) return false;
+
+  const parsed = parsePhoneNumberFromString(phone);
+  if (!parsed) return false;
+  if (!parsed.isValid()) return false;
 
   return true;
 }
 
 const createSessionSchema = z.object({
-  phoneNumber: z.string().min(10).transform(normalizePhoneNumber).refine(validatePhoneNumber, {
-    message: 'Invalid phone number format. Use international format like +234XXXXXXXXXX',
+  phoneNumber: z.string().min(7).transform(normalizePhoneNumber).refine(validatePhoneNumber, {
+    message: 'Invalid phone number. Please enter a real phone number with country code (e.g. +234XXXXXXXXXX, +1XXXXXXXXXX, +44XXXXXXXXXX)',
   }),
   sessionName: z.string().min(1).max(50),
 });
@@ -139,6 +139,25 @@ export async function POST(request: NextRequest) {
     }
 
     const { phoneNumber, sessionName } = validation.data;
+
+    // Enforce session limit: check how many sessions this user already has
+    const adminClient = await createAdminClient();
+    const { data: userRecord } = await adminClient.auth.admin.getUserById(user.id);
+    const isAdmin = userRecord?.user?.email === ADMIN_EMAIL;
+
+    if (!isAdmin) {
+      const { count } = await supabase
+        .from('bot_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (count !== null && count >= MAX_SESSIONS_PER_USER) {
+        return NextResponse.json(
+          { error: `Session limit reached. You can only connect ${MAX_SESSIONS_PER_USER} WhatsApp number${MAX_SESSIONS_PER_USER === 1 ? '' : 's'}. Please delete an existing session first.` },
+          { status: 403 }
+        );
+      }
+    }
 
     const workerUrl = await assignWorkerAsync();
     console.log(`[API] POST session: user=${user.id.slice(0,8)} phone=${phoneNumber} name=${sessionName} assignedWorker=${workerUrl ?? 'main'}`);
