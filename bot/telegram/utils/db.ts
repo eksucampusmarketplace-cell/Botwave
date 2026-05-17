@@ -39,6 +39,7 @@ export interface TelegramConfig {
   antiraid_threshold: number;
   antiraid_mode: string;
   antiraid_duration_mins: number;
+  start_buttons_json: string | null;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -67,6 +68,7 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   antiraid_threshold: 15,
   antiraid_mode: 'restrict',
   antiraid_duration_mins: 15,
+  start_buttons_json: null,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
