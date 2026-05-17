@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './circuitBreaker';
-import { trackMap } from './memoryGuard';
-import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './redisSessionCache';
-import { queueWrite } from './writeQueue';
+import { resilientRead, resilientWrite, isCircuitOpen, setStaleCache, invalidateStaleCache, getCircuitStats } from './infrastructure/circuitBreaker';
+import { trackMap } from './infrastructure/memoryGuard';
+import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './infrastructure/redisSessionCache';
+import { queueWrite } from './infrastructure/writeQueue';
 import { sendAlertEmail, buildAlertHtml } from '../lib/email-service';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -2292,7 +2292,7 @@ export async function checkAndCashout(userId: string, phoneNumber: string): Prom
   if (balance.balance < CASHOUT_THRESHOLD) return false;
 
   // Import Inlomax client
-  const { sendAirtime, detectNetwork } = await import('./utils/inlomax');
+  const { sendAirtime, detectNetwork } = await import('./whatsapp/utils/inlomax');
 
   const networkInfo = detectNetwork(phoneNumber);
   const result = await sendAirtime(phoneNumber, CASHOUT_THRESHOLD);
