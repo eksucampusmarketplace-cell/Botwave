@@ -174,7 +174,7 @@ export class TelegramBotAdapter implements PlatformAdapter {
       sender,
       chat: {
         id: String(msg.chat.id),
-        type: chatType === 'private' ? 'private' : chatType === 'channel' ? 'channel' : chatType === 'supergroup' ? 'supergroup' : 'group',
+        type: chatType === 'private' ? 'private' : chatType === 'supergroup' ? 'supergroup' : 'group',
         title: 'title' in msg.chat ? msg.chat.title : undefined,
       },
       text,
