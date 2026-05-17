@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementLeaderboard, incrementQuotaUsage, getUserSubscription, creditReward } from './database';
 import { getCommand, type MessageContext, type TemplateVars } from './commands/registry';
 import { refreshHeartbeat } from './sessionCoordinator';
+import { registerAllHandlers } from './telegram/factory';
 
 // Import all command modules to trigger self-registration
 import './commands';
@@ -107,7 +108,10 @@ export class TelegramBotInstance {
         if (settings?.command_prefix) commandPrefix = settings.command_prefix;
       } catch { /* use default */ }
 
-      // Register message handler
+      // Register all Telegram-specific handlers (moderation, welcome, captcha, etc.)
+      await registerAllHandlers(this.bot, this.sessionId);
+
+      // Register legacy message handler for command registry compatibility
       this.bot.on('message:text', async (ctx) => {
         if (this.stopped) return;
 
