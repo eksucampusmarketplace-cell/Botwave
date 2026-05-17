@@ -7,19 +7,19 @@ import {
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
-import { useSupabaseAuthState } from './SupabaseAuthState';
-import { handleMessage, handleGroupParticipantsUpdate } from './handlers/MessageHandler';
+import { useSupabaseAuthState } from './whatsapp/SupabaseAuthState';
+import { handleMessage, handleGroupParticipantsUpdate } from './whatsapp/handlers/MessageHandler';
 // Autoview removed entirely
 // import { handleStatusUpdate, cleanupStatusViewer } from './handlers/StatusViewer';
-import { cacheMessage, handleMessageRevoke, cleanupSessionCache } from './handlers/AntiDeleteHandler';
-import { MessageQueue } from './utils/MessageQueue';
-import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './utils/advancedAntiban';
-import { SELF_URL, getNextWorker } from './workerConfig';
-import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './sessionCoordinator';
-import { EvolutionSocketAdapter } from './evolutionSocket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, type PairingResult } from './evolutionClient';
-import { queueLink, cancelPendingLinks } from './linkQueue';
-import { TelegramBotInstance } from './TelegramBotManager';
+import { cacheMessage, handleMessageRevoke, cleanupSessionCache } from './whatsapp/handlers/AntiDeleteHandler';
+import { MessageQueue } from './whatsapp/utils/MessageQueue';
+import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSession } from './whatsapp/utils/advancedAntiban';
+import { SELF_URL, getNextWorker } from './scaling/workerConfig';
+import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
+import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, type PairingResult } from './whatsapp/evolution/client';
+import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
+import { TelegramBotInstance } from './telegram/manager';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -32,7 +32,7 @@ try {
 import P from 'pino';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { cacheJSON, getCachedJSON } from './redisSessionCache';
+import { cacheJSON, getCachedJSON } from './infrastructure/redisSessionCache';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 
@@ -306,7 +306,7 @@ export class BotWaveBot {
             try {
               const queueStartTime = Date.now();
               console.log(`[PAIRING] >>> Queuing pairing code request for "${cleanPhone}" at ${new Date(queueStartTime).toISOString()}`);
-              const queuePos = (await import('./linkQueue')).getQueuePosition(this.sessionId);
+              const queuePos = (await import('./infrastructure/linkQueue')).getQueuePosition(this.sessionId);
               if (queuePos) {
                 console.log(`[PAIRING] Queue position: #${queuePos.position} estimatedWait=${queuePos.estimatedWaitMinutes}min`);
               } else {

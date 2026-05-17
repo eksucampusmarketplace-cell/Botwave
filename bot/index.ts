@@ -2,14 +2,14 @@ import './env';
 import { isMainThread } from 'worker_threads';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
-import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './sessionCoordinator';
-import { startMonetizationScheduler, stopMonetizationScheduler } from './monetization';
-import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './autoScaler';
-import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './evolutionClient';
-import { disconnectRedis } from './redis';
-import { isCircuitOpen } from './circuitBreaker';
-import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './gracefulShutdown';
+import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './scaling/sessionCoordinator';
+import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
+import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
+import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './whatsapp/evolution/client';
+import { disconnectRedis } from './infrastructure/redis';
+import { isCircuitOpen } from './infrastructure/circuitBreaker';
+import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './infrastructure/gracefulShutdown';
 
 // Guard: only run the main bot process on the main thread.
 // Worker threads use workerThread.ts as their entry point.
@@ -17,10 +17,10 @@ if (!isMainThread) {
   console.error('[BOT] index.ts must only run on the main thread. Workers use workerThread.ts.');
   process.exit(1);
 }
-import { trackMap, startMemoryGuard, stopMemoryGuard } from './memoryGuard';
-import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from './writeQueue';
-import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './adaptivePoller';
-import { disconnectSessionCache } from './redisSessionCache';
+import { trackMap, startMemoryGuard, stopMemoryGuard } from './infrastructure/memoryGuard';
+import { startWriteQueueReplay, stopWriteQueueReplay, getWriteQueueStats } from './infrastructure/writeQueue';
+import { getPollingMultiplier, recordPollerError, recordPollerSuccess } from './infrastructure/adaptivePoller';
+import { disconnectSessionCache } from './infrastructure/redisSessionCache';
 import { createServer as createHttpServer } from 'http';
 import { startHealthMonitor, stopHealthMonitor } from '../lib/health-monitor';
 
