@@ -5,8 +5,11 @@ import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import SessionCard from '@/components/ui/SessionCard';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
+import PlatformSelector from '@/components/ui/PlatformSelector';
+import TelegramBotSetup from '@/components/ui/TelegramBotSetup';
+import TelegramUserbotSetup from '@/components/ui/TelegramUserbotSetup';
 import { createClient } from '@/lib/supabase/client';
-import type { BotSession } from '@/lib/types';
+import type { BotSession, Platform } from '@/lib/types';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<BotSession[]>([]);
@@ -18,6 +21,7 @@ export default function SessionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
   const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
 
   const supabase = useRef(createClient()).current;
   const activeSessionRef = useRef<BotSession | null>(null);
@@ -113,12 +117,14 @@ export default function SessionsPage() {
         body: JSON.stringify({
           sessionName: newSession.name,
           phoneNumber: newSession.phone,
+          platform: 'whatsapp',
         }),
       });
       const data = await response.json();
       if (data.success) {
         setShowAddModal(false);
         setNewSession({ name: '', phone: '' });
+        setSelectedPlatform(null);
         fetchSessions();
         setActiveSession(data.data);
         setShowQR(true);
@@ -128,6 +134,65 @@ export default function SessionsPage() {
     } catch (err) {
       setError('An unexpected error occurred');
       console.error('Add session error:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleTelegramBotComplete = async (data: { token: string; botUsername: string; sessionName: string }) => {
+    setIsCreating(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: data.sessionName,
+          platform: 'telegram_bot',
+          telegramBotToken: data.token,
+          telegramBotUsername: data.botUsername,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowAddModal(false);
+        setSelectedPlatform(null);
+        fetchSessions();
+      } else {
+        setError(result.error || 'Failed to create Telegram bot session');
+      }
+    } catch {
+      setError('Failed to create Telegram bot session');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUserbotComplete = async (data: { sessionString: string; sessionName: string; apiId: number; apiHash: string }) => {
+    setIsCreating(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: data.sessionName,
+          platform: 'telegram_userbot',
+          telegramApiId: data.apiId,
+          telegramApiHash: data.apiHash,
+          telegramSessionString: data.sessionString,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowAddModal(false);
+        setSelectedPlatform(null);
+        fetchSessions();
+      } else {
+        setError(result.error || 'Failed to create userbot session');
+      }
+    } catch {
+      setError('Failed to create userbot session');
     } finally {
       setIsCreating(false);
     }
@@ -206,7 +271,7 @@ export default function SessionsPage() {
             <div>
               <h3 className="font-display text-lg text-red-600 font-bold tracking-wider">ACTION REQUIRED: SESSION DISCONNECTED</h3>
               <p className="font-mono text-xs text-zinc-400 mt-1">
-                One or more of your sessions have been disconnected by WhatsApp. Re-authenticate to resume service.
+                One or more of your sessions have been disconnected. Re-authenticate to resume service.
               </p>
             </div>
             <button 
@@ -231,7 +296,7 @@ export default function SessionsPage() {
             BOT <span className="text-green">SESSIONS</span>
           </h1>
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
-            Manage your connected WhatsApp numbers
+            Manage your connected WhatsApp &amp; Telegram sessions
           </p>
         </motion.div>
 
@@ -248,6 +313,7 @@ export default function SessionsPage() {
                 phone={session.phone_number}
                 status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                 lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
+                platform={session.platform}
                 onConnect={() => handleConnect(session)}
                 onDisconnect={() => handleDisconnectSession(session.id)}
                 onDelete={() => handleDeleteSession(session.id)}
@@ -277,7 +343,7 @@ export default function SessionsPage() {
         >
           <div className="px-5 py-3 border-b border-green/15 flex items-center gap-2">
             <span className="text-green text-sm">?</span>
-            <span className="font-mono text-[11px] text-green/70 tracking-[2px]">HOW TO CONNECT YOUR WHATSAPP</span>
+            <span className="font-mono text-[11px] text-green/70 tracking-[2px]">HOW TO CONNECT</span>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-3">
@@ -286,25 +352,25 @@ export default function SessionsPage() {
                 <span className="font-mono text-xs text-white font-bold tracking-[1px]">ADD A SESSION</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                Click the <span className="text-green">+ ADD NEW SESSION</span> button above. Enter a name and your WhatsApp phone number (with country code, e.g. +234...).
+                Click <span className="text-green">+ ADD NEW SESSION</span> and choose your platform: <span className="text-white">WhatsApp</span>, <span className="text-white">Telegram Bot</span>, or <span className="text-white">Telegram Userbot</span>.
               </p>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-lg text-cyan font-bold">2</span>
-                <span className="font-mono text-xs text-white font-bold tracking-[1px]">OPEN LINKED DEVICES</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">AUTHENTICATE</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                On your phone, open <span className="text-white">WhatsApp</span> &rarr; tap the <span className="text-white">three dots menu</span> (top right) &rarr; <span className="text-white">Linked Devices</span> &rarr; <span className="text-white">Link a Device</span>.
+                <span className="text-white">WhatsApp:</span> Enter your phone number and scan the QR code or enter pairing code. <span className="text-white">Telegram Bot:</span> Paste your @BotFather token. <span className="text-white">Userbot:</span> Enter API credentials from my.telegram.org.
               </p>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-lg text-cyan font-bold">3</span>
-                <span className="font-mono text-xs text-white font-bold tracking-[1px]">SCAN QR OR ENTER CODE</span>
+                <span className="font-mono text-xs text-white font-bold tracking-[1px]">GO LIVE</span>
               </div>
               <p className="font-mono text-[11px] text-[#5a9a7a] leading-relaxed">
-                <span className="text-white">Scan the QR code</span> shown on screen, or tap <span className="text-white">&quot;Link with phone number instead&quot;</span> and enter the <span className="text-green">8-digit code</span>. If WhatsApp shows a scam warning, tap <span className="text-white">Continue</span> — it&apos;s safe.
+                Once connected, your bot is <span className="text-green">live</span>. Manage settings, view analytics, and configure auto-replies from the dashboard.
               </p>
             </div>
           </div>
@@ -316,93 +382,141 @@ export default function SessionsPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-green/20 p-8 max-w-md w-full relative"
+            className="bg-card border border-green/20 p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
           >
             <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
-            <form onSubmit={handleAddSession} className="space-y-4">
-              {error && (
-                <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
-                  <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
-                    Error: {error}
-                  </p>
-                </div>
-              )}
-              {!showConfirm ? (
-                <>
-                  <div>
-                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
-                    <input
-                      type="text"
-                      required
-                      value={newSession.name}
-                      onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
-                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                      placeholder="e.g. Personal"
-                      disabled={isCreating}
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
-                    <input
-                      type="text"
-                      required
-                      value={newSession.phone}
-                      onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
-                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                      placeholder="+2348012345678"
-                      disabled={isCreating}
-                    />
-                    <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
-                  </div>
-                  <div className="flex gap-4 pt-4">
+
+            {error && (
+              <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
+                <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
+                  Error: {error}
+                </p>
+              </div>
+            )}
+
+            {/* Step 1: Platform Selection */}
+            {!selectedPlatform && (
+              <div className="space-y-4">
+                <PlatformSelector selected={selectedPlatform} onSelect={(p) => { setSelectedPlatform(p); setError(null); }} />
+                <button
+                  type="button"
+                  onClick={() => { setShowAddModal(false); setError(null); }}
+                  className="w-full border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                >
+                  CANCEL
+                </button>
+              </div>
+            )}
+
+            {/* WhatsApp Flow */}
+            {selectedPlatform === 'whatsapp' && (
+              <form onSubmit={handleAddSession} className="space-y-4">
+                {!showConfirm ? (
+                  <>
                     <button
                       type="button"
-                      onClick={() => { setShowAddModal(false); setShowConfirm(false); setError(null); }}
-                      className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
-                      disabled={isCreating}
+                      onClick={() => { setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
+                      className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
                     >
-                      CANCEL
+                      &larr; BACK TO PLATFORMS
                     </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isCreating}
-                    >
-                      CONTINUE
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-cyan/10 border border-cyan/30 p-4">
-                    <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
-                    <div className="space-y-2">
-                      <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
-                      <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                    <div>
+                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
+                      <input
+                        type="text"
+                        required
+                        value={newSession.name}
+                        onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
+                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        placeholder="e.g. Personal"
+                        disabled={isCreating}
+                      />
                     </div>
-                    <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
-                      Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
-                    </p>
+                    <div>
+                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
+                      <input
+                        type="text"
+                        required
+                        value={newSession.phone}
+                        onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
+                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        placeholder="+2348012345678"
+                        disabled={isCreating}
+                      />
+                      <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddModal(false); setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
+                        className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                        disabled={isCreating}
+                      >
+                        CANCEL
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCreating}
+                      >
+                        CONTINUE
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-cyan/10 border border-cyan/30 p-4">
+                      <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
+                      <div className="space-y-2">
+                        <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
+                        <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                      </div>
+                      <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
+                        Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
+                      </p>
+                    </div>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm(false)}
+                        className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
+                      >
+                        GO BACK
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCreating}
+                      >
+                        {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm(false)}
-                      className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
-                    >
-                      GO BACK
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isCreating}
-                    >
-                      {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </form>
+                )}
+              </form>
+            )}
+
+            {/* Telegram Bot Flow */}
+            {selectedPlatform === 'telegram_bot' && (
+              <TelegramBotSetup
+                onComplete={handleTelegramBotComplete}
+                onCancel={() => { setSelectedPlatform(null); setError(null); }}
+              />
+            )}
+
+            {/* Telegram Userbot Flow */}
+            {selectedPlatform === 'telegram_userbot' && (
+              <TelegramUserbotSetup
+                onComplete={handleUserbotComplete}
+                onCancel={() => { setSelectedPlatform(null); setError(null); }}
+              />
+            )}
+
+            {isCreating && selectedPlatform !== 'whatsapp' && (
+              <div className="text-center py-4">
+                <div className="animate-pulse font-mono text-xs text-green">CREATING SESSION...</div>
+              </div>
+            )}
           </motion.div>
         </div>
       )}
