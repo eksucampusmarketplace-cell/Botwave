@@ -18,7 +18,7 @@ function appendFooter(text: string): string {
 function formatMessage(template: string, vars: Record<string, string>): string {
   let result = template;
   for (const [key, val] of Object.entries(vars)) {
-    result = result.replaceAll(`{${key}}`, val);
+    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
   }
   return result;
 }

@@ -172,7 +172,7 @@ export async function checkLocks(
   if (msg.poll && locks.includes('poll')) blocked = true;
   if (msg.contact && locks.includes('contact')) blocked = true;
   if (msg.video_note && locks.includes('video_note')) blocked = true;
-  if (msg.forward_date && locks.includes('forward')) blocked = true;
+  if (msg.forward_origin && locks.includes('forward')) blocked = true;
 
   if (
     locks.includes('link') &&
