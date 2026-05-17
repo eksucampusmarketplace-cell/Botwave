@@ -27,8 +27,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Import pending clients from request-code route
-    const { pendingClients } = await import('../request-code/route');
+    const { pendingClients } = await import('@/botwave/platforms/telegram/userbot/pendingAuthStore');
     const entry = pendingClients.get(storeKey);
 
     if (!entry) {
