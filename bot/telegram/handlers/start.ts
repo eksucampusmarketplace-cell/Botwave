@@ -6,7 +6,7 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getTelegramConfig, updateTelegramConfig, getActiveGroups } from '../utils/db';
 import { requireAdmin } from '../utils/permissions';
 
 const POWERED_BY = '\n\n⚡ <b>Powered by Botwave</b>';
@@ -344,6 +344,34 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
     await updateTelegramConfig(sessionId, { help_text: text });
     await ctx.reply('✅ Help message updated!');
+  });
+
+  // ── /groups — list all groups the bot is in ────────────────────────────
+
+  bot.command(['groups', 'mygroups'], async (ctx) => {
+    const groups = await getActiveGroups(sessionId);
+
+    if (groups.length === 0) {
+      await ctx.reply(
+        '📋 <b>No groups found.</b>\n\n' +
+        'Add me to a group to get started!',
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+
+    const lines = groups.map((g, i) => {
+      const title = g.chat_title || 'Unknown';
+      const type = g.chat_type === 'supergroup' ? 'supergroup' : 'group';
+      return `${i + 1}. <b>${title}</b> (<code>${g.chat_id}</code>) [${type}]`;
+    });
+
+    await ctx.reply(
+      `📋 <b>Active Groups (${groups.length})</b>\n\n` +
+      lines.join('\n') +
+      `\n\n💡 Use /panel to manage settings for each group.`,
+      { parse_mode: 'HTML' },
+    );
   });
 
   // ── /resetstart — reset start message to default ───────────────────────

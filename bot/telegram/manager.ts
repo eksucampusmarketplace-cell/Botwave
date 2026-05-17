@@ -152,11 +152,9 @@ export class TelegramBotInstance {
         }
       });
 
-      // Handle new chat members (welcome message)
-      this.bot.on('chat_member', async (ctx) => {
-        if (this.stopped) return;
-        // Could add welcome/goodbye handling here in the future
-      });
+      // Note: chat_member events for new member joins are handled in factory.ts
+      // (federation ban check + anti-raid). Group lifecycle (bot add/remove)
+      // is handled via my_chat_member in group_lifecycle.ts.
 
       // Error handler
       this.bot.catch((err) => {
@@ -342,6 +340,10 @@ export class TelegramBotInstance {
       'kang', 'stickerinfo', 'getsticker',
       // Broadcast
       'broadcast', 'broadcaststats',
+      // Group management
+      'groups', 'mygroups',
+      // Start button resets
+      'resetstart', 'resethelp', 'setstartbuttons',
     ]);
 
     if (NATIVE_TG_COMMANDS.has(commandName)) return;
