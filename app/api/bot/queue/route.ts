@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getQueuePosition } from '@/bot/linkQueue';
+import { getQueuePosition } from '@/bot/infrastructure/linkQueue';
 
 export const dynamic = 'force-dynamic';
 
