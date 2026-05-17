@@ -46,9 +46,9 @@ export async function GET() {
             .single();
 
           if (session && session.state === 'active') {
-            const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
-            const { handleMessage } = await import('@/bot/handlers/MessageHandler');
-            const { MessageQueue } = await import('@/bot/utils/MessageQueue');
+            const { EvolutionSocketAdapter } = await import('@/bot/whatsapp/evolution/socket');
+            const { handleMessage } = await import('@/bot/whatsapp/handlers/MessageHandler');
+            const { MessageQueue } = await import('@/bot/whatsapp/utils/MessageQueue');
 
             const sock = new EvolutionSocketAdapter(item.session_id, session.id, session.user_id, session.phone_number);
             const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, item.session_id);

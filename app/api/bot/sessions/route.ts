@@ -1,7 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/workerConfig';
+import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/scaling/workerConfig';
 import { getCachedSessions, cacheSessions, invalidateSessions } from '@/lib/redisApiCache';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 

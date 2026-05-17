@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/redisSessionCache';
-import { recordMessageActivity, trigger428Cooldown } from '@/bot/evolutionClient';
+import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/infrastructure/redisSessionCache';
+import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolution/client';
 
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
           const selfJid = current.phone_number.replace(/\D/g, '');
 
           try {
-            const { sendText } = await import('@/bot/evolutionClient');
+            const { sendText } = await import('@/bot/whatsapp/evolution/client');
             await sendText(sessionId, selfJid, welcomeText);
             console.log(`[EVO-WEBHOOK] Sent welcome message to ${selfJid} for session ${sessionId}`);
           } catch (err) {
@@ -576,12 +576,12 @@ export async function POST(request: NextRequest) {
       // the handler mid-delay).
       if (commandMsgs.length > 0 || statusMsgs.length > 0 || cacheMsgs.length > 0) {
         // Lazy-import to avoid circular dependencies and keep Next.js bundle clean
-        const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
-        const { handleMessage } = await import('@/bot/handlers/MessageHandler');
+        const { EvolutionSocketAdapter } = await import('@/bot/whatsapp/evolution/socket');
+        const { handleMessage } = await import('@/bot/whatsapp/handlers/MessageHandler');
         // Autoview removed entirely
         // const { handleStatusUpdate } = await import('@/bot/handlers/StatusViewer');
-        const { MessageQueue } = await import('@/bot/utils/MessageQueue');
-        const { cacheMessage } = await import('@/bot/handlers/AntiDeleteHandler');
+        const { MessageQueue } = await import('@/bot/whatsapp/utils/MessageQueue');
+        const { cacheMessage } = await import('@/bot/whatsapp/handlers/AntiDeleteHandler');
 
         const sid = session.id;
         const uid = session.user_id || '';
@@ -657,7 +657,7 @@ export async function POST(request: NextRequest) {
 
           void (async () => {
             try {
-              const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
+              const { handleMessageRevoke } = await import('@/bot/whatsapp/handlers/AntiDeleteHandler');
               await handleMessageRevoke(revokeMsg, session.id, session.user_id || '');
               console.log(`[EVO-WEBHOOK] Processed message delete for ${sessionId}: msgId=${deletedKey.id}`);
             } catch (err) {
@@ -697,7 +697,7 @@ export async function POST(request: NextRequest) {
 
           void (async () => {
             try {
-              const { handleMessageRevoke } = await import('@/bot/handlers/AntiDeleteHandler');
+              const { handleMessageRevoke } = await import('@/bot/whatsapp/handlers/AntiDeleteHandler');
               await handleMessageRevoke(revokeMsg, session.id, session.user_id || '');
               console.log(`[EVO-WEBHOOK] Processed edited/revoke for ${sessionId}: msgId=${editedMsg.key.id}`);
             } catch (err) {
@@ -715,9 +715,9 @@ export async function POST(request: NextRequest) {
       const session = await getCachedOrFetchSession(supabase, sessionId, 'id, user_id, phone_number');
 
       if (session && data) {
-        const { EvolutionSocketAdapter } = await import('@/bot/evolutionSocket');
-        const { handleGroupParticipantsUpdate } = await import('@/bot/handlers/MessageHandler');
-        const { MessageQueue } = await import('@/bot/utils/MessageQueue');
+        const { EvolutionSocketAdapter } = await import('@/bot/whatsapp/evolution/socket');
+        const { handleGroupParticipantsUpdate } = await import('@/bot/whatsapp/handlers/MessageHandler');
+        const { MessageQueue } = await import('@/bot/whatsapp/utils/MessageQueue');
 
         const sock = new EvolutionSocketAdapter(sessionId, session.id, session.user_id || '', session.phone_number || '');
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
