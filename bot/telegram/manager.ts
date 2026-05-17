@@ -105,15 +105,13 @@ export class TelegramBotInstance {
       this.botUsername = me.username || this.botUsername;
       console.log(`[TG-BOT] Bot verified: @${me.username} (${me.first_name})`);
 
-      // Load user settings for command prefix
+      // Load user settings and register handlers in parallel for faster startup
       let commandPrefix = DEFAULT_COMMAND_PREFIX;
-      try {
-        const settings = await getUserSettings(this.userId);
-        if (settings?.command_prefix) commandPrefix = settings.command_prefix;
-      } catch { /* use default */ }
-
-      // Register all Telegram-specific handlers (moderation, welcome, captcha, etc.)
-      await registerAllHandlers(this.bot, this.sessionId);
+      const [settings] = await Promise.all([
+        getUserSettings(this.userId).catch(() => null),
+        registerAllHandlers(this.bot, this.sessionId),
+      ]);
+      if (settings?.command_prefix) commandPrefix = settings.command_prefix;
 
       // Register legacy message handler for command registry compatibility
       this.bot.on('message:text', async (ctx) => {
@@ -303,23 +301,39 @@ export class TelegramBotInstance {
     }
     const args = parts.slice(1);
 
+    // Skip commands that have native Grammy handlers registered in factory.ts.
+    // Those handlers already replied; processing them again through the legacy
+    // WhatsApp command bridge would send a duplicate (incomplete) response.
+    const NATIVE_TG_COMMANDS = new Set([
+      'start', 'help', 'panel', 'setstart', 'sethelp',
+      'ban', 'unban', 'tban', 'mute', 'unmute', 'tmute', 'kick', 'warn',
+      'unwarn', 'warns', 'resetwarns', 'promote', 'demote',
+      'welcome', 'setwelcome', 'goodbye', 'setgoodbye',
+      'captcha', 'savenote', 'note', 'delnote', 'notes',
+      'addfilter', 'delfilter', 'filters',
+      'joke', 'quote', 'dice', 'coin', '8ball', 'afk',
+      'antiflood', 'antilink', 'nightmode',
+      'purge', 'del', 'pin', 'unpin',
+      'rules', 'setrules',
+      'xp', 'leaderboard',
+      'games', 'game',
+      'ping', 'id', 'info', 'admins',
+      'setlog', 'unsetlog', 'logchannel',
+      'blacklist', 'unblacklist', 'blacklistmode',
+      'report', 'reports',
+      'lock', 'unlock', 'locks',
+      'poll', 'quiz', 'stoppoll',
+      'schedule',
+    ]);
+
+    if (NATIVE_TG_COMMANDS.has(commandName)) return;
+
     // Map common Telegram commands to BotWave commands
-    const commandMap: Record<string, string> = {
-      start: 'help',
-      help: 'help',
-    };
+    const commandMap: Record<string, string> = {};
     const mappedCommand = commandMap[commandName] || commandName;
 
     const handler = getCommand(mappedCommand);
     if (!handler) {
-      // Unknown command — send help hint
-      if (commandName === 'start') {
-        const welcomeText =
-          `Welcome to BotWave! I'm @${this.botUsername}\n\n` +
-          `Use /help to see all available commands.\n` +
-          `Commands use the "${commandPrefix}" prefix.`;
-        await ctx.reply(welcomeText);
-      }
       return;
     }
 
