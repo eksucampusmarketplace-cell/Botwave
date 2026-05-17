@@ -7,6 +7,7 @@
 
 import { sendAlertEmail, buildAlertHtml, isEmailConfigured } from './email-service';
 import { onErrorSpike } from './error-tracker';
+import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions } from '@/bot/database';
 
 const CHECK_INTERVAL_MS = 60_000; // 60 seconds
 const CONSECUTIVE_FAILURES_THRESHOLD = 3;
@@ -171,10 +172,21 @@ export function startHealthMonitor(): void {
     await handleHealthResult(health);
   }, 30_000);
 
-  // Regular interval checks
+  // Regular interval checks + periodic session cleanup
   monitorInterval = setInterval(async () => {
     const health = await checkHealth();
     await handleHealthResult(health);
+
+    // Run session cleanup every cycle (60s)
+    try {
+      const expired = await expireStuckPairingSessions();
+      const cleaned = await cleanupOldNeedsReauthSessions();
+      if (expired > 0 || cleaned > 0) {
+        console.log(`[HEALTH-MONITOR] Cleanup: ${expired} stuck pairing expired, ${cleaned} old needs_reauth deleted`);
+      }
+    } catch (err) {
+      console.error('[HEALTH-MONITOR] Session cleanup error:', err);
+    }
   }, CHECK_INTERVAL_MS);
 }
 

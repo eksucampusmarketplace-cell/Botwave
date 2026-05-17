@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 import ParticleBackground from '@/components/ui/ParticleBackground';
 import OnboardingTour from '@/components/ui/OnboardingTour';
 import SessionAlerts from '@/components/ui/SessionAlerts';
+import SessionHealthWidget from '@/components/ui/SessionHealthWidget';
 import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
 import { useSSE } from '@/lib/useSSE';
 
@@ -495,6 +496,21 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+            >
+              <SessionHealthWidget
+                total={sessions.length}
+                active={sessions.filter(s => s.state === 'active').length}
+                needsReauth={sessions.filter(s => s.state === 'needs_reauth').length}
+                pairingSent={sessions.filter(s => s.state === 'pairing_sent').length}
+                qrPending={sessions.filter(s => s.state === 'qr_pending').length}
+                inactive={sessions.filter(s => s.state === 'inactive').length}
+              />
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

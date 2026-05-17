@@ -594,12 +594,13 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
  * that have been in needs_reauth for at least RECOVERY_COOLDOWN_MS.
  */
 export async function recoverNeedsReauthSessions(): Promise<number> {
-  // Wait at least 5 minutes before retrying a needs_reauth session.
+  // Wait at least 2 minutes before retrying a needs_reauth session.
   // This gives Evolution API time to settle and avoids hammering it.
-  const RECOVERY_COOLDOWN_MS = 5 * 60 * 1000;
-  // Don't retry sessions that have been in needs_reauth for more than 24 hours.
-  // After 24h, the user likely needs to manually re-pair (logged out by WhatsApp).
-  const MAX_REAUTH_AGE_MS = 24 * 60 * 60 * 1000;
+  const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
+  // Don't retry sessions that have been in needs_reauth for more than 48 hours.
+  // After 48h, the user likely needs to manually re-pair (logged out by WhatsApp).
+  // Sessions older than 7 days are cleaned up by cleanupOldNeedsReauthSessions().
+  const MAX_REAUTH_AGE_MS = 48 * 60 * 60 * 1000;
 
   const cooldownCutoff = new Date(Date.now() - RECOVERY_COOLDOWN_MS).toISOString();
   const maxAgeCutoff = new Date(Date.now() - MAX_REAUTH_AGE_MS).toISOString();
@@ -649,6 +650,156 @@ export async function recoverNeedsReauthSessions(): Promise<number> {
     console.log(`[RECOVERY-REAUTH] Recovered ${recovered}/${reauthSessions.length} needs_reauth session(s) — sync loop will retry them`);
   }
   return recovered;
+}
+
+/**
+ * Auto-expire stuck pairing_sent sessions after 10 minutes.
+ * These sessions had pairing codes sent but WhatsApp never confirmed them.
+ * Resets them to qr_pending so the user can retry.
+ */
+export async function expireStuckPairingSessions(): Promise<number> {
+  const PAIRING_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+  const cutoff = new Date(Date.now() - PAIRING_EXPIRY_MS).toISOString();
+
+  const { data: stuckSessions, error } = await supabase
+    .from('bot_sessions')
+    .select('id, phone_number, updated_at')
+    .eq('state', 'pairing_sent')
+    .lt('updated_at', cutoff);
+
+  if (error || !stuckSessions || stuckSessions.length === 0) return 0;
+
+  console.log(`[CLEANUP] Found ${stuckSessions.length} stuck pairing_sent session(s) older than 10min: ${stuckSessions.map(s => s.id.slice(0, 8)).join(', ')}`);
+
+  let expired = 0;
+  for (const session of stuckSessions) {
+    const { error: updateErr } = await supabase
+      .from('bot_sessions')
+      .update({
+        state: 'qr_pending',
+        pairing_code: null,
+        qr_code: null,
+        qr_expires_at: null,
+        qr_generated_at: null,
+        locked_by: null,
+        locked_at: null,
+        worker_url: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', session.id)
+      .eq('state', 'pairing_sent');
+
+    if (!updateErr) {
+      expired++;
+      console.log(`[CLEANUP] Session ${session.id.slice(0, 8)} expired: pairing_sent → qr_pending (was stuck since ${session.updated_at})`);
+    }
+  }
+
+  if (expired > 0) {
+    console.log(`[CLEANUP] Expired ${expired}/${stuckSessions.length} stuck pairing_sent session(s)`);
+  }
+  return expired;
+}
+
+/**
+ * Auto-delete needs_reauth sessions older than 7 days.
+ * These sessions are dead — the user needs to create a new session.
+ */
+export async function cleanupOldNeedsReauthSessions(): Promise<number> {
+  const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const cutoff = new Date(Date.now() - MAX_AGE_MS).toISOString();
+
+  const { data: oldSessions, error } = await supabase
+    .from('bot_sessions')
+    .select('id, phone_number, session_name, updated_at')
+    .eq('state', 'needs_reauth')
+    .lt('updated_at', cutoff);
+
+  if (error || !oldSessions || oldSessions.length === 0) return 0;
+
+  console.log(`[CLEANUP] Found ${oldSessions.length} needs_reauth session(s) older than 7 days: ${oldSessions.map(s => `${s.id.slice(0, 8)}(${s.session_name || s.phone_number})`).join(', ')}`);
+
+  let deleted = 0;
+  for (const session of oldSessions) {
+    const { error: deleteErr } = await supabase
+      .from('bot_sessions')
+      .delete()
+      .eq('id', session.id)
+      .eq('state', 'needs_reauth');
+
+    if (!deleteErr) {
+      deleted++;
+      console.log(`[CLEANUP] Deleted old session ${session.id.slice(0, 8)} (${session.session_name || session.phone_number}) — needs_reauth since ${session.updated_at}`);
+    }
+  }
+
+  if (deleted > 0) {
+    console.log(`[CLEANUP] Deleted ${deleted}/${oldSessions.length} old needs_reauth session(s)`);
+  }
+  return deleted;
+}
+
+/**
+ * Get session health stats for the dashboard widget.
+ * Returns counts by state and connection health ratio.
+ */
+export async function getSessionHealthStats(): Promise<{
+  total: number;
+  active: number;
+  needsReauth: number;
+  pairingSent: number;
+  qrPending: number;
+  inactive: number;
+  stuckPairing: number;
+  oldNeedsReauth: number;
+  healthPercent: number;
+}> {
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .select('state, updated_at');
+
+  if (error || !data) {
+    return { total: 0, active: 0, needsReauth: 0, pairingSent: 0, qrPending: 0, inactive: 0, stuckPairing: 0, oldNeedsReauth: 0, healthPercent: 0 };
+  }
+
+  const now = Date.now();
+  const PAIRING_EXPIRY_MS = 10 * 60 * 1000;
+  const OLD_REAUTH_MS = 7 * 24 * 60 * 60 * 1000;
+
+  const stats = {
+    total: data.length,
+    active: 0,
+    needsReauth: 0,
+    pairingSent: 0,
+    qrPending: 0,
+    inactive: 0,
+    stuckPairing: 0,
+    oldNeedsReauth: 0,
+    healthPercent: 0,
+  };
+
+  for (const s of data) {
+    const age = now - new Date(s.updated_at).getTime();
+    switch (s.state) {
+      case 'active': stats.active++; break;
+      case 'needs_reauth':
+        stats.needsReauth++;
+        if (age > OLD_REAUTH_MS) stats.oldNeedsReauth++;
+        break;
+      case 'pairing_sent':
+        stats.pairingSent++;
+        if (age > PAIRING_EXPIRY_MS) stats.stuckPairing++;
+        break;
+      case 'qr_pending': stats.qrPending++; break;
+      case 'inactive': stats.inactive++; break;
+    }
+  }
+
+  stats.healthPercent = stats.total > 0
+    ? Math.round((stats.active / stats.total) * 100)
+    : 0;
+
+  return stats;
 }
 
 /**
