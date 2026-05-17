@@ -54,9 +54,15 @@ export async function POST(request: NextRequest) {
 
       // Store client for verification step
       const storeKey = sessionId || `${user.id}:${phoneNumber}`;
+      const phoneCodeHash = 'phoneCodeHash' in result ? (result as any).phoneCodeHash as string : '';
+      if (!phoneCodeHash) {
+        return NextResponse.json({
+          error: 'Account already authorized or code not required',
+        }, { status: 400 });
+      }
       pendingClients.set(storeKey, {
         client,
-        phoneCodeHash: result.phoneCodeHash,
+        phoneCodeHash,
       });
 
       // Auto-cleanup after 5 minutes
