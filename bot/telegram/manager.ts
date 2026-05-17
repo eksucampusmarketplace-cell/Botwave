@@ -202,11 +202,12 @@ export class TelegramBotInstance {
         const tgConfig = await getTelegramConfig(this.sessionId);
         const miniappUrl = tgConfig.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL;
         if (miniappUrl) {
+          const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${this.sessionId}`;
           await this.bot.api.setChatMenuButton({
             menu_button: {
               type: 'web_app',
               text: '📱 Open Panel',
-              web_app: { url: miniappUrl },
+              web_app: { url: panelUrl },
             },
           });
           console.log(`[TG-BOT] Menu button set to Mini App for ${this.sessionId.slice(0, 8)}`);
@@ -304,20 +305,26 @@ export class TelegramBotInstance {
     // Skip commands that have native Grammy handlers registered in factory.ts.
     // Those handlers already replied; processing them again through the legacy
     // WhatsApp command bridge would send a duplicate (incomplete) response.
+    // Also includes WhatsApp command aliases (e.g. 'h', 'commands', 'pong')
+    // that map to the same commands — without these, aliases bypass the
+    // native check and fall through to the WhatsApp bridge, producing
+    // garbled responses (e.g. docx caption sent as plain text).
     const NATIVE_TG_COMMANDS = new Set([
-      'start', 'help', 'panel', 'setstart', 'sethelp',
+      'start', 'help', 'h', 'commands', 'panel', 'setstart', 'sethelp',
       'ban', 'unban', 'tban', 'mute', 'unmute', 'tmute', 'kick', 'warn',
       'unwarn', 'warns', 'resetwarns', 'promote', 'demote',
       'welcome', 'setwelcome', 'goodbye', 'setgoodbye',
       'captcha', 'savenote', 'note', 'delnote', 'notes',
       'addfilter', 'delfilter', 'filters',
-      'joke', 'quote', 'dice', 'coin', '8ball', 'afk', 'back',
+      'joke', 'jokes', 'funny', 'quote', 'quotes', 'q', 'inspire', 'motivation',
+      'dice', 'coin', '8ball', 'eightball', 'magic', 'magic8ball',
+      'afk', 'back',
       'antiflood', 'antilink', 'nightmode',
       'purge', 'del', 'pin', 'unpin',
       'rules', 'setrules',
       'xp', 'leaderboard',
-      'games', 'game',
-      'ping', 'id', 'info', 'admins',
+      'games', 'game', 'mgame', 'multiplayer',
+      'ping', 'pong', 'alive', 'id', 'info', 'admins',
       'setlog', 'unsetlog', 'logchannel',
       'blacklist', 'unblacklist', 'blacklistmode',
       'report', 'reports',
@@ -454,6 +461,22 @@ export class TelegramBotInstance {
           return bot.api.sendMessage(targetChatId, content.text, { parse_mode: 'Markdown' }).catch(() => {
             return bot.api.sendMessage(targetChatId, content.text);
           });
+        }
+        if (content.document && Buffer.isBuffer(content.document)) {
+          // Document messages (e.g. docx help guide) — send as file
+          try {
+            const { InputFile } = await import('grammy');
+            return bot.api.sendDocument(
+              targetChatId,
+              new InputFile(content.document, content.fileName || 'file'),
+              { caption: content.caption || undefined },
+            );
+          } catch {
+            // Fallback: send caption as text if document upload fails
+            if (content.caption) {
+              return bot.api.sendMessage(targetChatId, content.caption);
+            }
+          }
         }
         if (content.image || content.caption) {
           // Image messages — send caption as text for now

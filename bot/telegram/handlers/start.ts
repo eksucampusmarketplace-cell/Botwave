@@ -222,7 +222,8 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       const keyboard = new InlineKeyboard();
 
       if (miniappUrl) {
-        keyboard.webApp('📱 Open Panel', miniappUrl).row();
+        const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+        keyboard.webApp('📱 Open Panel', panelUrl).row();
       }
 
       keyboard
@@ -257,7 +258,8 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
 
       const dmKeyboard = new InlineKeyboard();
       if (miniappUrl) {
-        dmKeyboard.webApp('⚡ Open Settings', miniappUrl).row();
+        const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+        dmKeyboard.webApp('⚡ Open Settings', settingsUrl).row();
       }
       dmKeyboard.text('❓ Commands', 'help_main').text('📖 Categories', 'help_categories');
 
@@ -298,8 +300,9 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
+    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
     const keyboard = new InlineKeyboard()
-      .webApp('⚡ Open Settings Panel', miniappUrl);
+      .webApp('⚡ Open Settings Panel', panelUrl);
 
     await ctx.reply('📱 <b>Open the panel below to manage your bot:</b>', {
       parse_mode: 'HTML',
@@ -507,7 +510,8 @@ async function sendHelpMessage(
   const keyboard = new InlineKeyboard();
 
   if (miniappUrl) {
-    keyboard.webApp('📱 Open Mini App', miniappUrl).row();
+    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+    keyboard.webApp('📱 Open Mini App', panelUrl).row();
   }
 
   keyboard.text('📖 Browse Commands', 'help_categories').row();
