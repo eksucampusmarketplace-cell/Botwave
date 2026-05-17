@@ -7,7 +7,7 @@
 
 import { sendAlertEmail, buildAlertHtml, isEmailConfigured } from './email-service';
 import { onErrorSpike } from './error-tracker';
-import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions } from '@/bot/database';
+import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions } from '../bot/database';
 
 const CHECK_INTERVAL_MS = 60_000; // 60 seconds
 const CONSECUTIVE_FAILURES_THRESHOLD = 3;
