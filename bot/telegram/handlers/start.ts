@@ -183,7 +183,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
         return;
       }
 
-      const template = (config as any).start_group_dm_text || DEFAULT_START_GROUP_DM;
+      const template = config.start_group_dm_text || DEFAULT_START_GROUP_DM;
       const dmText = formatMessage(template, {
         first_name: user.first_name || 'there',
         bot_name: botName,
