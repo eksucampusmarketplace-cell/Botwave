@@ -7,13 +7,16 @@ import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
 import BotStatus from '@/components/ui/BotStatus';
+import PlatformSelector from '@/components/ui/PlatformSelector';
+import TelegramBotSetup from '@/components/ui/TelegramBotSetup';
+import TelegramUserbotSetup from '@/components/ui/TelegramUserbotSetup';
 
 import { createClient } from '@/lib/supabase/client';
 import ParticleBackground from '@/components/ui/ParticleBackground';
 import OnboardingTour from '@/components/ui/OnboardingTour';
 import SessionAlerts from '@/components/ui/SessionAlerts';
 import SessionHealthWidget from '@/components/ui/SessionHealthWidget';
-import type { BotSession, BotFeature, DashboardStats } from '@/lib/types';
+import type { BotSession, BotFeature, DashboardStats, Platform } from '@/lib/types';
 import { useSSE } from '@/lib/useSSE';
 
 // Features that default to OFF — must be explicitly enabled by the user
@@ -52,6 +55,7 @@ export default function DashboardPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
   const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [stats, setStats] = useState<DashboardStats>({ totalMessages: 0, totalCommands: 0, uptimePercent: 0, activeSessions: 0, totalSessions: 0 });
 
   const activeSessionRef = useRef<BotSession | null>(null);
@@ -254,12 +258,14 @@ export default function DashboardPage() {
         body: JSON.stringify({
           sessionName: newSession.name,
           phoneNumber: newSession.phone,
+          platform: 'whatsapp',
         }),
       });
       const data = await response.json();
       if (data.success) {
         setShowAddModal(false);
         setNewSession({ name: '', phone: '' });
+        setSelectedPlatform(null);
         fetchDashboardData();
         setActiveSession(data.data);
         setShowQR(true);
@@ -269,6 +275,65 @@ export default function DashboardPage() {
     } catch (err) {
       setError('An unexpected error occurred');
       console.error('Error creating session:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleTelegramBotComplete = async (data: { token: string; botUsername: string; sessionName: string }) => {
+    setIsCreating(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: data.sessionName,
+          platform: 'telegram_bot',
+          telegramBotToken: data.token,
+          telegramBotUsername: data.botUsername,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowAddModal(false);
+        setSelectedPlatform(null);
+        fetchDashboardData();
+      } else {
+        setError(result.error || 'Failed to create Telegram bot session');
+      }
+    } catch {
+      setError('Failed to create Telegram bot session');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUserbotComplete = async (data: { sessionString: string; sessionName: string; apiId: number; apiHash: string }) => {
+    setIsCreating(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/bot/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionName: data.sessionName,
+          platform: 'telegram_userbot',
+          telegramApiId: data.apiId,
+          telegramApiHash: data.apiHash,
+          telegramSessionString: data.sessionString,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowAddModal(false);
+        setSelectedPlatform(null);
+        fetchDashboardData();
+      } else {
+        setError(result.error || 'Failed to create userbot session');
+      }
+    } catch {
+      setError('Failed to create userbot session');
     } finally {
       setIsCreating(false);
     }
@@ -355,7 +420,7 @@ export default function DashboardPage() {
           </h1>
           <div className="flex items-center gap-4 mt-2">
             <p className="font-mono text-sm text-[#5a9a7a]">
-              Manage your WhatsApp sessions and bot features
+              Manage your WhatsApp &amp; Telegram sessions and bot features
             </p>
             {sseConnected && (
               <span className="flex items-center gap-1 font-mono text-[10px] text-cyan tracking-[1px]">
@@ -396,6 +461,7 @@ export default function DashboardPage() {
                     phone={session.phone_number}
                     status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                     lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
+                    platform={session.platform}
                     onConnect={() => handleConnect(session)}
                     onDisconnect={() => handleDisconnectSession(session.id)}
                     onDelete={() => handleDeleteSession(session.id)}
@@ -565,93 +631,153 @@ export default function DashboardPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-green/20 p-5 sm:p-8 max-w-md w-full relative"
+            className="bg-card border border-green/20 p-5 sm:p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
           >
             <h2 className="font-display text-xl text-green mb-6 tracking-[2px]">NEW SESSION</h2>
-            <form onSubmit={handleAddSession} className="space-y-4">
-              {error && (
-                <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
-                  <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
-                    Error: {error}
-                  </p>
-                </div>
-              )}
-              {!showConfirm ? (
-                <>
-                  <div>
-                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
-                    <input
-                      type="text"
-                      required
-                      value={newSession.name}
-                      onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
-                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                      placeholder="e.g. Personal"
-                      disabled={isCreating}
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
-                    <input
-                      type="text"
-                      required
-                      value={newSession.phone}
-                      onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
-                      className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
-                      placeholder="+2348012345678"
-                      disabled={isCreating}
-                    />
-                    <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => { setShowAddModal(false); setShowConfirm(false); setError(null); }}
-                      className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
-                      disabled={isCreating}
-                    >
-                      CANCEL
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isCreating}
-                    >
-                      CONTINUE
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-cyan/10 border border-cyan/30 p-4">
-                    <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
-                    <div className="space-y-2">
-                      <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
-                      <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+
+            {error && (
+              <div className="bg-red-400/10 border border-red-400/50 p-3 mb-4">
+                <p className="font-mono text-[10px] text-red-400 tracking-[1px] uppercase">
+                  Error: {error}
+                </p>
+              </div>
+            )}
+
+            {/* Step 1: Platform Selection */}
+            {!selectedPlatform && (
+              <div className="space-y-4">
+                <PlatformSelector selected={selectedPlatform} onSelect={(p) => { setSelectedPlatform(p); setError(null); }} />
+                <button
+                  type="button"
+                  onClick={() => { setShowAddModal(false); setError(null); }}
+                  className="w-full border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10"
+                >
+                  CANCEL
+                </button>
+              </div>
+            )}
+
+            {/* WhatsApp Flow */}
+            {selectedPlatform === 'whatsapp' && (
+              <form onSubmit={handleAddSession} className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
+                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                >
+                  &larr; BACK TO PLATFORMS
+                </button>
+                {!showConfirm ? (
+                  <>
+                    <div>
+                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">SESSION NAME</label>
+                      <input
+                        type="text"
+                        required
+                        value={newSession.name}
+                        onChange={(e) => setNewSession({ ...newSession, name: e.target.value })}
+                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        placeholder="e.g. Personal"
+                        disabled={isCreating}
+                      />
                     </div>
-                    <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
-                      Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
-                    </p>
+                    <div>
+                      <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">PHONE NUMBER</label>
+                      <input
+                        type="text"
+                        required
+                        value={newSession.phone}
+                        onChange={(e) => setNewSession({ ...newSession, phone: e.target.value })}
+                        className="w-full bg-dark border border-green/20 p-3 text-white font-mono text-sm focus:border-green outline-none"
+                        placeholder="+2348012345678"
+                        disabled={isCreating}
+                      />
+                      <p className="font-mono text-[9px] text-[#5a9a7a]/60 mt-1">Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedPlatform(null); setShowConfirm(false); setError(null); }}
+                        className="flex-1 border border-red-400/50 text-red-400 p-3 font-mono text-xs tracking-[2px] hover:bg-red-400/10 disabled:opacity-50"
+                        disabled={isCreating}
+                      >
+                        BACK
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCreating}
+                      >
+                        CONTINUE
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-cyan/10 border border-cyan/30 p-4">
+                      <p className="font-mono text-xs text-cyan tracking-[1px] mb-3">CONFIRM SESSION DETAILS</p>
+                      <div className="space-y-2">
+                        <p className="font-mono text-xs text-white">Name: <span className="text-green">{newSession.name}</span></p>
+                        <p className="font-mono text-xs text-white">Phone: <span className="text-green">{newSession.phone}</span></p>
+                      </div>
+                      <p className="font-mono text-[10px] text-[#5a9a7a] mt-3">
+                        Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.
+                      </p>
+                    </div>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirm(false)}
+                        className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
+                      >
+                        GO BACK
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isCreating}
+                      >
+                        {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm(false)}
-                      className="flex-1 border border-yellow-500/50 text-yellow-500 p-3 font-mono text-xs tracking-[2px] hover:bg-yellow-500/10"
-                    >
-                      GO BACK
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isCreating}
-                    >
-                      {isCreating ? 'CREATING...' : 'CONFIRM & CREATE'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </form>
+                )}
+              </form>
+            )}
+
+            {/* Telegram Bot Flow */}
+            {selectedPlatform === 'telegram_bot' && (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedPlatform(null); setError(null); }}
+                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                >
+                  &larr; BACK TO PLATFORMS
+                </button>
+                <TelegramBotSetup
+                  onComplete={handleTelegramBotComplete}
+                  onCancel={() => { setSelectedPlatform(null); setError(null); }}
+                />
+              </div>
+            )}
+
+            {/* Telegram Userbot Flow */}
+            {selectedPlatform === 'telegram_userbot' && (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedPlatform(null); setError(null); }}
+                  className="font-mono text-[10px] text-[#5a9a7a] hover:text-white transition-colors mb-2"
+                >
+                  &larr; BACK TO PLATFORMS
+                </button>
+                <TelegramUserbotSetup
+                  onComplete={handleUserbotComplete}
+                  onCancel={() => { setSelectedPlatform(null); setError(null); }}
+                />
+              </div>
+            )}
           </motion.div>
         </div>
       )}

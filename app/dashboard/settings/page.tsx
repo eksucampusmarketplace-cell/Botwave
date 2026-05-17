@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import { createClient } from '@/lib/supabase/client';
+import type { Platform } from '@/lib/types';
 
 interface ApiKeyData {
   id: string;
@@ -15,6 +16,24 @@ interface ApiKeyData {
   created_at: string;
   rawKey?: string;
 }
+
+interface SessionInfo {
+  id: string;
+  session_name: string;
+  platform?: Platform;
+}
+
+const platformPrefixDefaults: Record<string, string> = {
+  whatsapp: '!',
+  telegram_bot: '/',
+  telegram_userbot: '.',
+};
+
+const platformLabels: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  telegram_bot: 'TG Bot',
+  telegram_userbot: 'TG Userbot',
+};
 
 export default function SettingsPage() {
   const [skipProbability, setSkipProbability] = useState(15);
@@ -32,6 +51,8 @@ export default function SettingsPage() {
   const [newKeyPerms, setNewKeyPerms] = useState<string[]>(['read']);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [activePlatforms, setActivePlatforms] = useState<Set<string>>(new Set(['whatsapp']));
 
   useEffect(() => {
     const checkUser = async () => {
@@ -59,6 +80,19 @@ export default function SettingsPage() {
 
       // Fetch existing settings
       fetchApiKeys();
+
+      // Fetch sessions to determine active platforms
+      try {
+        const sessRes = await fetch('/api/bot/sessions');
+        const sessData = await sessRes.json();
+        if (sessData.success && sessData.data) {
+          setSessions(sessData.data);
+          const platforms = new Set<string>(sessData.data.map((s: SessionInfo) => s.platform || 'whatsapp'));
+          if (platforms.size > 0) setActivePlatforms(platforms);
+        }
+      } catch {
+        // ignore
+      }
 
       try {
         const res = await fetch('/api/user/settings');
@@ -256,7 +290,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">COMMAND PREFIX</label>
                   <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
-                    Character used to trigger bot commands. Default is ! (e.g. !help, !sticker).
+                    Character used to trigger bot commands. Defaults: <span className="text-[#5a9a7a]">!</span> (WhatsApp), <span className="text-[#5a9a7a]">/</span> (Telegram Bot), <span className="text-[#5a9a7a]">.</span> (Telegram Userbot).
                   </p>
                   <input
                     type="text"
@@ -297,7 +331,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">BOT LANGUAGE</label>
                   <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
-                    Set the language for bot responses. Commands stay in English (e.g. !help), but the bot replies in your chosen language. You can also set this via !lang in WhatsApp.
+                    Set the language for bot responses. Commands stay in English, but the bot replies in your chosen language.
                   </p>
                   <select
                     value={languagePreference}
@@ -357,8 +391,8 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div>
-              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">ANTI-BAN SETTINGS</h3>
+            {activePlatforms.has('whatsapp') && <div>
+              <h3 className="font-display text-sm tracking-[3px] text-green mb-4">ANTI-BAN SETTINGS <span className="font-mono text-[9px] text-emerald-400/60 ml-2">WHATSAPP ONLY</span></h3>
               <div className="space-y-4">
                 <div>
                   <label className="block font-mono text-[10px] text-[#5a9a7a] mb-1 tracking-[2px]">
@@ -391,7 +425,18 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </div>}
+
+            {activePlatforms.has('telegram_userbot') && <div>
+              <h3 className="font-display text-sm tracking-[3px] text-purple-400 mb-4">TELEGRAM USERBOT RATE LIMITS</h3>
+              <div className="bg-dark/30 border border-purple-500/10 p-4">
+                <p className="font-mono text-[10px] text-[#3a6a5a]">
+                  Telegram userbots use your real account and are subject to Telegram&apos;s rate limits.
+                  BotWave automatically enforces safe intervals between messages, joins, and forwards
+                  to protect your account. These limits are configured per-session.
+                </p>
+              </div>
+            </div>}
 
             <div className="border-t border-green/10 pt-8">
               <h3 className="font-display text-sm tracking-[3px] text-green mb-4">API ACCESS</h3>
@@ -472,7 +517,7 @@ export default function SettingsPage() {
                 DELETE ALL SESSIONS
               </button>
               <p className="font-mono text-[10px] text-[#5a5a5a] mt-2">
-                This will permanently remove all your WhatsApp connections and data.
+                This will permanently remove all your sessions (WhatsApp, Telegram Bot, Telegram Userbot) and data.
               </p>
             </div>
           </div>
