@@ -56,16 +56,42 @@ export async function isSudoUser(sessionId: string, userId: number): Promise<boo
 }
 
 /**
- * Check if a user is the bot owner (explicit owner set in config).
+ * Check if a user is the bot owner.
+ * Checks telegram_bot_configs.owner_user_id first, then falls back to
+ * checking if the user added the bot to a group (added_by_user_id in
+ * telegram_groups), which links them as the dashboard connector / bot owner.
  */
 export async function isOwner(sessionId: string, userId: number): Promise<boolean> {
+  const uid = userId.toString();
+
   const { data: config } = await supabase
     .from('telegram_bot_configs')
     .select('owner_user_id')
     .eq('session_id', sessionId)
     .single();
 
-  if (config?.owner_user_id && config.owner_user_id === userId.toString()) return true;
+  if (config?.owner_user_id && config.owner_user_id === uid) return true;
+
+  // Fallback: check if this user added the bot to any group for this session
+  const { data: group } = await supabase
+    .from('telegram_groups')
+    .select('added_by_user_id')
+    .eq('session_id', sessionId)
+    .eq('added_by_user_id', uid)
+    .limit(1)
+    .maybeSingle();
+
+  if (group) {
+    // Auto-set owner so future checks are faster
+    await supabase
+      .from('telegram_bot_configs')
+      .upsert(
+        { session_id: sessionId, owner_user_id: uid, updated_at: new Date().toISOString() },
+        { onConflict: 'session_id' },
+      );
+    return true;
+  }
+
   return false;
 }
 

@@ -459,6 +459,7 @@ export default function DashboardPage() {
                     status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                     lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
                     platform={session.platform}
+                    sessionId={session.id}
                     onConnect={() => handleConnect(session)}
                     onDisconnect={() => handleDisconnectSession(session.id)}
                     onDelete={() => handleDeleteSession(session.id)}

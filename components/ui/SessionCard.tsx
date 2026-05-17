@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
 
@@ -10,6 +11,7 @@ interface SessionCardProps {
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth';
   lastActive: string;
   platform?: Platform;
+  sessionId?: string;
   onConnect: () => void;
   onDisconnect?: () => void;
   onDelete?: () => void;
@@ -27,7 +29,7 @@ const platformLabels: Record<Platform, string> = {
   telegram_userbot: 'TG User',
 };
 
-export default function SessionCard({ name, phone, status, lastActive, platform, onConnect, onDisconnect, onDelete }: SessionCardProps) {
+export default function SessionCard({ name, phone, status, lastActive, platform, sessionId, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   const statusColors = {
     connected: 'bg-green-500 text-white',
     active: 'bg-green-500 text-white',
@@ -97,6 +99,17 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
           >
             DISCONNECT
           </motion.button>
+        )}
+        {sessionId && (platform === 'telegram_bot' || platform === 'telegram_userbot') && (status === 'connected' || status === 'active') && (
+          <Link href={`/dashboard/telegram/${sessionId}`}>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="text-xs font-semibold px-3 py-2 border border-blue-400/30 text-blue-500 dark:text-blue-400 rounded-lg hover:bg-blue-400/10 transition-colors"
+            >
+              CONFIGURE
+            </motion.button>
+          </Link>
         )}
         {onDelete && (
           <motion.button
