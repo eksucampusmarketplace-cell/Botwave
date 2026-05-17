@@ -40,6 +40,17 @@ export interface TelegramConfig {
   antiraid_mode: string;
   antiraid_duration_mins: number;
   start_buttons_json: string | null;
+  karma_enabled: boolean;
+  votekick_enabled: boolean;
+  join_approval_enabled: boolean;
+  join_approval_mode: string;
+  ban_ghosts_enabled: boolean;
+  auto_delete_seconds: number;
+  mentionall_enabled: boolean;
+  bot_language: string;
+  ai_enabled: boolean;
+  force_channel: string | null;
+  booster_enabled: boolean;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -69,6 +80,17 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   antiraid_mode: 'restrict',
   antiraid_duration_mins: 15,
   start_buttons_json: null,
+  karma_enabled: false,
+  votekick_enabled: false,
+  join_approval_enabled: false,
+  join_approval_mode: 'manual',
+  ban_ghosts_enabled: false,
+  auto_delete_seconds: 0,
+  mentionall_enabled: true,
+  bot_language: 'en',
+  ai_enabled: false,
+  force_channel: null,
+  booster_enabled: false,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();

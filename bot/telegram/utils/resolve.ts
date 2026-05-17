@@ -8,6 +8,7 @@ import type { User } from '@grammyjs/types';
 export interface ResolvedTarget {
   user: User | null;
   userId: number | null;
+  username?: string;
   reason: string;
 }
 
@@ -38,10 +39,9 @@ export function resolveTarget(ctx: Context): ResolvedTarget {
     return { user: null, userId: numId, reason };
   }
 
-  // @username — we can't resolve username to user object without API call
-  // Return null user but keep the info for the caller
+  // @username — return username for async resolution by caller
   if (firstArg.startsWith('@')) {
-    return { user: null, userId: null, reason };
+    return { user: null, userId: null, username: firstArg.slice(1), reason };
   }
 
   return { user: null, userId: null, reason: text };
