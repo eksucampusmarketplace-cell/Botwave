@@ -322,23 +322,25 @@ export class TelegramBotInstance {
     const NATIVE_TG_COMMANDS = new Set([
       'start', 'help', 'h', 'commands', 'panel', 'setstart', 'sethelp',
       'ban', 'unban', 'tban', 'mute', 'unmute', 'tmute', 'kick', 'warn',
-      'unwarn', 'warns', 'resetwarns', 'promote', 'demote',
+      'unwarn', 'warns', 'resetwarns', 'promote', 'demote', 'settitle',
       'welcome', 'setwelcome', 'goodbye', 'setgoodbye',
       'captcha', 'savenote', 'note', 'delnote', 'notes',
       'addfilter', 'delfilter', 'filters',
       'joke', 'jokes', 'funny', 'quote', 'quotes', 'q', 'inspire', 'motivation',
       'dice', 'coin', '8ball', 'eightball', 'magic', 'magic8ball',
+      'choose', 'roll',
       'afk', 'back',
-      'antiflood', 'antilink', 'nightmode',
+      'antiflood', 'antilink', 'whitelist', 'nightmode',
       'purge', 'del', 'pin', 'unpin',
-      'rules', 'setrules',
-      'xp', 'leaderboard',
-      'games', 'game', 'mgame', 'multiplayer',
-      'ping', 'pong', 'alive', 'id', 'info', 'admins',
+      'rules', 'setrules', 'clearrules',
+      'xp', 'leaderboard', 'level',
+      'games', 'game', 'mgame', 'multiplayer', 'setgamesurl',
+      'ping', 'pong', 'alive', 'id', 'info', 'admins', 'chatinfo',
+      'addsudo', 'delsudo', 'sudolist', 'setowner',
       'setlog', 'unsetlog', 'logchannel',
-      'blacklist', 'unblacklist', 'blacklistmode',
-      'report', 'reports',
-      'lock', 'unlock', 'locks',
+      'blacklist', 'unblacklist', 'blacklistmode', 'blacklisted',
+      'report', 'reports', 'resolve', 'dismiss',
+      'lock', 'unlock', 'locks', 'open', 'close',
       'poll', 'quiz', 'stoppoll',
       'schedule',
       // Federation
@@ -347,7 +349,7 @@ export class TelegramBotInstance {
       // Anti-Raid
       'antiraid', 'raid',
       // Tickets
-      'ticket', 'tickets', 'close', 'assign', 'escalate', 'treply',
+      'ticket', 'tickets', 'assign', 'escalate', 'treply',
       // Stickers
       'kang', 'stickerinfo', 'getsticker',
       // Broadcast
