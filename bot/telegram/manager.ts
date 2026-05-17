@@ -376,6 +376,28 @@ export class TelegramBotInstance {
       'boost', 'boostinfo', 'invite',
       // Name History
       'namehistory',
+      // Games
+      'trivia', 'scramble', 'mathquiz',
+      // Slow Mode
+      'slowmode', 'slowoff',
+      // Text Tools
+      'reverse', 'mock', 'morse', 'upper', 'lower', 'flip', 'leet', 'vaporwave', 'count',
+      // Quick Tools
+      'password', 'uuid', 'calc', 'bmi', 'timezone', 'pick', 'hash', 'base64', 'color',
+      // Profile Tools
+      'profile', 'whois', 'membercount',
+      // Media Tools
+      'qr', 'charinfo', 'encode', 'decode', 'timestamp', 'length',
+      // Fun Extras
+      'roast', 'compliment', 'dare', 'truth', 'wyr', 'wouldyourather', 'lyrics', 'rate', 'ship',
+      // Auto Reply
+      'addautoreply', 'delautoreply', 'autoreplies', 'clearautoreplies',
+      // Media Download
+      'download', 'ytdl', 'igdl', 'ttdl', 'mediainfo',
+      // Image Edit
+      'imginfo', 'getfile', 'fileid', 'caption',
+      // Info Lookup
+      'crypto', 'ip', 'whois', 'dns', 'ud', 'weather', 'npm', 'country',
     ]);
 
     if (NATIVE_TG_COMMANDS.has(commandName)) return;

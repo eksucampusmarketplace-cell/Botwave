@@ -51,6 +51,12 @@ export interface TelegramConfig {
   ai_enabled: boolean;
   force_channel: string | null;
   booster_enabled: boolean;
+  games_enabled: boolean;
+  texttools_enabled: boolean;
+  quicktools_enabled: boolean;
+  mediadownload_enabled: boolean;
+  funextras_enabled: boolean;
+  infolookup_enabled: boolean;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -91,6 +97,12 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   ai_enabled: false,
   force_channel: null,
   booster_enabled: false,
+  games_enabled: true,
+  texttools_enabled: true,
+  quicktools_enabled: true,
+  mediadownload_enabled: true,
+  funextras_enabled: true,
+  infolookup_enabled: true,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
