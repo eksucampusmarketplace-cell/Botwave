@@ -66,6 +66,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--btn); color: var(--btn-text); padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; z-index: 100; }
 .toast.show { opacity: 1; }
 .loading { text-align: center; padding: 20px; color: var(--hint); }
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.feature-card { background: var(--card-bg); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.feature-card .fc-header { display: flex; align-items: center; justify-content: space-between; }
+.feature-card .fc-icon { font-size: 1.4rem; margin-bottom: 4px; }
+.feature-card .fc-name { font-size: 0.82rem; font-weight: 600; }
+.feature-card .fc-desc { font-size: 0.7rem; color: var(--hint); line-height: 1.3; }
+.feature-card .toggle { transform: scale(0.8); transform-origin: right center; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card { background: var(--card-bg); border-radius: 14px; padding: 16px; text-align: center; }
+.stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--btn); }
+.stat-card .stat-label { font-size: 0.75rem; color: var(--hint); margin-top: 4px; }
+.broadcast-box { background: var(--card-bg); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.broadcast-box textarea { width: 100%; min-height: 100px; padding: 10px 12px; background: var(--secondary-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.9rem; resize: vertical; outline: none; }
 .group-selector { margin-bottom: 12px; }
 .group-selector select { width: 100%; padding: 10px 12px; background: var(--secondary-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.9rem; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' fill='none' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
 .group-selector label { display: block; font-size: 0.75rem; color: var(--hint); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -91,47 +104,228 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="refresh-indicator" id="refresh-indicator"></div>
 
   <div class="tabs" id="tabs-container">
-    <button class="tab active" data-tab="config" data-roles="owner,admin">Settings</button>
-    <button class="tab" data-tab="messages" data-roles="owner">Messages</button>
+    <button class="tab active" data-tab="features" data-roles="owner,admin">Features</button>
+    <button class="tab" data-tab="config" data-roles="owner,admin">Settings</button>
+    <button class="tab" data-tab="stats" data-roles="owner">Stats</button>
+    <button class="tab" data-tab="broadcast" data-roles="owner">Broadcast</button>
+    <button class="tab" data-tab="groupmsgs" data-roles="owner,admin">Group Msgs</button>
+    <button class="tab" data-tab="messages" data-roles="owner">Bot Msgs</button>
     <button class="tab" data-tab="notes" data-roles="owner,admin">Notes</button>
     <button class="tab" data-tab="filters" data-roles="owner,admin">Filters</button>
     <button class="tab" data-tab="modlog" data-roles="owner,admin,user">Mod Log</button>
     <button class="tab" data-tab="xp" data-roles="owner,admin,user">XP</button>
   </div>
 
+  <!-- Features Section (Owner + Admin) — WhatsApp-style toggle cards -->
+  <div class="section active" id="sec-features">
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fc-icon">🛡️</div>
+        <div class="fc-header">
+          <div class="fc-name">Anti-Flood</div>
+          <label class="toggle"><input type="checkbox" id="ft-antiflood"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Rate-limit messages & auto-mute spammers</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🔗</div>
+        <div class="fc-header">
+          <div class="fc-name">Anti-Link</div>
+          <label class="toggle"><input type="checkbox" id="ft-antilink"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Remove unauthorized links from messages</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🚨</div>
+        <div class="fc-header">
+          <div class="fc-name">Anti-Raid</div>
+          <label class="toggle"><input type="checkbox" id="ft-antiraid"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Auto-detect mass joins & lockdown</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🌙</div>
+        <div class="fc-header">
+          <div class="fc-name">Night Mode</div>
+          <label class="toggle"><input type="checkbox" id="ft-nightmode"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Restrict messages during night hours</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🔒</div>
+        <div class="fc-header">
+          <div class="fc-name">Captcha</div>
+          <label class="toggle"><input type="checkbox" id="ft-captcha"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Verify new members with a challenge</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">⭐</div>
+        <div class="fc-header">
+          <div class="fc-name">XP System</div>
+          <label class="toggle"><input type="checkbox" id="ft-xp"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Members earn XP & level up by chatting</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">👍</div>
+        <div class="fc-header">
+          <div class="fc-name">Karma</div>
+          <label class="toggle"><input type="checkbox" id="ft-karma"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Upvote/downvote via +/- reply</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🗳️</div>
+        <div class="fc-header">
+          <div class="fc-name">VoteKick</div>
+          <label class="toggle"><input type="checkbox" id="ft-votekick"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Community vote to kick users</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🤖</div>
+        <div class="fc-header">
+          <div class="fc-name">AI Chat</div>
+          <label class="toggle"><input type="checkbox" id="ft-ai"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Groq AI /ask, /summarize, /translate</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">👻</div>
+        <div class="fc-header">
+          <div class="fc-name">Ban Ghosts</div>
+          <label class="toggle"><input type="checkbox" id="ft-banghosts"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Auto-ban deleted accounts</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📢</div>
+        <div class="fc-header">
+          <div class="fc-name">Mention All</div>
+          <label class="toggle"><input type="checkbox" id="ft-mentionall" checked><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Allow /mentionall to ping all admins</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🚀</div>
+        <div class="fc-header">
+          <div class="fc-name">Group Booster</div>
+          <label class="toggle"><input type="checkbox" id="ft-booster"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Engagement prompts & growth tools</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">👋</div>
+        <div class="fc-header">
+          <div class="fc-name">Welcome Bot</div>
+          <label class="toggle"><input type="checkbox" id="ft-welcome"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Greet new members & say goodbye</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📋</div>
+        <div class="fc-header">
+          <div class="fc-name">Join Approval</div>
+          <label class="toggle"><input type="checkbox" id="ft-joinapproval"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Manual/auto-approve join requests</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📡</div>
+        <div class="fc-header">
+          <div class="fc-name">Channel Force</div>
+          <label class="toggle"><input type="checkbox" id="ft-channelforce"><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Require users to join a channel</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">👤</div>
+        <div class="fc-header">
+          <div class="fc-name">Name History</div>
+          <label class="toggle"><input type="checkbox" id="ft-namehistory" checked><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Track user name/username changes</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">📊</div>
+        <div class="fc-header">
+          <div class="fc-name">Analytics</div>
+          <label class="toggle"><input type="checkbox" id="ft-analytics" checked><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Message stats & activity tracking</div>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon">🌐</div>
+        <div class="fc-header">
+          <div class="fc-name">Language</div>
+          <label class="toggle"><input type="checkbox" id="ft-language" checked><span class="slider"></span></label>
+        </div>
+        <div class="fc-desc">Multi-language & auto-detection</div>
+      </div>
+    </div>
+    <button class="btn" id="save-features">Save Features</button>
+  </div>
+
+  <!-- Stats Section (Owner only) -->
+  <div class="section" id="sec-stats">
+    <div class="card"><h3>Bot Analytics</h3><p>Overview of your bot's activity and engagement.</p></div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-groups">-</div>
+        <div class="stat-label">Groups</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-members">-</div>
+        <div class="stat-label">Total Members</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-messages-7d">-</div>
+        <div class="stat-label">Messages (7d)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-active-users">-</div>
+        <div class="stat-label">Active Users (7d)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Top Active Users (7 days)</h3>
+      <div id="stats-top-users"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Moderation Summary</h3>
+      <div id="stats-mod-summary"><div class="loading">Loading...</div></div>
+    </div>
+    <button class="btn btn-outline" id="refresh-stats" style="margin-top:8px">Refresh Stats</button>
+  </div>
+
+  <!-- Broadcast Section (Owner only) -->
+  <div class="section" id="sec-broadcast">
+    <div class="card"><h3>Broadcast Message</h3><p>Send a message to all groups where the bot is active.</p></div>
+    <div class="broadcast-box">
+      <textarea id="broadcast-text" placeholder="Type your broadcast message here...\n\nSupports HTML: <b>bold</b>, <i>italic</i>, <code>code</code>"></textarea>
+    </div>
+    <div class="card">
+      <h3>Options</h3>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Pin Message</div><div class="toggle-desc">Pin broadcast in each group</div></div>
+        <label class="toggle"><input type="checkbox" id="broadcast-pin"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Silent</div><div class="toggle-desc">Send without notification</div></div>
+        <label class="toggle"><input type="checkbox" id="broadcast-silent"><span class="slider"></span></label>
+      </div>
+    </div>
+    <div id="broadcast-status" style="display:none" class="card"><p id="broadcast-status-text"></p></div>
+    <button class="btn" id="send-broadcast">Send to All Groups</button>
+    <div class="card" style="margin-top:12px">
+      <h3>Recent Broadcasts</h3>
+      <div id="broadcast-history"><div class="empty">No broadcasts sent yet.</div></div>
+    </div>
+  </div>
+
   <!-- Config Section (Owner + Admin) -->
-  <div class="section active" id="sec-config">
-    <div class="card">
-      <h3>Protection</h3>
-      <div class="toggle-row">
-        <div><div class="toggle-label">Anti-Flood</div><div class="toggle-desc">Rate-limit messages</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-antiflood"><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">Anti-Link</div><div class="toggle-desc">Remove unauthorized links</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-antilink"><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">Anti-Raid</div><div class="toggle-desc">Auto-detect mass joins</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-antiraid"><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">Night Mode</div><div class="toggle-desc">Restrict messages at night</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-nightmode"><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">Captcha</div><div class="toggle-desc">Verify new members</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-captcha"><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">XP System</div><div class="toggle-desc">Members earn XP by chatting</div></div>
-        <label class="toggle"><input type="checkbox" id="cfg-xp"><span class="slider"></span></label>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Welcome Message</h3>
-      <div class="input-group"><textarea id="cfg-welcome" placeholder="Welcome {name} to {group}!"></textarea></div>
-    </div>
+  <div class="section" id="sec-config">
     <div class="card">
       <h3>Anti-Raid Settings</h3>
       <div class="input-group"><label>Threshold (joins/min)</label><input type="number" id="cfg-antiraid-threshold" value="15" min="1"></div>
@@ -148,20 +342,30 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </div>
       <div class="input-group"><label>Anti-Flood Max Per Minute</label><input type="number" id="cfg-antiflood-max" value="10" min="1" max="100"></div>
       <div class="input-group"><label>Log Channel ID</label><input type="text" id="cfg-log-channel" placeholder="e.g. -1001234567890"></div>
-      <div class="input-group"><label>Mini App Base URL</label><input type="text" id="cfg-miniapp-url" placeholder="https://botwave.online"></div>
+      <div class="input-group"><label>Bot Language</label>
+        <select id="cfg-bot-language"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ar">العربية</option><option value="hi">हिन्दी</option><option value="ru">Русский</option><option value="tr">Türkçe</option></select>
+      </div>
+      <div class="input-group"><label>Force Join Channel</label><input type="text" id="cfg-force-channel" placeholder="@channel_username"></div>
+      <div id="miniapp-url-display" style="display:none"><label style="font-size:0.82rem;color:var(--hint)">Mini App Base URL</label><div style="padding:10px 12px;background:var(--secondary-bg);border-radius:10px;font-size:0.9rem;color:var(--hint);margin-top:4px" id="cfg-miniapp-url-text"></div></div>
     </div>
     <button class="btn" id="save-config">Save Settings</button>
   </div>
 
-  <!-- Messages Section (Owner only) -->
+  <!-- Group Messages Section (Owner + Admin) -->
+  <div class="section" id="sec-groupmsgs">
+    <div class="card"><h3>Group Messages</h3><p>Customize group-specific messages. Use placeholders like {first_name}, {group_name}.</p></div>
+    <div class="card"><h3>Welcome Message</h3><div class="input-group"><textarea id="grp-welcome" rows="3" placeholder="Welcome {first_name} to {group_name}!"></textarea></div></div>
+    <div class="card"><h3>Goodbye Message</h3><div class="input-group"><textarea id="grp-goodbye" rows="3" placeholder="Goodbye {first_name}!"></textarea></div></div>
+    <div class="card"><h3>Rules Text</h3><div class="input-group"><textarea id="grp-rules" rows="4" placeholder="Group rules shown with /rules"></textarea></div></div>
+    <button class="btn" id="save-groupmsgs">Save Group Messages</button>
+  </div>
+
+  <!-- Bot Messages Section (Owner only) -->
   <div class="section" id="sec-messages">
-    <div class="card"><h3>Bot Messages</h3><p>Customize the text your bot sends. Use placeholders like {first_name}, {bot_name}, {group_name}.</p></div>
+    <div class="card"><h3>Bot Messages (Owner Only)</h3><p>These messages are global for your bot. Only the bot owner can edit them.</p></div>
     <div class="card"><h3>Start Message (Private DM)</h3><div class="input-group"><textarea id="msg-start-text" rows="5" placeholder="Leave empty for default"></textarea></div></div>
     <div class="card"><h3>Start Message (Group DM)</h3><div class="input-group"><textarea id="msg-start-group-dm" rows="5" placeholder="Sent when bot is added to a group"></textarea></div></div>
     <div class="card"><h3>Help Text</h3><div class="input-group"><textarea id="msg-help-text" rows="5" placeholder="Sent when user types /help"></textarea></div></div>
-    <div class="card"><h3>Welcome Message</h3><div class="input-group"><textarea id="msg-welcome" rows="3" placeholder="Welcome {first_name} to {group_name}!"></textarea></div></div>
-    <div class="card"><h3>Goodbye Message</h3><div class="input-group"><textarea id="msg-goodbye" rows="3" placeholder="Goodbye {first_name}!"></textarea></div></div>
-    <div class="card"><h3>Rules Text</h3><div class="input-group"><textarea id="msg-rules" rows="4" placeholder="Group rules shown with /rules"></textarea></div></div>
     <div class="card"><h3>Start Buttons (JSON)</h3><div class="input-group"><p>Inline buttons shown with /start. Format: array of {text, url} objects.</p><textarea id="msg-start-buttons" rows="3" placeholder='[{"text":"Website","url":"https://example.com"}]'></textarea></div></div>
     <div style="display:flex;gap:8px">
       <button class="btn" id="save-messages" style="flex:1">Save Messages</button>
@@ -272,15 +476,19 @@ document.getElementById('group-select').addEventListener('change', function() {
   if (activeTab) loadTabData(activeTab.dataset.tab);
 });
 
+var isPolling = false;
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
   pollInterval = setInterval(function() {
+    if (isPolling) return;
+    isPolling = true;
     var activeTab = document.querySelector('.tab.active');
     if (activeTab) {
-      loadTabData(activeTab.dataset.tab);
+      loadTabData(activeTab.dataset.tab, true);
       var el = document.getElementById('refresh-indicator');
       el.textContent = 'Updated ' + new Date().toLocaleTimeString();
     }
+    isPolling = false;
   }, POLL_SECONDS * 1000);
 }
 
@@ -334,25 +542,31 @@ document.querySelectorAll('.tab').forEach(function(tab) {
   });
 });
 
-function loadConfig() {
+var cachedConfig = null;
+
+function loadFeatures() {
   apiCall('/api/telegram/config').then(function(res) {
     if (res.success && res.data) {
+      cachedConfig = res.data;
       var c = res.data;
-      document.getElementById('cfg-antiflood').checked = c.antiflood_enabled || false;
-      document.getElementById('cfg-antilink').checked = c.antilink_enabled || false;
-      document.getElementById('cfg-antiraid').checked = c.antiraid_enabled || false;
-      document.getElementById('cfg-nightmode').checked = c.night_mode_enabled || false;
-      document.getElementById('cfg-captcha').checked = c.captcha_enabled || false;
-      document.getElementById('cfg-xp').checked = c.xp_enabled !== false;
-      document.getElementById('cfg-welcome').value = c.welcome_message || '';
-      document.getElementById('cfg-antiraid-threshold').value = c.antiraid_threshold || 15;
-      document.getElementById('cfg-antiraid-mode').value = c.antiraid_mode || 'restrict';
-      document.getElementById('cfg-antiraid-duration').value = c.antiraid_duration_mins || 15;
-      document.getElementById('cfg-warn-limit').value = c.warn_limit || 3;
-      document.getElementById('cfg-warn-action').value = c.warn_action || 'mute';
-      document.getElementById('cfg-antiflood-max').value = c.antiflood_max_per_min || 10;
-      document.getElementById('cfg-log-channel').value = c.log_channel_id || '';
-      document.getElementById('cfg-miniapp-url').value = c.miniapp_base_url || '';
+      document.getElementById('ft-antiflood').checked = c.antiflood_enabled || false;
+      document.getElementById('ft-antilink').checked = c.antilink_enabled || false;
+      document.getElementById('ft-antiraid').checked = c.antiraid_enabled || false;
+      document.getElementById('ft-nightmode').checked = c.night_mode_enabled || false;
+      document.getElementById('ft-captcha').checked = c.captcha_enabled || false;
+      document.getElementById('ft-xp').checked = c.xp_enabled !== false;
+      document.getElementById('ft-karma').checked = c.karma_enabled || false;
+      document.getElementById('ft-votekick').checked = c.votekick_enabled || false;
+      document.getElementById('ft-ai').checked = c.ai_enabled || false;
+      document.getElementById('ft-banghosts').checked = c.ban_ghosts_enabled || false;
+      document.getElementById('ft-mentionall').checked = c.mentionall_enabled !== false;
+      document.getElementById('ft-booster').checked = c.booster_enabled || false;
+      document.getElementById('ft-welcome').checked = !!(c.welcome_message);
+      document.getElementById('ft-joinapproval').checked = c.join_approval_enabled || false;
+      document.getElementById('ft-channelforce').checked = !!(c.force_channel);
+      document.getElementById('ft-namehistory').checked = true;
+      document.getElementById('ft-analytics').checked = true;
+      document.getElementById('ft-language').checked = true;
       document.getElementById('bot-info').textContent = 'Session: ' + sessionId.slice(0, 8) + '...';
     }
   }).catch(function() {
@@ -360,16 +574,53 @@ function loadConfig() {
   });
 }
 
+document.getElementById('save-features').addEventListener('click', function() {
+  var payload = {
+    sessionId: sessionId,
+    antiflood_enabled: document.getElementById('ft-antiflood').checked,
+    antilink_enabled: document.getElementById('ft-antilink').checked,
+    antiraid_enabled: document.getElementById('ft-antiraid').checked,
+    night_mode_enabled: document.getElementById('ft-nightmode').checked,
+    captcha_enabled: document.getElementById('ft-captcha').checked,
+    xp_enabled: document.getElementById('ft-xp').checked,
+    karma_enabled: document.getElementById('ft-karma').checked,
+    votekick_enabled: document.getElementById('ft-votekick').checked,
+    ai_enabled: document.getElementById('ft-ai').checked,
+    ban_ghosts_enabled: document.getElementById('ft-banghosts').checked,
+    mentionall_enabled: document.getElementById('ft-mentionall').checked,
+    booster_enabled: document.getElementById('ft-booster').checked,
+    join_approval_enabled: document.getElementById('ft-joinapproval').checked,
+  };
+  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
+    .then(function(res) { toast(res.success ? 'Features saved!' : 'Failed to save'); })
+    .catch(function() { toast('Error saving features'); });
+});
+
+function loadConfig() {
+  apiCall('/api/telegram/config').then(function(res) {
+    if (res.success && res.data) {
+      cachedConfig = res.data;
+      var c = res.data;
+      document.getElementById('cfg-antiraid-threshold').value = c.antiraid_threshold || 15;
+      document.getElementById('cfg-antiraid-mode').value = c.antiraid_mode || 'restrict';
+      document.getElementById('cfg-antiraid-duration').value = c.antiraid_duration_mins || 15;
+      document.getElementById('cfg-warn-limit').value = c.warn_limit || 3;
+      document.getElementById('cfg-warn-action').value = c.warn_action || 'mute';
+      document.getElementById('cfg-antiflood-max').value = c.antiflood_max_per_min || 10;
+      document.getElementById('cfg-log-channel').value = c.log_channel_id || '';
+      document.getElementById('cfg-bot-language').value = c.bot_language || 'en';
+      document.getElementById('cfg-force-channel').value = c.force_channel || '';
+      if (c.miniapp_base_url && currentRole === 'owner') {
+        document.getElementById('miniapp-url-display').style.display = 'block';
+        document.getElementById('cfg-miniapp-url-text').textContent = c.miniapp_base_url;
+      }
+    }
+  }).catch(function() {});
+}
+
 document.getElementById('save-config').addEventListener('click', function() {
   var payload = {
     sessionId: sessionId,
-    antiflood_enabled: document.getElementById('cfg-antiflood').checked,
-    antilink_enabled: document.getElementById('cfg-antilink').checked,
-    antiraid_enabled: document.getElementById('cfg-antiraid').checked,
-    night_mode_enabled: document.getElementById('cfg-nightmode').checked,
-    captcha_enabled: document.getElementById('cfg-captcha').checked,
-    xp_enabled: document.getElementById('cfg-xp').checked,
-    welcome_message: document.getElementById('cfg-welcome').value,
     antiraid_threshold: parseInt(document.getElementById('cfg-antiraid-threshold').value),
     antiraid_mode: document.getElementById('cfg-antiraid-mode').value,
     antiraid_duration_mins: parseInt(document.getElementById('cfg-antiraid-duration').value),
@@ -379,11 +630,101 @@ document.getElementById('save-config').addEventListener('click', function() {
     payload.warn_action = document.getElementById('cfg-warn-action').value;
     payload.antiflood_max_per_min = parseInt(document.getElementById('cfg-antiflood-max').value);
     payload.log_channel_id = document.getElementById('cfg-log-channel').value || null;
-    payload.miniapp_base_url = document.getElementById('cfg-miniapp-url').value || null;
+    payload.bot_language = document.getElementById('cfg-bot-language').value || 'en';
+    payload.force_channel = document.getElementById('cfg-force-channel').value || null;
   }
   apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
     .then(function(res) { toast(res.success ? 'Settings saved!' : 'Failed to save'); })
     .catch(function() { toast('Error saving settings'); });
+});
+
+function loadStats() {
+  apiCall('/api/telegram/groups?sessionId=' + sessionId).then(function(res) {
+    var groupCount = (res.success && res.data) ? res.data.length : 0;
+    document.getElementById('stat-groups').textContent = groupCount;
+  }).catch(function() {});
+  apiCall('/api/telegram/analytics/summary').then(function(res) {
+    if (res.success && res.data) {
+      document.getElementById('stat-members').textContent = res.data.total_members || '-';
+      document.getElementById('stat-messages-7d').textContent = res.data.messages_7d || '-';
+      document.getElementById('stat-active-users').textContent = res.data.active_users_7d || '-';
+      var topEl = document.getElementById('stats-top-users');
+      if (res.data.top_users && res.data.top_users.length) {
+        var medals = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+        topEl.innerHTML = res.data.top_users.map(function(u, i) {
+          return '<div class="list-item"><div><div class="name">' + (i < 3 ? medals[i] : (i+1) + '.') + ' User ' + u.user_id + '</div><div class="meta">' + u.message_count + ' messages</div></div></div>';
+        }).join('');
+      } else { topEl.innerHTML = '<div class="empty">No activity data yet.</div>'; }
+      var modEl = document.getElementById('stats-mod-summary');
+      if (res.data.mod_actions) {
+        modEl.innerHTML = '<div class="list-item"><div><div class="name">Bans: ' + (res.data.mod_actions.bans || 0) + '</div><div class="meta">Mutes: ' + (res.data.mod_actions.mutes || 0) + ' \u2022 Warns: ' + (res.data.mod_actions.warns || 0) + ' \u2022 Kicks: ' + (res.data.mod_actions.kicks || 0) + '</div></div></div>';
+      } else { modEl.innerHTML = '<div class="empty">No moderation data yet.</div>'; }
+    }
+  }).catch(function() {
+    document.getElementById('stat-members').textContent = '-';
+    document.getElementById('stat-messages-7d').textContent = '-';
+    document.getElementById('stat-active-users').textContent = '-';
+    document.getElementById('stats-top-users').innerHTML = '<div class="empty">Failed to load stats.</div>';
+    document.getElementById('stats-mod-summary').innerHTML = '<div class="empty">Failed to load stats.</div>';
+  });
+}
+
+document.getElementById('refresh-stats').addEventListener('click', function() {
+  toast('Refreshing stats...');
+  loadStats();
+});
+
+document.getElementById('send-broadcast').addEventListener('click', function() {
+  var text = document.getElementById('broadcast-text').value.trim();
+  if (!text) { toast('Please enter a message to broadcast'); return; }
+  if (!confirm('Send this message to ALL groups? This cannot be undone.')) return;
+  var statusEl = document.getElementById('broadcast-status');
+  var statusText = document.getElementById('broadcast-status-text');
+  statusEl.style.display = 'block';
+  statusText.textContent = 'Sending broadcast...';
+  apiCall('/api/telegram/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({
+      sessionId: sessionId,
+      text: text,
+      pin: document.getElementById('broadcast-pin').checked,
+      silent: document.getElementById('broadcast-silent').checked,
+    }),
+  }).then(function(res) {
+    if (res.success) {
+      statusText.textContent = 'Broadcast sent to ' + (res.sent || 0) + ' group(s)!';
+      document.getElementById('broadcast-text').value = '';
+      toast('Broadcast sent!');
+    } else {
+      statusText.textContent = 'Failed: ' + (res.error || 'Unknown error');
+    }
+  }).catch(function() {
+    statusText.textContent = 'Error sending broadcast.';
+  });
+});
+
+function loadGroupMessages() {
+  apiCall('/api/telegram/messages').then(function(res) {
+    if (res.success && res.data) {
+      var m = res.data;
+      document.getElementById('grp-welcome').value = m.welcome_message || '';
+      document.getElementById('grp-goodbye').value = m.goodbye_message || '';
+      document.getElementById('grp-rules').value = m.rules_text || '';
+    }
+  }).catch(function() {});
+}
+
+document.getElementById('save-groupmsgs').addEventListener('click', function() {
+  apiCall('/api/telegram/messages', {
+    method: 'PUT',
+    body: JSON.stringify({
+      sessionId: sessionId,
+      welcome_message: document.getElementById('grp-welcome').value || null,
+      goodbye_message: document.getElementById('grp-goodbye').value || null,
+      rules_text: document.getElementById('grp-rules').value || null,
+    }),
+  }).then(function(res) { toast(res.success ? 'Group messages saved!' : 'Failed to save'); })
+    .catch(function() { toast('Error saving group messages'); });
 });
 
 function loadMessages() {
@@ -393,9 +734,6 @@ function loadMessages() {
       document.getElementById('msg-start-text').value = m.start_text || '';
       document.getElementById('msg-start-group-dm').value = m.start_group_dm_text || '';
       document.getElementById('msg-help-text').value = m.help_text || '';
-      document.getElementById('msg-welcome').value = m.welcome_message || '';
-      document.getElementById('msg-goodbye').value = m.goodbye_message || '';
-      document.getElementById('msg-rules').value = m.rules_text || '';
       document.getElementById('msg-start-buttons').value = m.start_buttons_json || '';
     }
   }).catch(function() {});
@@ -409,9 +747,6 @@ document.getElementById('save-messages').addEventListener('click', function() {
       start_text: document.getElementById('msg-start-text').value || null,
       start_group_dm_text: document.getElementById('msg-start-group-dm').value || null,
       help_text: document.getElementById('msg-help-text').value || null,
-      welcome_message: document.getElementById('msg-welcome').value || null,
-      goodbye_message: document.getElementById('msg-goodbye').value || null,
-      rules_text: document.getElementById('msg-rules').value || null,
       start_buttons_json: document.getElementById('msg-start-buttons').value || null,
     }),
   }).then(function(res) { toast(res.success ? 'Messages saved!' : 'Failed to save'); })
@@ -419,10 +754,10 @@ document.getElementById('save-messages').addEventListener('click', function() {
 });
 
 document.getElementById('reset-messages').addEventListener('click', function() {
-  if (!confirm('Reset all messages to defaults? This cannot be undone.')) return;
+  if (!confirm('Reset all bot messages to defaults? This cannot be undone.')) return;
   apiCall('/api/telegram/messages', {
     method: 'PUT',
-    body: JSON.stringify({ sessionId: sessionId, start_text: null, start_group_dm_text: null, help_text: null, welcome_message: null, goodbye_message: null, rules_text: null, start_buttons_json: null }),
+    body: JSON.stringify({ sessionId: sessionId, start_text: null, start_group_dm_text: null, help_text: null, start_buttons_json: null }),
   }).then(function(res) {
     if (res.success) { toast('Messages reset to defaults'); loadMessages(); }
     else { toast('Failed to reset'); }
@@ -513,12 +848,16 @@ document.getElementById('reset-xp').addEventListener('click', function() {
     .catch(function() { toast('Error resetting XP'); });
 });
 
-function loadTabData(tab) {
+function loadTabData(tab, silent) {
   switch(tab) {
+    case 'features': loadFeatures(); break;
     case 'config': loadConfig(); break;
+    case 'stats': if (!silent) loadStats(); break;
+    case 'broadcast': break;
+    case 'groupmsgs': loadGroupMessages(); break;
     case 'messages': loadMessages(); break;
-    case 'notes': loadNotes(); break;
-    case 'filters': loadFilters(); break;
+    case 'notes': if (!silent) loadNotes(); break;
+    case 'filters': if (!silent) loadFilters(); break;
     case 'modlog': loadModlog(); break;
     case 'xp': loadXP(); break;
   }
@@ -528,7 +867,7 @@ loadGroups().then(function() {
   return detectRole();
 }).then(function(role) {
   applyRole(role);
-  loadConfig();
+  loadFeatures();
   startPolling();
 });
 

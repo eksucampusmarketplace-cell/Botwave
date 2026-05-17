@@ -14,6 +14,28 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const sudoCache = new Map<string, { users: string[]; expiresAt: number }>();
 const SUDO_CACHE_TTL = 60_000;
 
+// In-memory admin cache per chat to reduce API calls
+const adminCache = new Map<string, { admins: number[]; expiresAt: number }>();
+const ADMIN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export async function getAdminList(chatId: number | string, api: { getChatAdministrators: (chatId: number | string) => Promise<Array<{ user: { id: number } }>> }): Promise<number[]> {
+  const key = chatId.toString();
+  const cached = adminCache.get(key);
+  if (cached && Date.now() < cached.expiresAt) return cached.admins;
+  try {
+    const admins = await api.getChatAdministrators(chatId);
+    const ids = admins.map((a: { user: { id: number } }) => a.user.id);
+    adminCache.set(key, { admins: ids, expiresAt: Date.now() + ADMIN_CACHE_TTL });
+    return ids;
+  } catch {
+    return cached?.admins || [];
+  }
+}
+
+export function invalidateAdminCache(chatId: number | string): void {
+  adminCache.delete(chatId.toString());
+}
+
 export async function getSudoUsers(sessionId: string): Promise<string[]> {
   const cached = sudoCache.get(sessionId);
   if (cached && Date.now() < cached.expiresAt) return cached.users;
@@ -98,8 +120,8 @@ export async function isOwner(sessionId: string, userId: number): Promise<boolea
 export async function isAdmin(ctx: Context): Promise<boolean> {
   if (!ctx.from || !ctx.chat) return false;
   try {
-    const member = await ctx.getChatMember(ctx.from.id);
-    return member.status === 'administrator' || member.status === 'creator';
+    const admins = await getAdminList(ctx.chat.id, ctx.api);
+    return admins.includes(ctx.from.id);
   } catch {
     return false;
   }

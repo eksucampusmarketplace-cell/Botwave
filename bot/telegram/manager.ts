@@ -11,14 +11,10 @@
 import { Bot, GrammyError, HttpError } from 'grammy';
 import { createClient } from '@supabase/supabase-js';
 import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementLeaderboard, incrementQuotaUsage, getUserSubscription, creditReward } from '../database';
-import { getCommand, type MessageContext, type TemplateVars } from '../whatsapp/commands/registry';
 import { refreshHeartbeat } from '../scaling/sessionCoordinator';
 import { registerAllHandlers } from './factory';
 import { getTelegramConfig, getDueScheduledMessages, markScheduledMessageSent } from './utils/db';
 import { checkNightMode } from './handlers/nightmode';
-
-// Import all command modules to trigger self-registration
-import '../whatsapp/commands';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -358,71 +354,34 @@ export class TelegramBotInstance {
       'groups', 'mygroups',
       // Start button resets
       'resetstart', 'resethelp', 'setstartbuttons',
+      // Karma
+      'karma', 'mykarma',
+      // VoteKick
+      'votekick',
+      // Join Approval
+      'setapprove',
+      // Admin Tools
+      'mentionall', 'setdesc', 'adminlist', 'banghosts',
+      // Auto Delete
+      'autodelete',
+      // Language
+      'setlang', 'lang', 'detectlang',
+      // AI
+      'ask', 'summarize', 'translate',
+      // Analytics
+      'stats', 'groupstats',
+      // Channel Force
+      'forcejoin',
+      // Group Booster
+      'boost', 'boostinfo', 'invite',
+      // Name History
+      'namehistory',
     ]);
 
     if (NATIVE_TG_COMMANDS.has(commandName)) return;
 
-    // Map common Telegram commands to BotWave commands
-    const commandMap: Record<string, string> = {};
-    const mappedCommand = commandMap[commandName] || commandName;
-
-    const handler = getCommand(mappedCommand);
-    if (!handler) {
-      return;
-    }
-
-    // Check owner-only commands
-    if (handler.ownerOnly && !isOwner) {
-      return;
-    }
-
-    // Quota check
-    if (this.userId) {
-      const quotaOk = await incrementQuotaUsage(this.userId);
-      if (!quotaOk) {
-        const sub = await getUserSubscription(this.userId);
-        const upgradeMsg = sub.plan === 'free'
-          ? `You've hit your monthly message limit (${sub.quotaLimit}). Upgrade your plan at botwave.online to continue!`
-          : `You've reached your ${sub.plan} plan limit (${sub.quotaLimit} messages).`;
-        await ctx.reply(upgradeMsg);
-        return;
-      }
-      void creditReward(this.userId, 'command_use', commandName).catch(() => {});
-    }
-
-    // Track command execution
-    trackCommand(this.sessionId, this.userId, senderId, commandName).catch(() => {});
-
-    // Build context compatible with existing command handlers
-    const messageContext: MessageContext = {
-      senderJid: senderId,
-      chatJid: chatId,
-      message: text,
-      rawMessage: ctx.message,
-      isGroup,
-      isOwner,
-      pushName,
-      sessionId: this.sessionId,
-      userId: this.userId,
-      commandPrefix,
-    };
-
-    const vars: TemplateVars = {
-      name: pushName,
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-      group: isGroup ? ctx.chat.title || chatId : undefined,
-    };
-
-    // Create a Telegram-aware sock wrapper for command handlers
-    const sock = this.createSockWrapper(ctx);
-
-    try {
-      await handler.execute(messageContext, args, sock, vars, mappedCommand);
-    } catch (err) {
-      console.error(`[TG-BOT] Command "${commandName}" failed for ${this.sessionId.slice(0, 8)}:`, err);
-      await ctx.reply('An error occurred processing that command.').catch(() => {});
-    }
+    // All Telegram commands are handled natively via grammy handlers in factory.ts.
+    // Non-native commands are silently ignored (no WhatsApp bridge fallback).
   }
 
   private async handleAutoReply(

@@ -34,8 +34,20 @@ import { registerTicketHandlers } from './handlers/tickets';
 import { registerStickerHandlers } from './handlers/stickers';
 import { registerBroadcastHandlers } from './handlers/broadcast';
 import { registerGroupLifecycleHandlers } from './handlers/group_lifecycle';
+import { registerKarmaHandlers } from './handlers/karma';
+import { registerVotekickHandlers } from './handlers/votekick';
+import { registerJoinApprovalHandlers } from './handlers/joinapproval';
+import { registerAdminToolsHandlers } from './handlers/admintools';
+import { registerAutoDeleteHandlers } from './handlers/autodelete';
+import { registerSudoHandlers } from './handlers/sudo';
+import { registerLanguageHandlers } from './handlers/language';
+import { registerGroqAiHandlers } from './handlers/groqai';
+import { registerAnalyticsHandlers, processAnalytics } from './handlers/analytics';
+import { registerChannelForceHandlers } from './handlers/channelforce';
+import { registerGroupBoosterHandlers } from './handlers/groupbooster';
+import { registerNameHistoryHandlers } from './handlers/namehistory';
 import { getTelegramConfig } from './utils/db';
-import { isElevated } from './utils/permissions';
+import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
 
 /**
@@ -122,6 +134,23 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerTicketHandlers(bot, sessionId);
   registerStickerHandlers(bot, sessionId);
   registerBroadcastHandlers(bot, sessionId);
+  registerKarmaHandlers(bot, sessionId);
+  registerVotekickHandlers(bot, sessionId);
+  registerJoinApprovalHandlers(bot, sessionId);
+  registerAdminToolsHandlers(bot, sessionId);
+  registerAutoDeleteHandlers(bot, sessionId);
+  registerSudoHandlers(bot, sessionId);
+  registerLanguageHandlers(bot, sessionId);
+  registerGroqAiHandlers(bot, sessionId);
+  registerAnalyticsHandlers(bot, sessionId);
+  registerChannelForceHandlers(bot, sessionId);
+  registerGroupBoosterHandlers(bot, sessionId);
+  registerNameHistoryHandlers(bot, sessionId);
+
+  // Invalidate admin cache on chat_member updates
+  bot.on('chat_member', async (ctx) => {
+    if (ctx.chat) invalidateAdminCache(ctx.chat.id);
+  });
 
   // Middleware: federation ban check + anti-raid on new chat members
   bot.on('chat_member', async (ctx) => {
@@ -154,5 +183,8 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
 
     // Award XP
     await processXp(ctx, sessionId);
+
+    // Track analytics
+    await processAnalytics(sessionId, ctx.chat.id.toString(), ctx.from.id.toString(), 'text');
   });
 }
