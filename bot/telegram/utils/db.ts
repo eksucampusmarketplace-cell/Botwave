@@ -57,6 +57,114 @@ export interface TelegramConfig {
   mediadownload_enabled: boolean;
   funextras_enabled: boolean;
   infolookup_enabled: boolean;
+  // General settings
+  timezone: string;
+  welcome_enabled: boolean;
+  welcome_timing: string;
+  rules_enabled: boolean;
+  admonition_enabled: boolean;
+  admonition_timing: string;
+  noiseless_mode: boolean;
+  noiseless_timing: string;
+  auto_delete_bot_msgs: boolean;
+  auto_delete_timing: string;
+  auto_delete_minutes: number;
+  check_admin_violations: boolean;
+  verify_user_realness: boolean;
+  ignore_public_commands: boolean;
+  remove_join_leave_notifs: boolean;
+  remove_join_leave_timing: string;
+  anon_admin: boolean;
+  admin_error_messages: boolean;
+  // Warnings configuration
+  warnings_enabled: boolean;
+  warnings_timing: string;
+  max_warnings: number;
+  warning_keep_days: number;
+  default_violation_penalty: string;
+  warn_time: string;
+  // Prohibitions
+  prohibit_unofficial_ads: boolean;
+  prohibit_unofficial_ads_timing: string;
+  prohibit_bots_deletion: boolean;
+  prohibit_bot_inviter_removal: boolean;
+  prohibit_userbots: boolean;
+  prohibit_userbots_timing: string;
+  prohibit_userbots_penalty: string;
+  strict_mode: boolean;
+  prohibit_porn_words: boolean;
+  prohibit_website_links: boolean;
+  prohibit_telegram_links: boolean;
+  prohibit_usernames: boolean;
+  prohibit_hashtags: boolean;
+  prohibit_text: boolean;
+  prohibit_forwarding: boolean;
+  prohibit_forward_channels: boolean;
+  prohibit_pictures: boolean;
+  prohibit_videos: boolean;
+  prohibit_stickers: boolean;
+  prohibit_emojis: boolean;
+  prohibit_emoji_only: boolean;
+  prohibit_location: boolean;
+  prohibit_contact: boolean;
+  prohibit_audio: boolean;
+  prohibit_voice: boolean;
+  prohibit_files: boolean;
+  prohibit_apps: boolean;
+  prohibit_apps_timing: string;
+  prohibit_apps_penalty: string;
+  prohibit_gifs: boolean;
+  prohibit_polls: boolean;
+  prohibit_glass_buttons: boolean;
+  prohibit_games: boolean;
+  prohibit_bot_commands: boolean;
+  prohibit_textless_posts: boolean;
+  prohibit_english: boolean;
+  prohibit_arabic_farsi: boolean;
+  prohibit_regular_reply: boolean;
+  prohibit_external_reply: boolean;
+  message_regex_pattern: string;
+  forbidden_words: string;
+  necessary_words: string;
+  // Numerical limitations
+  min_message_words: number;
+  max_message_words: number;
+  message_count_limit: number;
+  message_count_timeframe_mins: number;
+  max_repeated_messages: number;
+  repeated_msg_timeframe_mins: number;
+  // Silent times
+  silent_time_1_enabled: boolean;
+  silent_time_1_start: string;
+  silent_time_1_end: string;
+  silent_time_2_enabled: boolean;
+  silent_time_2_start: string;
+  silent_time_2_end: string;
+  silent_time_3_enabled: boolean;
+  silent_time_3_start: string;
+  silent_time_3_end: string;
+  temporary_lock_enabled: boolean;
+  // Mandatory memberships
+  forced_add_count: number;
+  forced_add_timeframe_days: number;
+  mandatory_channels: string;
+  // Customized texts
+  custom_welcome_text: string;
+  custom_rules_text: string;
+  custom_silent_start_text: string;
+  custom_silent_end_text: string;
+  custom_admonition_text: string;
+  custom_forced_add_text: string;
+  custom_mandatory_channel_text: string;
+  // Antiflood enhancements
+  antiflood_action: string;
+  antiflood_timed_count: number;
+  antiflood_timed_duration_secs: number;
+  antiflood_clear_messages: boolean;
+  // AntiRaid enhancements
+  antiraid_time: string;
+  antiraid_action_time: string;
+  auto_antiraid_threshold: number;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -103,6 +211,114 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   mediadownload_enabled: true,
   funextras_enabled: true,
   infolookup_enabled: true,
+  // General settings
+  timezone: 'UTC',
+  welcome_enabled: true,
+  welcome_timing: 'always',
+  rules_enabled: false,
+  admonition_enabled: false,
+  admonition_timing: 'always',
+  noiseless_mode: false,
+  noiseless_timing: 'always',
+  auto_delete_bot_msgs: false,
+  auto_delete_timing: 'always',
+  auto_delete_minutes: 1,
+  check_admin_violations: false,
+  verify_user_realness: false,
+  ignore_public_commands: false,
+  remove_join_leave_notifs: false,
+  remove_join_leave_timing: 'always',
+  anon_admin: false,
+  admin_error_messages: true,
+  // Warnings configuration
+  warnings_enabled: false,
+  warnings_timing: 'always',
+  max_warnings: 20,
+  warning_keep_days: 3,
+  default_violation_penalty: 'warn',
+  warn_time: 'off',
+  // Prohibitions
+  prohibit_unofficial_ads: false,
+  prohibit_unofficial_ads_timing: 'always',
+  prohibit_bots_deletion: false,
+  prohibit_bot_inviter_removal: false,
+  prohibit_userbots: false,
+  prohibit_userbots_timing: 'always',
+  prohibit_userbots_penalty: 'default',
+  strict_mode: false,
+  prohibit_porn_words: false,
+  prohibit_website_links: false,
+  prohibit_telegram_links: false,
+  prohibit_usernames: false,
+  prohibit_hashtags: false,
+  prohibit_text: false,
+  prohibit_forwarding: false,
+  prohibit_forward_channels: false,
+  prohibit_pictures: false,
+  prohibit_videos: false,
+  prohibit_stickers: false,
+  prohibit_emojis: false,
+  prohibit_emoji_only: false,
+  prohibit_location: false,
+  prohibit_contact: false,
+  prohibit_audio: false,
+  prohibit_voice: false,
+  prohibit_files: false,
+  prohibit_apps: false,
+  prohibit_apps_timing: 'always',
+  prohibit_apps_penalty: 'default',
+  prohibit_gifs: false,
+  prohibit_polls: false,
+  prohibit_glass_buttons: false,
+  prohibit_games: false,
+  prohibit_bot_commands: false,
+  prohibit_textless_posts: false,
+  prohibit_english: false,
+  prohibit_arabic_farsi: false,
+  prohibit_regular_reply: false,
+  prohibit_external_reply: false,
+  message_regex_pattern: '',
+  forbidden_words: '',
+  necessary_words: '',
+  // Numerical limitations
+  min_message_words: 0,
+  max_message_words: 0,
+  message_count_limit: 0,
+  message_count_timeframe_mins: 1,
+  max_repeated_messages: 0,
+  repeated_msg_timeframe_mins: 1,
+  // Silent times
+  silent_time_1_enabled: false,
+  silent_time_1_start: '00:00',
+  silent_time_1_end: '06:00',
+  silent_time_2_enabled: false,
+  silent_time_2_start: '00:00',
+  silent_time_2_end: '06:00',
+  silent_time_3_enabled: false,
+  silent_time_3_start: '00:00',
+  silent_time_3_end: '06:00',
+  temporary_lock_enabled: false,
+  // Mandatory memberships
+  forced_add_count: 0,
+  forced_add_timeframe_days: 0,
+  mandatory_channels: '',
+  // Customized texts
+  custom_welcome_text: 'Greetings, esteemed {user}! Welcome to {group}! We wish you a delightful experience during your presence here.',
+  custom_rules_text: '',
+  custom_silent_start_text: 'Silent time has been successfully activated. This group is currently in silent mode from {starttime} until {endtime}.',
+  custom_silent_end_text: 'Silent time has been deactivated. The next silent time period will begin at {starttime}.',
+  custom_admonition_text: 'Reason: {reason} | Penalty: {penalty} | {user_warnings} warnings out of {warnings_count} | Each warning will be deleted after {warningstime}',
+  custom_forced_add_text: 'To be able to send messages to this group, you need to add {number} members. So far, you have added {added} members.',
+  custom_mandatory_channel_text: 'Before sending messages to this group, please join the following channel(s)/group(s): {channel_names}',
+  // Antiflood enhancements
+  antiflood_action: 'mute',
+  antiflood_timed_count: 0,
+  antiflood_timed_duration_secs: 0,
+  antiflood_clear_messages: false,
+  // AntiRaid enhancements
+  antiraid_time: '6h',
+  antiraid_action_time: '1h',
+  auto_antiraid_threshold: 0,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
@@ -1539,4 +1755,120 @@ export async function getActiveChats(sessionId: string): Promise<string[]> {
   }
 
   return Array.from(chatIds);
+}
+
+// ─── Approved Users ─────────────────────────────────────────────────────────
+
+export async function approveUser(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+  approvedBy: string,
+): Promise<void> {
+  await supabase.from('telegram_approved_users').upsert(
+    { session_id: sessionId, chat_id: chatId, user_id: userId, approved_by: approvedBy },
+    { onConflict: 'session_id,chat_id,user_id' },
+  );
+}
+
+export async function unapproveUser(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+): Promise<void> {
+  await supabase
+    .from('telegram_approved_users')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .eq('user_id', userId);
+}
+
+export async function isApprovedUser(
+  sessionId: string,
+  chatId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('telegram_approved_users')
+    .select('id')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .eq('user_id', userId)
+    .single();
+  return !!data;
+}
+
+export async function getApprovedUsers(
+  sessionId: string,
+  chatId: string,
+): Promise<Array<{ user_id: string; approved_by: string; created_at: string }>> {
+  const { data } = await supabase
+    .from('telegram_approved_users')
+    .select('user_id, approved_by, created_at')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function unapproveAllUsers(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  await supabase
+    .from('telegram_approved_users')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+}
+
+// ─── Group Statistics ───────────────────────────────────────────────────────
+
+export async function incrementGroupStat(
+  sessionId: string,
+  chatId: string,
+  field: 'new_members' | 'left_members' | 'messages_count',
+): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+  const { data: existing } = await supabase
+    .from('telegram_group_stats')
+    .select('id, ' + field)
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .eq('date', today)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from('telegram_group_stats')
+      .update({ [field]: (existing[field] || 0) + 1 })
+      .eq('id', existing.id);
+  } else {
+    await supabase.from('telegram_group_stats').insert({
+      session_id: sessionId,
+      chat_id: chatId,
+      date: today,
+      [field]: 1,
+    });
+  }
+}
+
+export async function getGroupStats(
+  sessionId: string,
+  chatId: string,
+  days: number = 30,
+): Promise<Array<{ date: string; new_members: number; left_members: number; messages_count: number }>> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const { data } = await supabase
+    .from('telegram_group_stats')
+    .select('date, new_members, left_members, messages_count')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .gte('date', startDate.toISOString().split('T')[0])
+    .order('date', { ascending: false });
+
+  return data || [];
 }

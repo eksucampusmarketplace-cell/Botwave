@@ -4,7 +4,8 @@
  */
 
 import { Bot } from 'grammy';
-import { getTelegramConfig } from '../utils/db';
+import { requireAdmin } from '../utils/permissions';
+import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
 import { mentionUser } from '../utils/format';
 
 export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
@@ -79,7 +80,6 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
       );
       return;
     }
-    const { updateTelegramConfig } = await import('../utils/db');
     await updateTelegramConfig(sessionId, { welcome_message: text });
     await ctx.reply('✅ Welcome message updated.');
   });
@@ -93,8 +93,36 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
       );
       return;
     }
-    const { updateTelegramConfig } = await import('../utils/db');
     await updateTelegramConfig(sessionId, { goodbye_message: text });
     await ctx.reply('✅ Goodbye message updated.');
+  });
+
+  // /resetwelcome — Reset welcome message to default
+  bot.command('resetwelcome', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    await updateTelegramConfig(sessionId, { welcome_message: 'Welcome {name} to {group}!' });
+    await ctx.reply('✅ Welcome message reset to default.');
+  });
+
+  // /resetgoodbye — Reset goodbye message to default
+  bot.command('resetgoodbye', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    await updateTelegramConfig(sessionId, { goodbye_message: '' });
+    await ctx.reply('✅ Goodbye message reset to default.');
+  });
+
+  // /cleanwelcome — Auto-delete old welcome messages
+  bot.command('cleanwelcome', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { clean_welcome: true } as Record<string, unknown>);
+      await ctx.reply('✅ Old welcome messages will be auto-deleted.');
+    } else if (['no', 'off'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { clean_welcome: false } as Record<string, unknown>);
+      await ctx.reply('✅ Welcome messages will no longer be auto-deleted.');
+    } else {
+      await ctx.reply('Usage: /cleanwelcome <yes/no/on/off>');
+    }
   });
 }

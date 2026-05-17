@@ -61,6 +61,45 @@ export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
       await ctx.reply('📋 No log channel set. Use /setlog <channel_id> to set one.');
     }
   });
+
+  // /log — Alias for /setlog
+  bot.command('log', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim();
+    if (!arg) {
+      const config = await getTelegramConfig(sessionId);
+      if (config.log_channel_id) {
+        await ctx.reply(`📋 Log channel: <code>${escapeHtml(config.log_channel_id)}</code>`, { parse_mode: 'HTML' });
+      } else {
+        await ctx.reply('Usage: /log <channel_id>\nOr use /nolog to disable.');
+      }
+      return;
+    }
+    try {
+      const testMsg = await ctx.api.sendMessage(Number(arg), 'Log channel linked.');
+      await ctx.api.deleteMessage(Number(arg), testMsg.message_id);
+    } catch {
+      await ctx.reply('❌ Cannot post to that channel. Make sure I am admin there.');
+      return;
+    }
+    await updateTelegramConfig(sessionId, { log_channel_id: arg });
+    await ctx.reply(`✅ Log channel set to <code>${escapeHtml(arg)}</code>.`, { parse_mode: 'HTML' });
+  });
+
+  // /nolog — Alias for /unsetlog
+  bot.command('nolog', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    await updateTelegramConfig(sessionId, { log_channel_id: null });
+    await ctx.reply('✅ Log channel removed.');
+  });
+
+  // /logcategories — Show which event categories are logged
+  bot.command('logcategories', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const categories = ['bans', 'mutes', 'kicks', 'warns', 'pins', 'notes', 'filters', 'locks', 'federation', 'antiflood', 'antiraid'];
+    const list = categories.map(c => `• <code>${c}</code>`).join('\n');
+    await ctx.reply(`<b>Log Categories</b>\n\nAll of the following events are logged when a log channel is set:\n\n${list}`, { parse_mode: 'HTML' });
+  });
 }
 
 /**

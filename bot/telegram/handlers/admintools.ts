@@ -1,10 +1,10 @@
 /**
- * Admin Tools — /mentionall, /settitle, /setdesc, /adminlist, /banghosts
+ * Admin Tools — /mentionall, /settitle, /setdesc, /adminlist, /banghosts, /admincache, /anonadmin, /adminerror
  */
 
 import { Bot } from 'grammy';
-import { requireAdmin, getAdminList } from '../utils/permissions';
-import { getTelegramConfig } from '../utils/db';
+import { requireAdmin, getAdminList, invalidateAdminCache } from '../utils/permissions';
+import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
@@ -113,6 +113,61 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
       } else {
         await ctx.reply('Ghost banning is already enabled. Use /banghosts off to disable.');
       }
+    }
+  });
+
+  // /admincache — Force refresh the admin cache for this chat
+  bot.command('admincache', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    if (!ctx.chat || ctx.chat.type === 'private') return;
+    invalidateAdminCache(ctx.chat.id);
+    try {
+      await getAdminList(ctx.chat.id, ctx.api);
+      await ctx.reply('✅ Admin cache has been updated.');
+    } catch {
+      await ctx.reply('❌ Failed to update admin cache.');
+    }
+  });
+
+  // /anonadmin — Allow anonymous admins to use all commands without permission checks
+  bot.command('anonadmin', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { anon_admin: true });
+      await ctx.reply('✅ Anonymous admin mode enabled. Anonymous admins can now use all commands without permission checks.\n⚠️ This is not recommended for security reasons.');
+    } else if (['no', 'off'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { anon_admin: false });
+      await ctx.reply('✅ Anonymous admin mode disabled.');
+    } else {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `👤 <b>Anonymous Admin</b>\n\n` +
+        `Status: ${config.anon_admin ? '✅ Enabled' : '❌ Disabled'}\n\n` +
+        `Usage: /anonadmin <yes/no/on/off>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+  });
+
+  // /adminerror — Toggle error messages when normal users use admin commands
+  bot.command('adminerror', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { admin_error_messages: true });
+      await ctx.reply('✅ Admin error messages enabled. Normal users will see error messages when using admin commands.');
+    } else if (['no', 'off'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { admin_error_messages: false });
+      await ctx.reply('✅ Admin error messages disabled.');
+    } else {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `⚠️ <b>Admin Error Messages</b>\n\n` +
+        `Status: ${config.admin_error_messages !== false ? '✅ Enabled' : '❌ Disabled'}\n\n` +
+        `Usage: /adminerror <yes/no/on/off>`,
+        { parse_mode: 'HTML' },
+      );
     }
   });
 }

@@ -82,6 +82,68 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
+  // /raidtime — View or set the desired antiraid duration
+  bot.command('raidtime', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    if (ctx.chat.type === 'private') return;
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim();
+    if (!arg) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `⏱ <b>Raid Time</b>\n\nCurrent: ${config.antiraid_time || '6h'}\n\nUsage: /raidtime <time>\nExample: /raidtime 3h`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+    await updateTelegramConfig(sessionId, { antiraid_time: arg });
+    await ctx.reply(`✅ Antiraid duration set to: ${arg}`);
+  });
+
+  // /raidactiontime — View or set how long new joiners are temp-banned
+  bot.command('raidactiontime', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    if (ctx.chat.type === 'private') return;
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim();
+    if (!arg) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `⏱ <b>Raid Action Time</b>\n\nCurrent: ${config.antiraid_action_time || '1h'}\n\nUsage: /raidactiontime <time>\nExample: /raidactiontime 2h`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+    await updateTelegramConfig(sessionId, { antiraid_action_time: arg });
+    await ctx.reply(`✅ Raid action time set to: ${arg}`);
+  });
+
+  // /autoantiraid — Set joins per minute to auto-enable antiraid
+  bot.command('autoantiraid', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+    if (ctx.chat.type === 'private') return;
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['0', 'off', 'no'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { auto_antiraid_threshold: 0 });
+      await ctx.reply('✅ Automatic antiraid disabled.');
+      return;
+    }
+    const num = parseInt(arg, 10);
+    if (!num || num < 1) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `🛡️ <b>Auto AntiRaid</b>\n\n` +
+        `Current threshold: ${config.auto_antiraid_threshold || 0} joins/min (${config.auto_antiraid_threshold ? 'Enabled' : 'Disabled'})\n\n` +
+        `Usage: /autoantiraid <number/off/no>\nExample: /autoantiraid 15`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+    await updateTelegramConfig(sessionId, { auto_antiraid_threshold: num });
+    await ctx.reply(`✅ Auto antiraid will trigger if over ${num} users join in under a minute.`);
+  });
+
   // /raid on|off — manually trigger or end raid mode
   bot.command('raid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;

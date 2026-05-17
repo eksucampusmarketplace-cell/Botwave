@@ -46,6 +46,106 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
       );
     }
   });
+
+  // /flood — Get the current antiflood settings
+  bot.command('flood', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const config = await getTelegramConfig(sessionId);
+    const timedInfo = config.antiflood_timed_count && config.antiflood_timed_duration_secs
+      ? `\nTimed: ${config.antiflood_timed_count} msgs in ${config.antiflood_timed_duration_secs}s`
+      : '\nTimed: Disabled';
+    await ctx.reply(
+      `🌊 <b>Anti-Flood Settings</b>\n\n` +
+      `Status: ${config.antiflood_enabled ? '✅ Enabled' : '❌ Disabled'}\n` +
+      `Limit: ${config.antiflood_max_per_min} messages/minute\n` +
+      `Action: ${config.antiflood_action || 'mute'}${timedInfo}\n` +
+      `Clear messages: ${config.antiflood_clear_messages ? 'Yes' : 'No'}`,
+      { parse_mode: 'HTML' },
+    );
+  });
+
+  // /setflood — Set the number of consecutive messages to trigger antiflood
+  bot.command('setflood', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['0', 'off', 'no'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { antiflood_enabled: false });
+      await ctx.reply('✅ Anti-flood disabled.');
+      return;
+    }
+    const num = parseInt(arg, 10);
+    if (!num || num < 2 || num > 100) {
+      await ctx.reply("Usage: /setflood <number/off/no>\nSet to '0', 'off', or 'no' to disable.");
+      return;
+    }
+    await updateTelegramConfig(sessionId, { antiflood_enabled: true, antiflood_max_per_min: num });
+    await ctx.reply(`✅ Anti-flood set to trigger after ${num} consecutive messages.`);
+  });
+
+  // /setfloodtimer — Set timed antiflood (count + duration)
+  bot.command('setfloodtimer', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const args = (ctx.match?.toString() || '').trim().split(/\s+/);
+    if (['off', 'no'].includes(args[0]?.toLowerCase())) {
+      await updateTelegramConfig(sessionId, { antiflood_timed_count: 0, antiflood_timed_duration_secs: 0 });
+      await ctx.reply('✅ Timed antiflood disabled.');
+      return;
+    }
+    const count = parseInt(args[0], 10);
+    const durationStr = args[1] || '';
+    let durationSecs = parseInt(durationStr, 10);
+    if (durationStr.endsWith('s')) durationSecs = parseInt(durationStr, 10);
+    else if (durationStr.endsWith('m')) durationSecs = parseInt(durationStr, 10) * 60;
+    else if (durationStr.endsWith('h')) durationSecs = parseInt(durationStr, 10) * 3600;
+    if (!count || count < 1 || !durationSecs || durationSecs < 1) {
+      await ctx.reply("Usage: /setfloodtimer <count> <duration>\nExample: /setfloodtimer 10 30s\nSet to 'off' or 'no' to disable.");
+      return;
+    }
+    await updateTelegramConfig(sessionId, { antiflood_timed_count: count, antiflood_timed_duration_secs: durationSecs });
+    await ctx.reply(`✅ Timed antiflood set: ${count} messages in ${durationSecs} seconds.`);
+  });
+
+  // /floodmode — Choose the action for flooding users
+  bot.command('floodmode', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const args = (ctx.match?.toString() || '').trim().split(/\s+/);
+    const action = args[0]?.toLowerCase();
+    const validActions = ['ban', 'mute', 'kick', 'tban', 'tmute'];
+    if (!action || !validActions.includes(action)) {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `🌊 <b>Flood Mode</b>\n\n` +
+        `Current action: ${config.antiflood_action || 'mute'}\n\n` +
+        `Usage: /floodmode <${validActions.join('/')}>\n` +
+        `Example: /floodmode tban 3d`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+    await updateTelegramConfig(sessionId, { antiflood_action: action });
+    await ctx.reply(`✅ Flood action set to: ${action}`);
+  });
+
+  // /clearflood — Whether to delete flood-triggering messages
+  bot.command('clearflood', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    const arg = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (['yes', 'on'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { antiflood_clear_messages: true });
+      await ctx.reply('✅ Flood messages will now be deleted.');
+    } else if (['no', 'off'].includes(arg)) {
+      await updateTelegramConfig(sessionId, { antiflood_clear_messages: false });
+      await ctx.reply('✅ Flood messages will no longer be deleted.');
+    } else {
+      const config = await getTelegramConfig(sessionId);
+      await ctx.reply(
+        `🌊 <b>Clear Flood Messages</b>\n\n` +
+        `Status: ${config.antiflood_clear_messages ? '✅ Enabled' : '❌ Disabled'}\n\n` +
+        `Usage: /clearflood <yes/no/on/off>`,
+        { parse_mode: 'HTML' },
+      );
+    }
+  });
 }
 
 /**
