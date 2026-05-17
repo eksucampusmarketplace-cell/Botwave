@@ -6,6 +6,30 @@ import Navbar from '@/components/layout/Navbar';
 
 const posts = [
   {
+    slug: 'telegram-bot-for-groups-nigeria',
+    title: 'Telegram Bot for Groups in Nigeria (2026) — Free Setup with BotWave',
+    excerpt: 'Set up a free Telegram bot for your Nigerian group in under 2 minutes. AI chat, stickers, games, polls, anti-spam — all built in. No coding needed.',
+    date: '2026-05-16',
+    readTime: '6 min read',
+    tags: ['Telegram', 'Nigeria', 'Groups'],
+  },
+  {
+    slug: 'free-telegram-group-management-bot',
+    title: 'Free Telegram Group Management Bot (2026) — Anti-Spam, Polls, Games & More',
+    excerpt: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools — all built in.',
+    date: '2026-05-16',
+    readTime: '7 min read',
+    tags: ['Telegram', 'Groups', 'Management'],
+  },
+  {
+    slug: 'telegram-userbot-automation',
+    title: 'Telegram Userbot Automation (2026) — Automate Your Real Telegram Account',
+    excerpt: 'Automate your real Telegram account with BotWave userbot mode. Auto-replies, AI chat, media tools — all running from your personal account. Free setup.',
+    date: '2026-05-16',
+    readTime: '8 min read',
+    tags: ['Telegram', 'Userbot', 'Automation'],
+  },
+  {
     slug: 'whatsapp-bot-south-africa',
     title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management',
     excerpt: 'Free WhatsApp bot for South African businesses, communities, and groups. Auto-replies, AI chat, anti-spam, stickers, and group management.',
@@ -128,10 +152,10 @@ export default function BlogPage() {
               BLOG
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">
-              WhatsApp Bot Tips, Guides & Comparisons
+              Bot Automation Tips, Guides & Comparisons
             </h1>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              Learn how to automate WhatsApp, grow your community, and get the most out of BotWave.
+              Learn how to automate WhatsApp & Telegram, grow your community, and get the most out of BotWave.
             </p>
           </motion.div>
 
