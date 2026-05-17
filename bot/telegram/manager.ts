@@ -173,8 +173,20 @@ export class TelegramBotInstance {
       });
 
       // Start long polling (non-blocking)
+      // Explicitly include my_chat_member so the group lifecycle handler fires
       this.bot.start({
         drop_pending_updates: true,
+        allowed_updates: [
+          'message',
+          'edited_message',
+          'callback_query',
+          'chat_member',
+          'my_chat_member',
+          'inline_query',
+          'chosen_inline_result',
+          'poll',
+          'poll_answer',
+        ],
         onStart: () => {
           if (this.stopped) return;
           this.isReady = true;
