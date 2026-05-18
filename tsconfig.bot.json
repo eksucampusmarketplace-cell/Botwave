@@ -13,6 +13,6 @@
     "noImplicitAny": false,
     "allowJs": true
   },
-  "include": ["bot/**/*", "lib/utils.ts", "lib/game/**/*", "server/**/*"],
+  "include": ["bot/**/*", "lib/utils.ts", "lib/game/**/*", "lib/i18n/**/*", "server/**/*"],
   "exclude": ["node_modules", "dist", "lib/game/haptics.ts", "lib/game/sounds.ts"]
 }

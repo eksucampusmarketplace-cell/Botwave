@@ -24,7 +24,7 @@ import {
   getBotDefaultLang,
   t,
   type SupportedLocale,
-} from '@/lib/i18n';
+} from '../../../lib/i18n';
 
 /** Detect language from Unicode script patterns */
 function detectLanguage(text: string): string {

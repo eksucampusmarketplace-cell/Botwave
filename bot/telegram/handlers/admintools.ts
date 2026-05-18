@@ -119,7 +119,10 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
   // /admincache — Force refresh the admin cache for this chat
   bot.command('admincache', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    if (!ctx.chat || ctx.chat.type === 'private') return;
+    if (!ctx.chat || ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     invalidateAdminCache(ctx.chat.id);
     try {
       await getAdminList(ctx.chat.id, ctx.api);

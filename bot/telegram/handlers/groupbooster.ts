@@ -28,7 +28,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     try {
       const count = await bot.api.getChatMemberCount(chatId);
       const chat = await bot.api.getChat(chatId);
-      const chatData = chat as Record<string, unknown>;
+      const chatData = chat as any;
       const title = chatData.title as string || 'Unknown';
       const desc = chatData.description as string || 'No description';
       const inviteLink = chatData.invite_link as string;

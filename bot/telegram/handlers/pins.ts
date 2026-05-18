@@ -64,7 +64,10 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
 
   // /pinned — Show link to currently pinned message
   bot.command('pinned', async (ctx) => {
-    if (!ctx.chat || ctx.chat.type === 'private') return;
+    if (!ctx.chat || ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     try {
       const chat = await ctx.api.getChat(ctx.chat.id);
       if ('pinned_message' in chat && chat.pinned_message) {

@@ -21,17 +21,17 @@ async function trackMessageAnalytics(sessionId: string, chatId: string, userId: 
     date: today,
     message_type: msgType,
     count: 1,
-  }, { onConflict: 'session_id,chat_id,user_id,date,message_type', ignoreDuplicates: false })
-    .then(() => {
-      // Increment count via RPC or raw SQL if upsert doesn't increment
-      return supabase.rpc('increment_analytics_count', {
-        p_session_id: sessionId,
-        p_chat_id: chatId,
-        p_user_id: userId,
-        p_date: today,
-        p_message_type: msgType,
-      }).catch(() => { /* RPC may not exist yet, graceful fallback */ });
+  }, { onConflict: 'session_id,chat_id,user_id,date,message_type', ignoreDuplicates: false });
+
+  try {
+    await supabase.rpc('increment_analytics_count', {
+      p_session_id: sessionId,
+      p_chat_id: chatId,
+      p_user_id: userId,
+      p_date: today,
+      p_message_type: msgType,
     });
+  } catch { /* RPC may not exist yet, graceful fallback */ }
 }
 
 export function registerAnalyticsHandlers(bot: Bot, sessionId: string): void {
@@ -42,13 +42,13 @@ export function registerAnalyticsHandlers(bot: Bot, sessionId: string): void {
 
     const { data: weekly } = await supabase
       .from('telegram_analytics')
-      .select('count, message_type')
+      .select('count, message_type, user_id')
       .eq('session_id', sessionId)
       .eq('chat_id', chatId)
       .gte('date', weekAgo);
 
-    const totalMessages = (weekly || []).reduce((sum, r) => sum + (r.count || 0), 0);
-    const uniqueUsers = new Set((weekly || []).map(r => r.user_id)).size;
+    const totalMessages = (weekly || []).reduce((sum, r: any) => sum + (r.count || 0), 0);
+    const uniqueUsers = new Set((weekly || []).map((r: any) => r.user_id)).size;
 
     const { count: memberCount } = await supabase
       .from('telegram_xp')

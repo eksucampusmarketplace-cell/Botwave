@@ -25,7 +25,10 @@ function resolveTarget(ctx: { message?: { reply_to_message?: { from?: { id: numb
 export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
   // /approval — Check a user's approval status
   bot.command('approval', async (ctx) => {
-    if (!ctx.chat || ctx.chat.type === 'private') return;
+    if (!ctx.chat || ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     const target = resolveTarget(ctx);
     if (!target) {
       if (!ctx.from) return;

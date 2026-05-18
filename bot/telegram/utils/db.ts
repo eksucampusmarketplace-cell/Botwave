@@ -12,6 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ─── Config ────────────────────────────────────────────────────────────────
 
 export interface TelegramConfig {
+  [key: string]: unknown;
   id?: string;
   session_id: string;
   welcome_message: string | null;
@@ -335,8 +336,7 @@ export async function getTelegramConfig(sessionId: string): Promise<TelegramConf
     .single();
 
   if (error || !data) {
-    const fallback: TelegramConfig = { ...DEFAULT_CONFIG, session_id: sessionId };
-    return fallback;
+    return { ...DEFAULT_CONFIG, session_id: sessionId } as TelegramConfig;
   }
 
   const config: TelegramConfig = {
@@ -1840,10 +1840,11 @@ export async function incrementGroupStat(
     .single();
 
   if (existing) {
+    const rec = existing as any;
     await supabase
       .from('telegram_group_stats')
-      .update({ [field]: (existing[field] || 0) + 1 })
-      .eq('id', existing.id);
+      .update({ [field]: ((rec[field] as number) || 0) + 1 })
+      .eq('id', rec.id as string);
   } else {
     await supabase.from('telegram_group_stats').insert({
       session_id: sessionId,

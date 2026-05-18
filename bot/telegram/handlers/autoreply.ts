@@ -42,7 +42,8 @@ export function registerAutoReplyHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    await addFilter(sessionId, keyword, response);
+    const chatId = ctx.chat!.id.toString();
+    await addFilter(sessionId, chatId, keyword, response);
     await ctx.reply(
       `✅ Auto-reply added!\n\n<b>Trigger:</b> ${escapeHtml(keyword)}\n<b>Response:</b> ${escapeHtml(response.slice(0, 200))}${response.length > 200 ? '...' : ''}`,
       { parse_mode: 'HTML' },
@@ -56,12 +57,14 @@ export function registerAutoReplyHandlers(bot: Bot, sessionId: string): void {
       await ctx.reply('Usage: /delautoreply <keyword>');
       return;
     }
-    await removeFilter(sessionId, keyword);
+    const chatId = ctx.chat!.id.toString();
+    await removeFilter(sessionId, chatId, keyword);
     await ctx.reply(`🗑️ Auto-reply removed: <b>${escapeHtml(keyword)}</b>`, { parse_mode: 'HTML' });
   });
 
   bot.command('autoreplies', async (ctx) => {
-    const filters = await getFilters(sessionId);
+    const chatId = ctx.chat!.id.toString();
+    const filters = await getFilters(sessionId, chatId);
     if (!filters || filters.length === 0) {
       await ctx.reply('📝 No auto-replies set.\n\nUse /addautoreply keyword | response to add one.');
       return;
@@ -74,13 +77,14 @@ export function registerAutoReplyHandlers(bot: Bot, sessionId: string): void {
 
   bot.command('clearautoreplies', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const filters = await getFilters(sessionId);
+    const chatId = ctx.chat!.id.toString();
+    const filters = await getFilters(sessionId, chatId);
     if (!filters || filters.length === 0) {
       await ctx.reply('No auto-replies to clear.');
       return;
     }
     for (const f of filters) {
-      await removeFilter(sessionId, f.keyword);
+      await removeFilter(sessionId, chatId, f.keyword);
     }
     await ctx.reply(`🗑️ Cleared ${filters.length} auto-replies.`);
   });

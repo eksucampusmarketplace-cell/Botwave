@@ -317,7 +317,11 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
 
   // ─── Kickme ───────────────────────────────────────────────────────
   bot.command('kickme', async (ctx) => {
-    if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') return;
+    if (!ctx.from || !ctx.chat) return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     try {
       await ctx.banChatMember(ctx.from.id);
       await ctx.unbanChatMember(ctx.from.id);
@@ -469,7 +473,8 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
     const chatId = ctx.chat!.id.toString();
     // Reset all warns for all users in this chat
-    const { supabase } = await import('../utils/supabase');
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     await supabase.from('telegram_warnings').delete().eq('session_id', sessionId).eq('chat_id', chatId);
     await ctx.reply('✅ All warnings for all users have been reset.');
   });

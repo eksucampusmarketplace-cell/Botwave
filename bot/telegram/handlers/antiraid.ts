@@ -19,7 +19,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /antiraid — show or toggle anti-raid settings
   bot.command('antiraid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const args = (ctx.match?.toString() || '').trim().split(/\s+/);
@@ -85,7 +88,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /raidtime — View or set the desired antiraid duration
   bot.command('raidtime', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
@@ -103,7 +109,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /raidactiontime — View or set how long new joiners are temp-banned
   bot.command('raidactiontime', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
@@ -121,7 +130,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /autoantiraid — Set joins per minute to auto-enable antiraid
   bot.command('autoantiraid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
     if (['0', 'off', 'no'].includes(arg)) {
@@ -147,7 +159,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /raid on|off — manually trigger or end raid mode
   bot.command('raid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();

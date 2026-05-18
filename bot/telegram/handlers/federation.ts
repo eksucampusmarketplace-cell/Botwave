@@ -91,7 +91,10 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
   // /leavefed — leave current federation
   bot.command('leavefed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
-    if (ctx.chat.type === 'private') return;
+    if (ctx.chat.type === 'private') {
+      await ctx.reply('⚠️ This command can only be used in group chats.');
+      return;
+    }
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const fed = await getFederationForChat(ctx.chat.id.toString());
