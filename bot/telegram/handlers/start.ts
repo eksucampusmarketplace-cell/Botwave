@@ -301,12 +301,8 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
 
     const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-    const keyboard = new InlineKeyboard();
-    if (ctx.chat!.type === 'private') {
-      keyboard.webApp('⚡ Open Settings Panel', panelUrl);
-    } else {
-      keyboard.url('⚡ Open Settings Panel', panelUrl);
-    }
+    const keyboard = new InlineKeyboard()
+      .webApp('⚡ Open Settings Panel', panelUrl);
 
     await ctx.reply('📱 <b>Open the panel below to manage your bot:</b>', {
       parse_mode: 'HTML',
@@ -543,11 +539,7 @@ async function sendHelpMessage(
 
   if (miniappUrl) {
     const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-    if (ctx.chat.type === 'private') {
-      keyboard.webApp('📱 Open Mini App', panelUrl).row();
-    } else {
-      keyboard.url('📱 Open Mini App', panelUrl).row();
-    }
+    keyboard.webApp('📱 Open Mini App', panelUrl).row();
   }
 
   keyboard.text('📖 Browse Commands', 'help_categories').row();
