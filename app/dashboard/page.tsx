@@ -43,63 +43,39 @@ const featureCategories: { id: FeatureCategory; label: string; icon: string }[] 
   { id: 'utility', label: 'Utilities & Tools', icon: '\uD83D\uDD27' },
 ];
 
-const defaultFeatures: FeatureDef[] = [
-  // Core
-  { id: 'ai_chat', name: 'AI CHAT', description: 'Intelligent AI responses (Gemini)', icon: '\uD83E\uDD16', category: 'core' },
-  { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '\uD83C\uDCB4', category: 'core' },
-  { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '\uD83D\uDCE5', category: 'core' },
-  { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '\uD83D\uDCAC', category: 'core' },
-  { id: 'language', name: 'MULTI-LANGUAGE', description: 'Multi-language bot responses', icon: '\uD83C\uDF10', category: 'core' },
+interface FeatureDefWithPlatform extends FeatureDef {
+  platforms: Platform[];
+}
 
-  // Protection
-  { id: 'antiflood', name: 'ANTI-FLOOD', description: 'Rate-limit messages to prevent flooding', icon: '\uD83C\uDF0A', category: 'protection' },
-  { id: 'antilink', name: 'ANTI-LINK', description: 'Remove unauthorized links', icon: '\uD83D\uDD17', category: 'protection' },
-  { id: 'antiraid', name: 'ANTI-RAID', description: 'Auto-detect mass joins', icon: '\uD83D\uDEA8', category: 'protection' },
-  { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '\uD83D\uDEE1\uFE0F', category: 'protection' },
-  { id: 'nightmode', name: 'NIGHT MODE', description: 'Restrict messages at night', icon: '\uD83C\uDF19', category: 'protection' },
-  { id: 'captcha', name: 'CAPTCHA', description: 'Verify new members on join', icon: '\u2705', category: 'protection' },
-  { id: 'blocklist', name: 'BLOCKLIST', description: 'Blocked words / phrases filter', icon: '\uD83D\uDEAB', category: 'protection' },
-  { id: 'locks', name: 'LOCKS', description: 'Lock specific message types', icon: '\uD83D\uDD12', category: 'protection' },
+const defaultFeatures: FeatureDefWithPlatform[] = [
+  // Core — WhatsApp
+  { id: 'ai_chat', name: 'AI CHAT', description: 'Intelligent AI responses (Gemini)', icon: '\uD83E\uDD16', category: 'core', platforms: ['whatsapp'] },
+  { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '\uD83C\uDCB4', category: 'core', platforms: ['whatsapp'] },
+  { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '\uD83D\uDCE5', category: 'core', platforms: ['whatsapp'] },
+  { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '\uD83D\uDCAC', category: 'core', platforms: ['whatsapp'] },
+  { id: 'language', name: 'MULTI-LANGUAGE', description: 'Multi-language bot responses', icon: '\uD83C\uDF10', category: 'core', platforms: ['whatsapp'] },
 
-  // Moderation
-  { id: 'warns', name: 'WARNINGS', description: 'Warning system for violations', icon: '\u26A0\uFE0F', category: 'moderation' },
-  { id: 'modlog', name: 'MOD LOG', description: 'Log moderation actions to channel', icon: '\uD83D\uDCCB', category: 'moderation' },
-  { id: 'purge', name: 'PURGE', description: 'Bulk message deletion', icon: '\uD83D\uDDD1\uFE0F', category: 'moderation' },
-  { id: 'pins', name: 'PINS', description: 'Pin message management', icon: '\uD83D\uDCCC', category: 'moderation' },
-  { id: 'approval', name: 'APPROVAL', description: 'Approve users to bypass restrictions', icon: '\uD83D\uDC4D', category: 'moderation' },
-  { id: 'cleancommand', name: 'CLEAN COMMANDS', description: 'Auto-delete command messages', icon: '\uD83E\uDDF9', category: 'moderation' },
-  { id: 'cleanservice', name: 'CLEAN SERVICE', description: 'Auto-delete join/leave messages', icon: '\uD83E\uDDF9', category: 'moderation' },
-  { id: 'disabling', name: 'DISABLE COMMANDS', description: 'Disable specific commands per group', icon: '\uD83D\uDEAB', category: 'moderation' },
-  { id: 'federation', name: 'FEDERATION', description: 'Cross-group shared banlists', icon: '\uD83C\uDF10', category: 'moderation' },
+  // Protection — WhatsApp
+  { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '\uD83D\uDEE1\uFE0F', category: 'protection', platforms: ['whatsapp'] },
 
-  // Content & Engagement
-  { id: 'welcome', name: 'WELCOME MESSAGE', description: 'Greet new members (OFF by default)', icon: '\uD83D\uDC4B', category: 'content' },
-  { id: 'goodbye', name: 'GOODBYE MESSAGE', description: 'Farewell leaving members', icon: '\uD83D\uDC4B', category: 'content' },
-  { id: 'xp', name: 'XP SYSTEM', description: 'Members earn XP by chatting', icon: '\u2B50', category: 'content' },
-  { id: 'rules', name: 'RULES', description: 'Group rules management', icon: '\uD83D\uDCDC', category: 'content' },
-  { id: 'notes', name: 'NOTES', description: 'Saved notes / FAQs for group', icon: '\uD83D\uDDD2\uFE0F', category: 'content' },
-  { id: 'filters', name: 'FILTERS', description: 'Auto-reply keyword triggers', icon: '\uD83D\uDD0D', category: 'content' },
-  { id: 'connections', name: 'CONNECTIONS', description: 'Connect groups for remote management', icon: '\uD83D\uDD17', category: 'content' },
-  { id: 'topics', name: 'TOPICS', description: 'Forum topic management', icon: '\uD83D\uDCC1', category: 'content' },
-  { id: 'scheduled', name: 'SCHEDULED MESSAGES', description: 'Schedule messages for later', icon: '\u23F0', category: 'content' },
-  { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '\uD83D\uDCCA', category: 'content' },
+  // Content & Engagement — WhatsApp
+  { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '\uD83D\uDCCA', category: 'content', platforms: ['whatsapp'] },
 
-  // Media & Creative
-  { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '\uD83D\uDD04', category: 'media' },
-  { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '\uD83D\uDDBC\uFE0F', category: 'media' },
-  { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '\uD83D\uDC64', category: 'media' },
+  // Media & Creative — WhatsApp
+  { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '\uD83D\uDD04', category: 'media', platforms: ['whatsapp'] },
+  { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '\uD83D\uDDBC\uFE0F', category: 'media', platforms: ['whatsapp'] },
+  { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '\uD83D\uDC64', category: 'media', platforms: ['whatsapp'] },
 
-  // Fun & Games
-  { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, WordChain, Chess', icon: '\uD83C\uDFAE', category: 'fun' },
-  { id: 'tools', name: 'FUN COMMANDS', description: 'Jokes, quotes, memes, 8ball, fortune', icon: '\uD83C\uDF89', category: 'fun' },
-  { id: 'social', name: 'SOCIAL', description: 'forward, roast, ghost, ship, birthday', icon: '\uD83D\uDD17', category: 'fun' },
+  // Fun & Games — WhatsApp
+  { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, WordChain, Chess', icon: '\uD83C\uDFAE', category: 'fun', platforms: ['whatsapp'] },
+  { id: 'tools', name: 'FUN COMMANDS', description: 'Jokes, quotes, memes, 8ball, fortune', icon: '\uD83C\uDF89', category: 'fun', platforms: ['whatsapp'] },
+  { id: 'social', name: 'SOCIAL', description: 'forward, roast, ghost, ship, birthday', icon: '\uD83D\uDD17', category: 'fun', platforms: ['whatsapp'] },
 
-  // Utility
-  { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, remind, schedule', icon: '\u26A1', category: 'utility' },
-  { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '\uD83D\uDD0D', category: 'utility' },
-  { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '\u270D\uFE0F', category: 'utility' },
-  { id: 'utilities', name: 'QUICK UTILITIES', description: 'pick, dice, password, uuid, unit, bmi', icon: '\uD83D\uDD27', category: 'utility' },
-  { id: 'stats', name: 'STATISTICS', description: 'Group activity stats and analytics', icon: '\uD83D\uDCC8', category: 'utility' },
+  // Utility — WhatsApp
+  { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, remind, schedule', icon: '\u26A1', category: 'utility', platforms: ['whatsapp'] },
+  { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '\uD83D\uDD0D', category: 'utility', platforms: ['whatsapp'] },
+  { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '\u270D\uFE0F', category: 'utility', platforms: ['whatsapp'] },
+  { id: 'utilities', name: 'QUICK UTILITIES', description: 'pick, dice, password, uuid, unit, bmi', icon: '\uD83D\uDD27', category: 'utility', platforms: ['whatsapp'] },
 ];
 
 export default function DashboardPage() {
@@ -558,17 +534,20 @@ export default function DashboardPage() {
             >
               <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Tools</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates', desc: 'Reusable message snippets with variables' },
-                  { href: '/dashboard/custom-commands', icon: '\uD83E\uDD16', label: 'Commands', desc: 'Custom trigger \u2192 response pairs' },
-                  { href: '/dashboard/flows', icon: '\uD83D\uDD00', label: 'Flows', desc: 'Multi-step conversation sequences' },
-                  { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits' },
-                  { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics' },
-                  { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop' },
-                  { href: '/dashboard/referrals', icon: '\uD83D\uDD17', label: 'Referrals' },
-                  { href: '/dashboard/pricing', icon: '\uD83D\uDCB3', label: 'Pricing' },
-                  { href: '/dashboard/rewards', icon: '\uD83C\uDF81', label: 'Rewards' },
-                ].map((link) => (
+                {([
+                  { href: '/dashboard/templates', icon: '\uD83D\uDCDD', label: 'Templates', desc: 'Reusable message snippets with variables', platforms: ['whatsapp'] as Platform[] },
+                  { href: '/dashboard/custom-commands', icon: '\uD83E\uDD16', label: 'Commands', desc: 'Custom trigger \u2192 response pairs', platforms: ['whatsapp'] as Platform[] },
+                  { href: '/dashboard/flows', icon: '\uD83D\uDD00', label: 'Flows', desc: 'Multi-step conversation sequences', platforms: ['whatsapp'] as Platform[] },
+                  { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                  { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                  { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                  { href: '/dashboard/referrals', icon: '\uD83D\uDD17', label: 'Referrals', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                  { href: '/dashboard/pricing', icon: '\uD83D\uDCB3', label: 'Pricing', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                  { href: '/dashboard/rewards', icon: '\uD83C\uDF81', label: 'Rewards', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
+                ]).filter(link => {
+                  const activePlatforms = sessions.map(s => s.platform || 'whatsapp');
+                  return link.platforms.some(p => activePlatforms.includes(p));
+                }).map((link) => (
                   <a
                     key={link.href}
                     href={link.href}
@@ -615,6 +594,7 @@ export default function DashboardPage() {
               {(() => {
                 const selectedSession = sessions.find(s => s.id === selectedFeatureSession);
                 const isTelegram = selectedSession?.platform === 'telegram_bot' || selectedSession?.platform === 'telegram_userbot';
+                const sessionPlatform: Platform = selectedSession?.platform || 'whatsapp';
 
                 if (isTelegram) {
                   return (
@@ -633,7 +613,7 @@ export default function DashboardPage() {
                 }
 
                 return featureCategories.map((cat) => {
-                  const catFeatures = defaultFeatures.filter(f => f.category === cat.id);
+                  const catFeatures = defaultFeatures.filter(f => f.category === cat.id && f.platforms.includes(sessionPlatform));
                   if (!catFeatures.length) return null;
                   const isExpanded = expandedCategory === cat.id;
                   const enabledCount = catFeatures.filter(f => activeFeatures.includes(f.id)).length;
@@ -671,7 +651,12 @@ export default function DashboardPage() {
               })()}
             </motion.section>
 
-            {/* Bot Owner Settings */}
+            {/* Bot Owner Settings — only visible when a Telegram session is selected */}
+            {(() => {
+              const selectedSession = sessions.find(s => s.id === selectedFeatureSession);
+              const isTelegramSession = selectedSession?.platform === 'telegram_bot' || selectedSession?.platform === 'telegram_userbot';
+              if (!isTelegramSession) return null;
+              return (
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -817,6 +802,8 @@ export default function DashboardPage() {
                 </div>
               )}
             </motion.section>
+              );
+            })()}
           </div>
 
           <div className="space-y-8">
