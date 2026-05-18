@@ -304,7 +304,7 @@ services:
   # ── GoTrue (Supabase Auth) ────────────────────────────
   botwave-gotrue:
     container_name: botwave_gotrue
-    image: supabase/gotrue:v2.151.0
+    image: supabase/gotrue:v2.186.0
     restart: unless-stopped
     depends_on:
       botwave-postgres:

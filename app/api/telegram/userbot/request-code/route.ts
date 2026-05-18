@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { pendingClients } from '@/botwave/platforms/telegram/userbot/pendingAuthStore';
@@ -16,9 +16,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authenticatedUser = await getAuthenticatedUser(supabase);
 
-    if (!user) {
+    if (!authenticatedUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Store client for verification step
-      const storeKey = sessionId || `${user.id}:${phoneNumber}`;
+      const storeKey = sessionId || `${authenticatedUser.id}:${phoneNumber}`;
       const phoneCodeHash = 'phoneCodeHash' in result ? (result as any).phoneCodeHash as string : '';
       if (!phoneCodeHash) {
         return NextResponse.json({
