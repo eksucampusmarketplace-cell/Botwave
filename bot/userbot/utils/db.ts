@@ -19,10 +19,13 @@ export interface UserbotConfig {
   pm_permit_enabled: boolean;
   pm_permit_limit: number;
   pm_permit_message: string;
+  pm_permit_image: string;
+  pm_permit_inline: boolean;
   afk_enabled: boolean;
   afk_reason: string;
   afk_since: string | null;
   alive_message: string;
+  alive_image: string;
   log_chat_id: string | null;
   sudo_users: string[];
   disabled_modules: string[];
@@ -39,10 +42,13 @@ const DEFAULT_CONFIG: Omit<UserbotConfig, 'session_id'> = {
   pm_permit_enabled: false,
   pm_permit_limit: 3,
   pm_permit_message: 'This is an automated message. My owner will get back to you soon. Please wait.',
+  pm_permit_image: '',
+  pm_permit_inline: false,
   afk_enabled: false,
   afk_reason: '',
   afk_since: null,
   alive_message: '🤖 BotWave Userbot is alive!',
+  alive_image: '',
   log_chat_id: null,
   sudo_users: [],
   disabled_modules: [],

@@ -15,12 +15,15 @@ interface UserbotConfig {
   pm_permit_enabled: boolean;
   pm_permit_limit: number;
   pm_permit_message: string;
+  pm_permit_image: string;
+  pm_permit_inline: boolean;
   anti_pm: boolean;
   anti_pm_block: boolean;
   anti_pm_report: boolean;
   afk_enabled: boolean;
   afk_reason: string;
   alive_message: string;
+  alive_image: string;
   log_chat_id: string | null;
   sudo_users: string[];
   disabled_modules: string[];
@@ -34,12 +37,15 @@ const DEFAULT_CONFIG: UserbotConfig = {
   pm_permit_enabled: false,
   pm_permit_limit: 3,
   pm_permit_message: 'This is an automated message. My owner will get back to you soon. Please wait.',
+  pm_permit_image: '',
+  pm_permit_inline: false,
   anti_pm: false,
   anti_pm_block: false,
   anti_pm_report: false,
   afk_enabled: false,
   afk_reason: '',
   alive_message: '🤖 BotWave Userbot is alive!',
+  alive_image: '',
   log_chat_id: null,
   sudo_users: [],
   disabled_modules: [],
@@ -445,6 +451,36 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
     saveConfig({ sudo_users: sudoUsers });
   };
 
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  const handleImageUpload = async (file: File, field: 'alive_image' | 'pm_permit_image') => {
+    setUploading(field);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('sessionId', sessionId);
+      formData.append('field', field);
+
+      const res = await fetch('/api/telegram/userbot/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setConfig(prev => ({ ...prev, [field]: data.url }));
+        setSuccess('Image uploaded successfully');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.error || 'Upload failed');
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch {
+      setError('Upload failed');
+      setTimeout(() => setError(''), 3000);
+    }
+    setUploading(null);
+  };
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'general', label: 'General' },
     { id: 'pmpermit', label: 'PM Permit' },
@@ -513,8 +549,28 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
             <div className="space-y-4">
               <InputField label="Command Prefix" desc="Character that triggers commands (1-2 chars)" value={config.prefix}
                 onChange={v => setConfig(prev => ({ ...prev, prefix: v }))} maxLength={2} />
-              <InputField label="Alive Message" desc="Response to .alive command" value={config.alive_message}
+              <InputField label="Alive Message" desc="Response to .alive command (supports markdown)" value={config.alive_message}
                 onChange={v => setConfig(prev => ({ ...prev, alive_message: v }))} />
+              <div>
+                <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>Alive Image</label>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image/GIF shown with .alive — paste a URL or upload a file (leave blank for text only)</p>
+                <div className="flex gap-2">
+                  <input type="text" value={config.alive_image} onChange={e => setConfig(prev => ({ ...prev, alive_image: e.target.value }))}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 p-2.5 rounded-xl text-sm" style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                  <label className="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-500 transition-colors cursor-pointer flex-shrink-0">
+                    {uploading === 'alive_image' ? '...' : 'Upload'}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'alive_image'); }} />
+                  </label>
+                </div>
+                {config.alive_image && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img src={config.alive_image} alt="Alive preview" className="h-12 w-12 rounded-lg object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                    <button onClick={() => setConfig(prev => ({ ...prev, alive_image: '' }))} className="text-xs text-red-500 hover:text-red-400">Remove</button>
+                  </div>
+                )}
+              </div>
               <InputField label="Log Chat ID" desc="Chat ID for logging actions (blank = disabled)" value={config.log_chat_id || ''}
                 onChange={v => setConfig(prev => ({ ...prev, log_chat_id: v || null }))} />
               <InputField label="Timezone Offset (hours)" desc="UTC offset for time-based features" value={config.timezone_offset.toString()}
@@ -582,19 +638,43 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
             onChange={v => { setConfig(prev => ({ ...prev, anti_pm_block: v })); saveConfig({ anti_pm_block: v }); }} />
           <Toggle label="Auto-Report" desc="Report spammers to Telegram after blocking" checked={config.anti_pm_report}
             onChange={v => { setConfig(prev => ({ ...prev, anti_pm_report: v })); saveConfig({ anti_pm_report: v }); }} />
+          <Toggle label="Inline Mode" desc="Send PM warnings with inline buttons (requires bot username)" checked={config.pm_permit_inline}
+            onChange={v => { setConfig(prev => ({ ...prev, pm_permit_inline: v })); saveConfig({ pm_permit_inline: v }); }} />
           <div className="mt-4 space-y-4">
             <InputField label="Warning Limit" desc="Number of warnings before blocking" value={config.pm_permit_limit.toString()}
               onChange={v => setConfig(prev => ({ ...prev, pm_permit_limit: parseInt(v) || 3 }))} type="number" />
             <div>
               <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>Warning Message</label>
-              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Message sent to unapproved PM senders</p>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Message sent to unapproved PM senders. Supports variables: {'{warns}'}, {'{totalwarns}'}, {'{mention}'}</p>
               <textarea value={config.pm_permit_message} onChange={e => setConfig(prev => ({ ...prev, pm_permit_message: e.target.value }))}
                 rows={3} className="w-full p-3 rounded-xl text-sm resize-none"
                 style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
             </div>
+            <div>
+              <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>PM Permit Image</label>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image shown with PM warning — paste a URL or upload a file (leave blank for text only)</p>
+              <div className="flex gap-2">
+                <input type="text" value={config.pm_permit_image} onChange={e => setConfig(prev => ({ ...prev, pm_permit_image: e.target.value }))}
+                  placeholder="https://example.com/image.jpg"
+                  className="flex-1 p-2.5 rounded-xl text-sm" style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                <label className="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-500 transition-colors cursor-pointer flex-shrink-0">
+                  {uploading === 'pm_permit_image' ? '...' : 'Upload'}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={e => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], 'pm_permit_image'); }} />
+                </label>
+              </div>
+              {config.pm_permit_image && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={config.pm_permit_image} alt="PM permit preview" className="h-12 w-12 rounded-lg object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                  <button onClick={() => setConfig(prev => ({ ...prev, pm_permit_image: '' }))} className="text-xs text-red-500 hover:text-red-400">Remove</button>
+                </div>
+              )}
+            </div>
             <SaveButton saving={saving} onClick={() => saveConfig({
               pm_permit_limit: config.pm_permit_limit,
               pm_permit_message: config.pm_permit_message,
+              pm_permit_image: config.pm_permit_image,
+              pm_permit_inline: config.pm_permit_inline,
             })} />
           </div>
         </Section>

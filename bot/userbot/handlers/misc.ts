@@ -48,6 +48,21 @@ export const aliveHandler: HandlerFn = async (client, event) => {
     } catch {}
   }
 
+  // If alive_image is set, send as photo with caption
+  if (config.alive_image && msg.chatId) {
+    try {
+      await client.sendFile(msg.chatId, {
+        file: config.alive_image,
+        caption: text,
+        forceDocument: false,
+      });
+      await msg.delete({ revoke: true });
+      return;
+    } catch {
+      // Fall back to text-only if image fails
+    }
+  }
+
   await msg.edit({ text });
 };
 
@@ -183,49 +198,63 @@ export const statsHandler: HandlerFn = async (client, event) => {
   }
 };
 
+const HELP_MODULES: { name: string; emoji: string; commands: string[] }[] = [
+  { name: 'Admin', emoji: '🛡️', commands: ['ban', 'unban', 'kick', 'mute', 'unmute', 'promote', 'demote', 'pin', 'unpin'] },
+  { name: 'PM Permit', emoji: '🔒', commands: ['approve', 'disapprove', 'block', 'unblock', 'pmguard on/off'] },
+  { name: 'AFK', emoji: '💤', commands: ['afk [reason]', 'unafk'] },
+  { name: 'Notes', emoji: '📝', commands: ['save <name> <text>', 'get <name>', 'notes', 'clear <name>'] },
+  { name: 'Filters', emoji: '🔍', commands: ['filter <keyword> <response>', 'filters', 'stop <keyword>'] },
+  { name: 'Purge', emoji: '🗑️', commands: ['purge (reply)', 'purgeme <count>', 'del (reply)'] },
+  { name: 'GBan', emoji: '🔨', commands: ['gban', 'ungban', 'gbanlist'] },
+  { name: 'Stickers', emoji: '🎨', commands: ['kang (reply)', 'stickerid', 'getsticker', 'stickers'] },
+  { name: 'Chat Tools', emoji: '💬', commands: ['chatinfo', 'admins', 'invite <user>', 'leave', 'setname', 'setbio', 'username', 'zombies', 'groupname', 'groupbio'] },
+  { name: 'Text Tools', emoji: '✏️', commands: ['reverse', 'mock', 'vapor', 'tiny', 'flip', 'b64encode', 'b64decode', 'upper', 'lower', 'clap', 'spoiler', 'mono', 'strike'] },
+  { name: 'Search', emoji: '🔎', commands: ['google <query>', 'wiki <query>', 'calc <expr>', 'currency <from> <to> <amt>', 'time <city>'] },
+  { name: 'Translate', emoji: '🌍', commands: ['tr <lang> <text>', 'translate <lang> <text>', 'langs'] },
+  { name: 'Fun', emoji: '🎮', commands: ['dice', 'dart', 'slot', 'basketball', 'football', 'bowling', 'coinflip', 'rng <min> <max>', '8ball <question>', 'rate', 'pp', 'decide', 'roll'] },
+  { name: 'Reminders', emoji: '⏰', commands: ['remind <time> <text>', 'reminders', 'cancelremind <id>', 'clearreminders'] },
+  { name: 'Media', emoji: '📁', commands: ['download (reply)', 'forward (reply)', 'copy (reply)', 'mediainfo (reply)'] },
+  { name: 'Antiflood', emoji: '🚫', commands: ['antiflood <count>', 'antiflood off'] },
+  { name: 'Welcome', emoji: '👋', commands: ['setwelcome <text>', 'setgoodbye <text>', 'welcome', 'goodbye'] },
+  { name: 'Settings', emoji: '⚙️', commands: ['setprefix <char>', 'setalive <msg>', 'setlog here/off/<id>', 'addsudo <user>', 'rmsudo <user>'] },
+  { name: 'Utility', emoji: '🔧', commands: ['alive', 'ping', 'info', 'id', 'stats', 'help'] },
+];
+
 export const helpHandler: HandlerFn = async (client, event) => {
   await waitForRateLimit('message_send');
   const msg = event.message;
   const sessionId = (client as unknown as { _sessionId: string })._sessionId;
   const config = await getUserbotConfig(sessionId);
   const p = config.prefix;
+  const args = (msg.text || '').split(/\s+/).slice(1);
+
+  // .help <module> — show specific module
+  if (args[0]) {
+    const query = args[0].toLowerCase();
+    const mod = HELP_MODULES.find(m => m.name.toLowerCase() === query || m.name.toLowerCase().replace(/\s/g, '') === query);
+    if (mod) {
+      const cmds = mod.commands.map(c => `  \`${p}${c}\``).join('\n');
+      await msg.edit({ text: `${mod.emoji} **${mod.name} Commands**\n\n${cmds}` });
+      return;
+    }
+  }
+
+  // Default: full help overview
+  const sections = HELP_MODULES.map(mod => {
+    const cmds = mod.commands.map(c => `\`${p}${c.split(' ')[0]}\``).join(' ');
+    return `${mod.emoji} **${mod.name}**\n${cmds}`;
+  });
 
   const text = [
-    `📖 **BotWave Userbot Commands**`,
-    `Prefix: \`${p}\``,
+    `📖 **BotWave Userbot Help**`,
+    `Prefix: \`${p}\` | Modules: ${HELP_MODULES.length}`,
+    `Use \`${p}help <module>\` for detailed commands`,
     ``,
-    `**🛡️ Admin**`,
-    `\`${p}ban\` \`${p}unban\` \`${p}kick\` \`${p}mute\` \`${p}unmute\``,
-    `\`${p}promote\` \`${p}demote\` \`${p}pin\` \`${p}unpin\``,
-    ``,
-    `**🔒 PM Permit**`,
-    `\`${p}approve\` \`${p}disapprove\` \`${p}block\` \`${p}unblock\` \`${p}pmguard\``,
-    ``,
-    `**💤 AFK**`,
-    `\`${p}afk [reason]\` \`${p}unafk\``,
-    ``,
-    `**📝 Notes**`,
-    `\`${p}save <name> <text>\` \`${p}get <name>\` \`${p}notes\` \`${p}clear <name>\``,
-    ``,
-    `**🔍 Filters**`,
-    `\`${p}filter <keyword> <response>\` \`${p}filters\` \`${p}stop <keyword>\``,
-    ``,
-    `**🗑️ Purge**`,
-    `\`${p}purge\` (reply) \`${p}purgeme <count>\` \`${p}del\` (reply)`,
-    ``,
-    `**🔨 GBan**`,
-    `\`${p}gban\` \`${p}ungban\` \`${p}gbanlist\``,
-    ``,
-    `**🔧 Utility**`,
-    `\`${p}alive\` \`${p}ping\` \`${p}info\` \`${p}id\` \`${p}stats\` \`${p}help\``,
-    ``,
-    `**⚙️ Settings**`,
-    `\`${p}setprefix <char>\` \`${p}setafkmsg\` \`${p}setalive <msg>\``,
-    `\`${p}setlog <chatid>\` \`${p}addsudo <user>\` \`${p}rmsudo <user>\``,
-  ].join('\n');
+    ...sections,
+  ].join('\n\n');
 
   await shortPause();
-  await msg.edit({ text });
+  await msg.edit({ text, parseMode: 'md' });
 };
 
 function formatUptime(ms: number): string {
