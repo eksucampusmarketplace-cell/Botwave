@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       pendingClients.set(storeKey, {
         client,
         phoneCodeHash,
+        phoneNumber,
       });
 
       // Auto-cleanup after 5 minutes

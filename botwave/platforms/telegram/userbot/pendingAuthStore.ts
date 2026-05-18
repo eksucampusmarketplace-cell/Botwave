@@ -7,4 +7,4 @@
 
 import type { TelegramClient } from 'telegram';
 
-export const pendingClients = new Map<string, { client: TelegramClient; phoneCodeHash: string }>();
+export const pendingClients = new Map<string, { client: TelegramClient; phoneCodeHash: string; phoneNumber: string }>();

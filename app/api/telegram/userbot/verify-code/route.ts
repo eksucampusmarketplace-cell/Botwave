@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { client, phoneCodeHash } = entry;
+    const { client, phoneCodeHash, phoneNumber } = entry;
 
     try {
       const { Api } = await import('telegram/tl');
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       try {
         await client.invoke(
           new Api.auth.SignIn({
-            phoneNumber: storeKey.includes(':') ? storeKey.split(':')[1] : '',
+            phoneNumber,
             phoneCodeHash,
             phoneCode: code,
           }),
