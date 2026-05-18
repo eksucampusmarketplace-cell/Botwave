@@ -44,6 +44,11 @@ export function resolveTarget(ctx: Context): ResolvedTarget {
     return { user: null, userId: null, username: firstArg.slice(1), reason };
   }
 
+  // Plain text that looks like a username (alphanumeric + underscore, 3+ chars)
+  if (/^[a-zA-Z]\w{2,}$/.test(firstArg)) {
+    return { user: null, userId: null, username: firstArg, reason };
+  }
+
   return { user: null, userId: null, reason: text };
 }
 
