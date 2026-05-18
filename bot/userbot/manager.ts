@@ -147,19 +147,21 @@ export class UserbotManager {
     return true;
   }
 
-  async stopUserbot(sessionId: string): Promise<void> {
+  async stopUserbot(sessionId: string, preserveState = false): Promise<void> {
     const ub = this.userbots.get(sessionId);
     if (!ub) return;
 
     console.log(`[USERBOT-MGR] Stopping session ${sessionId.slice(0, 8)}...`);
     await ub.client.disconnect();
     this.userbots.delete(sessionId);
-    await updateSessionState(sessionId, 'disconnected');
+    if (!preserveState) {
+      await updateSessionState(sessionId, 'disconnected');
+    }
   }
 
-  async stopAll(): Promise<void> {
+  async stopAll(preserveState = false): Promise<void> {
     console.log(`[USERBOT-MGR] Stopping all ${this.userbots.size} userbots...`);
-    const promises = Array.from(this.userbots.keys()).map(id => this.stopUserbot(id));
+    const promises = Array.from(this.userbots.keys()).map(id => this.stopUserbot(id, preserveState));
     await Promise.allSettled(promises);
     if (this.heartbeatHandle) {
       clearInterval(this.heartbeatHandle);

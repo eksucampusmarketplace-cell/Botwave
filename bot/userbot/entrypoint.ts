@@ -160,8 +160,8 @@ async function main(): Promise<void> {
 // ─── Graceful Shutdown ───────────────────────────────────────────────────────
 
 async function shutdown(signal: string): Promise<void> {
-  console.log(`[USERBOT] ${signal} received — shutting down...`);
-  await manager.stopAll();
+  console.log(`[USERBOT] ${signal} received — shutting down (preserving session state)...`);
+  await manager.stopAll(true);
   process.exit(0);
 }
 
