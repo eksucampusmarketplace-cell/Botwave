@@ -4,6 +4,7 @@ import './globals.css';
 import { PWARegister } from '@/components/pwa/PWARegister';
 import ThemeProvider from '@/components/ui/ThemeProvider';
 import LanguageBanner from '@/components/ui/LanguageBanner';
+import LanguageOnboarding from '@/components/ui/LanguageOnboarding';
 import SupportChat from '@/components/ui/SupportChat';
 
 export const viewport: Viewport = {
@@ -298,6 +299,7 @@ export default function RootLayout({
           {children}
         </ThemeProvider>
         <PWARegister />
+        <LanguageOnboarding />
         <LanguageBanner />
         <SupportChat />
         <Script id="google-translate-init" strategy="afterInteractive">
