@@ -522,10 +522,10 @@ function buildCategoryKeyboard(): InlineKeyboard {
 // ── Helper: send help message with mini app + categories ─────────────────
 
 async function sendHelpMessage(
-  ctx: { reply: (...args: any[]) => Promise<any>; me: any },
+  ctx: { reply: (...args: any[]) => Promise<any>; me: any; chat: { id: number } },
   sessionId: string,
 ): Promise<void> {
-  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+  const config = await getGroupConfig(sessionId, ctx.chat.id.toString());
   const botInfo = ctx.me;
   const botName = botInfo.first_name || botInfo.username || 'Botwave';
   const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';

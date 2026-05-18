@@ -57,7 +57,7 @@ export function registerNightmodeHandlers(bot: Bot, sessionId: string): void {
  * Called every 60 seconds from TelegramBotManager.
  */
 export async function checkNightMode(bot: Bot, sessionId: string): Promise<void> {
-  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+  const config = await getGroupConfig(sessionId, 'global');
   if (!config.night_mode_enabled) return;
 
   const active = isNightModeActive(config);

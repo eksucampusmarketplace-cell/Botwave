@@ -84,7 +84,7 @@ const suggestedChats = new Set<string>();
 
 export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
   // Load bot default lang from config on startup
-  getGroupConfig(sessionId, ctx.chat!.id.toString()).then(config => {
+  getGroupConfig(sessionId, 'global').then(config => {
     const lang = (config as Record<string, unknown>).bot_language as string;
     if (lang && isValidLocale(lang)) {
       setBotDefaultLang(lang);

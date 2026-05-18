@@ -180,7 +180,7 @@ export async function checkRaid(
   chatId: string,
   userId: number,
 ): Promise<boolean> {
-  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+  const config = await getGroupConfig(sessionId, chatId);
   if (!config.antiraid_enabled) return false;
 
   await trackJoin(sessionId, chatId, userId.toString());
