@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { storeKey, code, password } = await request.json();
+    const { storeKey, code, password, apiId, apiHash, phoneNumber, sessionName } = await request.json();
 
     if (!storeKey || !code) {
       return NextResponse.json({
@@ -41,10 +41,13 @@ export async function POST(request: NextRequest) {
     try {
       const { Api } = await import('telegram/tl');
 
+      // Resolve phone: prefer explicit phoneNumber from body, fallback to storeKey extraction
+      const resolvedPhoneForSignIn = phoneNumber || (storeKey.includes(':') ? storeKey.split(':')[1] : '');
+
       try {
         await client.invoke(
           new Api.auth.SignIn({
-            phoneNumber: storeKey.includes(':') ? storeKey.split(':')[1] : '',
+            phoneNumber: resolvedPhoneForSignIn,
             phoneCodeHash,
             phoneCode: code,
           }),
@@ -85,15 +88,51 @@ export async function POST(request: NextRequest) {
       // Clean up pending client
       pendingClients.delete(storeKey);
 
+      // Auto-create session in database if apiId and apiHash provided
+      let sessionRecord = null;
+      if (apiId && apiHash) {
+        try {
+          const adminClient = await createAdminClient();
+          const resolvedPhone = phoneNumber || (storeKey.includes(':') ? storeKey.split(':')[1] : '');
+          const resolvedName = sessionName || resolvedPhone || 'BotWave Userbot';
+
+          const { data: newSession, error: insertError } = await adminClient
+            .from('bot_sessions')
+            .insert({
+              user_id: user.id,
+              phone_number: resolvedPhone,
+              session_name: resolvedName,
+              state: 'active',
+              platform: 'telegram_userbot',
+              telegram_api_id: Number(apiId),
+              telegram_api_hash: apiHash,
+              telegram_session_string: sessionString,
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('[TG-UB-VERIFY] Auto-save session error:', insertError.message);
+          } else {
+            sessionRecord = newSession;
+            console.log(`[TG-UB-VERIFY] Session auto-created: ${newSession.id}`);
+          }
+        } catch (saveErr) {
+          console.error('[TG-UB-VERIFY] Failed to auto-save session:', saveErr);
+        }
+      }
+
       return NextResponse.json({
         success: true,
         sessionString,
-        message: 'Login successful! Session string saved.',
+        session: sessionRecord,
+        message: 'Login successful! Session created and saved automatically.',
       });
-    } catch (err: any) {
-      console.error('[TG-UB-VERIFY] Error:', err);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('[TG-UB-VERIFY] Error:', errMsg, err);
       return NextResponse.json({
-        error: 'Verification failed. Please try again.',
+        error: `Verification failed: ${errMsg}`,
       }, { status: 500 });
     }
   } catch (error) {

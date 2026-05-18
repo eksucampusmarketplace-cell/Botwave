@@ -172,27 +172,12 @@ export default function SessionsPage() {
     setIsCreating(true);
     setError(null);
     try {
-      const response = await fetch('/api/bot/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionName: data.sessionName,
-          platform: 'telegram_userbot',
-          telegramApiId: data.apiId,
-          telegramApiHash: data.apiHash,
-          telegramSessionString: data.sessionString,
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setShowAddModal(false);
-        setSelectedPlatform(null);
-        fetchSessions();
-      } else {
-        setError(result.error || 'Failed to create userbot session');
-      }
+      // Session is auto-created by verify-code endpoint, just refresh the list
+      setShowAddModal(false);
+      setSelectedPlatform(null);
+      await fetchSessions();
     } catch {
-      setError('Failed to create userbot session');
+      setError('Failed to refresh sessions');
     } finally {
       setIsCreating(false);
     }
