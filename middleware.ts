@@ -25,8 +25,11 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Middleware MUST use NEXT_PUBLIC_SUPABASE_URL (not internal URL) because the
+  // cookie name is derived from the URL hostname. Using internal URL would look
+  // for "sb-supabase-kong-auth-token" instead of the actual "sb-144-auth-token".
   const supabase = createServerClient(
-    process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
