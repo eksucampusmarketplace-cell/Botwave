@@ -227,10 +227,50 @@ services:
       retries: 3
       start_period: 20s
 
+  # ── BotWave Telegram Userbot (isolated) ──────────────
+  botwave-userbot:
+    container_name: botwave_userbot
+    <<: *botwave-build
+    restart: unless-stopped
+    env_file:
+      - .env.botwave
+    environment:
+      - NODE_ENV=production
+      - BOT_PLATFORM=telegram_userbot
+      - IS_WORKER=false
+      - REDIS_URL=redis://redis:6379
+      - USERBOT_HEALTH_PORT=10002
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
+      - USERBOT_PROXY_LIST=${USERBOT_PROXY_LIST:-}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
+    command: ["node", "dist/bot/bot/userbot/entrypoint.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      update_config:
+        order: start-first
+        failure_action: rollback
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "try { const http = require('http'); const r = http.get('http://localhost:10002/health', res => { process.exit(res.statusCode === 200 ? 0 : 1); }); r.on('error', () => process.exit(1)); r.setTimeout(5000, () => process.exit(1)); } catch(e) { process.exit(1); }"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
   # NOTE: The old single botwave-bot container has been replaced by
-  # botwave-telegram + botwave-whatsapp for fault isolation.
-  # Each platform runs independently — if one crashes, the other keeps running.
-  # Both share the same Docker image, just with different CMD entrypoints.
+  # botwave-telegram + botwave-whatsapp + botwave-userbot for fault isolation.
+  # Each platform runs independently — if one crashes, the others keep running.
+  # All share the same Docker image, just with different CMD entrypoints.
 
   # ── BotWave Postgres (Supabase data) ────────────────────
   botwave-postgres:
