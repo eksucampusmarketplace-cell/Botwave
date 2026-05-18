@@ -4,7 +4,7 @@
  */
 
 import { Bot } from 'grammy';
-import { getTelegramConfig } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 
 interface TriviaQuestion {
   question: string;
@@ -111,7 +111,7 @@ function generateMathProblem(): { expression: string; answer: number } {
 export function registerGamesHandlers(bot: Bot, sessionId: string): void {
   bot.command('trivia', async (ctx) => {
     if (!ctx.chat) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.games_enabled) {
       await ctx.reply('Games are disabled. An admin can enable them from the Mini App.');
       return;
@@ -146,7 +146,7 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
 
   bot.command('scramble', async (ctx) => {
     if (!ctx.chat) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.games_enabled) {
       await ctx.reply('Games are disabled. An admin can enable them from the Mini App.');
       return;
@@ -179,7 +179,7 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
 
   bot.command('mathquiz', async (ctx) => {
     if (!ctx.chat) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.games_enabled) {
       await ctx.reply('Games are disabled. An admin can enable them from the Mini App.');
       return;

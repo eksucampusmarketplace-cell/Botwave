@@ -10,7 +10,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { updateTelegramConfig, getTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 import {
   SUPPORTED_LOCALES,
@@ -84,7 +84,7 @@ const suggestedChats = new Set<string>();
 
 export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
   // Load bot default lang from config on startup
-  getTelegramConfig(sessionId).then(config => {
+  getGroupConfig(sessionId, 'global').then(config => {
     const lang = (config as Record<string, unknown>).bot_language as string;
     if (lang && isValidLocale(lang)) {
       setBotDefaultLang(lang);

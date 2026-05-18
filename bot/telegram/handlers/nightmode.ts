@@ -4,14 +4,14 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerNightmodeHandlers(bot: Bot, sessionId: string): void {
   bot.command('nightmode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
 
     if (arg === 'on') {
       await updateTelegramConfig(sessionId, { night_mode_enabled: true });
@@ -57,7 +57,7 @@ export function registerNightmodeHandlers(bot: Bot, sessionId: string): void {
  * Called every 60 seconds from TelegramBotManager.
  */
 export async function checkNightMode(bot: Bot, sessionId: string): Promise<void> {
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, 'global');
   if (!config.night_mode_enabled) return;
 
   const active = isNightModeActive(config);

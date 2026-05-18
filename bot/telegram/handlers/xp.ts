@@ -4,7 +4,7 @@
 
 import { Bot, Context } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig, awardXp, getXp, getXpLeaderboard } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, awardXp, getXp, getXpLeaderboard } from '../utils/db';
 import { escapeHtml, mentionById } from '../utils/format';
 
 export function registerXpHandlers(bot: Bot, sessionId: string): void {
@@ -20,7 +20,7 @@ export function registerXpHandlers(bot: Bot, sessionId: string): void {
       await updateTelegramConfig(sessionId, { xp_enabled: false });
       await ctx.reply('✅ XP system disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       const status = config.xp_enabled ? 'ON' : 'OFF';
       await ctx.reply(
         `⭐ <b>XP System</b>\n\n` +
@@ -86,7 +86,7 @@ export async function processXp(
 ): Promise<void> {
   if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') return;
 
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
   if (!config.xp_enabled) return;
 
   const result = await awardXp(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());

@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { escapeHtml } from '../utils/format';
-import { getTelegramConfig } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 
 const URL_REGEX = /https?:\/\/[^\s]+/;
 
@@ -38,7 +38,7 @@ async function fetchMediaInfo(url: string): Promise<{ title: string; downloadUrl
 
 export function registerMediaDownloadHandlers(bot: Bot, sessionId: string): void {
   const handleDownload = async (ctx: any, urlOverride?: string) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as any).mediadownload_enabled) {
       await ctx.reply('Media downloads are disabled. An admin can enable them from the Mini App.');
       return;

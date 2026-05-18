@@ -5,17 +5,11 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import {
-  getTelegramConfig,
-  updateTelegramConfig,
-  setCaptchaPending,
-  markCaptchaVerified,
-  isCaptchaVerified,
-} from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, setCaptchaPending, markCaptchaVerified, isCaptchaVerified } from '../utils/db';
 
 export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
   bot.on(':new_chat_members', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.captcha_enabled) return;
 
     for (const member of ctx.message!.new_chat_members!) {
@@ -76,7 +70,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
       await updateTelegramConfig(sessionId, { captcha_enabled: false });
       await ctx.reply('✅ CAPTCHA disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `🔐 <b>CAPTCHA Settings</b>\n\n` +
         `Status: ${config.captcha_enabled ? '✅ Enabled' : '❌ Disabled'}\n` +

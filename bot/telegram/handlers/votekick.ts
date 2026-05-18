@@ -5,7 +5,7 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { resolveTarget } from '../utils/resolve';
 import { mentionUser, escapeHtml } from '../utils/format';
-import { getTelegramConfig } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 import { isAdmin } from '../utils/permissions';
 
 interface ActiveVote {
@@ -22,7 +22,7 @@ const activeVotes = new Map<string, ActiveVote>();
 
 export function registerVotekickHandlers(bot: Bot, sessionId: string): void {
   bot.command('votekick', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as Record<string, unknown>).votekick_enabled) {
       await ctx.reply('VoteKick is disabled. An admin can enable it from settings.');
       return;

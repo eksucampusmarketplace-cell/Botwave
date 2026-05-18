@@ -473,6 +473,395 @@ export async function ensureConfig(sessionId: string): Promise<void> {
   }
 }
 
+// ─── Group Config (Per-Group) ────────────────────────────────────────────────
+
+export interface GroupConfig {
+  [key: string]: unknown;
+  id?: string;
+  session_id: string;
+  chat_id: number;
+  chat_title?: string;
+  // Welcome
+  welcome_enabled: boolean;
+  welcome_message: string | null;
+  welcome_delete_after: number;
+  welcome_show_rules_btn: boolean;
+  goodbye_enabled: boolean;
+  goodbye_message: string | null;
+  // Captcha
+  captcha_enabled: boolean;
+  captcha_mode: string;
+  captcha_timeout: number;
+  captcha_action: string;
+  captcha_message: string | null;
+  captcha_restrict_on_join: boolean;
+  // Warn
+  warns_enabled: boolean;
+  warn_limit: number;
+  warn_action: string;
+  warn_expiry_days: number;
+  warn_message: string | null;
+  warn_limit_message: string | null;
+  // Antiflood
+  antiflood_enabled: boolean;
+  antiflood_max: number;
+  antiflood_window: number;
+  antiflood_action: string;
+  antiflood_duration: number;
+  antiflood_message: string | null;
+  antiflood_exempt_admins: boolean;
+  // Antilink
+  antilink_enabled: boolean;
+  antilink_action: string;
+  antilink_whitelist: string[];
+  antilink_allow_telegram: boolean;
+  antilink_exempt_admins: boolean;
+  antilink_message: string | null;
+  // Night mode
+  night_mode_enabled: boolean;
+  night_mode_start: string;
+  night_mode_end: string;
+  night_mode_timezone: string;
+  night_mode_lock_msg: string | null;
+  night_mode_unlock_msg: string | null;
+  night_mode_exempt_admins: boolean;
+  // Antiraid
+  antiraid_enabled: boolean;
+  antiraid_threshold: number;
+  antiraid_window: number;
+  antiraid_mode: string;
+  antiraid_duration: number;
+  antiraid_message: string | null;
+  // XP
+  xp_enabled: boolean;
+  xp_per_message: number;
+  xp_levelup_announce: boolean;
+  xp_levelup_message: string | null;
+  xp_penalty_on_warn: number;
+  xp_streak_bonus: boolean;
+  // Rules
+  rules_text: string | null;
+  rules_enabled: boolean;
+  rules_send_on_join: boolean;
+  rules_pin_on_set: boolean;
+  rules_button_on_welcome: boolean;
+  // Modlog
+  modlog_enabled: boolean;
+  modlog_channel_id: string | null;
+  modlog_bans: boolean;
+  modlog_mutes: boolean;
+  modlog_warns: boolean;
+  modlog_joins: boolean;
+  modlog_name_changes: boolean;
+  // Booster / Force channel
+  booster_enabled: boolean;
+  booster_goal: number;
+  booster_reward_text: string | null;
+  force_channel_enabled: boolean;
+  force_channel_id: string | null;
+  force_channel_username: string | null;
+  force_channel_action: string;
+  force_channel_message: string | null;
+  force_channel_verify_text: string;
+  // AI
+  ai_enabled: boolean;
+  ai_system_prompt: string | null;
+  ai_provider: string;
+  ai_on_mention: boolean;
+  ai_max_length: number;
+  ai_cooldown: number;
+  // Language
+  language: string;
+  allow_user_lang_override: boolean;
+  translate_enabled: boolean;
+  // Name history
+  name_history_enabled: boolean;
+  name_history_notify: boolean;
+  name_history_log_channel: boolean;
+  // Analytics
+  analytics_enabled: boolean;
+  // Games
+  games_enabled: boolean;
+  games_list: string[];
+  game_xp_reward: number;
+  game_cooldown: number;
+  // Filters
+  filters_enabled: boolean;
+  filters_case_sensitive: boolean;
+  filters_delete_trigger: boolean;
+  filters_action: string;
+  // Notes
+  notes_enabled: boolean;
+  notes_private: boolean;
+  // Misc
+  karma_enabled: boolean;
+  votekick_enabled: boolean;
+  votekick_required_votes: number;
+  votekick_timeout_secs: number;
+  join_approval_enabled: boolean;
+  join_approval_mode: string;
+  slowmode_enabled: boolean;
+  slowmode_seconds: number;
+  reports_enabled: boolean;
+  tickets_enabled: boolean;
+  federation_enabled: boolean;
+  autoreply_enabled: boolean;
+  stickers_enabled: boolean;
+  polls_enabled: boolean;
+  mentionall_enabled: boolean;
+  ban_ghosts_enabled: boolean;
+  texttools_enabled: boolean;
+  quicktools_enabled: boolean;
+  mediadownload_enabled: boolean;
+  funextras_enabled: boolean;
+  infolookup_enabled: boolean;
+  profiletools_enabled: boolean;
+  mediatools_enabled: boolean;
+  imagetools_enabled: boolean;
+  timezone: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+const GROUP_CONFIG_DEFAULTS: Omit<GroupConfig, 'session_id' | 'chat_id'> = {
+  welcome_enabled: false,
+  welcome_message: null,
+  welcome_delete_after: 0,
+  welcome_show_rules_btn: false,
+  goodbye_enabled: false,
+  goodbye_message: null,
+  captcha_enabled: false,
+  captcha_mode: 'button',
+  captcha_timeout: 60,
+  captcha_action: 'kick',
+  captcha_message: null,
+  captcha_restrict_on_join: true,
+  warns_enabled: false,
+  warn_limit: 3,
+  warn_action: 'mute',
+  warn_expiry_days: 0,
+  warn_message: null,
+  warn_limit_message: null,
+  antiflood_enabled: false,
+  antiflood_max: 10,
+  antiflood_window: 10,
+  antiflood_action: 'mute',
+  antiflood_duration: 5,
+  antiflood_message: null,
+  antiflood_exempt_admins: true,
+  antilink_enabled: false,
+  antilink_action: 'delete',
+  antilink_whitelist: [],
+  antilink_allow_telegram: false,
+  antilink_exempt_admins: true,
+  antilink_message: null,
+  night_mode_enabled: false,
+  night_mode_start: '22:00',
+  night_mode_end: '06:00',
+  night_mode_timezone: 'UTC',
+  night_mode_lock_msg: null,
+  night_mode_unlock_msg: null,
+  night_mode_exempt_admins: true,
+  antiraid_enabled: false,
+  antiraid_threshold: 15,
+  antiraid_window: 60,
+  antiraid_mode: 'restrict',
+  antiraid_duration: 15,
+  antiraid_message: null,
+  xp_enabled: false,
+  xp_per_message: 2,
+  xp_levelup_announce: true,
+  xp_levelup_message: null,
+  xp_penalty_on_warn: 25,
+  xp_streak_bonus: true,
+  rules_text: null,
+  rules_enabled: false,
+  rules_send_on_join: false,
+  rules_pin_on_set: false,
+  rules_button_on_welcome: false,
+  modlog_enabled: false,
+  modlog_channel_id: null,
+  modlog_bans: true,
+  modlog_mutes: true,
+  modlog_warns: true,
+  modlog_joins: false,
+  modlog_name_changes: false,
+  booster_enabled: false,
+  booster_goal: 5,
+  booster_reward_text: null,
+  force_channel_enabled: false,
+  force_channel_id: null,
+  force_channel_username: null,
+  force_channel_action: 'delete',
+  force_channel_message: null,
+  force_channel_verify_text: 'I joined',
+  ai_enabled: false,
+  ai_system_prompt: null,
+  ai_provider: 'groq',
+  ai_on_mention: false,
+  ai_max_length: 500,
+  ai_cooldown: 10,
+  language: 'en',
+  allow_user_lang_override: true,
+  translate_enabled: true,
+  name_history_enabled: false,
+  name_history_notify: false,
+  name_history_log_channel: false,
+  analytics_enabled: true,
+  games_enabled: false,
+  games_list: [],
+  game_xp_reward: 10,
+  game_cooldown: 30,
+  filters_enabled: true,
+  filters_case_sensitive: false,
+  filters_delete_trigger: false,
+  filters_action: 'reply',
+  notes_enabled: true,
+  notes_private: false,
+  karma_enabled: false,
+  votekick_enabled: false,
+  votekick_required_votes: 5,
+  votekick_timeout_secs: 60,
+  join_approval_enabled: false,
+  join_approval_mode: 'manual',
+  slowmode_enabled: false,
+  slowmode_seconds: 0,
+  reports_enabled: true,
+  tickets_enabled: false,
+  federation_enabled: false,
+  autoreply_enabled: true,
+  stickers_enabled: true,
+  polls_enabled: true,
+  mentionall_enabled: true,
+  ban_ghosts_enabled: false,
+  texttools_enabled: true,
+  quicktools_enabled: true,
+  mediadownload_enabled: true,
+  funextras_enabled: true,
+  infolookup_enabled: true,
+  profiletools_enabled: true,
+  mediatools_enabled: true,
+  imagetools_enabled: true,
+  timezone: 'UTC',
+};
+
+const groupConfigCache = new Map<string, { data: GroupConfig; expiresAt: number }>();
+const GROUP_CONFIG_TTL_MS = 60_000;
+
+/**
+ * Get the effective config for a specific group.
+ * Priority: group-specific config > global bot config > hardcoded defaults.
+ */
+export async function getGroupConfig(
+  sessionId: string,
+  chatId: string,
+): Promise<TelegramConfig> {
+  const cacheKey = `${sessionId}:${chatId}`;
+  const cached = groupConfigCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data as unknown as TelegramConfig;
+  }
+
+  const globalConfig = await getTelegramConfig(sessionId);
+
+  const { data: groupData } = await supabase
+    .from('telegram_group_configs')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .single();
+
+  // Merge: defaults < global config < group-specific config
+  const merged = {
+    ...GROUP_CONFIG_DEFAULTS,
+    ...globalConfig,
+    ...(groupData || {}),
+    session_id: sessionId,
+    chat_id: Number(chatId),
+  } as GroupConfig;
+
+  groupConfigCache.set(cacheKey, { data: merged, expiresAt: Date.now() + GROUP_CONFIG_TTL_MS });
+  return merged as unknown as TelegramConfig;
+}
+
+/**
+ * Update (upsert) per-group config.
+ */
+export async function updateGroupConfig(
+  sessionId: string,
+  chatId: string,
+  updates: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_group_configs')
+    .upsert(
+      {
+        session_id: sessionId,
+        chat_id: chatId,
+        ...updates,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'session_id,chat_id' },
+    );
+
+  if (error) {
+    console.error(`[TG-DB] Failed to update group config for ${sessionId}/${chatId}:`, error);
+  }
+  groupConfigCache.delete(`${sessionId}:${chatId}`);
+}
+
+/**
+ * Get all groups for a session from telegram_group_configs.
+ */
+export async function getSessionGroups(
+  sessionId: string,
+): Promise<Array<{ chat_id: string; chat_title: string | null }>> {
+  const { data, error } = await supabase
+    .from('telegram_group_configs')
+    .select('chat_id, chat_title')
+    .eq('session_id', sessionId)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.warn(`[TG-DB] getSessionGroups: ${error.message}`);
+    return [];
+  }
+  return (data || []).map((r: { chat_id: number; chat_title: string | null }) => ({
+    chat_id: String(r.chat_id),
+    chat_title: r.chat_title,
+  }));
+}
+
+/**
+ * Ensure a group config row exists (auto-create on first activity).
+ */
+export async function ensureGroupConfig(
+  sessionId: string,
+  chatId: string,
+  chatTitle?: string,
+): Promise<void> {
+  const { data } = await supabase
+    .from('telegram_group_configs')
+    .select('id, chat_title')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .single();
+
+  if (!data) {
+    await supabase.from('telegram_group_configs').insert({
+      session_id: sessionId,
+      chat_id: chatId,
+      chat_title: chatTitle || null,
+    });
+  } else if (chatTitle && data.chat_title !== chatTitle) {
+    await supabase
+      .from('telegram_group_configs')
+      .update({ chat_title: chatTitle, updated_at: new Date().toISOString() })
+      .eq('session_id', sessionId)
+      .eq('chat_id', chatId);
+  }
+}
+
 // ─── Warnings ──────────────────────────────────────────────────────────────
 
 export interface Warning {

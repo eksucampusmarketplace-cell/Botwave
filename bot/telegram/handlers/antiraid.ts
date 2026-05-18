@@ -5,15 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import {
-  getTelegramConfig,
-  updateTelegramConfig,
-  trackJoin,
-  getRecentJoinCount,
-  startRaidSession,
-  endRaidSession,
-  isRaidActive,
-} from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, trackJoin, getRecentJoinCount, startRaidSession, endRaidSession, isRaidActive } from '../utils/db';
 
 export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /antiraid — show or toggle anti-raid settings
@@ -28,7 +20,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     const args = (ctx.match?.toString() || '').trim().split(/\s+/);
     const subcommand = args[0]?.toLowerCase();
 
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
 
     if (!subcommand || subcommand === '') {
       const raidActive = await isRaidActive(sessionId, ctx.chat.id.toString());
@@ -95,7 +87,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `⏱ <b>Raid Time</b>\n\nCurrent: ${config.antiraid_time || '6h'}\n\nUsage: /raidtime <time>\nExample: /raidtime 3h`,
         { parse_mode: 'HTML' },
@@ -116,7 +108,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `⏱ <b>Raid Action Time</b>\n\nCurrent: ${config.antiraid_action_time || '1h'}\n\nUsage: /raidactiontime <time>\nExample: /raidactiontime 2h`,
         { parse_mode: 'HTML' },
@@ -143,7 +135,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     }
     const num = parseInt(arg, 10);
     if (!num || num < 1) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `🛡️ <b>Auto AntiRaid</b>\n\n` +
         `Current threshold: ${config.auto_antiraid_threshold || 0} joins/min (${config.auto_antiraid_threshold ? 'Enabled' : 'Disabled'})\n\n` +
@@ -188,7 +180,7 @@ export async function checkRaid(
   chatId: string,
   userId: number,
 ): Promise<boolean> {
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, chatId);
   if (!config.antiraid_enabled) return false;
 
   await trackJoin(sessionId, chatId, userId.toString());

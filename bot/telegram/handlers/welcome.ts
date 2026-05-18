@@ -5,12 +5,12 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { mentionUser } from '../utils/format';
 
 export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
   bot.on(':new_chat_members', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.welcome_message) return;
 
     for (const member of ctx.message!.new_chat_members!) {
@@ -33,7 +33,7 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.on(':left_chat_member', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.goodbye_message) return;
 
     const member = ctx.message!.left_chat_member!;
@@ -48,7 +48,7 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('welcome', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.welcome_message) {
       await ctx.reply('No welcome message set. Use /setwelcome <message> to set one.');
       return;
@@ -60,7 +60,7 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('goodbye', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.goodbye_message) {
       await ctx.reply('No goodbye message set. Use /setgoodbye <message> to set one.');
       return;

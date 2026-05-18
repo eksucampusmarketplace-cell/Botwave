@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 const SERVICE_TYPES = ['join', 'leave', 'pin', 'photo_change', 'title_change', 'video_chat'] as const;
 
@@ -21,7 +21,7 @@ export function registerCleanServiceHandlers(bot: Bot, sessionId: string): void 
       await updateTelegramConfig(sessionId, { clean_service: false } as Record<string, unknown>);
       await ctx.reply('✅ Service message cleanup disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       const enabled = (config as Record<string, unknown>).clean_service;
       await ctx.reply(
         `🧹 <b>Clean Service Messages</b>\n\n` +
@@ -40,7 +40,7 @@ export function registerCleanServiceHandlers(bot: Bot, sessionId: string): void 
       await ctx.reply(`Usage: /keepservice <${SERVICE_TYPES.join('/')}>`);
       return;
     }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const kept: string[] = (config as Record<string, unknown>).kept_services as string[] || [];
     if (!kept.includes(arg)) {
       kept.push(arg);

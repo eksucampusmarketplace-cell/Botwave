@@ -10,12 +10,12 @@
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
 import { escapeHtml } from '../utils/format';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void {
   // ── /memberbooster — Show help ───────────────────────────────────────────
   bot.command('memberbooster', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const status = config.memberbooster_enabled ? 'Enabled' : 'Disabled';
     await ctx.reply(
       `<b>MemberBooster</b>\n\n` +
@@ -100,7 +100,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Force Add</b>\nCurrent: ${config.memberbooster_max || 0}\nMode: ${config.memberbooster_max_mode || 'new'}\n\nUsage: /max &lt;number&gt;`,
         { parse_mode: 'HTML' },
@@ -119,7 +119,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
   // ── /maxmode — Toggle force add mode (new vs all) ────────────────────────
   bot.command('maxmode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const newMode = config.memberbooster_max_mode === 'new' ? 'all' : 'new';
     await updateTelegramConfig(sessionId, { memberbooster_max_mode: newMode } as Record<string, unknown>);
     await ctx.reply(`Force add mode: ${newMode === 'new' ? 'New members only' : 'All members'}`);
@@ -130,7 +130,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Daily Limit</b>\nCurrent: ${config.memberbooster_daily || 0}\nPeriod: ${config.memberbooster_daily_minute || 1440} min\nMode: ${config.memberbooster_daily_mode || 'reset'}\n\nUsage: /daily &lt;number&gt;`,
         { parse_mode: 'HTML' },
@@ -151,7 +151,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(`Daily period: ${config.memberbooster_daily_minute || 1440} minutes\nUsage: /dailyminute <minutes>`);
       return;
     }
@@ -167,7 +167,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
   // ── /dailymode — Toggle daily mode ───────────────────────────────────────
   bot.command('dailymode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const newMode = config.memberbooster_daily_mode === 'reset' ? 'accumulate' : 'reset';
     await updateTelegramConfig(sessionId, { memberbooster_daily_mode: newMode } as Record<string, unknown>);
     await ctx.reply(`Daily mode: ${newMode === 'reset' ? 'Resets after period' : 'Accumulates (no reset)'}`);
@@ -184,7 +184,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Force Join Channel</b>\nEnabled: ${config.memberbooster_channel_enabled ? 'Yes' : 'No'}\nChannel: ${config.memberbooster_channel || 'Not set'}\n\nUsage: /channel 1|0|@username`,
         { parse_mode: 'HTML' },
@@ -212,7 +212,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Second Force Join Channel</b>\nEnabled: ${config.memberbooster_channel2_enabled ? 'Yes' : 'No'}\nChannel: ${config.memberbooster_channel2 || 'Not set'}`,
         { parse_mode: 'HTML' },
@@ -246,7 +246,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
       await updateTelegramConfig(sessionId, { memberbooster_forced_boost: false } as Record<string, unknown>);
       await ctx.reply('Forced boost disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(`Forced boost: ${config.memberbooster_forced_boost ? 'Enabled' : 'Disabled'}\nUsage: /forced_boost 1|0`);
     }
   });
@@ -268,7 +268,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
       } as Record<string, unknown>);
       await ctx.reply(`Button link set to: ${escapeHtml(arg)}`, { parse_mode: 'HTML' });
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Inline Button</b>\nEnabled: ${config.memberbooster_btn_enabled ? 'Yes' : 'No'}\nLink: ${config.memberbooster_btn_link || 'Not set'}\nText: ${config.memberbooster_btn_text || 'Not set'}\n\nUsage: /btn 1|0|[link]`,
         { parse_mode: 'HTML' },
@@ -302,7 +302,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
       await updateTelegramConfig(sessionId, { memberbooster_text: arg } as Record<string, unknown>);
       await ctx.reply('Custom force add text updated.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Force Add Text</b>\nEnabled: ${config.memberbooster_text_enabled ? 'Yes' : 'No'}\nText: ${escapeHtml(config.memberbooster_text || '(default)')}\n\nVariables: !name, !count, !added, !remain\nUsage: /mbtext &lt;message&gt; or /mbtext 0|1`,
         { parse_mode: 'HTML' },
@@ -315,7 +315,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Force Join Channel Text</b>\nText: ${escapeHtml(config.memberbooster_channel_text || '(default)')}\n\nUsage: /mbtextchannel &lt;message&gt;`,
         { parse_mode: 'HTML' },
@@ -331,7 +331,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `<b>Daily Alert Text</b>\nText: ${escapeHtml(config.memberbooster_daily_text || '(default)')}\n\nUsage: /mbtextdaily &lt;message&gt;`,
         { parse_mode: 'HTML' },
@@ -353,7 +353,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
       await updateTelegramConfig(sessionId, { memberbooster_hard_mode: false } as Record<string, unknown>);
       await ctx.reply('Hard mode disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(`Hard mode: ${config.memberbooster_hard_mode ? 'Active' : 'Inactive'}\nUsage: /hard_mode 1|0`);
     }
   });
@@ -370,7 +370,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
 
   // ── /remain — Show user's remaining requirements ─────────────────────────
   bot.command('remain', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.memberbooster_enabled) {
       await ctx.reply('MemberBooster is not enabled.');
       return;

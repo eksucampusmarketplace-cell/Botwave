@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { mentionUser, escapeHtml } from '../utils/format';
-import { getTelegramConfig } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -64,7 +64,7 @@ export function registerKarmaHandlers(bot: Bot, sessionId: string): void {
   bot.on('message:text', async (ctx, next) => {
     const text = ctx.message.text.trim();
     if ((text === '+' || text === '-' || text === '+1' || text === '-1') && ctx.message.reply_to_message?.from) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       if (!(config as Record<string, unknown>).karma_enabled) {
         await next();
         return;

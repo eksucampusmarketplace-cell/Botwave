@@ -14,7 +14,7 @@ import {
   getSudoUsers,
 } from '../utils/permissions';
 import { resolveTarget } from '../utils/resolve';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { updateTelegramConfig } from '../utils/db';
 
 export function registerInfoHandlers(bot: Bot, sessionId: string): void {
   bot.command('id', async (ctx) => {

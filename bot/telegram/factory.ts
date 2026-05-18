@@ -63,7 +63,7 @@ import { registerCleanServiceHandlers } from './handlers/cleanservice';
 import { registerConnectionsHandlers } from './handlers/connections';
 import { registerDisablingHandlers } from './handlers/disabling';
 import { registerTopicsHandlers } from './handlers/topics';
-import { getTelegramConfig } from './utils/db';
+import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
 
@@ -75,10 +75,20 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   // Ensure config row exists for this session
   await ensureConfig(sessionId);
 
+  // Middleware: auto-register group config on first activity (Part 9)
+  bot.use(async (ctx, next) => {
+    if (ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup')) {
+      const chatId = ctx.chat.id.toString();
+      const chatTitle = ctx.chat.title || undefined;
+      await ensureGroupConfig(sessionId, chatId, chatTitle);
+    }
+    await next();
+  });
+
   // Middleware: night mode check (before commands)
   bot.use(async (ctx, next) => {
     if (ctx.chat && ctx.chat.type !== 'private') {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat.id.toString());
       if (isNightModeActive(config)) {
         const elevated = ctx.from ? await isElevated(ctx, sessionId) : false;
         if (!elevated) {

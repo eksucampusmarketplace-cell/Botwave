@@ -6,13 +6,13 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin, requireBotAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
   // /actiontopic — Show current action topic setting
   bot.command('actiontopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const topicId = (config as Record<string, unknown>).action_topic_id as string | null;
     if (topicId) {
       await ctx.reply(`📋 Action topic ID: <code>${topicId}</code>`, { parse_mode: 'HTML' });

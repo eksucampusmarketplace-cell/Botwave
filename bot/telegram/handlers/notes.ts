@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { saveNote, getNote, deleteNote, listNotes, getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { saveNote, getNote, deleteNote, listNotes, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerNotesHandlers(bot: Bot, sessionId: string): void {

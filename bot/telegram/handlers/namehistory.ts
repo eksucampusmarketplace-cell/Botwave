@@ -85,7 +85,7 @@ export function registerNameHistoryHandlers(bot: Bot, sessionId: string): void {
           await saveSnapshot(sessionId, userId, current, changes.join(','));
 
           // Notify in chat if log channel is not set
-          const config = await import('../utils/db').then(m => m.getTelegramConfig(sessionId));
+          const config = await import('../utils/db').then(m => m.getGroupConfig(sessionId, ctx.chat!.id.toString()));
           if (config.log_channel_id) {
             let text = `👤 <b>User update</b> — <a href="tg://user?id=${ctx.from.id}">${escapeHtml(current.first_name)}</a>\n`;
             if (changes.includes('name')) {

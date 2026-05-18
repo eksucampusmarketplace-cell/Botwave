@@ -5,7 +5,7 @@
 
 import { Bot, type Context } from 'grammy';
 import { requireAdmin, isAdmin } from '../utils/permissions';
-import { getLocks, setLock, clearAllLocks, getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, getLocks, setLock, clearAllLocks, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 const VALID_LOCK_TYPES = [
@@ -168,7 +168,7 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const url = (ctx.match?.toString() || '').trim();
     if (!url) { await ctx.reply('Usage: /allowlist <url or domain>'); return; }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const current: string[] = (config as Record<string, unknown>).lock_allowlist as string[] || [];
     if (!current.includes(url.toLowerCase())) {
       current.push(url.toLowerCase());
@@ -182,7 +182,7 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const url = (ctx.match?.toString() || '').trim().toLowerCase();
     if (!url) { await ctx.reply('Usage: /rmallowlist <url or domain>'); return; }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const current: string[] = (config as Record<string, unknown>).lock_allowlist as string[] || [];
     const filtered = current.filter(u => u !== url);
     await updateTelegramConfig(sessionId, { lock_allowlist: filtered } as Record<string, unknown>);
