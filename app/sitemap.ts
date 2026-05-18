@@ -24,9 +24,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: new Date('2026-05-13'),
+      lastModified: new Date('2026-05-18'),
       changeFrequency: 'weekly',
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/status`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'daily',
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/blog/how-to-create-free-whatsapp-bot-2026`,
@@ -155,6 +161,39 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date('2026-05-18'),
       changeFrequency: 'monthly',
       priority: 0.8,
+    },
+    // Entity / About page (AI crawlers love this)
+    {
+      url: `${baseUrl}/what-is-botwave`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    // Telegram landing pages
+    {
+      url: `${baseUrl}/telegram-bot-nigeria`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/telegram-userbot-commands`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    // New Telegram blog posts
+    {
+      url: `${baseUrl}/blog/telegram-bot-vs-whatsapp-bot`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/telegram-anti-spam-bot`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
   ];
 }

@@ -6,6 +6,22 @@ import Navbar from '@/components/layout/Navbar';
 
 const posts = [
   {
+    slug: 'telegram-bot-vs-whatsapp-bot',
+    title: 'Telegram Bot vs WhatsApp Bot (2026) — Which is Better? Full Comparison',
+    excerpt: 'Ban risk, features, setup, group limits, API access, pricing — every difference compared. BotWave supports both platforms from one dashboard.',
+    date: '2026-05-18',
+    readTime: '8 min read',
+    tags: ['Telegram', 'WhatsApp', 'Comparison'],
+  },
+  {
+    slug: 'telegram-anti-spam-bot',
+    title: 'Free Telegram Anti-Spam Bot (2026) — Protect Your Groups',
+    excerpt: 'Set up a free Telegram anti-spam bot in 2 minutes. Block spam, scam links, flood messages, and raid attacks. Works with Bot API and Userbot.',
+    date: '2026-05-18',
+    readTime: '5 min read',
+    tags: ['Telegram', 'Anti-Spam', 'Security'],
+  },
+  {
     slug: 'telegram-bot-for-groups-nigeria',
     title: 'Telegram Bot for Groups in Nigeria (2026) — Free Setup with BotWave',
     excerpt: 'Set up a free Telegram bot for your Nigerian group in under 2 minutes. AI chat, stickers, games, polls, anti-spam — all built in. No coding needed.',
