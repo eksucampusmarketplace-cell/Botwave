@@ -41,10 +41,13 @@ export async function POST(request: NextRequest) {
     try {
       const { Api } = await import('telegram/tl');
 
+      // Resolve phone: prefer explicit phoneNumber from body, fallback to storeKey extraction
+      const resolvedPhoneForSignIn = phoneNumber || (storeKey.includes(':') ? storeKey.split(':')[1] : '');
+
       try {
         await client.invoke(
           new Api.auth.SignIn({
-            phoneNumber: storeKey.includes(':') ? storeKey.split(':')[1] : '',
+            phoneNumber: resolvedPhoneForSignIn,
             phoneCodeHash,
             phoneCode: code,
           }),
