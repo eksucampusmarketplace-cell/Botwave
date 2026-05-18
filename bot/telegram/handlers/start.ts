@@ -301,12 +301,23 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
 
     const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-    const keyboard = new InlineKeyboard()
-      .webApp('⚡ Open Settings Panel', panelUrl);
+    const keyboard = new InlineKeyboard();
+    if (ctx.chat!.type === 'private') {
+      keyboard.webApp('⚡ Open Settings Panel', panelUrl);
+    } else {
+      keyboard.webApp('⚡ Open Settings Panel', panelUrl);
+    }
 
     await ctx.reply('📱 <b>Open the panel below to manage your bot:</b>', {
       parse_mode: 'HTML',
       reply_markup: keyboard,
+    }).catch(async () => {
+      // Fallback to url() if webApp() fails (domain not configured in BotFather)
+      const fallback = new InlineKeyboard().url('⚡ Open Settings Panel', panelUrl);
+      await ctx.reply('📱 <b>Open the panel below to manage your bot:</b>\n<i>💡 Tip: Use the ☰ Menu button for native mini app experience.</i>', {
+        parse_mode: 'HTML',
+        reply_markup: fallback,
+      });
     });
   });
 
@@ -547,5 +558,17 @@ async function sendHelpMessage(
   await ctx.reply(appendFooter(text), {
     parse_mode: 'HTML',
     reply_markup: keyboard,
+  }).catch(async () => {
+    // Fallback if webApp() button fails in groups
+    const fallbackKb = new InlineKeyboard();
+    if (miniappUrl) {
+      const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+      fallbackKb.url('📱 Open Mini App', panelUrl).row();
+    }
+    fallbackKb.text('📖 Browse Commands', 'help_categories').row();
+    await ctx.reply(appendFooter(text), {
+      parse_mode: 'HTML',
+      reply_markup: fallbackKb,
+    });
   });
 }
