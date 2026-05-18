@@ -62,7 +62,14 @@ export default function TelegramUserbotSetup({ onComplete, onCancel }: TelegramU
     setStep('loading');
 
     try {
-      const body: Record<string, string> = { storeKey, code: code.trim() };
+      const body: Record<string, string | number> = {
+        storeKey,
+        code: code.trim(),
+        apiId: parseInt(apiId),
+        apiHash: apiHash.trim(),
+        phoneNumber: phone.trim(),
+        sessionName: sessionName || phone.trim(),
+      };
       if (with2FA && password) {
         body.password = password;
       }
