@@ -56,7 +56,7 @@ export const pingHandler: HandlerFn = async (client, event) => {
   const msg = event.message;
   const start = Date.now();
 
-  await client.invoke(new Api.Ping({ pingId: BigInt(Math.floor(Math.random() * 1e15)) }));
+  await client.invoke(new Api.Ping({ pingId: BigInt(Math.floor(Math.random() * 1e15)) as any }));
   const latency = Date.now() - start;
 
   await shortPause();

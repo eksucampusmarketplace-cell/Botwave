@@ -20,7 +20,7 @@ type HandlerFn = (client: TelegramClient, event: NewMessageEvent) => Promise<voi
 async function getTargetUser(
   client: TelegramClient,
   event: NewMessageEvent,
-): Promise<Api.TypeInputUser | null> {
+): Promise<any | null> {
   const msg = event.message;
   const args = (msg.text || '').split(/\s+/).slice(1);
 
@@ -66,8 +66,8 @@ export const banHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({
           untilDate: 0,
           viewMessages: true,
@@ -105,8 +105,8 @@ export const unbanHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({ untilDate: 0 }),
       }),
     );
@@ -134,8 +134,8 @@ export const kickHandler: HandlerFn = async (client, event) => {
     // Ban then immediately unban = kick
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({
           untilDate: 0,
           viewMessages: true,
@@ -145,8 +145,8 @@ export const kickHandler: HandlerFn = async (client, event) => {
     await shortPause();
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({ untilDate: 0 }),
       }),
     );
@@ -173,8 +173,8 @@ export const muteHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({
           untilDate: 0,
           sendMessages: true,
@@ -209,8 +209,8 @@ export const unmuteHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: target as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: target as any,
         bannedRights: new Api.ChatBannedRights({ untilDate: 0 }),
       }),
     );
@@ -240,8 +240,8 @@ export const promoteHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditAdmin({
-        channel: chatPeer as Api.TypeInputChannel,
-        userId: target,
+        channel: chatPeer as any,
+        userId: target as any,
         adminRights: new Api.ChatAdminRights({
           changeInfo: true,
           deleteMessages: true,
@@ -276,8 +276,8 @@ export const demoteHandler: HandlerFn = async (client, event) => {
     const chatPeer = await client.getInputEntity(msg.chatId!);
     await client.invoke(
       new Api.channels.EditAdmin({
-        channel: chatPeer as Api.TypeInputChannel,
-        userId: target,
+        channel: chatPeer as any,
+        userId: target as any,
         adminRights: new Api.ChatAdminRights({}),
         rank: '',
       }),

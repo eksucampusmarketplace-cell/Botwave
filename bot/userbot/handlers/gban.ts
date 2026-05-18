@@ -79,8 +79,8 @@ export const gbanHandler: HandlerFn = async (client, event) => {
         const inputUser = await client.getInputEntity(targetId);
         await client.invoke(
           new Api.channels.EditBanned({
-            channel: chatPeer as Api.TypeInputChannel,
-            participant: inputUser as Api.TypeInputPeer,
+            channel: chatPeer as any,
+            participant: inputUser as any,
             bannedRights: new Api.ChatBannedRights({
               untilDate: 0,
               viewMessages: true,
@@ -135,8 +135,8 @@ export const ungbanHandler: HandlerFn = async (client, event) => {
         const inputUser = await client.getInputEntity(targetId);
         await client.invoke(
           new Api.channels.EditBanned({
-            channel: chatPeer as Api.TypeInputChannel,
-            participant: inputUser as Api.TypeInputPeer,
+            channel: chatPeer as any,
+            participant: inputUser as any,
             bannedRights: new Api.ChatBannedRights({ untilDate: 0 }),
           }),
         );
@@ -176,7 +176,7 @@ export const gbanlistHandler: HandlerFn = async (client, event) => {
 export async function handleGbanCheck(
   client: TelegramClient,
   userId: string,
-  chatId: bigint | string,
+  chatId: any,
   sessionId: string,
 ): Promise<boolean> {
   if (!(await isGbanned(sessionId, userId))) return false;
@@ -189,8 +189,8 @@ export async function handleGbanCheck(
     const inputUser = await client.getInputEntity(userId);
     await client.invoke(
       new Api.channels.EditBanned({
-        channel: chatPeer as Api.TypeInputChannel,
-        participant: inputUser as Api.TypeInputPeer,
+        channel: chatPeer as any,
+        participant: inputUser as any,
         bannedRights: new Api.ChatBannedRights({
           untilDate: 0,
           viewMessages: true,

@@ -39,7 +39,7 @@ export const diceHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '🎲' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
@@ -63,7 +63,7 @@ export const dartHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '🎯' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
@@ -87,7 +87,7 @@ export const slotHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '🎰' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
@@ -111,7 +111,7 @@ export const basketballHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '🏀' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
@@ -135,7 +135,7 @@ export const footballHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '⚽' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
@@ -159,7 +159,7 @@ export const bowlingHandler: HandlerFn = async (client, event) => {
         peer,
         media: new Api.InputMediaDice({ emoticon: '🎳' }),
         message: '',
-        randomId: BigInt(Math.floor(Math.random() * 1e15)),
+        randomId: BigInt(Math.floor(Math.random() * 1e15)) as any,
       }),
     );
     await msg.delete({ revoke: true });
