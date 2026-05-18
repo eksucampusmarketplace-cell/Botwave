@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './scaling/workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
 import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, type PairingResult } from './whatsapp/evolution/client';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, type PairingResult } from './whatsapp/evolution/client';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -794,6 +794,7 @@ export class EvolutionBot {
       // Instance exists — ensure webhook points to this deploy's URL
       await setWebhook(this.sessionId);
       trackInstance(this.sessionId);
+      if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
       if (state === 'open') {
         console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
@@ -879,6 +880,7 @@ export class EvolutionBot {
 
       await setWebhook(this.sessionId);
       trackInstance(this.sessionId);
+      if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
       // Try to connect the instance — this triggers Baileys to reconnect
       // using saved auth credentials if they exist.
@@ -1003,6 +1005,7 @@ export class EvolutionBot {
         await updateSessionStatus(this.sessionId, 'active');
         await setWebhook(this.sessionId);
         trackInstance(this.sessionId);
+        if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
         this.startPresenceLoop();
         this.startPollLoop();
         return;
@@ -1051,6 +1054,7 @@ export class EvolutionBot {
 
       // Register for keep-alive pings so Evolution API doesn't auto-delete
       trackInstance(this.sessionId);
+      if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
       // Fetch pairing code — getPairingCode now handles its own polling
       const evoPairingStart = Date.now();
