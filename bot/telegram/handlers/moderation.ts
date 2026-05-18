@@ -24,7 +24,7 @@ async function resolveTargetId(
 
   if (!targetId && username) {
     try {
-      const chat = await ctx.api.getChat(username);
+      const chat = await ctx.api.getChat(`@${username}`);
       targetId = (chat as { id: number }).id;
     } catch {
       await ctx.reply('Could not find that user. Make sure they have been in this group.');
