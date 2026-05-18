@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 
-type Tab = 'general' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
+type Tab = 'general' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
@@ -37,6 +37,7 @@ const TAB_FEATURE_MAP: Record<Tab, string[]> = {
   numerical: [], // always visible (general limits)
   silence: ['silenttime'],
   memberships: ['mandatory_membership', 'forced_add'],
+  memberbooster: ['memberbooster'],
   texts: ['welcome', 'goodbye'],
   notes: ['notes'],
   filters: ['filters'],
@@ -157,6 +158,35 @@ export default function TelegramConfigPage() {
     antiraid_time: '6h',
     antiraid_action_time: '1h',
     auto_antiraid_threshold: 0,
+    // CAPTCHA enhancements
+    captcha_mode: 'button',
+    captcha_rules: false,
+    captcha_mute_time: '',
+    captcha_kick: true,
+    captcha_kick_time: '',
+    captcha_button_text: '',
+    // MemberBooster
+    memberbooster_enabled: false,
+    memberbooster_max: 0,
+    memberbooster_max_mode: 'new',
+    memberbooster_text: '',
+    memberbooster_text_enabled: true,
+    memberbooster_channel_text: '',
+    memberbooster_daily_text: '',
+    memberbooster_daily: 0,
+    memberbooster_daily_minute: 1440,
+    memberbooster_daily_mode: 'reset',
+    memberbooster_channel_enabled: false,
+    memberbooster_channel: '',
+    memberbooster_channel2_enabled: false,
+    memberbooster_channel2: '',
+    memberbooster_forced_boost: false,
+    memberbooster_btn_enabled: false,
+    memberbooster_btn_link: '',
+    memberbooster_btn_text: '',
+    memberbooster_hard_mode: false,
+    // Force join channel
+    force_channel: '',
   });
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -301,6 +331,7 @@ export default function TelegramConfigPage() {
     { id: 'numerical', label: 'Limits', icon: '\ud83d\udd22' },
     { id: 'silence', label: 'Silent Times', icon: '\ud83e\udd2b' },
     { id: 'memberships', label: 'Memberships', icon: '\ud83d\udc65' },
+    { id: 'memberbooster', label: 'MemberBooster', icon: '\ud83d\ude80' },
     { id: 'texts', label: 'Custom Texts', icon: '\ud83d\udcdd' },
     { id: 'notes', label: 'Notes', icon: '\ud83d\uddd2\ufe0f' },
     { id: 'filters', label: 'Filters', icon: '\ud83d\udd0d' },
@@ -540,7 +571,26 @@ export default function TelegramConfigPage() {
             <SectionCard title="Other Protection">
               <Toggle configKey="antilink_enabled" label="Anti-Link" desc="Remove unauthorized links from messages." />
               <Toggle configKey="night_mode_enabled" label="Night Mode" desc="Restrict messages during night hours." />
-              <Toggle configKey="captcha_enabled" label="CAPTCHA" desc="Require verification for new members." />
+            </SectionCard>
+
+            <SectionCard title="CAPTCHA">
+              <Toggle configKey="captcha_enabled" label="CAPTCHA" desc="Require verification for new members before they can send messages." />
+              {config.captcha_enabled && (
+                <div className="mt-3 space-y-0">
+                  <SelectInput configKey="captcha_mode" label="CAPTCHA Mode" desc="Type of CAPTCHA challenge to show new members."
+                    options={[
+                      { value: 'button', label: 'Button (click to verify)' },
+                      { value: 'math', label: 'Math (solve equation)' },
+                      { value: 'text', label: 'Text (type shown text)' },
+                      { value: 'text2', label: 'Text v2 (advanced)' },
+                    ]} />
+                  <Toggle configKey="captcha_rules" label="Require accepting rules" desc="New users must accept the group rules before speaking." />
+                  <Toggle configKey="captcha_kick" label="Kick unverified users" desc="Kick users who don't solve the CAPTCHA in time." />
+                  <TextInput configKey="captcha_kick_time" label="CAPTCHA kick time" desc="Time after which unverified users are kicked. E.g. 5m, 1h, 1d. Leave empty for default (60s)." placeholder="5m" />
+                  <TextInput configKey="captcha_mute_time" label="CAPTCHA mute time" desc="Auto-unmute time for CAPTCHA. Leave empty to keep muted until solved." placeholder="5m" />
+                  <TextInput configKey="captcha_button_text" label="Custom CAPTCHA button text" desc="Custom text for the verify button. Leave empty for default." placeholder="I'm human — click to verify" />
+                </div>
+              )}
             </SectionCard>
 
             <SaveButton />
@@ -647,11 +697,80 @@ export default function TelegramConfigPage() {
               <NumberInput configKey="forced_add_count" label="Forced Add" desc="Members must invite this number of members before sending messages. 0 = disabled." min={0} />
               <NumberInput configKey="forced_add_timeframe_days" label="Forced add timeframe (days)" desc="The count of added members resets after this period." min={0} />
             </SectionCard>
+            <SectionCard title="Force Join Channel">
+              <TextInput configKey="force_channel" label="Force Join Channel" desc="Users must join this channel before they can chat. Use @channel_username format. Leave empty to disable." placeholder="@channel_username" />
+            </SectionCard>
             <SectionCard title="Mandatory Channel Membership">
               <TextArea configKey="mandatory_channels" label="Mandatory channel membership"
                 desc="Ensure botwave has admin privileges in your channel. Provide usernames prefixed with @, each on a separate line."
                 placeholder="@channel1\n@channel2" rows={4} />
             </SectionCard>
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'memberbooster' && (
+          <div className="space-y-0">
+            <SectionCard title="MemberBooster">
+              <Toggle configKey="memberbooster_enabled" label="Enable MemberBooster" desc="Users must add new members to the group or join a channel to send messages, growing your group and channel." />
+            </SectionCard>
+
+            {config.memberbooster_enabled && (
+              <>
+                <SectionCard title="Force Add Settings">
+                  <NumberInput configKey="memberbooster_max" label="Required members to add (!max)" desc="Number of members each user must invite. 0 = disabled." min={0} />
+                  <SelectInput configKey="memberbooster_max_mode" label="Force add mode (!max.mode)" desc="Whether only new members or all members must add."
+                    options={[
+                      { value: 'new', label: 'New members only' },
+                      { value: 'all', label: 'All members' },
+                    ]} />
+                  <Toggle configKey="memberbooster_hard_mode" label="Hard mode (!hard_mode)" desc="Strict enforcement — users cannot send any messages until requirement is met." />
+                </SectionCard>
+
+                <SectionCard title="Daily Limits">
+                  <NumberInput configKey="memberbooster_daily" label="Daily add limit (!daily)" desc="Number of members a user must add per day. 0 = no daily limit." min={0} />
+                  <NumberInput configKey="memberbooster_daily_minute" label="Daily limit period in minutes (!daily.minute)" desc="Duration of the daily limit cycle in minutes. Default: 1440 (24h)." min={1} />
+                  <SelectInput configKey="memberbooster_daily_mode" label="Daily mode (!daily.mode)" desc="Whether the daily limit resets at 24h or accumulates."
+                    options={[
+                      { value: 'reset', label: 'Reset after period' },
+                      { value: 'accumulate', label: 'Accumulate (no reset)' },
+                    ]} />
+                </SectionCard>
+
+                <SectionCard title="Forced Channel Join">
+                  <Toggle configKey="memberbooster_channel_enabled" label="Force join channel (!channel 1/0)" desc="Require users to join a channel before they can send messages." />
+                  {config.memberbooster_channel_enabled && (
+                    <TextInput configKey="memberbooster_channel" label="Channel address (!channel @...)" desc="Channel username with @ prefix." placeholder="@YourChannelID" />
+                  )}
+                  <Toggle configKey="memberbooster_channel2_enabled" label="Force join second channel (!channel2 1/0)" desc="Require users to join a second channel." />
+                  {config.memberbooster_channel2_enabled && (
+                    <TextInput configKey="memberbooster_channel2" label="Second channel address (!channel2 @...)" desc="Second channel username with @ prefix." placeholder="@YourSecondChannelID" />
+                  )}
+                </SectionCard>
+
+                <SectionCard title="Forced Boost">
+                  <Toggle configKey="memberbooster_forced_boost" label="Forced boost (!forced_boost 1/0)" desc="Require users to boost the group before they can send messages." />
+                </SectionCard>
+
+                <SectionCard title="Inline Button">
+                  <Toggle configKey="memberbooster_btn_enabled" label="Show inline button (!btn 1/0)" desc="Display an inline button below all MemberBooster messages." />
+                  {config.memberbooster_btn_enabled && (
+                    <>
+                      <TextInput configKey="memberbooster_btn_link" label="Button link (!btn [link])" desc="URL the button links to." placeholder="https://t.me/your_channel" />
+                      <TextInput configKey="memberbooster_btn_text" label="Button text (!btn_text [text])" desc="Text displayed on the inline button." placeholder="Join our channel" />
+                    </>
+                  )}
+                </SectionCard>
+
+                <SectionCard title="Custom Texts">
+                  <Toggle configKey="memberbooster_text_enabled" label="Show warning text (!text 1/0)" desc="Display the force add warning message to users." />
+                  <TextArea configKey="memberbooster_text" label="Force add message (!text)" desc="Variables: !name (username), !count (required), !added (added so far), !remain (remaining)." placeholder="!name, you need to add !count members. You have added !added so far. !remain remaining." rows={3} />
+                  <TextArea configKey="memberbooster_channel_text" label="Force join channel message (!text.channel)" desc="Custom message shown when users haven't joined the required channel." placeholder="You must join the channel before sending messages." rows={3} />
+                  <TextArea configKey="memberbooster_daily_text" label="Daily alert message (!text.daily)" desc="Custom message for daily limit alerts." placeholder="You have reached your daily add limit." rows={3} />
+                </SectionCard>
+              </>
+            )}
+
             <SaveButton />
           </div>
         )}
