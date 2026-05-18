@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/i18n';
 
 interface NavLink {
   href: string;
@@ -108,10 +109,37 @@ function Dropdown({ group }: { group: NavGroup }) {
   );
 }
 
+const POPULAR_LOCALES: SupportedLocale[] = ['en', 'es', 'fr', 'ar', 'hi', 'pt', 'de', 'ru', 'tr', 'zh', 'ja', 'ko'];
+
 export default function DashboardNav() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [dashLang, setDashLang] = useState<SupportedLocale>('en');
+  const langRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+
+  // Close language dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleLangChange = (locale: SupportedLocale) => {
+    setDashLang(locale);
+    setLangOpen(false);
+    // Trigger Google Translate if available
+    const select = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+    if (select) {
+      select.value = locale === 'zh' ? 'zh-CN' : locale;
+      select.dispatchEvent(new Event('change'));
+    }
+    // Dispatch custom event for dashboard components
+    window.dispatchEvent(new CustomEvent('botwave-lang-change', { detail: { locale } }));
+  };
 
   const handleLogout = async () => {
     try {
@@ -157,22 +185,51 @@ export default function DashboardNav() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Globe translate toggle */}
-            <button
-              onClick={() => {
-                const wrapper = document.getElementById('gtx-wrapper');
-                if (wrapper) wrapper.classList.toggle('gtx-collapsed');
-              }}
-              className="gtx-nav-toggle flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
-              title="Translate"
-            >
-              <span className="text-sm">{'\u{1F310}'}</span>
-            </button>
+            {/* Language selector dropdown */}
+            <div ref={langRef} className="relative" data-tour="nav-language">
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex h-9 px-2 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center gap-1 transition-colors"
+                title="Language"
+              >
+                <span className="text-sm">{'\u{1F310}'}</span>
+                <span className="text-xs font-medium text-[var(--text-secondary)] hidden sm:inline">{dashLang.toUpperCase()}</span>
+                <svg className={`w-3 h-3 text-[var(--text-muted)] transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <AnimatePresence>
+                {langOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full right-0 mt-1 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-y-auto max-h-64 z-[1001]"
+                  >
+                    {POPULAR_LOCALES.map((code) => (
+                      <button
+                        key={code}
+                        onClick={() => handleLangChange(code)}
+                        className={`w-full text-left text-sm px-4 py-2 transition-colors font-medium ${
+                          dashLang === code
+                            ? 'bg-[var(--primary)]/10 text-[var(--primary)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
+                        }`}
+                      >
+                        {SUPPORTED_LOCALES[code]} <span className="text-xs opacity-60">({code})</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             {/* Theme toggle — always visible */}
             <button
               onClick={toggleTheme}
               className="flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              data-tour="nav-theme"
             >
               <span className="text-sm">{theme === 'dark' ? '\u2600\uFE0F' : '\u{1F319}'}</span>
             </button>
@@ -210,6 +267,26 @@ export default function DashboardNav() {
             className="fixed top-[57px] left-0 right-0 z-[999] bg-[var(--surface)] border-b border-[var(--border)] md:hidden overflow-y-auto max-h-[80vh]"
           >
             <div className="flex flex-col px-4 py-2">
+              {/* Mobile language + theme controls */}
+              <div className="flex items-center gap-3 py-3 border-b border-[var(--border)]">
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  <span>{theme === 'dark' ? '\u2600\uFE0F' : '\u{1F319}'}</span>
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </button>
+                <span className="text-[var(--border)]">|</span>
+                <select
+                  value={dashLang}
+                  onChange={(e) => handleLangChange(e.target.value as SupportedLocale)}
+                  className="text-sm font-medium bg-transparent text-[var(--text-secondary)] border-none outline-none cursor-pointer"
+                >
+                  {POPULAR_LOCALES.map((code) => (
+                    <option key={code} value={code}>{SUPPORTED_LOCALES[code]}</option>
+                  ))}
+                </select>
+              </div>
               {allLinks.map((link) => (
                 <Link
                   key={link.href}
