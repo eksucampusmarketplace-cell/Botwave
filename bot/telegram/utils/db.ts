@@ -193,6 +193,24 @@ export interface TelegramConfig {
   memberbooster_btn_link: string;
   memberbooster_btn_text: string;
   memberbooster_hard_mode: boolean;
+  // Additional feature settings
+  clean_welcome: boolean;
+  votekick_required_votes: number;
+  votekick_timeout_secs: number;
+  slowmode_seconds: number;
+  blacklist_mode: string;
+  reports_enabled: boolean;
+  tickets_enabled: boolean;
+  federation_enabled: boolean;
+  autoreply_enabled: boolean;
+  stickers_enabled: boolean;
+  polls_enabled: boolean;
+  namehistory_enabled: boolean;
+  analytics_enabled: boolean;
+  profiletools_enabled: boolean;
+  mediatools_enabled: boolean;
+  imagetools_enabled: boolean;
+  slowmode_enabled: boolean;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -374,6 +392,24 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   memberbooster_btn_link: '',
   memberbooster_btn_text: '',
   memberbooster_hard_mode: false,
+  // Additional feature settings
+  clean_welcome: false,
+  votekick_required_votes: 5,
+  votekick_timeout_secs: 60,
+  slowmode_seconds: 0,
+  blacklist_mode: 'delete',
+  reports_enabled: true,
+  tickets_enabled: false,
+  federation_enabled: false,
+  autoreply_enabled: true,
+  stickers_enabled: true,
+  polls_enabled: true,
+  namehistory_enabled: true,
+  analytics_enabled: true,
+  profiletools_enabled: true,
+  mediatools_enabled: true,
+  imagetools_enabled: true,
+  slowmode_enabled: false,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
