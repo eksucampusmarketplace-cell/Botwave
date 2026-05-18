@@ -223,10 +223,24 @@ export async function handleIncomingPm(
     } catch {}
   }
 
+  const warningText = `${config.pm_permit_message}\n\n⚠️ Warning ${warnCount}/${config.pm_permit_limit}`;
+
   try {
-    await client.sendMessage(msg.chatId!, {
-      message: `${config.pm_permit_message}\n\n⚠️ Warning ${warnCount}/${config.pm_permit_limit}`,
-    });
+    // If PM permit image is set, send as photo with caption
+    if (config.pm_permit_image && msg.chatId) {
+      try {
+        await client.sendFile(msg.chatId, {
+          file: config.pm_permit_image,
+          caption: warningText,
+          forceDocument: false,
+        });
+      } catch {
+        // Fall back to text if image fails
+        await client.sendMessage(msg.chatId!, { message: warningText });
+      }
+    } else {
+      await client.sendMessage(msg.chatId!, { message: warningText });
+    }
   } catch {}
 
   return true;
