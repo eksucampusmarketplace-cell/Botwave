@@ -10,9 +10,11 @@ export function getInternalSupabaseUrl(): string {
 export async function createClient() {
   const cookieStore = await cookies();
 
-  // Use internal URL for server-side requests (avoids Docker networking issues
-  // where the public URL may not be reliably reachable from within containers)
-  const url = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  // MUST use NEXT_PUBLIC_SUPABASE_URL here because @supabase/ssr derives the
+  // cookie name from the URL hostname. The browser sets "sb-144-auth-token"
+  // (from the public URL). Using SUPABASE_INTERNAL_URL would look for
+  // "sb-supabase-kong-auth-token" which doesn't exist → always unauthorized.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
   return createServerClient(
     url,
