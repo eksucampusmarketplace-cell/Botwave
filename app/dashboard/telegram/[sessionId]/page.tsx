@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 
-type Tab = 'general' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
+type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
@@ -32,6 +32,7 @@ const PENALTY_OPTIONS = [
 // Maps tabs to feature IDs that the bot owner controls
 const TAB_FEATURE_MAP: Record<Tab, string[]> = {
   general: [], // always visible
+  features: [], // always visible
   protection: ['antiflood', 'antiraid', 'antispam', 'captcha'],
   prohibitions: ['prohibitions', 'locks', 'blocklist'],
   numerical: [], // always visible (general limits)
@@ -187,6 +188,48 @@ export default function TelegramConfigPage() {
     memberbooster_hard_mode: false,
     // Force join channel
     force_channel: '',
+    // Additional feature settings
+    clean_welcome: false,
+    votekick_enabled: false,
+    votekick_required_votes: 5,
+    votekick_timeout_secs: 60,
+    karma_enabled: false,
+    ai_enabled: false,
+    ban_ghosts_enabled: false,
+    mentionall_enabled: true,
+    booster_enabled: false,
+    games_enabled: true,
+    texttools_enabled: true,
+    quicktools_enabled: true,
+    mediadownload_enabled: true,
+    funextras_enabled: true,
+    infolookup_enabled: true,
+    join_approval_enabled: false,
+    join_approval_mode: 'manual',
+    xp_enabled: true,
+    slowmode_enabled: false,
+    slowmode_seconds: 0,
+    blacklist_mode: 'delete',
+    reports_enabled: true,
+    tickets_enabled: false,
+    federation_enabled: false,
+    autoreply_enabled: true,
+    stickers_enabled: true,
+    polls_enabled: true,
+    namehistory_enabled: true,
+    analytics_enabled: true,
+    profiletools_enabled: true,
+    mediatools_enabled: true,
+    imagetools_enabled: true,
+    antilink_whitelist: '',
+    night_mode_start: '22:00',
+    night_mode_end: '06:00',
+    start_text: '',
+    help_text: '',
+    rules_text: '',
+    warn_limit: 3,
+    warn_action: 'mute',
+    auto_delete_seconds: 0,
   });
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -326,6 +369,7 @@ export default function TelegramConfigPage() {
 
   const allTabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'general', label: 'General', icon: '\u2699\ufe0f' },
+    { id: 'features', label: 'Features', icon: '\ud83d\udd27' },
     { id: 'protection', label: 'Antiflood & AntiRaid', icon: '\ud83d\udee1\ufe0f' },
     { id: 'prohibitions', label: 'Prohibitions', icon: '\ud83d\udeab' },
     { id: 'numerical', label: 'Limits', icon: '\ud83d\udd22' },
@@ -520,6 +564,103 @@ export default function TelegramConfigPage() {
             <SectionCard title="Messages">
               <TextArea configKey="welcome_message" label="Welcome Message" placeholder="Welcome to the group!" desc="Variables: {name}, {username}, {group}, {count}, {mention}" />
               <TextArea configKey="goodbye_message" label="Goodbye Message" placeholder="Goodbye!" desc="Variables: {name}, {username}, {group}" />
+              <Toggle configKey="clean_welcome" label="Auto-delete old welcome messages" desc="Automatically remove previous welcome messages when a new member joins." />
+            </SectionCard>
+
+            <SectionCard title="Bot Texts">
+              <TextArea configKey="start_text" label="/start message" desc="Custom message shown when user sends /start in DM. Leave empty for default." placeholder="Welcome to BotWave!" rows={3} />
+              <TextArea configKey="help_text" label="/help message" desc="Custom help text. Leave empty for default." placeholder="Here are my commands..." rows={3} />
+              <TextArea configKey="rules_text" label="Group rules" desc="Rules text shown via /rules command." placeholder="1. Be respectful..." rows={4} />
+            </SectionCard>
+
+            <SectionCard title="XP System">
+              <Toggle configKey="xp_enabled" label="XP System" desc="Members earn XP and level up by chatting." />
+            </SectionCard>
+
+            <SaveButton />
+          </div>
+        )}
+
+        {activeTab === 'features' && (
+          <div className="space-y-0">
+            <SectionCard title="Protection Features">
+              <Toggle configKey="antiflood_enabled" label="Anti-Flood" desc="Rate-limit messages & auto-mute spammers." />
+              <Toggle configKey="antilink_enabled" label="Anti-Link" desc="Remove unauthorized links from messages." />
+              <Toggle configKey="antiraid_enabled" label="Anti-Raid" desc="Auto-detect mass joins & lockdown." />
+              <Toggle configKey="night_mode_enabled" label="Night Mode" desc="Restrict messages during night hours." />
+              <Toggle configKey="captcha_enabled" label="CAPTCHA" desc="Verify new members with a challenge." />
+              <Toggle configKey="ban_ghosts_enabled" label="Ban Ghosts" desc="Auto-ban deleted/deactivated accounts." />
+              <Toggle configKey="slowmode_enabled" label="Slow Mode" desc="Control chat slow mode via bot." />
+            </SectionCard>
+
+            <SectionCard title="Community Features">
+              <Toggle configKey="xp_enabled" label="XP System" desc="Members earn XP & level up by chatting." />
+              <Toggle configKey="karma_enabled" label="Karma" desc="Upvote/downvote via +/- reply." />
+              <Toggle configKey="votekick_enabled" label="VoteKick" desc="Community vote to kick users." />
+              {config.votekick_enabled && (
+                <div className="ml-4 mt-2 space-y-0">
+                  <NumberInput configKey="votekick_required_votes" label="Required votes" desc="Number of votes needed to kick a user." min={2} max={50} />
+                  <NumberInput configKey="votekick_timeout_secs" label="Vote timeout (seconds)" desc="How long a vote stays open." min={10} max={3600} />
+                </div>
+              )}
+              <Toggle configKey="mentionall_enabled" label="Mention All" desc="Allow /mentionall to ping all members." />
+              <Toggle configKey="reports_enabled" label="Reports" desc="Users can report messages to admins." />
+              <Toggle configKey="tickets_enabled" label="Tickets" desc="Support ticket system for users." />
+            </SectionCard>
+
+            <SectionCard title="Growth & Engagement">
+              <Toggle configKey="memberbooster_enabled" label="MemberBooster" desc="Force add / channel join to send messages." />
+              <Toggle configKey="booster_enabled" label="Group Booster" desc="Engagement prompts & growth tools." />
+              <Toggle configKey="welcome_enabled" label="Welcome Bot" desc="Greet new members & say goodbye." />
+              <Toggle configKey="join_approval_enabled" label="Join Approval" desc="Manual/auto-approve join requests." />
+              {config.join_approval_enabled && (
+                <div className="ml-4 mt-2">
+                  <SelectInput configKey="join_approval_mode" label="Approval mode" options={[
+                    { value: 'manual', label: 'Manual (admin approves)' },
+                    { value: 'auto', label: 'Auto (approve all)' },
+                    { value: 'captcha', label: 'CAPTCHA (verify first)' },
+                  ]} />
+                </div>
+              )}
+              <Toggle configKey="federation_enabled" label="Federation" desc="Cross-group ban sharing (TrustNet)." />
+            </SectionCard>
+
+            <SectionCard title="AI & Smart Features">
+              <Toggle configKey="ai_enabled" label="AI Chat" desc="Groq AI /ask, /summarize, /translate." />
+              <Toggle configKey="autoreply_enabled" label="Auto Reply" desc="Custom keyword triggers & responses." />
+              <Toggle configKey="namehistory_enabled" label="Name History" desc="Track user name/username changes." />
+              <Toggle configKey="analytics_enabled" label="Analytics" desc="Message stats & activity tracking." />
+            </SectionCard>
+
+            <SectionCard title="Fun & Utility">
+              <Toggle configKey="games_enabled" label="Mini Games" desc="Trivia, word scramble & math quiz." />
+              <Toggle configKey="funextras_enabled" label="Fun Extras" desc="Roast, compliment, dare, truth, lyrics." />
+              <Toggle configKey="texttools_enabled" label="Text Tools" desc="Reverse, mock, morse, leet, flip." />
+              <Toggle configKey="quicktools_enabled" label="Quick Utils" desc="Password, UUID, calc, BMI, hash." />
+              <Toggle configKey="profiletools_enabled" label="Profile Tools" desc="User profiles & member lookup." />
+              <Toggle configKey="stickers_enabled" label="Sticker Maker" desc="Steal & manage sticker packs." />
+              <Toggle configKey="polls_enabled" label="Polls & Quiz" desc="Create polls & quizzes natively." />
+            </SectionCard>
+
+            <SectionCard title="Media & Downloads">
+              <Toggle configKey="mediadownload_enabled" label="Media Download" desc="Download from YT, TikTok, IG." />
+              <Toggle configKey="mediatools_enabled" label="Media Tools" desc="QR codes, timestamps, encoding." />
+              <Toggle configKey="imagetools_enabled" label="Image Tools" desc="File info, download, captions." />
+              <Toggle configKey="infolookup_enabled" label="Info Lookup" desc="Crypto, IP, WHOIS, weather, npm." />
+            </SectionCard>
+
+            <SectionCard title="Moderation">
+              <Toggle configKey="warnings_enabled" label="Warnings" desc="Track rule violations with warnings." />
+              <SelectInput configKey="warn_action" label="Warning action" desc="Action to take when warn limit is reached." options={PENALTY_OPTIONS} />
+              <NumberInput configKey="warn_limit" label="Warning limit" desc="Number of warnings before action is taken." min={1} max={100} />
+              <SelectInput configKey="blacklist_mode" label="Blacklist mode" desc="Action taken when a blacklisted word is detected."
+                options={[
+                  { value: 'delete', label: 'Delete message' },
+                  { value: 'warn', label: 'Warn user' },
+                  { value: 'mute', label: 'Mute user' },
+                  { value: 'ban', label: 'Ban user' },
+                  { value: 'kick', label: 'Kick user' },
+                ]} />
             </SectionCard>
 
             <SaveButton />
@@ -568,9 +709,30 @@ export default function TelegramConfigPage() {
               )}
             </SectionCard>
 
-            <SectionCard title="Other Protection">
+            <SectionCard title="Anti-Link">
               <Toggle configKey="antilink_enabled" label="Anti-Link" desc="Remove unauthorized links from messages." />
+              {config.antilink_enabled && (
+                <div className="mt-3 space-y-0">
+                  <TextArea configKey="antilink_whitelist" label="Whitelisted domains" desc="Domains that are allowed. One per line. E.g. youtube.com" placeholder="youtube.com\ngoogle.com" rows={3} />
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Night Mode">
               <Toggle configKey="night_mode_enabled" label="Night Mode" desc="Restrict messages during night hours." />
+              {config.night_mode_enabled && (
+                <div className="mt-3 grid grid-cols-2 gap-4">
+                  <TimeInput configKey="night_mode_start" label="Start Time" />
+                  <TimeInput configKey="night_mode_end" label="End Time" />
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Slow Mode">
+              <Toggle configKey="slowmode_enabled" label="Slow Mode" desc="Control chat slow mode via bot." />
+              {config.slowmode_enabled && (
+                <NumberInput configKey="slowmode_seconds" label="Slow mode delay (seconds)" desc="Minimum seconds between messages per user. 0 = off." min={0} max={86400} />
+              )}
             </SectionCard>
 
             <SectionCard title="CAPTCHA">
