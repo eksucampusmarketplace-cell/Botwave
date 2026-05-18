@@ -1,5 +1,5 @@
 /**
- * Session Coordinator — Idempotent session lifecycle management.
+ * Session Coordinator - Idempotent session lifecycle management.
  *
  * Guarantees:
  *  1. One session = one bot = one WebSocket (never duplicated)
@@ -63,14 +63,14 @@ export async function tryAcquireLock(sessionId: string): Promise<boolean> {
     return false;
   }
 
-  // Already owned by us — refresh
+  // Already owned by us - refresh
   if (session.locked_by === INSTANCE_ID) {
     await refreshHeartbeat(sessionId);
     ownedSessions.add(sessionId);
     return true;
   }
 
-  // Owned by someone else — check if stale
+  // Owned by someone else - check if stale
   if (session.locked_by) {
     const heartbeatAge = session.heartbeat_at
       ? Date.now() - new Date(session.heartbeat_at).getTime()
@@ -80,11 +80,11 @@ export async function tryAcquireLock(sessionId: string): Promise<boolean> {
       : Infinity;
 
     if (heartbeatAge < LOCK_EXPIRY_MS && lockAge < LOCK_EXPIRY_MS * 2) {
-      console.log(`[COORD] Session ${sessionId.slice(0, 8)} locked by ${session.locked_by} (heartbeat ${Math.round(heartbeatAge / 1000)}s ago) — skipping`);
+      console.log(`[COORD] Session ${sessionId.slice(0, 8)} locked by ${session.locked_by} (heartbeat ${Math.round(heartbeatAge / 1000)}s ago) - skipping`);
       return false;
     }
 
-    console.log(`[COORD] Session ${sessionId.slice(0, 8)} has stale lock from ${session.locked_by} (heartbeat ${Math.round(heartbeatAge / 1000)}s ago) — taking over`);
+    console.log(`[COORD] Session ${sessionId.slice(0, 8)} has stale lock from ${session.locked_by} (heartbeat ${Math.round(heartbeatAge / 1000)}s ago) - taking over`);
   }
 
   // Acquire lock with conditional update via RPC (only if unlocked, ours, or stale)
@@ -105,7 +105,7 @@ export async function tryAcquireLock(sessionId: string): Promise<boolean> {
     return true;
   }
 
-  console.log(`[COORD] Lock race lost for session ${sessionId.slice(0, 8)} — another instance grabbed it`);
+  console.log(`[COORD] Lock race lost for session ${sessionId.slice(0, 8)} - another instance grabbed it`);
   return false;
 }
 
@@ -179,7 +179,7 @@ export async function refreshHeartbeatToSupabase(sessionId: string): Promise<voi
 }
 
 /**
- * Start the heartbeat loop — updates all owned sessions every 30s.
+ * Start the heartbeat loop - updates all owned sessions every 30s.
  */
 export function startHeartbeatLoop(): void {
   if (heartbeatHandle) return;
@@ -193,7 +193,7 @@ export function startHeartbeatLoop(): void {
     // Try Redis first for batch heartbeat
     const redisOk = await redisSetHeartbeatBatch(sessionIds, INSTANCE_ID);
 
-    // Skip Supabase write when circuit is open — Redis heartbeats are enough
+    // Skip Supabase write when circuit is open - Redis heartbeats are enough
     if (isCircuitOpen()) return;
 
     // Sync to Supabase every Nth cycle (or always if Redis is unavailable)
@@ -234,7 +234,7 @@ export async function detectOrphanedSessions(): Promise<any[]> {
   const staleTime = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
 
   // Only select sessions with stale or missing heartbeats. Sessions with
-  // locked_by=null but a recent heartbeat_at are likely mid-recovery —
+  // locked_by=null but a recent heartbeat_at are likely mid-recovery -
   // their worker will re-lock them on the next sync cycle.
   const { data, error } = await supabase
     .from('bot_sessions')
@@ -251,7 +251,7 @@ export async function detectOrphanedSessions(): Promise<any[]> {
 }
 
 /**
- * Recover orphaned sessions — reset them to a recoverable state.
+ * Recover orphaned sessions - reset them to a recoverable state.
  * Only the main service should run this (not workers).
  */
 export async function recoverOrphanedSessions(): Promise<number> {
@@ -270,13 +270,13 @@ export async function recoverOrphanedSessions(): Promise<number> {
     if (session.worker_url) {
       const healthy = await isWorkerHealthy(session.worker_url);
       if (healthy) {
-        // Worker is alive but heartbeat is stale — maybe the worker just hasn't
+        // Worker is alive but heartbeat is stale - maybe the worker just hasn't
         // started the heartbeat loop yet. Give it a pass if lock is recent.
         const lockAge = session.locked_at
           ? Date.now() - new Date(session.locked_at).getTime()
           : Infinity;
         if (lockAge < LOCK_EXPIRY_MS * 2) {
-          console.log(`[COORD] Worker ${session.worker_url} is healthy for ${session.id.slice(0, 8)} — lock is recent, skipping`);
+          console.log(`[COORD] Worker ${session.worker_url} is healthy for ${session.id.slice(0, 8)} - lock is recent, skipping`);
           continue;
         }
       }
@@ -291,7 +291,7 @@ export async function recoverOrphanedSessions(): Promise<number> {
       try {
         newWorkerUrl = await assignWorkerAsync();
         if (newWorkerUrl) {
-          console.log(`[COORD] Orphan ${session.id.slice(0, 8)} on main — reassigning to healthy worker ${newWorkerUrl}`);
+          console.log(`[COORD] Orphan ${session.id.slice(0, 8)} on main - reassigning to healthy worker ${newWorkerUrl}`);
         }
       } catch {
         // Fall back to resetting on main
@@ -304,7 +304,7 @@ export async function recoverOrphanedSessions(): Promise<number> {
     // heartbeat so the next orphan scan doesn't immediately re-detect them.
     // Active sessions: the sync loop reconnects via tryReconnectExisting().
     // Pairing_sent sessions: the user may be entering the pairing code right
-    // now — resetting to qr_pending would delete the instance and invalidate
+    // now - resetting to qr_pending would delete the instance and invalidate
     // the code, causing an infinite create→orphan→reset loop. Instead, just
     // release the stale lock and let the existing bot continue.
     if (session.state === 'active' || session.state === 'pairing_sent') {
@@ -323,7 +323,7 @@ export async function recoverOrphanedSessions(): Promise<number> {
         .eq('id', session.id);
       if (!preserveUpdateErr) {
         recovered++;
-        console.log(`[COORD] ${session.state} session ${session.id.slice(0, 8)} recovered — lock released, state preserved${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ''}`);
+        console.log(`[COORD] ${session.state} session ${session.id.slice(0, 8)} recovered - lock released, state preserved${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ''}`);
       } else {
         console.error(`[COORD] Failed to recover ${session.state} session ${session.id.slice(0, 8)}:`, preserveUpdateErr);
       }
@@ -353,7 +353,7 @@ export async function recoverOrphanedSessions(): Promise<number> {
 
     if (!updateErr) {
       recovered++;
-      console.log(`[COORD] Session ${session.id.slice(0, 8)} recovered — reset to qr_pending${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ' with clean state'}`);
+      console.log(`[COORD] Session ${session.id.slice(0, 8)} recovered - reset to qr_pending${newWorkerUrl ? ` on worker ${newWorkerUrl}` : ' with clean state'}`);
     } else {
       console.error(`[COORD] Failed to recover session ${session.id.slice(0, 8)}:`, updateErr);
     }
@@ -411,7 +411,7 @@ export async function cleanupOnStartup(): Promise<void> {
     console.log(`[COORD] Released ${data.length} stale lock(s) from previous run: ${data.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
 
     // Reset pairing_sent sessions to qr_pending (old pairing code is dead).
-    // In Evolution mode, skip the reset — the pairing may have completed on the
+    // In Evolution mode, skip the reset - the pairing may have completed on the
     // Evolution API side even though Botwave restarted before seeing the
     // connection.update webhook. The sync loop will check instance status via
     // tryReconnectExisting() before deciding to re-pair.
@@ -419,7 +419,7 @@ export async function cleanupOnStartup(): Promise<void> {
     for (const session of data) {
       if (session.state === 'pairing_sent') {
         if (useEvolution) {
-          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Evolution mode) — preserving state for instance status check`);
+          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Evolution mode) - preserving state for instance status check`);
         } else {
           await supabase
             .from('bot_sessions')
@@ -430,7 +430,7 @@ export async function cleanupOnStartup(): Promise<void> {
               updated_at: new Date().toISOString(),
             })
             .eq('id', session.id);
-          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Baileys mode) — reset to qr_pending`);
+          console.log(`[COORD] Session ${session.id.slice(0, 8)} was pairing_sent on restart (Baileys mode) - reset to qr_pending`);
         }
       }
     }
@@ -476,7 +476,7 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
   for (const session of stale) {
     // Enforce per-cycle limit to prevent thundering herd
     if (recovered >= AUTO_RECOVERY_MAX_PER_CYCLE) {
-      console.log(`[AUTO-RECOVERY] Per-cycle limit reached (${AUTO_RECOVERY_MAX_PER_CYCLE}) — deferring remaining sessions to next cycle`);
+      console.log(`[AUTO-RECOVERY] Per-cycle limit reached (${AUTO_RECOVERY_MAX_PER_CYCLE}) - deferring remaining sessions to next cycle`);
       break;
     }
 
@@ -491,7 +491,7 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     const backoffMs = AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, attempts);
     const sessionAge = Date.now() - new Date(session.updated_at).getTime();
     if (sessionAge < backoffMs) {
-      continue; // not ready yet — backoff period hasn't elapsed
+      continue; // not ready yet - backoff period hasn't elapsed
     }
 
     const sid = session.id.slice(0, 8);
@@ -504,9 +504,9 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
     const nextBackoffMin = Math.round(AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, newAttempt) / 60_000);
     if (preserveAuth) {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
     } else {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) — attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Full cleanup and reset to qr_pending...`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Full cleanup and reset to qr_pending...`);
 
       // Force-delete the Evolution API instance before resetting. This prevents
       // the 400 "instance already exists" / 404 "instance does not exist" loop
@@ -613,7 +613,7 @@ export async function detectConflict(sessionId: string): Promise<string | null> 
 // ─── Session State Audit ──────────────────────────────────────────────────────
 
 /**
- * Full audit of all sessions — logs anomalies for debugging.
+ * Full audit of all sessions - logs anomalies for debugging.
  * Call periodically from main service (e.g. every 60s).
  */
 export async function auditSessions(): Promise<void> {
@@ -671,7 +671,7 @@ export async function auditSessions(): Promise<void> {
 
 /**
  * Clean up sessions stuck in pairing_sent or qr_pending for over 48 hours.
- * These sessions never completed pairing — the user abandoned the flow.
+ * These sessions never completed pairing - the user abandoned the flow.
  * Marking them inactive frees up resources and keeps the dashboard clean.
  */
 export async function cleanupStuckPairingSessions(): Promise<number> {
@@ -699,7 +699,7 @@ export async function cleanupStuckPairingSessions(): Promise<number> {
     try {
       await deleteInstanceAndVerify(session.id);
     } catch {
-      // Non-fatal — instance may not exist
+      // Non-fatal - instance may not exist
     }
 
     const { error: updateErr } = await supabase
@@ -721,7 +721,7 @@ export async function cleanupStuckPairingSessions(): Promise<number> {
 
     if (!updateErr) {
       cleaned++;
-      console.log(`[CLEANUP] Session ${sid} ("${label}") was ${session.state} for ${age}h — marked inactive`);
+      console.log(`[CLEANUP] Session ${sid} ("${label}") was ${session.state} for ${age}h - marked inactive`);
     }
   }
 
@@ -740,7 +740,7 @@ export function getInstanceId(): string {
 }
 
 /** Remove a session from the owned set without releasing the DB lock.
- *  Used during worker thread handoff — the worker will re-acquire the lock. */
+ *  Used during worker thread handoff - the worker will re-acquire the lock. */
 export function untrackSession(sessionId: string): void {
   ownedSessions.delete(sessionId);
 }

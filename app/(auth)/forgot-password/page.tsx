@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
                 </p>
               </div>
               <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-6">
-                Don&apos;t see it? Check your <span className="font-semibold">spam/junk folder</span> — emails from new senders sometimes land there.
+                Don&apos;t see it? Check your <span className="font-semibold">spam/junk folder</span> - emails from new senders sometimes land there.
               </p>
               <Link href="/login" className="text-sm text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
                 Back to login

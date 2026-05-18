@@ -10,7 +10,7 @@ import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 const SERVICE_TYPES = ['join', 'leave', 'pin', 'photo_change', 'title_change', 'video_chat'] as const;
 
 export function registerCleanServiceHandlers(bot: Bot, sessionId: string): void {
-  // /cleanservice <type/yes/no> — Enable auto-deletion of service messages
+  // /cleanservice <type/yes/no> - Enable auto-deletion of service messages
   bot.command('cleanservice', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -32,7 +32,7 @@ export function registerCleanServiceHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // /keepservice <type> — Exclude a service type from auto-deletion
+  // /keepservice <type> - Exclude a service type from auto-deletion
   bot.command('keepservice', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -49,14 +49,14 @@ export function registerCleanServiceHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`✅ "${arg}" service messages will not be deleted.`);
   });
 
-  // /nocleanservice — Alias for /cleanservice off
+  // /nocleanservice - Alias for /cleanservice off
   bot.command('nocleanservice', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { clean_service: false } as Record<string, unknown>);
     await ctx.reply('✅ Service message cleanup disabled.');
   });
 
-  // /cleanservicetypes — Show available service types
+  // /cleanservicetypes - Show available service types
   bot.command('cleanservicetypes', async (ctx) => {
     const list = SERVICE_TYPES.map(t => `• <code>${t}</code>`).join('\n');
     await ctx.reply(`<b>Service Message Types</b>\n\n${list}`, { parse_mode: 'HTML' });

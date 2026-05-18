@@ -216,7 +216,7 @@ export default function PricingPage() {
           let callbackFired = false;
           const safetyTimeout = setTimeout(() => {
             if (!callbackFired) {
-              console.warn('[PAYMENT] Squad widget timed out — no callback fired in 10s');
+              console.warn('[PAYMENT] Squad widget timed out - no callback fired in 10s');
               setLoading(null);
               setMessage({ type: 'error', text: 'Payment widget timed out. Please try again.' });
             }

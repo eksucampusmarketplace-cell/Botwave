@@ -27,9 +27,9 @@ async function handleLang(
       `*🌍 LANGUAGE SETTINGS*\n\n` +
       `*Current:* ${langName} (${currentLang})\n\n` +
       `*Commands:*\n` +
-      `• \`!lang list\` — Show all supported languages\n` +
-      `• \`!lang set [code]\` — Set your language\n` +
-      `• \`!lang reset\` — Reset to English\n\n` +
+      `• \`!lang list\` - Show all supported languages\n` +
+      `• \`!lang set [code]\` - Set your language\n` +
+      `• \`!lang reset\` - Reset to English\n\n` +
       `_Example: !lang set fr (for French)_`,
       sock, context.rawMessage.key, context.queue,
     );
@@ -39,7 +39,7 @@ async function handleLang(
   // List supported languages
   if (sub === 'list' || sub === 'languages' || sub === 'ls') {
     const langList = Object.entries(SUPPORTED_LANGUAGES)
-      .map(([code, name]) => `• \`${code}\` — ${name}`)
+      .map(([code, name]) => `• \`${code}\` - ${name}`)
       .join('\n');
 
     await sendReply(
@@ -84,7 +84,7 @@ async function handleLang(
     setUserLangFallback(context.userId, langCode);
     const result = await upsertUserSettings(context.userId, { language_preference: langCode });
     if (!result) {
-      console.error(`[LANG] DB save failed for language_preference=${langCode} userId=${context.userId} — using in-memory fallback`);
+      console.error(`[LANG] DB save failed for language_preference=${langCode} userId=${context.userId} - using in-memory fallback`);
     } else {
       console.log(`[LANG] Saved language_preference=${langCode} for userId=${context.userId}`);
     }
@@ -140,7 +140,7 @@ async function handleLang(
     setUserLangFallback(context.userId, sub);
     const result = await upsertUserSettings(context.userId, { language_preference: sub });
     if (!result) {
-      console.error(`[LANG] DB save failed for language_preference=${sub} userId=${context.userId} — using in-memory fallback`);
+      console.error(`[LANG] DB save failed for language_preference=${sub} userId=${context.userId} - using in-memory fallback`);
     } else {
       console.log(`[LANG] Saved language_preference=${sub} for userId=${context.userId}`);
     }

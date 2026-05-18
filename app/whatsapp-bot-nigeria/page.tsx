@@ -3,11 +3,11 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for Nigeria (2026) — Free Automation for Nigerian Businesses & Groups',
-  description: 'The #1 free WhatsApp bot built for Nigeria. Auto-replies, AI chat, stickers, anti-spam, group management, games — all in Naira pricing. 100+ commands. No coding. Set up in 2 minutes.',
+  title: 'WhatsApp Bot for Nigeria (2026) - Free Automation for Nigerian Businesses & Groups',
+  description: 'The #1 free WhatsApp bot built for Nigeria. Auto-replies, AI chat, stickers, anti-spam, group management, games - all in Naira pricing. 100+ commands. No coding. Set up in 2 minutes.',
   keywords: ['whatsapp bot nigeria', 'free whatsapp bot nigeria', 'whatsapp automation nigeria', 'whatsapp business bot nigeria', 'whatsapp group bot nigeria', 'nigerian whatsapp bot', 'botwave nigeria'],
   openGraph: {
-    title: 'WhatsApp Bot for Nigeria (2026) — Free Automation',
+    title: 'WhatsApp Bot for Nigeria (2026) - Free Automation',
     description: 'The #1 free WhatsApp bot built for Nigeria. 100+ commands, Naira pricing, no coding. Set up in 2 minutes.',
     url: 'https://www.botwave.online/whatsapp-bot-nigeria',
     type: 'website',
@@ -39,7 +39,7 @@ export default function NigeriaLandingPage() {
             The Free WhatsApp Bot<br />Built for Nigeria
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8">
-            100+ commands. Naira pricing. No coding. Auto-replies, AI chat, stickers, anti-spam, group management, games — everything Nigerian businesses and communities need on WhatsApp.
+            100+ commands. Naira pricing. No coding. Auto-replies, AI chat, stickers, anti-spam, group management, games - everything Nigerian businesses and communities need on WhatsApp.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
@@ -66,7 +66,7 @@ export default function NigeriaLandingPage() {
               { title: 'Naira Pricing', desc: 'Plans start at ₦0/month. Paid plans from ₦500. No dollar conversion headaches.' },
               { title: 'Works on Nigerian Networks', desc: 'Optimized for MTN, Glo, Airtel, and 9mobile data speeds. Low bandwidth friendly.' },
               { title: 'Business Ready', desc: 'Auto-replies for customer support, order updates, and promotions. Perfect for SMEs.' },
-              { title: 'Campus Groups', desc: 'Class groups, departmental chats, study sessions — manage hundreds of members effortlessly.' },
+              { title: 'Campus Groups', desc: 'Class groups, departmental chats, study sessions - manage hundreds of members effortlessly.' },
               { title: 'Anti-Ban Protection', desc: 'Advanced anti-ban system protects your number. Human-like delays, message variation, rate limiting.' },
               { title: 'No Coding Needed', desc: 'Scan QR code and your bot is live. Web dashboard to manage everything.' },
             ].map((item) => (

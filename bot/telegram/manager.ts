@@ -1,5 +1,5 @@
 /**
- * Telegram Bot Manager — grammy-based handler for Telegram bot sessions.
+ * Telegram Bot Manager - grammy-based handler for Telegram bot sessions.
  *
  * Uses long polling (no webhook needed). Completely independent from
  * Evolution API / WhatsApp infrastructure.
@@ -160,7 +160,7 @@ export class TelegramBotInstance {
 
         if (err.error instanceof GrammyError) {
           if (err.error.error_code === 401) {
-            console.error(`[TG-BOT] Bot token revoked for ${this.sessionId.slice(0, 8)} — marking inactive`);
+            console.error(`[TG-BOT] Bot token revoked for ${this.sessionId.slice(0, 8)} - marking inactive`);
             this.markInactive('Bot token revoked');
           }
         } else if (err.error instanceof HttpError) {
@@ -312,7 +312,7 @@ export class TelegramBotInstance {
     // Those handlers already replied; processing them again through the legacy
     // WhatsApp command bridge would send a duplicate (incomplete) response.
     // Also includes WhatsApp command aliases (e.g. 'h', 'commands', 'pong')
-    // that map to the same commands — without these, aliases bypass the
+    // that map to the same commands - without these, aliases bypass the
     // native check and fall through to the WhatsApp bridge, producing
     // garbled responses (e.g. docx caption sent as plain text).
     const NATIVE_TG_COMMANDS = new Set([
@@ -460,7 +460,7 @@ export class TelegramBotInstance {
           });
         }
         if (content.document && Buffer.isBuffer(content.document)) {
-          // Document messages (e.g. docx help guide) — send as file
+          // Document messages (e.g. docx help guide) - send as file
           try {
             const { InputFile } = await import('grammy');
             return bot.api.sendDocument(
@@ -476,7 +476,7 @@ export class TelegramBotInstance {
           }
         }
         if (content.image || content.caption) {
-          // Image messages — send caption as text for now
+          // Image messages - send caption as text for now
           if (content.caption) {
             return bot.api.sendMessage(targetChatId, content.caption);
           }

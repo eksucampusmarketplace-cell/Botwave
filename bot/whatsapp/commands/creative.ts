@@ -15,7 +15,7 @@ async function handleDoc(
   sock: any,
   vars: { name?: string; time?: string; date?: string; group?: string },
 ): Promise<void> {
-  // Check for quoted/replied message first — works even with no args
+  // Check for quoted/replied message first - works even with no args
   const quotedMsg = getQuotedMessage(context.rawMessage);
   const quotedText = quotedMsg?.conversation
     || quotedMsg?.extendedTextMessage?.text
@@ -32,13 +32,13 @@ async function handleDoc(
     await sendReply(
       context.chatJid,
       `*DOCUMENT MAKER*\n\n` +
-      `*Option 1 — Title + Content:*\n` +
+      `*Option 1 - Title + Content:*\n` +
       `!doc My Title | Your content goes here exactly as you type it\n\n` +
-      `*Option 2 — Reply to a message:*\n` +
+      `*Option 2 - Reply to a message:*\n` +
       `Reply to any message with *!doc* or *!doc My Title* and the replied message becomes the content\n\n` +
-      `*Option 3 — With image:*\n` +
+      `*Option 3 - With image:*\n` +
       `Send an image with caption *!doc My Title* to include it in the document\n\n` +
-      `*Option 4 — Content only:*\n` +
+      `*Option 4 - Content only:*\n` +
       `!doc Just type your content here and the title will be "Document"\n\n` +
       `_Your formatting, line breaks, and spacing are preserved exactly._`,
       sock,
@@ -71,7 +71,7 @@ async function handleDoc(
   }
 
   try {
-    // Preserve line breaks and formatting — each line becomes its own paragraph
+    // Preserve line breaks and formatting - each line becomes its own paragraph
     const contentLines = content ? content.split('\n') : [];
     const contentParagraphs = contentLines.map(line =>
       new Paragraph({
@@ -209,7 +209,7 @@ async function handleToPdf(context: MessageContext, sock: any): Promise<void> {
   const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
 
   if (!hasQuotedDoc && !hasDirectDoc) {
-    await sendReply(context.chatJid, '*!topdf* — Convert a document to PDF\n\nReply to a .docx or .txt file with *!topdf*', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '*!topdf* - Convert a document to PDF\n\nReply to a .docx or .txt file with *!topdf*', sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -297,7 +297,7 @@ async function handleToDoc(context: MessageContext, sock: any): Promise<void> {
   const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
 
   if (!hasQuotedDoc && !hasDirectDoc) {
-    await sendReply(context.chatJid, '*!todoc* — Convert a file to DOCX\n\nReply to a .txt or .pdf file with *!todoc*', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '*!todoc* - Convert a file to DOCX\n\nReply to a .txt or .pdf file with *!todoc*', sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -366,7 +366,7 @@ async function handleToTxt(context: MessageContext, sock: any): Promise<void> {
   const hasDirectDoc = !!context.rawMessage?.message?.documentMessage;
 
   if (!hasQuotedDoc && !hasDirectDoc) {
-    await sendReply(context.chatJid, '*!totxt* — Convert a document to plain text\n\nReply to a .docx or .pdf file with *!totxt*', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '*!totxt* - Convert a document to plain text\n\nReply to a .docx or .pdf file with *!totxt*', sock, context.rawMessage.key, context.queue);
     return;
   }
 

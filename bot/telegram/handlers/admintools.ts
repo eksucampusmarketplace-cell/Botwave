@@ -1,5 +1,5 @@
 /**
- * Admin Tools — /mentionall, /settitle, /setdesc, /adminlist, /banghosts, /admincache, /anonadmin, /adminerror
+ * Admin Tools - /mentionall, /settitle, /setdesc, /adminlist, /banghosts, /admincache, /anonadmin, /adminerror
  */
 
 import { Bot } from 'grammy';
@@ -74,14 +74,14 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
       if (creator) {
         const title = (creator as { custom_title?: string }).custom_title;
         text += `👑 <a href="tg://user?id=${creator.user.id}">${escapeHtml(creator.user.first_name)}</a>`;
-        if (title) text += ` — <i>${escapeHtml(title)}</i>`;
+        if (title) text += ` - <i>${escapeHtml(title)}</i>`;
         text += '\n';
       }
       const regularAdmins = admins.filter(a => a.status === 'administrator' && !a.user.is_bot);
       for (const admin of regularAdmins) {
         const title = (admin as { custom_title?: string }).custom_title;
         text += `⭐ <a href="tg://user?id=${admin.user.id}">${escapeHtml(admin.user.first_name)}</a>`;
-        if (title) text += ` — <i>${escapeHtml(title)}</i>`;
+        if (title) text += ` - <i>${escapeHtml(title)}</i>`;
         text += '\n';
       }
       const botAdmins = admins.filter(a => a.user.is_bot);
@@ -116,7 +116,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /admincache — Force refresh the admin cache for this chat
+  // /admincache - Force refresh the admin cache for this chat
   bot.command('admincache', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.chat || ctx.chat.type === 'private') {
@@ -132,7 +132,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /anonadmin — Allow anonymous admins to use all commands without permission checks
+  // /anonadmin - Allow anonymous admins to use all commands without permission checks
   bot.command('anonadmin', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -153,7 +153,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /adminerror — Toggle error messages when normal users use admin commands
+  // /adminerror - Toggle error messages when normal users use admin commands
   bot.command('adminerror', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();

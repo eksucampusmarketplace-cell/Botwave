@@ -1,13 +1,13 @@
 /**
- * Email Service — sends alert emails via SMTP (Postal or any SMTP server).
+ * Email Service - sends alert emails via SMTP (Postal or any SMTP server).
  *
  * Configuration via environment variables:
- *   SMTP_HOST     — SMTP server hostname (e.g. postal.botwave.online)
- *   SMTP_PORT     — SMTP port (default: 25)
- *   SMTP_USER     — SMTP username (Postal credential username)
- *   SMTP_PASS     — SMTP password (Postal credential password)
- *   SMTP_FROM     — From address (e.g. alerts@botwave.online)
- *   ALERT_EMAIL   — Where to send alerts (e.g. admin's email)
+ *   SMTP_HOST     - SMTP server hostname (e.g. postal.botwave.online)
+ *   SMTP_PORT     - SMTP port (default: 25)
+ *   SMTP_USER     - SMTP username (Postal credential username)
+ *   SMTP_PASS     - SMTP password (Postal credential password)
+ *   SMTP_FROM     - From address (e.g. alerts@botwave.online)
+ *   ALERT_EMAIL   - Where to send alerts (e.g. admin's email)
  */
 
 import nodemailer from 'nodemailer';
@@ -46,14 +46,14 @@ export interface AlertEmail {
 export async function sendAlertEmail(alert: AlertEmail): Promise<boolean> {
   const transport = getTransporter();
   if (!transport) {
-    console.warn('[EMAIL] SMTP not configured — skipping email alert');
+    console.warn('[EMAIL] SMTP not configured - skipping email alert');
     return false;
   }
 
   const from = process.env.SMTP_FROM || 'alerts@botwave.online';
   const to = process.env.ALERT_EMAIL;
   if (!to) {
-    console.warn('[EMAIL] ALERT_EMAIL not set — skipping email alert');
+    console.warn('[EMAIL] ALERT_EMAIL not set - skipping email alert');
     return false;
   }
 

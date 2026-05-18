@@ -27,15 +27,15 @@ function formatMessage(template: string, vars: Record<string, string>): string {
 
 const DEFAULT_START_PRIVATE =
   `👋 <b>Hey {first_name}!</b>\n\n` +
-  `I'm <b>{bot_name}</b> — a powerful group management bot with 50+ commands.\n\n` +
+  `I'm <b>{bot_name}</b> - a powerful group management bot with 50+ commands.\n\n` +
   `🛡️ <b>What I can do:</b>\n` +
-  `├ Moderation — bans, mutes, warns, purge\n` +
-  `├ Auto-mod — anti-flood, anti-link, anti-raid\n` +
-  `├ Notes & Filters — auto-replies, saved notes\n` +
-  `├ Federation — cross-group ban system\n` +
-  `├ XP System — levels, leaderboards\n` +
-  `├ Tickets — support ticket system\n` +
-  `├ Stickers — steal & manage stickers\n` +
+  `├ Moderation - bans, mutes, warns, purge\n` +
+  `├ Auto-mod - anti-flood, anti-link, anti-raid\n` +
+  `├ Notes & Filters - auto-replies, saved notes\n` +
+  `├ Federation - cross-group ban system\n` +
+  `├ XP System - levels, leaderboards\n` +
+  `├ Tickets - support ticket system\n` +
+  `├ Stickers - steal & manage stickers\n` +
   `└ Games, Polls, Scheduling & more!\n\n` +
   `📱 <b>Add me to a group to get started!</b>\n` +
   `Use /help to see all available commands.`;
@@ -51,7 +51,7 @@ const DEFAULT_START_GROUP_DM =
   `💡 <b>Tip:</b> Use /help in the group to see all commands.`;
 
 const DEFAULT_HELP_TEXT =
-  `⚡ <b>{bot_name} — Command Reference</b>\n\n` +
+  `⚡ <b>{bot_name} - Command Reference</b>\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n\n` +
   `🛡️ <b>Moderation</b>\n` +
   `<code>/ban</code> <code>/unban</code> <code>/tban</code> <code>/mute</code> <code>/unmute</code> <code>/tmute</code> <code>/kick</code>\n` +
@@ -87,119 +87,119 @@ const DEFAULT_HELP_TEXT =
 
 const HELP_CATEGORIES: Record<string, string[]> = {
   '🛡️ Moderation': [
-    '/warn [&lt;@user&gt;|reply] [reason] — Warn a user',
-    '/unwarn [&lt;@user&gt;|reply] — Remove a warning',
-    '/warns [&lt;@user&gt;|reply] — Show user warnings',
-    '/resetwarns [&lt;@user&gt;|reply] — Clear all warnings',
-    '/mute [&lt;@user&gt;|reply] [reason] — Mute a user',
-    '/unmute [&lt;@user&gt;|reply] — Unmute a user',
-    '/tmute [&lt;@user&gt;|reply] [duration] — Temp mute',
-    '/ban [&lt;@user&gt;|reply] [reason] — Ban a user',
-    '/unban [&lt;@user&gt;|reply] — Unban a user',
-    '/tban [&lt;@user&gt;|reply] [duration] [reason] — Temp ban',
-    '/kick [&lt;@user&gt;|reply] [reason] — Kick a user',
-    '/purge [count] — Delete recent messages',
+    '/warn [&lt;@user&gt;|reply] [reason] - Warn a user',
+    '/unwarn [&lt;@user&gt;|reply] - Remove a warning',
+    '/warns [&lt;@user&gt;|reply] - Show user warnings',
+    '/resetwarns [&lt;@user&gt;|reply] - Clear all warnings',
+    '/mute [&lt;@user&gt;|reply] [reason] - Mute a user',
+    '/unmute [&lt;@user&gt;|reply] - Unmute a user',
+    '/tmute [&lt;@user&gt;|reply] [duration] - Temp mute',
+    '/ban [&lt;@user&gt;|reply] [reason] - Ban a user',
+    '/unban [&lt;@user&gt;|reply] - Unban a user',
+    '/tban [&lt;@user&gt;|reply] [duration] [reason] - Temp ban',
+    '/kick [&lt;@user&gt;|reply] [reason] - Kick a user',
+    '/purge [count] - Delete recent messages',
   ],
   '👮 Admin Tools': [
-    '/promote [&lt;@user&gt;|reply] — Promote to admin',
-    '/demote [&lt;@user&gt;|reply] — Demote admin',
-    '/admins — List all admins',
-    '/id — Show user/chat ID',
-    '/info — Show user/group info',
-    '/ping — Check bot latency',
+    '/promote [&lt;@user&gt;|reply] - Promote to admin',
+    '/demote [&lt;@user&gt;|reply] - Demote admin',
+    '/admins - List all admins',
+    '/id - Show user/chat ID',
+    '/info - Show user/group info',
+    '/ping - Check bot latency',
   ],
   '🔒 Locks & Filters': [
-    '/lock &lt;type&gt; — Lock a message type',
-    '/unlock &lt;type&gt; — Unlock a message type',
-    '/locks — Show all locks',
-    '/addfilter &lt;keyword&gt; &lt;response&gt; — Add auto-reply',
-    '/delfilter &lt;keyword&gt; — Remove filter',
-    '/filters — List all keyword filters',
-    '/blacklist &lt;word&gt; — Add word to blacklist',
-    '/unblacklist &lt;word&gt; — Remove from blacklist',
-    '/blacklistmode &lt;action&gt; — Set blacklist action',
+    '/lock &lt;type&gt; - Lock a message type',
+    '/unlock &lt;type&gt; - Unlock a message type',
+    '/locks - Show all locks',
+    '/addfilter &lt;keyword&gt; &lt;response&gt; - Add auto-reply',
+    '/delfilter &lt;keyword&gt; - Remove filter',
+    '/filters - List all keyword filters',
+    '/blacklist &lt;word&gt; - Add word to blacklist',
+    '/unblacklist &lt;word&gt; - Remove from blacklist',
+    '/blacklistmode &lt;action&gt; - Set blacklist action',
   ],
   '👋 Greetings': [
-    '/setwelcome [text] — Set welcome message',
-    '/setgoodbye [text] — Set goodbye message',
-    '/setrules [text] — Set group rules',
-    '/welcome — Preview welcome message',
-    '/rules — Show group rules',
+    '/setwelcome [text] - Set welcome message',
+    '/setgoodbye [text] - Set goodbye message',
+    '/setrules [text] - Set group rules',
+    '/welcome - Preview welcome message',
+    '/rules - Show group rules',
   ],
   '📊 Reports & Polls': [
-    '/report [reply] [reason] — Report a user',
-    '/reports — View pending reports (admin)',
-    '/poll &lt;question&gt; | &lt;opt1&gt; | &lt;opt2&gt; — Create a poll',
-    '/quiz &lt;question&gt; | &lt;correct&gt; | &lt;wrong&gt; — Create quiz',
-    '/stoppoll [reply] — Stop a poll',
+    '/report [reply] [reason] - Report a user',
+    '/reports - View pending reports (admin)',
+    '/poll &lt;question&gt; | &lt;opt1&gt; | &lt;opt2&gt; - Create a poll',
+    '/quiz &lt;question&gt; | &lt;correct&gt; | &lt;wrong&gt; - Create quiz',
+    '/stoppoll [reply] - Stop a poll',
   ],
   '📝 Notes & Schedule': [
-    '/savenote &lt;name&gt; [text] — Save a note',
-    '/note &lt;name&gt; — Get a note',
-    '/delnote &lt;name&gt; — Delete a note',
-    '/notes — List all notes',
-    '/schedule — Manage scheduled messages',
+    '/savenote &lt;name&gt; [text] - Save a note',
+    '/note &lt;name&gt; - Get a note',
+    '/delnote &lt;name&gt; - Delete a note',
+    '/notes - List all notes',
+    '/schedule - Manage scheduled messages',
   ],
   '🎮 Fun & Games': [
-    '/games — Open mini app games',
-    '/game &lt;id&gt; — Play a specific game',
-    '/joke — Get a random joke',
-    '/quote — Get a random quote',
-    '/dice — Roll a dice',
-    '/coin — Flip a coin',
-    '/8ball &lt;question&gt; — Ask the magic 8-ball',
-    '/afk [reason] — Set AFK status',
+    '/games - Open mini app games',
+    '/game &lt;id&gt; - Play a specific game',
+    '/joke - Get a random joke',
+    '/quote - Get a random quote',
+    '/dice - Roll a dice',
+    '/coin - Flip a coin',
+    '/8ball &lt;question&gt; - Ask the magic 8-ball',
+    '/afk [reason] - Set AFK status',
   ],
   '⚙️ Bot Settings': [
-    '/panel — Open Mini App control panel',
-    '/setlog — Set log channel',
-    '/unsetlog — Remove log channel',
-    '/logchannel — Show current log channel',
-    '/nightmode — Toggle night mode',
-    '/antiflood — Toggle flood protection',
-    '/antilink — Toggle link protection',
-    '/help — Show this message',
+    '/panel - Open Mini App control panel',
+    '/setlog - Set log channel',
+    '/unsetlog - Remove log channel',
+    '/logchannel - Show current log channel',
+    '/nightmode - Toggle night mode',
+    '/antiflood - Toggle flood protection',
+    '/antilink - Toggle link protection',
+    '/help - Show this message',
   ],
   '🛡️ Federation': [
-    '/newfed &lt;name&gt; — Create a new federation',
-    '/joinfed &lt;code&gt; — Join group to a federation',
-    '/leavefed — Leave current federation',
-    '/fedinfo — Show federation details',
-    '/myfeds — List federations you own',
-    '/fedchats — List member groups',
-    '/fban &lt;user&gt; [reason] — Ban across all fed groups',
-    '/unfban &lt;user&gt; — Unban from federation',
-    '/fbans — List federation bans',
-    '/fpromote &lt;user&gt; — Add federation admin',
-    '/fdemote &lt;user&gt; — Remove federation admin',
-    '/fedadmins — List federation admins',
-    '/fbroadcast &lt;text&gt; — Broadcast to all fed groups',
+    '/newfed &lt;name&gt; - Create a new federation',
+    '/joinfed &lt;code&gt; - Join group to a federation',
+    '/leavefed - Leave current federation',
+    '/fedinfo - Show federation details',
+    '/myfeds - List federations you own',
+    '/fedchats - List member groups',
+    '/fban &lt;user&gt; [reason] - Ban across all fed groups',
+    '/unfban &lt;user&gt; - Unban from federation',
+    '/fbans - List federation bans',
+    '/fpromote &lt;user&gt; - Add federation admin',
+    '/fdemote &lt;user&gt; - Remove federation admin',
+    '/fedadmins - List federation admins',
+    '/fbroadcast &lt;text&gt; - Broadcast to all fed groups',
   ],
   '🚨 Anti-Raid': [
-    '/antiraid — Show anti-raid settings',
-    '/antiraid on/off — Enable/disable',
-    '/antiraid threshold &lt;n&gt; — Set joins/min threshold',
+    '/antiraid - Show anti-raid settings',
+    '/antiraid on/off - Enable/disable',
+    '/antiraid threshold &lt;n&gt; - Set joins/min threshold',
     '/antiraid mode &lt;restrict|ban|captcha|lockdown&gt;',
-    '/antiraid duration &lt;mins&gt; — Set auto-end duration',
-    '/raid on — Manually trigger raid mode',
-    '/raid off — Manually end raid mode',
+    '/antiraid duration &lt;mins&gt; - Set auto-end duration',
+    '/raid on - Manually trigger raid mode',
+    '/raid off - Manually end raid mode',
   ],
   '🎫 Tickets': [
-    '/ticket &lt;subject&gt; — Open a support ticket',
-    '/tickets — List open tickets (admin)',
-    '/closeticket &lt;id&gt; — Close a ticket',
-    '/assign &lt;id&gt; &lt;@admin&gt; — Assign ticket',
-    '/escalate &lt;id&gt; — Escalate priority',
-    '/treply &lt;id&gt; &lt;message&gt; — Reply to ticket',
+    '/ticket &lt;subject&gt; - Open a support ticket',
+    '/tickets - List open tickets (admin)',
+    '/closeticket &lt;id&gt; - Close a ticket',
+    '/assign &lt;id&gt; &lt;@admin&gt; - Assign ticket',
+    '/escalate &lt;id&gt; - Escalate priority',
+    '/treply &lt;id&gt; &lt;message&gt; - Reply to ticket',
   ],
   '🎨 Stickers': [
-    '/kang — Reply to sticker to steal it',
-    '/stickerinfo — Reply to sticker for info',
-    '/getsticker — Reply to sticker to get as file',
+    '/kang - Reply to sticker to steal it',
+    '/stickerinfo - Reply to sticker for info',
+    '/getsticker - Reply to sticker to get as file',
   ],
   '📡 Broadcast': [
-    '/broadcast &lt;message&gt; — Send to all groups (owner)',
-    '/broadcaststats — Show last broadcast stats',
+    '/broadcast &lt;message&gt; - Send to all groups (owner)',
+    '/broadcaststats - Show last broadcast stats',
   ],
 };
 
@@ -243,7 +243,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       if (!user) {
         const totalCmds = Object.values(HELP_CATEGORIES).reduce((a, b) => a + b.length, 0);
         await ctx.reply(
-          `👋 Hi! I'm <b>${botName}</b> — a powerful group management bot.\n\nUse /help to see all <b>${totalCmds}+</b> available commands.`,
+          `👋 Hi! I'm <b>${botName}</b> - a powerful group management bot.\n\nUse /help to see all <b>${totalCmds}+</b> available commands.`,
           { parse_mode: 'HTML' },
         );
         return;
@@ -287,7 +287,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await sendHelpMessage(ctx, sessionId);
   });
 
-  // ── /panel — open mini app directly ─────────────────────────────────────
+  // ── /panel - open mini app directly ─────────────────────────────────────
 
   bot.command('panel', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -315,7 +315,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     });
   });
 
-  // ── /setstart — customize start message ─────────────────────────────────
+  // ── /setstart - customize start message ─────────────────────────────────
 
   bot.command('setstart', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -333,7 +333,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Start message updated!');
   });
 
-  // ── /sethelp — customize help message ───────────────────────────────────
+  // ── /sethelp - customize help message ───────────────────────────────────
 
   bot.command('sethelp', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -351,7 +351,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Help message updated!');
   });
 
-  // ── /groups — list all groups the bot is in ────────────────────────────
+  // ── /groups - list all groups the bot is in ────────────────────────────
 
   bot.command(['groups', 'mygroups'], async (ctx) => {
     const groups = await getActiveGroups(sessionId);
@@ -379,7 +379,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // ── /resetstart — reset start message to default ───────────────────────
+  // ── /resetstart - reset start message to default ───────────────────────
 
   bot.command('resetstart', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -387,7 +387,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Start message reset to default.');
   });
 
-  // ── /resethelp — reset help message to default ─────────────────────────
+  // ── /resethelp - reset help message to default ─────────────────────────
 
   bot.command('resethelp', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -395,7 +395,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Help message reset to default.');
   });
 
-  // ── /setstartbuttons — set custom inline buttons on /start ─────────────
+  // ── /setstartbuttons - set custom inline buttons on /start ─────────────
 
   bot.command('setstartbuttons', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -465,7 +465,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // ── Callback: help_back — show category list ───────────────────────────
+  // ── Callback: help_back - show category list ───────────────────────────
 
   bot.callbackQuery('help_back', async (ctx) => {
     await ctx.answerCallbackQuery();
@@ -486,7 +486,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // ── Callback: help_categories — show interactive category picker ───────
+  // ── Callback: help_categories - show interactive category picker ───────
 
   bot.callbackQuery('help_categories', async (ctx) => {
     await ctx.answerCallbackQuery();

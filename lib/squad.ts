@@ -210,7 +210,7 @@ export async function initializePayment(params: InitPaymentParams): Promise<Init
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       console.error(`[SQUAD] initializePayment TIMEOUT after ${SQUAD_API_TIMEOUT_MS}ms ref=${params.transactionRef}`);
-      return { success: false, error: 'Squad API timed out — please try again' };
+      return { success: false, error: 'Squad API timed out - please try again' };
     }
     console.error(`[SQUAD] initializePayment EXCEPTION ref=${params.transactionRef}:`, err);
     return {
@@ -284,7 +284,7 @@ export async function verifyPayment(transactionRef: string): Promise<VerifyPayme
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       console.error(`[SQUAD] verifyPayment TIMEOUT after ${SQUAD_API_TIMEOUT_MS}ms ref=${transactionRef}`);
-      return { success: false, error: 'Squad verify timed out — please try again' };
+      return { success: false, error: 'Squad verify timed out - please try again' };
     }
     console.error(`[SQUAD] verifyPayment EXCEPTION ref=${transactionRef}:`, err);
     return {

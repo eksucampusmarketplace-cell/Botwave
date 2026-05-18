@@ -30,7 +30,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
       await setCaptchaPending(sessionId, ctx.chat.id.toString(), member.id.toString(), expiresAt);
 
       const keyboard = new InlineKeyboard()
-        .text(`✅ I'm human — click to verify`, `captcha:${member.id}:${ctx.chat.id}`);
+        .text(`✅ I'm human - click to verify`, `captcha:${member.id}:${ctx.chat.id}`);
 
       const msg = await ctx.reply(
         `👋 Welcome ${member.first_name}!\n` +
@@ -59,7 +59,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /captcha — Enable/disable CAPTCHA
+  // /captcha - Enable/disable CAPTCHA
   bot.command('captcha', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -81,7 +81,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /captchamode — Choose CAPTCHA type
+  // /captchamode - Choose CAPTCHA type
   bot.command('captchamode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -93,7 +93,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ CAPTCHA mode set to: ${arg}`);
   });
 
-  // /captcharules — Require accepting rules before speaking
+  // /captcharules - Require accepting rules before speaking
   bot.command('captcharules', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -108,7 +108,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /captchamutetime — Set auto-unmute time for CAPTCHA
+  // /captchamutetime - Set auto-unmute time for CAPTCHA
   bot.command('captchamutetime', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -123,7 +123,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /captchakick — Kick users who haven't solved CAPTCHA
+  // /captchakick - Kick users who haven't solved CAPTCHA
   bot.command('captchakick', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -138,7 +138,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /captchakicktime — Set time after which to kick CAPTCHA'd users
+  // /captchakicktime - Set time after which to kick CAPTCHA'd users
   bot.command('captchakicktime', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -147,7 +147,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ CAPTCHA kick time set to: ${arg}`);
   });
 
-  // /setcaptchatext — Customise the CAPTCHA button text
+  // /setcaptchatext - Customise the CAPTCHA button text
   bot.command('setcaptchatext', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const text = (ctx.match?.toString() || '').trim();
@@ -156,7 +156,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ CAPTCHA button text set to: ${text}`);
   });
 
-  // /resetcaptchatext — Reset CAPTCHA button to default
+  // /resetcaptchatext - Reset CAPTCHA button to default
   bot.command('resetcaptchatext', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { captcha_button_text: null } as Record<string, unknown>);

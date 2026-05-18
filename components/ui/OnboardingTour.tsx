@@ -25,7 +25,7 @@ const steps = [
   },
   {
     target: '[data-tour="features"]',
-    content: 'Toggle bot features on and off. Each feature adds new commands to your WhatsApp — stickers, AI chat, games, and more!',
+    content: 'Toggle bot features on and off. Each feature adds new commands to your WhatsApp - stickers, AI chat, games, and more!',
     placement: 'top' as const,
   },
   {
@@ -35,7 +35,7 @@ const steps = [
   },
   {
     target: '[data-tour="nav-sessions"]',
-    content: 'Manage all your sessions in detail — connect, disconnect, or delete WhatsApp connections.',
+    content: 'Manage all your sessions in detail - connect, disconnect, or delete WhatsApp connections.',
     placement: 'bottom' as const,
   },
   {

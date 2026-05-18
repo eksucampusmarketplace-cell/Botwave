@@ -190,11 +190,11 @@ export async function handleMessageRevoke(
   const msgCache = getSessionMsgCache(sessionId);
   const cached = msgCache.get(deletedKey.id);
   if (!cached) {
-    console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — message NOT in cache (session=${sessionId.slice(0, 8)}). Cache size=${msgCache.size}`);
+    console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} - message NOT in cache (session=${sessionId.slice(0, 8)}). Cache size=${msgCache.size}`);
     return;
   }
 
-  console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} — found cached message in chat=${cached.chatJid} from=${cached.senderJid} revokeJid=${revokeMessage.key.remoteJid}`);
+  console.log(`[ANTI-DELETE] Revoke for ${deletedKey.id} - found cached message in chat=${cached.chatJid} from=${cached.senderJid} revokeJid=${revokeMessage.key.remoteJid}`);
   msgCache.delete(deletedKey.id);
 
   // Use the cached chatJid (phone JID format) instead of revokeMessage.key.remoteJid

@@ -140,11 +140,11 @@ async function handleSettings(context: MessageContext, args: string[], sock: any
       `*AFK:* ${afkEnabled}\n` +
       `*AFK Message:* ${afkMsg}\n\n` +
       `*Commands:*\n` +
-      `!settings afk on/off — Toggle AFK\n` +
-      `!settings afk msg [text] — Set AFK message\n` +
-      `!settings name [name] — Set bot name\n` +
-      `!settings welcome on/off — Toggle welcome/goodbye\n` +
-      `!settings status — Show current settings`,
+      `!settings afk on/off - Toggle AFK\n` +
+      `!settings afk msg [text] - Set AFK message\n` +
+      `!settings name [name] - Set bot name\n` +
+      `!settings welcome on/off - Toggle welcome/goodbye\n` +
+      `!settings status - Show current settings`,
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -301,11 +301,11 @@ async function handleWelcomeCmd(context: MessageContext, args: string[], sock: a
       `Current: ${current || '_Default random messages_'}\n\n` +
       `*Set custom:* !welcome Hello {name}, welcome to {group}!\n\n` +
       `*Placeholders:*\n` +
-      `{name} — new member's name\n` +
-      `{group} — group name\n` +
-      `{time} — current time\n` +
-      `{date} — current date\n` +
-      `{count} — member count\n\n` +
+      `{name} - new member's name\n` +
+      `{group} - group name\n` +
+      `{time} - current time\n` +
+      `{date} - current date\n` +
+      `{count} - member count\n\n` +
       `*Reset to default:* !welcome reset\n` +
       `*Toggle on/off:* !settings welcome on/off`,
       sock, context.rawMessage.key, context.queue,
@@ -385,7 +385,7 @@ async function handleKick(context: MessageContext, args: string[], sock: any): P
     }
 
     if (!targetJid) {
-      await sendReply(context.chatJid, '*!kick* — Remove a member from the group\n\nUsage:\n- Reply to their message with !kick\n- Or: !kick @mention\n- Or: !kick 2348012345678', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, '*!kick* - Remove a member from the group\n\nUsage:\n- Reply to their message with !kick\n- Or: !kick @mention\n- Or: !kick 2348012345678', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -423,7 +423,7 @@ async function handlePromote(context: MessageContext, args: string[], sock: any)
     }
 
     if (!targetJid) {
-      await sendReply(context.chatJid, '*!promote* — Make a member admin\n\nUsage:\n- Reply to their message with !promote\n- Or: !promote @mention\n- Or: !promote 2348012345678', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, '*!promote* - Make a member admin\n\nUsage:\n- Reply to their message with !promote\n- Or: !promote @mention\n- Or: !promote 2348012345678', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -461,7 +461,7 @@ async function handleDemote(context: MessageContext, args: string[], sock: any):
     }
 
     if (!targetJid) {
-      await sendReply(context.chatJid, '*!demote* — Remove admin from a member\n\nUsage:\n- Reply to their message with !demote\n- Or: !demote @mention\n- Or: !demote 2348012345678', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, '*!demote* - Remove admin from a member\n\nUsage:\n- Reply to their message with !demote\n- Or: !demote @mention\n- Or: !demote 2348012345678', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -613,7 +613,7 @@ async function handleAntiDelete(
     const current = await getFeatureEnabled(context.userId, 'anti_delete');
     await sendReply(
       context.chatJid,
-      `*Anti-Delete* is currently *${current ? 'ON' : 'OFF'}*\n\nUsage:\n!antidelete on — recover deleted messages\n!antidelete off — disable recovery`,
+      `*Anti-Delete* is currently *${current ? 'ON' : 'OFF'}*\n\nUsage:\n!antidelete on - recover deleted messages\n!antidelete off - disable recovery`,
       sock,
       context.rawMessage.key,
       context.queue,
@@ -693,7 +693,7 @@ async function handleRecover(
 
     try {
       if (isPrivate) {
-        // Send to private chat — no mentions, include chat context
+        // Send to private chat - no mentions, include chat context
         if (msg.mediaBuffer && msg.mediaType) {
           const caption = `_${tag} deleted a ${msg.mediaType} in ${chatName} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
           const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
@@ -713,11 +713,11 @@ async function handleRecover(
           const text = `_${tag} deleted in ${chatName} (${timeLabel}):_\n\n${msg.content}`;
           await sock.sendMessage(targetJid, { text });
         } else if (msg.mediaType) {
-          const text = `_${tag} deleted a ${msg.mediaType} in ${chatName} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+          const text = `_${tag} deleted a ${msg.mediaType} in ${chatName} (${timeLabel})${msg.mediaCaption ? ` - "${msg.mediaCaption}"` : ''}_ (media expired)`;
           await sock.sendMessage(targetJid, { text });
         }
       } else {
-        // Original behavior — send in same chat with mentions
+        // Original behavior - send in same chat with mentions
         if (msg.mediaBuffer && msg.mediaType) {
           const caption = `_${tag} deleted a ${msg.mediaType} (${timeLabel}):_${msg.mediaCaption ? `\n_Caption: ${msg.mediaCaption}_` : ''}`;
           const needsSeparate = msg.mediaType === 'sticker' || msg.mediaType === 'audio';
@@ -745,7 +745,7 @@ async function handleRecover(
           const mentions = context.isGroup ? [msg.deleterJid] : undefined;
           await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
         } else if (msg.mediaType) {
-          const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` — "${msg.mediaCaption}"` : ''}_ (media expired)`;
+          const text = `_${tag} deleted a ${msg.mediaType} (${timeLabel})${msg.mediaCaption ? ` - "${msg.mediaCaption}"` : ''}_ (media expired)`;
           const mentions = context.isGroup ? [msg.deleterJid] : undefined;
           await sendReply(context.chatJid, { text, mentions }, sock, context.rawMessage.key, context.queue);
         }
@@ -866,7 +866,7 @@ registerCommand({
     const rssMB = (mem.rss / 1024 / 1024).toFixed(1);
 
     const msg =
-      `*BOT TEST — ALL SYSTEMS*\n\n` +
+      `*BOT TEST - ALL SYSTEMS*\n\n` +
       `Status: ONLINE\n` +
       `Uptime: ${h}h ${m}m ${s}s\n` +
       `Memory: ${heapMB}MB heap / ${rssMB}MB RSS\n` +

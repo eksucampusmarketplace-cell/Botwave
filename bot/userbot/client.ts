@@ -65,7 +65,7 @@ export class UserbotClient {
       (clientOpts as Record<string, unknown>).proxy = proxyConfig;
       console.log(`[USERBOT-CLIENT] ${config.sessionId.slice(0, 8)} using proxy ${this.currentProxy.host}:${this.currentProxy.port}`);
     } else {
-      console.warn(`[USERBOT-CLIENT] ${config.sessionId.slice(0, 8)} NO proxy — connecting directly`);
+      console.warn(`[USERBOT-CLIENT] ${config.sessionId.slice(0, 8)} NO proxy - connecting directly`);
     }
 
     this.client = new TelegramClient(

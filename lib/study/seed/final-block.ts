@@ -1,5 +1,5 @@
 /**
- * FINAL BLOCK FOR 300 LEVEL MBBS 2026 — Pre-loaded Study Material
+ * FINAL BLOCK FOR 300 LEVEL MBBS 2026 - Pre-loaded Study Material
  * Source: Final Block DOCX covering 8 major topics
  * Topics: Pancreatic Hormones, Adrenal Hormones, Male Reproductive Organs,
  *         Foetal Circulation, CNS Physiologic Anatomy, Spinal Cord Lesions,
@@ -7,7 +7,7 @@
  */
 
 export const finalBlockMaterial = {
-  title: 'Final Block — 300 Level MBBS 2026',
+  title: 'Final Block - 300 Level MBBS 2026',
   fileType: 'docx',
   wordCount: 4900,
   status: 'analyzed' as const,
@@ -19,7 +19,7 @@ export const finalBlockMaterial = {
       { term: 'Insulin', definition: 'Peptide hormone of 51 amino acids secreted by beta cells. Secreted as proinsulin → cleaved to insulin + C-peptide. Half-life ~5 min. Binds tyrosine kinase receptor (TKR), causes GLUT-4 translocation. The ONLY hypoglycaemic hormone.' },
       { term: 'Glucagon', definition: 'Peptide hormone of 29 amino acids secreted by alpha cells. Counter-regulatory hormone to insulin. Acts via G-protein coupled receptor → adenylate cyclase → ↑cAMP. Primary target is the liver.' },
       { term: 'Somatostatin (Pancreatic)', definition: 'Secreted by delta cells. Also produced in hypothalamus and GI tract. Inhibits insulin, glucagon, GH, and GI secretions. Acts as local paracrine regulator. Synthetic analogue: Octreotide.' },
-      { term: 'C-peptide', definition: 'Connecting peptide released when proinsulin is cleaved to active insulin. Clinically used to distinguish endogenous from exogenous insulin — present in endogenous insulin secretion, absent when exogenous insulin is given.' },
+      { term: 'C-peptide', definition: 'Connecting peptide released when proinsulin is cleaved to active insulin. Clinically used to distinguish endogenous from exogenous insulin - present in endogenous insulin secretion, absent when exogenous insulin is given.' },
       { term: 'Diabetic Ketoacidosis (DKA)', definition: 'Life-threatening complication of Type 1 DM due to absolute insulin deficiency. Results in: hyperglycaemia, increased lipolysis → free fatty acids → ketone bodies → metabolic acidosis. Features: Kussmaul breathing, fruity breath.' },
       { term: 'OGTT (Oral Glucose Tolerance Test)', definition: 'Diagnostic test for diabetes. Method: fasting blood glucose → 75g oral glucose → check at 1, 2, 3 hrs. Normal: <6.1 mmol/L fasting. Impaired: 6.1-7.0 mmol/L. Diabetic: ≥7.0 mmol/L fasting repeatedly.' },
       { term: '## ADRENAL HORMONES', definition: 'The adrenal glands sit on top of each kidney. Each gland has two functionally distinct parts: the outer cortex (80-90%, mesodermal origin) producing steroid hormones, and the inner medulla (neural crest origin) producing catecholamines.' },
@@ -48,7 +48,7 @@ export const finalBlockMaterial = {
       { term: '## PREGNANCY & LACTATION', definition: 'Pregnancy involves fertilization in the fallopian tube, implantation in the uterus, and placental development. The placenta functions as an organ of gas exchange, nutrition, and hormone production. Parturition is driven by oxytocin positive feedback.' },
       { term: 'hCG (Human Chorionic Gonadotropin)', definition: 'Glycoprotein hormone secreted by syncytiotrophoblast of placenta. Maintains corpus luteum in early pregnancy. Peaks at 8-10 weeks. Basis of pregnancy tests. Structurally similar to LH.' },
       { term: 'Prolactin', definition: 'Anterior pituitary hormone that stimulates milk production (lactogenesis). Inhibited by dopamine. During pregnancy, high estrogen blocks prolactin action on breast. After delivery, estrogen drops → prolactin acts → milk production begins.' },
-      { term: 'Oxytocin', definition: 'Posterior pituitary hormone. Two main functions: (1) Uterine contraction during labour — positive feedback (Ferguson reflex); (2) Milk ejection reflex — suckling stimulates oxytocin → myoepithelial cell contraction → milk let-down.' },
+      { term: 'Oxytocin', definition: 'Posterior pituitary hormone. Two main functions: (1) Uterine contraction during labour - positive feedback (Ferguson reflex); (2) Milk ejection reflex - suckling stimulates oxytocin → myoepithelial cell contraction → milk let-down.' },
       { term: 'Ferguson Reflex', definition: 'Positive feedback loop during parturition: cervical stretching → oxytocin release → uterine contractions → more cervical stretching → more oxytocin. One of the few positive feedback examples in physiology.' },
       { term: '## CNS & SPINAL CORD LESIONS', definition: 'The spinal cord carries motor and sensory signals between the brain and body. Lesions at different levels produce characteristic patterns of paralysis and sensory loss depending on which tracts are affected.' },
       { term: 'Spinal Shock', definition: 'Period immediately following complete spinal cord transection. Features: NO sensory or motor activity below lesion, flaccid paralysis, loss of all reflexes, loss of sensation, bladder/rectum paralysis, BP may drop (especially T1 transection → MBP 100→40 mmHg).' },
@@ -67,9 +67,9 @@ export const finalBlockMaterial = {
       '## PANCREATIC HORMONES',
       '>> The pancreas has both exocrine and endocrine functions. The endocrine portion (Islets of Langerhans) regulates blood glucose through insulin and glucagon.',
       '### Definition',
-      'Pancreas: mixed gland — exocrine (digestive enzymes) + endocrine (Islets of Langerhans → blood glucose regulation)',
+      'Pancreas: mixed gland - exocrine (digestive enzymes) + endocrine (Islets of Langerhans → blood glucose regulation)',
       '### Basic Properties',
-      'Cell types: 1) Beta (60-70%) — Insulin, 2) Alpha (20-25%) — Glucagon, 3) Delta (5-10%) — Somatostatin, 4) PP/F (1-5%) — Pancreatic Polypeptide',
+      'Cell types: 1) Beta (60-70%) - Insulin, 2) Alpha (20-25%) - Glucagon, 3) Delta (5-10%) - Somatostatin, 4) PP/F (1-5%) - Pancreatic Polypeptide',
       'Insulin: 51 amino acids, proinsulin → insulin + C-peptide. Half-life ~5 min. Binds TKR → GLUT-4 translocation. ONLY hypoglycaemic hormone',
       'Glucagon: 29 amino acids, from alpha cells. Major counter-regulatory hormone to insulin. Acts via GPCR → cAMP',
       'Other: Pancreatic Polypeptide (inhibits exocrine secretions), Amylin (co-secreted with insulin, slows gastric emptying)',
@@ -108,7 +108,7 @@ export const finalBlockMaterial = {
       'Aldosterone: ↑Na+ reabsorption, ↑K+/H+ excretion at distal tubule/collecting duct',
       'Cortisol: ↑gluconeogenesis, anti-inflammatory, immunosuppressive, anti-insulin (diabetogenic). Steroid → intracellular receptor → gene transcription',
       'Catecholamines (fight-or-flight): ↑heart rate, ↑BP, bronchodilation, glycogenolysis, lipolysis, mydriasis',
-      'Androgens: DHEA, androstenedione — important for female pubic/axillary hair and libido',
+      'Androgens: DHEA, androstenedione - important for female pubic/axillary hair and libido',
       '### Regulation',
       'Aldosterone: RAAS + plasma K+. Cortisol: HPA axis (CRH → ACTH → Cortisol), circadian rhythm (peak early morning)',
       'RAS = Angiotensin II only (short-term BP). RAAS = Angiotensin II + Aldosterone (long-term)',
@@ -153,7 +153,7 @@ export const finalBlockMaterial = {
       '### Definition',
       'Specialised circulatory pattern in foetus with three shunts bypassing non-functional lungs and liver, using placenta for gas exchange',
       '### Basic Properties',
-      'Three shunts (FDD): 1) Ductus Venosus — bypasses liver, 2) Foramen Ovale — bypasses lungs (RA → LA), 3) Ductus Arteriosus — bypasses lungs (PA → Aorta)',
+      'Three shunts (FDD): 1) Ductus Venosus - bypasses liver, 2) Foramen Ovale - bypasses lungs (RA → LA), 3) Ductus Arteriosus - bypasses lungs (PA → Aorta)',
       'Foetal haemoglobin (HbF) has HIGHER O₂ affinity than adult HbA (allows transfer at placenta)',
       'Umbilical cord: 2 arteries (deoxygenated) + 1 vein (oxygenated)',
       '### Functions/Effects',
@@ -200,7 +200,7 @@ export const finalBlockMaterial = {
       'Lactation: Prolactin → milk production (high estrogen blocks during pregnancy → starts AFTER delivery). Colostrum: IgA-rich, passive immunity',
       '### Regulation',
       'Parturition triggers: ↑estrogen/progesterone ratio, oxytocin, prostaglandins, fetal cortisol',
-      'Oxytocin: POSITIVE FEEDBACK (Ferguson reflex) — contractions → cervical stretch → more oxytocin',
+      'Oxytocin: POSITIVE FEEDBACK (Ferguson reflex) - contractions → cervical stretch → more oxytocin',
       'Milk ejection: suckling → oxytocin → myoepithelial contraction → let-down',
       '### Clinical Features',
       'Labour stages: 1) Cervical dilation (longest), 2) Delivery of baby, 3) Delivery of placenta',
@@ -223,7 +223,7 @@ export const finalBlockMaterial = {
       'LMNL (at/below anterior horn): flaccid paralysis, hypotonia, lost reflexes, fasciculations',
       'Paralysis types: Monoplegia (1 limb), Diplegia (both upper/lower), Hemiplegia (one side), Paraplegia (lower body), Quadriplegia (all 4)',
       '### Clinical Features',
-      'Spinal shock: immediate after transection — flaccid paralysis, ALL reflexes lost, bladder/bowel paralysis. Resolves → UMNL pattern',
+      'Spinal shock: immediate after transection - flaccid paralysis, ALL reflexes lost, bladder/bowel paralysis. Resolves → UMNL pattern',
       'T1 transection → BP drops ~100 to ~40 mmHg. Above C3 → respiratory failure (phrenic nerve C3,4,5)',
       '### Named Syndromes (Diagnosis)',
       '1) Brown-Séquard: hemisection → ipsilateral motor loss + contralateral pain/temp loss',
@@ -244,17 +244,17 @@ export const finalBlockMaterial = {
       'Visual pathway: Retina → Optic nerve → Optic chiasm (nasal fibres cross) → Optic tract → LGB (thalamus) → Optic radiation → Visual cortex (area 17)',
       'Purkinje shift: dim light shifts peak sensitivity from 555nm → 507nm (blue-green appears brighter)',
       '### Abnormalities',
-      'Night blindness (nyctalopia): impaired rods — vitamin A deficiency or retinitis pigmentosa',
+      'Night blindness (nyctalopia): impaired rods - vitamin A deficiency or retinitis pigmentosa',
       'Colour blindness: X-linked recessive. Most common: red-green. Tested with Ishihara plates',
       '### Diagnosis',
       'Colour blindness: Ishihara plates. Night blindness: dark adaptation test, serum vitamin A',
 
       '## THE THALAMUS',
-      '>> The thalamus is the brain\'s relay station — almost every sensory signal (except smell) passes through it before reaching the cortex.',
+      '>> The thalamus is the brain\'s relay station - almost every sensory signal (except smell) passes through it before reaching the cortex.',
       '### Definition',
       'Gateway to cerebral cortex. ALL sensory pathways relay through thalamus EXCEPT olfaction',
       '### Basic Properties',
-      '5 nuclear masses: 1) Medial, 2) Lateral (VA, VL, VPL, VPM), 3) Midline, 4) Intralaminar (arousal/consciousness), 5) Pulvinar (largest — visual attention, language)',
+      '5 nuclear masses: 1) Medial, 2) Lateral (VA, VL, VPL, VPM), 3) Midline, 4) Intralaminar (arousal/consciousness), 5) Pulvinar (largest - visual attention, language)',
       'Metathalamus = LGB + MGB',
       'Reticular nucleus: surrounds thalamus, filters/gates information. Does NOT project to cortex directly',
       '### Functions/Effects',
@@ -269,7 +269,7 @@ export const finalBlockMaterial = {
     ],
 
     examHighlights: [
-      '## PANCREATIC HORMONES — EXAM FACTS',
+      '## PANCREATIC HORMONES - EXAM FACTS',
       '>> Highest-yield pancreatic topics for MCQs.',
       '### Insulin',
       'Insulin is the ONLY hypoglycaemic hormone (all others raise glucose: glucagon, cortisol, GH, epinephrine)',
@@ -279,7 +279,7 @@ export const finalBlockMaterial = {
       'OGTT: Normal <6.1, Impaired 6.1-7.0, Diabetic ≥7.0 mmol/L fasting',
       '### DKA vs HHS',
       'DKA = absolute insulin deficiency (Type 1). HHS = Type 2. Always tested',
-      '## ADRENAL HORMONES — EXAM FACTS',
+      '## ADRENAL HORMONES - EXAM FACTS',
       '>> Cortex zones and vein drainage are repeatedly tested.',
       '### Must-Know Facts',
       'Cortex zones: GFR = Salt (aldosterone), Sugar (cortisol), Sex (androgens)',
@@ -288,7 +288,7 @@ export const finalBlockMaterial = {
       'Cortisol + GH = both diabetogenic (anti-insulin)',
       '### Phaeochromocytoma',
       'Rule of 10s. Episodic HTN, palpitations, headache, sweating. Diagnose: 24h urine metanephrines',
-      '## MALE REPRODUCTIVE — EXAM FACTS',
+      '## MALE REPRODUCTIVE - EXAM FACTS',
       '>> Spermatogenesis and blood-testis barrier are classic questions.',
       '### Key Facts',
       'Spermatogenesis = 74 days. Temp must be 2-3°C below body (why testes are external)',
@@ -296,12 +296,12 @@ export const finalBlockMaterial = {
       'HPG axis: FSH → Sertoli (spermatogenesis). LH → Leydig (testosterone). Inhibin → ↓FSH',
       '### Semen Composition',
       'Seminal vesicles = 60% (fructose). Prostate = 30% (PSA, alkaline). Bulbourethral = lubrication',
-      '## FOETAL CIRCULATION — EXAM FACTS',
+      '## FOETAL CIRCULATION - EXAM FACTS',
       '>> Know the 3 shunts, what they become, and HbF.',
       '### Shunts After Birth',
       'FO → fossa ovalis. DA → ligamentum arteriosum. DV → ligamentum venosum. UV → ligamentum teres',
       'HbF has higher O₂ affinity than HbA. Prostaglandins keep DA open. Indomethacin closes PDA',
-      '## FEMALE REPRODUCTIVE — EXAM FACTS',
+      '## FEMALE REPRODUCTIVE - EXAM FACTS',
       '>> LH surge, cycle phases, and contraception are repeatedly tested.',
       '### Cycle Facts',
       'LH surge = THE most important hormonal event (positive feedback from estrogen → ovulation)',
@@ -309,13 +309,13 @@ export const finalBlockMaterial = {
       'Basal body temp ↑0.5°C after ovulation (progesterone effect)',
       '### Life Stages',
       'Menarche requires ~17% body fat. Menopause: ↑FSH is best diagnostic test',
-      '## PREGNANCY & LACTATION — EXAM FACTS',
+      '## PREGNANCY & LACTATION - EXAM FACTS',
       '>> hCG, oxytocin positive feedback, and prolactin are high-yield.',
       '### Key Facts',
       'hCG: basis of pregnancy tests, peaks 8-10 weeks, similar to LH',
       'Oxytocin in labour = POSITIVE feedback (Ferguson reflex)',
       'Prolactin makes milk. Oxytocin ejects milk. High estrogen in pregnancy blocks prolactin → milk starts AFTER delivery',
-      '## CNS & SPINAL CORD — EXAM FACTS',
+      '## CNS & SPINAL CORD - EXAM FACTS',
       '>> UMNL vs LMNL is the most tested distinction.',
       '### UMNL vs LMNL Signs',
       'Babinski: UMNL only. Clonus: UMNL only. Fasciculations: LMNL only',
@@ -325,14 +325,14 @@ export const finalBlockMaterial = {
       'Brown-Séquard: hemisection → ipsilateral motor + contralateral pain/temp',
       'Central cord: upper limbs > lower limbs (most common incomplete)',
       'Cauda equina: LMNL + saddle anaesthesia + bladder (surgical emergency)',
-      '## VISION — EXAM FACTS',
+      '## VISION - EXAM FACTS',
       '>> Rhodopsin, vitamin A, visual pathway, and colour blindness.',
       '### Key Facts',
       'Rhodopsin requires Vitamin A → deficiency = night blindness',
       'Visual pathway: Retina → Optic nerve → Chiasm → Tract → LGB → Radiation → Cortex (area 17)',
       'Colour blindness: X-linked recessive. Red-green most common. Ishihara plates',
       'Purkinje shift: blue-green brighter in dim light',
-      '## THALAMUS — EXAM FACTS',
+      '## THALAMUS - EXAM FACTS',
       '>> Olfaction bypass is the #1 tested fact.',
       '### Key Facts',
       'Olfaction is the ONLY sensation that bypasses the thalamus',
@@ -465,15 +465,15 @@ export const finalBlockMaterial = {
     ],
 
     mnemonics: [
-      { topic: 'Adrenal Cortex Zones', mnemonic: 'GFR — Salt, Sugar, Sex', explanation: 'Zona Glomerulosa (mineralocorticoids/Salt/Aldosterone), Zona Fasciculata (glucocorticoids/Sugar/Cortisol), Zona Reticularis (androgens/Sex/DHEA). From outer to inner.' },
-      { topic: 'Foetal Shunts', mnemonic: 'FDD — Foramen Ovale, Ductus Arteriosus, Ductus Venosus', explanation: 'Three main shunts that bypass non-functional organs. FO bypasses lungs (RA→LA). DA bypasses lungs (PA→Aorta). DV bypasses liver (UV→IVC).' },
+      { topic: 'Adrenal Cortex Zones', mnemonic: 'GFR - Salt, Sugar, Sex', explanation: 'Zona Glomerulosa (mineralocorticoids/Salt/Aldosterone), Zona Fasciculata (glucocorticoids/Sugar/Cortisol), Zona Reticularis (androgens/Sex/DHEA). From outer to inner.' },
+      { topic: 'Foetal Shunts', mnemonic: 'FDD - Foramen Ovale, Ductus Arteriosus, Ductus Venosus', explanation: 'Three main shunts that bypass non-functional organs. FO bypasses lungs (RA→LA). DA bypasses lungs (PA→Aorta). DV bypasses liver (UV→IVC).' },
       { topic: 'Postnatal Closure', mnemonic: 'U DO LA', explanation: 'Umbilical vessels close, Ductus arteriosus closes, Oxygen increases, Lungs take over, Atrial shunt (FO) closes.' },
       { topic: 'DM Classical Features', mnemonic: '3 Ps + W: Polyuria, Polydipsia, Polyphagia + Weight loss', explanation: 'Classic presentation of Type 1 DM. Polyuria (osmotic diuresis), polydipsia (dehydration), polyphagia (cell starvation despite high glucose), weight loss (protein catabolism).' },
       { topic: 'Paralysis Types', mnemonic: 'Mon-Di-Hemi-Para-Quad: 1-2-Half-Lower-All', explanation: 'Monoplegia (1 limb), Diplegia (2 limbs same level), Hemiplegia (half body), Paraplegia (lower body), Quadriplegia (all 4 limbs).' },
       { topic: 'UMNL vs LMNL', mnemonic: 'UMNL = Up means Spastic. LMNL = Low means Flaccid', explanation: 'UMNL: hypertonia, spastic paralysis, hyperreflexia, Babinski+, clonus. LMNL: hypotonia, flaccid paralysis, areflexia, fasciculations.' },
-      { topic: 'Cranial Nerves', mnemonic: 'Oh Oh Oh To Touch And Feel Very Good Velvet AH — Olfactory, Optic, Oculomotor, Trochlear, Trigeminal, Abducens, Facial, Vestibulocochlear, Glossopharyngeal, Vagus, Accessory, Hypoglossal', explanation: 'Mnemonic for 12 cranial nerves in order (I-XII).' },
-      { topic: 'Ovarian Cycle Phases', mnemonic: 'FOL — Follicular, Ovulation, Luteal', explanation: 'Follicular (days 1-14, FSH, estrogen), Ovulation (day 14, LH surge), Luteal (days 14-28, progesterone from corpus luteum).' },
-      { topic: 'Menstrual Cycle Phases', mnemonic: 'MPS — Menstrual, Proliferative, Secretory', explanation: 'Menstrual (shedding), Proliferative (estrogen rebuilds), Secretory (progesterone prepares). Correlates with ovarian cycle: follicular=proliferative, luteal=secretory.' },
+      { topic: 'Cranial Nerves', mnemonic: 'Oh Oh Oh To Touch And Feel Very Good Velvet AH - Olfactory, Optic, Oculomotor, Trochlear, Trigeminal, Abducens, Facial, Vestibulocochlear, Glossopharyngeal, Vagus, Accessory, Hypoglossal', explanation: 'Mnemonic for 12 cranial nerves in order (I-XII).' },
+      { topic: 'Ovarian Cycle Phases', mnemonic: 'FOL - Follicular, Ovulation, Luteal', explanation: 'Follicular (days 1-14, FSH, estrogen), Ovulation (day 14, LH surge), Luteal (days 14-28, progesterone from corpus luteum).' },
+      { topic: 'Menstrual Cycle Phases', mnemonic: 'MPS - Menstrual, Proliferative, Secretory', explanation: 'Menstrual (shedding), Proliferative (estrogen rebuilds), Secretory (progesterone prepares). Correlates with ovarian cycle: follicular=proliferative, luteal=secretory.' },
       { topic: 'Placental Hormones', mnemonic: 'hCG-hPL-E-P', explanation: 'hCG (maintains corpus luteum, pregnancy test), hPL/hCS (anti-insulin, glucose for fetus), Estrogen (uterine growth), Progesterone (maintains pregnancy).' },
       { topic: 'Milk Production vs Ejection', mnemonic: 'Prolactin PRODUCES, Oxytocin OUTPUTS', explanation: 'Prolactin (anterior pituitary) = milk production. Oxytocin (posterior pituitary) = milk ejection. Both stimulated by suckling.' },
     ],
@@ -491,7 +491,7 @@ export const finalBlockMaterial = {
   },
 
   questions: [
-    // PANCREATIC HORMONES — MCQ
+    // PANCREATIC HORMONES - MCQ
     { questionType: 'mcq', question: 'Which cells of the Islets of Langerhans secrete insulin?', options: ['A) Alpha cells', 'B) Beta cells', 'C) Delta cells', 'D) PP cells'], correctAnswer: 'B) Beta cells', explanation: 'Beta cells comprise 60-70% of islet cells and secrete insulin. Alpha cells secrete glucagon, delta cells secrete somatostatin, PP/F cells secrete pancreatic polypeptide.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Insulin acts on which type of receptor?', options: ['A) G-protein coupled receptor', 'B) Tyrosine kinase receptor', 'C) Nuclear receptor', 'D) Ligand-gated ion channel'], correctAnswer: 'B) Tyrosine kinase receptor', explanation: 'Insulin binds to tyrosine kinase receptor (TKR), activates intracellular signalling pathways, and causes GLUT-4 transporter translocation in muscle and adipose tissue.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The MOST important stimulator of insulin secretion is:', options: ['A) Amino acids', 'B) Parasympathetic stimulation', 'C) Increased blood glucose', 'D) Sulfonylurea drugs'], correctAnswer: 'C) Increased blood glucose', explanation: 'Increased blood glucose is the most important stimulator of insulin secretion. Other stimulators include amino acids (arginine, leucine), GI hormones (GLP-1, GIP), and parasympathetic stimulation.', difficulty: 'easy' },
@@ -503,7 +503,7 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'A fasting blood glucose of 7.5 mmol/L on repeated testing indicates:', options: ['A) Normal OGTT', 'B) Impaired glucose tolerance', 'C) Diabetes mellitus', 'D) Reactive hypoglycaemia'], correctAnswer: 'C) Diabetes mellitus', explanation: 'Fasting levels repeatedly at or above 7.0 mmol/L (126 mg/dL) are diagnostic of diabetes mellitus according to OGTT interpretation criteria.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Amylin is co-secreted with:', options: ['A) Glucagon', 'B) Insulin', 'C) Somatostatin', 'D) Pancreatic polypeptide'], correctAnswer: 'B) Insulin', explanation: 'Amylin (IAPP) is co-secreted with insulin from beta cells. It slows gastric emptying and suppresses glucagon. In T2DM, amylin deficiency and islet amyloid deposition worsen β-cell dysfunction.', difficulty: 'medium' },
 
-    // ADRENAL HORMONES — MCQ
+    // ADRENAL HORMONES - MCQ
     { questionType: 'mcq', question: 'The zona fasciculata of the adrenal cortex secretes:', options: ['A) Aldosterone', 'B) Cortisol', 'C) DHEA', 'D) Epinephrine'], correctAnswer: 'B) Cortisol', explanation: 'Zona Fasciculata (middle layer) secretes glucocorticoids, primarily cortisol. Zona Glomerulosa = aldosterone. Zona Reticularis = androgens (DHEA). Medulla = catecholamines.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'The MOST LIKELY diagnosis in a patient with hypertension, hypokalaemia, and metabolic alkalosis is:', options: ['A) Cushing\'s syndrome', 'B) Addison\'s disease', 'C) Conn\'s syndrome', 'D) Phaeochromocytoma'], correctAnswer: 'C) Conn\'s syndrome', explanation: 'Conn\'s syndrome (primary hyperaldosteronism) presents with hypertension + hypokalaemia + metabolic alkalosis. Excess aldosterone causes Na+/water retention (HTN) and K+/H+ excretion.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Hyperpigmentation in Addison\'s disease is due to:', options: ['A) Excess cortisol', 'B) Excess aldosterone', 'C) Increased ACTH/MSH', 'D) Increased catecholamines'], correctAnswer: 'C) Increased ACTH/MSH', explanation: 'In primary adrenal insufficiency, low cortisol → loss of negative feedback → ↑ACTH. ACTH shares a precursor (POMC) with MSH (melanocyte-stimulating hormone), causing hyperpigmentation.', difficulty: 'hard' },
@@ -511,20 +511,20 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'Catecholamine synthesis follows the pathway:', options: ['A) Tryptophan → Serotonin → Melatonin', 'B) Tyrosine → DOPA → Dopamine → NE → Epinephrine', 'C) Phenylalanine → Tyrosine → Melanin', 'D) Histidine → Histamine → Serotonin'], correctAnswer: 'B) Tyrosine → DOPA → Dopamine → NE → Epinephrine', explanation: 'The catecholamine synthesis pathway: Tyrosine → DOPA (tyrosine hydroxylase, rate-limiting) → Dopamine → Norepinephrine → Epinephrine (PNMT enzyme, requires cortisol).', difficulty: 'medium' },
     { questionType: 'mcq', question: 'RAS differs from RAAS primarily in that RAS:', options: ['A) Includes aldosterone effects', 'B) Provides long-term volume control', 'C) Only involves angiotensin II-mediated vasoconstriction', 'D) Acts on distal nephron prominently'], correctAnswer: 'C) Only involves angiotensin II-mediated vasoconstriction', explanation: 'RAS = Angiotensin pathway only → rapid vasoconstriction for short-term BP control. RAAS = Angiotensin II + Aldosterone → long-term BP and fluid regulation via Na+/water retention.', difficulty: 'hard' },
 
-    // MALE REPRODUCTIVE — MCQ
+    // MALE REPRODUCTIVE - MCQ
     { questionType: 'mcq', question: 'Testosterone is produced by which cells?', options: ['A) Sertoli cells', 'B) Leydig cells', 'C) Spermatogonia', 'D) Spermatids'], correctAnswer: 'B) Leydig cells', explanation: 'Leydig (interstitial) cells produce testosterone in response to LH stimulation. Sertoli cells support spermatogenesis, secrete inhibin, and form the blood-testis barrier.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Spermatogenesis takes approximately:', options: ['A) 24 days', 'B) 48 days', 'C) 74 days', 'D) 120 days'], correctAnswer: 'C) 74 days', explanation: 'The complete process from primitive germ cell to mature spermatozoon takes approximately 74 days. It occurs in the seminiferous tubules from puberty throughout adult life.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Seminal vesicles contribute what percentage of semen volume?', options: ['A) 30%', 'B) 60%', 'C) 5%', 'D) 90%'], correctAnswer: 'B) 60%', explanation: 'Seminal vesicles contribute about 60% of semen volume. Their secretion is alkaline and rich in fructose (energy source for sperm). Prostate contributes ~30%.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Inhibin from Sertoli cells provides negative feedback on:', options: ['A) LH', 'B) FSH', 'C) GnRH', 'D) Testosterone'], correctAnswer: 'B) FSH', explanation: 'Inhibin secreted by Sertoli cells specifically inhibits FSH release from the anterior pituitary via negative feedback. This regulates spermatogenesis.', difficulty: 'medium' },
 
-    // FOETAL CIRCULATION — MCQ
+    // FOETAL CIRCULATION - MCQ
     { questionType: 'mcq', question: 'The ductus venosus in foetal circulation bypasses the:', options: ['A) Lungs', 'B) Liver', 'C) Heart', 'D) Kidneys'], correctAnswer: 'B) Liver', explanation: 'The ductus venosus shunts oxygenated blood from the umbilical vein directly to the IVC, bypassing the liver. After birth it becomes the ligamentum venosum.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Which foetal shunt connects the pulmonary artery to the aorta?', options: ['A) Foramen ovale', 'B) Ductus venosus', 'C) Ductus arteriosus', 'D) Umbilical vein'], correctAnswer: 'C) Ductus arteriosus', explanation: 'The ductus arteriosus connects the pulmonary artery to the descending aorta, allowing most blood to bypass the non-functional lungs. It becomes the ligamentum arteriosum after birth.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'After birth, the foramen ovale closes to become the:', options: ['A) Ligamentum arteriosum', 'B) Ligamentum venosum', 'C) Fossa ovalis', 'D) Ligamentum teres'], correctAnswer: 'C) Fossa ovalis', explanation: 'After birth, lungs expand → ↓pulmonary resistance → ↑left atrial pressure > right atrial pressure → foramen ovale flap closes → becomes fossa ovalis.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'The MOST LIKELY trigger for closure of the ductus arteriosus after birth is:', options: ['A) Decreased blood pressure', 'B) Increased oxygen tension', 'C) Decreased prostaglandins', 'D) Increased left atrial pressure'], correctAnswer: 'B) Increased oxygen tension', explanation: 'Increased oxygen tension after birth causes constriction and functional closure of the ductus arteriosus. Prostaglandins keep it open in utero; indomethacin (prostaglandin inhibitor) can close a PDA.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The umbilical vein after birth becomes the:', options: ['A) Ligamentum arteriosum', 'B) Fossa ovalis', 'C) Ligamentum teres', 'D) Ligamentum venosum'], correctAnswer: 'C) Ligamentum teres', explanation: 'After birth, the umbilical vein obliterates and becomes the ligamentum teres (round ligament of the liver). The umbilical arteries become medial umbilical ligaments.', difficulty: 'medium' },
 
-    // CNS / SPINAL CORD — MCQ
+    // CNS / SPINAL CORD - MCQ
     { questionType: 'mcq', question: 'Complete spinal cord transection at T1 will cause blood pressure to drop to approximately:', options: ['A) 80 mmHg', 'B) 60 mmHg', 'C) 40 mmHg', 'D) 20 mmHg'], correctAnswer: 'C) 40 mmHg', explanation: 'T1 transection cuts off ALL thoracolumbar sympathetic neurons (T1-L2) from the medullary cardiovascular centre, causing a marked fall in MBP from ~100 to ~40 mmHg.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'Babinski sign (abnormal plantar reflex) is a feature of:', options: ['A) Lower motor neuron lesion', 'B) Upper motor neuron lesion', 'C) Both UMNL and LMNL', 'D) Peripheral neuropathy'], correctAnswer: 'B) Upper motor neuron lesion', explanation: 'Babinski sign (extensor plantar response) is present in UMNL due to loss of cortical inhibition. In LMNL, the plantar reflex is absent. In normal adults, the plantar response is flexor.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Clonus is MOST LIKELY to occur in:', options: ['A) Lower motor neuron lesion', 'B) Upper motor neuron lesion', 'C) Cerebellar lesion', 'D) Peripheral neuropathy'], correctAnswer: 'B) Upper motor neuron lesion', explanation: 'Clonus (repeated involuntary jerky movements during deep reflex testing) occurs due to hypertonicity in UMNL. Examples: multiple sclerosis, stroke, cerebral palsy, meningitis.', difficulty: 'easy' },
@@ -533,13 +533,13 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'Hemiplegia is paralysis of:', options: ['A) One limb', 'B) Both lower limbs', 'C) One side of the body', 'D) All four limbs'], correctAnswer: 'C) One side of the body', explanation: 'Hemiplegia = upper + lower limb on one side. Caused by lesion in motor cortex or corticospinal tracts in internal capsule on the OPPOSITE side (contralateral lesion).', difficulty: 'easy' },
     { questionType: 'mcq', question: 'The dorsal root of a spinal nerve carries:', options: ['A) Motor fibres', 'B) Sensory fibres', 'C) Both motor and sensory', 'D) Autonomic fibres only'], correctAnswer: 'B) Sensory fibres', explanation: 'Dorsal (posterior) root carries afferent (sensory) fibres. Ventral (anterior) root carries efferent (motor) fibres. Bell-Magendie law.', difficulty: 'easy' },
 
-    // VISION — MCQ
+    // VISION - MCQ
     { questionType: 'mcq', question: 'Photopic vision is mediated by:', options: ['A) Rods', 'B) Cones', 'C) Both rods and cones', 'D) Bipolar cells'], correctAnswer: 'B) Cones', explanation: 'Photopic (daylight) vision is mediated by cones. There are 3 types of cones (S/blue, M/green, L/red) enabling trichromatic colour vision. Cones are concentrated in the fovea centralis.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Night blindness (nyctalopia) is MOST LIKELY caused by:', options: ['A) Cone dystrophy', 'B) Vitamin A deficiency', 'C) Macular degeneration', 'D) Glaucoma'], correctAnswer: 'B) Vitamin A deficiency', explanation: 'Vitamin A is required for rhodopsin regeneration in rods. Without it, rods cannot function in dim light → night blindness. Also seen in retinitis pigmentosa (rod degeneration).', difficulty: 'easy' },
     { questionType: 'mcq', question: 'The peak spectral sensitivity for scotopic vision is approximately:', options: ['A) 420 nm', 'B) 507 nm', 'C) 555 nm', 'D) 620 nm'], correctAnswer: 'B) 507 nm', explanation: 'Scotopic (rod) vision peaks at ~507 nm (blue-green). Photopic (cone) vision peaks at ~555 nm (green-yellow). This shift is called the Purkinje shift.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Rods are MOST concentrated in the:', options: ['A) Fovea centralis', 'B) Optic disc', 'C) Peripheral retina', 'D) Macula lutea'], correctAnswer: 'C) Peripheral retina', explanation: 'Rods are mostly in the peripheral retina and are ABSENT from the fovea. Cones are concentrated in the fovea. This is why peripheral vision is better in dim light.', difficulty: 'medium' },
 
-    // THALAMUS — MCQ
+    // THALAMUS - MCQ
     { questionType: 'mcq', question: 'The ONLY sensory pathway that initially bypasses the thalamus is:', options: ['A) Vision', 'B) Hearing', 'C) Olfaction', 'D) Touch'], correctAnswer: 'C) Olfaction', explanation: 'Olfaction (smell) is the only sensory pathway that bypasses the thalamus initially, projecting directly from olfactory bulb to olfactory cortex. All other sensations (vision, hearing, touch, taste) relay through the thalamus.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Visual impulses are relayed in which thalamic nucleus?', options: ['A) Medial Geniculate Body', 'B) Lateral Geniculate Body', 'C) VPL', 'D) Anterior nucleus'], correctAnswer: 'B) Lateral Geniculate Body', explanation: 'LGB relays visual impulses to visual cortex. MGB relays auditory impulses. VPL relays body somatosensory. VPM relays face somatosensory.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Auditory impulses are relayed in which thalamic nucleus?', options: ['A) VPL', 'B) Lateral Geniculate Body', 'C) Medial Geniculate Body', 'D) Pulvinar'], correctAnswer: 'C) Medial Geniculate Body', explanation: 'The Medial Geniculate Body receives ascending auditory fibres and relays them to the auditory cortex in the temporal lobe.', difficulty: 'medium' },
@@ -577,7 +577,7 @@ export const finalBlockMaterial = {
 
     // ADDITIONAL ADRENAL MCQs
     { questionType: 'mcq', question: 'The rate-limiting enzyme in catecholamine synthesis is:', options: ['A) DOPA decarboxylase', 'B) Tyrosine hydroxylase', 'C) Dopamine β-hydroxylase', 'D) PNMT'], correctAnswer: 'B) Tyrosine hydroxylase', explanation: 'Tyrosine hydroxylase converts Tyrosine → DOPA and is the rate-limiting step. PNMT converts NE → Epinephrine and requires cortisol (explains why adrenal medulla is surrounded by cortex).', difficulty: 'medium' },
-    { questionType: 'mcq', question: 'PNMT (the enzyme converting NE to Epinephrine) requires which hormone?', options: ['A) Aldosterone', 'B) Cortisol', 'C) DHEA', 'D) Testosterone'], correctAnswer: 'B) Cortisol', explanation: 'PNMT (phenylethanolamine N-methyltransferase) requires cortisol for its activity. This is why the adrenal medulla is anatomically enclosed by the cortex — to receive high concentrations of cortisol via the portal blood supply.', difficulty: 'hard' },
+    { questionType: 'mcq', question: 'PNMT (the enzyme converting NE to Epinephrine) requires which hormone?', options: ['A) Aldosterone', 'B) Cortisol', 'C) DHEA', 'D) Testosterone'], correctAnswer: 'B) Cortisol', explanation: 'PNMT (phenylethanolamine N-methyltransferase) requires cortisol for its activity. This is why the adrenal medulla is anatomically enclosed by the cortex - to receive high concentrations of cortisol via the portal blood supply.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'A patient presents with episodic hypertension, headache, palpitations, and sweating. 24-hour urine shows elevated metanephrines. The diagnosis is:', options: ['A) Cushing syndrome', 'B) Conn syndrome', 'C) Phaeochromocytoma', 'D) Addison disease'], correctAnswer: 'C) Phaeochromocytoma', explanation: 'Classic triad of phaeochromocytoma: episodic hypertension + headache + palpitations/sweating. Diagnosed by elevated urinary metanephrines/catecholamines over 24 hours.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'ACE inhibitors work by preventing the conversion of:', options: ['A) Renin to angiotensinogen', 'B) Angiotensinogen to Angiotensin I', 'C) Angiotensin I to Angiotensin II', 'D) Angiotensin II to aldosterone'], correctAnswer: 'C) Angiotensin I to Angiotensin II', explanation: 'ACE (angiotensin-converting enzyme) converts Angiotensin I → Angiotensin II in the lungs. ACE inhibitors block this conversion, reducing vasoconstriction and aldosterone release.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Cortisol is MOST accurately measured in the blood at what time?', options: ['A) Midnight', 'B) 8 AM', 'C) 12 noon', 'D) 6 PM'], correctAnswer: 'B) 8 AM', explanation: 'Cortisol follows a circadian (diurnal) rhythm with peak levels early in the morning (6-8 AM) and lowest at midnight. Morning cortisol measurement is used for initial screening.', difficulty: 'easy' },
@@ -609,19 +609,19 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'At the optic chiasm, which fibres cross to the opposite side?', options: ['A) Temporal fibres', 'B) Nasal fibres', 'C) All fibres', 'D) No fibres cross'], correctAnswer: 'B) Nasal fibres', explanation: 'At the optic chiasm, nasal (medial) fibres from each eye cross to the opposite side. Temporal (lateral) fibres remain ipsilateral. This allows binocular vision and depth perception.', difficulty: 'medium' },
 
     // ADDITIONAL THALAMUS MCQs
-    { questionType: 'mcq', question: 'The reticular nucleus of the thalamus is unique because it:', options: ['A) Projects directly to the cortex', 'B) Does NOT project to the cortex', 'C) Relays visual information', 'D) Is the largest nucleus'], correctAnswer: 'B) Does NOT project to the cortex', explanation: 'The reticular nucleus is a shell of neurons surrounding the thalamus. It modulates and gates thalamic activity but does NOT project directly to the cortex — it projects back to other thalamic nuclei.', difficulty: 'hard' },
+    { questionType: 'mcq', question: 'The reticular nucleus of the thalamus is unique because it:', options: ['A) Projects directly to the cortex', 'B) Does NOT project to the cortex', 'C) Relays visual information', 'D) Is the largest nucleus'], correctAnswer: 'B) Does NOT project to the cortex', explanation: 'The reticular nucleus is a shell of neurons surrounding the thalamus. It modulates and gates thalamic activity but does NOT project directly to the cortex - it projects back to other thalamic nuclei.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'The largest nucleus of the thalamus is the:', options: ['A) VPL', 'B) LGB', 'C) Pulvinar', 'D) Anterior nucleus'], correctAnswer: 'C) Pulvinar', explanation: 'The Pulvinar is the largest thalamic nucleus. It is involved in visual attention, language processing, and multimodal sensory integration.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'Damage to the intralaminar nuclei of the thalamus MOST LIKELY results in:', options: ['A) Loss of vision', 'B) Loss of hearing', 'C) Loss of consciousness/coma', 'D) Loss of smell'], correctAnswer: 'C) Loss of consciousness/coma', explanation: 'The intralaminar nuclei (centromedian and parafascicular) are part of the reticular activating system involved in arousal and consciousness. Bilateral damage → coma.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'The mediodorsal nucleus of the thalamus projects to the:', options: ['A) Occipital cortex', 'B) Prefrontal cortex', 'C) Motor cortex', 'D) Auditory cortex'], correctAnswer: 'B) Prefrontal cortex', explanation: 'The mediodorsal nucleus has reciprocal connections with the prefrontal cortex. It is involved in cognition, behaviour, decision-making, and personality. Damage affects executive function.', difficulty: 'hard' },
 
     // ADDITIONAL TRUE/FALSE
-    { questionType: 'true_false', question: 'Insulin-independent glucose uptake occurs in the brain. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The brain uses GLUT-1 transporters which are insulin-INDEPENDENT. The brain always takes up glucose regardless of insulin levels, which is why hypoglycaemia is dangerous — it starves the brain.', difficulty: 'medium' },
+    { questionType: 'true_false', question: 'Insulin-independent glucose uptake occurs in the brain. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The brain uses GLUT-1 transporters which are insulin-INDEPENDENT. The brain always takes up glucose regardless of insulin levels, which is why hypoglycaemia is dangerous - it starves the brain.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'The adrenal cortex and adrenal medulla have the same embryological origin. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'The adrenal cortex is mesodermal in origin. The adrenal medulla is neural crest (ectodermal) in origin. They are two functionally distinct endocrine glands sharing one capsule.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'Spermatogenesis occurs at body temperature. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Spermatogenesis requires a temperature 2-3°C below body temperature. This is why the testes are located externally in the scrotum. Cryptorchidism (undescended testis) impairs sperm production.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'In foetal circulation, the umbilical arteries carry oxygenated blood. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Umbilical ARTERIES carry DEoxygenated blood from the foetus to the placenta. The umbilical VEIN carries oxygenated blood from the placenta to the foetus. This is the reverse of postnatal circulation naming.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'The phrenic nerve arises from C3, C4, C5. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The phrenic nerve (C3, C4, C5) "keeps the diaphragm alive". Injury to the cervical spinal cord above C3 paralyses the diaphragm → respiratory failure → ventilator dependence.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'Cones take longer than rods to adapt to darkness. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Cones adapt to darkness in 5-7 minutes. Rods take much longer: 20-30 minutes for full dark adaptation. This is why you initially cannot see in a dark room (cones trying, not yet rod-adapted).', difficulty: 'medium' },
-    { questionType: 'true_false', question: 'The thalamus has reciprocal connections with the cortex — it both sends to and receives from the cortex. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The thalamus has extensive reciprocal (bidirectional) connections with the cerebral cortex. Cortex sends feedback to thalamus, allowing modulation of which sensory information reaches consciousness.', difficulty: 'medium' },
+    { questionType: 'true_false', question: 'The thalamus has reciprocal connections with the cortex - it both sends to and receives from the cortex. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The thalamus has extensive reciprocal (bidirectional) connections with the cerebral cortex. Cortex sends feedback to thalamus, allowing modulation of which sensory information reaches consciousness.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'HHS (Hyperosmolar Hyperglycaemic State) occurs in Type 1 DM. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'HHS occurs in Type 2 DM (relative insulin deficiency prevents DKA but allows severe hyperglycaemia). DKA occurs in Type 1 DM (absolute insulin deficiency). This is a key distinction.', difficulty: 'medium' },
 
     // ADDITIONAL FILL IN THE BLANK
@@ -633,7 +633,7 @@ export const finalBlockMaterial = {
     { questionType: 'fill_blank', question: 'The thalamus relays ALL sensory pathways to the cortex EXCEPT _____.', options: [], correctAnswer: 'olfaction (smell)', explanation: 'Olfaction is the only sensory modality that bypasses the thalamus, projecting directly from the olfactory bulb to the olfactory cortex. All other senses relay through specific thalamic nuclei.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'Hemisection of the spinal cord is called _____ syndrome.', options: [], correctAnswer: 'Brown-Séquard', explanation: 'Brown-Séquard syndrome results from hemisection of the spinal cord: ipsilateral motor + proprioception/vibration loss + contralateral pain/temperature loss (spinothalamic crosses).', difficulty: 'medium' },
 
-    // FEMALE REPRODUCTIVE SYSTEM — MCQ
+    // FEMALE REPRODUCTIVE SYSTEM - MCQ
     { questionType: 'mcq', question: 'Ovulation is triggered by a surge of which hormone?', options: ['A) FSH', 'B) LH', 'C) Estrogen', 'D) Progesterone'], correctAnswer: 'B) LH', explanation: 'The LH surge, triggered by sustained high estrogen from the dominant follicle (positive feedback), causes ovulation approximately 36 hours after the LH peak.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'During the follicular phase of the ovarian cycle, the dominant hormone is:', options: ['A) Progesterone', 'B) LH', 'C) Estrogen', 'D) hCG'], correctAnswer: 'C) Estrogen', explanation: 'The follicular phase (days 1-14) is dominated by estrogen produced by the growing follicle under FSH stimulation. Progesterone dominates the luteal phase.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'The proliferative phase of the uterine cycle corresponds to which ovarian phase?', options: ['A) Luteal phase', 'B) Follicular phase', 'C) Ovulation', 'D) Menstrual phase'], correctAnswer: 'B) Follicular phase', explanation: 'Proliferative phase (estrogen rebuilds endometrium) corresponds to the follicular phase. Secretory phase (progesterone prepares endometrium) corresponds to the luteal phase.', difficulty: 'medium' },
@@ -648,14 +648,14 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'Turner syndrome (45,XO) presents with all EXCEPT:', options: ['A) Short stature', 'B) Webbed neck', 'C) Tall stature with long limbs', 'D) Primary amenorrhoea'], correctAnswer: 'C) Tall stature with long limbs', explanation: 'Turner syndrome (45,XO) causes SHORT stature, not tall. Tall stature with long limbs is seen in Klinefelter (47,XXY) or Marfan syndrome. Turner: webbed neck, shield chest, coarctation, streak gonads.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'The positive feedback mechanism of estrogen on LH occurs when estrogen levels are:', options: ['A) Low', 'B) Moderately low', 'C) Sustained high for >36 hours', 'D) Fluctuating'], correctAnswer: 'C) Sustained high for >36 hours', explanation: 'Low/moderate estrogen provides NEGATIVE feedback on LH. Only when estrogen reaches a threshold level AND is sustained for >36 hours does it switch to POSITIVE feedback, triggering the LH surge and ovulation.', difficulty: 'hard' },
 
-    // PREGNANCY & LACTATION — MCQ
+    // PREGNANCY & LACTATION - MCQ
     { questionType: 'mcq', question: 'Fertilization normally occurs in the:', options: ['A) Uterine cavity', 'B) Cervix', 'C) Ampulla of the fallopian tube', 'D) Ovary'], correctAnswer: 'C) Ampulla of the fallopian tube', explanation: 'Fertilization normally occurs in the ampulla (widest part) of the fallopian tube. The fertilized ovum then travels to the uterus for implantation over the next 6-7 days.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'hCG peaks at approximately which week of pregnancy?', options: ['A) Week 4', 'B) Week 8-10', 'C) Week 20', 'D) Week 36'], correctAnswer: 'B) Week 8-10', explanation: 'hCG is produced by the syncytiotrophoblast, peaks at 8-10 weeks, then declines. It maintains the corpus luteum until the placenta takes over progesterone production.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The Ferguson reflex during labour is an example of:', options: ['A) Negative feedback', 'B) Positive feedback', 'C) Feed-forward control', 'D) No feedback'], correctAnswer: 'B) Positive feedback', explanation: 'The Ferguson reflex: cervical stretching → oxytocin release → uterine contractions → more cervical stretching → more oxytocin. This positive feedback loop amplifies until delivery occurs.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Which hormone is responsible for milk PRODUCTION?', options: ['A) Oxytocin', 'B) Prolactin', 'C) Estrogen', 'D) Progesterone'], correctAnswer: 'B) Prolactin', explanation: 'Prolactin (from the anterior pituitary) stimulates milk production (lactogenesis). Oxytocin is responsible for milk ejection/let-down, not production.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Which hormone is responsible for milk EJECTION (let-down)?', options: ['A) Prolactin', 'B) Oxytocin', 'C) FSH', 'D) Estrogen'], correctAnswer: 'B) Oxytocin', explanation: 'Oxytocin (from the posterior pituitary) causes contraction of myoepithelial cells around the mammary alveoli, ejecting milk. Suckling stimulates both oxytocin and prolactin release.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'During pregnancy, milk production does not occur despite high prolactin because:', options: ['A) Oxytocin is absent', 'B) The breast is not developed', 'C) High estrogen blocks prolactin action on the breast', 'D) Progesterone destroys prolactin'], correctAnswer: 'C) High estrogen blocks prolactin action on the breast', explanation: 'During pregnancy, high placental estrogen inhibits prolactin action at the breast. After delivery, the sudden drop in estrogen allows prolactin to act → milk production begins within 1-3 days.', difficulty: 'hard' },
-    { questionType: 'mcq', question: 'Prolactin secretion is tonically INHIBITED by:', options: ['A) Serotonin', 'B) TRH', 'C) Dopamine', 'D) Oxytocin'], correctAnswer: 'C) Dopamine', explanation: 'Dopamine (prolactin-inhibiting hormone/PIH) from the hypothalamus tonically inhibits prolactin release. This is unique — most pituitary hormones are controlled by stimulatory hypothalamic hormones.', difficulty: 'medium' },
+    { questionType: 'mcq', question: 'Prolactin secretion is tonically INHIBITED by:', options: ['A) Serotonin', 'B) TRH', 'C) Dopamine', 'D) Oxytocin'], correctAnswer: 'C) Dopamine', explanation: 'Dopamine (prolactin-inhibiting hormone/PIH) from the hypothalamus tonically inhibits prolactin release. This is unique - most pituitary hormones are controlled by stimulatory hypothalamic hormones.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Colostrum differs from mature breast milk in that it contains more:', options: ['A) Fat', 'B) Lactose', 'C) IgA antibodies', 'D) Water'], correctAnswer: 'C) IgA antibodies', explanation: 'Colostrum (first 3-5 days) is rich in IgA antibodies, proteins, and minerals but lower in fat and lactose compared to mature milk. It provides passive immunity to the newborn.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Gestational diabetes is primarily caused by:', options: ['A) Autoimmune beta-cell destruction', 'B) Placental hormones causing insulin resistance', 'C) Viral infection of the pancreas', 'D) Excess insulin production'], correctAnswer: 'B) Placental hormones causing insulin resistance', explanation: 'Placental hormones (hPL, estrogen, progesterone, cortisol) cause insulin resistance in the mother. This ensures glucose availability for the foetus but can cause gestational diabetes if the mother cannot compensate.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The cortical reaction during fertilization prevents:', options: ['A) Implantation', 'B) Polyspermy', 'C) Blastocyst formation', 'D) Trophoblast development'], correctAnswer: 'B) Polyspermy', explanation: 'After one sperm penetrates the zona pellucida, the cortical reaction releases enzymes that harden the zona pellucida, preventing additional sperm from entering (block to polyspermy).', difficulty: 'medium' },
@@ -666,7 +666,7 @@ export const finalBlockMaterial = {
     { questionType: 'mcq', question: 'During pregnancy, blood volume increases by approximately:', options: ['A) 10-15%', 'B) 20-25%', 'C) 40-50%', 'D) 70-80%'], correctAnswer: 'C) 40-50%', explanation: 'Maternal blood volume increases by 40-50% during pregnancy (peaks at ~32 weeks). Plasma volume increases more than RBC mass, leading to physiological anaemia of pregnancy (dilutional).', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The LONGEST stage of labour is:', options: ['A) Stage 1 (cervical dilation)', 'B) Stage 2 (delivery of baby)', 'C) Stage 3 (delivery of placenta)', 'D) All stages are equal'], correctAnswer: 'A) Stage 1 (cervical dilation)', explanation: 'Stage 1 (cervical dilation to 10 cm) is the longest, lasting 12-18 hours in primigravida. Stage 2 (delivery) takes 30 min-2 hours. Stage 3 (placenta) takes 5-30 minutes.', difficulty: 'easy' },
 
-    // FEMALE REPRODUCTION — TRUE/FALSE
+    // FEMALE REPRODUCTION - TRUE/FALSE
     { questionType: 'true_false', question: 'The LH surge is an example of positive feedback by estrogen. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Sustained high estrogen from the dominant follicle switches from negative to positive feedback on the anterior pituitary, triggering a massive LH surge → ovulation.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'Progesterone causes thinning of cervical mucus. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'ESTROGEN causes thinning of cervical mucus (spinnbarkeit, facilitating sperm passage). PROGESTERONE causes thickening of cervical mucus (hostile to sperm, contraceptive effect).', difficulty: 'medium' },
     { questionType: 'true_false', question: 'During menopause, FSH levels decrease. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'During menopause, FSH levels INCREASE markedly because there are no ovarian follicles to produce estrogen/inhibin, so there is no negative feedback on FSH.', difficulty: 'easy' },
@@ -674,7 +674,7 @@ export const finalBlockMaterial = {
     { questionType: 'true_false', question: 'The placenta takes over progesterone production from the corpus luteum at around 10-12 weeks. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'By 10-12 weeks, the placenta produces enough progesterone to maintain pregnancy independently. The corpus luteum then degenerates. This is the luteo-placental shift.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'Oxytocin causes uterine relaxation during labour. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Oxytocin causes uterine CONTRACTION during labour, not relaxation. It acts via positive feedback (Ferguson reflex) to amplify contractions until delivery.', difficulty: 'easy' },
 
-    // FEMALE REPRODUCTION — FILL IN THE BLANK
+    // FEMALE REPRODUCTION - FILL IN THE BLANK
     { questionType: 'fill_blank', question: 'The ovarian cycle phase that occurs after ovulation and is dominated by progesterone is the _____ phase.', options: [], correctAnswer: 'luteal', explanation: 'The luteal phase (days 14-28) follows ovulation. The corpus luteum secretes progesterone, which converts the proliferative endometrium to secretory endometrium.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'The hormone that maintains the corpus luteum in early pregnancy is _____.', options: [], correctAnswer: 'hCG (human chorionic gonadotropin)', explanation: 'hCG from the trophoblast/placenta maintains the corpus luteum, ensuring progesterone production continues until the placenta takes over at ~10-12 weeks.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'Prolactin release is tonically inhibited by the neurotransmitter _____.', options: [], correctAnswer: 'dopamine', explanation: 'Dopamine (also called prolactin-inhibiting hormone/PIH) from the hypothalamus tonically suppresses prolactin. Dopamine antagonists (antipsychotics) → hyperprolactinaemia.', difficulty: 'medium' },
@@ -682,7 +682,7 @@ export const finalBlockMaterial = {
     { questionType: 'fill_blank', question: 'The positive feedback loop of oxytocin during labour is called the _____ reflex.', options: [], correctAnswer: 'Ferguson', explanation: 'The Ferguson reflex: cervical stretching → oxytocin → uterine contractions → more stretching → more oxytocin. One of the few positive feedback mechanisms in physiology.', difficulty: 'medium' },
 
     // ADDITIONAL CLINICAL SCENARIOS
-    { questionType: 'mcq', question: 'A 60-year-old obese patient has fasting glucose of 8.0 mmol/L on two occasions. He is started on metformin. What is his diagnosis and why metformin first?', options: ['A) Type 1 DM — metformin as bridge to insulin', 'B) Type 2 DM — metformin reduces hepatic glucose production and improves insulin sensitivity', 'C) Gestational DM — metformin is safest in pregnancy', 'D) Pre-diabetes — metformin prevents progression'], correctAnswer: 'B) Type 2 DM — metformin reduces hepatic glucose production and improves insulin sensitivity', explanation: 'Obese patient + fasting glucose ≥7.0 mmol/L on 2 occasions = Type 2 DM. Metformin is first-line because it reduces hepatic glucose output, improves insulin sensitivity, does not cause hypoglycaemia, and is weight-neutral.', difficulty: 'medium' },
+    { questionType: 'mcq', question: 'A 60-year-old obese patient has fasting glucose of 8.0 mmol/L on two occasions. He is started on metformin. What is his diagnosis and why metformin first?', options: ['A) Type 1 DM - metformin as bridge to insulin', 'B) Type 2 DM - metformin reduces hepatic glucose production and improves insulin sensitivity', 'C) Gestational DM - metformin is safest in pregnancy', 'D) Pre-diabetes - metformin prevents progression'], correctAnswer: 'B) Type 2 DM - metformin reduces hepatic glucose production and improves insulin sensitivity', explanation: 'Obese patient + fasting glucose ≥7.0 mmol/L on 2 occasions = Type 2 DM. Metformin is first-line because it reduces hepatic glucose output, improves insulin sensitivity, does not cause hypoglycaemia, and is weight-neutral.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'A patient with spinal cord injury at T4 suddenly develops severe headache, hypertension (220/130), and bradycardia after a full bladder. The MOST LIKELY diagnosis is:', options: ['A) Stroke', 'B) Autonomic dysreflexia', 'C) Phaeochromocytoma', 'D) Hypertensive emergency'], correctAnswer: 'B) Autonomic dysreflexia', explanation: 'Autonomic dysreflexia occurs in spinal cord injuries above T6. A stimulus below the lesion (full bladder, constipation) triggers massive uncontrolled sympathetic discharge → severe HTN + reflex bradycardia. Immediate treatment: remove the stimulus + sit patient upright.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'A patient loses both temporal visual fields after a pituitary surgery. This is caused by damage to the:', options: ['A) Optic nerve', 'B) Optic chiasm', 'C) Optic tract', 'D) Lateral geniculate body'], correctAnswer: 'B) Optic chiasm', explanation: 'Bitemporal hemianopia (loss of both temporal visual fields) results from damage to the optic chiasm, where nasal fibres from both eyes cross. Pituitary tumours/surgery compress the chiasm from below.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'A 20-year-old male presents with infertility. Examination reveals tall stature, gynaecomastia, small firm testes. Karyotype shows 47,XXY. The MOST LIKELY diagnosis is:', options: ['A) Turner syndrome', 'B) Klinefelter syndrome', 'C) Kallmann syndrome', 'D) Androgen insensitivity'], correctAnswer: 'B) Klinefelter syndrome', explanation: 'Klinefelter syndrome (47,XXY): tall stature, gynaecomastia, small testes, infertility, ↑FSH/LH, ↓testosterone. Most common sex chromosome disorder in males (1 in 660).', difficulty: 'hard' },
@@ -690,33 +690,33 @@ export const finalBlockMaterial = {
 
   flashcards: [
     { front: 'What are the 4 cell types of Islets of Langerhans?', back: 'Beta (60-70%): Insulin. Alpha (20-25%): Glucagon. Delta (5-10%): Somatostatin. PP/F (1-5%): Pancreatic polypeptide.', difficulty: 'easy' },
-    { front: 'Insulin vs Glucagon — key differences?', back: 'Insulin: 51 aa, beta cells, TKR, ↓glucose, only hypoglycaemic hormone. Glucagon: 29 aa, alpha cells, GPCR→cAMP, ↑glucose, counter-regulatory.', difficulty: 'easy' },
+    { front: 'Insulin vs Glucagon - key differences?', back: 'Insulin: 51 aa, beta cells, TKR, ↓glucose, only hypoglycaemic hormone. Glucagon: 29 aa, alpha cells, GPCR→cAMP, ↑glucose, counter-regulatory.', difficulty: 'easy' },
     { front: 'Type 1 vs Type 2 DM?', back: 'T1: autoimmune β-cell destruction, absolute deficiency, HLA-DR3/4, DKA, young. T2: insulin resistance, relative deficiency, genetic+lifestyle, HHS, older/obese.', difficulty: 'medium' },
     { front: 'Three zones of adrenal cortex + hormones?', back: 'GFR = Salt, Sugar, Sex. Glomerulosa→Aldosterone. Fasciculata→Cortisol. Reticularis→Androgens (DHEA).', difficulty: 'easy' },
     { front: 'Cushing\'s vs Addison\'s?', back: 'Cushing\'s = cortisol EXCESS: moon face, obesity, HTN, DM. Addison\'s = cortisol DEFICIENCY: hyperpigmentation, hypotension, weight loss, hyperkalaemia.', difficulty: 'medium' },
     { front: 'Three foetal shunts and what they become?', back: 'Ductus Venosus → ligamentum venosum (bypassed liver). Foramen Ovale → fossa ovalis (bypassed lungs). Ductus Arteriosus → ligamentum arteriosum (bypassed lungs).', difficulty: 'medium' },
-    { front: 'UMNL vs LMNL — key features?', back: 'UMNL: spastic paralysis, hypertonia, hyperreflexia, Babinski+, clonus, groups of muscles. LMNL: flaccid paralysis, hypotonia, areflexia, fasciculations, individual muscles.', difficulty: 'medium' },
+    { front: 'UMNL vs LMNL - key features?', back: 'UMNL: spastic paralysis, hypertonia, hyperreflexia, Babinski+, clonus, groups of muscles. LMNL: flaccid paralysis, hypotonia, areflexia, fasciculations, individual muscles.', difficulty: 'medium' },
     { front: 'Types of paralysis?', back: 'Monoplegia=1 limb. Diplegia=both UL or LL. Hemiplegia=one side. Paraplegia=lower body. Quadriplegia=all 4 limbs.', difficulty: 'easy' },
     { front: 'Photopic vs Scotopic vision?', back: 'Photopic: cones, daylight, high acuity, colour, fovea, 555nm. Scotopic: rods, night, low acuity, no colour, peripheral retina, 507nm.', difficulty: 'easy' },
     { front: 'What does the thalamus relay?', back: 'ALL sensory pathways EXCEPT olfaction. VPL/VPM=somatosensory, LGB=vision, MGB=hearing, VA/VL=motor, Anterior=emotion/memory.', difficulty: 'medium' },
     { front: 'OGTT interpretation values?', back: 'Normal: fasting <6.1 mmol/L. Impaired: 6.1-7.0 mmol/L. Diabetic: ≥7.0 mmol/L fasting, repeatedly.', difficulty: 'medium' },
     { front: 'Catecholamine synthesis pathway?', back: 'Tyrosine → DOPA (rate-limiting: tyrosine hydroxylase) → Dopamine → Norepinephrine → Epinephrine (PNMT, needs cortisol).', difficulty: 'hard' },
-    { front: 'Phaeochromocytoma — Rule of 10s?', back: '10% bilateral, 10% extra-adrenal (paraganglioma), 10% malignant, 10% familial. Diagnosis: 24-hr urine metanephrines/catecholamines.', difficulty: 'hard' },
+    { front: 'Phaeochromocytoma - Rule of 10s?', back: '10% bilateral, 10% extra-adrenal (paraganglioma), 10% malignant, 10% familial. Diagnosis: 24-hr urine metanephrines/catecholamines.', difficulty: 'hard' },
     { front: 'GLUT-4 vs GLUT-1?', back: 'GLUT-4: insulin-DEPENDENT, in muscle/adipose. GLUT-1: insulin-INDEPENDENT, in brain/RBCs. Brain always gets glucose regardless of insulin levels.', difficulty: 'medium' },
-    { front: 'Blood-testis barrier — why is it important?', back: 'Formed by Sertoli cells. Protects developing sperm from immune attack. Breach → autoimmune orchitis. Separates basal from adluminal compartment.', difficulty: 'medium' },
+    { front: 'Blood-testis barrier - why is it important?', back: 'Formed by Sertoli cells. Protects developing sperm from immune attack. Breach → autoimmune orchitis. Separates basal from adluminal compartment.', difficulty: 'medium' },
     { front: 'Brown-Séquard syndrome?', back: 'Spinal cord hemisection: Ipsilateral motor loss + proprioception/vibration loss (dorsal columns). Contralateral pain/temperature loss (spinothalamic crosses).', difficulty: 'hard' },
-    { front: 'C3,4,5 — what does it supply?', back: 'Phrenic nerve → diaphragm. "C3,4,5 keeps the diaphragm alive." Injury above C3 = respiratory failure = needs ventilator.', difficulty: 'medium' },
-    { front: 'HbF vs HbA?', back: 'HbF (foetal) has HIGHER O₂ affinity than HbA (adult) — allows O₂ transfer from maternal to foetal blood at the placenta. HbF doesn\'t bind 2,3-DPG well.', difficulty: 'medium' },
+    { front: 'C3,4,5 - what does it supply?', back: 'Phrenic nerve → diaphragm. "C3,4,5 keeps the diaphragm alive." Injury above C3 = respiratory failure = needs ventilator.', difficulty: 'medium' },
+    { front: 'HbF vs HbA?', back: 'HbF (foetal) has HIGHER O₂ affinity than HbA (adult) - allows O₂ transfer from maternal to foetal blood at the placenta. HbF doesn\'t bind 2,3-DPG well.', difficulty: 'medium' },
     { front: 'Dark adaptation times?', back: 'Cones adapt in 5-7 minutes. Rods take 20-30 minutes for full dark adaptation. Complete adaptation = rhodopsin regeneration in rods.', difficulty: 'medium' },
     { front: 'Thalamic pain syndrome (Dejerine-Roussy)?', back: 'Stroke in VPL/VPM thalamic nuclei → contralateral spontaneous burning pain + hyperalgesia + allodynia. Very difficult to treat.', difficulty: 'hard' },
     { front: 'Autonomic dysreflexia?', back: 'Spinal cord injury above T6. Stimulus below lesion (full bladder) → massive sympathetic discharge → severe HTN + bradycardia. Emergency: remove stimulus, sit upright.', difficulty: 'hard' },
     { front: 'Three phases of the ovarian cycle?', back: 'Follicular (days 1-14, FSH/estrogen), Ovulation (day 14, LH surge), Luteal (days 14-28, corpus luteum/progesterone).', difficulty: 'easy' },
     { front: 'Ovarian-Uterine cycle correlation?', back: 'Follicular = Proliferative (estrogen). Luteal = Secretory (progesterone). Menstrual = hormone withdrawal.', difficulty: 'medium' },
-    { front: 'Estrogen vs Progesterone — key differences?', back: 'Estrogen: proliferative endometrium, thin cervical mucus, bone growth, ↑HDL. Progesterone: secretory endometrium, thick cervical mucus, ↑basal body temp, maintains pregnancy.', difficulty: 'medium' },
-    { front: 'What triggers ovulation?', back: 'LH surge — triggered by sustained high estrogen (positive feedback) from dominant follicle. Ovulation occurs ~36 hours after LH peak.', difficulty: 'easy' },
+    { front: 'Estrogen vs Progesterone - key differences?', back: 'Estrogen: proliferative endometrium, thin cervical mucus, bone growth, ↑HDL. Progesterone: secretory endometrium, thick cervical mucus, ↑basal body temp, maintains pregnancy.', difficulty: 'medium' },
+    { front: 'What triggers ovulation?', back: 'LH surge - triggered by sustained high estrogen (positive feedback) from dominant follicle. Ovulation occurs ~36 hours after LH peak.', difficulty: 'easy' },
     { front: 'Prolactin vs Oxytocin in lactation?', back: 'Prolactin = milk PRODUCTION (anterior pituitary, inhibited by dopamine). Oxytocin = milk EJECTION (posterior pituitary, myoepithelial contraction). Both stimulated by suckling.', difficulty: 'medium' },
     { front: 'Why no milk production during pregnancy despite high prolactin?', back: 'High estrogen from placenta blocks prolactin action on breast. After delivery → estrogen drops → prolactin acts → milk production begins.', difficulty: 'hard' },
-    { front: 'hCG — what, when, why?', back: 'From syncytiotrophoblast. Peaks 8-10 weeks. Maintains corpus luteum → progesterone. Basis of pregnancy tests. Similar to LH.', difficulty: 'medium' },
+    { front: 'hCG - what, when, why?', back: 'From syncytiotrophoblast. Peaks 8-10 weeks. Maintains corpus luteum → progesterone. Basis of pregnancy tests. Similar to LH.', difficulty: 'medium' },
     { front: 'Ferguson reflex?', back: 'Positive feedback: cervical stretching → oxytocin → contractions → more stretching → more oxytocin. Drives labour until delivery.', difficulty: 'medium' },
     { front: 'PCOS features?', back: 'Anovulation, hyperandrogenism (acne, hirsutism), polycystic ovaries, insulin resistance. Most common cause of female infertility.', difficulty: 'medium' },
     { front: 'Turner vs Klinefelter?', back: 'Turner (45,XO): female, short, webbed neck, streak gonads. Klinefelter (47,XXY): male, tall, gynecomastia, small testes, infertility.', difficulty: 'hard' },

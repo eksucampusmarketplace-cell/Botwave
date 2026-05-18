@@ -1,5 +1,5 @@
 /**
- * Broadcast system — bot owner can send a message to all active groups.
+ * Broadcast system - bot owner can send a message to all active groups.
  */
 
 import { Bot } from 'grammy';
@@ -16,7 +16,7 @@ interface BroadcastStats {
 const lastBroadcast = new Map<string, BroadcastStats>();
 
 export function registerBroadcastHandlers(bot: Bot, sessionId: string): void {
-  // /broadcast <message> — send to all active groups
+  // /broadcast <message> - send to all active groups
   bot.command('broadcast', async (ctx) => {
     if (!ctx.from) return;
 
@@ -77,7 +77,7 @@ export function registerBroadcastHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /broadcaststats — show last broadcast stats
+  // /broadcaststats - show last broadcast stats
   bot.command('broadcaststats', async (ctx) => {
     if (!ctx.from) return;
 

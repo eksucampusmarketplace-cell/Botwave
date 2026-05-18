@@ -95,7 +95,7 @@ export async function sendPaymentConfirmationEmail(
   return sendEmail({
     channel: 'billing',
     to,
-    subject: `Payment confirmed — ${plan} plan`,
+    subject: `Payment confirmed - ${plan} plan`,
     html: paymentTemplate(username, plan, amount, currency),
   });
 }
@@ -110,7 +110,7 @@ export async function sendSubscriptionEmail(
   return sendEmail({
     channel: 'billing',
     to,
-    subject: `Subscription ${action} — ${plan} plan`,
+    subject: `Subscription ${action} - ${plan} plan`,
     html: subscriptionTemplate(username, plan, action),
   });
 }
@@ -139,7 +139,7 @@ export async function sendReengagementEmail(
   return sendEmail({
     channel: 'notify',
     to,
-    subject: 'We miss you on BotWave — come see what\'s new',
+    subject: 'We miss you on BotWave - come see what\'s new',
     html: reengagementTemplate(username, hasLinkedDevice),
   });
 }

@@ -35,7 +35,7 @@ if (PROXY_LIST.length > 0) {
     console.log(`[PROXY]   #${i + 1}: ${parts[0]}:${parts[1]} (user: ${parts[2] || 'none'})`);
   });
 } else {
-  console.log('[PROXY] No PROXY_LIST configured — all connections will use server IP directly');
+  console.log('[PROXY] No PROXY_LIST configured - all connections will use server IP directly');
 }
 
 // Track consecutive Evolution API failures for health gating.
@@ -46,21 +46,21 @@ let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
 
 // ─── Global 428 Cooldown ───────────────────────────────────────────────
-// When ANY instance receives a 428 ("Connection Closed" — WhatsApp rate limit),
+// When ANY instance receives a 428 ("Connection Closed" - WhatsApp rate limit),
 // ALL new connection/creation attempts are paused for COOLDOWN_DURATION_MS.
 // This prevents the thrash loop: connect → 428 → retry immediately → 428 again.
 let global428CooldownUntil = 0;
-const COOLDOWN_DURATION_MS = 60_000; // 60 seconds — WhatsApp rate limit resets in ~30-60s
+const COOLDOWN_DURATION_MS = 60_000; // 60 seconds - WhatsApp rate limit resets in ~30-60s
 
 /** Activate the global 428 cooldown. Called when any instance receives 428. */
 export function trigger428Cooldown(source: string): void {
   const now = Date.now();
   if (now < global428CooldownUntil) {
-    console.log(`[428-COOLDOWN] Already in cooldown (${Math.round((global428CooldownUntil - now) / 1000)}s remaining) — triggered by ${source}`);
+    console.log(`[428-COOLDOWN] Already in cooldown (${Math.round((global428CooldownUntil - now) / 1000)}s remaining) - triggered by ${source}`);
     return;
   }
   global428CooldownUntil = now + COOLDOWN_DURATION_MS;
-  console.warn(`[428-COOLDOWN] ⚠️ ACTIVATED — all new connections paused for ${COOLDOWN_DURATION_MS / 1000}s (triggered by ${source})`);
+  console.warn(`[428-COOLDOWN] ⚠️ ACTIVATED - all new connections paused for ${COOLDOWN_DURATION_MS / 1000}s (triggered by ${source})`);
 }
 
 /** Check if the global 428 cooldown is currently active. */
@@ -89,7 +89,7 @@ const RECOVERY_WINDOW_MS = 120_000; // queue is active for 2 min after recovery
 export function markEvolutionDown(): void {
   if (!evolutionWasDown) {
     evolutionWasDown = true;
-    console.warn('[EVO-RECONNECT-QUEUE] Evolution API marked as DOWN — reconnections will be queued on recovery');
+    console.warn('[EVO-RECONNECT-QUEUE] Evolution API marked as DOWN - reconnections will be queued on recovery');
   }
 }
 
@@ -99,7 +99,7 @@ export function markEvolutionRecovered(): void {
     evolutionWasDown = false;
     recoveryStartedAt = Date.now();
     reconnectSlotCounter = 0;
-    console.log('[EVO-RECONNECT-QUEUE] Evolution API RECOVERED — staggered reconnection queue active');
+    console.log('[EVO-RECONNECT-QUEUE] Evolution API RECOVERED - staggered reconnection queue active');
   }
 }
 
@@ -140,7 +140,7 @@ const RATE_LIMIT_INTERVAL_MS = 8_000; // 8 seconds between instance creations
 // for PAIRING_STABILITY_MS. This gives the user time to enter the code
 // before BotWave's auto-retry loop destroys the instance.
 const pairingCodeTimestamps = new Map<string, number>();
-const PAIRING_STABILITY_MS = 60 * 1000; // 60 seconds — matches WhatsApp pairing code validity
+const PAIRING_STABILITY_MS = 60 * 1000; // 60 seconds - matches WhatsApp pairing code validity
 
 /** Record that a pairing code was just generated for an instance. */
 export function markPairingCodeGenerated(instanceName: string): void {
@@ -241,8 +241,8 @@ export function recordProxyFailure(instanceName: string, proxyHost: string, erro
 
     if (allFailing) {
       proxyPoolDisabled = true;
-      console.error('[PROXY] ALL proxies failing — falling back to direct VPS connection');
-      sendProxyAlert('Proxy Pool Down — Falling Back to Direct VPS', {
+      console.error('[PROXY] ALL proxies failing - falling back to direct VPS connection');
+      sendProxyAlert('Proxy Pool Down - Falling Back to Direct VPS', {
         'Status': 'All proxies failed, using direct VPS IP',
         'Failed Proxies': PROXY_LIST.length.toString(),
         'Last Error': error,
@@ -267,7 +267,7 @@ export function recordProxySuccess(proxyHost: string): void {
     });
     if (anyHealthy) {
       proxyPoolDisabled = false;
-      console.log('[PROXY] Proxy pool recovered — re-enabling proxy connections');
+      console.log('[PROXY] Proxy pool recovered - re-enabling proxy connections');
       stopProxyRecoveryCheck();
       sendProxyAlert('Proxy Pool Recovered', {
         'Status': 'At least one proxy is healthy again',
@@ -291,7 +291,7 @@ function startProxyRecoveryCheck(): void {
         const proxyUrl = `http://${user}:${pass}@${host}:${port}`;
         const agent = HttpsProxyAgent ? new HttpsProxyAgent(proxyUrl) : null;
         if (!agent) {
-          console.log(`[PROXY] Recovery check: HttpsProxyAgent not available — skipping`);
+          console.log(`[PROXY] Recovery check: HttpsProxyAgent not available - skipping`);
           break;
         }
         const controller = new AbortController();
@@ -343,7 +343,7 @@ export function resetEvolutionHealth(): void {
 function getNextProxy(): { host: string; port: string; protocol: string; username: string; password: string } | null {
   if (PROXY_LIST.length === 0) return null;
   if (proxyPoolDisabled) {
-    console.log('[PROXY] Pool disabled (fallback mode) — skipping proxy assignment');
+    console.log('[PROXY] Pool disabled (fallback mode) - skipping proxy assignment');
     return null;
   }
   const proxy = PROXY_LIST[proxyCounter % PROXY_LIST.length];
@@ -415,7 +415,7 @@ async function apiFetch(url: string, options: RequestInit & { skipHealthCount?: 
       const text = await res.clone().text().catch(() => '');
       console.error(`[EVO-CLIENT] ${options.method || 'GET'} ${url} -> ${res.status}: ${text.slice(0, 300)}`);
       // Only count failures that indicate the API itself is broken (5xx, auth errors).
-      // 404s during reconnection are expected — Evolution API may still be loading.
+      // 404s during reconnection are expected - Evolution API may still be loading.
       if (!skipHealthCount && res.status >= 500) {
         consecutiveFailures++;
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
@@ -430,7 +430,7 @@ async function apiFetch(url: string, options: RequestInit & { skipHealthCount?: 
     }
     return res;
   } catch (err) {
-    // Network errors always count — the API is unreachable
+    // Network errors always count - the API is unreachable
     consecutiveFailures++;
     if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
       markEvolutionDown();
@@ -497,20 +497,20 @@ export async function waitForEvolutionReady(maxAttempts = 10, baseDelayMs = 3000
 }
 
 // Create a new WhatsApp instance for a session, including webhook config.
-// If the instance already exists (403), log and continue — the caller will
+// If the instance already exists (403), log and continue - the caller will
 // connect to the existing instance via getPairingCode.
 export async function createInstance(instanceName: string, phoneNumber: string) {
   // Guard: refuse to create new instances if Evolution API has been failing
   if (!isEvolutionHealthy()) {
-    console.error(`[EVO-CLIENT] createInstance BLOCKED: Evolution API has ${consecutiveFailures} consecutive failures — refusing to accept new pairing sessions`);
-    throw new Error('Evolution API is unhealthy — cannot create new instances');
+    console.error(`[EVO-CLIENT] createInstance BLOCKED: Evolution API has ${consecutiveFailures} consecutive failures - refusing to accept new pairing sessions`);
+    throw new Error('Evolution API is unhealthy - cannot create new instances');
   }
 
   // Guard: refuse during 428 cooldown to prevent cascading disconnects
   if (is428CooldownActive()) {
     const remaining = get428CooldownRemaining();
-    console.warn(`[EVO-CLIENT] createInstance BLOCKED: 428 cooldown active (${remaining}s remaining) — refusing ${instanceName}`);
-    throw new Error(`428 cooldown active — ${remaining}s remaining`);
+    console.warn(`[EVO-CLIENT] createInstance BLOCKED: 428 cooldown active (${remaining}s remaining) - refusing ${instanceName}`);
+    throw new Error(`428 cooldown active - ${remaining}s remaining`);
   }
 
   // Rate limit: wait if we created an instance too recently
@@ -530,7 +530,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   if (PROXY_LIST.length > 0) {
     console.log(`[PROXY] Will assign proxy from pool of ${PROXY_LIST.length} to instance ${instanceName}`);
   } else {
-    console.warn(`[PROXY] No proxy available for instance ${instanceName} — connecting with server IP (risk of 428 ban)`);
+    console.warn(`[PROXY] No proxy available for instance ${instanceName} - connecting with server IP (risk of 428 ban)`);
   }
 
   // NOTE: Do NOT include proxy or webhook config in the create payload.
@@ -550,17 +550,17 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     // Throw so withRetry retries after a backoff instead of crashing
     // when we try to parse the HTML error page as JSON.
     if (r.status === 502 || r.status === 503) {
-      throw new Error(`Evolution API returned ${r.status} (transient) — will retry`);
+      throw new Error(`Evolution API returned ${r.status} (transient) - will retry`);
     }
 
     // If instance creation fails with 403 (name in use) or 400 (stale/corrupt
     // instance state), force-delete the old instance and retry. The 400 case
-    // commonly occurs after WhatsApp logs out a session — Evolution API's
+    // commonly occurs after WhatsApp logs out a session - Evolution API's
     // internal state is inconsistent and createInstance rejects even though
     // the instance no longer functions.
     if (r.status === 403 || r.status === 400) {
       const body = await r.clone().text().catch(() => '');
-      console.warn(`[EVO-CLIENT] Instance "${instanceName}" creation rejected (status=${r.status}, body=${body.slice(0, 200)}) — force-deleting and retrying`);
+      console.warn(`[EVO-CLIENT] Instance "${instanceName}" creation rejected (status=${r.status}, body=${body.slice(0, 200)}) - force-deleting and retrying`);
       await deleteInstanceAndVerify(instanceName);
       // Extra pause after verified deletion to let DB constraints fully propagate
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -575,7 +575,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
   }, 4, 2000); // 4 attempts, 2s base delay for 502/503 recovery
   const result = await safeJson(res);
   if (!result) {
-    console.error(`[EVO-CLIENT] createInstance: response body is not valid JSON (status=${res.status}) — treating as failure`);
+    console.error(`[EVO-CLIENT] createInstance: response body is not valid JSON (status=${res.status}) - treating as failure`);
     return { error: true, status: res.status, message: 'Non-JSON response from Evolution API' };
   }
   const instanceId = result?.instance?.instanceId || 'none';
@@ -610,13 +610,13 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
           }),
         });
         if (proxyRes.status === 200 || proxyRes.status === 201) {
-          console.log(`[PROXY] Proxy SET for ${instanceName} — ${p.host}:${p.port} (attempt ${pi + 1}/${maxProxyAttempts})`);
+          console.log(`[PROXY] Proxy SET for ${instanceName} - ${p.host}:${p.port} (attempt ${pi + 1}/${maxProxyAttempts})`);
           recordProxySuccess(p.host);
           proxySet = true;
         } else if (proxyRes.status === 404) {
-          // Instance doesn't exist in Evolution API — not a proxy problem.
+          // Instance doesn't exist in Evolution API - not a proxy problem.
           // Stop trying more proxies; the instance itself is gone.
-          console.warn(`[PROXY] Instance ${instanceName} not found (404) — skipping remaining proxy attempts`);
+          console.warn(`[PROXY] Instance ${instanceName} not found (404) - skipping remaining proxy attempts`);
           break;
         } else {
           const body = await proxyRes.text().catch(() => '');
@@ -629,12 +629,12 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       }
     }
     if (!proxySet && maxProxyAttempts > 0) {
-      console.error(`[PROXY] All ${maxProxyAttempts} proxies failed for ${instanceName} — session will run on server IP`);
+      console.error(`[PROXY] All ${maxProxyAttempts} proxies failed for ${instanceName} - session will run on server IP`);
     }
   }
 
   // Ensure readMessages and readStatus are OFF so the bot doesn't auto-read
-  // incoming messages. Evolution API defaults can vary — set explicitly.
+  // incoming messages. Evolution API defaults can vary - set explicitly.
   if (res.status === 200 || res.status === 201) {
     try {
       await apiFetch(`${BASE}/settings/set/${instanceName}`, {
@@ -657,7 +657,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     }
   }
 
-  // Set per-instance webhook separately (non-fatal — global webhook is the fallback)
+  // Set per-instance webhook separately (non-fatal - global webhook is the fallback)
   if (webhookUrl && (res.status === 200 || res.status === 201)) {
     setWebhook(instanceName).catch(err => {
       console.warn(`[EVO-CLIENT] setWebhook after create failed for ${instanceName} (non-fatal, global webhook active):`, err);
@@ -701,8 +701,8 @@ export async function enableInstanceProxy(instanceName: string): Promise<boolean
         return true;
       }
       if (res.status === 404) {
-        // Instance doesn't exist — not a proxy problem, stop trying.
-        console.warn(`[PROXY] enableInstanceProxy: instance ${instanceName} not found (404) — aborting`);
+        // Instance doesn't exist - not a proxy problem, stop trying.
+        console.warn(`[PROXY] enableInstanceProxy: instance ${instanceName} not found (404) - aborting`);
         return false;
       }
       recordProxyFailure(instanceName, proxy.host, `enableInstanceProxy status=${res.status}`);
@@ -757,7 +757,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
       headers,
     }).then(r => {
       if (r.status === 502 || r.status === 503) {
-        throw new Error(`Evolution API returned ${r.status} (transient) — will retry`);
+        throw new Error(`Evolution API returned ${r.status} (transient) - will retry`);
       }
       return r;
     }),
@@ -769,7 +769,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
     // If pairing code is present but QR data is missing, the Evolution API's
     // async toDataURL callback hasn't completed yet. Wait briefly and retry.
     if (!connectData.code) {
-      console.log(`[PAIRING-EVO-CLIENT] Got pairing code but QR data missing — retrying after 1.5s`);
+      console.log(`[PAIRING-EVO-CLIENT] Got pairing code but QR data missing - retrying after 1.5s`);
       await new Promise(r => setTimeout(r, 1500));
       try {
         const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
@@ -801,12 +801,12 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
         headers,
       });
       if (res.status === 502 || res.status === 503) {
-        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: got ${res.status} (transient) — skipping`);
+        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: got ${res.status} (transient) - skipping`);
         continue;
       }
       const data: any = await safeJson(res);
       if (!data) {
-        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: non-JSON response — skipping`);
+        console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: non-JSON response - skipping`);
         continue;
       }
       const pollDuration = Date.now() - pollStart;
@@ -815,7 +815,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
       if (data?.pairingCode) {
         // If pairing code is present but QR data not ready, retry once
         if (!data.code) {
-          console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}: pairing code present but QR missing — retrying after 1.5s`);
+          console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}: pairing code present but QR missing - retrying after 1.5s`);
           await new Promise(r => setTimeout(r, 1500));
           try {
             const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
@@ -842,7 +842,7 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
 }
 
 // Fetch the latest pairing code without triggering a new connection.
-// Safe to call repeatedly — returns current QR data when instance is connecting.
+// Safe to call repeatedly - returns current QR data when instance is connecting.
 export async function refreshPairingCode(instanceName: string, phoneNumber: string): Promise<PairingResult | null> {
   try {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -885,7 +885,7 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
     // 404 = instance was deleted (REMOVED by Evolution API). Return 'gone'
     // so BotManager can immediately transition to needs_reauth.
     if (res.status === 404) {
-      console.warn(`[EVO-CLIENT] getInstanceStatus ${instanceName}: 404 — instance GONE (deleted by Evolution API)`);
+      console.warn(`[EVO-CLIENT] getInstanceStatus ${instanceName}: 404 - instance GONE (deleted by Evolution API)`);
       return 'gone';
     }
     const data: any = await safeJson(res);
@@ -928,7 +928,7 @@ export async function connectInstance(instanceName: string, phoneNumber?: string
   // Guard: refuse during 428 cooldown
   if (is428CooldownActive()) {
     const remaining = get428CooldownRemaining();
-    console.warn(`[EVO-CLIENT] connectInstance BLOCKED: 428 cooldown active (${remaining}s remaining) — refusing ${instanceName}`);
+    console.warn(`[EVO-CLIENT] connectInstance BLOCKED: 428 cooldown active (${remaining}s remaining) - refusing ${instanceName}`);
     return 'cooldown';
   }
   console.log(`[EVO-CLIENT] connectInstance: ${instanceName} phone=${phoneNumber || 'none'}`);
@@ -954,7 +954,7 @@ export async function connectInstance(instanceName: string, phoneNumber?: string
 }
 
 // Delete an instance (used when session is removed).
-// 404s are expected (instance already gone) — don't count them as failures.
+// 404s are expected (instance already gone) - don't count them as failures.
 export async function deleteInstance(instanceName: string): Promise<number> {
   console.log(`[EVO-CLIENT] deleteInstance: ${instanceName}`);
   try {
@@ -987,13 +987,13 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
   // This prevents accidentally wiping a working session's auth state.
   const preDeleteState = await getInstanceStatus(instanceName);
   if (preDeleteState === 'open') {
-    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED — instance ${instanceName} is OPEN (connected). Refusing to delete a live session.`);
+    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED - instance ${instanceName} is OPEN (connected). Refusing to delete a live session.`);
     return;
   }
 
   // GUARD: Don't delete during pairing stability window
   if (isPairingStabilityActive(instanceName)) {
-    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED — instance ${instanceName} is within pairing stability window. Code may still be valid.`);
+    console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: BLOCKED - instance ${instanceName} is within pairing stability window. Code may still be valid.`);
     return;
   }
 
@@ -1003,9 +1003,9 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
   for (let attempt = 1; attempt <= MAX_DELETE_RETRIES; attempt++) {
     const deleteStatus = await deleteInstance(instanceName);
 
-    // FAST PATH: 404 means instance is already gone — no need to poll
+    // FAST PATH: 404 means instance is already gone - no need to poll
     if (deleteStatus === 404) {
-      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} already gone (delete returned 404) — skipping verify`);
+      console.log(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} already gone (delete returned 404) - skipping verify`);
       return;
     }
 
@@ -1021,10 +1021,10 @@ export async function deleteInstanceAndVerify(instanceName: string, maxWaitMs = 
     }
 
     if (attempt < MAX_DELETE_RETRIES) {
-      console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${maxWaitMs}ms — retrying delete (attempt ${attempt + 1}/${MAX_DELETE_RETRIES})`);
+      console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${maxWaitMs}ms - retrying delete (attempt ${attempt + 1}/${MAX_DELETE_RETRIES})`);
     }
   }
-  console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${MAX_DELETE_RETRIES} delete attempts — proceeding anyway`);
+  console.warn(`[EVO-CLIENT] deleteInstanceAndVerify: ${instanceName} still present after ${MAX_DELETE_RETRIES} delete attempts - proceeding anyway`);
 }
 
 // Configure webhook for an existing instance.
@@ -1067,7 +1067,7 @@ export async function setWebhook(instanceName: string) {
         console.error(`[EVO-CLIENT] setWebhook ${instanceName} failed: status=${res.status} body=${body}`);
         return;
       }
-      console.warn(`[EVO-CLIENT] setWebhook ${instanceName} FK constraint error (attempt ${attempt}/${MAX_RETRIES}) — retrying in ${BASE_DELAY * attempt}ms`);
+      console.warn(`[EVO-CLIENT] setWebhook ${instanceName} FK constraint error (attempt ${attempt}/${MAX_RETRIES}) - retrying in ${BASE_DELAY * attempt}ms`);
       await new Promise(r => setTimeout(r, BASE_DELAY * attempt));
     } catch (err) {
       console.error(`[EVO-CLIENT] Failed to set webhook for ${instanceName} (attempt ${attempt}/${MAX_RETRIES}):`, err);
@@ -1207,7 +1207,7 @@ export async function updateMessage(
       console.log(`[EDIT-DEBUG] DB lookup: stored key=${JSON.stringify(stored?.key)}`);
       if (stored?.key?.remoteJid && stored.key.remoteJid !== key.remoteJid) {
         const storedJid = stored.key.remoteJid;
-        // Pass the full stored JID (including @lid) as `number` — Evolution API's
+        // Pass the full stored JID (including @lid) as `number` - Evolution API's
         // createJid() preserves @lid suffix, so it will match the stored remoteJid.
         const fixedKey = { ...key, remoteJid: storedJid };
         console.log(`[EDIT-DEBUG] Retrying with stored JID: ${storedJid} (was ${key.remoteJid})`);
@@ -1225,7 +1225,7 @@ export async function updateMessage(
       } else if (!stored) {
         console.log(`[EDIT-DEBUG] Message not found in DB by key.id=${key.id}`);
       } else {
-        console.log(`[EDIT-DEBUG] Stored JID matches webhook JID — no alternate to try`);
+        console.log(`[EDIT-DEBUG] Stored JID matches webhook JID - no alternate to try`);
       }
     } catch (lookupErr) {
       if (lookupErr instanceof Error && lookupErr.message.includes('retry failed')) throw lookupErr;
@@ -1368,7 +1368,7 @@ export async function checkOnWhatsApp(instanceName: string, numbers: string[]) {
 
 // Send presence update (composing, paused, available, unavailable)
 export async function sendPresence(instanceName: string, jid: string, presence: string) {
-  // Strip JID suffix — Evolution API expects plain number
+  // Strip JID suffix - Evolution API expects plain number
   const number = jid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '') || jid;
   const res = await apiFetch(`${BASE}/chat/sendPresence/${instanceName}`, {
     method: 'POST',
@@ -1429,12 +1429,12 @@ function disableProxiesOnAllInstances(): void {
   }
 }
 
-// Grace period tracking for 'unknown' state — Evolution API may still be
+// Grace period tracking for 'unknown' state - Evolution API may still be
 // loading instances after restart. Don't panic until several consecutive unknowns.
 const unknownGraceCounts = new Map<string, number>();
 const UNKNOWN_GRACE_THRESHOLD = 5; // 5 × 60s = 5 min grace period
 
-// WhatsApp presence heartbeat interval — sends a presence update to WhatsApp
+// WhatsApp presence heartbeat interval - sends a presence update to WhatsApp
 // (not just polling Evolution API) to keep WhatsApp's activity tracker fresh
 // and prevent the 14-day inactivity unlink.
 const PRESENCE_HEARTBEAT_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
@@ -1452,11 +1452,11 @@ function ensurePresenceHeartbeat(): void {
   presenceHeartbeatHandle = setInterval(async () => {
     for (const name of trackedInstances) {
       try {
-        // Evolution API requires `number` and `delay` fields — omitting them
+        // Evolution API requires `number` and `delay` fields - omitting them
         // causes 400 errors. Use cached ownerJid to get the number.
         const ownerJid = instanceOwnerCache.get(name);
         if (!ownerJid) {
-          // No owner cached — skip this instance silently
+          // No owner cached - skip this instance silently
           continue;
         }
         const number = ownerJid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');
@@ -1467,7 +1467,7 @@ function ensurePresenceHeartbeat(): void {
           headers,
           body: JSON.stringify({ number, presence: 'available', delay: 0 }),
         });
-        // Brief delay then go offline — mimics a real user checking their phone
+        // Brief delay then go offline - mimics a real user checking their phone
         setTimeout(async () => {
           try {
             await apiFetch(`${BASE}/chat/sendPresence/${name}`, {
@@ -1505,16 +1505,16 @@ function ensureKeepAlive(): void {
         const state = data?.instance?.state || 'unknown';
         console.log(`[EVO-CLIENT] keep-alive ping ${name}: state=${state}`);
 
-        // Handle 'unknown' state with grace period — Evolution API may still
+        // Handle 'unknown' state with grace period - Evolution API may still
         // be loading instances after restart. Don't trigger reconnection.
         if (state === 'unknown') {
           const count = (unknownGraceCounts.get(name) || 0) + 1;
           unknownGraceCounts.set(name, count);
           if (count <= UNKNOWN_GRACE_THRESHOLD) {
-            console.log(`[EVO-CLIENT] keep-alive: ${name} is unknown (${count}/${UNKNOWN_GRACE_THRESHOLD} grace) — waiting for Evolution API to load`);
+            console.log(`[EVO-CLIENT] keep-alive: ${name} is unknown (${count}/${UNKNOWN_GRACE_THRESHOLD} grace) - waiting for Evolution API to load`);
             continue;
           }
-          console.warn(`[EVO-CLIENT] keep-alive: ${name} exceeded unknown grace threshold — treating as disconnected`);
+          console.warn(`[EVO-CLIENT] keep-alive: ${name} exceeded unknown grace threshold - treating as disconnected`);
         } else {
           unknownGraceCounts.delete(name);
         }
@@ -1522,7 +1522,7 @@ function ensureKeepAlive(): void {
         // Notify BotManager when a tracked instance is disconnected so it can
         // trigger reconnection immediately instead of waiting for the 5s poll.
         if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
-          console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} — notifying BotManager for reconnection`);
+          console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} - notifying BotManager for reconnection`);
           onDisconnectDetected(name, state);
         }
 
@@ -1533,7 +1533,7 @@ function ensureKeepAlive(): void {
         if (state === 'close') {
           // Skip auto-reconnect during 428 cooldown to avoid triggering more rate limits
           if (is428CooldownActive()) {
-            console.log(`[EVO-CLIENT] keep-alive: SKIPPING auto-reconnect for ${name} — 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
+            console.log(`[EVO-CLIENT] keep-alive: SKIPPING auto-reconnect for ${name} - 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
           } else {
             console.log(`[EVO-CLIENT] keep-alive: attempting auto-reconnect for ${name}...`);
             try {
@@ -1619,7 +1619,7 @@ export async function verifyEvolutionDataPersistence(): Promise<{ persisted: boo
 
 // ─── Socket.io WebSocket Client ───────────────────────────────────────────────
 // Connects to Evolution API's socket.io server for real-time event delivery.
-// This provides ~10ms disconnect detection vs 60s HTTP polling — the fastest
+// This provides ~10ms disconnect detection vs 60s HTTP polling - the fastest
 // detection layer in the 4-layer system.
 //
 // Requires on Evolution API:
@@ -1664,7 +1664,7 @@ export function startEvolutionWebSocket(): void {
     });
 
     evoSocketClient.on('connect_error', (err: Error) => {
-      console.warn(`[EVO-WS] Connection error: ${err.message} — will retry automatically`);
+      console.warn(`[EVO-WS] Connection error: ${err.message} - will retry automatically`);
     });
 
     // Catch parse errors from malformed WebSocket frames.
@@ -1680,7 +1680,7 @@ export function startEvolutionWebSocket(): void {
       }
     });
 
-    // Listen for connection.update events — instant disconnect detection + 428 cooldown
+    // Listen for connection.update events - instant disconnect detection + 428 cooldown
     evoSocketClient.on('connection.update', (msg: Record<string, unknown>) => {
       const instanceName = msg.instance as string;
       const data = msg.data as Record<string, unknown> | undefined;
@@ -1692,18 +1692,18 @@ export function startEvolutionWebSocket(): void {
 
       console.log(`[EVO-WS] connection.update for ${instanceName}: state=${state} statusCode=${statusCode || 'none'}`);
 
-      // Detect 428 (WhatsApp rate limit) — trigger global cooldown
+      // Detect 428 (WhatsApp rate limit) - trigger global cooldown
       if (statusCode === 428) {
         trigger428Cooldown(`WebSocket connection.update for ${instanceName}`);
       }
 
       if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
-        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket — notifying BotManager`);
+        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket - notifying BotManager`);
         onDisconnectDetected(instanceName, state);
       }
     });
 
-    // Listen for messages.upsert — track activity for deaf session detection
+    // Listen for messages.upsert - track activity for deaf session detection
     evoSocketClient.on('messages.upsert', (msg: Record<string, unknown>) => {
       const instanceName = msg.instance as string;
       if (instanceName && trackedInstances.has(instanceName)) {

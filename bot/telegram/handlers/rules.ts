@@ -40,7 +40,7 @@ export function registerRulesHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Rules cleared.');
   });
 
-  // /privaterules <yes/no> — Send rules via PM instead of group
+  // /privaterules <yes/no> - Send rules via PM instead of group
   bot.command('privaterules', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -55,14 +55,14 @@ export function registerRulesHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /resetrules — Reset rules to empty
+  // /resetrules - Reset rules to empty
   bot.command('resetrules', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { rules_text: null });
     await ctx.reply('✅ Rules have been reset.');
   });
 
-  // /setrulesbutton <text> — Set custom text for rules button
+  // /setrulesbutton <text> - Set custom text for rules button
   bot.command('setrulesbutton', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const text = (ctx.match?.toString() || '').trim();
@@ -71,7 +71,7 @@ export function registerRulesHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Rules button text set to: ${escapeHtml(text)}`, { parse_mode: 'HTML' });
   });
 
-  // /resetrulesbutton — Reset rules button text to default
+  // /resetrulesbutton - Reset rules button text to default
   bot.command('resetrulesbutton', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { rules_button_text: null } as Record<string, unknown>);

@@ -22,7 +22,7 @@ async function hmacSign(data: string, secret: string): Promise<string> {
 
 /**
  * Generate an HMAC-signed admin token embedding username + expiry.
- * Uses Web Crypto API — works in both Edge Runtime and Node.js.
+ * Uses Web Crypto API - works in both Edge Runtime and Node.js.
  */
 export async function generateSecureToken(username: string): Promise<string> {
   const expiresAt = Date.now() + TOKEN_EXPIRY_MS;
@@ -33,7 +33,7 @@ export async function generateSecureToken(username: string): Promise<string> {
 }
 
 /**
- * No-op — tokens are now self-verifying via HMAC signature.
+ * No-op - tokens are now self-verifying via HMAC signature.
  * Kept for API compatibility with the login route.
  */
 export function storeAdminToken(_token: string, _username: string): void {
@@ -64,7 +64,7 @@ export async function validateAdminToken(token: string): Promise<{ username: str
 }
 
 /**
- * No-op — HMAC tokens cannot be individually revoked without a blacklist.
+ * No-op - HMAC tokens cannot be individually revoked without a blacklist.
  * Logout clears the cookie, which is sufficient.
  */
 export function revokeAdminToken(_token: string): boolean {

@@ -3,8 +3,8 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-south-africa' },
-  title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management',
-  description: 'Free WhatsApp bot for South Africa — auto-replies, AI chat, anti-spam, stickers & group management. Works with Vodacom, MTN, Cell C. Set up in 2 minutes, no coding needed. Try it free →',
+  title: 'WhatsApp Bot for South Africa (2026) - Free Automation & Group Management',
+  description: 'Free WhatsApp bot for South Africa - auto-replies, AI chat, anti-spam, stickers & group management. Works with Vodacom, MTN, Cell C. Set up in 2 minutes, no coding needed. Try it free →',
   keywords: ['whatsapp bot south africa', 'whatsapp automation south africa', 'free whatsapp bot sa', 'whatsapp business bot south africa', 'whatsapp group bot south africa', 'chatbot south africa'],
   openGraph: {
     title: 'WhatsApp Bot for South Africa (2026)',
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for South Africa (2026) — Free Automation & Group Management
+# WhatsApp Bot for South Africa (2026) - Free Automation & Group Management
 
 **Last updated: May 2026** | 6 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-South Africa has over 30 million WhatsApp users — making it one of the most active WhatsApp markets on the continent. Whether you're running a spaza shop in Soweto, managing a stokvel group, or operating a small business in Cape Town, a WhatsApp bot can automate your most repetitive tasks for free.
+South Africa has over 30 million WhatsApp users - making it one of the most active WhatsApp markets on the continent. Whether you're running a spaza shop in Soweto, managing a stokvel group, or operating a small business in Cape Town, a WhatsApp bot can automate your most repetitive tasks for free.
 
 ## Why South Africans Need WhatsApp Bots
 
@@ -69,7 +69,7 @@ South African WhatsApp groups (stokvels, neighborhoods, churches) benefit from:
 
 ### Sticker Maker
 
-South Africans love WhatsApp stickers. Reply to any image with \`!sticker\` to create custom stickers instantly — no app download needed.
+South Africans love WhatsApp stickers. Reply to any image with \`!sticker\` to create custom stickers instantly - no app download needed.
 
 ## Setting Up BotWave with a South African Number
 
@@ -108,7 +108,7 @@ Neighborhood watch groups, community forums, and local business networks use:
 - Polls for community decisions
 
 ### University Students
-UCT, Wits, Stellenbosch, UJ — student groups across SA use BotWave for:
+UCT, Wits, Stellenbosch, UJ - student groups across SA use BotWave for:
 - Study help via AI chat
 - Anti-spam in class groups
 - Trivia nights for engagement
@@ -157,11 +157,11 @@ BotWave's AI chat works in all South African languages:
 - Xhosa (isiXhosa)
 - Sotho (Sesotho)
 - Tswana (Setswana)
-- And more — the AI supports 100+ languages
+- And more - the AI supports 100+ languages
 
 ## Getting Started
 
-Whether you're in Johannesburg, Cape Town, Durban, or anywhere in South Africa — if you have WhatsApp, you can use BotWave. Free, no coding, 2-minute setup.
+Whether you're in Johannesburg, Cape Town, Durban, or anywhere in South Africa - if you have WhatsApp, you can use BotWave. Free, no coding, 2-minute setup.
 
 **[Get Started Free →](https://www.botwave.online/signup)**
 `;

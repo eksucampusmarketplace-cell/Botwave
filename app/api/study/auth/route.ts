@@ -12,7 +12,7 @@ function getServiceSupabase() {
 
 const TOKEN_EXPIRY_MINUTES = 10;
 
-// POST — generate a one-time login token (called by the bot)
+// POST - generate a one-time login token (called by the bot)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET — validate token and create session (called by the study-login page)
+// GET - validate token and create session (called by the study-login page)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

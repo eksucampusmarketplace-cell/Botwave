@@ -49,7 +49,7 @@ export function isCircuitOpen(): boolean {
 
 export function recordSuccess(): void {
   if (state === 'HALF_OPEN') {
-    console.log(`[CIRCUIT] Recovery confirmed — HALF_OPEN -> CLOSED (blocked ${totalBlocked} requests during outage, served ${totalFallbacks} from stale cache)`);
+    console.log(`[CIRCUIT] Recovery confirmed - HALF_OPEN -> CLOSED (blocked ${totalBlocked} requests during outage, served ${totalFallbacks} from stale cache)`);
     totalBlocked = 0;
     totalFallbacks = 0;
     markRecovery();
@@ -65,14 +65,14 @@ export function recordFailure(error?: unknown): void {
 
   if (state === 'HALF_OPEN') {
     state = 'OPEN';
-    console.log('[CIRCUIT] Probe failed — HALF_OPEN -> OPEN (will retry in 30s)');
+    console.log('[CIRCUIT] Probe failed - HALF_OPEN -> OPEN (will retry in 30s)');
     return;
   }
 
   if (consecutiveFailures >= FAILURE_THRESHOLD && state === 'CLOSED') {
     state = 'OPEN';
     const errMsg = error instanceof Error ? error.message : String(error || '');
-    console.log(`[CIRCUIT] ${consecutiveFailures} consecutive failures — CLOSED -> OPEN. Last error: ${errMsg.slice(0, 200)}`);
+    console.log(`[CIRCUIT] ${consecutiveFailures} consecutive failures - CLOSED -> OPEN. Last error: ${errMsg.slice(0, 200)}`);
   }
 }
 
@@ -171,7 +171,7 @@ export interface ResilientReadOptions<T> {
 export async function resilientRead<T>(opts: ResilientReadOptions<T>): Promise<T> {
   const { cacheKey, queryFn, fallbackValue } = opts;
 
-  // Circuit open — don't even try
+  // Circuit open - don't even try
   if (!canAttemptRequest()) {
     const stale = getStaleCache<T>(cacheKey);
     if (stale !== undefined) {
@@ -236,7 +236,7 @@ export async function resilientWrite(opts: ResilientWriteOptions): Promise<boole
 
   // If circuit is open, skip non-critical writes entirely
   if (isCircuitOpen()) {
-    console.log(`[CIRCUIT] Skipping ${label} — circuit is OPEN`);
+    console.log(`[CIRCUIT] Skipping ${label} - circuit is OPEN`);
     return false;
   }
 
@@ -253,10 +253,10 @@ export async function resilientWrite(opts: ResilientWriteOptions): Promise<boole
           console.log(`[CIRCUIT] ${label} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${backoffMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
         } else {
-          console.error(`[CIRCUIT] ${label} failed after ${maxRetries + 1} attempts — giving up`);
+          console.error(`[CIRCUIT] ${label} failed after ${maxRetries + 1} attempts - giving up`);
         }
       } else {
-        // Non-Supabase error (e.g. validation) — don't retry
+        // Non-Supabase error (e.g. validation) - don't retry
         console.error(`[CIRCUIT] ${label} non-retriable error:`, err);
         return false;
       }

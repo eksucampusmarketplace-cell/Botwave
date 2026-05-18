@@ -143,7 +143,7 @@ export const pmguardHandler: HandlerFn = async (client, event) => {
 };
 
 /**
- * Incoming PM handler — checks if PM permit is enabled and handles unapproved users.
+ * Incoming PM handler - checks if PM permit is enabled and handles unapproved users.
  * This is called for every incoming PM, not as a command.
  */
 export async function handleIncomingPm(

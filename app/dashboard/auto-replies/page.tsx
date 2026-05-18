@@ -131,7 +131,7 @@ export default function AutoRepliesPage() {
           if (!session?.user) { window.location.href = '/login'; return; }
         }
       } catch {
-        console.warn('[AutoReplies] Auth check failed (network error) — staying on page');
+        console.warn('[AutoReplies] Auth check failed (network error) - staying on page');
       }
       fetchData();
     };

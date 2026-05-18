@@ -1,5 +1,5 @@
 /**
- * Analytics — /stats, /groupstats commands + message tracking middleware.
+ * Analytics - /stats, /groupstats commands + message tracking middleware.
  */
 
 import { Bot } from 'grammy';

@@ -228,7 +228,7 @@ export const helpHandler: HandlerFn = async (client, event) => {
   const p = config.prefix;
   const args = (msg.text || '').split(/\s+/).slice(1);
 
-  // .help <module> — show specific module
+  // .help <module> - show specific module
   if (args[0]) {
     const query = args[0].toLowerCase();
     const mod = HELP_MODULES.find(m => m.name.toLowerCase() === query || m.name.toLowerCase().replace(/\s/g, '') === query);

@@ -19,12 +19,12 @@ const ROASTS = [
   "Somewhere out there, a tree is producing oxygen for you. I think you owe it an apology.",
   "You're about as useful as a screen door on a submarine.",
   "I'd roast you but my mom said I'm not allowed to burn trash.",
-  "You're like a Monday — nobody likes you.",
+  "You're like a Monday - nobody likes you.",
   "If brains were dynamite, you wouldn't have enough to blow your nose.",
   "You're not the dumbest person in the world, but you'd better hope they don't die.",
   "I've seen smarter things than you at the bottom of my shoe.",
   "You're the reason shampoo has instructions.",
-  "You bring everyone joy — some when you arrive, most when you leave.",
+  "You bring everyone joy - some when you arrive, most when you leave.",
   "Your secrets are safe with me. I wasn't even listening.",
 ];
 
@@ -46,7 +46,7 @@ const COMPLIMENTS = [
   "Your energy is infectious in the best way.",
   "You're braver than you believe, stronger than you seem, and smarter than you think.",
   "The world needs more people like you.",
-  "You're one of a kind — in the best possible way.",
+  "You're one of a kind - in the best possible way.",
   "Everything you do comes from a place of kindness.",
   "You have an amazing sense of humor!",
 ];

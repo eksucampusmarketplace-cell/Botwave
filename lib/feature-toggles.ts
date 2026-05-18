@@ -1,11 +1,11 @@
 /**
  * Two-level feature toggle system for BotWave.
  *
- * Level 1 — Bot Owner: Controls which features the bot has at all.
+ * Level 1 - Bot Owner: Controls which features the bot has at all.
  *   Stored in `telegram_bot_configs.owner_features` (JSONB).
  *   If the owner disables a feature, no group can use it.
  *
- * Level 2 — Group Admin: Controls which features are active in their group.
+ * Level 2 - Group Admin: Controls which features are active in their group.
  *   Stored in `telegram_bot_configs.group_features_{chatId}` or a separate table.
  *   Group admins can only enable features the bot owner has enabled.
  *
@@ -86,7 +86,7 @@ const groupFeatures = new Map<string, Set<FeatureId>>();
 // ── Owner-Level (Bot Owner) ──────────────────────────────────────────
 
 /**
- * Initialize owner features — all enabled by default.
+ * Initialize owner features - all enabled by default.
  */
 export function initOwnerFeatures(sessionId: string, enabled?: FeatureId[]): void {
   if (enabled) {
@@ -134,7 +134,7 @@ function groupKey(sessionId: string, chatId: string): string {
 }
 
 /**
- * Initialize group features — inherits all owner-enabled features by default.
+ * Initialize group features - inherits all owner-enabled features by default.
  */
 export function initGroupFeatures(sessionId: string, chatId: string, enabled?: FeatureId[]): void {
   const key = groupKey(sessionId, chatId);

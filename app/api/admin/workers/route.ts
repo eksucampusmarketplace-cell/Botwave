@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       const currentWorkers = countRunningWorkers();
 
       if (targetCount > currentWorkers) {
-        // Scale UP — start stopped workers or create new ones
+        // Scale UP - start stopped workers or create new ones
         const toStart: string[] = [];
         for (let i = currentWorkers + 1; i <= targetCount; i++) {
           toStart.push(`botwave-worker-${i}`);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } else if (targetCount < currentWorkers) {
-        // Scale DOWN — stop excess workers (highest numbers first)
+        // Scale DOWN - stop excess workers (highest numbers first)
         for (let i = currentWorkers; i > targetCount; i--) {
           try {
             execSync(`docker stop botwave_worker_${i}`, {

@@ -801,8 +801,8 @@ export default function DeploymentTab() {
             <p className="text-yellow-500 font-mono text-[10px] tracking-widest mb-2">IMPORTANT SAFETY TIPS</p>
             <ul className="text-zinc-400 font-mono text-[11px] space-y-1">
               <li>&bull; Always back up your .env files before making changes manually</li>
-              <li>&bull; Never run <code className="text-red-400">rm -rf /</code> — it deletes EVERYTHING</li>
-              <li>&bull; Use this admin panel instead of terminal when possible — it&apos;s safer</li>
+              <li>&bull; Never run <code className="text-red-400">rm -rf /</code> - it deletes EVERYTHING</li>
+              <li>&bull; Use this admin panel instead of terminal when possible - it&apos;s safer</li>
               <li>&bull; If something breaks, containers auto-restart. Worst case: reboot the VPS</li>
               <li>&bull; Your domain botwave.online should point to 144.91.107.59 in DNS settings</li>
             </ul>

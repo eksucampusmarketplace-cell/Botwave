@@ -1,18 +1,18 @@
 /**
- * ESSENTIALS OF MEDICAL PHYSIOLOGY — Endocrinology Chapters
- * Source: Sembulingam Textbook — Endocrinology section
+ * ESSENTIALS OF MEDICAL PHYSIOLOGY - Endocrinology Chapters
+ * Source: Sembulingam Textbook - Endocrinology section
  * Focus: General Endocrinology, Thyroid, Parathyroid, Calcium Metabolism
  */
 
 export const physiologyTextbookMaterial = {
-  title: 'Essentials of Medical Physiology — Endocrinology',
+  title: 'Essentials of Medical Physiology - Endocrinology',
   fileType: 'pdf',
   wordCount: 6200,
   status: 'analyzed' as const,
 
   summary: {
     definitions: [
-      { term: '## GENERAL ENDOCRINOLOGY', definition: 'Endocrinology is the study of hormones — chemical messengers secreted into the blood by glands or specialised cells. Hormones act on distant target cells via specific receptors.' },
+      { term: '## GENERAL ENDOCRINOLOGY', definition: 'Endocrinology is the study of hormones - chemical messengers secreted into the blood by glands or specialised cells. Hormones act on distant target cells via specific receptors.' },
       { term: 'Endocrine Gland', definition: 'Ductless gland that secretes hormones directly into the bloodstream. Examples: pituitary, thyroid, adrenal, pancreas, gonads. Distinguished from exocrine glands which secrete via ducts.' },
       { term: 'Hormone', definition: 'Chemical messenger synthesized and secreted by endocrine cells, transported via blood to target cells where it produces a specific physiological response. Term coined by Ernest Starling (1905).' },
       { term: '## THYROID GLAND', definition: 'The thyroid is the largest endocrine gland (~20g), located anterior to the trachea. It produces T₃ and T₄ (from follicular cells) and calcitonin (from parafollicular C cells).' },
@@ -48,7 +48,7 @@ export const physiologyTextbookMaterial = {
       'In blood: 99.97% of T₄ is protein-bound (TBG 70%, albumin 20%, TBPA 10%). Only FREE hormone is biologically active',
       'Receptor: NUCLEAR receptor (like steroids). Acts as a transcription factor, altering gene expression',
       '### Functions/Effects',
-      'Thyroid hormone actions: ↑BMR (calorigenic effect — most important), ↑O₂ consumption, thermogenesis, growth and development, CNS maturation, ↑heart rate and contractility',
+      'Thyroid hormone actions: ↑BMR (calorigenic effect - most important), ↑O₂ consumption, thermogenesis, growth and development, CNS maturation, ↑heart rate and contractility',
       '### Regulation',
       'TSH (anterior pituitary) is the main regulator. TRH (hypothalamus) stimulates TSH. T₃/T₄ provide negative feedback',
       'TSH actions on thyroid: ↑iodide trapping, ↑T₃/T₄ synthesis, ↑proteolysis and release, ↑vascularity, ↑gland size',
@@ -65,7 +65,7 @@ export const physiologyTextbookMaterial = {
       'Thyroid storm: propranolol, propylthiouracil, potassium iodide, hydrocortisone',
 
       '## PARATHYROID & CALCIUM METABOLISM',
-      '>> Calcium is critical for nerve conduction, muscle contraction, and bone structure. PTH is the master regulator — it raises calcium by acting on bone, kidney, and (indirectly) gut via vitamin D₃.',
+      '>> Calcium is critical for nerve conduction, muscle contraction, and bone structure. PTH is the master regulator - it raises calcium by acting on bone, kidney, and (indirectly) gut via vitamin D₃.',
       '### Definition',
       'Four small glands on posterior surface of thyroid. Chief cells secrete PTH. Critical for calcium homeostasis',
       '### Basic Properties',
@@ -134,16 +134,16 @@ export const physiologyTextbookMaterial = {
       '>> Clinical conditions of the thyroid range from goitre (iodine deficiency) to autoimmune diseases (Graves\', Hashimoto\'s) to thyroid emergencies (thyroid storm).',
       '### Iodine Deficiency',
       'Goitre: enlarged thyroid gland. Simple/endemic goitre = iodine deficiency → ↓T₃/T₄ → ↑TSH → thyroid hyperplasia. Prevented by iodised salt.',
-      '### Autoimmune — Hyperthyroidism',
+      '### Autoimmune - Hyperthyroidism',
       'Graves\' disease: autoimmune hyperthyroidism. TSI (thyroid-stimulating immunoglobulin) mimics TSH. Diffuse goitre + exophthalmos + pretibial myxedema. Treatment: antithyroid drugs, radioactive iodine, surgery.',
-      '### Autoimmune — Hypothyroidism',
+      '### Autoimmune - Hypothyroidism',
       'Hashimoto\'s thyroiditis: autoimmune hypothyroidism. Anti-TPO and anti-thyroglobulin antibodies. Painless goitre → gradual destruction → hypothyroidism. Treatment: levothyroxine replacement.',
       '### Thyroid Emergencies',
       'Thyroid storm: life-threatening hyperthyroidism. Triggered by surgery/infection in uncontrolled Graves\'. Features: high fever, tachycardia, altered consciousness. Treatment: propranolol, propylthiouracil, potassium iodide, hydrocortisone.',
       '### Inflammatory',
       'De Quervain\'s thyroiditis: subacute granulomatous thyroiditis. Post-viral. Painful tender thyroid. Initially hyperthyroid → hypothyroid → recovery. Self-limiting.',
       '## PARATHYROID & CALCIUM DISORDERS',
-      '>> Calcium disorders present with characteristic clinical features — "stones, bones, groans, and moans" for hyperparathyroidism, and tetany for hypoparathyroidism.',
+      '>> Calcium disorders present with characteristic clinical features - "stones, bones, groans, and moans" for hyperparathyroidism, and tetany for hypoparathyroidism.',
       '### Hypoparathyroidism',
       'Hypoparathyroidism: most commonly post-thyroidectomy (accidental removal). ↓Ca²⁺, ↑PO₄³⁻, ↓PTH. Tetany, Trousseau, Chvostek. Treatment: calcium + vitamin D supplements.',
       '### Hyperparathyroidism',
@@ -158,20 +158,20 @@ export const physiologyTextbookMaterial = {
       {
         name: 'Thyroid Hormone Synthesis (6 Steps)',
         steps: [
-          'Step 1 — Iodide Trapping: I⁻ actively transported into follicular cell by Na⁺/I⁻ symporter (NIS). 20-40x concentration gradient. TSH stimulated.',
-          'Step 2 — Oxidation: I⁻ oxidised to I₂ by thyroid peroxidase (TPO) at the apical membrane.',
-          'Step 3 — Organification: I₂ incorporated into tyrosine residues on thyroglobulin → MIT (monoiodotyrosine) and DIT (diiodotyrosine). TPO catalyses.',
-          'Step 4 — Coupling: MIT + DIT = T₃. DIT + DIT = T₄. More T₄ is made than T₃. TPO catalyses.',
-          'Step 5 — Storage: Iodinated thyroglobulin stored as colloid in follicular lumen. Enough for ~100 days.',
-          'Step 6 — Release: TSH stimulates endocytosis of colloid → proteolysis → T₃ and T₄ released into blood. MIT and DIT recycled (deiodinated, iodine reused).',
+          'Step 1 - Iodide Trapping: I⁻ actively transported into follicular cell by Na⁺/I⁻ symporter (NIS). 20-40x concentration gradient. TSH stimulated.',
+          'Step 2 - Oxidation: I⁻ oxidised to I₂ by thyroid peroxidase (TPO) at the apical membrane.',
+          'Step 3 - Organification: I₂ incorporated into tyrosine residues on thyroglobulin → MIT (monoiodotyrosine) and DIT (diiodotyrosine). TPO catalyses.',
+          'Step 4 - Coupling: MIT + DIT = T₃. DIT + DIT = T₄. More T₄ is made than T₃. TPO catalyses.',
+          'Step 5 - Storage: Iodinated thyroglobulin stored as colloid in follicular lumen. Enough for ~100 days.',
+          'Step 6 - Release: TSH stimulates endocytosis of colloid → proteolysis → T₃ and T₄ released into blood. MIT and DIT recycled (deiodinated, iodine reused).',
         ],
       },
       {
         name: 'Vitamin D₃ Activation Pathway',
         steps: [
           'Skin: UV-B light converts 7-dehydrocholesterol → Cholecalciferol (Vitamin D₃)',
-          'Liver: 25-hydroxylase converts Vitamin D₃ → 25-hydroxyvitamin D₃ (calcidiol) — storage form, used for clinical measurement',
-          'Kidney: 1α-hydroxylase converts 25-(OH)D₃ → 1,25-dihydroxyvitamin D₃ (calcitriol) — ACTIVE form',
+          'Liver: 25-hydroxylase converts Vitamin D₃ → 25-hydroxyvitamin D₃ (calcidiol) - storage form, used for clinical measurement',
+          'Kidney: 1α-hydroxylase converts 25-(OH)D₃ → 1,25-dihydroxyvitamin D₃ (calcitriol) - ACTIVE form',
           'PTH stimulates 1α-hydroxylase activity (the renal activation step)',
           'Active vitamin D₃ acts on intestine (↑Ca²⁺ and PO₄³⁻ absorption), bone (↑mineralisation), and kidney (↑Ca²⁺ reabsorption)',
         ],
@@ -192,13 +192,13 @@ export const physiologyTextbookMaterial = {
     ],
 
     mnemonics: [
-      { topic: 'Thyroid Hormone Synthesis', mnemonic: 'TOXIC — Trapping, Oxidation, eXchange (organification), Iodo-coupling, Collection (storage + release)', explanation: 'Steps of thyroid hormone synthesis in order: Trapping (NIS), Oxidation (TPO), Organification/exchange, Coupling (MIT+DIT), Collection/release by TSH.' },
+      { topic: 'Thyroid Hormone Synthesis', mnemonic: 'TOXIC - Trapping, Oxidation, eXchange (organification), Iodo-coupling, Collection (storage + release)', explanation: 'Steps of thyroid hormone synthesis in order: Trapping (NIS), Oxidation (TPO), Organification/exchange, Coupling (MIT+DIT), Collection/release by TSH.' },
       { topic: 'TBG Levels', mnemonic: 'TBG ↑ in Pregnancy and Pills (OCP), ↓ in Nephrosis and Androgens', explanation: 'Conditions that change TBG: Pregnancy/OCP/hepatitis → ↑TBG → ↑total T₄ (but free T₄ normal). Nephrotic syndrome/androgens/steroids → ↓TBG → ↓total T₄ (but free T₄ normal).' },
       { topic: 'PTH Actions', mnemonic: 'PTH = Phosphate Trashing Hormone', explanation: 'PTH TRASHES phosphate (↑phosphate excretion by kidneys) while raising calcium. Net effect: ↑Ca²⁺, ↓PO₄³⁻ in blood.' },
       { topic: 'Hyperparathyroidism Features', mnemonic: 'Stones, Bones, Abdominal Groans, Psychiatric Moans', explanation: 'Stones (renal calculi), Bones (bone pain/fractures), Abdominal groans (constipation, pancreatitis), Psychiatric moans (depression, confusion).' },
-      { topic: 'Vitamin D Pathway', mnemonic: 'Skin → Liver → Kidney (SLK — "SaLaKa")', explanation: 'Vitamin D activation path: Skin (UV + 7-DHC → D₃) → Liver (25-hydroxylation) → Kidney (1α-hydroxylation → active calcitriol). PTH activates the kidney step.' },
-      { topic: 'Hyperthyroidism Signs', mnemonic: 'THYROIDISM — Tremor, Heart rate↑, Yawning/fatigue, Restlessness, Oligomenorrhoea, Intolerance to heat, Diarrhoea, Irritability, Sweating, Muscle wasting', explanation: 'Common signs/symptoms of hyperthyroidism.' },
-      { topic: 'Hypothyroidism Signs', mnemonic: 'SLOWNESS — Sleepy, Lethargic, Obesity, Weight gain, Numbness, Edema (non-pitting), Sensitivity to cold, Slow reflexes', explanation: 'Common signs/symptoms of hypothyroidism (myxedema).' },
+      { topic: 'Vitamin D Pathway', mnemonic: 'Skin → Liver → Kidney (SLK - "SaLaKa")', explanation: 'Vitamin D activation path: Skin (UV + 7-DHC → D₃) → Liver (25-hydroxylation) → Kidney (1α-hydroxylation → active calcitriol). PTH activates the kidney step.' },
+      { topic: 'Hyperthyroidism Signs', mnemonic: 'THYROIDISM - Tremor, Heart rate↑, Yawning/fatigue, Restlessness, Oligomenorrhoea, Intolerance to heat, Diarrhoea, Irritability, Sweating, Muscle wasting', explanation: 'Common signs/symptoms of hyperthyroidism.' },
+      { topic: 'Hypothyroidism Signs', mnemonic: 'SLOWNESS - Sleepy, Lethargic, Obesity, Weight gain, Numbness, Edema (non-pitting), Sensitivity to cold, Slow reflexes', explanation: 'Common signs/symptoms of hypothyroidism (myxedema).' },
     ],
 
     quickReview: [
@@ -224,7 +224,7 @@ export const physiologyTextbookMaterial = {
     { questionType: 'mcq', question: 'The major carrier protein for thyroid hormones in blood is:', options: ['A) Albumin', 'B) TBPA (transthyretin)', 'C) TBG (thyroxine-binding globulin)', 'D) Sex hormone-binding globulin'], correctAnswer: 'C) TBG (thyroxine-binding globulin)', explanation: 'TBG carries ~70% of circulating T₄ and T₃. Albumin carries ~20% and TBPA (transthyretin) carries ~10%. Only free (unbound) hormone is biologically active.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The Wolff-Chaikoff effect refers to:', options: ['A) Thyroid hormone resistance', 'B) Temporary inhibition of thyroid hormone synthesis by excess iodide', 'C) Stimulation of thyroid by TSH', 'D) Autoimmune thyroid destruction'], correctAnswer: 'B) Temporary inhibition of thyroid hormone synthesis by excess iodide', explanation: 'The Wolff-Chaikoff effect is a protective autoregulatory mechanism. High iodide levels temporarily block organification, preventing excess thyroid hormone production. This is the basis for potassium iodide use in thyroid storm.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'The most important action of thyroid hormones is:', options: ['A) Growth promotion', 'B) Calorigenic effect (↑BMR)', 'C) Brain development', 'D) Bone maturation'], correctAnswer: 'B) Calorigenic effect (↑BMR)', explanation: 'The calorigenic effect (increasing basal metabolic rate and O₂ consumption) is the most important action. Thyroid hormones increase heat production in virtually all tissues except brain, spleen, and gonads.', difficulty: 'medium' },
-    { questionType: 'mcq', question: 'Thyroid hormone receptors are located:', options: ['A) On the cell membrane', 'B) In the cytoplasm', 'C) In the nucleus', 'D) On mitochondria'], correctAnswer: 'C) In the nucleus', explanation: 'Thyroid hormone receptors (TR-alpha and TR-beta) are nuclear receptors that act as transcription factors. Despite being amine derivatives, thyroid hormones behave like steroids — they cross the cell membrane and bind nuclear receptors.', difficulty: 'medium' },
+    { questionType: 'mcq', question: 'Thyroid hormone receptors are located:', options: ['A) On the cell membrane', 'B) In the cytoplasm', 'C) In the nucleus', 'D) On mitochondria'], correctAnswer: 'C) In the nucleus', explanation: 'Thyroid hormone receptors (TR-alpha and TR-beta) are nuclear receptors that act as transcription factors. Despite being amine derivatives, thyroid hormones behave like steroids - they cross the cell membrane and bind nuclear receptors.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Which condition causes an increase in TBG levels?', options: ['A) Nephrotic syndrome', 'B) Androgen therapy', 'C) Pregnancy', 'D) Chronic liver disease'], correctAnswer: 'C) Pregnancy', explanation: 'Pregnancy and OCP (estrogen) ↑TBG production by the liver. This ↑total T₄ but free T₄ remains normal → patient is euthyroid. Nephrotic syndrome and androgens ↓TBG.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'Congenital hypothyroidism (cretinism) is prevented by:', options: ['A) Iodised salt', 'B) Neonatal TSH screening', 'C) Vitamin D supplementation', 'D) Calcium supplementation'], correctAnswer: 'B) Neonatal TSH screening', explanation: 'Neonatal TSH screening detects congenital hypothyroidism early (within first week). Early levothyroxine replacement prevents irreversible mental retardation. Iodised salt prevents endemic goitre, not congenital hypothyroidism.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'The enzyme that converts T₄ to T₃ in peripheral tissues is:', options: ['A) Thyroid peroxidase', 'B) Deiodinase', 'C) Monoamine oxidase', 'D) COMT'], correctAnswer: 'B) Deiodinase', explanation: 'Type I deiodinase (liver/kidney) is the main enzyme converting T₄ to T₃ peripherally. Type II (brain/pituitary) provides local T₃. Type III converts T₄ to inactive rT₃.', difficulty: 'medium' },
@@ -242,7 +242,7 @@ export const physiologyTextbookMaterial = {
     { questionType: 'mcq', question: 'The calcium-sensing receptor (CaSR) is located on:', options: ['A) Thyroid follicular cells', 'B) Parathyroid chief cells', 'C) Osteoclasts', 'D) Intestinal epithelium'], correctAnswer: 'B) Parathyroid chief cells', explanation: 'The CaSR on parathyroid chief cells detects changes in ionised Ca²⁺. When Ca²⁺ drops, CaSR triggers ↑PTH secretion. When Ca²⁺ rises, CaSR suppresses PTH secretion.', difficulty: 'hard' },
 
     // GENERAL ENDOCRINOLOGY MCQs
-    { questionType: 'mcq', question: 'Which hormone has the LONGEST half-life?', options: ['A) Epinephrine', 'B) Insulin', 'C) T₄ (thyroxine)', 'D) Cortisol'], correctAnswer: 'C) T₄ (thyroxine)', explanation: 'T₄ half-life is 6-7 days — the longest of common hormones. This is because T₄ is heavily protein-bound (99.97%). Epinephrine = seconds. Insulin = ~5 min. Cortisol = ~90 min.', difficulty: 'medium' },
+    { questionType: 'mcq', question: 'Which hormone has the LONGEST half-life?', options: ['A) Epinephrine', 'B) Insulin', 'C) T₄ (thyroxine)', 'D) Cortisol'], correctAnswer: 'C) T₄ (thyroxine)', explanation: 'T₄ half-life is 6-7 days - the longest of common hormones. This is because T₄ is heavily protein-bound (99.97%). Epinephrine = seconds. Insulin = ~5 min. Cortisol = ~90 min.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Positive feedback in endocrinology occurs in all EXCEPT:', options: ['A) Oxytocin during labour', 'B) LH surge causing ovulation', 'C) Cortisol suppressing CRH', 'D) Estrogen surge before ovulation'], correctAnswer: 'C) Cortisol suppressing CRH', explanation: 'Cortisol suppressing CRH is NEGATIVE feedback (the most common). Positive feedback (rare): oxytocin during labour, LH surge from rising estrogen, and prolactin stimulating its own secretion during suckling.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'Thyroid hormones are unique among amine hormones because they:', options: ['A) Act via surface receptors', 'B) Have very short half-lives', 'C) Bind nuclear receptors like steroid hormones', 'D) Are water-soluble'], correctAnswer: 'C) Bind nuclear receptors like steroid hormones', explanation: 'Despite being amine derivatives (from tyrosine), thyroid hormones are lipid-soluble, cross the cell membrane, and bind NUCLEAR receptors (like steroids). This is unique among amine hormones.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'An iodine-deficient diet leads to:', options: ['A) Hyperthyroidism', 'B) Endemic goitre', 'C) Thyroid cancer', 'D) Myxedema coma'], correctAnswer: 'B) Endemic goitre', explanation: 'Iodine deficiency → ↓T₃/T₄ synthesis → ↑TSH (loss of negative feedback) → thyroid hyperplasia → goitre. This is called simple/endemic/colloid goitre. Prevented by iodised salt.', difficulty: 'easy' },
@@ -255,7 +255,7 @@ export const physiologyTextbookMaterial = {
 
     // TRUE/FALSE
     { questionType: 'true_false', question: 'T₄ is the major secretory product of the thyroid gland (90%). True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'The thyroid secretes mostly T₄ (90%) and some T₃ (10%). However, T₃ is the more potent form. Most circulating T₃ comes from peripheral conversion of T₄ by deiodinase enzymes.', difficulty: 'easy' },
-    { questionType: 'true_false', question: 'PTH acts directly on the intestine to increase calcium absorption. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'PTH acts on gut INDIRECTLY — via vitamin D₃. PTH → stimulates 1α-hydroxylase in kidney → ↑active vitamin D₃ → this vitamin D₃ then increases intestinal calcium absorption.', difficulty: 'medium' },
+    { questionType: 'true_false', question: 'PTH acts directly on the intestine to increase calcium absorption. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'PTH acts on gut INDIRECTLY - via vitamin D₃. PTH → stimulates 1α-hydroxylase in kidney → ↑active vitamin D₃ → this vitamin D₃ then increases intestinal calcium absorption.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'Calcitonin is more important than PTH in calcium regulation in adults. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'PTH is the most important calcium regulator. Calcitonin plays a minor role in adults. Total thyroidectomy (removing all C cells) does NOT cause significant calcium disturbance, proving calcitonin is not essential.', difficulty: 'medium' },
     { questionType: 'true_false', question: 'Olfaction is the only sensation that bypasses the thalamus. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Olfaction projects directly from olfactory bulb to olfactory cortex without thalamic relay. All other sensory modalities (vision, hearing, touch, taste) relay through specific thalamic nuclei.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'Thyroid hormones are the only hormones that require a trace element (iodine) for synthesis. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Iodine is a trace element essential for T₃ and T₄ synthesis. No other hormone requires a trace element for its synthesis. Daily requirement is 150 μg for adults.', difficulty: 'medium' },
@@ -272,7 +272,7 @@ export const physiologyTextbookMaterial = {
     { questionType: 'mcq', question: 'The rate-limiting step in thyroid hormone synthesis is:', options: ['A) Coupling', 'B) Organification', 'C) Iodide trapping by NIS', 'D) Proteolysis'], correctAnswer: 'C) Iodide trapping by NIS', explanation: 'Iodide trapping by the Na⁺/I⁻ symporter (NIS) is the first and rate-limiting step. It is stimulated by TSH and inhibited by perchlorate and thiocyanate ions.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Which drug is used to block iodide trapping in the thyroid?', options: ['A) Propylthiouracil', 'B) Methimazole', 'C) Perchlorate', 'D) Propranolol'], correctAnswer: 'C) Perchlorate', explanation: 'Perchlorate competitively inhibits the NIS transporter, blocking iodide uptake. Propylthiouracil and methimazole inhibit TPO (organification/coupling). Propranolol is a beta-blocker used for symptoms.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'De Quervain\'s thyroiditis typically follows:', options: ['A) Pregnancy', 'B) A viral infection', 'C) Iodine excess', 'D) Surgery'], correctAnswer: 'B) A viral infection', explanation: 'De Quervain\'s (subacute granulomatous thyroiditis) follows a viral URI. Painful tender thyroid. Triphasic: hyperthyroid → hypothyroid → euthyroid. Self-limiting. ESR elevated.', difficulty: 'medium' },
-    { questionType: 'mcq', question: 'Thyroid storm is treated with all EXCEPT:', options: ['A) Propranolol', 'B) Propylthiouracil', 'C) Radioactive iodine', 'D) Hydrocortisone'], correctAnswer: 'C) Radioactive iodine', explanation: 'Thyroid storm is a medical emergency requiring immediate control: propranolol (↓HR), PTU (blocks synthesis + peripheral conversion), KI (blocks release — Wolff-Chaikoff), hydrocortisone (↓conversion + treats relative adrenal insufficiency). Radioactive iodine is for elective treatment, NOT emergencies.', difficulty: 'hard' },
+    { questionType: 'mcq', question: 'Thyroid storm is treated with all EXCEPT:', options: ['A) Propranolol', 'B) Propylthiouracil', 'C) Radioactive iodine', 'D) Hydrocortisone'], correctAnswer: 'C) Radioactive iodine', explanation: 'Thyroid storm is a medical emergency requiring immediate control: propranolol (↓HR), PTU (blocks synthesis + peripheral conversion), KI (blocks release - Wolff-Chaikoff), hydrocortisone (↓conversion + treats relative adrenal insufficiency). Radioactive iodine is for elective treatment, NOT emergencies.', difficulty: 'hard' },
     { questionType: 'mcq', question: 'Type I deiodinase is mainly found in:', options: ['A) Brain', 'B) Placenta', 'C) Liver and kidney', 'D) Pituitary'], correctAnswer: 'C) Liver and kidney', explanation: 'Type I deiodinase (liver/kidney) is the main enzyme for peripheral T₄→T₃ conversion. Type II is in brain/pituitary (local T₃ supply). Type III is in placenta/brain (inactivation to rT₃).', difficulty: 'hard' },
     { questionType: 'mcq', question: 'In Graves\' disease, TSH levels are:', options: ['A) Elevated', 'B) Normal', 'C) Suppressed', 'D) Variable'], correctAnswer: 'C) Suppressed', explanation: 'In Graves\', TSI antibodies stimulate thyroid → ↑T₃/T₄ → negative feedback → TSH is SUPPRESSED. This is a key distinguishing feature. If TSH were elevated, consider TSH-secreting pituitary adenoma.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'The daily iodine requirement for adults is:', options: ['A) 50 μg', 'B) 150 μg', 'C) 500 μg', 'D) 1000 μg'], correctAnswer: 'B) 150 μg', explanation: 'Adults need 150 μg/day of iodine. Pregnancy requires more (~250 μg). The thyroid stores ~8000 μg, enough for ~100 days without dietary intake. Iodised salt provides adequate supplementation.', difficulty: 'medium' },
@@ -304,12 +304,12 @@ export const physiologyTextbookMaterial = {
     { questionType: 'true_false', question: 'PTH is secreted in response to high serum calcium. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'PTH is secreted in response to LOW serum Ca²⁺ (detected by CaSR on chief cells). HIGH Ca²⁺ suppresses PTH secretion. Calcitonin is secreted in response to high calcium.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'Total thyroidectomy causes significant calcium disturbance due to loss of calcitonin. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Despite removing all C cells (calcitonin source), total thyroidectomy does NOT cause significant Ca²⁺ disturbance. This proves calcitonin is not essential in adults. Ca²⁺ problems post-thyroidectomy are from parathyroid damage, not calcitonin loss.', difficulty: 'hard' },
     { questionType: 'true_false', question: 'Thyroid hormones are essential for brain development in infants. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Thyroid hormones are critical for CNS development (myelination, neuronal migration, synaptogenesis) in the first 2-3 years of life. Deficiency causes cretinism with irreversible mental retardation if not treated early.', difficulty: 'easy' },
-    { questionType: 'true_false', question: 'Vitamin D₃ can be obtained from both diet and skin synthesis. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Vitamin D₃ sources: (1) Skin — UV-B + 7-dehydrocholesterol (main source with adequate sun). (2) Diet — fatty fish, egg yolks, fortified foods, supplements. Both are cholecalciferol.', difficulty: 'easy' },
+    { questionType: 'true_false', question: 'Vitamin D₃ can be obtained from both diet and skin synthesis. True or False?', options: ['True', 'False'], correctAnswer: 'True', explanation: 'Vitamin D₃ sources: (1) Skin - UV-B + 7-dehydrocholesterol (main source with adequate sun). (2) Diet - fatty fish, egg yolks, fortified foods, supplements. Both are cholecalciferol.', difficulty: 'easy' },
     { questionType: 'true_false', question: 'Osteoporosis and osteomalacia are the same condition. True or False?', options: ['True', 'False'], correctAnswer: 'False', explanation: 'Osteoporosis: decreased bone DENSITY (normal mineralisation but less bone). Osteomalacia: decreased bone MINERALISATION (adequate osteoid but poor calcium deposition). Different pathophysiology and treatment.', difficulty: 'medium' },
 
     // ADDITIONAL FILL IN THE BLANK
     { questionType: 'fill_blank', question: 'The most important action of thyroid hormones is the _____ effect (increasing BMR).', options: [], correctAnswer: 'calorigenic', explanation: 'The calorigenic effect (heat production via increased BMR and O₂ consumption) is the most important thyroid hormone action. It affects virtually all tissues except brain, spleen, and gonads.', difficulty: 'medium' },
-    { questionType: 'fill_blank', question: 'Graves\' disease is caused by _____ antibodies that stimulate the TSH receptor.', options: [], correctAnswer: 'TSI (thyroid-stimulating immunoglobulin)', explanation: 'TSI (also called TRAb — TSH receptor antibodies) are IgG antibodies that bind and activate TSH receptors, causing unregulated thyroid hormone production. They also cause retroorbital inflammation → exophthalmos.', difficulty: 'medium' },
+    { questionType: 'fill_blank', question: 'Graves\' disease is caused by _____ antibodies that stimulate the TSH receptor.', options: [], correctAnswer: 'TSI (thyroid-stimulating immunoglobulin)', explanation: 'TSI (also called TRAb - TSH receptor antibodies) are IgG antibodies that bind and activate TSH receptors, causing unregulated thyroid hormone production. They also cause retroorbital inflammation → exophthalmos.', difficulty: 'medium' },
     { questionType: 'fill_blank', question: 'The _____ cells of the parathyroid gland secrete PTH.', options: [], correctAnswer: 'chief', explanation: 'Chief cells (principal cells) are the functional cells of the parathyroid gland that secrete PTH. Oxyphil cells are also present but their function is unknown.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'Coupling of MIT + DIT produces _____, while DIT + DIT produces _____.', options: [], correctAnswer: 'T₃; T₄', explanation: 'MIT (1 iodine) + DIT (2 iodines) = T₃ (3 iodines). DIT (2 iodines) + DIT (2 iodines) = T₄ (4 iodines). More T₄ is produced than T₃. Both reactions are catalysed by TPO.', difficulty: 'medium' },
     { questionType: 'fill_blank', question: 'Rickets in children and _____ in adults are both caused by vitamin D deficiency.', options: [], correctAnswer: 'osteomalacia', explanation: 'Rickets (children): bowing of legs, rachitic rosary, craniotabes, delayed fontanelle closure. Osteomalacia (adults): bone pain, proximal myopathy, pseudofractures. Both due to inadequate mineralisation from vitamin D deficiency.', difficulty: 'easy' },
@@ -337,9 +337,9 @@ export const physiologyTextbookMaterial = {
     { questionType: 'fill_blank', question: 'In primary hyperparathyroidism, ~80% of cases are caused by a parathyroid _____.', options: [], correctAnswer: 'adenoma', explanation: 'Parathyroid adenoma (single gland, benign tumour) accounts for ~80% of primary hyperparathyroidism. Hyperplasia (all 4 glands) ~15%. Carcinoma <5%.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'The sign where tapping the facial nerve causes facial muscle twitch is called _____ sign.', options: [], correctAnswer: 'Chvostek', explanation: 'Chvostek sign: tapping over the facial nerve (anterior to the ear) causes ipsilateral facial muscle twitch. Indicates neuromuscular hyperexcitability from hypocalcaemia. Trousseau sign (carpal spasm) is more specific.', difficulty: 'easy' },
     { questionType: 'fill_blank', question: 'Insulin is unique among peptide hormones because its receptor is a _____ kinase.', options: [], correctAnswer: 'tyrosine', explanation: 'The insulin receptor is a tyrosine kinase receptor that autophosphorylates upon insulin binding, then phosphorylates IRS proteins. Most other peptide hormones use G-protein coupled receptors with second messengers.', difficulty: 'medium' },
-    { questionType: 'fill_blank', question: 'The thyroid gland stores enough iodine for approximately _____ days without dietary intake.', options: [], correctAnswer: '100', explanation: 'The thyroid stores ~8000 μg of iodine in thyroglobulin within the colloid. With a daily requirement of 80 μg for hormone synthesis, this provides a ~100-day reserve — the largest hormone reserve in the body.', difficulty: 'medium' },
+    { questionType: 'fill_blank', question: 'The thyroid gland stores enough iodine for approximately _____ days without dietary intake.', options: [], correctAnswer: '100', explanation: 'The thyroid stores ~8000 μg of iodine in thyroglobulin within the colloid. With a daily requirement of 80 μg for hormone synthesis, this provides a ~100-day reserve - the largest hormone reserve in the body.', difficulty: 'medium' },
 
-    // ADDITIONAL — REACHING 100+ QUESTIONS
+    // ADDITIONAL - REACHING 100+ QUESTIONS
     { questionType: 'mcq', question: 'Which of the following is NOT a function of calcium in the body?', options: ['A) Muscle contraction', 'B) Blood clotting', 'C) Hormone synthesis', 'D) Nerve conduction'], correctAnswer: 'C) Hormone synthesis', explanation: 'Calcium functions: muscle contraction (excitation-contraction coupling), blood clotting (Factor IV), nerve conduction, enzyme activation, hormone secretion, cell signaling. Calcium is not used to SYNTHESIZE hormones.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Thyroglobulin is stored in:', options: ['A) Thyroid follicular cells', 'B) Parafollicular C cells', 'C) Follicular colloid (lumen)', 'D) Blood'], correctAnswer: 'C) Follicular colloid (lumen)', explanation: 'Thyroglobulin (660 kDa glycoprotein) with iodinated tyrosine residues (MIT, DIT, T₃, T₄) is stored as colloid in the follicular lumen. TSH stimulates endocytosis and proteolysis to release T₃/T₄.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Which condition presents with a PAINFUL thyroid?', options: ['A) Graves\' disease', 'B) Hashimoto\'s thyroiditis', 'C) De Quervain\'s thyroiditis', 'D) Papillary thyroid carcinoma'], correctAnswer: 'C) De Quervain\'s thyroiditis', explanation: 'De Quervain\'s (subacute granulomatous thyroiditis) is characteristically PAINFUL. Graves\' and Hashimoto\'s are typically painless. Thyroid cancers are usually painless nodules.', difficulty: 'medium' },
@@ -350,18 +350,18 @@ export const physiologyTextbookMaterial = {
   ],
 
   flashcards: [
-    { front: 'T₃ vs T₄ — which is more potent and which is secreted more?', back: 'T₃ is 3-5x more potent. T₄ is the major secretory product (90%). Most circulating T₃ comes from peripheral conversion of T₄ by deiodinase in liver/kidney.', difficulty: 'easy' },
+    { front: 'T₃ vs T₄ - which is more potent and which is secreted more?', back: 'T₃ is 3-5x more potent. T₄ is the major secretory product (90%). Most circulating T₃ comes from peripheral conversion of T₄ by deiodinase in liver/kidney.', difficulty: 'easy' },
     { front: 'Steps of thyroid hormone synthesis?', back: '1) Iodide trapping (NIS) → 2) Oxidation (TPO) → 3) Organification (TPO) → 4) Coupling (MIT+DIT→T₃, DIT+DIT→T₄) → 5) Storage in colloid → 6) Proteolysis and release (TSH stimulated).', difficulty: 'medium' },
     { front: 'What is the Wolff-Chaikoff effect?', back: 'Excess iodide temporarily blocks organification → ↓thyroid hormone synthesis. Protective against hyperthyroidism. Basis for KI use in thyroid storm.', difficulty: 'hard' },
-    { front: 'PTH actions — bone, kidney, gut?', back: 'Bone: ↑osteoclast activity → ↑Ca²⁺ release. Kidney: ↑Ca²⁺ reabsorption, ↓PO₄³⁻ reabsorption, ↑1α-hydroxylase. Gut: INDIRECT only (via active vitamin D₃ → ↑Ca²⁺ absorption).', difficulty: 'medium' },
+    { front: 'PTH actions - bone, kidney, gut?', back: 'Bone: ↑osteoclast activity → ↑Ca²⁺ release. Kidney: ↑Ca²⁺ reabsorption, ↓PO₄³⁻ reabsorption, ↑1α-hydroxylase. Gut: INDIRECT only (via active vitamin D₃ → ↑Ca²⁺ absorption).', difficulty: 'medium' },
     { front: 'PTH net effect on Ca²⁺ and PO₄³⁻?', back: '↑serum Ca²⁺ and ↓serum PO₄³⁻. PTH = "Phosphate Trashing Hormone". Despite releasing PO₄³⁻ from bone, the phosphaturic effect at the kidney dominates.', difficulty: 'medium' },
     { front: 'Vitamin D₃ activation pathway?', back: 'Skin (UV + 7-DHC → D₃) → Liver (25-hydroxylase → calcidiol) → Kidney (1α-hydroxylase → calcitriol = ACTIVE). PTH stimulates the kidney step.', difficulty: 'medium' },
     { front: 'Graves\' disease vs Hashimoto\'s thyroiditis?', back: 'Graves\': TSI antibodies → hyperthyroidism + exophthalmos. Hashimoto\'s: anti-TPO/anti-Tg antibodies → hypothyroidism. Both are autoimmune thyroid diseases.', difficulty: 'medium' },
     { front: 'Trousseau sign vs Chvostek sign?', back: 'Both indicate hypocalcaemia. Trousseau: carpal spasm after BP cuff inflated >systolic for 3 min. Chvostek: facial muscle twitch on tapping over facial nerve.', difficulty: 'easy' },
     { front: 'Cretinism vs Myxedema?', back: 'Cretinism: hypothyroidism in infants/children → mental retardation + growth failure + coarse features. Myxedema: severe hypothyroidism in adults → non-pitting oedema + cold intolerance + bradycardia.', difficulty: 'easy' },
-    { front: 'TBG changes — what increases and decreases it?', back: '↑TBG: Pregnancy, OCP (estrogen), hepatitis. ↓TBG: Nephrotic syndrome, androgens, glucocorticoids. Changes in TBG alter total T₄ but NOT free T₄ (patient remains euthyroid).', difficulty: 'hard' },
+    { front: 'TBG changes - what increases and decreases it?', back: '↑TBG: Pregnancy, OCP (estrogen), hepatitis. ↓TBG: Nephrotic syndrome, androgens, glucocorticoids. Changes in TBG alter total T₄ but NOT free T₄ (patient remains euthyroid).', difficulty: 'hard' },
     { front: 'Hyperparathyroidism features mnemonic?', back: 'Stones (renal), Bones (pain/fractures), Abdominal Groans (constipation/pancreatitis), Psychiatric Moans (depression/confusion). Lab: ↑Ca²⁺, ↓PO₄³⁻, ↑PTH.', difficulty: 'medium' },
-    { front: 'Calcitonin — where from and what does it do?', back: 'From parafollicular C cells of thyroid. Secreted when Ca²⁺ is HIGH. ↓bone resorption (inhibits osteoclasts) → ↓serum Ca²⁺. Opposes PTH. Less important in adults.', difficulty: 'easy' },
+    { front: 'Calcitonin - where from and what does it do?', back: 'From parafollicular C cells of thyroid. Secreted when Ca²⁺ is HIGH. ↓bone resorption (inhibits osteoclasts) → ↓serum Ca²⁺. Opposes PTH. Less important in adults.', difficulty: 'easy' },
     { front: 'What makes thyroid hormones unique among amine hormones?', back: 'Despite being amines (from tyrosine), T₃/T₄ are lipid-soluble, bind NUCLEAR receptors (like steroids), and require iodine (trace element) for synthesis. No other amine acts this way.', difficulty: 'hard' },
   ],
 };

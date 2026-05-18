@@ -49,7 +49,7 @@ async function executeShutdown(signal: string): Promise<void> {
   if (isShuttingDown) return; // prevent double shutdown
   isShuttingDown = true;
 
-  console.log(`[SHUTDOWN] ${signal} received — starting graceful shutdown...`);
+  console.log(`[SHUTDOWN] ${signal} received - starting graceful shutdown...`);
 
   // 1. Clear all registered intervals immediately
   for (const handle of registeredIntervals) {
@@ -73,7 +73,7 @@ async function executeShutdown(signal: string): Promise<void> {
     }
   }
 
-  console.log('[SHUTDOWN] Cleanup complete — exiting');
+  console.log('[SHUTDOWN] Cleanup complete - exiting');
   process.exit(0);
 }
 
@@ -95,7 +95,7 @@ export function installShutdownHandlers(): void {
   process.on('SIGTERM', () => forceExit('SIGTERM'));
   process.on('SIGINT', () => forceExit('SIGINT'));
 
-  // Catch unhandled rejections — log but don't crash
+  // Catch unhandled rejections - log but don't crash
   process.on('unhandledRejection', (reason) => {
     console.error('[PROCESS] Unhandled rejection:', reason);
   });

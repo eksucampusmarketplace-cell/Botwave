@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/support/tickets — list user's tickets with latest message
+// GET /api/support/tickets - list user's tickets with latest message
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/support/tickets — create ticket or send message
+// POST /api/support/tickets - create ticket or send message
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

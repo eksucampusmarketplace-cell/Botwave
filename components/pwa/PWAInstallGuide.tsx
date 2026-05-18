@@ -117,7 +117,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
               exit={{ opacity: 0 }}
             >
               <h4 className="font-mono text-[10px] text-green tracking-[2px] mb-3">
-                ANDROID — STEP BY STEP
+                ANDROID - STEP BY STEP
               </h4>
               <div className="space-y-3">
                 {[
@@ -148,7 +148,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
               exit={{ opacity: 0 }}
             >
               <h4 className="font-mono text-[10px] text-green tracking-[2px] mb-3">
-                iPHONE — STEP BY STEP
+                iPHONE - STEP BY STEP
               </h4>
               <div className="space-y-3">
                 {[
@@ -179,7 +179,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
               exit={{ opacity: 0 }}
             >
               <h4 className="font-mono text-[10px] text-green tracking-[2px] mb-3">
-                DESKTOP — STEP BY STEP
+                DESKTOP - STEP BY STEP
               </h4>
               <div className="space-y-3">
                 {[
@@ -224,7 +224,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
           onClick={handleManualConfirm}
           className="w-full bg-green text-dark p-3 font-mono text-xs font-bold tracking-[2px] hover:bg-cyan transition-colors"
         >
-          I HAVE INSTALLED THE APP — CONTINUE
+          I HAVE INSTALLED THE APP - CONTINUE
         </button>
         <p className="font-mono text-[10px] text-[#3a6a5a] mt-2 text-center">
           Click above after you have added BotWave to your home screen

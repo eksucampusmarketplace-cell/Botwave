@@ -1,5 +1,5 @@
 /**
- * Offline Write Queue — Buffers non-critical writes when Supabase is unreachable.
+ * Offline Write Queue - Buffers non-critical writes when Supabase is unreachable.
  *
  * Problem: When the circuit breaker is OPEN, non-critical writes (command tracking,
  * message tracking, health events) are silently dropped. This means analytics data
@@ -48,7 +48,7 @@ export async function queueWrite(label: string, writeFn: () => Promise<void>): P
       await writeFn();
       return true;
     } catch {
-      // Failed even though circuit was closed — queue it
+      // Failed even though circuit was closed - queue it
     }
   }
 

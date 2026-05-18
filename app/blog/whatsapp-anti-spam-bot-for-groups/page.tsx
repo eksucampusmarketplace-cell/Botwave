@@ -3,7 +3,7 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-anti-spam-bot-for-groups' },
-  title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically',
+  title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically',
   description: 'Tired of spam in your WhatsApp groups? This free bot blocks scam links, betting ads, chain messages & offensive content automatically. Set up in 2 minutes →',
   keywords: ['whatsapp anti spam bot', 'whatsapp spam blocker', 'whatsapp group spam', 'stop whatsapp spam', 'whatsapp group protection', 'block spam whatsapp group', 'whatsapp spam filter'],
   openGraph: {
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically
+# WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically
 
 **Last updated: May 2026** | 5 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-Every WhatsApp group admin knows the pain. You wake up to 47 spam messages — betting links, fake giveaways, crypto scams, and chain messages. You delete them manually, warn the offenders, maybe remove someone. Next day, it happens again. There's a better way.
+Every WhatsApp group admin knows the pain. You wake up to 47 spam messages - betting links, fake giveaways, crypto scams, and chain messages. You delete them manually, warn the offenders, maybe remove someone. Next day, it happens again. There's a better way.
 
 ## The Spam Problem in WhatsApp Groups
 
@@ -58,14 +58,14 @@ BotWave includes an intelligent anti-spam system that runs automatically once ad
 - **Promotional content**: Unsolicited advertising
 
 ### Smart Warnings System
-BotWave doesn't just delete — it has a graduated response:
+BotWave doesn't just delete - it has a graduated response:
 
 1. **First offense**: Warning message to the user
 2. **Second offense**: Second warning
 3. **Third offense**: Message deleted + notification to admins
 4. **Repeat offender**: Can be auto-removed (if configured)
 
-This is fair — people make mistakes. The bot gives them a chance before taking action.
+This is fair - people make mistakes. The bot gives them a chance before taking action.
 
 ## Setting Up Anti-Spam
 
@@ -123,7 +123,7 @@ Allow: Verified news sources, community resources
 The anti-spam system is tuned to minimize false positives. Normal conversation, images, and non-spam links are not affected. You can always whitelist specific domains.
 
 ### Can members still share links?
-Yes — only known spam domains and suspicious links are blocked. Normal URLs (news sites, YouTube, Google, etc.) are fine. You can customize what's blocked.
+Yes - only known spam domains and suspicious links are blocked. Normal URLs (news sites, YouTube, Google, etc.) are fine. You can customize what's blocked.
 
 ### Does it work if I'm not an admin?
 BotWave works best when added as a group member by an admin. It doesn't need admin privileges to detect spam, but admin privileges allow it to delete messages automatically.
@@ -139,9 +139,9 @@ You shouldn't have to spend 30 minutes every morning cleaning up your WhatsApp g
 `;
 
 const relatedPosts = [
-  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games' },
   { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
-  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
 ];
 
 export default function Article() {

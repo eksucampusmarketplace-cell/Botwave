@@ -210,7 +210,7 @@ parentPort.on('message', (msg: MainToWorkerMsg) => {
       break;
 
     case 'shutdown':
-      console.log(`${PREFIX} Shutdown requested — finishing current cycle...`);
+      console.log(`${PREFIX} Shutdown requested - finishing current cycle...`);
       gracefulShutdown();
       break;
   }
@@ -222,17 +222,17 @@ async function runSyncCycle(): Promise<void> {
   if (isPaused || isShuttingDown || activeBots.size === 0) return;
 
   if (is428Active()) {
-    console.log(`${PREFIX} Skipping sync — 428 cooldown active`);
+    console.log(`${PREFIX} Skipping sync - 428 cooldown active`);
     return;
   }
 
   if (isEvolutionDown()) {
-    console.log(`${PREFIX} Skipping sync — Evolution API is down`);
+    console.log(`${PREFIX} Skipping sync - Evolution API is down`);
     return;
   }
 
   if (isGloballyPaused()) {
-    console.log(`${PREFIX} Skipping sync — globally paused`);
+    console.log(`${PREFIX} Skipping sync - globally paused`);
     return;
   }
 
@@ -307,7 +307,7 @@ async function gracefulShutdown(): Promise<void> {
   }
   await Promise.allSettled(stopPromises);
 
-  console.log(`${PREFIX} Shutdown complete — ${assignedSessions.size} session(s) will be redistributed`);
+  console.log(`${PREFIX} Shutdown complete - ${assignedSessions.size} session(s) will be redistributed`);
   process.exit(0);
 }
 

@@ -43,7 +43,7 @@ const SENDER_POOL: SenderIdentity[] = [
   { address: `outreach@${DOMAIN}`, name: 'BotWave Outreach', channel: 'outreach' },
 ];
 
-/** In-memory round-robin index — no persistence needed */
+/** In-memory round-robin index - no persistence needed */
 let rotationIndex = 0;
 
 /**

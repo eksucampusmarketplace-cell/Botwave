@@ -1,5 +1,5 @@
 /**
- * Redis API Cache — Shared Redis caching layer for Next.js API routes.
+ * Redis API Cache - Shared Redis caching layer for Next.js API routes.
  *
  * The bot process uses bot/redisSessionCache.ts with its own Redis connection.
  * API routes run in a separate Next.js serverless context and need their own
@@ -39,22 +39,22 @@ function isAvailable(): boolean {
 
 // ─── TTL Constants (seconds) ─────────────────────────────────────────────────
 
-const SUBSCRIPTION_TTL = 300; // 5 min — plan info rarely changes
+const SUBSCRIPTION_TTL = 300; // 5 min - plan info rarely changes
 const SETTINGS_TTL = 300; // 5 min
 const CUSTOM_CMDS_TTL = 300; // 5 min
 const PRODUCTS_TTL = 300; // 5 min
 const TEMPLATES_TTL = 300; // 5 min
 const FLOWS_TTL = 300; // 5 min
 const FEATURES_TTL = 300; // 5 min
-const SESSIONS_TTL = 30; // 30 sec — sessions change frequently
+const SESSIONS_TTL = 30; // 30 sec - sessions change frequently
 const REFERRAL_TTL = 300; // 5 min
 const REWARDS_TTL = 300; // 5 min
 const PAYMENT_HISTORY_TTL = 120; // 2 min
-const PROFILE_TTL = 600; // 10 min — username→id mapping rarely changes
+const PROFILE_TTL = 600; // 10 min - username→id mapping rarely changes
 const API_KEYS_TTL = 300; // 5 min
-const STATS_TTL = 60; // 1 min — stats refresh frequently
-const HEALTH_TTL = 60; // 1 min — health data refreshes frequently
-const ANALYTICS_TTL = 120; // 2 min — analytics aggregation is expensive
+const STATS_TTL = 60; // 1 min - stats refresh frequently
+const HEALTH_TTL = 60; // 1 min - health data refreshes frequently
+const ANALYTICS_TTL = 120; // 2 min - analytics aggregation is expensive
 
 // ─── Generic Helpers ─────────────────────────────────────────────────────────
 
@@ -353,7 +353,7 @@ export async function invalidateAnalytics(userId: string): Promise<void> {
 
 const STUDY_TOPICS_TTL = 600; // 10 min
 const STUDY_MATERIALS_TTL = 600; // 10 min
-const STUDY_SUMMARY_TTL = 3600; // 1 hr — AI summaries rarely change
+const STUDY_SUMMARY_TTL = 3600; // 1 hr - AI summaries rarely change
 const STUDY_QUESTIONS_TTL = 3600; // 1 hr
 const STUDY_FLASHCARDS_TTL = 3600; // 1 hr
 
@@ -441,7 +441,7 @@ export async function invalidateAdminUsers(): Promise<void> {
 
 // ─── Autopilot Persona ──────────────────────────────────────────────────────
 
-const AUTOPILOT_TTL = 120; // 2 min — persona state is read often by bot
+const AUTOPILOT_TTL = 120; // 2 min - persona state is read often by bot
 
 export async function getCachedAutopilot(userId: string, sessionId: string): Promise<Record<string, unknown> | null> {
   return apiCacheGet<Record<string, unknown>>(`autopilot:${userId}:${sessionId}`);

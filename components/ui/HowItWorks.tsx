@@ -7,7 +7,7 @@ const steps = [
     number: '01',
     title: 'Create Account',
     cmd: '$ botwave signup --email you@mail.com',
-    description: 'Sign up on the BotWave dashboard with just your email. No credit card, no payment — completely free to start.',
+    description: 'Sign up on the BotWave dashboard with just your email. No credit card, no payment - completely free to start.',
   },
   {
     number: '02',

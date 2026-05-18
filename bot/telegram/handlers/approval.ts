@@ -1,5 +1,5 @@
 /**
- * Approval — /approval, /approve, /unapprove, /approved, /unapproveall
+ * Approval - /approval, /approve, /unapprove, /approved, /unapproveall
  * Approve trustworthy users to bypass locks, blocklists, and antiflood.
  */
 
@@ -23,7 +23,7 @@ function resolveTarget(ctx: { message?: { reply_to_message?: { from?: { id: numb
 }
 
 export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
-  // /approval — Check a user's approval status
+  // /approval - Check a user's approval status
   bot.command('approval', async (ctx) => {
     if (!ctx.chat || ctx.chat.type === 'private') {
       await ctx.reply('⚠️ This command can only be used in group chats.');
@@ -45,7 +45,7 @@ export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /approve — Approve a user (admin only)
+  // /approve - Approve a user (admin only)
   bot.command('approve', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.chat || !ctx.from) return;
@@ -61,7 +61,7 @@ export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /unapprove — Unapprove a user (admin only)
+  // /unapprove - Unapprove a user (admin only)
   bot.command('unapprove', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.chat) return;
@@ -77,7 +77,7 @@ export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /approved — List all approved users (admin only)
+  // /approved - List all approved users (admin only)
   bot.command('approved', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.chat) return;
@@ -92,7 +92,7 @@ export function registerApprovalHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`👥 <b>Approved Users</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
-  // /unapproveall — Unapprove ALL users (admin only)
+  // /unapproveall - Unapprove ALL users (admin only)
   bot.command('unapproveall', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.chat) return;

@@ -11,7 +11,7 @@ export function forgotPasswordTemplate(resetUrl: string, username: string): stri
       </a>
     </div>
     <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:24px 0 0">
-      This link expires in <strong style="color:#f1f5f9">30 minutes</strong>. If you didn't request this, ignore this email — your password won't change.
+      This link expires in <strong style="color:#f1f5f9">30 minutes</strong>. If you didn't request this, ignore this email - your password won't change.
     </p>
     <p style="color:#64748b;font-size:12px;margin:16px 0 0;word-break:break-all">
       ${resetUrl}

@@ -1,5 +1,5 @@
 /**
- * WhatsApp Bot — Isolated Entrypoint
+ * WhatsApp Bot - Isolated Entrypoint
  *
  * Starts ONLY WhatsApp bot sessions via Evolution API / Baileys.
  * Connects to Redis for shared state. Skips all Telegram/Grammy logic.
@@ -81,10 +81,10 @@ async function start() {
       if (instanceCount > 0) {
         console.log(`[WHATSAPP] Evolution API has ${instanceCount} persisted instance(s)`);
       } else {
-        console.warn('[WHATSAPP] Evolution API has 0 persisted instances — DATABASE_SAVE_DATA_INSTANCE may not be set');
+        console.warn('[WHATSAPP] Evolution API has 0 persisted instances - DATABASE_SAVE_DATA_INSTANCE may not be set');
       }
     } else {
-      console.warn('[WHATSAPP] Evolution API did not become ready — sessions will retry during sync loop');
+      console.warn('[WHATSAPP] Evolution API did not become ready - sessions will retry during sync loop');
     }
   }
 
@@ -315,7 +315,7 @@ async function start() {
             } else {
               if (target.name === 'evolution-api' && evoConsecutiveFailures >= 3 && !evoRecoveryInProgress) {
                 evoRecoveryInProgress = true;
-                console.log(`[WHATSAPP][KEEPALIVE] Evolution API recovered after ${evoConsecutiveFailures} failures — triggering re-sync`);
+                console.log(`[WHATSAPP][KEEPALIVE] Evolution API recovered after ${evoConsecutiveFailures} failures - triggering re-sync`);
                 evoConsecutiveFailures = 0;
                 resetEvolutionHealth();
                 syncSessionsWithDb(IS_WORKER).catch(err =>

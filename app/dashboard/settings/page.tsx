@@ -60,7 +60,7 @@ export default function SettingsPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          // Try getSession as fallback — getUser may fail due to network issues
+          // Try getSession as fallback - getUser may fail due to network issues
           // while the session cookie is still valid
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.user) {
@@ -72,10 +72,10 @@ export default function SettingsPage() {
           setUsername(user.email || user.id);
         }
       } catch {
-        // Network error reaching Supabase — don't redirect, the middleware
+        // Network error reaching Supabase - don't redirect, the middleware
         // already validated the session cookie server-side. Let the page
         // render so the user isn't bounced back to dashboard.
-        console.warn('[Settings] Auth check failed (network error) — staying on page');
+        console.warn('[Settings] Auth check failed (network error) - staying on page');
       }
 
       // Fetch existing settings
@@ -369,7 +369,7 @@ export default function SettingsPage() {
                 <div className="bg-dark/30 border border-blue-500/5 p-4">
                   <h4 className="font-mono text-[10px] text-[#5a9a7a] tracking-[2px] mb-2">AI POWERED BY GEMINI</h4>
                   <p className="font-mono text-[10px] text-[#3a6a5a]">
-                    All AI features (!ai, !scan, !digest, Study Hub) are powered by Google Gemini and work automatically — no API key needed from you.
+                    All AI features (!ai, !scan, !digest, Study Hub) are powered by Google Gemini and work automatically - no API key needed from you.
                   </p>
                 </div>
               </div>
@@ -399,7 +399,7 @@ export default function SettingsPage() {
                     READ-BUT-SKIP PROBABILITY (GROUPS): {skipProbability}%
                   </label>
                   <p className="font-mono text-[10px] text-[#3a6a5a] mb-2">
-                    Chance the bot reads a group message but doesn&apos;t reply — mimics real human behavior.
+                    Chance the bot reads a group message but doesn&apos;t reply - mimics real human behavior.
                     Only you (the account owner) can change this. 0% = always reply, 100% = never reply.
                   </p>
                   <input
@@ -446,7 +446,7 @@ export default function SettingsPage() {
 
               {createdKey && (
                 <div className="bg-blue-500/10 border border-blue-500/30 p-4 mb-4">
-                  <p className="font-mono text-[10px] text-blue-600 dark:text-blue-400 tracking-[2px] mb-2">NEW API KEY (copy now — shown once)</p>
+                  <p className="font-mono text-[10px] text-blue-600 dark:text-blue-400 tracking-[2px] mb-2">NEW API KEY (copy now - shown once)</p>
                   <code className="font-mono text-xs text-white break-all select-all">{createdKey}</code>
                   <button
                     onClick={() => { navigator.clipboard.writeText(createdKey); }}

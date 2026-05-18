@@ -1,5 +1,5 @@
 // bot/autoScaler.ts
-// Auto-scaling worker thread manager. Dormant by default — spawns workers
+// Auto-scaling worker thread manager. Dormant by default - spawns workers
 // only when scaling signals trigger. Falls back to standalone immediately
 // if all workers die.
 
@@ -164,7 +164,7 @@ function spawnWorker(id: number): WorkerInfo | null {
   // Check crash loop backoff
   const backoff = backoffUntil.get(id);
   if (backoff && Date.now() < backoff) {
-    console.log(`[SCALE] Worker ${id} in crash backoff until ${new Date(backoff).toISOString()} — skipping spawn`);
+    console.log(`[SCALE] Worker ${id} in crash backoff until ${new Date(backoff).toISOString()} - skipping spawn`);
     return null;
   }
 
@@ -200,7 +200,7 @@ function handleWorkerExit(workerId: number, code: number): void {
   const sessionCount = info?.sessions.size ?? 0;
   const sessionIds = info ? Array.from(info.sessions) : [];
 
-  console.log(`[SCALE] Worker ${workerId} exited (code=${code}) — had ${sessionCount} session(s)`);
+  console.log(`[SCALE] Worker ${workerId} exited (code=${code}) - had ${sessionCount} session(s)`);
   workers.delete(workerId);
 
   if (code !== 0) {
@@ -212,7 +212,7 @@ function handleWorkerExit(workerId: number, code: number): void {
     crashHistory.set(workerId, recent);
 
     if (recent.length >= CRASH_LOOP_MAX) {
-      console.warn(`[SCALE] Worker ${workerId} crash loop detected (${recent.length} crashes in ${CRASH_LOOP_WINDOW_MS / 1000}s) — backing off for ${CRASH_LOOP_BACKOFF_MS / 60000}min`);
+      console.warn(`[SCALE] Worker ${workerId} crash loop detected (${recent.length} crashes in ${CRASH_LOOP_WINDOW_MS / 1000}s) - backing off for ${CRASH_LOOP_BACKOFF_MS / 60000}min`);
       backoffUntil.set(workerId, Date.now() + CRASH_LOOP_BACKOFF_MS);
     } else {
       // Respawn immediately
@@ -232,7 +232,7 @@ function handleWorkerExit(workerId: number, code: number): void {
 
   // If all workers are gone, fall back to standalone
   if (workers.size === 0 && isScaledMode) {
-    console.warn('[SCALE] ALL workers exited — falling back to standalone mode');
+    console.warn('[SCALE] ALL workers exited - falling back to standalone mode');
     isScaledMode = false;
     standaloneSyncRunning = true;
     onStandaloneSyncStart?.();
@@ -241,7 +241,7 @@ function handleWorkerExit(workerId: number, code: number): void {
 
 function redistributeSessions(sessionIds: string[], excludeWorkerId: number): void {
   if (workers.size === 0) {
-    console.log(`[SCALE] No workers available — ${sessionIds.length} session(s) will be picked up by standalone sync`);
+    console.log(`[SCALE] No workers available - ${sessionIds.length} session(s) will be picked up by standalone sync`);
     // Clear cached data for these sessions
     for (const sid of sessionIds) sessionDataCache.delete(sid);
     return;
@@ -336,7 +336,7 @@ function handleWorkerMessage(workerId: number, msg: WorkerToMainMsg): void {
       break;
 
     case 'heartbeat':
-      // Worker reports a session heartbeat — refresh in Redis/Supabase
+      // Worker reports a session heartbeat - refresh in Redis/Supabase
       refreshHeartbeat(msg.sessionId).catch(err =>
         console.error(`[SCALE] Heartbeat refresh failed for ${msg.sessionId}:`, err)
       );
@@ -347,7 +347,7 @@ function handleWorkerMessage(workerId: number, msg: WorkerToMainMsg): void {
       break;
 
     case 'session_failed':
-      console.log(`[SCALE] Worker ${workerId}: session ${msg.sessionId.slice(0, 8)} failed — ${msg.reason}`);
+      console.log(`[SCALE] Worker ${workerId}: session ${msg.sessionId.slice(0, 8)} failed - ${msg.reason}`);
       if (info) info.sessions.delete(msg.sessionId);
       break;
 
@@ -465,7 +465,7 @@ function autoScaleLoop(): void {
     desired = 3;
   }
 
-  // Signal 3: Emergency — heartbeat expiry danger
+  // Signal 3: Emergency - heartbeat expiry danger
   if (lastSyncCycleDurationMs > LOCK_EXPIRY_MS * 0.6) {
     desired = Math.max(desired, Math.ceil(activeSessionCount / 5));
     console.warn(`[SCALE] EMERGENCY: sync cycle ${lastSyncCycleDurationMs}ms approaching heartbeat expiry ${LOCK_EXPIRY_MS}ms`);
@@ -500,7 +500,7 @@ function scaleUp(count: number): void {
     isScaledMode = true;
     standaloneSyncRunning = false;
     onStandaloneSyncStop?.();
-    console.log('[SCALE] Entering scaled mode — standalone sync loop stopped');
+    console.log('[SCALE] Entering scaled mode - standalone sync loop stopped');
   }
 
   // Find available worker IDs and spawn workers
@@ -519,7 +519,7 @@ function scaleUp(count: number): void {
 async function distributeSessionsToWorkers(): Promise<void> {
   const readyWorkers = Array.from(workers.values()).filter(w => w.ready);
   if (readyWorkers.length === 0) {
-    console.log('[SCALE] No ready workers — cannot distribute sessions');
+    console.log('[SCALE] No ready workers - cannot distribute sessions');
     return;
   }
 
@@ -556,7 +556,7 @@ async function distributeSessionsToWorkers(): Promise<void> {
     }
   }
 
-  console.log(`[SCALE] Distribution complete — ${sessions.length} session(s) assigned to ${readyWorkers.length} worker(s)`);
+  console.log(`[SCALE] Distribution complete - ${sessions.length} session(s) assigned to ${readyWorkers.length} worker(s)`);
 }
 
 function scaleDown(count: number): void {
@@ -600,7 +600,7 @@ export function startAutoScaler(): void {
   if (autoScaleHandle) return;
 
   console.log(`[SCALE] Auto-scaler started (threshold=${SCALE_THRESHOLD}, max_workers=${MAX_WORKER_THREADS}, check_interval=${AUTO_SCALE_INTERVAL_MS / 1000}s)`);
-  console.log(`[SCALE] Current mode: STANDALONE (dormant — 0 workers, waiting for scaling signals)`);
+  console.log(`[SCALE] Current mode: STANDALONE (dormant - 0 workers, waiting for scaling signals)`);
 
   autoScaleHandle = setInterval(() => {
     try {

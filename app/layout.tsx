@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     default: 'BotWave - Free WhatsApp Bot That Actually Works (2026) | Stop Paying for Bots',
     template: '%s | BotWave',
   },
-  description: 'Everyone is paying $20/mo for WhatsApp bots that barely work. BotWave is 100% free with 50+ commands — stickers, AI chat, games, anti-spam, media downloads. No coding. No catch. Works in Nigeria & worldwide. Why is nobody talking about this?',
+  description: 'Everyone is paying $20/mo for WhatsApp bots that barely work. BotWave is 100% free with 50+ commands - stickers, AI chat, games, anti-spam, media downloads. No coding. No catch. Works in Nigeria & worldwide. Why is nobody talking about this?',
   keywords: [
     'whatsapp bot',
     'whatsapp automation',
@@ -159,7 +159,7 @@ export default function RootLayout({
                 ratingValue: '4.8',
                 reviewCount: '5000',
               },
-              description: 'Free WhatsApp bot automation platform. 50+ commands — stickers, AI chat, media downloads, group management, games, anti-spam. Alternative to Telegram bots, Twitter bots, and paid bot platforms. No coding needed. Works in Nigeria and worldwide.',
+              description: 'Free WhatsApp bot automation platform. 50+ commands - stickers, AI chat, media downloads, group management, games, anti-spam. Alternative to Telegram bots, Twitter bots, and paid bot platforms. No coding needed. Works in Nigeria and worldwide.',
               url: 'https://www.botwave.online',
               sameAs: [
                 'https://www.botwave.online/blog',
@@ -184,7 +184,7 @@ export default function RootLayout({
                   name: 'What is BotWave?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'BotWave is a free WhatsApp bot automation platform. You connect your own WhatsApp number by scanning a QR code, and the bot adds powerful features like sticker creation, AI chat, media downloads, games, polls, and group management — all through simple commands.',
+                    text: 'BotWave is a free WhatsApp bot automation platform. You connect your own WhatsApp number by scanning a QR code, and the bot adds powerful features like sticker creation, AI chat, media downloads, games, polls, and group management - all through simple commands.',
                   },
                 },
                 {
@@ -200,7 +200,7 @@ export default function RootLayout({
                   name: 'How do I set up a WhatsApp bot with BotWave?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Sign up at www.botwave.online, go to your dashboard, and click "Connect WhatsApp". Scan the QR code with your phone and your bot is live — no coding needed. The whole process takes under 2 minutes.',
+                    text: 'Sign up at www.botwave.online, go to your dashboard, and click "Connect WhatsApp". Scan the QR code with your phone and your bot is live - no coding needed. The whole process takes under 2 minutes.',
                   },
                 },
                 {
@@ -224,7 +224,7 @@ export default function RootLayout({
                   name: 'Can I use BotWave for my business?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Absolutely. BotWave works great for businesses — use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.',
+                    text: 'Absolutely. BotWave works great for businesses - use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.',
                   },
                 },
                 {
@@ -248,7 +248,7 @@ export default function RootLayout({
                   name: 'Is BotWave better than Telegram bots?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp — where your audience already is.',
+                    text: 'Telegram bots are powerful, but they only work on Telegram. In Nigeria and most of Africa, WhatsApp is the dominant messaging platform. BotWave gives you Telegram-level bot features (AI chat, games, media tools, automation) directly on WhatsApp - where your audience already is.',
                   },
                 },
                 {
@@ -256,7 +256,7 @@ export default function RootLayout({
                   name: 'Why is BotWave free when other bot platforms charge $20-50/month?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different — your WhatsApp session runs from your own device via QR code, so there is no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms cannot match.',
+                    text: 'Most bot platforms host your connection on their servers, which costs them money per user. BotWave is different - your WhatsApp session runs from your own device via QR code, so there is no expensive server infrastructure per user. This lets us offer a generous free tier that other platforms cannot match.',
                   },
                 },
                 {
@@ -264,7 +264,7 @@ export default function RootLayout({
                   name: 'What is the difference between BotWave and Evolution API?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'Evolution API is a powerful open-source WhatsApp API platform designed for developers — it requires technical setup, server management, and coding knowledge. BotWave is built on top of Evolution API but wraps it in a simple web dashboard that anyone can use. No coding, no server setup, just scan QR and go.',
+                    text: 'Evolution API is a powerful open-source WhatsApp API platform designed for developers - it requires technical setup, server management, and coding knowledge. BotWave is built on top of Evolution API but wraps it in a simple web dashboard that anyone can use. No coding, no server setup, just scan QR and go.',
                   },
                 },
                 {
@@ -304,7 +304,7 @@ export default function RootLayout({
                   name: 'What is the difference between Telegram Bot and Telegram Userbot on BotWave?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'A Telegram Bot runs via the official Telegram Bot API — zero ban risk, ideal for group management. A Telegram Userbot uses your real Telegram account via MTProto to automate actions like .ban, .mute, .afk, .purge as if you typed them yourself. BotWave supports both from one dashboard.',
+                    text: 'A Telegram Bot runs via the official Telegram Bot API - zero ban risk, ideal for group management. A Telegram Userbot uses your real Telegram account via MTProto to automate actions like .ban, .mute, .afk, .purge as if you typed them yourself. BotWave supports both from one dashboard.',
                   },
                 },
                 {
@@ -312,7 +312,7 @@ export default function RootLayout({
                   name: 'How many groups can my bot manage at once?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'On the free plan, your bot can manage all the groups that your connected account is in — there is no group limit. The message cap is 300/month on the free tier. Paid plans remove message limits entirely.',
+                    text: 'On the free plan, your bot can manage all the groups that your connected account is in - there is no group limit. The message cap is 300/month on the free tier. Paid plans remove message limits entirely.',
                   },
                 },
                 {
@@ -320,7 +320,7 @@ export default function RootLayout({
                   name: 'Does BotWave work on iPhone or only Android?',
                   acceptedAnswer: {
                     '@type': 'Answer',
-                    text: 'BotWave works with any device that has WhatsApp or Telegram. You connect via QR code or API token through the web dashboard at www.botwave.online — it works on iPhone, Android, desktop, or any browser.',
+                    text: 'BotWave works with any device that has WhatsApp or Telegram. You connect via QR code or API token through the web dashboard at www.botwave.online - it works on iPhone, Android, desktop, or any browser.',
                   },
                 },
                 {
@@ -333,7 +333,7 @@ export default function RootLayout({
                 },
                 {
                   '@type': 'Question',
-                  name: 'Is my WhatsApp number safe — can BotWave read my private chats?',
+                  name: 'Is my WhatsApp number safe - can BotWave read my private chats?',
                   acceptedAnswer: {
                     '@type': 'Answer',
                     text: 'No. BotWave only processes messages in groups where the bot is active. Private/DM messages are never read, stored, or logged. All message processing happens in memory and is discarded immediately. Your session runs on your device IP, not our servers.',
@@ -364,6 +364,42 @@ export default function RootLayout({
                   },
                 },
               ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'BotWave',
+              url: 'https://www.botwave.online',
+              logo: 'https://www.botwave.online/icons/icon-512x512.png',
+              description: 'The operating system for WhatsApp communities and automation in Africa. Free bot platform with 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot.',
+              foundingDate: '2026',
+              founder: { '@type': 'Person', name: 'Decisive Analyst' },
+              sameAs: [
+                'https://www.botwave.online/blog',
+                'https://www.botwave.online/docs',
+              ],
+              knowsAbout: ['WhatsApp automation', 'Telegram bots', 'community management', 'anti-spam', 'AI chatbots', 'group moderation'],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'BotWave',
+              url: 'https://www.botwave.online',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://www.botwave.online/commands?q={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
             }),
           }}
         />

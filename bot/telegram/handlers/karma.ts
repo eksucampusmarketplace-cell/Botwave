@@ -1,5 +1,5 @@
 /**
- * Karma system — upvote/downvote via +/- reply, /karma, /mykarma commands.
+ * Karma system - upvote/downvote via +/- reply, /karma, /mykarma commands.
  */
 
 import { Bot } from 'grammy';

@@ -16,7 +16,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 );
 
-// ─── !scan — Receipt/Invoice Scanner using Gemini Vision ─────────────────────
+// ─── !scan - Receipt/Invoice Scanner using Gemini Vision ─────────────────────
 
 async function handleScan(
   context: MessageContext,
@@ -74,7 +74,7 @@ async function handleScan(
 
 1. **Store/Vendor Name** (if visible)
 2. **Date** (if visible)
-3. **Items** — list each item with its price
+3. **Items** - list each item with its price
 4. **Subtotal**
 5. **Tax** (if applicable)
 6. **Total**
@@ -92,7 +92,7 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
     console.error('[SCAN] Error:', err.message);
     let msg = 'Receipt scanning failed. Try a clearer photo or try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted — the Gemini API key needs billing enabled. Contact the bot admin.';
+      msg = 'AI quota exhausted - the Gemini API key needs billing enabled. Contact the bot admin.';
     } else if (error instanceof AIRateLimitError) {
       msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
     }
@@ -100,7 +100,7 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
   }
 }
 
-// ─── !music — Music Search & Audio Download ─────────────────────────────────
+// ─── !music - Music Search & Audio Download ─────────────────────────────────
 
 async function findYtDlp(): Promise<string> {
   for (const p of ['/tmp/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp']) {
@@ -229,7 +229,7 @@ async function handleMusic(
   }
 }
 
-// ─── !digest — Daily Digest / Group Chat Summary ────────────────────────────
+// ─── !digest - Daily Digest / Group Chat Summary ────────────────────────────
 
 async function handleDigest(
   context: MessageContext,
@@ -241,9 +241,9 @@ async function handleDigest(
       context.chatJid,
       '*DAILY DIGEST*\n\n' +
       'Use this command in a group chat to get an AI summary of recent messages.\n\n' +
-      '!digest — Summarize last few hours\n' +
-      '!digest today — Today\'s summary\n' +
-      '!digest 50 — Last 50 messages',
+      '!digest - Summarize last few hours\n' +
+      '!digest today - Today\'s summary\n' +
+      '!digest 50 - Last 50 messages',
       sock,
       context.rawMessage.key,
       context.queue,
@@ -338,7 +338,7 @@ async function handleDigest(
 - Organize by topic/theme, not chronologically
 - Highlight key decisions, questions, and action items
 - Note any important links or media shared
-- Keep it concise — max 500 words
+- Keep it concise - max 500 words
 - Use WhatsApp formatting: *bold* for headers, _italic_ for emphasis
 - Be neutral and objective
 - If there were arguments or debates, summarize both sides fairly`,
@@ -352,7 +352,7 @@ async function handleDigest(
     console.error('[DIGEST] Error:', error?.message || error);
     let msg = 'Digest generation failed. Try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted — the Gemini API key needs billing enabled. Contact the bot admin.';
+      msg = 'AI quota exhausted - the Gemini API key needs billing enabled. Contact the bot admin.';
     } else if (error instanceof AIRateLimitError) {
       msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
     }

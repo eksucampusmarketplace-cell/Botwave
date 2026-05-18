@@ -148,7 +148,7 @@ export async function isBotAdmin(ctx: Context): Promise<boolean> {
 }
 
 /**
- * Check if user is admin, owner, or sudo — any elevated role.
+ * Check if user is admin, owner, or sudo - any elevated role.
  */
 export async function isElevated(ctx: Context, sessionId: string): Promise<boolean> {
   if (!ctx.from) return false;
@@ -248,7 +248,7 @@ export async function requireBotAdmin(ctx: Context): Promise<boolean> {
 }
 
 /**
- * Require owner or sudo — for sensitive commands like /addsudo, /delsudo, /setowner.
+ * Require owner or sudo - for sensitive commands like /addsudo, /delsudo, /setowner.
  */
 export async function requireOwnerOrSudo(ctx: Context, sessionId: string): Promise<boolean> {
   if (!ctx.from) return false;

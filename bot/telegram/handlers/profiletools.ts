@@ -1,5 +1,5 @@
 /**
- * Profile tools: /profile, /whois — user profile lookup with detailed info.
+ * Profile tools: /profile, /whois - user profile lookup with detailed info.
  */
 
 import { Bot } from 'grammy';

@@ -3,12 +3,12 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-ai-chatbot-free' },
-  title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp',
-  description: 'Get ChatGPT-like AI on your WhatsApp for free. Ask anything, get homework help, translate 100+ languages, write messages — powered by Google Gemini. No app needed. Try it now →',
+  title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp',
+  description: 'Get ChatGPT-like AI on your WhatsApp for free. Ask anything, get homework help, translate 100+ languages, write messages - powered by Google Gemini. No app needed. Try it now →',
   keywords: ['whatsapp ai chatbot', 'whatsapp ai bot free', 'chatgpt whatsapp', 'ai on whatsapp', 'whatsapp chatbot free', 'google gemini whatsapp', 'ai assistant whatsapp', 'free whatsapp ai'],
   openGraph: {
-    title: 'Free WhatsApp AI Chatbot (2026) — AI on WhatsApp',
-    description: 'ChatGPT-like AI on your WhatsApp. Ask anything, translate, write, learn — all free with BotWave.',
+    title: 'Free WhatsApp AI Chatbot (2026) - AI on WhatsApp',
+    description: 'ChatGPT-like AI on your WhatsApp. Ask anything, translate, write, learn - all free with BotWave.',
     url: 'https://www.botwave.online/blog/whatsapp-ai-chatbot-free',
     type: 'article',
     images: [{ url: '/api/og?title=Free+WhatsApp+AI+Chatbot+(2026)+%E2%80%94+ChatGPT-Like+AI+on+WhatsApp', width: 1200, height: 630 }],
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp
+# Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp
 
 **Last updated: May 2026** | 6 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-ChatGPT changed how people search for information. But opening a browser, going to chat.openai.com, and typing your question takes time. What if you could ask AI anything directly inside WhatsApp — the app you already have open?
+ChatGPT changed how people search for information. But opening a browser, going to chat.openai.com, and typing your question takes time. What if you could ask AI anything directly inside WhatsApp - the app you already have open?
 
 ## AI Chat on WhatsApp with BotWave
 
@@ -78,7 +78,7 @@ BotWave includes a free AI chatbot powered by Google Gemini. Just type \`!ai\` f
 In any WhatsApp chat, type \`!ai\` followed by your question. The AI responds in 2-5 seconds.
 
 ### Step 3: Use in Groups Too
-The AI works in group chats as well. Group members can ask questions and everyone sees the answer — great for study groups, work teams, or friend groups.
+The AI works in group chats as well. Group members can ask questions and everyone sees the answer - great for study groups, work teams, or friend groups.
 
 ## BotWave AI vs ChatGPT
 
@@ -117,7 +117,7 @@ BotWave's AI is extremely popular in study groups and class WhatsApp groups. Her
 - **Essay outlines**: "!ai Give me an outline for an essay on climate change"
 - **Exam prep**: "!ai Give me 5 practice questions about organic chemistry"
 
-One bot serves the entire group — everyone benefits from every question asked.
+One bot serves the entire group - everyone benefits from every question asked.
 
 ## AI for Business on WhatsApp
 
@@ -152,7 +152,7 @@ Stop switching between apps to ask AI questions. Get it right inside WhatsApp wh
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
   { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
   { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms in 2026 Compared' },
 ];

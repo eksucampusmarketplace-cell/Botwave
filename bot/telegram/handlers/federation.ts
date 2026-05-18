@@ -1,5 +1,5 @@
 /**
- * Federation (TrustNet) commands — cross-group ban sharing.
+ * Federation (TrustNet) commands - cross-group ban sharing.
  * Groups join a federation, and bans are shared across all member groups.
  */
 
@@ -26,7 +26,7 @@ import {
 import { resolveTarget } from '../utils/resolve';
 
 export function registerFederationHandlers(bot: Bot, sessionId: string): void {
-  // /newfed <name> — create a new federation
+  // /newfed <name> - create a new federation
   bot.command('newfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const isGroup = ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
@@ -53,7 +53,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /joinfed <code> — join group to a federation
+  // /joinfed <code> - join group to a federation
   bot.command('joinfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -88,7 +88,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /leavefed — leave current federation
+  // /leavefed - leave current federation
   bot.command('leavefed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -107,7 +107,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Left federation "<b>${fed.name}</b>".`, { parse_mode: 'HTML' });
   });
 
-  // /fedinfo — show federation details
+  // /fedinfo - show federation details
   bot.command('fedinfo', async (ctx) => {
     if (!ctx.chat) return;
 
@@ -133,7 +133,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /myfeds — list federations you own
+  // /myfeds - list federations you own
   bot.command('myfeds', async (ctx) => {
     if (!ctx.from) return;
 
@@ -143,11 +143,11 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const list = feds.map((f, i) => `${i + 1}. <b>${f.name}</b> — <code>${f.invite_code}</code>`).join('\n');
+    const list = feds.map((f, i) => `${i + 1}. <b>${f.name}</b> - <code>${f.invite_code}</code>`).join('\n');
     await ctx.reply(`🛡️ <b>Your Federations</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
-  // /fedchats — list member groups
+  // /fedchats - list member groups
   bot.command('fedchats', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -172,7 +172,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`👥 <b>Federation Groups</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
-  // /fban <user> [reason] — ban user across all fed groups
+  // /fban <user> [reason] - ban user across all fed groups
   bot.command('fban', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -216,7 +216,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /unfban <user> — unban from federation
+  // /unfban <user> - unban from federation
   bot.command('unfban', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -251,7 +251,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ User <code>${userId}</code> has been unbanned from the federation.`, { parse_mode: 'HTML' });
   });
 
-  // /fbans — list federation bans
+  // /fbans - list federation bans
   bot.command('fbans', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -268,7 +268,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     }
 
     const list = bans.slice(0, 20).map((b, i) =>
-      `${i + 1}. <code>${b.user_id}</code>${b.reason ? ` — ${b.reason}` : ''}`
+      `${i + 1}. <code>${b.user_id}</code>${b.reason ? ` - ${b.reason}` : ''}`
     ).join('\n');
 
     await ctx.reply(
@@ -277,7 +277,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /fpromote <user> — add federation admin
+  // /fpromote <user> - add federation admin
   bot.command('fpromote', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -302,7 +302,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ User <code>${userId}</code> is now a federation admin.`, { parse_mode: 'HTML' });
   });
 
-  // /fdemote <user> — remove federation admin
+  // /fdemote <user> - remove federation admin
   bot.command('fdemote', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -327,7 +327,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ User <code>${userId}</code> has been removed as federation admin.`, { parse_mode: 'HTML' });
   });
 
-  // /fedadmins — list federation admins
+  // /fedadmins - list federation admins
   bot.command('fedadmins', async (ctx) => {
     if (!ctx.chat) return;
 
@@ -346,7 +346,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`👮 <b>Federation Admins</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
-  // /renamefed <name> — rename federation
+  // /renamefed <name> - rename federation
   bot.command('renamefed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -358,7 +358,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Federation renamed to "<b>${name}</b>".`, { parse_mode: 'HTML' });
   });
 
-  // /delfed — delete federation
+  // /delfed - delete federation
   bot.command('delfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -368,7 +368,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Federation deleted. All groups have been disconnected.');
   });
 
-  // /fedtransfer <user> — transfer federation ownership
+  // /fedtransfer <user> - transfer federation ownership
   bot.command('fedtransfer', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -379,7 +379,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Federation ownership transferred to <code>${userId}</code>.`, { parse_mode: 'HTML' });
   });
 
-  // /fednotif <yes/no> — toggle federation ban notifications
+  // /fednotif <yes/no> - toggle federation ban notifications
   bot.command('fednotif', async (ctx) => {
     if (!ctx.from) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -392,7 +392,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /fedreason <yes/no> — toggle showing reasons for fed bans
+  // /fedreason <yes/no> - toggle showing reasons for fed bans
   bot.command('fedreason', async (ctx) => {
     if (!ctx.from) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -405,7 +405,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /subfed <fed_id> — subscribe to another federation
+  // /subfed <fed_id> - subscribe to another federation
   bot.command('subfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -416,7 +416,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Subscribed to federation: ${targetFed}`);
   });
 
-  // /unsubfed <fed_id> — unsubscribe from a federation
+  // /unsubfed <fed_id> - unsubscribe from a federation
   bot.command('unsubfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -427,7 +427,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Unsubscribed from federation: ${targetFed}`);
   });
 
-  // /fedsubs — list subscribed federations
+  // /fedsubs - list subscribed federations
   bot.command('fedsubs', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -435,7 +435,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('📋 No federation subscriptions.');
   });
 
-  // /fedexport — export federation ban list
+  // /fedexport - export federation ban list
   bot.command('fedexport', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -447,7 +447,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`<b>Federation Ban Export</b> (${bans.length} bans)\n\n<pre>${csv}</pre>`, { parse_mode: 'HTML' });
   });
 
-  // /fedimport — import federation ban list
+  // /fedimport - import federation ban list
   bot.command('fedimport', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -467,7 +467,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Imported ${imported} bans.`);
   });
 
-  // /setfedlog <channel_id> — set federation log channel
+  // /setfedlog <channel_id> - set federation log channel
   bot.command('setfedlog', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -478,7 +478,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Federation log channel set to <code>${channelId}</code>.`, { parse_mode: 'HTML' });
   });
 
-  // /unsetfedlog — remove federation log channel
+  // /unsetfedlog - remove federation log channel
   bot.command('unsetfedlog', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -487,7 +487,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Federation log channel removed.');
   });
 
-  // /setfedlang <lang> — set federation language
+  // /setfedlang <lang> - set federation language
   bot.command('setfedlang', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -498,7 +498,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Federation language set to: ${lang}`);
   });
 
-  // /feddemoteme — demote yourself from federation admin
+  // /feddemoteme - demote yourself from federation admin
   bot.command('feddemoteme', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -509,7 +509,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ You have been removed as a federation admin.');
   });
 
-  // /fedstat — show federation statistics
+  // /fedstat - show federation statistics
   bot.command('fedstat', async (ctx) => {
     if (!ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -527,7 +527,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /chatfed — show which federation this chat belongs to
+  // /chatfed - show which federation this chat belongs to
   bot.command('chatfed', async (ctx) => {
     if (!ctx.chat) return;
     const fed = await getFederationForChat(ctx.chat.id.toString());
@@ -535,7 +535,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`🛡\ufe0f This group is in federation "<b>${fed.name}</b>".`, { parse_mode: 'HTML' });
   });
 
-  // /quietfed <yes/no> — suppress federation action messages
+  // /quietfed <yes/no> - suppress federation action messages
   bot.command('quietfed', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -549,7 +549,7 @@ export function registerFederationHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /fbroadcast <text> — send message to all fed groups
+  // /fbroadcast <text> - send message to all fed groups
   bot.command('fbroadcast', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 

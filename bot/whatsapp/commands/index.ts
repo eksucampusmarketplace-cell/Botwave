@@ -1,4 +1,4 @@
-// Import all command modules — each module self-registers its commands on import
+// Import all command modules - each module self-registers its commands on import
 import './general';
 import './fun';
 import './games';

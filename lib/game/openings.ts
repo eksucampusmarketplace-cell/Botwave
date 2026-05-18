@@ -1,4 +1,4 @@
-// Chess opening book — maps move sequences to opening names
+// Chess opening book - maps move sequences to opening names
 // Format: space-separated SAN moves -> opening name
 
 const OPENINGS: Record<string, string> = {

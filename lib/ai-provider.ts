@@ -1,10 +1,10 @@
 /**
- * AI Provider — Multi-provider with Groq (primary) and Gemini (fallback).
+ * AI Provider - Multi-provider with Groq (primary) and Gemini (fallback).
  *
  * Provider priority: Groq → Gemini
  *
- * GROQ_API_KEY — free, no billing needed, 30 req/min.
- * GEMINI_API_KEY — supports comma-separated keys for rotation.
+ * GROQ_API_KEY - free, no billing needed, 30 req/min.
+ * GEMINI_API_KEY - supports comma-separated keys for rotation.
  *
  * When a key hits a rate limit (429), it is cooldown-locked and the next
  * provider/key is tried automatically.
@@ -304,7 +304,7 @@ export interface AIVisionOptions {
 }
 
 /**
- * Call AI — tries Groq first, then Gemini with key rotation.
+ * Call AI - tries Groq first, then Gemini with key rotation.
  */
 export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt, history }: AICallOptions): Promise<string> {
   const errors: Error[] = [];
@@ -367,7 +367,7 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
 }
 
 /**
- * Call AI Vision — tries Groq (Llama vision) first, then Gemini Vision.
+ * Call AI Vision - tries Groq (Llama vision) first, then Gemini Vision.
  * Note: Groq vision uses llama-4-scout-17b-16e-instruct for image analysis.
  */
 export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg', maxTokens = 1000 }: AIVisionOptions): Promise<string> {

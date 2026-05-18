@@ -62,7 +62,7 @@ export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /log — Alias for /setlog
+  // /log - Alias for /setlog
   bot.command('log', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -86,14 +86,14 @@ export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Log channel set to <code>${escapeHtml(arg)}</code>.`, { parse_mode: 'HTML' });
   });
 
-  // /nolog — Alias for /unsetlog
+  // /nolog - Alias for /unsetlog
   bot.command('nolog', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { log_channel_id: null });
     await ctx.reply('✅ Log channel removed.');
   });
 
-  // /logcategories — Show which event categories are logged
+  // /logcategories - Show which event categories are logged
   bot.command('logcategories', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const categories = ['bans', 'mutes', 'kicks', 'warns', 'pins', 'notes', 'filters', 'locks', 'federation', 'antiflood', 'antiraid'];

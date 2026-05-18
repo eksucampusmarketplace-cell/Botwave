@@ -1,5 +1,5 @@
 /**
- * Auto-Delete Messages — /autodelete command with duration parsing.
+ * Auto-Delete Messages - /autodelete command with duration parsing.
  * Uses Telegram's native message auto-delete timer.
  */
 

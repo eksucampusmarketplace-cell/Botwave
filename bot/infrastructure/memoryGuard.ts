@@ -1,5 +1,5 @@
 /**
- * Memory Guard — Prevents memory leaks in long-running Node.js processes.
+ * Memory Guard - Prevents memory leaks in long-running Node.js processes.
  *
  * Problem: In-memory Maps used for rate limiting, dedup, cooldowns, and caching
  * grow unbounded over time. A bot running for days/weeks accumulates thousands
@@ -45,7 +45,7 @@ export function trackMap(
   trackedMaps.push({ name, map, maxAgeMs, getTimestamp });
 }
 
-/** Default timestamp extractor — handles common patterns in the codebase. */
+/** Default timestamp extractor - handles common patterns in the codebase. */
 function defaultGetTimestamp(value: unknown): number | null {
   if (typeof value === 'number') return value;
   if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'number') {
@@ -94,7 +94,7 @@ function sweep(): void {
   const rssMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
   const heapMB = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
   if (rssMB > MEMORY_WARN_MB) {
-    console.warn(`[MEMORY] HIGH RSS: ${rssMB}MB (heap: ${heapMB}MB) — approaching Render 512MB limit`);
+    console.warn(`[MEMORY] HIGH RSS: ${rssMB}MB (heap: ${heapMB}MB) - approaching Render 512MB limit`);
   }
 }
 
@@ -102,7 +102,7 @@ function sweep(): void {
 export function startMemoryGuard(): NodeJS.Timeout {
   if (guardHandle) return guardHandle;
   guardHandle = setInterval(sweep, SWEEP_INTERVAL_MS);
-  console.log(`[MEMORY] Guard started — sweeping ${trackedMaps.length} map(s) every ${SWEEP_INTERVAL_MS / 1000}s`);
+  console.log(`[MEMORY] Guard started - sweeping ${trackedMaps.length} map(s) every ${SWEEP_INTERVAL_MS / 1000}s`);
   return guardHandle;
 }
 

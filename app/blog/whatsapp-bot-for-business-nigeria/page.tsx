@@ -3,12 +3,12 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-for-business-nigeria' },
-  title: 'WhatsApp Bot for Business in Nigeria (2026) — Automate Sales & Support',
+  title: 'WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support',
   description: 'Stop answering "How much?" 50 times a day. Nigerian businesses use BotWave to automate support, orders & promotions on WhatsApp. Free setup, Naira pricing. Start now →',
   keywords: ['whatsapp bot business nigeria', 'whatsapp automation nigeria', 'whatsapp business bot', 'automate whatsapp business', 'whatsapp customer support bot', 'nigerian business whatsapp bot', 'whatsapp bot for sales'],
   openGraph: {
     title: 'WhatsApp Bot for Business in Nigeria (2026)',
-    description: 'Automate your Nigerian business on WhatsApp — customer support, order updates, promotions. Free with BotWave.',
+    description: 'Automate your Nigerian business on WhatsApp - customer support, order updates, promotions. Free with BotWave.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-for-business-nigeria',
     type: 'article',
     images: [{ url: '/api/og?title=WhatsApp+Bot+for+Business+in+Nigeria+(2026)', width: 1200, height: 630 }],
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for Business in Nigeria (2026) — Automate Sales & Support
+# WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support
 
 **Last updated: May 2026** | 8 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-WhatsApp is the backbone of Nigerian business. From fashion vendors on Instagram selling through WhatsApp DMs, to POS agents managing hundreds of customers, to restaurants taking delivery orders — everything runs through WhatsApp. But answering the same questions 50 times a day? That's where a WhatsApp bot changes the game.
+WhatsApp is the backbone of Nigerian business. From fashion vendors on Instagram selling through WhatsApp DMs, to POS agents managing hundreds of customers, to restaurants taking delivery orders - everything runs through WhatsApp. But answering the same questions 50 times a day? That's where a WhatsApp bot changes the game.
 
 ## Why Nigerian Businesses Need a WhatsApp Bot
 
@@ -34,7 +34,7 @@ If you run any business in Nigeria, you already know:
 - You can't reply fast enough during peak hours
 - You lose customers when you take too long to respond
 
-A WhatsApp bot handles all of this automatically — 24/7, no breaks, no delays.
+A WhatsApp bot handles all of this automatically - 24/7, no breaks, no delays.
 
 ## What Can a WhatsApp Bot Do for Your Business?
 
@@ -58,7 +58,7 @@ BotWave includes AI chat powered by Google Gemini. Your bot can:
 
 ### Group Management for Business Communities
 
-Many Nigerian businesses run WhatsApp groups for their customers — think fashion brands with VIP groups, or tech vendors with buyer communities. BotWave gives you:
+Many Nigerian businesses run WhatsApp groups for their customers - think fashion brands with VIP groups, or tech vendors with buyer communities. BotWave gives you:
 - **Anti-spam protection**: Automatically remove spam messages and links
 - **Welcome messages**: Greet new group members with your business info
 - **Polls**: Get customer feedback on new products
@@ -74,7 +74,7 @@ Many Nigerian businesses run WhatsApp groups for their customers — think fashi
 
 ### Step 1: Sign Up (Free)
 
-Go to [www.botwave.online/signup](https://www.botwave.online/signup). Create an account — takes 30 seconds, no credit card needed.
+Go to [www.botwave.online/signup](https://www.botwave.online/signup). Create an account - takes 30 seconds, no credit card needed.
 
 ### Step 2: Connect Your WhatsApp Business Number
 
@@ -139,12 +139,12 @@ Compare this to international bot platforms charging $20-50/month (₦30,000-75,
 | Setup time | 2 minutes | Days to train |
 | Scalability | Unlimited chats | One person, limited |
 
-A bot doesn't replace human touch for complex sales conversations — but it handles the 80% of repetitive queries so you can focus on the 20% that actually need your personal attention.
+A bot doesn't replace human touch for complex sales conversations - but it handles the 80% of repetitive queries so you can focus on the 20% that actually need your personal attention.
 
 ## Tips for Nigerian Businesses Using WhatsApp Bots
 
 1. **Start with your top 10 FAQs**: These will handle most customer queries automatically
-2. **Use Pidgin in auto-replies**: Many Nigerian customers prefer Pidgin — set up responses in both English and Pidgin
+2. **Use Pidgin in auto-replies**: Many Nigerian customers prefer Pidgin - set up responses in both English and Pidgin
 3. **Set expectations**: Let customers know they're chatting with a bot and how to reach you for complex issues
 4. **Monitor and improve**: Check which auto-replies get triggered most and refine them
 5. **Use the referral system**: Encourage satisfied customers to refer others through BotWave's built-in referral tracking
@@ -157,7 +157,7 @@ Setting up a WhatsApp bot for your Nigerian business takes under 2 minutes with 
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management' },
+  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026) - Free Automation & Group Management' },
   { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free (2026 Guide)' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
 ];

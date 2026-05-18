@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     if (session?.user_id) {
       // Check if this Telegram user ID appears as the added_by for any group
-      // belonging to this session — that links them to the dashboard owner
+      // belonging to this session - that links them to the dashboard owner
       const { data: group } = await supabase
         .from('telegram_groups')
         .select('added_by_user_id')

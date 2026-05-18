@@ -17,7 +17,7 @@ export function baseTemplate(title: string, content: string): string {
     </div>
     <div style="text-align:center;padding:24px 0">
       <p style="color:#475569;font-size:12px;margin:0">
-        <a href="${APP_URL}" style="color:#60a5fa;text-decoration:none">botwave.online</a> — WhatsApp Bot Automation
+        <a href="${APP_URL}" style="color:#60a5fa;text-decoration:none">botwave.online</a> - WhatsApp Bot Automation
       </p>
       <p style="color:#475569;font-size:12px;margin:8px 0 0">
         <a href="https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X" style="color:#22c55e;text-decoration:none">📢 Follow our WhatsApp Channel</a>

@@ -49,7 +49,7 @@ if (REDIS_URL) {
     redis = null;
   }
 } else {
-  console.log('[REDIS] No REDIS_URL set — using Supabase for all operations');
+  console.log('[REDIS] No REDIS_URL set - using Supabase for all operations');
 }
 
 /** Whether Redis is connected and usable right now. */

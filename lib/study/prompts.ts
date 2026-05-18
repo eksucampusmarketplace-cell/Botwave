@@ -1,11 +1,11 @@
 /**
- * Study Feature — AI Prompt Templates
+ * Study Feature - AI Prompt Templates
  * Used with Gemini API to generate summaries, questions, and flashcards.
  *
- * FIXED FORMATTING RULE — applies to ALL study note generation:
+ * FIXED FORMATTING RULE - applies to ALL study note generation:
  * This system prompt ensures AI always formats notes using the 8-step
  * medical study note formatting standard. Every fact from every source
- * must be included — nothing skipped or summarised away.
+ * must be included - nothing skipped or summarised away.
  */
 
 /**
@@ -13,12 +13,12 @@
  * Embedded into every summary prompt so Gemini always follows it.
  */
 const MEDICAL_NOTE_FORMATTING_RULE = `
-FIXED FORMATTING RULE — YOU MUST ALWAYS FOLLOW THESE RULES:
+FIXED FORMATTING RULE - YOU MUST ALWAYS FOLLOW THESE RULES:
 You are a medical study note formatter. When given study material from ANY source
 (PDF, PPT, text, images), you MUST:
  1. Read ALL sources thoroughly before writing anything
  2. Cross-check every source against each other and flag anything missing
- 3. Never skip or summarise away any point — every fact must appear somewhere in the final notes
+ 3. Never skip or summarise away any point - every fact must appear somewhere in the final notes
  4. For every topic always include in this order:
     - Definition
     - Basic properties (if a substance/hormone: name, structure, secretion, origin)
@@ -28,7 +28,7 @@ You are a medical study note formatter. When given study material from ANY sourc
     - Clinical features
     - Diagnosis
     - Treatment (directly under each condition, not in a separate section)
- 5. Format everything as bullet points — no paragraphs
+ 5. Format everything as bullet points - no paragraphs
  6. Add a Quick Review at the top
  7. Add Mnemonics at the bottom
  8. At the end, add a section called "Points Only Found In [Source]" listing anything that
@@ -36,7 +36,7 @@ You are a medical study note formatter. When given study material from ANY sourc
 
 ADDITIONAL FORMATTING RULES:
  - Every topic gets a clear heading
- - All content must be in bullet points — never paragraphs
+ - All content must be in bullet points - never paragraphs
  - Sub-bullets for details (causes, features, treatment, etc.)
  - Group related information under its own sub-heading
  - Always include a "Quick Review" section at the top summarising key points
@@ -54,37 +54,37 @@ MATERIAL TITLE: ${title}
 MATERIAL CONTENT:
 ${content.slice(0, 12000)}
 
-INSTRUCTIONS — follow ALL of these strictly:
+INSTRUCTIONS - follow ALL of these strictly:
 
-1. **KEY POINTS** — Extract every important concept as bullet points. Do NOT skip anything exam-worthy. Use clear, concise language. Follow the 8-step order (Definition → Properties → Functions → Regulation → Abnormalities → Clinical Features → Diagnosis → Treatment).
+1. **KEY POINTS** - Extract every important concept as bullet points. Do NOT skip anything exam-worthy. Use clear, concise language. Follow the 8-step order (Definition → Properties → Functions → Regulation → Abnormalities → Clinical Features → Diagnosis → Treatment).
 
-2. **EXAM HIGHLIGHTS** — List the most likely exam questions/topics. What would a professor ask? Mark these with a star.
+2. **EXAM HIGHLIGHTS** - List the most likely exam questions/topics. What would a professor ask? Mark these with a star.
 
-3. **DEFINITIONS** — List all key terms with their definitions.
+3. **DEFINITIONS** - List all key terms with their definitions.
 
-4. **CLINICAL CORRELATIONS** — Any clinical relevance, diseases, conditions, or applied knowledge. Include diagnosis and treatment directly under each condition.
+4. **CLINICAL CORRELATIONS** - Any clinical relevance, diseases, conditions, or applied knowledge. Include diagnosis and treatment directly under each condition.
 
-5. **DIAGRAMS & PROCESSES** — Describe any processes, pathways, or mechanisms step by step.
+5. **DIAGRAMS & PROCESSES** - Describe any processes, pathways, or mechanisms step by step.
 
-6. **MNEMONICS** — Create helpful memory aids for complex lists or processes.
+6. **MNEMONICS** - Create helpful memory aids for complex lists or processes.
 
-7. **QUICK REVIEW** — A 5-bullet ultra-condensed version for last-minute revision (placed at the top).
+7. **QUICK REVIEW** - A 5-bullet ultra-condensed version for last-minute revision (placed at the top).
 
-TOPIC GROUPING — VERY IMPORTANT:
+TOPIC GROUPING - VERY IMPORTANT:
 You MUST group content under topic headers AND sub-section labels for readability. Students must always know WHAT they are reading about.
 Use these special prefixes in your string arrays:
-- "## TOPIC NAME" — a main topic heading (use ALL CAPS for the topic name)
-- ">> Brief intro text" — a 1-2 sentence introduction/overview for that topic section
-- "### Sub-section" — a sub-section label within a topic. Follow the 8-step order: Definition, Basic Properties, Functions/Effects, Regulation, Abnormalities, Clinical Features, Diagnosis, Treatment
-- Regular strings (no prefix) — normal bullet points under that sub-section
+- "## TOPIC NAME" - a main topic heading (use ALL CAPS for the topic name)
+- ">> Brief intro text" - a 1-2 sentence introduction/overview for that topic section
+- "### Sub-section" - a sub-section label within a topic. Follow the 8-step order: Definition, Basic Properties, Functions/Effects, Regulation, Abnormalities, Clinical Features, Diagnosis, Treatment
+- Regular strings (no prefix) - normal bullet points under that sub-section
 
-EVERY topic MUST have sub-sections. Do NOT dump all bullets flat under a topic — group them by aspect.
+EVERY topic MUST have sub-sections. Do NOT dump all bullets flat under a topic - group them by aspect.
 Required sub-sections (in order): Definition, Basic Properties (structure, source, secretion), Functions/Effects, Regulation (stimulators & inhibitors), Abnormalities (hypo & hyper conditions), Clinical Features, Diagnosis, Treatment.
 
 For definitions, use: {"term": "## TOPIC NAME", "definition": "Brief intro for this topic section"} as a header entry, followed by normal definition entries.
 
 Example for keyPoints:
-["## INSULIN", ">> Insulin is the only hypoglycaemic hormone, secreted by beta cells of the pancreatic islets.", "### Definition", "Peptide hormone that lowers blood glucose", "### Basic Properties", "Secreted by beta cells of islets of Langerhans", "Peptide hormone (51 amino acids, 2 chains linked by disulphide bonds)", "### Functions/Effects", "↓Blood glucose — the ONLY hypoglycaemic hormone", "↑Glycogenesis, ↑lipogenesis, ↑protein synthesis", "### Regulation", "Stimulated by: hyperglycaemia, amino acids, GI hormones", "Inhibited by: hypoglycaemia, sympathetic stimulation, somatostatin", "### Abnormalities", "Deficiency → Diabetes Mellitus", "### Clinical Features", "Type 1: polyuria, polydipsia, polyphagia, weight loss, DKA", "### Diagnosis", "Fasting blood glucose, OGTT, HbA1c", "### Treatment", "Type 1: insulin replacement; Type 2: lifestyle + metformin + insulin if needed"]
+["## INSULIN", ">> Insulin is the only hypoglycaemic hormone, secreted by beta cells of the pancreatic islets.", "### Definition", "Peptide hormone that lowers blood glucose", "### Basic Properties", "Secreted by beta cells of islets of Langerhans", "Peptide hormone (51 amino acids, 2 chains linked by disulphide bonds)", "### Functions/Effects", "↓Blood glucose - the ONLY hypoglycaemic hormone", "↑Glycogenesis, ↑lipogenesis, ↑protein synthesis", "### Regulation", "Stimulated by: hyperglycaemia, amino acids, GI hormones", "Inhibited by: hypoglycaemia, sympathetic stimulation, somatostatin", "### Abnormalities", "Deficiency → Diabetes Mellitus", "### Clinical Features", "Type 1: polyuria, polydipsia, polyphagia, weight loss, DKA", "### Diagnosis", "Fasting blood glucose, OGTT, HbA1c", "### Treatment", "Type 1: insulin replacement; Type 2: lifestyle + metformin + insulin if needed"]
 
 If the material covers only ONE topic, still use ### sub-sections to organize the content.
 
@@ -112,7 +112,7 @@ ${content.slice(0, 12000)}
 
 INSTRUCTIONS:
 - Generate a MIX of question types:
-  * 8 MCQs (Multiple Choice — 4 options each, one correct)
+  * 8 MCQs (Multiple Choice - 4 options each, one correct)
   * 4 True/False questions
   * 3 Fill-in-the-blank questions
 - Questions should test UNDERSTANDING, not just memorization

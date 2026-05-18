@@ -163,7 +163,7 @@ export const gbanlistHandler: HandlerFn = async (client, event) => {
   }
 
   const list = gbans
-    .map((g, i) => `${i + 1}. \`${g.user_id}\` — ${g.reason}`)
+    .map((g, i) => `${i + 1}. \`${g.user_id}\` - ${g.reason}`)
     .join('\n');
 
   await shortPause();
@@ -171,7 +171,7 @@ export const gbanlistHandler: HandlerFn = async (client, event) => {
 };
 
 /**
- * Check if a user joining a chat is gbanned — auto-ban them.
+ * Check if a user joining a chat is gbanned - auto-ban them.
  */
 export async function handleGbanCheck(
   client: TelegramClient,

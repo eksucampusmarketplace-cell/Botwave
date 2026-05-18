@@ -2,8 +2,8 @@
  * Auto-reply system: enhanced keyword triggers using the existing filters table.
  * /addautoreply <keyword> | <response>
  * /delautoreply <keyword>
- * /autoreplies — list all
- * /clearautoreplies — remove all
+ * /autoreplies - list all
+ * /clearautoreplies - remove all
  */
 
 import { Bot } from 'grammy';

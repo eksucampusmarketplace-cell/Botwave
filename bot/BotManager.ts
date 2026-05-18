@@ -100,10 +100,10 @@ const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 15_000; // 15s between pairing starts to avoid WhatsApp 428 rate limits
-const PAIRING_TIMEOUT_MS = 180_000; // 3 min — matches UI countdown in QRCodeDisplay
-const MAX_CONCURRENT_PAIRING = 2; // Max sessions pairing simultaneously — prevents 428 storms
+const PAIRING_TIMEOUT_MS = 180_000; // 3 min - matches UI countdown in QRCodeDisplay
+const MAX_CONCURRENT_PAIRING = 2; // Max sessions pairing simultaneously - prevents 428 storms
 
-// Proxy pool for Baileys direct mode — distributes WebSocket connections
+// Proxy pool for Baileys direct mode - distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
 const PROXY_LIST = (process.env.PROXY_LIST || '')
   .split(',')
@@ -119,13 +119,13 @@ if (PROXY_LIST.length > 0) {
     console.log(`[PROXY]   #${i + 1}: ${parts[0]}:${parts[1]} (user: ${parts[2] || 'none'})`);
   });
 } else {
-  console.log('[PROXY] No PROXY_LIST env var — Baileys will connect with server IP directly');
+  console.log('[PROXY] No PROXY_LIST env var - Baileys will connect with server IP directly');
 }
 
 function getNextBaileysProxy(): any | undefined {
   if (PROXY_LIST.length === 0 || !HttpsProxyAgent) return undefined;
   if (isProxyPoolDisabled()) {
-    console.log('[PROXY] Baileys: proxy pool disabled (fallback mode) — connecting directly');
+    console.log('[PROXY] Baileys: proxy pool disabled (fallback mode) - connecting directly');
     return undefined;
   }
   const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
@@ -189,7 +189,7 @@ export class BotWaveBot {
   async start(): Promise<void> {
     console.log(`[${this.sessionId}] start() called. Phone: ${this.phoneNumber}`);
 
-    // Mark pairing start IMMEDIATELY — before any async calls — so the
+    // Mark pairing start IMMEDIATELY - before any async calls - so the
     // sync loop (which runs every 5s) sees this bot as "starting" and
     // doesn't create a duplicate. Without this, the async gap between
     // activeBots.set() and the first await allows a concurrent sync
@@ -201,7 +201,7 @@ export class BotWaveBot {
     const { state, saveCreds } = await useSupabaseAuthState(this.sessionId);
     console.log(`[${this.sessionId}] Auth state loaded. Registered: ${state.creds.registered}`);
 
-    // Session is already registered — no pairing needed. Clear the
+    // Session is already registered - no pairing needed. Clear the
     // early pairingStartedAt so the sync loop doesn't treat this as
     // a pairing-in-progress session (which would block other sessions).
     if (state.creds.registered) {
@@ -271,11 +271,11 @@ export class BotWaveBot {
 
       // isNewLogin = true means WhatsApp accepted the pairing code
       if (isNewLogin) {
-        console.log(`[${this.sessionId}] PAIRING SUCCESS — WhatsApp accepted the pairing code! Connection will restart to complete handshake.`);
+        console.log(`[${this.sessionId}] PAIRING SUCCESS - WhatsApp accepted the pairing code! Connection will restart to complete handshake.`);
         if (this.reconnectTimeout) {
           clearTimeout(this.reconnectTimeout);
           this.reconnectTimeout = null;
-          console.log(`[${this.sessionId}] Cleared QR timeout — pairing accepted`);
+          console.log(`[${this.sessionId}] Cleared QR timeout - pairing accepted`);
         }
       }
 
@@ -285,11 +285,11 @@ export class BotWaveBot {
       if (this.socket?.authState?.creds?.registered && this.reconnectTimeout && !this.isReady) {
         clearTimeout(this.reconnectTimeout);
         this.reconnectTimeout = null;
-        console.log(`[${this.sessionId}] Cleared QR timeout — creds registered`);
+        console.log(`[${this.sessionId}] Cleared QR timeout - creds registered`);
       }
 
       // When we receive a QR, the WebSocket IS connected and ready.
-      // Request pairing code here — this is the right moment because
+      // Request pairing code here - this is the right moment because
       // sendNode() requires an active WebSocket.
       // IMPORTANT: Each QR refresh means Baileys cycled the connection
       // and generated new identity keys. Any previously issued pairing
@@ -337,7 +337,7 @@ export class BotWaveBot {
               // needs_reauth. Do NOT overwrite that state with pairing_sent.
               // pairingStartedAt === -1 is the sentinel for "terminated".
               if (this.pairingStartedAt === -1 || !this.socket) {
-                console.log(`[PAIRING] DISCARDING code "${code}" — session terminated during request (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket})`);
+                console.log(`[PAIRING] DISCARDING code "${code}" - session terminated during request (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket})`);
                 return;
               }
               console.log(`[PAIRING] Saving code to DB...`);
@@ -356,7 +356,7 @@ export class BotWaveBot {
               console.error(`[PAIRING] Error: name=${err?.name} message=${err?.message} code=${err?.code || 'none'}`);
               console.error(`[PAIRING] Stack: ${err?.stack?.slice(0, 500)}`);
               if (err?.message?.includes('428') || err?.statusCode === 428) {
-                console.error(`[PAIRING] 428 RATE LIMIT — WhatsApp rejected pairing code request. Too many requests.`);
+                console.error(`[PAIRING] 428 RATE LIMIT - WhatsApp rejected pairing code request. Too many requests.`);
               }
               pairingCodeRequested = false;
               logPairingEvent(this.sessionId, 'code_failed', this.workerUrl, err?.statusCode, { error: err?.message }).catch(() => {});
@@ -376,7 +376,7 @@ export class BotWaveBot {
           // overwrite that state. The timer was scheduled before the error
           // occurred and is now stale.
           if (this.pairingStartedAt <= 0 || !this.socket) {
-            console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) — skipping restart`);
+            console.log(`[${this.sessionId}] QR timeout fired but session already terminated (pairingStartedAt=${this.pairingStartedAt}, socket=${!!this.socket}) - skipping restart`);
             return;
           }
           if (!this.isReady && this.qrCode === qr && !this.socket?.authState?.creds?.registered) {
@@ -413,7 +413,7 @@ export class BotWaveBot {
         // or the session was already terminated (pairingStartedAt === -1), ignore
         // the stale event to prevent overwriting the DB state.
         if (this.pairingStartedAt === -1) {
-          console.log(`Session ${this.sessionId}: ignoring close event — session already terminated`);
+          console.log(`Session ${this.sessionId}: ignoring close event - session already terminated`);
           return;
         }
         if (this.isReconnecting && !this.socket) {
@@ -454,18 +454,18 @@ export class BotWaveBot {
             return;
           }
 
-          // Exhausted retries on this worker — try switching to a different worker IP
+          // Exhausted retries on this worker - try switching to a different worker IP
           const nextWorker = getNextWorker(this.workerUrl);
 
           if (nextWorker) {
-            console.log(`[${this.sessionId}] 401 retries exhausted on ${this.workerUrl ?? 'main'} — switching to ${nextWorker}`);
+            console.log(`[${this.sessionId}] 401 retries exhausted on ${this.workerUrl ?? 'main'} - switching to ${nextWorker}`);
             this.workerUrl = nextWorker;
             this.reconnectAttempts = 0;
             this.isReconnecting = false;
             await updateSessionWorker(this.sessionId, nextWorker);
             console.log(`[${this.sessionId}] Reassigned to ${nextWorker}. Worker sync loop will pick it up.`);
           } else {
-            // All workers exhausted — fall back to needs_reauth so user can re-pair
+            // All workers exhausted - fall back to needs_reauth so user can re-pair
             console.log(`[${this.sessionId}] 401 auth failure. All retries and workers exhausted. Setting needs_reauth and releasing lock.`);
             this.isReconnecting = false;
             await releaseLock(this.sessionId);
@@ -490,7 +490,7 @@ export class BotWaveBot {
         // 428 = "Connection Terminated by Server".
         // During pairing: WhatsApp rejected concurrent unregistered connections.
         // On established session: WhatsApp force-closed the connection (IP conflict,
-        // auth drift, or anti-spam). Either way, don't retry — clear auth and let
+        // auth drift, or anti-spam). Either way, don't retry - clear auth and let
         // user re-pair from a clean state.
         if (statusCode === 428) {
           const wasEstablished = this.reconnectAttempts > 0 || this.pairingStartedAt === 0;
@@ -544,12 +544,12 @@ export class BotWaveBot {
             }
           }
         } else {
-          // Reconnect with exponential backoff — preserve auth credentials so the
+          // Reconnect with exponential backoff - preserve auth credentials so the
           // session auto-recovers after temporary disconnects (network blip, Render
           // restart, etc.) without forcing the user to re-pair.
           // Only give up after MAX_RECONNECT_ATTEMPTS if the session was never
           // successfully connected (pairing phase). Once connected, retry indefinitely
-          // with capped backoff — the auth state is valid and worth preserving.
+          // with capped backoff - the auth state is valid and worth preserving.
           const wasEverConnected = this.isReady || this.reconnectAttempts > 0;
           if (!wasEverConnected && this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             console.log(`[${this.sessionId}] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached during initial pairing. Setting needs_reauth (auth preserved for manual retry).`);
@@ -606,7 +606,7 @@ export class BotWaveBot {
         logHealthEvent(this.sessionId, 'connected', 'Connection established').catch(() => {});
 
         // Send 'available' on connect so WhatsApp shows the device as online
-        // instead of "last seen" — prevents the linked device appearing inactive.
+        // instead of "last seen" - prevents the linked device appearing inactive.
         try {
           await this.socket.sendPresenceUpdate('available');
         } catch { /* non-critical */ }
@@ -625,7 +625,7 @@ export class BotWaveBot {
     this.socket.ev.on('messages.upsert', async (m: any) => {
       if (m.type === 'notify') {
         for (const msg of m.messages) {
-          // Status broadcasts — disabled (Evolution API sendReaction is unreliable
+          // Status broadcasts - disabled (Evolution API sendReaction is unreliable
           // and can send garbled messages to contacts)
           if (msg.key.remoteJid === 'status@broadcast') {
             continue;
@@ -660,7 +660,7 @@ export class BotWaveBot {
       }
     });
 
-    // Welcome bot — greet new group members
+    // Welcome bot - greet new group members
     this.socket.ev.on('group-participants.update', async (update: any) => {
       await handleGroupParticipantsUpdate(update, this.socket, this.sessionId, this.userId, this.messageQueue ?? undefined);
     });
@@ -710,7 +710,7 @@ const EVO_RECONNECT_GIVE_UP_ACTIVE_MS = 2 * 60 * 60 * 1000; // 2h for previously
 const DEAF_SESSION_THRESHOLD_MS = 35 * 60 * 1000; // 35 minutes
 const DEAF_SESSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // check every 5 min
 
-// Auth state health check interval — proactively verify sessions are
+// Auth state health check interval - proactively verify sessions are
 // still authenticated before WhatsApp silently drops them.
 const AUTH_HEALTH_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
 
@@ -754,7 +754,7 @@ export class EvolutionBot {
    * to give Evolution API time to fully restore instances from its database.
    */
   private async tryReconnectExisting(): Promise<boolean> {
-    // Previously-active sessions get more patience — the Evolution API may
+    // Previously-active sessions get more patience - the Evolution API may
     // need 30-60s+ to fully load and reconnect instances from its DB after
     // a restart. Quick giveup causes unnecessary re-pairing.
     const wasActive = this.previousDbState === 'active' || this.previousDbState === 'inactive';
@@ -768,36 +768,36 @@ export class EvolutionBot {
       const state = await getInstanceStatus(this.sessionId);
       console.log(`[EVO] Instance state for ${this.sessionId}: ${state}`);
 
-      // Instance definitively deleted — bail immediately, no retries
+      // Instance definitively deleted - bail immediately, no retries
       if (state === 'gone') {
-        console.warn(`[EVO] Instance ${this.sessionId} GONE (404) during reconnect — bailing immediately`);
+        console.warn(`[EVO] Instance ${this.sessionId} GONE (404) during reconnect - bailing immediately`);
         return false;
       }
 
-      // 428 cooldown active — stop reconnection attempts to avoid making it worse
+      // 428 cooldown active - stop reconnection attempts to avoid making it worse
       if (state === 'cooldown') {
-        console.warn(`[EVO] 428 cooldown active during reconnect for ${this.sessionId} — pausing reconnection`);
+        console.warn(`[EVO] 428 cooldown active during reconnect for ${this.sessionId} - pausing reconnection`);
         return false;
       }
 
       if (state === 'unknown') {
         if (attempt < MAX_RECONNECT_RETRIES) {
           const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
-          console.log(`[EVO] Instance ${this.sessionId} not found yet — Evolution API may still be loading. Retrying in ${waitMs}ms...`);
+          console.log(`[EVO] Instance ${this.sessionId} not found yet - Evolution API may still be loading. Retrying in ${waitMs}ms...`);
           await new Promise(r => setTimeout(r, waitMs));
           continue;
         }
-        console.log(`[EVO] Instance ${this.sessionId} not found after ${MAX_RECONNECT_RETRIES} attempts — cannot reconnect`);
+        console.log(`[EVO] Instance ${this.sessionId} not found after ${MAX_RECONNECT_RETRIES} attempts - cannot reconnect`);
         return false;
       }
 
-      // Instance exists — ensure webhook points to this deploy's URL
+      // Instance exists - ensure webhook points to this deploy's URL
       await setWebhook(this.sessionId);
       trackInstance(this.sessionId);
       if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
       if (state === 'open') {
-        console.log(`[EVO] Instance ${this.sessionId} is already open — marking active`);
+        console.log(`[EVO] Instance ${this.sessionId} is already open - marking active`);
         this.isReady = true;
         this.isReconnecting = false;
         clearPairingStability(this.sessionId);
@@ -809,7 +809,7 @@ export class EvolutionBot {
       }
 
       if (state === 'close' || state === 'connecting') {
-        console.log(`[EVO] Instance ${this.sessionId} is ${state} — attempting reconnect via connect endpoint`);
+        console.log(`[EVO] Instance ${this.sessionId} is ${state} - attempting reconnect via connect endpoint`);
         const connectState = await connectInstance(this.sessionId, this.phoneNumber);
         console.log(`[EVO] connectInstance result for ${this.sessionId}: ${connectState}`);
 
@@ -823,53 +823,53 @@ export class EvolutionBot {
         }
 
         if (connectState === 'connecting') {
-          console.log(`[EVO] Instance ${this.sessionId} is connecting — poll loop will track state`);
+          console.log(`[EVO] Instance ${this.sessionId} is connecting - poll loop will track state`);
           return true;
         }
 
-        // 428 cooldown kicked in mid-reconnect — bail and let cooldown expire
+        // 428 cooldown kicked in mid-reconnect - bail and let cooldown expire
         if (connectState === 'cooldown') {
-          console.warn(`[EVO] 428 cooldown blocked connectInstance for ${this.sessionId} — stopping reconnect`);
+          console.warn(`[EVO] 428 cooldown blocked connectInstance for ${this.sessionId} - stopping reconnect`);
           return false;
         }
 
         // If connectInstance returns 'unknown' but getInstanceStatus said
         // 'close'/'connecting', the instance was likely deleted (e.g. 401
-        // logout). Verify by re-checking status — if now 'unknown', the
+        // logout). Verify by re-checking status - if now 'unknown', the
         // instance is gone and further retries are pointless.
         if (connectState === 'unknown') {
           const recheck = await getInstanceStatus(this.sessionId);
           if (recheck === 'unknown') {
-            console.log(`[EVO] Instance ${this.sessionId} disappeared after connect attempt (likely 401 logout) — bailing out`);
+            console.log(`[EVO] Instance ${this.sessionId} disappeared after connect attempt (likely 401 logout) - bailing out`);
             return false;
           }
         }
 
-        // Connection attempt didn't succeed — retry if attempts remain
+        // Connection attempt didn't succeed - retry if attempts remain
         if (attempt < MAX_RECONNECT_RETRIES) {
           const waitMs = Math.min(BASE_DELAY_MS * attempt, MAX_DELAY_MS);
-          console.log(`[EVO] Connect returned ${connectState} for ${this.sessionId} — retrying in ${waitMs}ms...`);
+          console.log(`[EVO] Connect returned ${connectState} for ${this.sessionId} - retrying in ${waitMs}ms...`);
           await new Promise(r => setTimeout(r, waitMs));
           continue;
         }
       }
     }
 
-    console.log(`[EVO] All reconnect attempts exhausted for ${this.sessionId} — will fall through to soft reconnect / fresh pairing`);
+    console.log(`[EVO] All reconnect attempts exhausted for ${this.sessionId} - will fall through to soft reconnect / fresh pairing`);
     return false;
   }
 
   /**
    * Try to reconnect by creating a new instance WITHOUT requesting a pairing code.
    * If Evolution API has auth credentials in its database (DATABASE_SAVE_DATA_INSTANCE=true),
-   * the instance may auto-connect using the saved auth state — no user action needed.
+   * the instance may auto-connect using the saved auth state - no user action needed.
    * Returns true if auto-connect succeeded or is in progress.
    */
   private async trySoftReconnect(): Promise<boolean> {
-    console.log(`[EVO] Attempting soft reconnect for ${this.sessionId} — creating instance without pairing code`);
+    console.log(`[EVO] Attempting soft reconnect for ${this.sessionId} - creating instance without pairing code`);
 
     try {
-      // Create the instance — this registers it with Evolution API.
+      // Create the instance - this registers it with Evolution API.
       // If Evolution API has auth data in its Prisma DB, the Baileys
       // connection may restore automatically using saved credentials.
       const createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
@@ -882,13 +882,13 @@ export class EvolutionBot {
       trackInstance(this.sessionId);
       if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
-      // Try to connect the instance — this triggers Baileys to reconnect
+      // Try to connect the instance - this triggers Baileys to reconnect
       // using saved auth credentials if they exist.
       const connectState = await connectInstance(this.sessionId, this.phoneNumber);
       console.log(`[EVO] Soft reconnect: connectInstance result for ${this.sessionId}: ${connectState}`);
 
       if (connectState === 'open') {
-        console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — auto-connected without re-pairing!`);
+        console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} - auto-connected without re-pairing!`);
         this.isReady = true;
         this.isReconnecting = false;
         clearPairingStability(this.sessionId);
@@ -901,13 +901,13 @@ export class EvolutionBot {
 
       // Give it a few seconds for the connection to establish
       if (connectState === 'connecting') {
-        console.log(`[EVO] Soft reconnect: instance ${this.sessionId} is connecting — waiting up to 30s for connection...`);
+        console.log(`[EVO] Soft reconnect: instance ${this.sessionId} is connecting - waiting up to 30s for connection...`);
         for (let i = 0; i < 6; i++) {
           await new Promise(r => setTimeout(r, 5000));
           const state = await getInstanceStatus(this.sessionId);
           console.log(`[EVO] Soft reconnect poll ${i + 1}/6: state=${state} for ${this.sessionId}`);
           if (state === 'open') {
-            console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} — connected after ${(i + 1) * 5}s!`);
+            console.log(`[EVO] Soft reconnect SUCCESS for ${this.sessionId} - connected after ${(i + 1) * 5}s!`);
             this.isReady = true;
             this.isReconnecting = false;
             clearPairingStability(this.sessionId);
@@ -917,13 +917,13 @@ export class EvolutionBot {
             this.startPresenceLoop();
             return true;
           }
-          if (state === 'unknown') break; // Instance gone — no point waiting
+          if (state === 'unknown') break; // Instance gone - no point waiting
         }
       }
 
-      // Soft reconnect didn't work — clean up the instance so fresh pairing
+      // Soft reconnect didn't work - clean up the instance so fresh pairing
       // can start with a clean slate.
-      console.log(`[EVO] Soft reconnect FAILED for ${this.sessionId} — auth data likely not persisted in Evolution API`);
+      console.log(`[EVO] Soft reconnect FAILED for ${this.sessionId} - auth data likely not persisted in Evolution API`);
       await deleteInstance(this.sessionId);
       return false;
     } catch (err) {
@@ -949,17 +949,17 @@ export class EvolutionBot {
       // This preserves the WhatsApp linked device across redeploys.
       // For pairing_sent: the pairing may have completed on Evolution API's side
       // even though Botwave restarted before seeing the connection.update webhook.
-      // NOTE: Skip reconnect for 'inactive' sessions — the instance was already
+      // NOTE: Skip reconnect for 'inactive' sessions - the instance was already
       // deleted during dead-bot cleanup, so 15 reconnect attempts just waste 2+
       // minutes polling a non-existent instance.
       if (this.previousDbState === 'active' || this.previousDbState === 'pairing_sent') {
         const reconnected = await this.tryReconnectExisting();
         if (reconnected) {
-          console.log(`[EVO] Successfully reconnected session ${this.sessionId} — skipping fresh pairing`);
+          console.log(`[EVO] Successfully reconnected session ${this.sessionId} - skipping fresh pairing`);
           this.startPollLoop();
           return;
         }
-        console.log(`[EVO] Reconnect failed for ${this.sessionId} — trying soft reconnect before fresh pairing`);
+        console.log(`[EVO] Reconnect failed for ${this.sessionId} - trying soft reconnect before fresh pairing`);
 
         // For previously-active sessions, try soft reconnect: create instance
         // and let Evolution API use saved auth data to reconnect without a
@@ -968,26 +968,26 @@ export class EvolutionBot {
         if (this.previousDbState === 'active') {
           const softReconnected = await this.trySoftReconnect();
           if (softReconnected) {
-            console.log(`[EVO] Soft reconnect succeeded for ${this.sessionId} — no re-pairing needed!`);
+            console.log(`[EVO] Soft reconnect succeeded for ${this.sessionId} - no re-pairing needed!`);
             this.startPollLoop();
             return;
           }
-          console.log(`[EVO] Soft reconnect also failed for ${this.sessionId} — falling through to fresh pairing`);
+          console.log(`[EVO] Soft reconnect also failed for ${this.sessionId} - falling through to fresh pairing`);
         }
       } else if (this.previousDbState === 'inactive') {
         // Inactive = was connected but disconnected (close/refused webhook).
         // The instance may still exist on Evolution API with saved auth.
-        // Try soft reconnect before falling through to fresh pairing —
+        // Try soft reconnect before falling through to fresh pairing -
         // this replicates what the 3-worker setup did implicitly when
         // orphan recovery moved a session to a new worker.
-        console.log(`[EVO] Session ${this.sessionId} was inactive — trying soft reconnect before fresh pairing`);
+        console.log(`[EVO] Session ${this.sessionId} was inactive - trying soft reconnect before fresh pairing`);
         const softReconnected = await this.trySoftReconnect();
         if (softReconnected) {
-          console.log(`[EVO] Soft reconnect succeeded for inactive session ${this.sessionId} — no re-pairing needed!`);
+          console.log(`[EVO] Soft reconnect succeeded for inactive session ${this.sessionId} - no re-pairing needed!`);
           this.startPollLoop();
           return;
         }
-        console.log(`[EVO] Soft reconnect failed for inactive session ${this.sessionId} — falling through to fresh pairing`);
+        console.log(`[EVO] Soft reconnect failed for inactive session ${this.sessionId} - falling through to fresh pairing`);
       }
 
       // PRE-START OPEN CHECK: Before deleting anything, check if Evolution API
@@ -996,7 +996,7 @@ export class EvolutionBot {
       // Deleting an open instance would wipe the auth state and force re-pairing.
       const preStartState = await getInstanceStatus(this.sessionId);
       if (preStartState === 'open') {
-        console.log(`[EVO] PRE-START GUARD: Instance ${this.sessionId} is already OPEN on Evolution API — skipping fresh pairing, marking active`);
+        console.log(`[EVO] PRE-START GUARD: Instance ${this.sessionId} is already OPEN on Evolution API - skipping fresh pairing, marking active`);
         this.isReady = true;
         this.isReconnecting = false;
         clearPairingStability(this.sessionId);
@@ -1018,14 +1018,14 @@ export class EvolutionBot {
       // FAST PATH: skip delete+verify entirely when the instance is already
       // confirmed gone (404). This avoids ~10s of redundant fetch timeouts.
       if (preStartState === 'gone') {
-        console.log(`[EVO] Instance ${this.sessionId} already confirmed gone — skipping deleteInstanceAndVerify`);
+        console.log(`[EVO] Instance ${this.sessionId} already confirmed gone - skipping deleteInstanceAndVerify`);
       } else {
         await deleteInstanceAndVerify(this.sessionId);
       }
 
       // Create instance on Evolution API (includes proxy setup with retry).
       // Proxy is set BEFORE pairing so WhatsApp sees a consistent IP.
-      // Retry with exponential backoff on 403 "name already in use" — this
+      // Retry with exponential backoff on 403 "name already in use" - this
       // happens when the old instance hasn't fully cleaned up yet after a
       // container restart. Waiting a few seconds usually resolves it.
       const MAX_CREATE_RETRIES = 4;
@@ -1034,7 +1034,7 @@ export class EvolutionBot {
         createResult = await createInstance(this.sessionId, this.phoneNumber) as Record<string, unknown> | null;
         if (createResult?.status === 403) {
           const retryDelay = Math.min(3000 * Math.pow(2, attempt), 30000);
-          console.warn(`[EVO] Instance creation 403 for ${this.sessionId} (attempt ${attempt + 1}/${MAX_CREATE_RETRIES}) — retrying in ${retryDelay}ms after cleanup`);
+          console.warn(`[EVO] Instance creation 403 for ${this.sessionId} (attempt ${attempt + 1}/${MAX_CREATE_RETRIES}) - retrying in ${retryDelay}ms after cleanup`);
           await new Promise(r => setTimeout(r, retryDelay));
           await deleteInstanceAndVerify(this.sessionId);
           continue;
@@ -1056,7 +1056,7 @@ export class EvolutionBot {
       trackInstance(this.sessionId);
       if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
 
-      // Fetch pairing code — getPairingCode now handles its own polling
+      // Fetch pairing code - getPairingCode now handles its own polling
       const evoPairingStart = Date.now();
       console.log(`[PAIRING-EVO] === Requesting pairing code via Evolution API === session=${this.sessionId} phone=${this.phoneNumber} at=${new Date(evoPairingStart).toISOString()}`);
       const backoffMs = recordPairingAttempt(this.phoneNumber);
@@ -1114,7 +1114,7 @@ export class EvolutionBot {
     }
 
     let pairingWaitStart = Date.now();
-    // Use module-level PAIRING_TIMEOUT_MS (3 min — matches UI countdown)
+    // Use module-level PAIRING_TIMEOUT_MS (3 min - matches UI countdown)
     const RECONNECT_TIMEOUT_MS = 60_000; // 1 min for reconnecting after redeploy
     const reconnectStart = Date.now();
     let unknownStateCount = 0;
@@ -1160,35 +1160,35 @@ export class EvolutionBot {
           void sendSessionWelcome(this.sessionId, ownerJid, this.socketAdapter);
         } else if (state === 'connecting') {
           unknownStateCount = 0;
-          // Waiting for connection — applies to both pairing and reconnect.
+          // Waiting for connection - applies to both pairing and reconnect.
           // Check for timeouts so we don't wait forever.
           if (this.isPairingSent) {
-            // Pairing in progress — poll for updated pairing code in case
+            // Pairing in progress - poll for updated pairing code in case
             // Evolution API internally reconnected and generated a new one
             // (the old code shown on the dashboard would be invalid).
             try {
               const latestResult = await refreshPairingCode(this.sessionId, this.phoneNumber);
               if (latestResult) {
-                // Always update QR — it rotates every ~20-30s even when
+                // Always update QR - it rotates every ~20-30s even when
                 // pairing code stays the same across rotations.
                 if (latestResult.qrCode) {
                   await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                 }
                 const dbCode = await getSessionPairingCode(this.sessionId);
                 if (dbCode !== latestResult.pairingCode) {
-                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" — updating DB`);
+                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" - updating DB`);
                   await updateSessionPairingCode(this.sessionId, latestResult.pairingCode);
                 }
               }
             } catch (err) {
-              // Non-fatal — just means we couldn't check for updated code
+              // Non-fatal - just means we couldn't check for updated code
             }
 
             // Check pairing timeout
             if (Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
               const finalState = await getInstanceStatus(this.sessionId);
               if (finalState === 'open') {
-                console.log(`[EVO] Pairing timeout (connecting) but instance is OPEN for ${this.sessionId} — transitioning to active`);
+                console.log(`[EVO] Pairing timeout (connecting) but instance is OPEN for ${this.sessionId} - transitioning to active`);
                 this.isReady = true;
                 this.isPairingSent = false;
                 this.isReconnecting = false;
@@ -1206,7 +1206,7 @@ export class EvolutionBot {
                 return;
               }
               // Auto-retry with fresh code
-              console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) — auto-retrying`);
+              console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) - auto-retrying`);
               isRecreating = true;
               try {
                 await deleteInstanceAndVerify(this.sessionId);
@@ -1225,7 +1225,7 @@ export class EvolutionBot {
                   pairingWaitStart = Date.now();
                   console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
                 } else {
-                  console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} — setting needs_reauth`);
+                  console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} - setting needs_reauth`);
                   await updateSessionStatus(this.sessionId, 'needs_reauth');
                   this.isPairingSent = false;
                   if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
@@ -1239,7 +1239,7 @@ export class EvolutionBot {
               isRecreating = false;
             }
           } else if (this.isReconnecting && Date.now() - reconnectStart > RECONNECT_TIMEOUT_MS) {
-            console.log(`[EVO] Reconnect timed out for ${this.sessionId} — stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
+            console.log(`[EVO] Reconnect timed out for ${this.sessionId} - stuck in connecting for ${RECONNECT_TIMEOUT_MS / 1000}s`);
             this.isReconnecting = false;
             await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1251,7 +1251,7 @@ export class EvolutionBot {
         } else if (state === 'close' || state === 'refused') {
           unknownStateCount = 0;
           if (this.isReady) {
-            // Was connected, now disconnected — retry with exponential
+            // Was connected, now disconnected - retry with exponential
             // backoff. Previously-active sessions get 2h window (vs 30min
             // for new sessions) since their auth is likely valid and just
             // needs time for WhatsApp to come back.
@@ -1268,7 +1268,7 @@ export class EvolutionBot {
 
             const elapsed = Date.now() - this.reconnectSince;
             const giveUpMs = this.wasEverActive ? EVO_RECONNECT_GIVE_UP_ACTIVE_MS : EVO_RECONNECT_GIVE_UP_DEFAULT_MS;
-            console.log(`[EVO] Session ${this.sessionId} closed/refused — reconnect attempt ${this.reconnectAttempts} (elapsed ${Math.round(elapsed / 1000)}s / ${giveUpMs / 1000}s, wasEverActive=${this.wasEverActive})`);
+            console.log(`[EVO] Session ${this.sessionId} closed/refused - reconnect attempt ${this.reconnectAttempts} (elapsed ${Math.round(elapsed / 1000)}s / ${giveUpMs / 1000}s, wasEverActive=${this.wasEverActive})`);
 
             // Stop polling while we attempt reconnection
             if (this.pollHandle) {
@@ -1298,11 +1298,11 @@ export class EvolutionBot {
               return;
             }
 
-            // Both failed — check if we should keep retrying or give up
+            // Both failed - check if we should keep retrying or give up
             if (elapsed < giveUpMs) {
               // Exponential backoff, capped at 2 minutes
               const backoff = Math.min(1000 * Math.pow(2, this.reconnectAttempts), EVO_RECONNECT_MAX_BACKOFF_MS);
-              console.log(`[EVO] Session ${this.sessionId} reconnect failed — retrying in ${backoff / 1000}s (attempt ${this.reconnectAttempts}, elapsed ${Math.round(elapsed / 1000)}s)`);
+              console.log(`[EVO] Session ${this.sessionId} reconnect failed - retrying in ${backoff / 1000}s (attempt ${this.reconnectAttempts}, elapsed ${Math.round(elapsed / 1000)}s)`);
               await updateSessionStatus(this.sessionId, 'inactive');
               // Schedule retry: wait, then restart poll loop which will
               // detect close/refused again and trigger the next attempt
@@ -1314,7 +1314,7 @@ export class EvolutionBot {
               return;
             }
 
-            // Exhausted retry window — now set needs_reauth
+            // Exhausted retry window - now set needs_reauth
             this.isReconnecting = false;
             this.reconnectAttempts = 0;
             this.reconnectSince = 0;
@@ -1336,24 +1336,24 @@ export class EvolutionBot {
             }
             return; // Poll handle already cleared
           } else if (this.isPairingSent) {
-            // Instance closed during pairing — auto-retry immediately with
+            // Instance closed during pairing - auto-retry immediately with
             // a fresh code instead of waiting for the full pairing timeout.
             // This handles proxy drops that kill the connection during pairing.
-            console.log(`[EVO] Instance closed during pairing for ${this.sessionId} (pairingAge=${Math.round((Date.now() - pairingWaitStart) / 1000)}s) — auto-retrying immediately`);
+            console.log(`[EVO] Instance closed during pairing for ${this.sessionId} (pairingAge=${Math.round((Date.now() - pairingWaitStart) / 1000)}s) - auto-retrying immediately`);
             if (Date.now() - pairingWaitStart > PAIRING_TIMEOUT_MS) {
-              // Pairing timeout exceeded — give up
-              console.log(`[EVO] Pairing timed out for ${this.sessionId} — setting needs_reauth`);
+              // Pairing timeout exceeded - give up
+              console.log(`[EVO] Pairing timed out for ${this.sessionId} - setting needs_reauth`);
               await updateSessionStatus(this.sessionId, 'needs_reauth');
               this.isPairingSent = false;
               if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
               return;
             }
-            // Before destroying the instance, do a final state check —
+            // Before destroying the instance, do a final state check -
             // the user may have linked their phone during the timeout window
             // but the poll returned 'close' due to a race condition.
             const finalState = await getInstanceStatus(this.sessionId);
             if (finalState === 'open') {
-              console.log(`[EVO] Pairing timeout fired but instance is OPEN for ${this.sessionId} — transitioning to active instead of recreating`);
+              console.log(`[EVO] Pairing timeout fired but instance is OPEN for ${this.sessionId} - transitioning to active instead of recreating`);
               this.isReady = true;
               this.isPairingSent = false;
               this.isReconnecting = false;
@@ -1373,10 +1373,10 @@ export class EvolutionBot {
               return;
             }
 
-            // Pairing timed out — auto-retry with a fresh code instead of
+            // Pairing timed out - auto-retry with a fresh code instead of
             // going straight to needs_reauth. This gives users another chance
             // without requiring manual reconnection from the dashboard.
-            console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) — auto-retrying with fresh code`);
+            console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) - auto-retrying with fresh code`);
             isRecreating = true;
             try {
               await deleteInstanceAndVerify(this.sessionId);
@@ -1396,7 +1396,7 @@ export class EvolutionBot {
                 pairingWaitStart = Date.now();
                 console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode}`);
               } else {
-                console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} — setting needs_reauth`);
+                console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} - setting needs_reauth`);
                 await updateSessionStatus(this.sessionId, 'needs_reauth');
                 this.isPairingSent = false;
                 if (this.pollHandle) {
@@ -1415,10 +1415,10 @@ export class EvolutionBot {
             }
             isRecreating = false;
           } else if (this.isReconnecting && !this.isPairingSent) {
-            // Reconnect attempt ended with close/refused — the session is
+            // Reconnect attempt ended with close/refused - the session is
             // genuinely disconnected. Update DB immediately to avoid stale
             // "active" state in the dashboard.
-            console.log(`[EVO] Reconnect ended with ${state} for ${this.sessionId} — marking needs_reauth`);
+            console.log(`[EVO] Reconnect ended with ${state} for ${this.sessionId} - marking needs_reauth`);
             this.isReconnecting = false;
             await releasePairingLock(this.sessionId);
             await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1429,8 +1429,8 @@ export class EvolutionBot {
           }
         } else if (state === 'gone') {
           // Instance was deleted by Evolution API (404 response).
-          // Immediately mark needs_reauth — don't wait through 'unknown' polls.
-          console.warn(`[EVO] Instance GONE (404) for ${this.sessionId} — immediately marking needs_reauth`);
+          // Immediately mark needs_reauth - don't wait through 'unknown' polls.
+          console.warn(`[EVO] Instance GONE (404) for ${this.sessionId} - immediately marking needs_reauth`);
           this.isReady = false;
           this.isPairingSent = false;
           this.isReconnecting = false;
@@ -1445,14 +1445,14 @@ export class EvolutionBot {
           }
           return;
         } else if (state === 'cooldown') {
-          // 428 cooldown is active — skip this poll cycle, don't reconnect
-          console.log(`[EVO] Poll for ${this.sessionId} — 428 cooldown active (${get428CooldownRemaining()}s remaining), skipping`);
+          // 428 cooldown is active - skip this poll cycle, don't reconnect
+          console.log(`[EVO] Poll for ${this.sessionId} - 428 cooldown active (${get428CooldownRemaining()}s remaining), skipping`);
         } else if (state === 'unknown') {
           unknownStateCount++;
           if (this.isPairingSent && unknownStateCount < MAX_UNKNOWN_BEFORE_RECREATE * 2) {
-            // User has a pairing code in hand — don't recreate yet, wait longer
+            // User has a pairing code in hand - don't recreate yet, wait longer
             // to tolerate short network hiccups to the Evolution API endpoint
-            console.log(`[EVO] Skipping recreate for ${this.sessionId} — pairing code is in user's hand (${unknownStateCount} unknown polls)`);
+            console.log(`[EVO] Skipping recreate for ${this.sessionId} - pairing code is in user's hand (${unknownStateCount} unknown polls)`);
           } else if (unknownStateCount >= MAX_UNKNOWN_BEFORE_RECREATE) {
             console.log(`[EVO] Instance gone for ${this.sessionId} (${unknownStateCount} unknown polls). Recreating...`);
             isRecreating = true;
@@ -1514,7 +1514,7 @@ export class EvolutionBot {
         // and prevent 14-day companion device unlinking.
         if (idleMinutes > 30) {
           await this.socketAdapter.sendPresenceUpdate('available');
-          // Brief delay then go offline — mimics a real user checking phone
+          // Brief delay then go offline - mimics a real user checking phone
           setTimeout(async () => {
             try {
               if (this.socketAdapter) {
@@ -1557,7 +1557,7 @@ export class EvolutionBot {
 
       const silentMs = Date.now() - lastActivity;
       if (silentMs > DEAF_SESSION_THRESHOLD_MS) {
-        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min — forcing instance restart to recover`);
+        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min - forcing instance restart to recover`);
         try {
           await restartInstance(this.sessionId);
           // Reset activity timestamp so we don't immediately trigger again
@@ -1583,7 +1583,7 @@ export class EvolutionBot {
       try {
         const state = await getInstanceStatus(this.sessionId);
         if (state === 'close' || state === 'refused') {
-          console.warn(`[AUTH-HEALTH] Session ${this.sessionId} auth check found state=${state} — triggering reconnect`);
+          console.warn(`[AUTH-HEALTH] Session ${this.sessionId} auth check found state=${state} - triggering reconnect`);
           // The poll loop will handle the actual reconnection
         } else if (state === 'open') {
           console.log(`[AUTH-HEALTH] Session ${this.sessionId} auth check OK (state=open)`);
@@ -1648,7 +1648,7 @@ export function getActiveSessionCount(): number {
 }
 
 /** Stop a bot and remove it from the active bots map.
- *  Used during worker thread handoff — preserves Evolution instances. */
+ *  Used during worker thread handoff - preserves Evolution instances. */
 export async function stopAndRemoveBot(sessionId: string): Promise<boolean> {
   const bot = activeBots.get(sessionId);
   if (!bot) return false;
@@ -1677,14 +1677,14 @@ export function getActiveBotSocket(sessionId: string): any | null {
 export function initializeBot() {
   // Register keep-alive disconnect handler so the Evolution API keep-alive
   // loop and WebSocket can trigger immediate reconnection in BotManager
-  // when they detect a session went offline — faster than the 5s poll loop.
+  // when they detect a session went offline - faster than the 5s poll loop.
   if (USE_EVOLUTION) {
     setKeepAliveDisconnectHandler((instanceName: string, state: string) => {
       const bot = activeBots.get(instanceName);
       if (bot && bot instanceof EvolutionBot) {
         const status = bot.getStatus();
         if (status.isReady && !status.isReconnecting) {
-          console.log(`[KEEPALIVE-HANDLER] Instance ${instanceName} detected as ${state} — triggering immediate reconnect via poll loop restart`);
+          console.log(`[KEEPALIVE-HANDLER] Instance ${instanceName} detected as ${state} - triggering immediate reconnect via poll loop restart`);
           // Force the poll loop to detect the disconnect immediately
           // by restarting it (next poll will see close/refused and trigger reconnection)
           (bot as any).startPollLoop();
@@ -1703,7 +1703,7 @@ export function initializeBot() {
 
       // Warn if Evolution API may not persist sessions across redeploys
       if (USE_EVOLUTION) {
-        console.log('[BOT] Evolution API mode — ensure DATABASE_SAVE_DATA_INSTANCE=true is set on your Evolution API service for sessions to survive redeploys');
+        console.log('[BOT] Evolution API mode - ensure DATABASE_SAVE_DATA_INSTANCE=true is set on your Evolution API service for sessions to survive redeploys');
       }
     },
     stop: async (preserveInstances = false) => {
@@ -1722,7 +1722,7 @@ export function initializeBot() {
 }
 
 /**
- * Sync sessions from DB — starts new bots and stops removed ones.
+ * Sync sessions from DB - starts new bots and stops removed ones.
  * Only one session pairs at a time per worker to avoid WhatsApp 428
  * ("Connection Terminated by Server") when multiple unregistered
  * WebSocket connections open from the same IP simultaneously.
@@ -1746,14 +1746,14 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 }
 
 async function _syncSessionsWithDbInner(isWorker?: boolean) {
-  // Skip sync entirely during 428 cooldown — no new connections should be attempted
+  // Skip sync entirely during 428 cooldown - no new connections should be attempted
   if (is428CooldownActive()) {
-    console.log(`[SYNC] Skipping sync cycle — 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
+    console.log(`[SYNC] Skipping sync cycle - 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
     return;
   }
 
   if (wasEvolutionRecentlyDown()) {
-    console.log('[SYNC] Evolution API recently recovered — reconnections will be staggered via queue');
+    console.log('[SYNC] Evolution API recently recovered - reconnections will be staggered via queue');
   }
 
   const allSessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
@@ -1803,13 +1803,13 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     }
   }
   // Wait for stale lock releases to complete before checking
-  // isWorkerPairingLocked — otherwise the check would still see them.
+  // isWorkerPairingLocked - otherwise the check would still see them.
   if (staleReleases.length > 0) {
     await Promise.all(staleReleases);
   }
 
   // Track how many NEW pairing sessions we start in THIS sync cycle.
-  // Only limit new starts — already-running pairing sessions are already
+  // Only limit new starts - already-running pairing sessions are already
   // connected to WhatsApp and won't cause additional 428 rate limits.
   let newPairingStartsThisCycle = 0;
 
@@ -1824,7 +1824,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       if (session.state === 'inactive') {
         const status = bot.getStatus();
         if (!status.isReady && !status.isReconnecting) {
-          console.log(`[SYNC] Cleaning up dead bot for inactive session ${session.id.slice(0, 8)} — will retry on next cycle`);
+          console.log(`[SYNC] Cleaning up dead bot for inactive session ${session.id.slice(0, 8)} - will retry on next cycle`);
           await bot.stop();
           activeBots.delete(session.id);
         }
@@ -1840,7 +1840,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       // Guard: pairingStartedAt > 0 means the bot is actively trying to pair
       // (set before WebSocket opens). isPairingSent means code was already sent.
       // isReconnecting means Baileys is reconnecting after a drop.
-      // Only replace if NONE of these are true — the bot is truly dead.
+      // Only replace if NONE of these are true - the bot is truly dead.
       const isActivelyPairing = status.pairingStartedAt > 0 && (Date.now() - status.pairingStartedAt) < PAIRING_TIMEOUT_MS;
       if (!status.isReady && !status.isReconnecting && !status.isPairingSent && !isActivelyPairing) {
         console.log(`[SYNC] Replacing dead bot for session: ${session.id} (state: ${session.state})`);
@@ -1852,17 +1852,17 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     }
 
     if (!activeBots.has(session.id)) {
-      // Check for conflicts — another instance may already be running this session
+      // Check for conflicts - another instance may already be running this session
       const conflict = await detectConflict(session.id);
       if (conflict) {
-        console.log(`[SYNC] Session ${session.id.slice(0, 8)} is actively managed by ${conflict} — skipping to avoid duplicate`);
+        console.log(`[SYNC] Session ${session.id.slice(0, 8)} is actively managed by ${conflict} - skipping to avoid duplicate`);
         continue;
       }
 
-      // Try to acquire lock — idempotent, prevents duplicates
+      // Try to acquire lock - idempotent, prevents duplicates
       const locked = await tryAcquireLock(session.id);
       if (!locked) {
-        console.log(`[SYNC] Could not acquire lock for session ${session.id.slice(0, 8)} — another instance owns it`);
+        console.log(`[SYNC] Could not acquire lock for session ${session.id.slice(0, 8)} - another instance owns it`);
         continue;
       }
 
@@ -1873,12 +1873,12 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
           // In Evolution API mode, the pairing may have completed on the
           // Evolution API side. Pass the state through so EvolutionBot can
           // check the actual instance status before deciding to re-pair.
-          console.log(`[SYNC] Session ${session.id} is pairing_sent (Evolution mode) — will check instance status before re-pairing`);
+          console.log(`[SYNC] Session ${session.id} is pairing_sent (Evolution mode) - will check instance status before re-pairing`);
         } else {
           // In direct Baileys mode, the old pairing code is dead (WebSocket
           // gone). Reset to qr_pending with fresh auth to avoid a 401 from
           // WhatsApp seeing two connections with the same creds.
-          console.log(`[SYNC] Session ${session.id} is pairing_sent but no active bot — process likely restarted. Resetting to qr_pending with fresh auth.`);
+          console.log(`[SYNC] Session ${session.id} is pairing_sent but no active bot - process likely restarted. Resetting to qr_pending with fresh auth.`);
           await clearAuthState(session.id);
           await updateSessionStatus(session.id, 'qr_pending');
           session.state = 'qr_pending';
@@ -1888,7 +1888,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       // Enforce concurrency limit for NEW pairing sessions started this cycle
       const isPairingSession = session.state === 'qr_pending' || session.state === 'pairing_sent';
       if (isPairingSession && newPairingStartsThisCycle >= MAX_CONCURRENT_PAIRING) {
-        console.log(`[SYNC] Pairing limit reached (${newPairingStartsThisCycle}/${MAX_CONCURRENT_PAIRING} new this cycle) — deferring session ${session.id.slice(0, 8)} to next cycle`);
+        console.log(`[SYNC] Pairing limit reached (${newPairingStartsThisCycle}/${MAX_CONCURRENT_PAIRING} new this cycle) - deferring session ${session.id.slice(0, 8)} to next cycle`);
         await releaseLock(session.id);
         continue;
       }
@@ -1901,7 +1901,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
           (s.state === 'active' || s.state === 'inactive') && !activeBots.has(s.id)
         );
         if (hasActiveBotsStartingThisCycle) {
-          console.log(`[SYNC] Stabilization gap: waiting 10s before starting pairing session ${session.id.slice(0, 8)} — active sessions connecting first`);
+          console.log(`[SYNC] Stabilization gap: waiting 10s before starting pairing session ${session.id.slice(0, 8)} - active sessions connecting first`);
           await new Promise(resolve => setTimeout(resolve, 10_000));
         }
       }
@@ -1914,7 +1914,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       if (platform === 'telegram_bot') {
         const botToken = (session as any).telegram_bot_token;
         if (!botToken) {
-          console.log(`[SYNC] Telegram bot session ${session.id.slice(0, 8)} has no bot token — skipping`);
+          console.log(`[SYNC] Telegram bot session ${session.id.slice(0, 8)} has no bot token - skipping`);
           await releaseLock(session.id);
           continue;
         }
@@ -1931,8 +1931,8 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       }
 
       if (platform === 'telegram_userbot') {
-        // Telegram userbot support not yet implemented — skip
-        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} — not yet supported, skipping`);
+        // Telegram userbot support not yet implemented - skip
+        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} - not yet supported, skipping`);
         await releaseLock(session.id);
         continue;
       }
@@ -1981,7 +1981,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       }
 
       // Stagger: wait between each NEW pairing start to avoid WhatsApp 428.
-      // Skip the delay for active/inactive sessions — they already have valid
+      // Skip the delay for active/inactive sessions - they already have valid
       // auth and just need to reconnect quickly after a redeploy.
       if (isPairingSession) {
         await new Promise(resolve => setTimeout(resolve, SESSION_STAGGER_DELAY));
@@ -2041,7 +2041,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   for (const id of conflictIds) {
     const bot = activeBots.get(id);
     if (bot) {
-      console.log(`[SYNC] Session ${id.slice(0, 8)} locked by another instance — stopping local bot to avoid duplicate`);
+      console.log(`[SYNC] Session ${id.slice(0, 8)} locked by another instance - stopping local bot to avoid duplicate`);
       await bot.stop();
       activeBots.delete(id);
     }

@@ -301,7 +301,7 @@ async function createSticker(
     const args = context.message.replace(/^!sticker\s*/i, '').trim().split(/\s+/);
     const subcommand = args[0]?.toLowerCase() || '';
 
-    // Determine media message — direct image/video or quoted
+    // Determine media message - direct image/video or quoted
     const quotedMsg = getQuotedMessage(context.rawMessage);
     const hasImage = !!(context.rawMessage.message?.imageMessage || quotedMsg?.imageMessage);
     const hasVideo = !!(context.rawMessage.message?.videoMessage || quotedMsg?.videoMessage);
@@ -320,16 +320,16 @@ async function createSticker(
       packName = args.slice(1).join(' ');
     }
 
-    // No media provided — show usage
+    // No media provided - show usage
     if (!hasImage && !hasVideo && !hasStickerMedia) {
       await sendReply(
         context.chatJid,
         `*STICKER MAKER*\n\nSend or reply to an image/video/GIF with:\n\n` +
-        `*!sticker* — Full sticker (default)\n` +
-        `*!sticker crop* — Cropped to square\n` +
-        `*!sticker circle* — Circular crop\n` +
-        `*!sticker rounded* — Rounded corners\n` +
-        `*!sticker pack [name]* — Set pack name\n\n` +
+        `*!sticker* - Full sticker (default)\n` +
+        `*!sticker crop* - Cropped to square\n` +
+        `*!sticker circle* - Circular crop\n` +
+        `*!sticker rounded* - Rounded corners\n` +
+        `*!sticker pack [name]* - Set pack name\n\n` +
         `_Supports: images, short videos, GIFs_`,
         sock,
         context.rawMessage.key,
@@ -483,7 +483,7 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       const buffer = Buffer.from(mediaResponse.data);
       const contentType = String(mediaResponse.headers['content-type'] || '');
 
-      // Reject HTML/text responses — these are web pages, not actual media
+      // Reject HTML/text responses - these are web pages, not actual media
       if (contentType.includes('text/html') || contentType.includes('text/plain') || contentType.includes('application/json')) {
         await sendReply(context.chatJid, 'Download failed. The URL may not be supported or the service is temporarily unavailable.', sock, context.rawMessage.key, context.queue);
         return;
@@ -520,7 +520,7 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
   }
 
   try {
-    // Get the bot owner's JID (to send to self) — normalize to strip device suffix
+    // Get the bot owner's JID (to send to self) - normalize to strip device suffix
     const rawOwnerJid = (sock as any).user?.id;
     const ownerJid = rawOwnerJid ? normalizeJid(rawOwnerJid) : '';
     if (!ownerJid) {
@@ -544,7 +544,7 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
           caption: savedHeader + (quotedMsg.imageMessage.caption || ''),
         });
       } else {
-        await sock.sendMessage(ownerJid, { text: savedHeader + '[Image — could not download]' });
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Image - could not download]' });
       }
     } else if (quotedMsg.videoMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
@@ -554,7 +554,7 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
           caption: savedHeader + (quotedMsg.videoMessage.caption || ''),
         });
       } else {
-        await sock.sendMessage(ownerJid, { text: savedHeader + '[Video — could not download]' });
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Video - could not download]' });
       }
     } else if (quotedMsg.audioMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
@@ -565,7 +565,7 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
           ptt: quotedMsg.audioMessage.ptt || false,
         });
       } else {
-        await sock.sendMessage(ownerJid, { text: savedHeader + '[Audio — could not download]' });
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Audio - could not download]' });
       }
     } else if (quotedMsg.documentMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
@@ -576,17 +576,17 @@ async function handleSave(context: MessageContext, sock: any): Promise<void> {
           fileName: quotedMsg.documentMessage.fileName || 'saved_file',
         });
       } else {
-        await sock.sendMessage(ownerJid, { text: savedHeader + '[Document — could not download]' });
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Document - could not download]' });
       }
     } else if (quotedMsg.stickerMessage) {
       const buffer = await downloadMedia({ ...context.rawMessage, message: quotedMsg }, sock);
       if (buffer) {
         await sock.sendMessage(ownerJid, { sticker: buffer });
       } else {
-        await sock.sendMessage(ownerJid, { text: savedHeader + '[Sticker — could not download]' });
+        await sock.sendMessage(ownerJid, { text: savedHeader + '[Sticker - could not download]' });
       }
     } else {
-      // Unknown message type — send notification
+      // Unknown message type - send notification
       await sock.sendMessage(ownerJid, { text: savedHeader + '[Message type not supported for save]' });
     }
 
@@ -788,7 +788,7 @@ function restoreBufferFields(obj: unknown): unknown {
   const record = obj as Record<string, unknown>;
   const keys = Object.keys(record);
 
-  // Detect indexed-object pattern (all numeric keys) — convert to Uint8Array
+  // Detect indexed-object pattern (all numeric keys) - convert to Uint8Array
   if (keys.length > 0 && keys.every(k => /^\d+$/.test(k))) {
     const values = keys
       .sort((a, b) => Number(a) - Number(b))
@@ -839,7 +839,7 @@ async function handleViewOnce(context: MessageContext, sock: any, args: string[]
   if (!inner) {
     await sendReply(
       context.chatJid,
-      '*VIEW ONCE*\n\nReply to a view-once message with:\n• *!viewonce* — resend as normal message in this chat\n• *!viewonce pr* — save to your private chat silently',
+      '*VIEW ONCE*\n\nReply to a view-once message with:\n• *!viewonce* - resend as normal message in this chat\n• *!viewonce pr* - save to your private chat silently',
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -939,7 +939,7 @@ async function handleToImg(context: MessageContext, sock: any): Promise<void> {
       return;
     }
 
-    // Use pages:1 to extract only the first frame — handles both static and animated WebP
+    // Use pages:1 to extract only the first frame - handles both static and animated WebP
     const pngBuffer = await sharp(buffer, { pages: 1 }).png().toBuffer();
     await sock.sendMessage(context.chatJid, { image: pngBuffer, caption: 'Sticker converted to image' }, { quoted: context.rawMessage });
   } catch (error) {
@@ -1103,7 +1103,7 @@ async function handleOCR(context: MessageContext, sock: any): Promise<void> {
   const hasImage = quotedMsg?.imageMessage || (context.rawMessage?.message as any)?.imageMessage;
 
   if (!hasImage) {
-    await sendReply(context.chatJid, '*OCR — TEXT EXTRACTION*\n\nReply to an image with *!ocr* to extract text from it.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '*OCR - TEXT EXTRACTION*\n\nReply to an image with *!ocr* to extract text from it.', sock, context.rawMessage.key, context.queue);
     return;
   }
 

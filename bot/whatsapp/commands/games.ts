@@ -185,7 +185,7 @@ async function handleAnswer(context: MessageContext, args: string[], sock: any):
         return;
       }
       game.usedWords.add(word);
-      // Bot's turn — find a word starting with the last letter of user's word
+      // Bot's turn - find a word starting with the last letter of user's word
       const nextLetter = word[word.length - 1];
       const botWords = ['elephant', 'tiger', 'rainbow', 'whisper', 'rocket', 'engine', 'energy', 'yellow', 'wizard', 'dream', 'music', 'castle', 'eagle', 'echo', 'orbit', 'turtle', 'emerald', 'desert', 'train', 'needle', 'eagle', 'evening', 'garden', 'nature', 'escape'];
       const available = botWords.filter(w => w[0] === nextLetter && !game.usedWords.has(w));
@@ -196,7 +196,7 @@ async function handleAnswer(context: MessageContext, args: string[], sock: any):
         const botWord = available[Math.floor(Math.random() * available.length)];
         game.usedWords.add(botWord);
         game.lastWord = botWord;
-        await sendReply(context.chatJid, `*${word}* — nice!\n\nMy turn: *${botWord}*\n\nYour turn! Word starting with *${botWord[botWord.length - 1].toUpperCase()}*\nChain: ${game.usedWords.size} words`, sock, context.rawMessage.key, context.queue);
+        await sendReply(context.chatJid, `*${word}* - nice!\n\nMy turn: *${botWord}*\n\nYour turn! Word starting with *${botWord[botWord.length - 1].toUpperCase()}*\nChain: ${game.usedWords.size} words`, sock, context.rawMessage.key, context.queue);
       }
       break;
     }

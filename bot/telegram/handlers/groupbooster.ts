@@ -1,5 +1,5 @@
 /**
- * MemberBooster / Group Booster — Force add, force channel join, daily limits,
+ * MemberBooster / Group Booster - Force add, force channel join, daily limits,
  * forced boost, inline buttons, hard mode, top users, and more.
  *
  * Commands: /memberbooster, /boost, /boostinfo, /invite, /max, /daily,
@@ -13,7 +13,7 @@ import { escapeHtml } from '../utils/format';
 import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void {
-  // ── /memberbooster — Show help ───────────────────────────────────────────
+  // ── /memberbooster - Show help ───────────────────────────────────────────
   bot.command('memberbooster', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const status = config.memberbooster_enabled ? 'Enabled' : 'Disabled';
@@ -24,27 +24,27 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
       `Daily limit: ${config.memberbooster_daily || 0}\n` +
       `Hard mode: ${config.memberbooster_hard_mode ? 'ON' : 'OFF'}\n\n` +
       `<b>Commands:</b>\n` +
-      `/max &lt;n&gt; — Set required member adds (0=off)\n` +
-      `/maxmode — Toggle new/all members\n` +
-      `/daily &lt;n&gt; — Set daily add limit\n` +
-      `/dailyminute &lt;n&gt; — Set daily period\n` +
-      `/dailymode — Toggle reset/accumulate\n` +
-      `/channel 1|0|@username — Force join channel\n` +
-      `/channel2 1|0|@username — Second channel\n` +
-      `/forced_boost 1|0 — Forced boost\n` +
-      `/btn 1|0|[link] — Inline button\n` +
-      `/btn_text [text] — Button text\n` +
-      `/mbtext [msg] — Custom force add text\n` +
-      `/mbtextchannel [msg] — Custom channel join text\n` +
-      `/mbtextdaily [msg] — Custom daily alert text\n` +
-      `/hard_mode 1|0 — Hard mode\n` +
-      `/top — Top 50 users\n` +
-      `/top24 — Top 50 (24h)`,
+      `/max &lt;n&gt; - Set required member adds (0=off)\n` +
+      `/maxmode - Toggle new/all members\n` +
+      `/daily &lt;n&gt; - Set daily add limit\n` +
+      `/dailyminute &lt;n&gt; - Set daily period\n` +
+      `/dailymode - Toggle reset/accumulate\n` +
+      `/channel 1|0|@username - Force join channel\n` +
+      `/channel2 1|0|@username - Second channel\n` +
+      `/forced_boost 1|0 - Forced boost\n` +
+      `/btn 1|0|[link] - Inline button\n` +
+      `/btn_text [text] - Button text\n` +
+      `/mbtext [msg] - Custom force add text\n` +
+      `/mbtextchannel [msg] - Custom channel join text\n` +
+      `/mbtextdaily [msg] - Custom daily alert text\n` +
+      `/hard_mode 1|0 - Hard mode\n` +
+      `/top - Top 50 users\n` +
+      `/top24 - Top 50 (24h)`,
       { parse_mode: 'HTML' },
     );
   });
 
-  // ── /boost — Enable/disable MemberBooster ────────────────────────────────
+  // ── /boost - Enable/disable MemberBooster ────────────────────────────────
   bot.command('boost', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const args = (ctx.message?.text || '').split(/\s+/).slice(1);
@@ -60,7 +60,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`MemberBooster ${mode === 'on' ? 'enabled' : 'disabled'}.`);
   });
 
-  // ── /boostinfo — Group info ──────────────────────────────────────────────
+  // ── /boostinfo - Group info ──────────────────────────────────────────────
   bot.command('boostinfo', async (ctx) => {
     const chatId = ctx.chat!.id;
     try {
@@ -84,7 +84,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /invite — Generate invite link ───────────────────────────────────────
+  // ── /invite - Generate invite link ───────────────────────────────────────
   bot.command('invite', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     try {
@@ -95,7 +95,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /max — Set force add count ───────────────────────────────────────────
+  // ── /max - Set force add count ───────────────────────────────────────────
   bot.command('max', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -116,7 +116,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(num === 0 ? 'Force add disabled.' : `Force add set to ${num} members.`);
   });
 
-  // ── /maxmode — Toggle force add mode (new vs all) ────────────────────────
+  // ── /maxmode - Toggle force add mode (new vs all) ────────────────────────
   bot.command('maxmode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -125,7 +125,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`Force add mode: ${newMode === 'new' ? 'New members only' : 'All members'}`);
   });
 
-  // ── /daily — Set daily add limit ─────────────────────────────────────────
+  // ── /daily - Set daily add limit ─────────────────────────────────────────
   bot.command('daily', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -146,7 +146,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(num === 0 ? 'Daily limit disabled.' : `Daily limit set to ${num}.`);
   });
 
-  // ── /dailyminute — Set daily limit period ────────────────────────────────
+  // ── /dailyminute - Set daily limit period ────────────────────────────────
   bot.command('dailyminute', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -164,7 +164,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`Daily limit period set to ${num} minutes.`);
   });
 
-  // ── /dailymode — Toggle daily mode ───────────────────────────────────────
+  // ── /dailymode - Toggle daily mode ───────────────────────────────────────
   bot.command('dailymode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -173,13 +173,13 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`Daily mode: ${newMode === 'reset' ? 'Resets after period' : 'Accumulates (no reset)'}`);
   });
 
-  // ── /dailyreset — Reset user's daily limit ───────────────────────────────
+  // ── /dailyreset - Reset user's daily limit ───────────────────────────────
   bot.command('dailyreset', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await ctx.reply('Daily limit reset for the replied user.');
   });
 
-  // ── /channel — Force join channel ────────────────────────────────────────
+  // ── /channel - Force join channel ────────────────────────────────────────
   bot.command('channel', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -207,7 +207,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /channel2 — Second force join channel ────────────────────────────────
+  // ── /channel2 - Second force join channel ────────────────────────────────
   bot.command('channel2', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -235,7 +235,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /forced_boost — Toggle forced boost ──────────────────────────────────
+  // ── /forced_boost - Toggle forced boost ──────────────────────────────────
   bot.command('forced_boost', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -251,7 +251,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /btn — Inline button settings ────────────────────────────────────────
+  // ── /btn - Inline button settings ────────────────────────────────────────
   bot.command('btn', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -276,7 +276,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /btn_text — Set button text ──────────────────────────────────────────
+  // ── /btn_text - Set button text ──────────────────────────────────────────
   bot.command('btn_text', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -288,7 +288,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`Button text set to: ${escapeHtml(arg)}`, { parse_mode: 'HTML' });
   });
 
-  // ── /mbtext — Set custom force add message ───────────────────────────────
+  // ── /mbtext - Set custom force add message ───────────────────────────────
   bot.command('mbtext', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -310,7 +310,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /mbtextchannel — Set custom force join channel text ──────────────────
+  // ── /mbtextchannel - Set custom force join channel text ──────────────────
   bot.command('mbtextchannel', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -326,7 +326,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply('Custom force join channel text updated.');
   });
 
-  // ── /mbtextdaily — Set custom daily alert text ───────────────────────────
+  // ── /mbtextdaily - Set custom daily alert text ───────────────────────────
   bot.command('mbtextdaily', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -342,7 +342,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply('Custom daily alert text updated.');
   });
 
-  // ── /hard_mode — Toggle hard mode ────────────────────────────────────────
+  // ── /hard_mode - Toggle hard mode ────────────────────────────────────────
   bot.command('hard_mode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -358,17 +358,17 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // ── /top — Top 50 users ──────────────────────────────────────────────────
+  // ── /top - Top 50 users ──────────────────────────────────────────────────
   bot.command('top', async (ctx) => {
     await ctx.reply('Top 50 users feature will be available once member tracking data accumulates.');
   });
 
-  // ── /top24 — Top 50 users in 24h ─────────────────────────────────────────
+  // ── /top24 - Top 50 users in 24h ─────────────────────────────────────────
   bot.command('top24', async (ctx) => {
     await ctx.reply('Top 50 users (24h) feature will be available once member tracking data accumulates.');
   });
 
-  // ── /remain — Show user's remaining requirements ─────────────────────────
+  // ── /remain - Show user's remaining requirements ─────────────────────────
   bot.command('remain', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.memberbooster_enabled) {
@@ -386,7 +386,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     );
   });
 
-  // ── /free — Exempt user from restrictions (reply to user) ────────────────
+  // ── /free - Exempt user from restrictions (reply to user) ────────────────
   bot.command('free', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.message?.reply_to_message?.from) {
@@ -400,7 +400,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     );
   });
 
-  // ── /resetdaily — Reset daily limits for all users ───────────────────────
+  // ── /resetdaily - Reset daily limits for all users ───────────────────────
   bot.command('resetdaily', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await ctx.reply('Daily limits have been reset for all users.');

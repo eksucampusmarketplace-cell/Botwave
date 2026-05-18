@@ -1,5 +1,5 @@
 /**
- * Groq AI Integration — /ask, /summarize commands using Groq API.
+ * Groq AI Integration - /ask, /summarize commands using Groq API.
  */
 
 import { Bot } from 'grammy';

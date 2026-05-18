@@ -20,7 +20,7 @@ import SessionHealthWidget from '@/components/ui/SessionHealthWidget';
 import type { BotSession, BotFeature, DashboardStats, Platform } from '@/lib/types';
 import { useSSE } from '@/lib/useSSE';
 
-// Features that default to OFF — must be explicitly enabled by the user
+// Features that default to OFF - must be explicitly enabled by the user
 const FEATURES_DEFAULT_OFF = new Set(['welcome', 'captcha', 'nightmode', 'xp', 'federation', 'antiraid']);
 
 type FeatureCategory = 'core' | 'protection' | 'moderation' | 'content' | 'media' | 'fun' | 'utility';
@@ -48,30 +48,30 @@ interface FeatureDefWithPlatform extends FeatureDef {
 }
 
 const defaultFeatures: FeatureDefWithPlatform[] = [
-  // Core — WhatsApp
+  // Core - WhatsApp
   { id: 'ai_chat', name: 'AI CHAT', description: 'Intelligent AI responses (Gemini)', icon: '\uD83E\uDD16', category: 'core', platforms: ['whatsapp'] },
   { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '\uD83C\uDCB4', category: 'core', platforms: ['whatsapp'] },
   { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '\uD83D\uDCE5', category: 'core', platforms: ['whatsapp'] },
   { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '\uD83D\uDCAC', category: 'core', platforms: ['whatsapp'] },
   { id: 'language', name: 'MULTI-LANGUAGE', description: 'Multi-language bot responses', icon: '\uD83C\uDF10', category: 'core', platforms: ['whatsapp'] },
 
-  // Protection — WhatsApp
+  // Protection - WhatsApp
   { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '\uD83D\uDEE1\uFE0F', category: 'protection', platforms: ['whatsapp'] },
 
-  // Content & Engagement — WhatsApp
+  // Content & Engagement - WhatsApp
   { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '\uD83D\uDCCA', category: 'content', platforms: ['whatsapp'] },
 
-  // Media & Creative — WhatsApp
+  // Media & Creative - WhatsApp
   { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '\uD83D\uDD04', category: 'media', platforms: ['whatsapp'] },
   { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '\uD83D\uDDBC\uFE0F', category: 'media', platforms: ['whatsapp'] },
   { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '\uD83D\uDC64', category: 'media', platforms: ['whatsapp'] },
 
-  // Fun & Games — WhatsApp
+  // Fun & Games - WhatsApp
   { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, WordChain, Chess', icon: '\uD83C\uDFAE', category: 'fun', platforms: ['whatsapp'] },
   { id: 'tools', name: 'FUN COMMANDS', description: 'Jokes, quotes, memes, 8ball, fortune', icon: '\uD83C\uDF89', category: 'fun', platforms: ['whatsapp'] },
   { id: 'social', name: 'SOCIAL', description: 'forward, roast, ghost, ship, birthday', icon: '\uD83D\uDD17', category: 'fun', platforms: ['whatsapp'] },
 
-  // Utility — WhatsApp
+  // Utility - WhatsApp
   { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, remind, schedule', icon: '\u26A1', category: 'utility', platforms: ['whatsapp'] },
   { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '\uD83D\uDD0D', category: 'utility', platforms: ['whatsapp'] },
   { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '\u270D\uFE0F', category: 'utility', platforms: ['whatsapp'] },
@@ -652,7 +652,7 @@ export default function DashboardPage() {
               })()}
             </motion.section>
 
-            {/* Bot Owner Settings — only visible when a Telegram session is selected */}
+            {/* Bot Owner Settings - only visible when a Telegram session is selected */}
             {(() => {
               const selectedSession = sessions.find(s => s.id === selectedFeatureSession);
               const isTelegramSession = selectedSession?.platform === 'telegram_bot' || selectedSession?.platform === 'telegram_userbot';

@@ -1,5 +1,5 @@
 /**
- * Redis Session Cache — Caches session and QR data in Redis.
+ * Redis Session Cache - Caches session and QR data in Redis.
  *
  * Problem: Session lookups and QR code reads happen very frequently during
  * pairing flows and message handling. Each one hits Supabase directly.
@@ -39,8 +39,8 @@ if (REDIS_URL) {
   }
 }
 
-const SESSION_TTL = 30; // 30 seconds — short TTL for session data
-const QR_TTL = 15; // 15 seconds — QR changes frequently during pairing
+const SESSION_TTL = 30; // 30 seconds - short TTL for session data
+const QR_TTL = 15; // 15 seconds - QR changes frequently during pairing
 
 function isAvailable(): boolean {
   return redis !== null && isRedisAvailable();
@@ -56,7 +56,7 @@ export async function cacheSession(sessionId: string, data: Record<string, unkno
   try {
     await redis!.set(`sess:${sessionId}`, JSON.stringify(data), 'EX', SESSION_TTL);
   } catch {
-    // Non-critical — fall back to Supabase
+    // Non-critical - fall back to Supabase
   }
 }
 
@@ -166,7 +166,7 @@ export async function getCachedSessionState(sessionId: string): Promise<{ state:
 
 // ─── Pairing Lock Cache ─────────────────────────────────────────────────────
 
-const PAIRING_LOCK_TTL = 180; // 3 minutes — matches pairing code TTL
+const PAIRING_LOCK_TTL = 180; // 3 minutes - matches pairing code TTL
 
 /**
  * Cache a pairing lock in Redis (mirrors DB pairing_lock_acquired_at).
@@ -211,7 +211,7 @@ export async function invalidatePairingLock(workerUrl: string | null): Promise<v
 
 // ─── Session User ID Cache ──────────────────────────────────────────────────
 
-const USER_ID_TTL = 300; // 5 minutes — user_id never changes for a session
+const USER_ID_TTL = 300; // 5 minutes - user_id never changes for a session
 
 /**
  * Cache the user_id for a session in Redis.
@@ -239,7 +239,7 @@ export async function getCachedSessionUserId(sessionId: string): Promise<string 
 
 // ─── Session Existence Cache ────────────────────────────────────────────────
 
-const EXISTS_TTL = 60; // 1 minute — short TTL for existence checks
+const EXISTS_TTL = 60; // 1 minute - short TTL for existence checks
 
 /**
  * Mark a session as existing in Redis (avoids Supabase existence checks).
@@ -269,12 +269,12 @@ export async function getCachedSessionExists(sessionId: string): Promise<boolean
 
 // ─── Generic JSON Cache (settings, features, auto-replies, AFK, etc.) ───────
 
-const SETTINGS_TTL = 300;     // 5 min — settings rarely change
-const FEATURE_TTL = 300;      // 5 min — feature toggles rarely change
-const AUTO_REPLY_TTL = 300;   // 5 min — auto-reply rules rarely change
-const AFK_TTL = 60;           // 1 min — AFK can change frequently
-const SUBSCRIPTION_TTL = 300; // 5 min — subscriptions rarely change
-const LEADERBOARD_TTL = 120;  // 2 min — leaderboard changes per message
+const SETTINGS_TTL = 300;     // 5 min - settings rarely change
+const FEATURE_TTL = 300;      // 5 min - feature toggles rarely change
+const AUTO_REPLY_TTL = 300;   // 5 min - auto-reply rules rarely change
+const AFK_TTL = 60;           // 1 min - AFK can change frequently
+const SUBSCRIPTION_TTL = 300; // 5 min - subscriptions rarely change
+const LEADERBOARD_TTL = 120;  // 2 min - leaderboard changes per message
 
 export async function cacheJSON(key: string, data: unknown, ttl: number): Promise<void> {
   if (!isAvailable()) return;

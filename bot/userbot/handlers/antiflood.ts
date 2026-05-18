@@ -2,7 +2,7 @@
  * Antiflood handler for Telegram userbot.
  * Detects rapid message flooding in groups and auto-mutes offenders.
  * Commands: .antiflood <count>, .antiflood off, .antiflood
- * Deeply humanized — adds random delays before taking action.
+ * Deeply humanized - adds random delays before taking action.
  */
 
 import { TelegramClient } from 'telegram';

@@ -1,6 +1,6 @@
 /**
  * Isolated entrypoint for the Telegram Userbot container.
- * Runs as a standalone process — errors here do NOT affect the TG bot or WhatsApp containers.
+ * Runs as a standalone process - errors here do NOT affect the TG bot or WhatsApp containers.
  *
  * Pattern follows telegram-entrypoint.ts:
  * - Syncs userbot sessions from DB
@@ -160,7 +160,7 @@ async function main(): Promise<void> {
 // ─── Graceful Shutdown ───────────────────────────────────────────────────────
 
 async function shutdown(signal: string): Promise<void> {
-  console.log(`[USERBOT] ${signal} received — shutting down (preserving session state)...`);
+  console.log(`[USERBOT] ${signal} received - shutting down (preserving session state)...`);
   await manager.stopAll(true);
   process.exit(0);
 }

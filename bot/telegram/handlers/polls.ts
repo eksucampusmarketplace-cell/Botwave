@@ -19,8 +19,8 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
         '<b>Create a Poll</b>\n\n' +
         'Usage: /poll Question | Option 1 | Option 2 | ...\n\n' +
         'Flags:\n' +
-        '<code>--anon</code> — anonymous voting\n' +
-        '<code>--multi</code> — allow multiple answers\n\n' +
+        '<code>--anon</code> - anonymous voting\n' +
+        '<code>--multi</code> - allow multiple answers\n\n' +
         'Example: /poll Best language? | TypeScript | Python | Rust --multi',
         { parse_mode: 'HTML' },
       );
@@ -105,7 +105,7 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
   });
 
   /**
-   * /stoppoll — reply to a poll to stop it
+   * /stoppoll - reply to a poll to stop it
    */
   bot.command('stoppoll', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;

@@ -188,13 +188,13 @@ export const langHandler: HandlerFn = async (client, event) => {
     const current = langMemory.get(sessionId) || 'en';
     const name = USERBOT_LANGUAGES[current] || 'English';
     await msg.edit({
-      text: `🌍 **Language Settings**\n\nCurrent: ${name} (${current})\n\n**Commands:**\n  \`.lang list\` — Show all languages\n  \`.lang set <code>\` — Set language\n  \`.lang reset\` — Reset to English`,
+      text: `🌍 **Language Settings**\n\nCurrent: ${name} (${current})\n\n**Commands:**\n  \`.lang list\` - Show all languages\n  \`.lang set <code>\` - Set language\n  \`.lang reset\` - Reset to English`,
     });
     return;
   }
 
   if (sub === 'list' || sub === 'ls') {
-    const list = Object.entries(USERBOT_LANGUAGES).map(([c, n]) => `  \`${c}\` — ${n}`).join('\n');
+    const list = Object.entries(USERBOT_LANGUAGES).map(([c, n]) => `  \`${c}\` - ${n}`).join('\n');
     await msg.edit({ text: `🌍 **Supported Languages**\n\n${list}\n\nUse \`.lang set <code>\` to change.` });
     return;
   }

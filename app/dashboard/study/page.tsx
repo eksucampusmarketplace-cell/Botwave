@@ -319,7 +319,7 @@ export default function StudyPage() {
           if (!session?.user) { window.location.href = '/login'; return; }
         }
       } catch {
-        console.warn('[Study] Auth check failed (network error) — staying on page');
+        console.warn('[Study] Auth check failed (network error) - staying on page');
       }
       fetchTopics();
       fetchMaterials();
@@ -755,7 +755,7 @@ export default function StudyPage() {
                 <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Pre-built Study Materials</h2>
                   <p className="text-xs text-[var(--text-muted)] mb-4">
-                    Load comprehensive endocrinology study materials with 466 quiz questions, 97 flashcards, summaries, mnemonics, and clinical correlations — ready to study instantly.
+                    Load comprehensive endocrinology study materials with 466 quiz questions, 97 flashcards, summaries, mnemonics, and clinical correlations - ready to study instantly.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
@@ -771,11 +771,11 @@ export default function StudyPage() {
                       <p className="text-xs text-[var(--text-muted)]">61 questions &middot; 15 flashcards</p>
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
-                      <p className="text-sm font-medium text-[var(--text-primary)]">Final Block — 8 Topics</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">Final Block - 8 Topics</p>
                       <p className="text-xs text-[var(--text-muted)]">148 questions &middot; 32 flashcards</p>
                     </div>
                     <div className="p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
-                      <p className="text-sm font-medium text-[var(--text-primary)]">Physiology Textbook — Endocrinology</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">Physiology Textbook - Endocrinology</p>
                       <p className="text-xs text-[var(--text-muted)]">102 questions &middot; 13 flashcards</p>
                     </div>
                   </div>
@@ -1214,7 +1214,7 @@ export default function StudyPage() {
                     >
                       <div className="text-center">
                         <p className="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-wider">
-                          {flashcardFlipped ? 'Answer' : 'Question'} — Click to flip
+                          {flashcardFlipped ? 'Answer' : 'Question'} - Click to flip
                         </p>
                         <p className="text-lg text-[var(--text-primary)] font-medium">
                           {flashcardFlipped

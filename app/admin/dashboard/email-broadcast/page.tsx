@@ -145,7 +145,7 @@ export default function EmailBroadcastPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ type: 'success', text: 'Auto-send triggered — processing in background' });
+        setMessage({ type: 'success', text: 'Auto-send triggered - processing in background' });
         setTimeout(fetchData, 3000);
       }
     } catch {
@@ -256,7 +256,7 @@ export default function EmailBroadcastPage() {
           {alreadyEmailedCount > 0 && (
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
               <p className="text-yellow-400 text-xs">
-                {alreadyEmailedCount} user(s) already emailed in the last 24h — will be skipped automatically.
+                {alreadyEmailedCount} user(s) already emailed in the last 24h - will be skipped automatically.
               </p>
             </div>
           )}

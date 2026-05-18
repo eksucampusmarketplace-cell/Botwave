@@ -1,5 +1,5 @@
 /**
- * Join Request Approval — /setapprove on/off, auto-approve or manual via log channel.
+ * Join Request Approval - /setapprove on/off, auto-approve or manual via log channel.
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
@@ -39,7 +39,7 @@ export function registerJoinApprovalHandlers(bot: Bot, sessionId: string): void 
       return;
     }
 
-    // Manual mode — send to log channel or group
+    // Manual mode - send to log channel or group
     const logChannelId = config.log_channel_id;
     const targetChat = logChannelId ? Number(logChannelId) : chatId;
 
@@ -64,7 +64,7 @@ export function registerJoinApprovalHandlers(bot: Bot, sessionId: string): void 
       await bot.api.approveChatJoinRequest(chatId, userId);
       await ctx.editMessageText(`✅ Approved user ${userId}`, { parse_mode: 'HTML' });
     } catch {
-      await ctx.answerCallbackQuery({ text: 'Failed to approve — request may have expired.' });
+      await ctx.answerCallbackQuery({ text: 'Failed to approve - request may have expired.' });
     }
   });
 
@@ -75,7 +75,7 @@ export function registerJoinApprovalHandlers(bot: Bot, sessionId: string): void 
       await bot.api.declineChatJoinRequest(chatId, userId);
       await ctx.editMessageText(`❌ Declined user ${userId}`, { parse_mode: 'HTML' });
     } catch {
-      await ctx.answerCallbackQuery({ text: 'Failed to decline — request may have expired.' });
+      await ctx.answerCallbackQuery({ text: 'Failed to decline - request may have expired.' });
     }
   });
 }

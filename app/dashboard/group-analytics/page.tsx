@@ -47,7 +47,7 @@ function HourlyHeatmap({ hours }: { hours: number[] }) {
             key={i}
             className="aspect-square rounded-sm flex items-center justify-center text-[8px] font-mono"
             style={{ background: bg, color: intensity > 0.5 ? '#fff' : 'var(--text-muted)' }}
-            title={`${i}:00 — ${count} messages`}
+            title={`${i}:00 - ${count} messages`}
           >
             {i}
           </div>

@@ -62,7 +62,7 @@ const ALL_SEEDS: SeedMaterial[] = [
   physiologyTextbookMaterial,
 ];
 
-// GET — list available seed materials
+// GET - list available seed materials
 export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +78,7 @@ export async function GET() {
   return NextResponse.json({ success: true, data: seeds });
 }
 
-// POST — load seed materials into user's study hub
+// POST - load seed materials into user's study hub
 export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   } else {
     const { data: newTopic, error: topicErr } = await supabase
       .from('study_topics')
-      .insert({ user_id: user.id, name: 'Endocrinology', description: 'Endocrine system physiology — 300 Level MBBS' })
+      .insert({ user_id: user.id, name: 'Endocrinology', description: 'Endocrine system physiology - 300 Level MBBS' })
       .select('id')
       .single();
     if (topicErr) {

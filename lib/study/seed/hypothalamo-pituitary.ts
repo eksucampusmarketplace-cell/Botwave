@@ -1,5 +1,5 @@
 /**
- * HYPOTHALAMO-PITUITARY CONNECTION — Pre-loaded Study Material
+ * HYPOTHALAMO-PITUITARY CONNECTION - Pre-loaded Study Material
  * Source: Hypothalamo-Pituitary Connection PPT (34 slides)
  */
 
@@ -38,7 +38,7 @@ export const hypothalamoPituitaryMaterial = {
       '## HYPOTHALAMUS',
       '>> The hypothalamus is the master co-ordinator of hormonal action and the final common pathway for signals to reach the pituitary. It links the nervous and endocrine systems.',
       '### Definition',
-      'Bilateral diencephalic structure — master co-ordinator of hormonal action and homeostatic control',
+      'Bilateral diencephalic structure - master co-ordinator of hormonal action and homeostatic control',
       '### Basic Properties',
       'Located in diencephalon, ~2.5cm long, ~4g',
       'Includes: optic chiasma, tuber cinereum, infundibulum, mammillary bodies',
@@ -66,16 +66,16 @@ export const hypothalamoPituitaryMaterial = {
       'Hypothalamic hypothyroidism: thyroid hormone replacement',
 
       '## POSTERIOR PITUITARY',
-      '>> The posterior pituitary does NOT synthesize hormones — it only stores and releases hormones made in the hypothalamus.',
+      '>> The posterior pituitary does NOT synthesize hormones - it only stores and releases hormones made in the hypothalamus.',
       '### Definition',
-      'Neurohypophysis — stores and releases ADH and Oxytocin (synthesised in hypothalamus)',
+      'Neurohypophysis - stores and releases ADH and Oxytocin (synthesised in hypothalamus)',
       '### Basic Properties',
       'ADH (Vasopressin): made in supraoptic nuclei, 9 amino acids (nanopeptide)',
       'Oxytocin: made in paraventricular nuclei, 9 amino acids (nanopeptide)',
       'Transported via hypothalamo-hypophyseal neural tract. Stored in Herring bodies',
       '### Functions/Effects',
-      'ADH targets: 1) Kidneys — water reabsorption, 2) Blood vessels — contraction, 3) Liver — glycogenolysis, 4) Brain — memory',
-      'Oxytocin targets: 1) Uterus — labour contractions (positive feedback), 2) Breast — milk ejection, 3) Emotional bonding',
+      'ADH targets: 1) Kidneys - water reabsorption, 2) Blood vessels - contraction, 3) Liver - glycogenolysis, 4) Brain - memory',
+      'Oxytocin targets: 1) Uterus - labour contractions (positive feedback), 2) Breast - milk ejection, 3) Emotional bonding',
       '### Regulation',
       'ADH stimulus: dehydration. Inhibited by: alcohol, hydration',
       'Oxytocin stimulus: positive feedback via stretch receptors (vagina) and touch receptors (nipple)',
@@ -91,18 +91,18 @@ export const hypothalamoPituitaryMaterial = {
       '## ANTERIOR PITUITARY',
       '>> The anterior pituitary secretes 6 major hormones, each regulated by hypothalamic releasing/inhibiting hormones.',
       '### Definition',
-      'Adenohypophysis — secretes 6 major tropic hormones regulated by hypothalamic hormones',
+      'Adenohypophysis - secretes 6 major tropic hormones regulated by hypothalamic hormones',
       '### Basic Properties',
-      '1) GH (191 aa) — growth and metabolism, 2) Prolactin (199 aa) — milk production',
-      '3) TSH (glycoprotein) — stimulates thyroid, 4) ACTH (39 aa) — stimulates adrenal cortex',
-      '5) FSH (glycoprotein) — ovarian follicle growth / spermatogenesis, 6) LH (glycoprotein) — ovulation / testosterone production',
+      '1) GH (191 aa) - growth and metabolism, 2) Prolactin (199 aa) - milk production',
+      '3) TSH (glycoprotein) - stimulates thyroid, 4) ACTH (39 aa) - stimulates adrenal cortex',
+      '5) FSH (glycoprotein) - ovarian follicle growth / spermatogenesis, 6) LH (glycoprotein) - ovulation / testosterone production',
       '### Functions/Effects',
       'FSH in ovaries: stimulates granulosa cells → oestrogen. FSH in testes: stimulates Sertoli cells → spermatogenesis',
       'LH in ovaries: stimulates theca cells → androgens. LH in testes: stimulates Leydig cells → testosterone',
       'FSH half-life = 3-4 hours. LH half-life = 50 minutes',
       '### Regulation',
       'Prolactin = ONLY anterior pituitary hormone under tonic INHIBITION (by dopamine)',
-      'GnRH must be PULSATILE — continuous GnRH paradoxically suppresses FSH/LH',
+      'GnRH must be PULSATILE - continuous GnRH paradoxically suppresses FSH/LH',
       '### Abnormalities',
       'Prolactinoma: pituitary tumour → excess prolactin. GH excess: Adults → Acromegaly, Children → Gigantism',
       'Pituitary stalk transection: prolactin RISES (loses inhibition), all others FALL',
@@ -111,22 +111,22 @@ export const hypothalamoPituitaryMaterial = {
     ],
 
     examHighlights: [
-      '## HYPOTHALAMO-PITUITARY — EXAM FACTS',
+      '## HYPOTHALAMO-PITUITARY - EXAM FACTS',
       '>> These are the most commonly tested concepts about the hypothalamus and pituitary.',
       '### Anatomy (Top Exam Question)',
       'Anterior pituitary = VASCULAR connection (portal system). Posterior pituitary = NEURAL connection (tract)',
       'Posterior pituitary = STORAGE site only. Does NOT synthesize hormones',
       '### Hormone Facts',
       'ADH from SUPRAOPTIC nuclei. Oxytocin from PARAVENTRICULAR nuclei (don\'t reverse these)',
-      'TRH releases BOTH TSH and Prolactin — explains why hypothyroidism can cause hyperprolactinaemia',
+      'TRH releases BOTH TSH and Prolactin - explains why hypothyroidism can cause hyperprolactinaemia',
       'Somatostatin inhibits BOTH GH and TSH, plus glucagon, gastrin, insulin, secretin',
       'FSH and LH share same alpha subunit with TSH and hCG (cross-reactivity in pregnancy tests)',
       '### Unique Regulation Facts',
       'Prolactin = ONLY anterior pituitary hormone under tonic INHIBITION (by dopamine)',
-      'Dopamine INHIBITS prolactin — basis for treating prolactinomas with bromocriptine',
-      'GnRH must be PULSATILE — continuous GnRH paradoxically suppresses FSH/LH',
-      'Oxytocin uses POSITIVE feedback (along with LH surge) — all others use negative feedback',
-      'ADH inhibited by ALCOHOL — explains why alcohol causes diuresis',
+      'Dopamine INHIBITS prolactin - basis for treating prolactinomas with bromocriptine',
+      'GnRH must be PULSATILE - continuous GnRH paradoxically suppresses FSH/LH',
+      'Oxytocin uses POSITIVE feedback (along with LH surge) - all others use negative feedback',
+      'ADH inhibited by ALCOHOL - explains why alcohol causes diuresis',
     ],
 
     clinicalCorrelations: [
@@ -198,8 +198,8 @@ export const hypothalamoPituitaryMaterial = {
     ],
 
     mnemonics: [
-      { topic: 'Posterior Pituitary Hormones — Which Nucleus?', mnemonic: 'SO sweet (ADH) and PVN loving (Oxytocin)', explanation: 'SupraOptic → ADH (Vasopressin). ParaVentricular Nuclei → Oxytocin. SO = supraoptic. PVN = paraventricular.' },
-      { topic: 'Hypothalamic Releasing Hormones', mnemonic: 'Go Create The Great Pies Surely', explanation: 'GnRH, CRH, TRH, GHRH, Prolactin Releasing Factor, Somatostatin — the major hypothalamic hormones.' },
+      { topic: 'Posterior Pituitary Hormones - Which Nucleus?', mnemonic: 'SO sweet (ADH) and PVN loving (Oxytocin)', explanation: 'SupraOptic → ADH (Vasopressin). ParaVentricular Nuclei → Oxytocin. SO = supraoptic. PVN = paraventricular.' },
+      { topic: 'Hypothalamic Releasing Hormones', mnemonic: 'Go Create The Great Pies Surely', explanation: 'GnRH, CRH, TRH, GHRH, Prolactin Releasing Factor, Somatostatin - the major hypothalamic hormones.' },
       { topic: 'Connection Type', mnemonic: 'Anterior = Artery (Vascular), Posterior = Post (Neural)', explanation: 'Anterior pituitary connection to hypothalamus is vascular (portal system). Posterior pituitary connection is neural (nerve tract).' },
       { topic: 'Dopamine\'s Role', mnemonic: 'Dopamine Dams Prolactin', explanation: 'Dopamine inhibits (dams) prolactin release. Remove the dam (dopamine) and prolactin floods out.' },
     ],
@@ -227,7 +227,7 @@ export const hypothalamoPituitaryMaterial = {
     // STANDARD MCQs
     { questionType: 'mcq', question: 'The hypothalamus is located:', options: ['A) Above the thalamus', 'B) Below the thalamus', 'C) Lateral to the thalamus', 'D) Behind the thalamus'], correctAnswer: 'B) Below the thalamus', explanation: 'The hypothalamus (hypo = below) is a bilateral diencephalic structure situated BELOW the thalamus.', difficulty: 'easy' },
     { questionType: 'mcq', question: 'Which of the following is NOT a hypothalamic hormone?', options: ['A) TRH', 'B) GnRH', 'C) Insulin', 'D) CRH'], correctAnswer: 'C) Insulin', explanation: 'Insulin is produced by the beta cells of the pancreas, not the hypothalamus. TRH, GnRH, CRH, GHRH, Somatostatin, and Dopamine are all hypothalamic hormones.', difficulty: 'easy' },
-    { questionType: 'mcq', question: 'Somatostatin inhibits all of the following EXCEPT:', options: ['A) Growth Hormone', 'B) TSH', 'C) Insulin', 'D) Prolactin'], correctAnswer: 'D) Prolactin', explanation: 'Somatostatin inhibits GH, TSH, glucagon, gastrin, insulin, and secretin. It does NOT inhibit prolactin — prolactin is inhibited by dopamine.', difficulty: 'medium' },
+    { questionType: 'mcq', question: 'Somatostatin inhibits all of the following EXCEPT:', options: ['A) Growth Hormone', 'B) TSH', 'C) Insulin', 'D) Prolactin'], correctAnswer: 'D) Prolactin', explanation: 'Somatostatin inhibits GH, TSH, glucagon, gastrin, insulin, and secretin. It does NOT inhibit prolactin - prolactin is inhibited by dopamine.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'Herring bodies are found in the:', options: ['A) Hypothalamus', 'B) Anterior pituitary', 'C) Posterior pituitary (neurohypophysis)', 'D) Pineal gland'], correctAnswer: 'C) Posterior pituitary (neurohypophysis)', explanation: 'Herring bodies are dilated nerve terminals in the neurohypophysis (posterior pituitary) where ADH and Oxytocin are stored before release.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'How many amino acids does GnRH contain?', options: ['A) 3', 'B) 10', 'C) 41', 'D) 44'], correctAnswer: 'B) 10', explanation: 'GnRH = 10 amino acids. For reference: TRH = 3 aa, Somatostatin = 14 aa, ACTH = 39 aa, CRH = 41 aa, GHRH = 44 aa, GH = 191 aa, Prolactin = 199 aa.', difficulty: 'medium' },
     { questionType: 'mcq', question: 'LH and FSH share the same alpha subunit with:', options: ['A) GH and Prolactin', 'B) TSH and hCG', 'C) ACTH and ADH', 'D) Insulin and Glucagon'], correctAnswer: 'B) TSH and hCG', explanation: 'FSH, LH, TSH, and hCG are all glycoproteins that share the same alpha subunit. They differ in their beta subunits, which confer biological specificity.', difficulty: 'medium' },
@@ -291,7 +291,7 @@ export const hypothalamoPituitaryMaterial = {
 
     // ADDITIONAL FILL IN THE BLANK
     { questionType: 'fill_blank', question: 'CRH has _____ amino acids and a half-life of _____ minutes.', options: [], correctAnswer: '41; 60', explanation: 'CRH is a 41 amino acid peptide from the parvocellular region of paraventricular nuclei. Its half-life is 60 minutes. It stimulates ACTH and beta-endorphin release.', difficulty: 'hard' },
-    { questionType: 'fill_blank', question: 'GnRH has _____ amino acids and is released in a _____ fashion.', options: [], correctAnswer: '10; pulsatile', explanation: 'GnRH is a 10 amino acid peptide released in pulsatile fashion from the preoptic area. Pulsatile release is essential — continuous GnRH paradoxically suppresses FSH/LH.', difficulty: 'medium' },
+    { questionType: 'fill_blank', question: 'GnRH has _____ amino acids and is released in a _____ fashion.', options: [], correctAnswer: '10; pulsatile', explanation: 'GnRH is a 10 amino acid peptide released in pulsatile fashion from the preoptic area. Pulsatile release is essential - continuous GnRH paradoxically suppresses FSH/LH.', difficulty: 'medium' },
     { questionType: 'fill_blank', question: 'In _____ diabetes insipidus, ADH is deficient. In _____ diabetes insipidus, kidneys are resistant to ADH.', options: [], correctAnswer: 'Central; Nephrogenic', explanation: 'Central DI: ADH deficiency (hypothalamic/pituitary problem). Nephrogenic DI: kidneys resistant to ADH (renal problem). Both present with polyuria and polydipsia.', difficulty: 'medium' },
     { questionType: 'fill_blank', question: 'FSH and LH share the same _____ subunit with TSH and hCG, but differ in their _____ subunits.', options: [], correctAnswer: 'alpha; beta', explanation: 'FSH, LH, TSH, and hCG are glycoprotein hormones sharing an identical alpha subunit. The beta subunit is unique to each and confers biological specificity.', difficulty: 'medium' },
 
@@ -302,22 +302,22 @@ export const hypothalamoPituitaryMaterial = {
   ],
 
   flashcards: [
-    { front: 'Hypothalamus to Anterior Pituitary: Vascular or Neural?', back: 'VASCULAR — via the Hypothalamo-Hypophyseal Portal System. Blood carrying releasing/inhibiting hormones flows from hypothalamus directly to anterior pituitary.', difficulty: 'easy' },
-    { front: 'Hypothalamus to Posterior Pituitary: Vascular or Neural?', back: 'NEURAL — via the Hypothalamo-Hypophyseal Neural Tract. Axons from supraoptic and paraventricular nuclei carry ADH and Oxytocin down to posterior pituitary for storage.', difficulty: 'easy' },
+    { front: 'Hypothalamus to Anterior Pituitary: Vascular or Neural?', back: 'VASCULAR - via the Hypothalamo-Hypophyseal Portal System. Blood carrying releasing/inhibiting hormones flows from hypothalamus directly to anterior pituitary.', difficulty: 'easy' },
+    { front: 'Hypothalamus to Posterior Pituitary: Vascular or Neural?', back: 'NEURAL - via the Hypothalamo-Hypophyseal Neural Tract. Axons from supraoptic and paraventricular nuclei carry ADH and Oxytocin down to posterior pituitary for storage.', difficulty: 'easy' },
     { front: 'Where is ADH made? Where is it stored?', back: 'MADE in supraoptic nuclei of hypothalamus. STORED in posterior pituitary (in Herring bodies). The posterior pituitary does NOT synthesise ADH.', difficulty: 'medium' },
     { front: 'What happens to prolactin if the pituitary stalk is cut?', back: 'Prolactin INCREASES. It is the only anterior pituitary hormone under tonic INHIBITION by dopamine. Cutting the stalk removes dopamine delivery → prolactin rises. All other hormones decrease.', difficulty: 'hard' },
     { front: 'Somatostatin inhibits which hormones?', back: 'GH, TSH, glucagon, gastrin, insulin, and secretin. Produced in hypothalamus, CNS, gut, and pancreas. Does NOT inhibit prolactin.', difficulty: 'medium' },
     { front: 'Why does continuous GnRH suppress LH/FSH?', back: 'GnRH normally acts in PULSATILE fashion. Continuous administration causes receptor down-regulation → paradoxical suppression. Used therapeutically for prostate cancer, endometriosis.', difficulty: 'hard' },
     { front: 'TRH stimulates which two hormones?', back: 'TSH and Prolactin. This explains why primary hypothyroidism (high TRH) can cause hyperprolactinaemia and galactorrhoea.', difficulty: 'medium' },
     { front: 'What is Kallmann syndrome?', back: 'GnRH deficiency (olfactory-genital dysplasia): hypogonadism + anosmia. GnRH neurons fail to migrate from olfactory placode during development.', difficulty: 'hard' },
-    { front: 'FSH vs LH in testes — which cells do they target?', back: 'LH → Leydig cells (testosterone production). FSH → Sertoli cells (with testosterone, stimulates spermatogenesis). Testicular inhibin suppresses FSH.', difficulty: 'medium' },
+    { front: 'FSH vs LH in testes - which cells do they target?', back: 'LH → Leydig cells (testosterone production). FSH → Sertoli cells (with testosterone, stimulates spermatogenesis). Testicular inhibin suppresses FSH.', difficulty: 'medium' },
     { front: 'What are the 3 types of feedback loops?', back: 'Long-loop: target gland → hypothalamus/pituitary. Short-loop: pituitary hormone → hypothalamus. Ultra-short/Auto: hypothalamic hormone → hypothalamus itself.', difficulty: 'medium' },
     { front: 'Why does alcohol cause diuresis?', back: 'Alcohol INHIBITS ADH release from posterior pituitary → kidneys cannot reabsorb water → increased urine output → dehydration.', difficulty: 'easy' },
     { front: 'Which glycoprotein hormones share the same alpha subunit?', back: 'FSH, LH, TSH, and hCG all share the same alpha subunit. They differ in their beta subunits which confer specificity.', difficulty: 'medium' },
     { front: 'Central DI vs Nephrogenic DI?', back: 'Central DI: ADH deficiency (pituitary/hypothalamic damage), responds to desmopressin. Nephrogenic DI: kidney resistance to ADH, does NOT respond to desmopressin.', difficulty: 'hard' },
-    { front: 'SIADH — key features?', back: 'Excess ADH → water retention → hyponatraemia. Classic cause: small cell lung cancer. Euvolaemic hyponatraemia with concentrated urine.', difficulty: 'hard' },
+    { front: 'SIADH - key features?', back: 'Excess ADH → water retention → hyponatraemia. Classic cause: small cell lung cancer. Euvolaemic hyponatraemia with concentrated urine.', difficulty: 'hard' },
     { front: 'What is the median eminence?', back: 'Region at the base of the hypothalamus where hypothalamic releasing/inhibiting hormones enter the primary capillary plexus of the portal system to reach the anterior pituitary.', difficulty: 'medium' },
-    { front: 'CRH — what does it release?', back: 'CRH (41 aa, from parvocellular paraventricular nuclei, half-life 60 min) releases ACTH AND beta-endorphin from the anterior pituitary. Both derived from POMC.', difficulty: 'hard' },
-    { front: 'GnIH — what does it do?', back: 'Gonadotropin-Inhibiting Hormone from paraventricular nuclei — inhibits LH release. Influenced by stress, developmental state, and photoperiod.', difficulty: 'hard' },
+    { front: 'CRH - what does it release?', back: 'CRH (41 aa, from parvocellular paraventricular nuclei, half-life 60 min) releases ACTH AND beta-endorphin from the anterior pituitary. Both derived from POMC.', difficulty: 'hard' },
+    { front: 'GnIH - what does it do?', back: 'Gonadotropin-Inhibiting Hormone from paraventricular nuclei - inhibits LH release. Influenced by stress, developmental state, and photoperiod.', difficulty: 'hard' },
   ],
 };

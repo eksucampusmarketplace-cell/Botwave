@@ -423,7 +423,7 @@ export async function PUT(request: NextRequest) {
           body: JSON.stringify({ action: 'disconnect', sessionId }),
         });
       } catch {
-        // Non-critical — sync loop will handle cleanup
+        // Non-critical - sync loop will handle cleanup
       }
     }
 
@@ -542,7 +542,7 @@ export async function PATCH(request: NextRequest) {
         console.error(`[API] Failed to notify worker ${workerUrl} for reconnect:`, err);
       }
     } else {
-      console.log(`[API] No worker assigned for session ${sessionId} — sync loop will pick it up within 5s`);
+      console.log(`[API] No worker assigned for session ${sessionId} - sync loop will pick it up within 5s`);
     }
 
     await invalidateSessions(user.id);

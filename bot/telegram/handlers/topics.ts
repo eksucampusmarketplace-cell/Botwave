@@ -9,7 +9,7 @@ import { requireAdmin, requireBotAdmin } from '../utils/permissions';
 import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
-  // /actiontopic — Show current action topic setting
+  // /actiontopic - Show current action topic setting
   bot.command('actiontopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -21,7 +21,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /setactiontopic — Set topic where bot actions are sent
+  // /setactiontopic - Set topic where bot actions are sent
   bot.command('setactiontopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
@@ -38,7 +38,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Action topic set to: ${arg}`);
   });
 
-  // /newtopic <name> — Create a new forum topic
+  // /newtopic <name> - Create a new forum topic
   bot.command('newtopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -52,7 +52,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /renametopic <name> — Rename current topic (use inside a topic)
+  // /renametopic <name> - Rename current topic (use inside a topic)
   bot.command('renametopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -68,7 +68,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /closetopic — Close current topic
+  // /closetopic - Close current topic
   bot.command('closetopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -82,7 +82,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /reopentopic — Reopen a closed topic
+  // /reopentopic - Reopen a closed topic
   bot.command('reopentopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -96,7 +96,7 @@ export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /deletetopic — Delete current topic
+  // /deletetopic - Delete current topic
   bot.command('deletetopic', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;

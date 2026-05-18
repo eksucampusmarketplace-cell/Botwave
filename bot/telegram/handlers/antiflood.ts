@@ -46,7 +46,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /flood — Get the current antiflood settings
+  // /flood - Get the current antiflood settings
   bot.command('flood', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -63,7 +63,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /setflood — Set the number of consecutive messages to trigger antiflood
+  // /setflood - Set the number of consecutive messages to trigger antiflood
   bot.command('setflood', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -81,7 +81,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Anti-flood set to trigger after ${num} consecutive messages.`);
   });
 
-  // /setfloodtimer — Set timed antiflood (count + duration)
+  // /setfloodtimer - Set timed antiflood (count + duration)
   bot.command('setfloodtimer', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const args = (ctx.match?.toString() || '').trim().split(/\s+/);
@@ -104,7 +104,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Timed antiflood set: ${count} messages in ${durationSecs} seconds.`);
   });
 
-  // /floodmode — Choose the action for flooding users
+  // /floodmode - Choose the action for flooding users
   bot.command('floodmode', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const args = (ctx.match?.toString() || '').trim().split(/\s+/);
@@ -125,7 +125,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Flood action set to: ${action}`);
   });
 
-  // /clearflood — Whether to delete flood-triggering messages
+  // /clearflood - Whether to delete flood-triggering messages
   bot.command('clearflood', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();

@@ -93,7 +93,7 @@ function playNoise(duration: number, volume: number = 0.1) {
 
 const SOUND_CONFIGS: Record<SoundType, () => void> = {
   move: () => {
-    // Warm click — like a piece on wood
+    // Warm click - like a piece on wood
     playTone(800, 0.08, 'sine', 0.25, 0.005, 0.02);
     playNoise(0.04, 0.08);
   },

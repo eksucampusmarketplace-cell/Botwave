@@ -1,5 +1,5 @@
 /**
- * Channel Force Join — require users to join a channel before chatting.
+ * Channel Force Join - require users to join a channel before chatting.
  * /forcejoin <@channel>, /forcejoin off
  */
 

@@ -151,12 +151,12 @@ async function handleGameCommand(
       '*MULTIPLAYER GAMES*',
       '',
       'Available commands:',
-      '!game chess — Start a chess match',
-      '!game tictactoe — Start Tic-Tac-Toe',
-      '!game join <room-id> — Join a game room',
-      '!game spectate <room-id> — Watch a live game',
-      '!game stats — Your win/loss record',
-      '!game leaderboard — Top players',
+      '!game chess - Start a chess match',
+      '!game tictactoe - Start Tic-Tac-Toe',
+      '!game join <room-id> - Join a game room',
+      '!game spectate <room-id> - Watch a live game',
+      '!game stats - Your win/loss record',
+      '!game leaderboard - Top players',
       '',
       'Games are played in your browser at ' + APP_URL,
     ].join('\n');
@@ -440,7 +440,7 @@ async function handleLeaderboard(
       const rating = results[i + 1];
       const rank = Math.floor(i / 2);
       const name = userId.includes('@') ? userId.split('@')[0] : userId;
-      msg += `${medals[rank] || `${rank + 1}.`} *${name}* — ${rating} ELO\n`;
+      msg += `${medals[rank] || `${rank + 1}.`} *${name}* - ${rating} ELO\n`;
     }
 
     await sendReply(context.chatJid, msg.trim(), sock, context.rawMessage.key, context.queue);
@@ -477,12 +477,12 @@ export async function sendGameUpdate(
 export function formatGameEvent(event: string, data: Record<string, string>): string {
   switch (event) {
     case 'game_start':
-      return `*${data.player1}* vs *${data.player2}* — ${GAME_DISPLAY[data.gameType as GameType] || data.gameType} match started!`;
+      return `*${data.player1}* vs *${data.player2}* - ${GAME_DISPLAY[data.gameType as GameType] || data.gameType} match started!`;
     case 'capture':
       return `*${data.player}* captured ${data.opponent}'s ${data.piece}! ${data.notation}`;
     case 'game_over': {
       if (data.reason === 'draw' || data.reason === 'stalemate') {
-        return `Draw! *${data.player1}* vs *${data.player2}* — ${data.moves} moves played`;
+        return `Draw! *${data.player1}* vs *${data.player2}* - ${data.moves} moves played`;
       }
       return `*${data.winner}* wins by ${data.reason}! (${data.moves} moves)`;
     }
@@ -499,7 +499,7 @@ registerCommand({
   name: 'game',
   aliases: ['game', 'games', 'mgame', 'multiplayer'],
   category: 'games',
-  description: 'Multiplayer online games (chess, tic-tac-toe) — play in browser!',
+  description: 'Multiplayer online games (chess, tic-tac-toe) - play in browser!',
   execute: async (context, args, sock) => {
     await handleGameCommand(context, args, sock);
   },

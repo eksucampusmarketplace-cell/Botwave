@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const terminalLines = [
-  { cls: 'comment', text: '# BotWave — New Account Setup' },
+  { cls: 'comment', text: '# BotWave - New Account Setup' },
   { cls: 'cmd', text: '$ botwave create-account' },
   { cls: 'output', text: '→ Setting up your workspace...' },
   { cls: 'blank', text: '' },
@@ -38,7 +38,7 @@ function SignupTerminal() {
         <div className="terminal-dot" style={{ background: '#ff5f57' }} />
         <div className="terminal-dot" style={{ background: '#febc2e' }} />
         <div className="terminal-dot" style={{ background: '#28c840' }} />
-        <span className="text-xs text-slate-500 ml-3 font-mono">setup — botwave</span>
+        <span className="text-xs text-slate-500 ml-3 font-mono">setup - botwave</span>
       </div>
       <div className="terminal-body">
         {terminalLines.slice(0, lines).map((l, i) => (
@@ -272,7 +272,7 @@ function SignupContent() {
       <div className="absolute inset-0 tech-grid opacity-30" />
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-        {/* Left — Form */}
+        {/* Left - Form */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -419,7 +419,7 @@ function SignupContent() {
                   We sent a 6-digit code to <span className="text-emerald-400 font-medium">{formData.email}</span>
                 </p>
                 <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-8">
-                  Don&apos;t see it? Check your <span className="font-semibold">spam/junk folder</span> — emails from new senders sometimes land there.
+                  Don&apos;t see it? Check your <span className="font-semibold">spam/junk folder</span> - emails from new senders sometimes land there.
                 </p>
 
                 {error && (
@@ -484,7 +484,7 @@ function SignupContent() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Right — Terminal */}
+        {/* Right - Terminal */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}

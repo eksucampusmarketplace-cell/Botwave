@@ -4,11 +4,11 @@ import BlogArticle from '../_components/BlogArticle';
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/how-to-automate-whatsapp-messages-free' },
   title: 'How to Automate WhatsApp Messages for Free (2026 Guide)',
-  description: 'Automate WhatsApp messages without coding or monthly fees. Auto-replies, scheduled messages, AI responses — this step-by-step guide gets you live in 2 minutes. Try free →',
+  description: 'Automate WhatsApp messages without coding or monthly fees. Auto-replies, scheduled messages, AI responses - this step-by-step guide gets you live in 2 minutes. Try free →',
   keywords: ['automate whatsapp messages', 'whatsapp automation free', 'auto reply whatsapp', 'scheduled whatsapp messages', 'whatsapp auto message', 'bulk whatsapp messages', 'whatsapp message bot free'],
   openGraph: {
     title: 'How to Automate WhatsApp Messages for Free (2026)',
-    description: 'Auto-replies, scheduled messages, AI chat — automate WhatsApp for free with BotWave. No coding needed.',
+    description: 'Auto-replies, scheduled messages, AI chat - automate WhatsApp for free with BotWave. No coding needed.',
     url: 'https://www.botwave.online/blog/how-to-automate-whatsapp-messages-free',
     type: 'article',
     images: [{ url: '/api/og?title=How+to+Automate+WhatsApp+Messages+for+Free+(2026)', width: 1200, height: 630 }],
@@ -20,9 +20,9 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-Whether you want to auto-reply to customers, schedule messages, or let AI handle your chats — this guide covers every way to automate WhatsApp messages in 2026 without spending money or writing code.
+Whether you want to auto-reply to customers, schedule messages, or let AI handle your chats - this guide covers every way to automate WhatsApp messages in 2026 without spending money or writing code.
 
 ## Why Automate WhatsApp?
 
@@ -36,7 +36,7 @@ The average Nigerian checks WhatsApp 80+ times per day. If you're running a busi
 
 ## Method 1: Auto-Replies with BotWave (Recommended)
 
-BotWave lets you set up keyword-triggered auto-replies on your WhatsApp number — completely free.
+BotWave lets you set up keyword-triggered auto-replies on your WhatsApp number - completely free.
 
 ### How It Works
 
@@ -106,24 +106,24 @@ In the BotWave dashboard, go to **Scheduled Messages**:
 BotWave has 50+ built-in commands that automate specific tasks:
 
 ### Information Commands
-- \`!weather Lagos\` — Auto-fetch weather
-- \`!translate Hello to French\` — Auto-translate
-- \`!news\` — Latest headlines
-- \`!quote\` — Daily inspiration
+- \`!weather Lagos\` - Auto-fetch weather
+- \`!translate Hello to French\` - Auto-translate
+- \`!news\` - Latest headlines
+- \`!quote\` - Daily inspiration
 
 ### Media Commands
-- \`!sticker\` — Auto-create stickers from images
-- \`!download [URL]\` — Auto-download media
+- \`!sticker\` - Auto-create stickers from images
+- \`!download [URL]\` - Auto-download media
 
 ### Group Commands
-- \`!poll Question | Option 1 | Option 2\` — Auto-create polls
-- \`!trivia\` — Auto-run quiz games
-- \`!announce Message\` — Format announcements
+- \`!poll Question | Option 1 | Option 2\` - Auto-create polls
+- \`!trivia\` - Auto-run quiz games
+- \`!announce Message\` - Format announcements
 
 ### Utility Commands
-- \`!remind 30m Check the oven\` — Set reminders
-- \`!calc 15000 * 1.075\` — Quick calculations
-- \`!qr text\` — Generate QR codes
+- \`!remind 30m Check the oven\` - Set reminders
+- \`!calc 15000 * 1.075\` - Quick calculations
+- \`!qr text\` - Generate QR codes
 
 ## What You Can't (and Shouldn't) Automate
 
@@ -168,8 +168,8 @@ Automating your WhatsApp takes under 2 minutes with BotWave. No coding, no month
 
 const relatedPosts = [
   { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026) — Automate Sales & Support' },
-  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
 ];
 
 export default function Article() {

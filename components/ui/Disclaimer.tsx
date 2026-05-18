@@ -20,7 +20,7 @@ const disclaimerItems = [
   <>
     <strong className="text-amber-400">Telegram Userbot:</strong> Userbot mode automates a{' '}
     <strong className="text-amber-400">real Telegram account</strong> via the MTProto API.
-    Use responsibly — Telegram enforces rate limits and may restrict accounts that abuse automation.{' '}
+    Use responsibly - Telegram enforces rate limits and may restrict accounts that abuse automation.{' '}
     <strong className="text-amber-400">Use at your own risk.</strong>
   </>,
   <>
@@ -36,7 +36,7 @@ const disclaimerItems = [
   <>
     BotWave does <strong className="text-amber-400">not store, read, or sell</strong> your messages on any platform.
     The bot owner <strong className="text-amber-400">cannot see, access, or read</strong> your private chats.
-    BotWave only processes messages that contain bot commands — all other messages are ignored.
+    BotWave only processes messages that contain bot commands - all other messages are ignored.
   </>,
   <>
     This service is provided <strong className="text-amber-400">&quot;as is&quot;</strong> with no guarantees of

@@ -20,7 +20,7 @@ async function getUser() {
   return user;
 }
 
-// GET — list user's topics (Redis first, Supabase fallback)
+// GET - list user's topics (Redis first, Supabase fallback)
 export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,7 +44,7 @@ export async function GET() {
   return NextResponse.json({ success: true, data });
 }
 
-// POST — create a new topic
+// POST - create a new topic
 export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ success: true, data });
 }
 
-// DELETE — remove a topic
+// DELETE - remove a topic
 export async function DELETE(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

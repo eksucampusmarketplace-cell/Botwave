@@ -1,5 +1,5 @@
 /**
- * Health Monitor — background service that periodically checks system health
+ * Health Monitor - background service that periodically checks system health
  * and sends email alerts when issues are detected.
  *
  * Runs on the main service only (not workers). Checks every 60 seconds.
@@ -62,7 +62,7 @@ async function handleHealthResult(health: HealthResponse | null): Promise<void> 
   if (lastHealthStatus !== 'healthy' && lastHealthStatus !== 'unknown' && health.status === 'healthy') {
     consecutiveFailures = 0;
     await sendAlertEmail({
-      subject: '🟢 BotWave RECOVERED — All Systems Operational',
+      subject: '🟢 BotWave RECOVERED - All Systems Operational',
       text: `BotWave has recovered. All checks are passing.`,
       html: buildAlertHtml('System Recovered', 'info', {
         'Status': 'All systems operational',
@@ -155,7 +155,7 @@ export function startHealthMonitor(): void {
       .join(', ');
 
     await sendAlertEmail({
-      subject: `🔴 BotWave Command Error Spike — ${(snapshot.failureRate * 100).toFixed(0)}% failure rate`,
+      subject: `🔴 BotWave Command Error Spike - ${(snapshot.failureRate * 100).toFixed(0)}% failure rate`,
       text: `${snapshot.failures}/${snapshot.totalCommands} commands failed in the last 5 minutes. Top failing: ${topFailing}`,
       html: buildAlertHtml('Command Error Spike', 'critical', {
         'Failure Rate': `${(snapshot.failureRate * 100).toFixed(1)}%`,

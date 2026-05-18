@@ -79,7 +79,7 @@ export function registerPurgeHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /spurge — Silent purge (delete command message too)
+  // /spurge - Silent purge (delete command message too)
   bot.command('spurge', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -104,7 +104,7 @@ export function registerPurgeHandlers(bot: Bot, sessionId: string): void {
     await logModAction(sessionId, chatId.toString(), 'spurge', '', ctx.from!.id.toString(), `Silent purged ${deleted} messages`);
   });
 
-  // /purgefrom — Mark start of purge range
+  // /purgefrom - Mark start of purge range
   bot.command('purgefrom', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!ctx.message?.reply_to_message) {
@@ -116,7 +116,7 @@ export function registerPurgeHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`Purge start marked at message ${ctx.message.reply_to_message.message_id}. Now reply to the end message with /purgeto.`);
   });
 
-  // /purgeto — Mark end of purge range and delete
+  // /purgeto - Mark end of purge range and delete
   bot.command('purgeto', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;

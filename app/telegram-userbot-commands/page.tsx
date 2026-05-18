@@ -3,11 +3,11 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 
 export const metadata: Metadata = {
-  title: 'Telegram Userbot Commands List (2026) — 100+ Commands | BotWave',
+  title: 'Telegram Userbot Commands List (2026) - 100+ Commands | BotWave',
   description: 'Complete list of 100+ Telegram userbot commands. Admin (.ban, .mute, .kick), moderation (.purge, .gban), stickers (.kang), AI (.ai), translate (.tr), notes, filters, PM permit, and more. Free with BotWave.',
   keywords: ['telegram userbot commands', 'telegram userbot commands list', 'telegram userbot', 'userbot commands 2026', 'telegram userbot automation', 'gramjs userbot', 'telegram admin commands', 'telegram purge command', 'telegram gban'],
   openGraph: {
-    title: 'Telegram Userbot Commands List (2026) — 100+ Commands',
+    title: 'Telegram Userbot Commands List (2026) - 100+ Commands',
     description: 'Complete list of 100+ Telegram userbot commands: admin, moderation, stickers, AI, translate, and more.',
     url: 'https://www.botwave.online/telegram-userbot-commands',
     type: 'website',
@@ -36,7 +36,7 @@ const commandSections = [
   {
     title: 'Purge Commands',
     emoji: '🧹',
-    desc: 'Mass message deletion — essential for group cleanup.',
+    desc: 'Mass message deletion - essential for group cleanup.',
     commands: [
       { cmd: '.purge', desc: 'Delete all messages from replied message to current' },
       { cmd: '.purgeme <n>', desc: 'Delete your last N messages' },
@@ -46,7 +46,7 @@ const commandSections = [
   {
     title: 'Global Ban (GBan)',
     emoji: '🌍',
-    desc: 'Ban a user across ALL groups where you are admin — one command.',
+    desc: 'Ban a user across ALL groups where you are admin - one command.',
     commands: [
       { cmd: '.gban <user>', desc: 'Globally ban a user across all your groups' },
       { cmd: '.ungban <user>', desc: 'Remove global ban' },
@@ -192,7 +192,7 @@ const commandSections = [
   {
     title: 'Antiflood',
     emoji: '🛡️',
-    desc: 'Automatic flood protection — mute/ban spammers.',
+    desc: 'Automatic flood protection - mute/ban spammers.',
     commands: [
       { cmd: '.antiflood <n>', desc: 'Set flood limit (n messages before action)' },
       { cmd: '.antiflood off', desc: 'Disable antiflood protection' },
@@ -252,7 +252,7 @@ export default function TelegramUserbotCommands() {
             100+ commands for the BotWave Telegram Userbot. Admin, moderation, stickers, AI, translate, notes, filters, PM permit, games, and more.
           </p>
           <p className="text-sm text-[var(--text-muted)]">
-            Last updated: May 2026 — Default prefix: <code className="px-1.5 py-0.5 bg-[var(--surface)] rounded text-blue-500 font-mono">.</code> (changeable with .setprefix)
+            Last updated: May 2026 - Default prefix: <code className="px-1.5 py-0.5 bg-[var(--surface)] rounded text-blue-500 font-mono">.</code> (changeable with .setprefix)
           </p>
         </div>
       </section>

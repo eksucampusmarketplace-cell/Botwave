@@ -127,7 +127,7 @@ export const remindersListHandler: HandlerFn = async (client, event) => {
   const lines = ['📋 **Active Reminders**\n'];
   for (const r of userReminders) {
     const timeLeft = r.triggerAt - Date.now();
-    lines.push(`**#${r.id}** — ${r.message}\n  ⏳ In ${formatDuration(timeLeft)}`);
+    lines.push(`**#${r.id}** - ${r.message}\n  ⏳ In ${formatDuration(timeLeft)}`);
   }
 
   await shortPause();

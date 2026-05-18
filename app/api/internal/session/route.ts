@@ -46,17 +46,17 @@ export async function POST(request: NextRequest) {
 
         // If session is already in a startable state, confirm it
         if (session.state === 'qr_pending' || session.state === 'pairing_sent') {
-          console.log(`[INTERNAL] Session ${sessionId} already in ${session.state} — worker sync loop will pick it up`);
+          console.log(`[INTERNAL] Session ${sessionId} already in ${session.state} - worker sync loop will pick it up`);
           return NextResponse.json({
             success: true,
-            message: `Session ${sessionId} is in ${session.state} state — bot sync will pick it up within 5s`,
+            message: `Session ${sessionId} is in ${session.state} state - bot sync will pick it up within 5s`,
             session: { id: session.id, state: session.state, worker_url: session.worker_url },
           });
         }
 
         // If stuck in needs_reauth or inactive, reset to qr_pending with fresh auth
         if (session.state === 'needs_reauth' || session.state === 'inactive') {
-          console.log(`[INTERNAL] Session ${sessionId} was ${session.state} — resetting to qr_pending with fresh auth and clearing lock`);
+          console.log(`[INTERNAL] Session ${sessionId} was ${session.state} - resetting to qr_pending with fresh auth and clearing lock`);
           const { error: updateErr } = await getSupabase()
             .from('bot_sessions')
             .update({
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
           return NextResponse.json({
             success: true,
-            message: `Session ${sessionId} reset to qr_pending — worker will pick it up within 5s`,
+            message: `Session ${sessionId} reset to qr_pending - worker will pick it up within 5s`,
           });
         }
 

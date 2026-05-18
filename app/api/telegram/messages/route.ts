@@ -1,8 +1,8 @@
 /**
  * Telegram Bot Messages API
  *
- * GET /api/telegram/messages?sessionId=X — return all editable text fields
- * PUT /api/telegram/messages — update one or more text fields
+ * GET /api/telegram/messages?sessionId=X - return all editable text fields
+ * PUT /api/telegram/messages - update one or more text fields
  */
 
 import { NextRequest, NextResponse } from 'next/server';

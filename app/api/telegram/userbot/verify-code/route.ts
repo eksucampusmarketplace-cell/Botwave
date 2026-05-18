@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Login successful — get session string
+      // Login successful - get session string
       const { StringSession } = await import('telegram/sessions');
       const sessionString = (client.session as InstanceType<typeof StringSession>).save();
 

@@ -1,5 +1,5 @@
 /**
- * Group lifecycle handler — detects when the bot is added to or removed from groups.
+ * Group lifecycle handler - detects when the bot is added to or removed from groups.
  * Inspired by Nexus bot's group_lifecycle.py pattern.
  *
  * Events handled via my_chat_member:
@@ -112,13 +112,13 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
         reply_markup: dmKeyboard,
       });
     } catch {
-      console.log(`[TG-LIFECYCLE] Could not DM user ${actor.id} — they may not have started the bot`);
+      console.log(`[TG-LIFECYCLE] Could not DM user ${actor.id} - they may not have started the bot`);
     }
 
     // Send brief confirmation in the group
     try {
       const groupMsg =
-        `👋 <b>Hey! I'm ${botName}</b> — a powerful group management bot.\n\n` +
+        `👋 <b>Hey! I'm ${botName}</b> - a powerful group management bot.\n\n` +
         `✅ I'm ready! Use /help to see all available commands.\n` +
         `📱 Use /panel to open the management dashboard.` +
         POWERED_BY;

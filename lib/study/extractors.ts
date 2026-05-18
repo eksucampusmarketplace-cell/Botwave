@@ -1,5 +1,5 @@
 /**
- * Study Feature — File Content Extractors
+ * Study Feature - File Content Extractors
  * Extracts text from PDF, DOCX, and plain text files.
  */
 

@@ -19,7 +19,7 @@ async function getUser() {
   return user;
 }
 
-// GET — fetch questions for quiz mode (Redis first, Supabase fallback)
+// GET - fetch questions for quiz mode (Redis first, Supabase fallback)
 export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ success: true, data: shuffled });
 }
 
-// POST — submit quiz answers and get scored
+// POST - submit quiz answers and get scored
 export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

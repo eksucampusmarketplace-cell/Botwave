@@ -3,8 +3,8 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-for-schools-campus-groups' },
-  title: 'WhatsApp Bot for Schools & Campus Groups (2026) — Study, Manage, Engage',
-  description: 'Turn your campus WhatsApp group into a smart hub — study tools, AI homework help, anti-spam, polls & attendance. Used by Nigerian universities. Free setup in 2 minutes →',
+  title: 'WhatsApp Bot for Schools & Campus Groups (2026) - Study, Manage, Engage',
+  description: 'Turn your campus WhatsApp group into a smart hub - study tools, AI homework help, anti-spam, polls & attendance. Used by Nigerian universities. Free setup in 2 minutes →',
   keywords: ['whatsapp bot for school', 'whatsapp bot campus', 'whatsapp class group bot', 'student whatsapp bot', 'university whatsapp bot', 'whatsapp bot education', 'nigerian campus whatsapp bot'],
   openGraph: {
     title: 'WhatsApp Bot for Schools & Campus Groups (2026)',
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for Schools & Campus Groups (2026) — Study, Manage, Engage
+# WhatsApp Bot for Schools & Campus Groups (2026) - Study, Manage, Engage
 
 **Last updated: May 2026** | 7 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-If you're a Nigerian university student, you know the drill. Every course has a WhatsApp group. Your department has a group. Your hostel has a group. Your study group has a group. And they're all chaotic — spam, off-topic chatter, missed announcements, and dead-group syndrome. A WhatsApp bot fixes all of this.
+If you're a Nigerian university student, you know the drill. Every course has a WhatsApp group. Your department has a group. Your hostel has a group. Your study group has a group. And they're all chaotic - spam, off-topic chatter, missed announcements, and dead-group syndrome. A WhatsApp bot fixes all of this.
 
 ## Why Every Campus Group Needs a Bot
 
@@ -34,7 +34,7 @@ If you're a Nigerian university student, you know the drill. Every course has a 
 - **Manual moderation is exhausting**: Class reps spend hours managing groups
 
 ### The Solution
-A WhatsApp bot that automatically moderates, engages, and helps — running 24/7 without anyone lifting a finger.
+A WhatsApp bot that automatically moderates, engages, and helps - running 24/7 without anyone lifting a finger.
 
 ## How Students Use BotWave
 
@@ -48,7 +48,7 @@ The \`!ai\` command turns your group into a study room:
 - \`!ai Summarize Chinua Achebe's Things Fall Apart\`
 - \`!ai Give me 5 practice questions on thermodynamics\`
 
-Everyone in the group sees the answer — one question helps 200 people.
+Everyone in the group sees the answer - one question helps 200 people.
 
 ### 2. Anti-Spam for Clean Groups
 
@@ -56,7 +56,7 @@ Campus groups are magnets for spam. BotWave's anti-spam:
 - Blocks betting links (1xBet, Sportybet, etc.)
 - Removes chain messages and forwards
 - Filters offensive content
-- Warns before removing — fair to everyone
+- Warns before removing - fair to everyone
 
 ### 3. Polls for Group Decisions
 
@@ -68,30 +68,30 @@ Class reps use polls constantly:
 ### 4. Trivia Games for Engagement
 
 Keep the group alive between exam seasons:
-- \`!trivia\` — General knowledge quiz with leaderboard
-- \`!hangman\` — Word guessing game
-- \`!riddle\` — Brain teasers
+- \`!trivia\` - General knowledge quiz with leaderboard
+- \`!hangman\` - Word guessing game
+- \`!riddle\` - Brain teasers
 
 These are surprisingly popular in campus groups. Students compete for top scores and it keeps the group active year-round.
 
 ### 5. Sticker Creation
 
-The \`!sticker\` command is the #1 most used feature on campus. Lecture memes, reaction faces, funny moments — students turn everything into stickers.
+The \`!sticker\` command is the #1 most used feature on campus. Lecture memes, reaction faces, funny moments - students turn everything into stickers.
 
 ### 6. Group Information
 
-- \`!weather [city]\` — Check weather before heading to campus
-- \`!quote\` — Morning motivation
-- \`!joke\` — Study break humor
-- \`!translate\` — Help with language courses
+- \`!weather [city]\` - Check weather before heading to campus
+- \`!quote\` - Morning motivation
+- \`!joke\` - Study break humor
+- \`!translate\` - Help with language courses
 
 ## Setting Up BotWave for Your Campus Group
 
 ### For Class Reps
 
 1. **Sign up** at [www.botwave.online/signup](https://www.botwave.online/signup) (free)
-2. **Connect WhatsApp** — scan QR code in the dashboard
-3. **Add to class group** — add the connected number to your class WhatsApp group
+2. **Connect WhatsApp** - scan QR code in the dashboard
+3. **Add to class group** - add the connected number to your class WhatsApp group
 4. **Announce**: "Added a bot for the group. Type !help for commands. Spam will be auto-removed."
 
 ### For Study Groups
@@ -117,7 +117,7 @@ Computer Science class groups use BotWave for coding help (\`!ai\`), anti-spam, 
 Hostel groups use anti-spam to block betting links and the sticker maker is the most used feature.
 
 ### University of Ibadan (UI)
-Study groups use AI chat for exam prep — one student asks a question, everyone benefits from the answer.
+Study groups use AI chat for exam prep - one student asks a question, everyone benefits from the answer.
 
 ### EKSU
 Campus marketplace groups use auto-replies for pricing and the poll feature for vendor feedback.
@@ -129,7 +129,7 @@ Campus marketplace groups use auto-replies for pricing and the poll feature for 
 3. **Pin the !help command**: So new members know what's available
 4. **Use polls for everything**: Class scheduling, event planning, feedback
 5. **Enable AI during exam season**: Study help that scales to the whole group
-6. **Don't over-moderate**: Students need some freedom — just block the obvious spam
+6. **Don't over-moderate**: Students need some freedom - just block the obvious spam
 
 ## BotWave vs Campus Life Without a Bot
 
@@ -157,7 +157,7 @@ Most campus groups stay within the free tier. If your group is very active, the 
 
 const relatedPosts = [
   { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
   { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
 ];
 

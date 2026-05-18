@@ -1,5 +1,5 @@
 /**
- * /ping command — simple health check to verify bot is alive.
+ * /ping command - simple health check to verify bot is alive.
  */
 
 import { Bot } from 'grammy';

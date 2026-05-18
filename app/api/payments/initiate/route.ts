@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (!user) {
       console.warn('[PAYMENT-INIT] Auth failed:', authError?.message || 'No user session', 'cookies:', request.cookies.getAll().map(c => c.name).join(','));
-      return NextResponse.json({ error: 'Unauthorized — please log in again' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - please log in again' }, { status: 401 });
     }
     console.log(`[PAYMENT-INIT] User ${user.id.slice(0, 8)} (${user.email}) requesting upgrade`);
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      console.log(`[PAYMENT-INIT] Found existing pending payment: ref=${existing.squad_transaction_ref} — re-initializing`);
+      console.log(`[PAYMENT-INIT] Found existing pending payment: ref=${existing.squad_transaction_ref} - re-initializing`);
       const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard?payment=success`;
       const reResult = await initializePayment({
         email: user.email || '',
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Re-init failed (e.g. "Duplicate reference") — mark old payment as failed
+      // Re-init failed (e.g. "Duplicate reference") - mark old payment as failed
       // and fall through to create a fresh one
       console.log(`[PAYMENT-INIT] Re-init failed, marking old ref as failed and creating new payment`);
       await supabase

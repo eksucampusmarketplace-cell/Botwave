@@ -172,7 +172,7 @@ const dareList = [
   "Let the group choose your status for 1 hour",
   "Send a message to the last person you texted saying 'We need to talk'",
   "Send a voice note saying 'I'm the smartest person here' in a baby voice",
-  "Post your battery percentage — if it's below 50%, you lose",
+  "Post your battery percentage - if it's below 50%, you lose",
   "Send a screenshot of your most recent search history",
   "Type a message using only your nose",
   "Change your display name to 'I lost a dare' for 30 minutes",
@@ -336,7 +336,7 @@ async function handleCompliment(context: MessageContext, args: string[], sock: a
     "Your perspective always adds value to any conversation.",
     "You have the kind of personality that people write songs about.",
     "Your ambition is inspiring to everyone who knows you.",
-    "You're like the sun — you brighten everyone's day.",
+    "You're like the sun - you brighten everyone's day.",
     "Your thoughtfulness never goes unnoticed.",
     "You have an old soul with a young heart.",
     "Your courage to be yourself is truly admirable.",
@@ -345,7 +345,7 @@ async function handleCompliment(context: MessageContext, args: string[], sock: a
   ];
   const target = args.length > 0 ? args.join(' ').replace(/@/g, '') : context.pushName || 'You';
   const compliment = compliments[Math.floor(Math.random() * compliments.length)];
-  await sendReply(context.chatJid, `*${target}* — ${compliment}`, sock, context.rawMessage.key, context.queue);
+  await sendReply(context.chatJid, `*${target}* - ${compliment}`, sock, context.rawMessage.key, context.queue);
 }
 
 async function handleFortune(context: MessageContext, sock: any): Promise<void> {
@@ -360,7 +360,7 @@ async function handleFortune(context: MessageContext, sock: any): Promise<void> 
     "A friend will surprise you with kindness.",
     "Your creativity will solve a major problem soon.",
     "Stop overthinking. The answer is simple.",
-    "Money is coming your way — just not the way you expect.",
+    "Money is coming your way - just not the way you expect.",
     "Your next meal will be surprisingly good.",
     "A stranger will change your perspective today.",
     "You'll discover a hidden talent you didn't know you had.",
@@ -454,7 +454,7 @@ async function handleFact(context: MessageContext, sock: any): Promise<void> {
     "The world's largest desert is Antarctica, not the Sahara.",
     "Human teeth are as strong as shark teeth.",
     "An average person walks about 100,000 miles in their lifetime.",
-    "A jiffy is an actual unit of time — 1/100th of a second.",
+    "A jiffy is an actual unit of time - 1/100th of a second.",
     "The average person spends 6 months of their lifetime waiting for red lights.",
     "It's physically impossible for pigs to look up at the sky.",
     "The inventor of the fire hydrant is unknown because the patent was destroyed in a fire.",
@@ -488,17 +488,17 @@ async function handleFact(context: MessageContext, sock: any): Promise<void> {
     "Coca-Cola was originally green.",
     "The average person produces enough saliva to fill two swimming pools.",
     "Lightning strikes the Earth about 8 million times a day.",
-    "The Mona Lisa has no eyebrows — it was fashionable in Renaissance Florence.",
+    "The Mona Lisa has no eyebrows - it was fashionable in Renaissance Florence.",
     "A crocodile cannot stick its tongue out.",
     "There are more fake flamingos in the world than real ones.",
-    "Astronauts cannot cry in space — no gravity for tears to flow.",
+    "Astronauts cannot cry in space - no gravity for tears to flow.",
     "The strongest muscle in the human body is the tongue.",
     "Bananas are slightly radioactive due to their potassium content.",
     "A cat has 32 muscles in each ear.",
     "The average person walks the equivalent of five times around the world in a lifetime.",
     "Dolphins sleep with one eye open.",
     "The electric chair was invented by a dentist.",
-    "Your fingerprint is unique — even identical twins have different fingerprints.",
+    "Your fingerprint is unique - even identical twins have different fingerprints.",
     "Goldfish have a memory span of about 3 months, not 3 seconds.",
     "The human brain uses about 20% of the body's total energy.",
     "A small child could swim through the veins of a blue whale.",

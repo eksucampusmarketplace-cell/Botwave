@@ -224,7 +224,7 @@ export default function DashboardNav() {
                 )}
               </AnimatePresence>
             </div>
-            {/* Theme toggle — always visible */}
+            {/* Theme toggle - always visible */}
             <button
               onClick={toggleTheme}
               className="flex w-9 h-9 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] items-center justify-center transition-colors"

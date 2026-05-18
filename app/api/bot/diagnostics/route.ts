@@ -9,7 +9,7 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized — log in first' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - log in first' }, { status: 401 });
     }
 
     const diagnostics: Record<string, any> = {
