@@ -48,6 +48,11 @@ const TAB_FEATURE_MAP: Record<Tab, string[]> = {
   stats: ['stats'],
 };
 
+interface GroupInfo {
+  chat_id: string;
+  chat_title: string | null;
+}
+
 export default function TelegramConfigPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [activeTab, setActiveTab] = useState<Tab>('general');
@@ -56,6 +61,9 @@ export default function TelegramConfigPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [ownerDisabledFeatures, setOwnerDisabledFeatures] = useState<Set<string>>(new Set());
+  const [groups, setGroups] = useState<GroupInfo[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [configMode, setConfigMode] = useState<'global' | 'group'>('global');
 
   // eslint-disable-next-line
   const [config, setConfig] = useState<Record<string, any>>({
@@ -242,17 +250,51 @@ export default function TelegramConfigPage() {
   const [newFilterKeyword, setNewFilterKeyword] = useState('');
   const [newFilterResponse, setNewFilterResponse] = useState('');
 
+  const fetchGroups = useCallback(async () => {
+    try {
+      const [groupsRes, gcRes] = await Promise.all([
+        fetch(`/api/telegram/groups?sessionId=${sessionId}`),
+        fetch(`/api/telegram/group-config?sessionId=${sessionId}&chatId=__list__`).catch(() => null),
+      ]);
+      const groupsData = await groupsRes.json();
+      const allGroups: GroupInfo[] = [];
+      const seen = new Set<string>();
+      if (groupsData.success && groupsData.data) {
+        for (const g of groupsData.data) {
+          const cid = String(g.chat_id);
+          if (!seen.has(cid)) { seen.add(cid); allGroups.push({ chat_id: cid, chat_title: g.chat_title || null }); }
+        }
+      }
+      if (gcRes) {
+        try {
+          const gcData = await gcRes.json();
+          if (gcData.success && Array.isArray(gcData.data)) {
+            for (const g of gcData.data) {
+              const cid = String(g.chat_id);
+              if (!seen.has(cid)) { seen.add(cid); allGroups.push({ chat_id: cid, chat_title: g.chat_title || null }); }
+            }
+          }
+        } catch {}
+      }
+      setGroups(allGroups);
+    } catch {}
+  }, [sessionId]);
+
   const fetchConfig = useCallback(async () => {
     try {
-      const [configRes, featRes] = await Promise.all([
+      const fetches: Promise<Response>[] = [
         fetch(`/api/telegram/config?sessionId=${sessionId}`),
         fetch(`/api/bot/features?sessionId=${sessionId}`),
-      ]);
-      const configData = await configRes.json();
+      ];
+      if (configMode === 'group' && selectedGroup) {
+        fetches.push(fetch(`/api/telegram/group-config?sessionId=${sessionId}&chatId=${selectedGroup}`));
+      }
+      const responses = await Promise.all(fetches);
+      const configData = await responses[0].json();
       if (configData.success && configData.data) {
         setConfig(prev => ({ ...prev, ...configData.data }));
       }
-      const featData = await featRes.json();
+      const featData = await responses[1].json();
       if (featData.success && featData.data) {
         const disabled = new Set<string>();
         for (const f of featData.data) {
@@ -262,9 +304,15 @@ export default function TelegramConfigPage() {
         }
         setOwnerDisabledFeatures(disabled);
       }
+      if (responses[2]) {
+        const groupData = await responses[2].json();
+        if (groupData.success && groupData.data) {
+          setConfig(prev => ({ ...prev, ...groupData.data }));
+        }
+      }
     } catch { setError('Failed to load config'); }
     setLoading(false);
-  }, [sessionId]);
+  }, [sessionId, configMode, selectedGroup]);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -307,6 +355,7 @@ export default function TelegramConfigPage() {
   }, [sessionId]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
   useEffect(() => {
     switch (activeTab) {
@@ -321,14 +370,25 @@ export default function TelegramConfigPage() {
   const saveConfig = async () => {
     setSaving(true); setError(''); setSuccess('');
     try {
-      const res = await fetch('/api/telegram/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, ...config }),
-      });
-      const data = await res.json();
-      if (data.success) setSuccess('Settings saved!');
-      else setError('Failed to save');
+      if (configMode === 'group' && selectedGroup) {
+        const res = await fetch('/api/telegram/group-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, chatId: selectedGroup, ...config }),
+        });
+        const data = await res.json();
+        if (data.success) setSuccess('Group settings saved!');
+        else setError('Failed to save group settings');
+      } else {
+        const res = await fetch('/api/telegram/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, ...config }),
+        });
+        const data = await res.json();
+        if (data.success) setSuccess('Settings saved!');
+        else setError('Failed to save');
+      }
     } catch { setError('Error saving settings'); }
     setSaving(false);
     setTimeout(() => setSuccess(''), 3000);
@@ -486,10 +546,49 @@ export default function TelegramConfigPage() {
           <h1 className="text-3xl font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>
             Telegram <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">Dashboard</span>
           </h1>
-          <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
             Session: {sessionId?.toString().slice(0, 8)}...
           </p>
         </motion.div>
+
+        {/* Group Selector */}
+        <div className="rounded-2xl p-4 mb-6" style={{ background: 'var(--card-bg)' }}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex gap-2">
+              <button onClick={() => { setConfigMode('global'); setSelectedGroup(''); }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${configMode === 'global' ? 'bg-blue-600 text-white' : ''}`}
+                style={configMode !== 'global' ? { background: 'var(--bg)', color: 'var(--text-secondary)' } : undefined}>
+                Global Defaults
+              </button>
+              <button onClick={() => setConfigMode('group')}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${configMode === 'group' ? 'bg-blue-600 text-white' : ''}`}
+                style={configMode !== 'group' ? { background: 'var(--bg)', color: 'var(--text-secondary)' } : undefined}>
+                Per-Group Config
+              </button>
+            </div>
+            {configMode === 'group' && (
+              <select
+                value={selectedGroup}
+                onChange={e => setSelectedGroup(e.target.value)}
+                className="flex-1 w-full sm:w-auto p-2 rounded-xl text-sm"
+                style={{ background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                <option value="">Select a group...</option>
+                {groups.map(g => (
+                  <option key={g.chat_id} value={g.chat_id}>
+                    {g.chat_title || `Group ${g.chat_id}`}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+            {configMode === 'global'
+              ? 'Global defaults apply to all groups unless overridden by per-group settings.'
+              : selectedGroup
+                ? 'Settings saved here override global defaults for this group only.'
+                : 'Select a group to configure its specific settings.'}
+          </p>
+        </div>
 
         {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>}
         {success && <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm">{success}</div>}

@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin, requireBotAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerPinsHandlers(bot: Bot, sessionId: string): void {

@@ -4,13 +4,13 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin, getAdminList, invalidateAdminCache } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
   bot.command('mentionall', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as Record<string, unknown>).mentionall_enabled) {
       await ctx.reply('Mention-all is disabled. Enable it from settings.');
       return;
@@ -100,7 +100,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
     // Note: Telegram Bot API doesn't provide a way to list all members.
     // This command will ban deleted accounts when they send a message.
     // Enable auto-ban via config.
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const enabled = (config as Record<string, unknown>).ban_ghosts_enabled;
     if (!enabled) {
       await ctx.reply('Ghost banning is now enabled. Deleted accounts will be banned when they send a message.\nUse /banghosts off to disable.');
@@ -143,7 +143,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
       await updateTelegramConfig(sessionId, { anon_admin: false });
       await ctx.reply('✅ Anonymous admin mode disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `👤 <b>Anonymous Admin</b>\n\n` +
         `Status: ${config.anon_admin ? '✅ Enabled' : '❌ Disabled'}\n\n` +
@@ -164,7 +164,7 @@ export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
       await updateTelegramConfig(sessionId, { admin_error_messages: false });
       await ctx.reply('✅ Admin error messages disabled.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `⚠️ <b>Admin Error Messages</b>\n\n` +
         `Status: ${config.admin_error_messages !== false ? '✅ Enabled' : '❌ Disabled'}\n\n` +

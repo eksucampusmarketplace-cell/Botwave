@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
@@ -45,7 +45,7 @@ export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
   // /reconnect — Reconnect to previously connected group
   bot.command('reconnect', async (ctx) => {
     if (!ctx.from) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const connectedId = (config as Record<string, unknown>).connected_chat_id as string | null;
     const connectedTitle = (config as Record<string, unknown>).connected_chat_title as string | null;
     if (connectedId) {
@@ -60,7 +60,7 @@ export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
 
   // /connection — Show current connection status
   bot.command('connection', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const connectedId = (config as Record<string, unknown>).connected_chat_id as string | null;
     const connectedTitle = (config as Record<string, unknown>).connected_chat_title as string | null;
     if (connectedId) {

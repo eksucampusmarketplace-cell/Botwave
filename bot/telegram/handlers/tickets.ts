@@ -13,7 +13,7 @@ import {
   assignTicket,
   escalateTicket,
   addTicketMessage,
-  getTelegramConfig,
+  ,
 } from '../utils/db';
 import { resolveTarget } from '../utils/resolve';
 
@@ -51,7 +51,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     );
 
     // Notify log channel if set
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (config.log_channel_id) {
       try {
         await ctx.api.sendMessage(

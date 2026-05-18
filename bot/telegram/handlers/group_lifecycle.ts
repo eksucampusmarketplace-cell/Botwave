@@ -17,7 +17,7 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { getTelegramConfig, registerGroup, unregisterGroup } from '../utils/db';
+import { , registerGroup, unregisterGroup } from '../utils/db';
 import { isOwner } from '../utils/permissions';
 
 const POWERED_BY = '\n\n<b>Powered by Botwave</b>';
@@ -79,7 +79,7 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
     // Register group in DB
     await registerGroup(sessionId, chatId, chatTitle, chatType, actor.id.toString());
 
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const botInfo = ctx.me;
     const botName = botInfo.first_name || botInfo.username || 'Botwave';
     const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';

@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { escapeHtml } from '../utils/format';
-import { getTelegramConfig } from '../utils/db';
+import {  } from '../utils/db';
 
 async function queryGroq(prompt: string, systemPrompt?: string): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY;
@@ -38,7 +38,7 @@ async function queryGroq(prompt: string, systemPrompt?: string): Promise<string 
 
 export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
   bot.command('ask', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as Record<string, unknown>).ai_enabled) {
       await ctx.reply('AI features are disabled. An admin can enable them from settings.');
       return;
@@ -64,7 +64,7 @@ export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('summarize', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as Record<string, unknown>).ai_enabled) {
       await ctx.reply('AI features are disabled.');
       return;
@@ -87,7 +87,7 @@ export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('translate', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!(config as Record<string, unknown>).ai_enabled) {
       await ctx.reply('AI features are disabled.');
       return;

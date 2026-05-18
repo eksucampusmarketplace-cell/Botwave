@@ -9,7 +9,7 @@ import { checkPermissions, isSudoUser } from '../utils/permissions';
 import { resolveTarget, parseDuration } from '../utils/resolve';
 import { mentionUser, mentionById, formatDurationLong, escapeHtml } from '../utils/format';
 import {
-  getTelegramConfig,
+  ,
   addWarning,
   removeWarning,
   getWarnings,
@@ -338,7 +338,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     const { targetId, targetName, reason } = resolved;
     if (!(await checkPermissions(ctx, targetId, sessionId))) return;
 
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const chatId = ctx.chat!.id.toString();
     const count = await addWarning(
       sessionId,
@@ -380,7 +380,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     if (ctx.message?.reply_to_message) {
       try { await ctx.api.deleteMessage(ctx.chat!.id, ctx.message.reply_to_message.message_id); } catch {}
     }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const chatId = ctx.chat!.id.toString();
     const count = await addWarning(sessionId, chatId, targetId.toString(), ctx.from!.id.toString(), reason || null);
     await ctx.reply(`⚠️ ${targetName} warned.\nCount: ${count}/${config.warn_limit}\nReason: ${escapeHtml(reason || 'No reason given')}`, { parse_mode: 'HTML' });
@@ -399,7 +399,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     const { targetId, reason } = resolved;
     if (!(await checkPermissions(ctx, targetId, sessionId))) return;
     try { await ctx.deleteMessage(); } catch {}
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const chatId = ctx.chat!.id.toString();
     const count = await addWarning(sessionId, chatId, targetId.toString(), ctx.from!.id.toString(), reason || null);
     if (count >= config.warn_limit) {
@@ -439,7 +439,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
 
     const chatId = ctx.chat!.id.toString();
     const warnings = await getWarnings(sessionId, chatId, targetId.toString());
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
 
     if (warnings.length === 0) {
       await ctx.reply('✅ No warnings found for this user.');
@@ -481,7 +481,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
 
   // ─── Warnings (chat settings) ─────────────────────────────────────
   bot.command('warnings', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     await ctx.reply(
       `⚠️ <b>Warning Settings</b>\n\n` +
       `Limit: ${config.warn_limit}\n` +
@@ -497,7 +497,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
     const validModes = ['ban', 'mute', 'kick', 'tban', 'tmute'];
     if (!arg || !validModes.includes(arg)) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `⚠️ <b>Warn Mode</b>\n\nCurrent: ${config.warn_action || 'mute'}\n\nUsage: /warnmode <${validModes.join('/')}>`,
         { parse_mode: 'HTML' },
@@ -514,7 +514,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(`⚠️ Current warn limit: ${config.warn_limit}\n\nUsage: /warnlimit <number>`);
       return;
     }
@@ -533,7 +533,7 @@ export function registerModerationHandlers(bot: Bot, sessionId: string): void {
     if (!(await checkPermissions(ctx, ctx.from!.id, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(`⚠️ Current warn time: ${(config as Record<string, unknown>).warn_time || 'No expiry'}\n\nUsage: /warntime <time/off>\nExamples: 4m, 3h, 6d, 5w`);
       return;
     }

@@ -5,7 +5,7 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerChannelForceHandlers(bot: Bot, sessionId: string): void {
@@ -16,7 +16,7 @@ export function registerChannelForceHandlers(bot: Bot, sessionId: string): void 
     const arg = args[0]?.toLowerCase();
 
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       const channel = (config as Record<string, unknown>).force_channel as string;
       if (channel) {
         await ctx.reply(`Currently forcing users to join: <b>${escapeHtml(channel)}</b>\nUse /forcejoin off to disable.`, { parse_mode: 'HTML' });
@@ -44,7 +44,7 @@ export function registerChannelForceHandlers(bot: Bot, sessionId: string): void 
       return;
     }
 
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const channel = (config as Record<string, unknown>).force_channel as string;
     if (!channel) {
       await next();

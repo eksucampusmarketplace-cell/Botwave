@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 
 export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void {
   // /cleancommand <yes/no> — Auto-delete command messages after processing
@@ -19,7 +19,7 @@ export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void 
       await updateTelegramConfig(sessionId, { clean_commands: false } as Record<string, unknown>);
       await ctx.reply('✅ Command messages will no longer be auto-deleted.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       const enabled = (config as Record<string, unknown>).clean_commands;
       await ctx.reply(
         `🧹 <b>Clean Commands</b>\n\n` +
@@ -38,7 +38,7 @@ export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void 
       await ctx.reply('Usage: /keepcommand <command>\nExample: /keepcommand rules');
       return;
     }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const kept: string[] = (config as Record<string, unknown>).kept_commands as string[] || [];
     if (!kept.includes(cmd)) {
       kept.push(cmd);
@@ -50,7 +50,7 @@ export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void 
   // /cleancommandtypes — Show which commands are kept/cleaned
   bot.command('cleancommandtypes', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const kept: string[] = (config as Record<string, unknown>).kept_commands as string[] || [];
     if (kept.length === 0) {
       await ctx.reply('No commands are excluded from auto-deletion.');

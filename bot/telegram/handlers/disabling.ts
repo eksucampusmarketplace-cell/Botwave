@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 const DISABLEABLE_COMMANDS = [
@@ -28,7 +28,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
       await ctx.reply(`❌ "${cmd}" cannot be disabled. See /disableable.`);
       return;
     }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const disabled: string[] = (config as Record<string, unknown>).disabled_commands as string[] || [];
     if (!disabled.includes(cmd)) {
       disabled.push(cmd);
@@ -45,7 +45,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
       await ctx.reply('Usage: /enable <command>');
       return;
     }
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const disabled: string[] = (config as Record<string, unknown>).disabled_commands as string[] || [];
     const filtered = disabled.filter(c => c !== cmd);
     await updateTelegramConfig(sessionId, { disabled_commands: filtered } as Record<string, unknown>);
@@ -90,7 +90,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
 
   // /disabled — List all currently disabled commands
   bot.command('disabled', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const disabled: string[] = (config as Record<string, unknown>).disabled_commands as string[] || [];
     if (disabled.length === 0) {
       await ctx.reply('No commands are currently disabled.');

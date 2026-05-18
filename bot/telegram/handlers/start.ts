@@ -6,7 +6,7 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { getTelegramConfig, updateTelegramConfig, getActiveGroups } from '../utils/db';
+import { , updateTelegramConfig, getActiveGroups } from '../utils/db';
 import { requireAdmin } from '../utils/permissions';
 
 const POWERED_BY = '\n\n⚡ <b>Powered by Botwave</b>';
@@ -207,7 +207,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
   // ── /start ──────────────────────────────────────────────────────────────
 
   bot.command('start', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const botInfo = ctx.me;
     const botName = botInfo.first_name || botInfo.username || 'Botwave';
     const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
@@ -290,7 +290,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
   // ── /panel — open mini app directly ─────────────────────────────────────
 
   bot.command('panel', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!miniappUrl) {
@@ -525,7 +525,7 @@ async function sendHelpMessage(
   ctx: { reply: (...args: any[]) => Promise<any>; me: any },
   sessionId: string,
 ): Promise<void> {
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
   const botInfo = ctx.me;
   const botName = botInfo.first_name || botInfo.username || 'Botwave';
   const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';

@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
@@ -51,7 +51,7 @@ export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('logchannel', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (config.log_channel_id) {
       await ctx.reply(
         `📋 Log channel: <code>${escapeHtml(config.log_channel_id)}</code>`,
@@ -67,7 +67,7 @@ export function registerLogChannelHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim();
     if (!arg) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       if (config.log_channel_id) {
         await ctx.reply(`📋 Log channel: <code>${escapeHtml(config.log_channel_id)}</code>`, { parse_mode: 'HTML' });
       } else {

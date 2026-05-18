@@ -5,7 +5,7 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 
 interface MiniApp {
   id: string;
@@ -80,7 +80,7 @@ function getAppUrl(baseUrl: string, app: MiniApp): string {
 
 export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
   bot.command(['games', 'mgame', 'multiplayer'], async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!baseUrl) {
@@ -107,7 +107,7 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
   });
 
   bot.command('game', async (ctx) => {
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!baseUrl) {
@@ -145,7 +145,7 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
 
     const url = (ctx.match?.toString() || '').trim();
     if (!url) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       const current = config.miniapp_base_url || 'Not set';
       await ctx.reply(
         `🎮 <b>Mini Apps URL</b>\n\nCurrent: <code>${current}</code>\n\nUsage: /setgamesurl <base_url>`,

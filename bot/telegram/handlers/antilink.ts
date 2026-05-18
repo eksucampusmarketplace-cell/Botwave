@@ -4,7 +4,7 @@
 
 import { Bot, Context } from 'grammy';
 import { requireAdmin, isElevated } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 
 const URL_REGEX = /https?:\/\/[^\s]+|t\.me\/[^\s]+|telegram\.me\/[^\s]+/i;
 
@@ -13,7 +13,7 @@ export function registerAntilinkHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
 
     if (arg === 'on') {
       await updateTelegramConfig(sessionId, { antilink_enabled: true });
@@ -51,7 +51,7 @@ export function registerAntilinkHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     let whitelist = config.antilink_whitelist || [];
 
     if (action === 'add') {
@@ -78,7 +78,7 @@ export async function checkAntilink(
   if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') return false;
   if (!ctx.message?.text) return false;
 
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
   if (!config.antilink_enabled) return false;
 
   // Admins/sudo/owners bypass

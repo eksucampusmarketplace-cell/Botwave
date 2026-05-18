@@ -4,7 +4,7 @@
 
 import { Bot, Context } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
+import { , updateTelegramConfig } from '../utils/db';
 import { mentionUser } from '../utils/format';
 import { logModAction } from '../utils/db';
 
@@ -16,7 +16,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
 
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
 
     if (arg === 'on') {
       await updateTelegramConfig(sessionId, { antiflood_enabled: true });
@@ -50,7 +50,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
   // /flood — Get the current antiflood settings
   bot.command('flood', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
-    const config = await getTelegramConfig(sessionId);
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const timedInfo = config.antiflood_timed_count && config.antiflood_timed_duration_secs
       ? `\nTimed: ${config.antiflood_timed_count} msgs in ${config.antiflood_timed_duration_secs}s`
       : '\nTimed: Disabled';
@@ -112,7 +112,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
     const action = args[0]?.toLowerCase();
     const validActions = ['ban', 'mute', 'kick', 'tban', 'tmute'];
     if (!action || !validActions.includes(action)) {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `🌊 <b>Flood Mode</b>\n\n` +
         `Current action: ${config.antiflood_action || 'mute'}\n\n` +
@@ -137,7 +137,7 @@ export function registerAntifloodHandlers(bot: Bot, sessionId: string): void {
       await updateTelegramConfig(sessionId, { antiflood_clear_messages: false });
       await ctx.reply('✅ Flood messages will no longer be deleted.');
     } else {
-      const config = await getTelegramConfig(sessionId);
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
       await ctx.reply(
         `🌊 <b>Clear Flood Messages</b>\n\n` +
         `Status: ${config.antiflood_clear_messages ? '✅ Enabled' : '❌ Disabled'}\n\n` +
@@ -157,7 +157,7 @@ export async function checkFlood(
 ): Promise<boolean> {
   if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') return false;
 
-  const config = await getTelegramConfig(sessionId);
+  const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
   if (!config.antiflood_enabled) return false;
 
   const key = `${sessionId}:${ctx.chat.id}:${ctx.from.id}`;
