@@ -71,7 +71,7 @@ export const adminsHandler: HandlerFn = async (client, event) => {
         filter: new Api.ChannelParticipantsAdmins(),
         offset: 0,
         limit: 100,
-        hash: BigInt(0),
+        hash: BigInt(0) as any,
       }),
     );
 
@@ -250,7 +250,7 @@ export const zombiesHandler: HandlerFn = async (client, event) => {
           filter: new Api.ChannelParticipantsRecent(),
           offset,
           limit: 200,
-          hash: BigInt(0),
+          hash: BigInt(0) as any,
         }),
       );
 
@@ -348,8 +348,8 @@ export const groupBioHandler: HandlerFn = async (client, event) => {
   try {
     const chatPeer = await client.getInputEntity(chatId);
     await client.invoke(
-      new Api.channels.EditAbout({
-        channel: chatPeer as unknown as Api.TypeInputChannel,
+      new (Api.channels as any).EditAbout({
+        channel: chatPeer as any,
         about,
       }),
     );

@@ -30,7 +30,7 @@ const USERBOT_PROXY_LIST: ProxyEntry[] = (process.env.USERBOT_PROXY_LIST || '')
       socksType: 5 as const,
     };
   })
-  .filter((p): p is ProxyEntry => p !== null);
+  .filter((p): p is NonNullable<typeof p> => p !== null) as ProxyEntry[];
 
 let proxyCounter = 0;
 const proxyHealth: Map<string, { failures: number; lastFailure: number }> = new Map();

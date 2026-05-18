@@ -181,8 +181,8 @@ export class UserbotManager {
         if (update instanceof Api.UpdateChannelParticipant) {
           const newParticipant = update.newParticipant;
           if (newParticipant && 'userId' in newParticipant) {
-            const userId = newParticipant.userId.toString();
-            const channelId = update.channelId;
+            const userId = (newParticipant.userId as any).toString();
+            const channelId = (update.channelId as any).toString();
             await handleGbanCheck(client, userId, channelId, sessionId);
           }
         }
@@ -257,7 +257,7 @@ export class UserbotManager {
       try {
         const ub = this.userbots.get(sessionId);
         if (ub) {
-          await ub.client.markRead(msg.chatId, msg.id);
+          await ub.client.markRead(msg.chatId as any, msg.id);
         }
       } catch {}
     }
