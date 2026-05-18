@@ -29,6 +29,23 @@ const PENALTY_OPTIONS = [
   { value: 'tmute', label: 'Temp Mute' },
 ];
 
+// Maps tabs to feature IDs that the bot owner controls
+const TAB_FEATURE_MAP: Record<Tab, string[]> = {
+  general: [], // always visible
+  protection: ['antiflood', 'antiraid', 'antispam', 'captcha'],
+  prohibitions: ['prohibitions', 'locks', 'blocklist'],
+  numerical: [], // always visible (general limits)
+  silence: ['silenttime'],
+  memberships: ['mandatory_membership', 'forced_add'],
+  texts: ['welcome', 'goodbye'],
+  notes: ['notes'],
+  filters: ['filters'],
+  modlog: ['modlog'],
+  xp: ['xp'],
+  scheduled: ['scheduled'],
+  stats: ['stats'],
+};
+
 export default function TelegramConfigPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [activeTab, setActiveTab] = useState<Tab>('general');
@@ -36,6 +53,7 @@ export default function TelegramConfigPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [ownerDisabledFeatures, setOwnerDisabledFeatures] = useState<Set<string>>(new Set());
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [config, setConfig] = useState<Record<string, any>>({
@@ -153,10 +171,23 @@ export default function TelegramConfigPage() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const res = await fetch(`/api/telegram/config?sessionId=${sessionId}`);
-      const data = await res.json();
-      if (data.success && data.data) {
-        setConfig(prev => ({ ...prev, ...data.data }));
+      const [configRes, featRes] = await Promise.all([
+        fetch(`/api/telegram/config?sessionId=${sessionId}`),
+        fetch(`/api/bot/features?sessionId=${sessionId}`),
+      ]);
+      const configData = await configRes.json();
+      if (configData.success && configData.data) {
+        setConfig(prev => ({ ...prev, ...configData.data }));
+      }
+      const featData = await featRes.json();
+      if (featData.success && featData.data) {
+        const disabled = new Set<string>();
+        for (const f of featData.data) {
+          if (f.feature_name && f.enabled === false) {
+            disabled.add(f.feature_name);
+          }
+        }
+        setOwnerDisabledFeatures(disabled);
       }
     } catch { setError('Failed to load config'); }
     setLoading(false);
@@ -263,7 +294,7 @@ export default function TelegramConfigPage() {
     fetchScheduled();
   };
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
+  const allTabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'general', label: 'General', icon: '\u2699\ufe0f' },
     { id: 'protection', label: 'Antiflood & AntiRaid', icon: '\ud83d\udee1\ufe0f' },
     { id: 'prohibitions', label: 'Prohibitions', icon: '\ud83d\udeab' },
@@ -278,6 +309,13 @@ export default function TelegramConfigPage() {
     { id: 'scheduled', label: 'Scheduled', icon: '\u23f0' },
     { id: 'stats', label: 'Statistics', icon: '\ud83d\udcca' },
   ];
+
+  // Filter tabs: hide tabs where ALL required features are disabled by the bot owner
+  const tabs = allTabs.filter(t => {
+    const requiredFeatures = TAB_FEATURE_MAP[t.id];
+    if (!requiredFeatures || requiredFeatures.length === 0) return true;
+    return requiredFeatures.some(f => !ownerDisabledFeatures.has(f));
+  });
 
   const inputStyle = { background: 'var(--bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' };
   const updateConfig = (key: string, value: unknown) => setConfig(prev => ({ ...prev, [key]: value }));
@@ -380,6 +418,12 @@ export default function TelegramConfigPage() {
 
         {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>}
         {success && <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm">{success}</div>}
+
+        {ownerDisabledFeatures.size > 0 && (
+          <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-xs">
+            Some features are disabled by the bot owner and are not available for this group.
+          </div>
+        )}
 
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin">
           {tabs.map(t => (

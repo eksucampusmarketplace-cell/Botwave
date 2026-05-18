@@ -20,27 +20,85 @@ import type { BotSession, BotFeature, DashboardStats, Platform } from '@/lib/typ
 import { useSSE } from '@/lib/useSSE';
 
 // Features that default to OFF — must be explicitly enabled by the user
-const FEATURES_DEFAULT_OFF = new Set(['welcome']);
+const FEATURES_DEFAULT_OFF = new Set(['welcome', 'captcha', 'nightmode', 'xp', 'federation', 'antiraid']);
 
-const defaultFeatures = [
-  { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '🎴' },
-  { id: 'ai_chat', name: 'AI CHAT REPLY', description: 'Intelligent AI responses', icon: '🤖' },
-  { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '📥' },
-  { id: 'welcome', name: 'WELCOME BOT', description: 'Greet new members & goodbye (OFF by default)', icon: '👋' },
-  { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '🛡️' },
-  { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, etc', icon: '🎮' },
-  { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '📊' },
-  { id: 'tools', name: 'SMART TOOLS', description: 'Weather, jokes, horoscope', icon: '🌤️' },
-  { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '💬' },
-  { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '🔄' },
-  { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '👤' },
-  { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, cal, timezone, paste', icon: '⚡' },
-  { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '🔍' },
-  { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '✍️' },
-  { id: 'utilities', name: 'QUICK UTILITIES', description: 'pick, dice, password, uuid, unit, bmi', icon: '🔧' },
-  { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '🖼️' },
-  { id: 'social', name: 'SOCIAL', description: 'forward, base64, hash, color, save', icon: '🔗' },
-  // autoview, nlp, savage — disabled
+type FeatureCategory = 'core' | 'protection' | 'moderation' | 'content' | 'media' | 'fun' | 'utility';
+
+interface FeatureDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: FeatureCategory;
+}
+
+const featureCategories: { id: FeatureCategory; label: string; icon: string }[] = [
+  { id: 'core', label: 'Core Features', icon: '\u2B50' },
+  { id: 'protection', label: 'Protection & Security', icon: '\uD83D\uDEE1\uFE0F' },
+  { id: 'moderation', label: 'Moderation & Admin', icon: '\uD83D\uDC6E' },
+  { id: 'content', label: 'Content & Engagement', icon: '\uD83D\uDCAC' },
+  { id: 'media', label: 'Media & Creative', icon: '\uD83C\uDFA8' },
+  { id: 'fun', label: 'Fun & Games', icon: '\uD83C\uDFAE' },
+  { id: 'utility', label: 'Utilities & Tools', icon: '\uD83D\uDD27' },
+];
+
+const defaultFeatures: FeatureDef[] = [
+  // Core
+  { id: 'ai_chat', name: 'AI CHAT', description: 'Intelligent AI responses (Gemini)', icon: '\uD83E\uDD16', category: 'core' },
+  { id: 'sticker', name: 'STICKER MAKER', description: 'Convert images to stickers', icon: '\uD83C\uDCB4', category: 'core' },
+  { id: 'downloader', name: 'MEDIA DOWNLOADER', description: 'Download from YT, TT, IG', icon: '\uD83D\uDCE5', category: 'core' },
+  { id: 'auto_reply', name: 'AUTO REPLY', description: 'Set custom auto responses', icon: '\uD83D\uDCAC', category: 'core' },
+  { id: 'language', name: 'MULTI-LANGUAGE', description: 'Multi-language bot responses', icon: '\uD83C\uDF10', category: 'core' },
+
+  // Protection
+  { id: 'antiflood', name: 'ANTI-FLOOD', description: 'Rate-limit messages to prevent flooding', icon: '\uD83C\uDF0A', category: 'protection' },
+  { id: 'antilink', name: 'ANTI-LINK', description: 'Remove unauthorized links', icon: '\uD83D\uDD17', category: 'protection' },
+  { id: 'antiraid', name: 'ANTI-RAID', description: 'Auto-detect mass joins', icon: '\uD83D\uDEA8', category: 'protection' },
+  { id: 'anti_spam', name: 'ANTI-SPAM', description: 'Block spam and floods', icon: '\uD83D\uDEE1\uFE0F', category: 'protection' },
+  { id: 'nightmode', name: 'NIGHT MODE', description: 'Restrict messages at night', icon: '\uD83C\uDF19', category: 'protection' },
+  { id: 'captcha', name: 'CAPTCHA', description: 'Verify new members on join', icon: '\u2705', category: 'protection' },
+  { id: 'blocklist', name: 'BLOCKLIST', description: 'Blocked words / phrases filter', icon: '\uD83D\uDEAB', category: 'protection' },
+  { id: 'locks', name: 'LOCKS', description: 'Lock specific message types', icon: '\uD83D\uDD12', category: 'protection' },
+
+  // Moderation
+  { id: 'warns', name: 'WARNINGS', description: 'Warning system for violations', icon: '\u26A0\uFE0F', category: 'moderation' },
+  { id: 'modlog', name: 'MOD LOG', description: 'Log moderation actions to channel', icon: '\uD83D\uDCCB', category: 'moderation' },
+  { id: 'purge', name: 'PURGE', description: 'Bulk message deletion', icon: '\uD83D\uDDD1\uFE0F', category: 'moderation' },
+  { id: 'pins', name: 'PINS', description: 'Pin message management', icon: '\uD83D\uDCCC', category: 'moderation' },
+  { id: 'approval', name: 'APPROVAL', description: 'Approve users to bypass restrictions', icon: '\uD83D\uDC4D', category: 'moderation' },
+  { id: 'cleancommand', name: 'CLEAN COMMANDS', description: 'Auto-delete command messages', icon: '\uD83E\uDDF9', category: 'moderation' },
+  { id: 'cleanservice', name: 'CLEAN SERVICE', description: 'Auto-delete join/leave messages', icon: '\uD83E\uDDF9', category: 'moderation' },
+  { id: 'disabling', name: 'DISABLE COMMANDS', description: 'Disable specific commands per group', icon: '\uD83D\uDEAB', category: 'moderation' },
+  { id: 'federation', name: 'FEDERATION', description: 'Cross-group shared banlists', icon: '\uD83C\uDF10', category: 'moderation' },
+
+  // Content & Engagement
+  { id: 'welcome', name: 'WELCOME MESSAGE', description: 'Greet new members (OFF by default)', icon: '\uD83D\uDC4B', category: 'content' },
+  { id: 'goodbye', name: 'GOODBYE MESSAGE', description: 'Farewell leaving members', icon: '\uD83D\uDC4B', category: 'content' },
+  { id: 'xp', name: 'XP SYSTEM', description: 'Members earn XP by chatting', icon: '\u2B50', category: 'content' },
+  { id: 'rules', name: 'RULES', description: 'Group rules management', icon: '\uD83D\uDCDC', category: 'content' },
+  { id: 'notes', name: 'NOTES', description: 'Saved notes / FAQs for group', icon: '\uD83D\uDDD2\uFE0F', category: 'content' },
+  { id: 'filters', name: 'FILTERS', description: 'Auto-reply keyword triggers', icon: '\uD83D\uDD0D', category: 'content' },
+  { id: 'connections', name: 'CONNECTIONS', description: 'Connect groups for remote management', icon: '\uD83D\uDD17', category: 'content' },
+  { id: 'topics', name: 'TOPICS', description: 'Forum topic management', icon: '\uD83D\uDCC1', category: 'content' },
+  { id: 'scheduled', name: 'SCHEDULED MESSAGES', description: 'Schedule messages for later', icon: '\u23F0', category: 'content' },
+  { id: 'polls', name: 'POLLS & LEADERBOARD', description: 'Create polls and track scores', icon: '\uD83D\uDCCA', category: 'content' },
+
+  // Media & Creative
+  { id: 'media_convert', name: 'MEDIA & CONVERSION', description: 'viewonce, toimg, togif, toaudio, ocr', icon: '\uD83D\uDD04', category: 'media' },
+  { id: 'image_editing', name: 'IMAGE EDITING', description: 'blur, grayscale, rotate, resize, crop', icon: '\uD83D\uDDBC\uFE0F', category: 'media' },
+  { id: 'profile', name: 'PROFILE TOOLS', description: 'bio, setpp, read, savestatus', icon: '\uD83D\uDC64', category: 'media' },
+
+  // Fun & Games
+  { id: 'games', name: 'MINI GAMES', description: 'Trivia, Hangman, WordChain, Chess', icon: '\uD83C\uDFAE', category: 'fun' },
+  { id: 'tools', name: 'FUN COMMANDS', description: 'Jokes, quotes, memes, 8ball, fortune', icon: '\uD83C\uDF89', category: 'fun' },
+  { id: 'social', name: 'SOCIAL', description: 'forward, roast, ghost, ship, birthday', icon: '\uD83D\uDD17', category: 'fun' },
+
+  // Utility
+  { id: 'productivity', name: 'PRODUCTIVITY', description: 'calc, countdown, remind, schedule', icon: '\u26A1', category: 'utility' },
+  { id: 'info_lookup', name: 'INFO LOOKUP', description: 'crypto, ud, ip, npm, whois, country', icon: '\uD83D\uDD0D', category: 'utility' },
+  { id: 'text_tools', name: 'TEXT & WRITING', description: 'reverse, mock, morse, font, ascii', icon: '\u270D\uFE0F', category: 'utility' },
+  { id: 'utilities', name: 'QUICK UTILITIES', description: 'pick, dice, password, uuid, unit, bmi', icon: '\uD83D\uDD27', category: 'utility' },
+  { id: 'stats', name: 'STATISTICS', description: 'Group activity stats and analytics', icon: '\uD83D\uDCC8', category: 'utility' },
 ];
 
 export default function DashboardPage() {
@@ -57,6 +115,20 @@ export default function DashboardPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [stats, setStats] = useState<DashboardStats>({ totalMessages: 0, totalCommands: 0, uptimePercent: 0, activeSessions: 0, totalSessions: 0 });
+  const [expandedCategory, setExpandedCategory] = useState<FeatureCategory | null>('core');
+  const [showOwnerSettings, setShowOwnerSettings] = useState(false);
+  const [ownerConfig, setOwnerConfig] = useState({
+    warnLimit: 3,
+    warnAction: 'mute' as string,
+    antifloodMax: 10,
+    logChannelId: '',
+    miniAppBaseUrl: 'https://botwave.online',
+    antiraidThreshold: 15,
+    antiraidMode: 'restrict' as string,
+    antiraidDuration: 15,
+  });
+  const [savingOwnerConfig, setSavingOwnerConfig] = useState(false);
+  const [ownerConfigSaved, setOwnerConfigSaved] = useState(false);
 
   const activeSessionRef = useRef<BotSession | null>(null);
   const [sseConnected, setSSEConnected] = useState(false);
@@ -539,17 +611,189 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {defaultFeatures.map((feature, index) => (
-                  <FeatureToggle
-                    key={feature.id}
-                    feature={feature}
-                    enabled={activeFeatures.includes(feature.id)}
-                    onToggle={() => toggleFeature(feature.id)}
-                    index={index}
-                  />
-                ))}
-              </div>
+              {featureCategories.map((cat) => {
+                const catFeatures = defaultFeatures.filter(f => f.category === cat.id);
+                if (!catFeatures.length) return null;
+                const isExpanded = expandedCategory === cat.id;
+                const enabledCount = catFeatures.filter(f => activeFeatures.includes(f.id)).length;
+                return (
+                  <div key={cat.id} className="mb-3">
+                    <button
+                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-blue-500/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{cat.icon}</span>
+                        <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.label}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+                          {enabledCount}/{catFeatures.length}
+                        </span>
+                      </div>
+                      <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {isExpanded && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pl-2">
+                        {catFeatures.map((feature, index) => (
+                          <FeatureToggle
+                            key={feature.id}
+                            feature={feature}
+                            enabled={activeFeatures.includes(feature.id)}
+                            onToggle={() => toggleFeature(feature.id)}
+                            index={index}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </motion.section>
+
+            {/* Bot Owner Settings */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.25 }}
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
+            >
+              <button
+                onClick={() => setShowOwnerSettings(!showOwnerSettings)}
+                className="w-full flex items-center justify-between"
+              >
+                <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+                  <span className="text-xl">\u2699\uFE0F</span> Bot Owner Settings
+                </h2>
+                <svg className={`w-5 h-5 text-[var(--text-muted)] transition-transform ${showOwnerSettings ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Features you disable here will be completely hidden from group admins.
+              </p>
+
+              {showOwnerSettings && (
+                <div className="mt-6 space-y-6">
+                  {/* Warning Settings */}
+                  <div className="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                      <span>\u26A0\uFE0F</span> Warning System
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Warn Limit</label>
+                        <input type="number" min={1} max={20} value={ownerConfig.warnLimit}
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, warnLimit: Number(e.target.value) || 3 }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Warn Action</label>
+                        <select value={ownerConfig.warnAction}
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, warnAction: e.target.value }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none">
+                          <option value="mute">Mute</option>
+                          <option value="kick">Kick</option>
+                          <option value="ban">Ban</option>
+                          <option value="tban">Temp Ban</option>
+                          <option value="tmute">Temp Mute</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Anti-Flood Settings */}
+                  <div className="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                      <span>\uD83C\uDF0A</span> Anti-Flood Settings
+                    </h3>
+                    <div>
+                      <label className="block text-xs text-[var(--text-secondary)] mb-1">Max Messages Per Minute</label>
+                      <input type="number" min={1} max={100} value={ownerConfig.antifloodMax}
+                        onChange={(e) => setOwnerConfig(p => ({ ...p, antifloodMax: Number(e.target.value) || 10 }))}
+                        className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                    </div>
+                  </div>
+
+                  {/* Anti-Raid Settings */}
+                  <div className="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                      <span>\uD83D\uDEA8</span> Anti-Raid Settings
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Threshold (joins/min)</label>
+                        <input type="number" min={1} max={100} value={ownerConfig.antiraidThreshold}
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, antiraidThreshold: Number(e.target.value) || 15 }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Mode</label>
+                        <select value={ownerConfig.antiraidMode}
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, antiraidMode: e.target.value }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none">
+                          <option value="restrict">Restrict</option>
+                          <option value="ban">Ban</option>
+                          <option value="kick">Kick</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Duration (min)</label>
+                        <input type="number" min={1} max={1440} value={ownerConfig.antiraidDuration}
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, antiraidDuration: Number(e.target.value) || 15 }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Log Channel & Mini App */}
+                  <div className="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-xl">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                      <span>\uD83D\uDCCB</span> Logging & Integration
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Log Channel ID</label>
+                        <input type="text" value={ownerConfig.logChannelId} placeholder="e.g. -1001234567890"
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, logChannelId: e.target.value }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Mini App Base URL</label>
+                        <input type="text" value={ownerConfig.miniAppBaseUrl} placeholder="https://botwave.online"
+                          onChange={(e) => setOwnerConfig(p => ({ ...p, miniAppBaseUrl: e.target.value }))}
+                          className="w-full bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-2 rounded-lg text-sm text-[var(--text-primary)] focus:border-blue-500 outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (!sessions.length) { alert('Create a session first'); return; }
+                      setSavingOwnerConfig(true);
+                      try {
+                        const targetSession = selectedFeatureSession || sessions[0].id;
+                        await fetch('/api/bot/features', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            sessionId: targetSession,
+                            featureName: '_owner_config',
+                            enabled: true,
+                            config: ownerConfig,
+                          }),
+                        });
+                        setOwnerConfigSaved(true);
+                        setTimeout(() => setOwnerConfigSaved(false), 3000);
+                      } catch (err) {
+                        console.error('Error saving owner config:', err);
+                      } finally {
+                        setSavingOwnerConfig(false);
+                      }
+                    }}
+                    disabled={savingOwnerConfig}
+                    className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {savingOwnerConfig ? 'Saving...' : ownerConfigSaved ? 'Settings Saved!' : 'Save Settings'}
+                  </button>
+                </div>
+              )}
             </motion.section>
           </div>
 
