@@ -32,6 +32,52 @@ import {
 } from './utils/humanizer';
 import { logProxyStatus } from './utils/proxy';
 
+const COMMAND_TO_MODULE: Record<string, string> = {
+  // admin
+  ban: 'admin', unban: 'admin', kick: 'admin', mute: 'admin', unmute: 'admin',
+  promote: 'admin', demote: 'admin', pin: 'admin', unpin: 'admin',
+  // pmpermit
+  approve: 'pmpermit', disapprove: 'pmpermit', block: 'pmpermit', unblock: 'pmpermit', pmguard: 'pmpermit',
+  // afk
+  afk: 'afk', unafk: 'afk',
+  // notes
+  save: 'notes', get: 'notes', clear: 'notes', notes: 'notes',
+  // filters
+  filter: 'filters', stop: 'filters', filters: 'filters',
+  // purge
+  purge: 'purge', purgeme: 'purge', del: 'purge',
+  // gban
+  gban: 'gban', ungban: 'gban', gbanlist: 'gban',
+  // stickers
+  kang: 'stickers', stickerid: 'stickers', getsticker: 'stickers', stickers: 'stickers',
+  // antiflood
+  antiflood: 'antiflood',
+  // welcome
+  setwelcome: 'welcome', setgoodbye: 'welcome', welcome: 'welcome', goodbye: 'welcome',
+  // chattools
+  chatinfo: 'chattools', admins: 'chattools', invite: 'chattools', leave: 'chattools',
+  setname: 'chattools', setbio: 'chattools', username: 'chattools', zombies: 'chattools',
+  groupname: 'chattools', groupbio: 'chattools',
+  // texttools
+  reverse: 'texttools', mock: 'texttools', vapor: 'texttools', tiny: 'texttools',
+  flip: 'texttools', b64encode: 'texttools', b64decode: 'texttools', upper: 'texttools',
+  lower: 'texttools', clap: 'texttools', spoiler: 'texttools', mono: 'texttools', strike: 'texttools',
+  // search
+  google: 'search', wiki: 'search', calc: 'search', currency: 'search', time: 'search',
+  // translate
+  tr: 'translate', translate: 'translate', langs: 'translate',
+  // fun
+  dice: 'fun', dart: 'fun', slot: 'fun', basketball: 'fun', football: 'fun',
+  bowling: 'fun', coinflip: 'fun', rng: 'fun', '8ball': 'fun', rate: 'fun',
+  pp: 'fun', decide: 'fun', roll: 'fun',
+  // reminders
+  remind: 'reminders', reminders: 'reminders', cancelremind: 'reminders', clearreminders: 'reminders',
+  // media
+  download: 'media', forward: 'media', copy: 'media', mediainfo: 'media',
+  // misc (alive, ping, info, id, stats, help)
+  alive: 'misc', ping: 'misc', info: 'misc', id: 'misc', stats: 'misc', help: 'misc',
+};
+
 interface ManagedUserbot {
   client: UserbotClient;
   sessionId: string;
@@ -208,8 +254,9 @@ export class UserbotManager {
 
     const command = text.slice(prefix.length).split(/\s+/)[0].toLowerCase();
 
-    // Check if command is disabled
-    if (config.disabled_modules.includes(command)) return;
+    // Check if command's module is disabled
+    const moduleName = COMMAND_TO_MODULE[command];
+    if (moduleName && config.disabled_modules.includes(moduleName)) return;
 
     const handler = commandHandlers[command];
     if (!handler) return;

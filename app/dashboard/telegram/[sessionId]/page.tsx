@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
+import TelegramUserbotDashboard from '@/components/ui/TelegramUserbotDashboard';
 
 type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
 
@@ -55,6 +56,7 @@ interface GroupInfo {
 
 export default function TelegramConfigPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const [platform, setPlatform] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -354,6 +356,18 @@ export default function TelegramConfigPage() {
     } catch {}
   }, [sessionId]);
 
+  useEffect(() => {
+    fetch(`/api/bot/sessions`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          const session = data.data.find((s: { id: string }) => s.id === sessionId);
+          if (session) setPlatform(session.platform || 'telegram_bot');
+        }
+      })
+      .catch(() => {});
+  }, [sessionId]);
+
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
@@ -534,6 +548,17 @@ export default function TelegramConfigPage() {
       <main className="min-h-screen" style={{ background: 'var(--bg)' }}>
         <DashboardNav />
         <div className="pt-24 text-center" style={{ color: 'var(--text-secondary)' }}>Loading...</div>
+      </main>
+    );
+  }
+
+  if (platform === 'telegram_userbot') {
+    return (
+      <main className="min-h-screen" style={{ background: 'var(--bg)' }}>
+        <DashboardNav />
+        <div className="pt-24 px-4 md:px-8 max-w-5xl mx-auto pb-12">
+          <TelegramUserbotDashboard sessionId={sessionId} />
+        </div>
       </main>
     );
   }
