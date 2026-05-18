@@ -3,11 +3,11 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for India (2026) — Free Automation for Indian Businesses & Groups',
+  title: 'WhatsApp Bot for India (2026) - Free Automation for Indian Businesses & Groups',
   description: 'Free WhatsApp bot for Indian businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. Works with Jio, Airtel, Vi numbers. 100+ commands. No coding.',
   keywords: ['whatsapp bot india', 'free whatsapp bot india', 'whatsapp automation india', 'whatsapp business bot india', 'whatsapp group bot india', 'botwave india', 'whatsapp chatbot india'],
   openGraph: {
-    title: 'WhatsApp Bot for India (2026) — Free Automation',
+    title: 'WhatsApp Bot for India (2026) - Free Automation',
     description: 'Free WhatsApp bot for Indian businesses. 100+ commands, no coding. Works with Jio, Airtel, Vi.',
     url: 'https://www.botwave.online/whatsapp-bot-india',
     type: 'website',
@@ -39,7 +39,7 @@ export default function IndiaLandingPage() {
             Free WhatsApp Bot<br />for India
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8">
-            100+ commands for Indian businesses and communities. Auto-replies, AI chat in Hindi and English, stickers, anti-spam, group management — all free. Works with Jio, Airtel, and Vi.
+            100+ commands for Indian businesses and communities. Auto-replies, AI chat in Hindi and English, stickers, anti-spam, group management - all free. Works with Jio, Airtel, and Vi.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
@@ -63,8 +63,8 @@ export default function IndiaLandingPage() {
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-8 text-center">Why Indian Users Love BotWave</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { title: 'Works with All Indian Networks', desc: 'Jio, Airtel, Vi (Vodafone Idea), BSNL — BotWave works seamlessly with every Indian carrier.' },
-              { title: 'AI Chat in Hindi & English', desc: 'Ask questions, translate, write — the AI works in Hindi, English, Tamil, Telugu, and 100+ languages.' },
+              { title: 'Works with All Indian Networks', desc: 'Jio, Airtel, Vi (Vodafone Idea), BSNL - BotWave works seamlessly with every Indian carrier.' },
+              { title: 'AI Chat in Hindi & English', desc: 'Ask questions, translate, write - the AI works in Hindi, English, Tamil, Telugu, and 100+ languages.' },
               { title: 'Business Automation', desc: 'Auto-replies for customer queries, order updates, and support. Perfect for Indian D2C brands and service businesses.' },
               { title: 'Group Management', desc: 'Manage college groups, family groups, business communities with anti-spam, polls, and welcome messages.' },
               { title: 'Free Forever Tier', desc: '300 messages/month free. No credit card. No hidden charges. Upgrade only when your business grows.' },
@@ -85,7 +85,7 @@ export default function IndiaLandingPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {[
               { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026' },
-              { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI' },
+              { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI' },
               { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free' },
               { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026)' },
             ].map((post) => (

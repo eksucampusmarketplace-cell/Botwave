@@ -73,7 +73,7 @@ export async function POST(
           body: JSON.stringify({ action: 'disconnect', sessionId: id }),
         });
       } catch {
-        // Non-critical — sync loop will handle cleanup
+        // Non-critical - sync loop will handle cleanup
       }
     }
 

@@ -28,7 +28,7 @@ const HEALTH_CHECK_TIMEOUT = 5_000;
 // Healthy results cached for 30s, unhealthy for 60s (backoff for dead workers).
 const workerHealthCache = new Map<string, { healthy: boolean; checkedAt: number }>();
 const HEALTH_CACHE_TTL_HEALTHY = 30_000;  // 30s
-const HEALTH_CACHE_TTL_UNHEALTHY = 60_000; // 60s — don't spam dead workers
+const HEALTH_CACHE_TTL_UNHEALTHY = 60_000; // 60s - don't spam dead workers
 
 // Track consecutive failures per worker. After threshold, enter extended backoff.
 const workerConsecutiveFailures = new Map<string, number>();
@@ -88,7 +88,7 @@ export async function isWorkerHealthy(url: string): Promise<boolean> {
  */
 export async function assignWorkerAsync(): Promise<string | null> {
   if (!WORKER_URLS.length) {
-    console.log('[WORKER] No worker URLs configured — session will run on main service');
+    console.log('[WORKER] No worker URLs configured - session will run on main service');
     return null;
   }
 
@@ -99,7 +99,7 @@ export async function assignWorkerAsync(): Promise<string | null> {
   try {
     pairingCounts = await getPairingCountsByWorker();
   } catch (err) {
-    console.warn('[WORKER] Failed to query pairing counts — falling back to round-robin:', err);
+    console.warn('[WORKER] Failed to query pairing counts - falling back to round-robin:', err);
   }
 
   // Check health of all workers in parallel
@@ -122,7 +122,7 @@ export async function assignWorkerAsync(): Promise<string | null> {
     return chosen;
   }
 
-  console.warn('[WORKER] No healthy workers found — session will run on main service');
+  console.warn('[WORKER] No healthy workers found - session will run on main service');
   counter++;
   return null;
 }

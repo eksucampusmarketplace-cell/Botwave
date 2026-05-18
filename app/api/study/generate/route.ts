@@ -31,7 +31,7 @@ function parseJsonFromResponse(text: string): unknown {
   return JSON.parse(text.trim());
 }
 
-// POST — generate summary, questions, or flashcards for a material
+// POST - generate summary, questions, or flashcards for a material
 export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

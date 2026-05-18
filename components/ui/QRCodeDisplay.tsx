@@ -155,7 +155,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
             </motion.div>
           )}
 
-          {/* Tab switcher — only show when both QR and pairing code are available */}
+          {/* Tab switcher - only show when both QR and pairing code are available */}
           {!isConnected && hasContent && qrCode && pairingCode && (
             <div className="flex mb-4 border border-[var(--border)] rounded-xl overflow-hidden">
               <button
@@ -278,7 +278,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                 <div className="flex items-start gap-2">
                   <span className="text-yellow-500 text-xs mt-0.5">!</span>
                   <p className="text-xs text-yellow-700 dark:text-yellow-600/80 leading-relaxed">
-                    WhatsApp may show a &quot;could be a scam&quot; warning — this is normal. Tap <span className="text-yellow-500 font-bold">Continue</span> to proceed.
+                    WhatsApp may show a &quot;could be a scam&quot; warning - this is normal. Tap <span className="text-yellow-500 font-bold">Continue</span> to proceed.
                   </p>
                 </div>
               </div>
@@ -306,7 +306,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                         Code not connecting?
                       </p>
                       <p className="text-xs text-yellow-700 dark:text-yellow-600/80 leading-relaxed">
-                        Try <span className="font-bold">scanning the QR code</span> instead — you can even use a <span className="font-bold">friend&apos;s phone</span> to scan it for you. Just switch to the <span className="text-yellow-600 dark:text-yellow-500 font-bold">Scan QR Code</span> tab above.
+                        Try <span className="font-bold">scanning the QR code</span> instead - you can even use a <span className="font-bold">friend&apos;s phone</span> to scan it for you. Just switch to the <span className="text-yellow-600 dark:text-yellow-500 font-bold">Scan QR Code</span> tab above.
                       </p>
                     </div>
                   </div>
@@ -322,7 +322,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
             </div>
           )}
 
-          {/* Only pairing code available (no QR) — show hint about QR */}
+          {/* Only pairing code available (no QR) - show hint about QR */}
           {!isConnected && pairingCode && !qrCode && (
             <div className="text-center mt-2 mb-3">
               <span className="text-xs text-[var(--text-muted)]">QR code not available for this session</span>
@@ -386,7 +386,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               </div>
               <p className="text-xs text-[var(--text-muted)]">
                 {loadingElapsed >= 20
-                  ? 'Taking a bit longer than usual — hang tight, your code is being generated.'
+                  ? 'Taking a bit longer than usual - hang tight, your code is being generated.'
                   : 'This may take 10-20 seconds.'}
               </p>
             </div>

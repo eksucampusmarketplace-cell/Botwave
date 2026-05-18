@@ -2,10 +2,10 @@
  * In-WhatsApp upgrade flow.
  *
  * Instead of "go to the dashboard", users can:
- * - !upgrade — see plans and pricing
- * - !upgrade lite — initiate payment for Lite plan
- * - !upgrade standard — initiate payment for Standard plan
- * - !upgrade boss — initiate payment for Boss plan
+ * - !upgrade - see plans and pricing
+ * - !upgrade lite - initiate payment for Lite plan
+ * - !upgrade standard - initiate payment for Standard plan
+ * - !upgrade boss - initiate payment for Boss plan
  *
  * The command generates a Squad payment link and sends it directly
  * in the chat, so the user can tap to pay without leaving WhatsApp.
@@ -39,7 +39,7 @@ async function handleUpgrade(
   const sub = await getUserSubscription(userId);
   const requestedPlan = args[0]?.toLowerCase();
 
-  // No plan specified — show plan comparison
+  // No plan specified - show plan comparison
   if (!requestedPlan) {
     await showPlanMenu(context, sock, sub.plan);
     return;
@@ -80,7 +80,7 @@ async function handleUpgrade(
   const plan = PLANS[requestedPlan];
   if (!plan) return;
   const msg =
-    `💳 *Upgrade to ${plan.name}* — ₦${plan.price.toLocaleString()}/mo\n\n` +
+    `💳 *Upgrade to ${plan.name}* - ₦${plan.price.toLocaleString()}/mo\n\n` +
     `*What you get:*\n` +
     plan.features.map(f => `• ${f}`).join('\n') + '\n\n' +
     `━━━━━━━━━━━━━━━━━\n` +

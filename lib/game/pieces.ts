@@ -1,4 +1,4 @@
-// Chess piece rendering — Unicode pieces with multiple style sets
+// Chess piece rendering - Unicode pieces with multiple style sets
 // Each style maps piece codes to display characters/SVG paths
 
 export type PieceStyle = 'classic' | 'neo' | 'alpha' | 'merida' | 'pixel' | 'emoji' | 'text';

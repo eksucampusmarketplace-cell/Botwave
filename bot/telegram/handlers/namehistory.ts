@@ -1,5 +1,5 @@
 /**
- * User Name/Username Change Tracking — detects and logs when users change
+ * User Name/Username Change Tracking - detects and logs when users change
  * their name or username, with full history.
  */
 
@@ -71,7 +71,7 @@ export function registerNameHistoryHandlers(bot: Bot, sessionId: string): void {
     try {
       const last = await getLastSnapshot(sessionId, userId);
       if (!last) {
-        // First time seeing this user — save initial snapshot
+        // First time seeing this user - save initial snapshot
         await saveSnapshot(sessionId, userId, current, 'initial');
       } else {
         const changes: string[] = [];
@@ -87,7 +87,7 @@ export function registerNameHistoryHandlers(bot: Bot, sessionId: string): void {
           // Notify in chat if log channel is not set
           const config = await import('../utils/db').then(m => m.getGroupConfig(sessionId, ctx.chat!.id.toString()));
           if (config.log_channel_id) {
-            let text = `👤 <b>User update</b> — <a href="tg://user?id=${ctx.from.id}">${escapeHtml(current.first_name)}</a>\n`;
+            let text = `👤 <b>User update</b> - <a href="tg://user?id=${ctx.from.id}">${escapeHtml(current.first_name)}</a>\n`;
             if (changes.includes('name')) {
               const oldName = `${last.first_name}${last.last_name ? ' ' + last.last_name : ''}`;
               const newName = `${current.first_name}${current.last_name ? ' ' + current.last_name : ''}`;
@@ -144,7 +144,7 @@ export function registerNameHistoryHandlers(bot: Bot, sessionId: string): void {
       const name = `${entry.first_name}${entry.last_name ? ' ' + entry.last_name : ''}`;
       const username = entry.username ? `@${entry.username}` : 'no username';
       const badge = entry.change_type === 'initial' ? '🆕' : '✏️';
-      text += `${badge} ${escapeHtml(name)} (${escapeHtml(username)}) — ${date}\n`;
+      text += `${badge} ${escapeHtml(name)} (${escapeHtml(username)}) - ${date}\n`;
     }
 
     await ctx.reply(text, { parse_mode: 'HTML' });

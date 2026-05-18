@@ -72,10 +72,10 @@ export function registerBlacklistHandlers(bot: Bot, sessionId: string): void {
         `<b>Blacklist Mode</b>\n\n` +
         `Current: <b>${current}</b>\n\n` +
         `Usage: /blacklistmode <${validModes.join('|')}>\n` +
-        `• delete — delete the message\n` +
-        `• warn — delete + warn the user\n` +
-        `• mute — delete + mute the user\n` +
-        `• ban — delete + ban the user`,
+        `• delete - delete the message\n` +
+        `• warn - delete + warn the user\n` +
+        `• mute - delete + mute the user\n` +
+        `• ban - delete + ban the user`,
         { parse_mode: 'HTML' },
       );
       return;

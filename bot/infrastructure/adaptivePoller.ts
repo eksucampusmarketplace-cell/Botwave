@@ -1,5 +1,5 @@
 /**
- * Adaptive Poller — Dynamically adjusts polling intervals based on system health.
+ * Adaptive Poller - Dynamically adjusts polling intervals based on system health.
  *
  * Problem: Fixed polling intervals waste queries when Supabase is throttled
  * (circuit OPEN) and are unnecessarily slow during healthy periods after recovery.
@@ -26,7 +26,7 @@ const pollerErrors = new Map<string, { errors: number; lastError: number; total:
  */
 export function markRecovery(): void {
   lastRecoveryTime = Date.now();
-  console.log('[ADAPTIVE] Circuit recovered — entering 2min gentle polling period');
+  console.log('[ADAPTIVE] Circuit recovered - entering 2min gentle polling period');
 }
 
 /**
@@ -39,7 +39,7 @@ export function getPollingMultiplier(): number {
   if (state === 'HALF_OPEN') return 2.0;
   if (state === 'OPEN') return Infinity; // caller should skip entirely
 
-  // Recently recovered — ease back in
+  // Recently recovered - ease back in
   if (lastRecoveryTime > 0 && Date.now() - lastRecoveryTime < RECOVERY_COOLDOWN_MS) {
     return 1.5;
   }
@@ -59,7 +59,7 @@ export function recordPollerError(pollerName: string): void {
 }
 
 /**
- * Record a poller success — resets the consecutive error count.
+ * Record a poller success - resets the consecutive error count.
  */
 export function recordPollerSuccess(pollerName: string): void {
   const existing = pollerErrors.get(pollerName);

@@ -5,7 +5,7 @@
  *   3. User-level preference (set via /mylang for DMs)
  *   4. Auto-detection from group chat, bio, name, admin info
  *
- * All lookups are in-memory via the i18n module — zero DB hits per message.
+ * All lookups are in-memory via the i18n module - zero DB hits per message.
  */
 
 import { Bot } from 'grammy';
@@ -91,7 +91,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     }
   }).catch(() => {});
 
-  // ── /setlang — Group admin sets group language ──
+  // ── /setlang - Group admin sets group language ──
   bot.command('setlang', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
 
@@ -101,7 +101,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     if (!lang) {
       let text = '<b>Available Languages</b>\n\n';
       for (const [code, name] of Object.entries(SUPPORTED_LOCALES)) {
-        text += `<code>${code}</code> — ${name}\n`;
+        text += `<code>${code}</code> - ${name}\n`;
       }
       text += '\nUsage: /setlang <code>';
       await ctx.reply(text, { parse_mode: 'HTML' });
@@ -121,7 +121,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(t('lang.set', lang, { lang: name }), { parse_mode: 'HTML' });
   });
 
-  // ── /mylang — User sets personal language preference ──
+  // ── /mylang - User sets personal language preference ──
   bot.command('mylang', async (ctx) => {
     const args = (ctx.message?.text || '').split(/\s+/).slice(1);
     const lang = args[0]?.toLowerCase();
@@ -145,7 +145,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(t('lang.user_set', locale, { lang: SUPPORTED_LOCALES[lang] }), { parse_mode: 'HTML' });
   });
 
-  // ── /lang — Show current language info ──
+  // ── /lang - Show current language info ──
   bot.command('lang', async (ctx) => {
     const userId = ctx.from?.id.toString();
     const chatId = ctx.chat?.id.toString();
@@ -166,7 +166,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(text, { parse_mode: 'HTML' });
   });
 
-  // ── /detectlang — Detect language of text/reply ──
+  // ── /detectlang - Detect language of text/reply ──
   bot.command('detectlang', async (ctx) => {
     const text = ctx.message?.reply_to_message?.text || (ctx.message?.text || '').split(/\s+/).slice(1).join(' ');
     if (!text) {
@@ -179,7 +179,7 @@ export function registerLanguageHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(t('lang.detected', locale, { lang: name }), { parse_mode: 'HTML' });
   });
 
-  // ── Auto-detection middleware — sample group messages ──
+  // ── Auto-detection middleware - sample group messages ──
   bot.on('message:text', async (ctx, next) => {
     if (ctx.chat?.type === 'private') return next();
     const chatId = ctx.chat!.id.toString();

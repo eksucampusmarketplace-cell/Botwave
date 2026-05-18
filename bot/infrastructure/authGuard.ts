@@ -1,5 +1,5 @@
 /**
- * Supabase Auth Guard — Deduplicates concurrent token refresh requests.
+ * Supabase Auth Guard - Deduplicates concurrent token refresh requests.
  *
  * Problem: When Supabase returns 409 "Too many concurrent token refresh requests",
  * it means multiple parts of the bot are triggering auth token refreshes at the
@@ -71,7 +71,7 @@ export async function withAuthGuard(authFn: () => Promise<boolean>): Promise<boo
       consecutiveAuthFailures++;
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('409') || msg.includes('conflict') || msg.includes('concurrent')) {
-        console.warn(`[AUTH-GUARD] Token refresh conflict (attempt ${consecutiveAuthFailures}) — backing off`);
+        console.warn(`[AUTH-GUARD] Token refresh conflict (attempt ${consecutiveAuthFailures}) - backing off`);
       } else {
         console.error(`[AUTH-GUARD] Auth operation failed:`, msg);
       }

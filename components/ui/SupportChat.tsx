@@ -60,7 +60,7 @@ export default function SupportChat() {
 
   // AI chatbot state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { role: 'bot', text: "Hi! I'm BotWave AI. Ask me anything about BotWave — commands, features, pricing, troubleshooting, and more!", timestamp: Date.now() },
+    { role: 'bot', text: "Hi! I'm BotWave AI. Ask me anything about BotWave - commands, features, pricing, troubleshooting, and more!", timestamp: Date.now() },
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);

@@ -67,7 +67,7 @@ export function registerXpHandlers(bot: Bot, sessionId: string): void {
     const medals = ['🥇', '🥈', '🥉'];
     const lines = top.map((entry, i) => {
       const medal = medals[i] || `${i + 1}.`;
-      return `${medal} <code>${entry.user_id}</code> — Level ${entry.level} (${entry.xp} XP)`;
+      return `${medal} <code>${entry.user_id}</code> - Level ${entry.level} (${entry.xp} XP)`;
     });
 
     await ctx.reply(

@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-// POST /api/support/subscribe — save push subscription for support notifications
+// POST /api/support/subscribe - save push subscription for support notifications
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/support/subscribe — remove push subscription
+// DELETE /api/support/subscribe - remove push subscription
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();

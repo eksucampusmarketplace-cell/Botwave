@@ -66,13 +66,13 @@ export function stopMonetizationScheduler(): void {
 }
 
 /**
- * Single scheduler cycle — collects and sends all pending notifications.
+ * Single scheduler cycle - collects and sends all pending notifications.
  */
 async function runSchedulerCycle(): Promise<void> {
   try {
     console.log('[MONETIZATION] Running notification cycle...');
 
-    // 0. Proactive plan expiry — downgrade expired subscriptions
+    // 0. Proactive plan expiry - downgrade expired subscriptions
     const expiredCount = await downgradeExpiredPlans();
     if (expiredCount > 0) {
       console.log(`[MONETIZATION] Proactively downgraded ${expiredCount} expired subscription(s)`);

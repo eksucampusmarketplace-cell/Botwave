@@ -1,5 +1,5 @@
 /**
- * Inlomax VTU API client — sends airtime top-ups for reward cashouts.
+ * Inlomax VTU API client - sends airtime top-ups for reward cashouts.
  *
  * API docs: https://inlomax.com/docs/airtime
  * Requires INLOMAX_API_KEY env var.

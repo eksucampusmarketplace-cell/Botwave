@@ -3,11 +3,11 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for USA (2026) — Free Automation for American Businesses & Communities',
+  title: 'WhatsApp Bot for USA (2026) - Free Automation for American Businesses & Communities',
   description: 'Free WhatsApp bot for US businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. 100+ commands. No coding. Works with any US number.',
   keywords: ['whatsapp bot usa', 'whatsapp bot united states', 'free whatsapp bot us', 'whatsapp automation usa', 'whatsapp business bot usa', 'botwave usa', 'whatsapp chatbot america'],
   openGraph: {
-    title: 'WhatsApp Bot for USA (2026) — Free Automation',
+    title: 'WhatsApp Bot for USA (2026) - Free Automation',
     description: 'Free WhatsApp bot for US businesses. 100+ commands, no coding. Auto-replies, AI chat, group management.',
     url: 'https://www.botwave.online/whatsapp-bot-usa',
     type: 'website',
@@ -39,7 +39,7 @@ export default function USALandingPage() {
             Free WhatsApp Bot<br />for the United States
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8">
-            WhatsApp is growing fast in the US. BotWave gives you 100+ commands — auto-replies, AI chat, stickers, group management, anti-spam — all free. No coding needed. Set up in 2 minutes.
+            WhatsApp is growing fast in the US. BotWave gives you 100+ commands - auto-replies, AI chat, stickers, group management, anti-spam - all free. No coding needed. Set up in 2 minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
@@ -63,8 +63,8 @@ export default function USALandingPage() {
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-8 text-center">Why US Users Choose BotWave</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { title: 'Works with Any US Number', desc: 'T-Mobile, AT&T, Verizon, Google Fi — BotWave works with all US carriers and WhatsApp numbers.' },
-              { title: 'AI-Powered Automation', desc: 'Google Gemini AI answers customer questions, writes responses, and translates — all inside WhatsApp.' },
+              { title: 'Works with Any US Number', desc: 'T-Mobile, AT&T, Verizon, Google Fi - BotWave works with all US carriers and WhatsApp numbers.' },
+              { title: 'AI-Powered Automation', desc: 'Google Gemini AI answers customer questions, writes responses, and translates - all inside WhatsApp.' },
               { title: 'Small Business Ready', desc: 'Auto-replies for customer support, appointment scheduling, and FAQ handling. Great for local businesses.' },
               { title: 'Community & Group Tools', desc: 'Manage church groups, neighborhood chats, sports leagues with anti-spam, polls, and moderation.' },
               { title: 'Privacy First', desc: 'Your session runs from your own device. Messages are never stored on our servers.' },

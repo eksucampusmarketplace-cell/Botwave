@@ -89,7 +89,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
   bot.command(['quote', 'quotes', 'q', 'inspire', 'motivation'], async (ctx) => {
     const q = randomItem(QUOTES);
     await ctx.reply(
-      `💬 <i>"${q.text}"</i>\n\n— <b>${q.author}</b>`,
+      `💬 <i>"${q.text}"</i>\n\n - <b>${q.author}</b>`,
       { parse_mode: 'HTML' },
     );
   });
@@ -133,7 +133,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`🎯 You rolled: <b>${result}</b> (1-${max})`, { parse_mode: 'HTML' });
   });
 
-  // /runs — Show a random fun action
+  // /runs - Show a random fun action
   bot.command('runs', async (ctx) => {
     const actions = [
       'runs away', 'hides behind a wall', 'does a backflip', 'moonwalks out',
@@ -144,7 +144,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`🏃 *${ctx.from?.first_name || 'User'} ${action}!*`, { parse_mode: 'Markdown' });
   });
 
-  // /donate — Show donation info
+  // /donate - Show donation info
   bot.command('donate', async (ctx) => {
     await ctx.reply(
       `❤\ufe0f <b>Support Botwave</b>\n\n` +
@@ -155,7 +155,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /markdownhelp — Show markdown formatting help
+  // /markdownhelp - Show markdown formatting help
   bot.command('markdownhelp', async (ctx) => {
     await ctx.reply(
       `<b>Markdown/HTML Formatting Help</b>\n\n` +
@@ -177,7 +177,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /limits — Show bot rate limits and usage info
+  // /limits - Show bot rate limits and usage info
   bot.command('limits', async (ctx) => {
     await ctx.reply(
       `ℹ\ufe0f <b>Bot Limits</b>\n\n` +
@@ -213,7 +213,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // AFK mention detection — reply-based and @username-based
+  // AFK mention detection - reply-based and @username-based
   bot.on('message:text', async (ctx, next) => {
     if (!ctx.from || !ctx.chat) { await next(); return; }
 

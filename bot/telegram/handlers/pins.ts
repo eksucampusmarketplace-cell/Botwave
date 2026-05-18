@@ -62,7 +62,7 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /pinned — Show link to currently pinned message
+  // /pinned - Show link to currently pinned message
   bot.command('pinned', async (ctx) => {
     if (!ctx.chat || ctx.chat.type === 'private') {
       await ctx.reply('⚠️ This command can only be used in group chats.');
@@ -86,7 +86,7 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /permapin <text> — Pin a message permanently (bot sends and pins it)
+  // /permapin <text> - Pin a message permanently (bot sends and pins it)
   bot.command('permapin', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -100,7 +100,7 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /unpinall — Unpin all messages
+  // /unpinall - Unpin all messages
   bot.command('unpinall', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     if (!(await requireBotAdmin(ctx))) return;
@@ -112,7 +112,7 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /antichannelpin <yes/no> — Automatically unpin messages sent by linked channel
+  // /antichannelpin <yes/no> - Automatically unpin messages sent by linked channel
   bot.command('antichannelpin', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -127,7 +127,7 @@ export function registerPinsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /cleanlinked <yes/no> — Auto-delete messages from linked channel
+  // /cleanlinked <yes/no> - Auto-delete messages from linked channel
   bot.command('cleanlinked', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();

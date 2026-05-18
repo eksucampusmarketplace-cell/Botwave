@@ -37,7 +37,7 @@ function AuthTerminal() {
         <div className="terminal-dot" style={{ background: '#ff5f57' }} />
         <div className="terminal-dot" style={{ background: '#febc2e' }} />
         <div className="terminal-dot" style={{ background: '#28c840' }} />
-        <span className="text-xs text-slate-500 ml-3 font-mono">auth — botwave</span>
+        <span className="text-xs text-slate-500 ml-3 font-mono">auth - botwave</span>
       </div>
       <div className="terminal-body">
         {terminalLines.slice(0, lines).map((l, i) => (
@@ -191,7 +191,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 tech-grid opacity-30" />
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
-        {/* Left — Form */}
+        {/* Left - Form */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -212,7 +212,7 @@ export default function LoginPage() {
           </Suspense>
         </motion.div>
 
-        {/* Right — Terminal */}
+        {/* Right - Terminal */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}

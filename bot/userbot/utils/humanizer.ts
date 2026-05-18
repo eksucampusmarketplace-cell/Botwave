@@ -56,7 +56,7 @@ export function typingDelay(textLength: number): Promise<void> {
 }
 
 export function readDelay(): Promise<void> {
-  // Humans don't read messages instantly — 0.5-3s delay
+  // Humans don't read messages instantly - 0.5-3s delay
   return humanDelay(500, 3000);
 }
 
@@ -233,7 +233,7 @@ export function getMessageSendDelay(): number {
 }
 
 /**
- * Session activity hours — reduce activity during sleep hours.
+ * Session activity hours - reduce activity during sleep hours.
  * Returns a multiplier (0.1 = very slow, 1.0 = normal speed).
  */
 export function getActivityMultiplier(timezoneOffset = 0): number {

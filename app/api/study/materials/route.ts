@@ -22,7 +22,7 @@ async function getUser() {
   return user;
 }
 
-// GET — list user's materials (Redis first, Supabase fallback)
+// GET - list user's materials (Redis first, Supabase fallback)
 export async function GET(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ success: true, data });
 }
 
-// POST — upload and extract a file
+// POST - upload and extract a file
 export async function POST(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE — remove a material
+// DELETE - remove a material
 export async function DELETE(request: NextRequest) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

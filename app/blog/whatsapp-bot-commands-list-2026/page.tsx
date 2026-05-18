@@ -3,11 +3,11 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-commands-list-2026' },
-  title: 'Complete WhatsApp Bot Commands List (2026) — 100+ BotWave Commands',
+  title: 'Complete WhatsApp Bot Commands List (2026) - 100+ BotWave Commands',
   description: 'The ultimate reference: all 100+ BotWave commands with examples. Stickers, AI chat, games, music, logos, study tools, media downloads & more. Bookmark this guide →',
   keywords: ['whatsapp bot commands', 'whatsapp bot commands list', 'botwave commands', 'whatsapp bot help', 'whatsapp bot features', 'all whatsapp bot commands 2026', 'whatsapp sticker bot', 'whatsapp ai bot', 'whatsapp game bot', 'whatsapp group bot', 'whatsapp download bot', 'whatsapp music bot', 'whatsapp logo maker bot'],
   openGraph: {
-    title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands',
+    title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands',
     description: 'All 100+ BotWave commands explained with examples. Stickers, AI, games, polls, media, music, logos, study tools, and more.',
     url: 'https://www.botwave.online/blog/whatsapp-bot-commands-list-2026',
     type: 'article',
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Complete WhatsApp Bot Commands List (2026) — 100+ BotWave Commands
+# Complete WhatsApp Bot Commands List (2026) - 100+ BotWave Commands
 
 **Last updated: May 2026** | 45 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-BotWave has over 100 built-in commands for your WhatsApp bot. This is the **ultimate reference guide** with detailed descriptions, usage syntax, real examples, and tips for every single command. Whether you want to make stickers, chat with AI, play games, manage groups, download media, generate logos, or study — BotWave has a command for it.
+BotWave has over 100 built-in commands for your WhatsApp bot. This is the **ultimate reference guide** with detailed descriptions, usage syntax, real examples, and tips for every single command. Whether you want to make stickers, chat with AI, play games, manage groups, download media, generate logos, or study - BotWave has a command for it.
 
 ---
 
@@ -32,7 +32,7 @@ All BotWave commands start with an exclamation mark (\`!\`). Just type the comma
 
 **Quick start**: Type \`!help\` to see the command list right inside WhatsApp. Type \`!help text\` for a quick text menu.
 
-**Reply mode**: Many commands support reply-to — reply to any message with the command to process that text (e.g. reply with \`!translate es\` to translate a message to Spanish).
+**Reply mode**: Many commands support reply-to - reply to any message with the command to process that text (e.g. reply with \`!translate es\` to translate a message to Spanish).
 
 ---
 
@@ -52,9 +52,9 @@ All BotWave commands start with an exclamation mark (\`!\`). Just type the comma
 Shows the complete list of available commands grouped by category. This is the first command every new user should try. By default it sends a beautifully formatted .docx guide with deep explanations. Use \`!help text\` for a quick text-based menu right in chat.
 
 **Usage:**
-- \`!help\` — Receive a full .docx command guide
-- \`!help text\` — Quick text menu in chat
-- \`!help quick\` — Same as !help text
+- \`!help\` - Receive a full .docx command guide
+- \`!help text\` - Quick text menu in chat
+- \`!help quick\` - Same as !help text
 
 **Tips:**
 - The .docx guide contains detailed explanations for every command
@@ -76,11 +76,11 @@ Check if the bot is online and responsive. Returns a quick status message confir
 The most popular BotWave command. Converts any image, video, or GIF into a WhatsApp sticker. Send or reply to media and type \`!sticker\` to create a sticker instantly. Supports multiple crop modes.
 
 **Usage:**
-- \`!sticker\` — Full-size sticker (default)
-- \`!sticker crop\` — Cropped to square
-- \`!sticker circle\` — Circular crop
-- \`!sticker rounded\` — Rounded corners
-- \`!sticker pack [name]\` — Set a custom sticker pack name
+- \`!sticker\` - Full-size sticker (default)
+- \`!sticker crop\` - Cropped to square
+- \`!sticker circle\` - Circular crop
+- \`!sticker rounded\` - Rounded corners
+- \`!sticker pack [name]\` - Set a custom sticker pack name
 
 **Examples:**
 - Reply to a photo with \`!sticker\` to make it a sticker
@@ -94,7 +94,7 @@ The most popular BotWave command. Converts any image, video, or GIF into a Whats
 
 ### !joke
 
-Sends a random joke from a curated collection. Every response is unique — the bot uses an anti-repeat system so you will not see the same joke twice in a row.
+Sends a random joke from a curated collection. Every response is unique - the bot uses an anti-repeat system so you will not see the same joke twice in a row.
 
 **Usage:** \`!joke\`
 
@@ -139,12 +139,12 @@ Fetches a random trending meme image from Reddit and sends it directly in chat. 
 
 ### !ai
 
-Chat with an AI assistant powered by Google Gemini 2.0 Flash. Send any question, request, or prompt and get an intelligent response. Supports multi-turn conversation — the bot remembers context from your last 10 exchanges (within 30 minutes). You can also reply to any message with \`!ai\` to ask the AI about that text.
+Chat with an AI assistant powered by Google Gemini 2.0 Flash. Send any question, request, or prompt and get an intelligent response. Supports multi-turn conversation - the bot remembers context from your last 10 exchanges (within 30 minutes). You can also reply to any message with \`!ai\` to ask the AI about that text.
 
 **Usage:**
 - \`!ai [your question or prompt]\`
 - Reply to a message with \`!ai\` to ask the AI about it
-- Just keep chatting after the first \`!ai\` — the bot remembers context
+- Just keep chatting after the first \`!ai\` - the bot remembers context
 
 **Examples:**
 - \`!ai Explain blockchain in simple terms\`
@@ -155,10 +155,10 @@ Chat with an AI assistant powered by Google Gemini 2.0 Flash. Send any question,
 - \`!ai Give me 5 business ideas for a university student in Nigeria\`
 
 **Tips:**
-- Works in any language — ask in English, Yoruba, French, Arabic, etc.
+- Works in any language - ask in English, Yoruba, French, Arabic, etc.
 - The AI remembers your conversation for 30 minutes, so you can have back-and-forth discussions
 - Reply to someone's message with \`!ai\` to get the AI's take on it
-- No API key setup needed — it works out of the box
+- No API key setup needed - it works out of the box
 
 ### !img
 
@@ -184,7 +184,7 @@ AI-powered receipt and invoice scanner. Send or reply to a photo of a receipt or
 **Usage:**
 - Send a receipt photo with caption \`!scan\`
 - Reply to a receipt photo with \`!scan\`
-- \`!scan [additional context]\` — Add context for better results
+- \`!scan [additional context]\` - Add context for better results
 
 **Examples:**
 - Send a supermarket receipt photo with caption \`!scan\`
@@ -218,9 +218,9 @@ Search for any song and receive it as an audio file directly in WhatsApp. Search
 AI-powered group chat summarizer. Use this in a group to get a concise summary of recent messages. The AI organizes the summary by topic, highlights key decisions and action items, and uses real participant names.
 
 **Usage:**
-- \`!digest\` — Summarize last few hours
-- \`!digest today\` — Today's full summary
-- \`!digest 50\` — Summarize last 50 messages
+- \`!digest\` - Summarize last few hours
+- \`!digest today\` - Today's full summary
+- \`!digest 50\` - Summarize last 50 messages
 
 **Tips:**
 - Only works in group chats
@@ -267,7 +267,7 @@ Smart FAQ system with fuzzy matching. Ask any question about BotWave and get an 
 
 ### !weather
 
-Gets current weather information for any city worldwide. Shows temperature, conditions, humidity, wind speed, and "feels like" temperature. Works with a free API — no configuration needed.
+Gets current weather information for any city worldwide. Shows temperature, conditions, humidity, wind speed, and "feels like" temperature. Works with a free API - no configuration needed.
 
 **Usage:** \`!weather [city name]\`
 
@@ -317,16 +317,16 @@ Gets your daily horoscope reading for any zodiac sign. Shows the sign emoji, ele
 Translates text to another language using auto-detection. Supports 100+ languages. You can also reply to any message with \`!translate [lang code]\` to translate it.
 
 **Usage:**
-- \`!translate [target-lang] [text]\` — Auto-detect source language
-- \`!translate [source-lang] [target-lang] [text]\` — Specify both languages
+- \`!translate [target-lang] [text]\` - Auto-detect source language
+- \`!translate [source-lang] [target-lang] [text]\` - Specify both languages
 - Reply to a message with \`!translate [target-lang]\`
 
 **Examples:**
-- \`!translate fr Good morning everyone\` — English to French
-- \`!translate es I love this song\` — English to Spanish
-- \`!translate yo Hello my friend\` — English to Yoruba
-- \`!translate ha How are you\` — English to Hausa
-- Reply to a French message with \`!translate en\` — French to English
+- \`!translate fr Good morning everyone\` - English to French
+- \`!translate es I love this song\` - English to Spanish
+- \`!translate yo Hello my friend\` - English to Yoruba
+- \`!translate ha How are you\` - English to Hausa
+- Reply to a French message with \`!translate en\` - French to English
 
 **Common language codes:** en (English), fr (French), es (Spanish), de (German), pt (Portuguese), ar (Arabic), hi (Hindi), yo (Yoruba), ha (Hausa), ig (Igbo), zu (Zulu), sw (Swahili), ja (Japanese), ko (Korean), zh (Chinese)
 
@@ -365,10 +365,10 @@ Converts currency between any two supported currencies using live exchange rates
 **Usage:** \`!currency [amount] [FROM] [TO]\`
 
 **Examples:**
-- \`!currency 100 USD NGN\` — 100 US Dollars to Nigerian Naira
-- \`!currency 50 EUR GBP\` — 50 Euros to British Pounds
-- \`!currency 1000 NGN USD\` — 1000 Naira to US Dollars
-- \`!currency 200 ZAR USD\` — 200 South African Rand to USD
+- \`!currency 100 USD NGN\` - 100 US Dollars to Nigerian Naira
+- \`!currency 50 EUR GBP\` - 50 Euros to British Pounds
+- \`!currency 1000 NGN USD\` - 1000 Naira to US Dollars
+- \`!currency 200 ZAR USD\` - 200 South African Rand to USD
 
 **Tips:**
 - Uses live exchange rates updated regularly
@@ -462,13 +462,13 @@ Creates a countdown to a specific date. Shows how many days, hours, and minutes 
 
 ### !doc
 
-Creates a beautifully formatted .docx Word document. Supports images — send an image with caption \`!doc Title\` to embed it. Your formatting, line breaks, and spacing are preserved exactly.
+Creates a beautifully formatted .docx Word document. Supports images - send an image with caption \`!doc Title\` to embed it. Your formatting, line breaks, and spacing are preserved exactly.
 
 **Usage:**
-- \`!doc My Title | Your content goes here\` — Title + content
-- Reply to any message with \`!doc My Title\` — Replied text becomes content
-- Send an image with caption \`!doc My Title\` — Image embedded in document
-- \`!doc Just type content\` — Auto-titled as "Document"
+- \`!doc My Title | Your content goes here\` - Title + content
+- Reply to any message with \`!doc My Title\` - Replied text becomes content
+- Send an image with caption \`!doc My Title\` - Image embedded in document
+- \`!doc Just type content\` - Auto-titled as "Document"
 
 **Examples:**
 - \`!doc Meeting Notes | Discussed budget, deadlines, and team assignments\`
@@ -566,7 +566,7 @@ Download videos, images, or audio from URLs. Supports YouTube, Twitter/X, Instag
 - Twitter/X supports both videos and images
 - Instagram supports reels, posts, and IGTV
 - TikTok videos are downloaded without the watermark
-- Playlists are not supported — send individual video URLs
+- Playlists are not supported - send individual video URLs
 
 ### !save
 
@@ -813,9 +813,9 @@ Converts text to fancy Unicode font styles.
 Sets a personal reminder. The bot will message you back after the specified time with your reminder. You can also view and cancel existing reminders.
 
 **Usage:**
-- \`!remind [time] [message]\` — Set a reminder
-- \`!remind\` — View your pending reminders
-- \`!remind cancel [number]\` — Cancel a specific reminder
+- \`!remind [time] [message]\` - Set a reminder
+- \`!remind\` - View your pending reminders
+- \`!remind cancel [number]\` - Cancel a specific reminder
 
 **Time formats:** \`5m\` (minutes), \`2h\` (hours), \`1d\` (days), \`30s\` (seconds)
 
@@ -835,9 +835,9 @@ Sets a personal reminder. The bot will message you back after the specified time
 Schedules a message to be sent at a specific time. Similar to reminders but designed for timed message delivery.
 
 **Usage:**
-- \`!schedule [time] [message]\` — Schedule a message
-- \`!schedule\` — View scheduled messages
-- \`!schedule cancel [number]\` — Cancel a scheduled message
+- \`!schedule [time] [message]\` - Schedule a message
+- \`!schedule\` - View scheduled messages
+- \`!schedule cancel [number]\` - Cancel a scheduled message
 
 **Examples:**
 - \`!schedule 1h Good night everyone!\`
@@ -848,10 +848,10 @@ Schedules a message to be sent at a specific time. Similar to reminders but desi
 Personal note-taking system built right into WhatsApp. Save quick notes, list all saved notes, view a specific note, or delete notes. Notes are stored per user and persist across sessions.
 
 **Usage:**
-- \`!note save [title] | [content]\` — Save a new note
-- \`!note list\` — List all your notes
-- \`!note view [number]\` — View a specific note
-- \`!note delete [number]\` — Delete a note
+- \`!note save [title] | [content]\` - Save a new note
+- \`!note list\` - List all your notes
+- \`!note view [number]\` - View a specific note
+- \`!note delete [number]\` - Delete a note
 
 **Examples:**
 - \`!note save Shopping List | Milk, bread, eggs, rice\`
@@ -861,7 +861,7 @@ Personal note-taking system built right into WhatsApp. Save quick notes, list al
 - \`!note delete 2\`
 
 **Tips:**
-- Notes are private — only you can see your notes
+- Notes are private - only you can see your notes
 - Great for storing passwords, to-do lists, quick thoughts
 - Use the pipe character | to separate title from content
 
@@ -877,7 +877,7 @@ Deletes the bot's own recent messages in a chat. Useful for cleaning up after te
 
 **Usage:** \`!purge [count]\` (1-100, default 5)
 
-**Example:** \`!purge 10\` — Delete last 10 bot messages
+**Example:** \`!purge 10\` - Delete last 10 bot messages
 
 **Tips:**
 - Bot can only delete its own messages
@@ -908,12 +908,12 @@ Creates a paste from text and returns a shareable link. Great for sharing long c
 
 ### !study
 
-Opens the BotWave Study Hub — a dedicated web interface for studying. Generates a one-time login link that takes you to a study dashboard where you can manage flashcards, take quizzes, and track your study sessions.
+Opens the BotWave Study Hub - a dedicated web interface for studying. Generates a one-time login link that takes you to a study dashboard where you can manage flashcards, take quizzes, and track your study sessions.
 
 **Usage:** \`!study\`
 
 **Tips:**
-- Opens in your browser — click the link to access
+- Opens in your browser - click the link to access
 - Your study data syncs between WhatsApp and the web interface
 
 ### !flashcard
@@ -921,10 +921,10 @@ Opens the BotWave Study Hub — a dedicated web interface for studying. Generate
 Create and review flashcards right in WhatsApp. Build your own study sets with questions and answers, then review them for spaced repetition learning.
 
 **Usage:**
-- \`!flashcard create [topic] | [question] | [answer]\` — Create a flashcard
-- \`!flashcard list\` — List all flashcard topics
-- \`!flashcard review [topic]\` — Review flashcards for a topic
-- \`!flashcard delete [id]\` — Delete a flashcard
+- \`!flashcard create [topic] | [question] | [answer]\` - Create a flashcard
+- \`!flashcard list\` - List all flashcard topics
+- \`!flashcard review [topic]\` - Review flashcards for a topic
+- \`!flashcard delete [id]\` - Delete a flashcard
 
 **Examples:**
 - \`!flashcard create Biology | What is DNA? | Deoxyribonucleic acid\`
@@ -941,12 +941,12 @@ Create and review flashcards right in WhatsApp. Build your own study sets with q
 Start a quiz session. You can quiz yourself from your flashcards or play general trivia. Tests your knowledge with questions from various categories.
 
 **Usage:**
-- \`!quiz\` — Start a general knowledge quiz
-- \`!quiz [topic]\` — Quiz from your flashcards on a specific topic
+- \`!quiz\` - Start a general knowledge quiz
+- \`!quiz [topic]\` - Quiz from your flashcards on a specific topic
 
 ### !pomodoro
 
-Starts a Pomodoro focus timer — 25 minutes of focused work followed by a 5-minute break. The bot notifies you when each period ends. A proven productivity technique.
+Starts a Pomodoro focus timer - 25 minutes of focused work followed by a 5-minute break. The bot notifies you when each period ends. A proven productivity technique.
 
 **Usage:** \`!pomodoro\`
 
@@ -1058,7 +1058,7 @@ Casts your vote on the active poll. Use the number corresponding to your choice.
 
 **Usage:** \`!vote [option number]\`
 
-**Example:** \`!vote 2\` — Votes for the second option
+**Example:** \`!vote 2\` - Votes for the second option
 
 ### !leaderboard
 
@@ -1090,7 +1090,7 @@ Gives you a random "Truth" question from the classic Truth or Dare game. Over 70
 
 ### !dare
 
-Gives you a random dare challenge. Over 70 fun and silly challenges designed for WhatsApp groups — from sending voice notes to changing profile pictures.
+Gives you a random dare challenge. Over 70 fun and silly challenges designed for WhatsApp groups - from sending voice notes to changing profile pictures.
 
 **Usage:** \`!dare\`
 
@@ -1228,8 +1228,8 @@ Shows the top-ranked players by ELO rating for chess or tic-tac-toe.
 Sets your away status. Anyone who tags or messages you will get an automatic reply saying you're away. Includes your reason if specified.
 
 **Usage:**
-- \`!afk [reason]\` — Set AFK with optional reason
-- \`!afk off\` — Turn off AFK mode
+- \`!afk [reason]\` - Set AFK with optional reason
+- \`!afk off\` - Turn off AFK mode
 
 **Examples:**
 - \`!afk Busy studying for exams\`
@@ -1253,13 +1253,13 @@ Sends a friendly (savage but harmless) roast about someone. Over 150 unique roas
 
 ### !ghost
 
-Enables ghost mode — your messages are automatically deleted after a set number of seconds. Like self-destructing messages.
+Enables ghost mode - your messages are automatically deleted after a set number of seconds. Like self-destructing messages.
 
 **Usage:**
-- \`!ghost [seconds]\` — Enable ghost mode
-- \`!ghost off\` — Disable ghost mode
+- \`!ghost [seconds]\` - Enable ghost mode
+- \`!ghost off\` - Disable ghost mode
 
-**Example:** \`!ghost 5\` — Messages disappear after 5 seconds
+**Example:** \`!ghost 5\` - Messages disappear after 5 seconds
 
 ### !type
 
@@ -1271,7 +1271,7 @@ Creates a dramatic typing effect where the message appears character by characte
 
 ### !wrap
 
-Generates a "year wrap" or profile recap — a personalized summary of your activity in the group chat, similar to Spotify Wrapped.
+Generates a "year wrap" or profile recap - a personalized summary of your activity in the group chat, similar to Spotify Wrapped.
 
 **Usage:** \`!wrap\`
 
@@ -1304,9 +1304,9 @@ Decrypts a message that was encrypted with \`!encrypt\`. Reply to the encrypted 
 Create custom command shortcuts. Map a short alias to any command you use frequently.
 
 **Usage:**
-- \`!alias set [name] = [command]\` — Create an alias
-- \`!alias list\` — Show your aliases
-- \`!alias delete [name]\` — Remove an alias
+- \`!alias set [name] = [command]\` - Create an alias
+- \`!alias list\` - Show your aliases
+- \`!alias delete [name]\` - Remove an alias
 
 **Examples:**
 - \`!alias set gm = !ai write a good morning message\`
@@ -1314,7 +1314,7 @@ Create custom command shortcuts. Map a short alias to any command you use freque
 - \`!alias set tr = !translate yo\`
 
 **Tips:**
-- Aliases are personal — only you can use yours
+- Aliases are personal - only you can use yours
 - Saved across sessions via Redis
 - Great for commands you type frequently
 
@@ -1325,8 +1325,8 @@ Pipe multiple commands together. The output of the first command becomes the inp
 **Usage:** \`!chain [cmd1] | [cmd2] | [cmd3]\`
 
 **Examples:**
-- \`!chain joke | upper\` — Get a joke and convert to uppercase
-- \`!chain quote | tts\` — Get a quote and convert to voice note
+- \`!chain joke | upper\` - Get a joke and convert to uppercase
+- \`!chain quote | tts\` - Get a quote and convert to voice note
 
 ### !recap
 
@@ -1343,9 +1343,9 @@ Shows a recap of recent group chat activity. Includes top talkers, hot topics, a
 Sets up automatic emoji reactions. When a specific word appears in a message, the bot automatically reacts with the specified emoji.
 
 **Usage:**
-- \`!react [emoji] when [word]\` — Add a react rule
-- \`!react list\` — Show active rules
-- \`!react clear\` — Remove all rules
+- \`!react [emoji] when [word]\` - Add a react rule
+- \`!react list\` - Show active rules
+- \`!react clear\` - Remove all rules
 
 **Examples:**
 - \`!react fire when lit\`
@@ -1364,7 +1364,7 @@ Shows detailed group analytics dashboard. Includes top members by message count,
 
 ### !deadman
 
-A safety switch — set a message that will be sent to a specified contact if you don't check in within a time period. Useful as a safety mechanism.
+A safety switch - set a message that will be sent to a specified contact if you don't check in within a time period. Useful as a safety mechanism.
 
 **Usage:** \`!deadman [time] [message]\`
 
@@ -1381,9 +1381,9 @@ Resets your deadman switch timer. Use this to check in and prevent the deadman m
 Set your birthday so the bot can send you birthday wishes and notify the group. Track birthdays for all group members.
 
 **Usage:**
-- \`!birthday set DD/MM\` — Set your birthday
-- \`!birthday list\` — See upcoming birthdays
-- \`!birthday check\` — Check today's birthdays
+- \`!birthday set DD/MM\` - Set your birthday
+- \`!birthday list\` - See upcoming birthdays
+- \`!birthday check\` - Check today's birthdays
 
 **Example:** \`!birthday set 25/12\`
 
@@ -1407,7 +1407,7 @@ Set your birthday so the bot can send you birthday wishes and notify the group. 
 
 ### !tagall
 
-Mentions every member of the group in a single message. Includes a custom message if provided. Use sparingly — only for truly important announcements.
+Mentions every member of the group in a single message. Includes a custom message if provided. Use sparingly - only for truly important announcements.
 
 **Usage:** \`!tagall [optional message]\`
 
@@ -1431,12 +1431,12 @@ Shows detailed group information including group name, member count, admin count
 View and configure bot settings. Manage AFK mode, bot name, welcome/goodbye messages, and more.
 
 **Usage:**
-- \`!settings\` — Show all settings
-- \`!settings afk on/off\` — Toggle AFK auto-reply
-- \`!settings afk msg [text]\` — Set AFK message
-- \`!settings name [name]\` — Set custom bot name
-- \`!settings welcome on/off\` — Toggle welcome/goodbye messages
-- \`!settings status\` — Show current settings
+- \`!settings\` - Show all settings
+- \`!settings afk on/off\` - Toggle AFK auto-reply
+- \`!settings afk msg [text]\` - Set AFK message
+- \`!settings name [name]\` - Set custom bot name
+- \`!settings welcome on/off\` - Toggle welcome/goodbye messages
+- \`!settings status\` - Show current settings
 
 ### !kick
 
@@ -1465,9 +1465,9 @@ Removes admin rights from a group member. Bot must be a group admin.
 Sets a custom welcome message for new group members. Supports placeholders that get replaced automatically.
 
 **Usage:**
-- \`!welcome\` — View current welcome message
-- \`!welcome [message]\` — Set custom message
-- \`!welcome reset\` — Reset to default
+- \`!welcome\` - View current welcome message
+- \`!welcome [message]\` - Set custom message
+- \`!welcome reset\` - Reset to default
 
 **Placeholders:** \`{name}\` (member name), \`{group}\` (group name), \`{time}\` (current time), \`{date}\` (current date), \`{count}\` (member count)
 
@@ -1478,9 +1478,9 @@ Sets a custom welcome message for new group members. Supports placeholders that 
 Sets a custom goodbye message for when members leave. Same placeholders as \`!welcome\`.
 
 **Usage:**
-- \`!goodbye\` — View current goodbye message
-- \`!goodbye [message]\` — Set custom message
-- \`!goodbye reset\` — Reset to default
+- \`!goodbye\` - View current goodbye message
+- \`!goodbye [message]\` - Set custom message
+- \`!goodbye reset\` - Reset to default
 
 **Example:** \`!goodbye Bye {name}, we'll miss you!\`
 
@@ -1489,16 +1489,16 @@ Sets a custom goodbye message for when members leave. Same placeholders as \`!we
 Toggles the anti-delete feature. When enabled, the bot saves and reposts any messages that someone deletes in the group.
 
 **Usage:**
-- \`!antidelete on\` — Enable anti-delete
-- \`!antidelete off\` — Disable anti-delete
+- \`!antidelete on\` - Enable anti-delete
+- \`!antidelete off\` - Disable anti-delete
 
 ### !recover
 
 Recovers recently deleted messages. Shows what was deleted and by whom.
 
 **Usage:**
-- \`!recover\` — Recover deleted messages in chat
-- \`!recover pr\` — Send recovered messages privately (DM)
+- \`!recover\` - Recover deleted messages in chat
+- \`!recover pr\` - Send recovered messages privately (DM)
 
 ### !forward
 
@@ -1523,11 +1523,11 @@ Forwards a message to another chat. Reply to any message with \`!forward\`.
 Generate beautiful logos with 45+ styles including neon, galaxy, minimalist, retro, watercolor, pixel, gaming, cyberpunk, and many more. Each style produces a unique, randomized design. Free users get 10 styles, premium users unlock all 45+.
 
 **Usage:**
-- \`!logo [style] [name]\` — Generate a logo
-- \`!logo preview\` — See all available styles in a grid
-- \`!logo [name]\` — Random style with your name
-- \`!logo [style] [name] | [tagline]\` — Logo with tagline
-- \`!logo [style] [name] | [tagline] | [color]\` — Custom color
+- \`!logo [style] [name]\` - Generate a logo
+- \`!logo preview\` - See all available styles in a grid
+- \`!logo [name]\` - Random style with your name
+- \`!logo [style] [name] | [tagline]\` - Logo with tagline
+- \`!logo [style] [name] | [tagline] | [color]\` - Custom color
 
 **Examples:**
 - \`!logo neon BotWave\`
@@ -1541,7 +1541,7 @@ Generate beautiful logos with 45+ styles including neon, galaxy, minimalist, ret
 **Tips:**
 - Use \`!logo preview\` to see a grid of all styles
 - Free styles: gradient, minimalist, neon, retro, watercolor, pixel, gaming, fire, ocean, nature
-- Each generation is unique — run the same command twice for different results
+- Each generation is unique - run the same command twice for different results
 - AI-powered suggestions available with \`!logo ai [name]\`
 
 ### !brandkit
@@ -1766,8 +1766,8 @@ Shows information about an NPM (Node.js) package including description, version,
 Two modes: domain lookup or user lookup. For domains, shows registration info. Reply to a user's message with \`!whois\` to see their name, phone number, and about info.
 
 **Usage:**
-- \`!whois [domain]\` — Domain registration info
-- Reply to a message with \`!whois\` — User info lookup
+- \`!whois [domain]\` - Domain registration info
+- Reply to a message with \`!whois\` - User info lookup
 
 **Examples:**
 - \`!whois google.com\`
@@ -1839,11 +1839,11 @@ Shows your current subscription plan, message quota, session limits, and AI quer
 ## Command Tips & Tricks
 
 1. **Commands are case-insensitive**: \`!STICKER\`, \`!Sticker\`, and \`!sticker\` all work
-2. **Reply mode**: Most text commands support reply-to — reply to any message with the command to process that text
+2. **Reply mode**: Most text commands support reply-to - reply to any message with the command to process that text
 3. **Commands work in groups and DMs**: Most commands work everywhere
 4. **Chain commands**: Use \`!chain cmd1 | cmd2\` to pipe output from one command to another
 5. **Custom aliases**: Use \`!alias set shortcut = !full command\` to create shortcuts
-6. **AI conversation**: After using \`!ai\`, the bot remembers context for 30 minutes — no need to repeat \`!ai\` when replying
+6. **AI conversation**: After using \`!ai\`, the bot remembers context for 30 minutes - no need to repeat \`!ai\` when replying
 7. **Ghost mode**: Use \`!ghost 5\` to make your bot messages self-destruct after 5 seconds
 8. **Type !help text in any chat**: The fastest way to see what's available
 
@@ -1860,8 +1860,8 @@ All basic commands are included in BotWave's free tier. Sign up, connect your Wh
 
 const relatedPosts = [
   { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
 ];
 
 export default function Article() {

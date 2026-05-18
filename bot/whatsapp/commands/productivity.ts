@@ -40,7 +40,7 @@ async function handleRemind(context: MessageContext, args: string[], sock: any):
     reminders.forEach((r, i) => {
       const timeLeft = Math.max(0, new Date(r.remind_at).getTime() - Date.now());
       const mins = Math.ceil(timeLeft / 60000);
-      msg += `${i + 1}. "${r.message}" — in ${mins}min\n`;
+      msg += `${i + 1}. "${r.message}" - in ${mins}min\n`;
     });
     msg += '\nUse !remind cancel <number> to remove one.';
     await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
@@ -94,7 +94,7 @@ async function handleNote(context: MessageContext, args: string[], sock: any): P
     let msg = '*Your Notes:*\n';
     notes.forEach((n, i) => {
       const preview = n.content.length > 50 ? n.content.slice(0, 50) + '...' : n.content;
-      msg += `${i + 1}. *${n.title}* — ${preview}\n`;
+      msg += `${i + 1}. *${n.title}* - ${preview}\n`;
     });
     msg += '\nUse !note view <number> to read, !note delete <number> to remove.';
     await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
@@ -186,7 +186,7 @@ async function handleStats(context: MessageContext, sock: any): Promise<void> {
       msg += '\n*TOP USERS*\n';
       stats.topUsers.slice(0, 5).forEach((u: { user_name?: string; user_jid: string; message_count: number }, i: number) => {
         const name = u.user_name || u.user_jid.split('@')[0];
-        msg += `${i + 1}. ${name} — ${u.message_count} msgs\n`;
+        msg += `${i + 1}. ${name} - ${u.message_count} msgs\n`;
       });
     }
 
@@ -217,7 +217,7 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
       const timeLeft = Math.max(0, new Date(s.send_at).getTime() - Date.now());
       const mins = Math.ceil(timeLeft / 60000);
       const preview = s.message.length > 30 ? s.message.slice(0, 30) + '...' : s.message;
-      msg += `${i + 1}. "${preview}" — sends in ${mins}min\n`;
+      msg += `${i + 1}. "${preview}" - sends in ${mins}min\n`;
     });
     msg += '\nUse !schedule cancel <number> to remove.';
     await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
@@ -257,7 +257,7 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
 async function handlePurge(context: MessageContext, args: string[], sock: any): Promise<void> {
   const count = parseInt(args[0]) || 5;
   if (count < 1 || count > 100) {
-    await sendReply(context.chatJid, '!purge [1-100] — Delete your own last N messages\n\nExample: !purge 10', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, '!purge [1-100] - Delete your own last N messages\n\nExample: !purge 10', sock, context.rawMessage.key, context.queue);
     return;
   }
 
@@ -470,7 +470,7 @@ async function handleBase64(context: MessageContext, args: string[], sock: any):
   if (args.length < 2) {
     await sendReply(
       context.chatJid,
-      '*BASE64*\n\n!base64 encode [text] — Encode text\n!base64 decode [encoded] — Decode base64\n\nExample: !base64 encode Hello World',
+      '*BASE64*\n\n!base64 encode [text] - Encode text\n!base64 decode [encoded] - Decode base64\n\nExample: !base64 encode Hello World',
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -498,7 +498,7 @@ async function handleHash(context: MessageContext, args: string[], sock: any, co
   if (!args.length) {
     await sendReply(
       context.chatJid,
-      '*HASH GENERATOR*\n\n!hash [text] — Generate MD5 + SHA-256\n!md5 [text] — MD5 only\n!sha256 [text] — SHA-256 only\n\nExample: !hash Hello World',
+      '*HASH GENERATOR*\n\n!hash [text] - Generate MD5 + SHA-256\n!md5 [text] - MD5 only\n!sha256 [text] - SHA-256 only\n\nExample: !hash Hello World',
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -712,11 +712,11 @@ async function handleFlashcard(context: MessageContext, args: string[], sock: an
 
   await sendReply(context.chatJid,
     '*FLASHCARDS*\n\n' +
-    '!flashcard add [front] | [back] — Add a card\n' +
-    '!flashcard list — View all cards\n' +
-    '!flashcard test — Random review\n' +
-    '!flashcard delete [n] — Delete a card\n' +
-    '!flashcard clear — Delete all cards\n\n' +
+    '!flashcard add [front] | [back] - Add a card\n' +
+    '!flashcard list - View all cards\n' +
+    '!flashcard test - Random review\n' +
+    '!flashcard delete [n] - Delete a card\n' +
+    '!flashcard clear - Delete all cards\n\n' +
     'Example: !flashcard add Capital of France? | Paris',
     sock, context.rawMessage.key, context.queue);
 }

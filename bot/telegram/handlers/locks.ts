@@ -114,7 +114,7 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
         can_add_web_page_previews: true,
         can_invite_users: true,
       });
-      await ctx.reply('Group opened — all members can send messages.');
+      await ctx.reply('Group opened - all members can send messages.');
     } catch {
       await ctx.reply('❌ Failed to open group. Am I admin?');
     }
@@ -136,13 +136,13 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
         can_add_web_page_previews: false,
         can_invite_users: false,
       });
-      await ctx.reply('Group closed — members cannot send messages.');
+      await ctx.reply('Group closed - members cannot send messages.');
     } catch {
       await ctx.reply('❌ Failed to close group. Am I admin?');
     }
   });
 
-  // /lockwarns <yes/no> — Warn users when they send locked content
+  // /lockwarns <yes/no> - Warn users when they send locked content
   bot.command('lockwarns', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -157,13 +157,13 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /locktypes — List all available lock types
+  // /locktypes - List all available lock types
   bot.command('locktypes', async (ctx) => {
     const types = VALID_LOCK_TYPES.map(t => `• <code>${t}</code>`).join('\n');
     await ctx.reply(`<b>Available Lock Types</b>\n\n${types}\n\n• <code>all</code> (lock everything)`, { parse_mode: 'HTML' });
   });
 
-  // /allowlist <url/domain> — Whitelist a URL from link lock
+  // /allowlist <url/domain> - Whitelist a URL from link lock
   bot.command('allowlist', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const url = (ctx.match?.toString() || '').trim();
@@ -177,7 +177,7 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Added <code>${escapeHtml(url)}</code> to allowlist.`, { parse_mode: 'HTML' });
   });
 
-  // /rmallowlist <url/domain> — Remove from allowlist
+  // /rmallowlist <url/domain> - Remove from allowlist
   bot.command('rmallowlist', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const url = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -189,7 +189,7 @@ export function registerLocksHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Removed from allowlist.`);
   });
 
-  // /rmallowlistall — Clear entire allowlist
+  // /rmallowlistall - Clear entire allowlist
   bot.command('rmallowlistall', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { lock_allowlist: [] } as Record<string, unknown>);

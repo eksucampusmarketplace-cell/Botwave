@@ -1,8 +1,8 @@
 /**
- * StatusViewer — Auto-view and optionally react to WhatsApp status updates.
+ * StatusViewer - Auto-view and optionally react to WhatsApp status updates.
  *
  * Anti-ban measures:
- * - Random delay 5–15s between each status view/react
+ * - Random delay 5-15s between each status view/react
  * - Skip ~15% of statuses randomly (human-like)
  * - Unlimited views (delays keep it ban-safe)
  * - Process one at a time via queue (no bursts)

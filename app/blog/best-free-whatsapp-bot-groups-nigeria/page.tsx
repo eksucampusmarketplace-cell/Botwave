@@ -4,11 +4,11 @@ import BlogArticle from '../_components/BlogArticle';
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/best-free-whatsapp-bot-groups-nigeria' },
   title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
-  description: 'The best WhatsApp group bot for Nigeria — anti-spam, polls, games, AI chat, stickers & 100+ commands. Free forever, no catch. See why Nigerian groups are switching →',
+  description: 'The best WhatsApp group bot for Nigeria - anti-spam, polls, games, AI chat, stickers & 100+ commands. Free forever, no catch. See why Nigerian groups are switching →',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],
   openGraph: {
     title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
-    description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat — all free. No catch.',
+    description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat - all free. No catch.',
     url: 'https://www.botwave.online/blog/best-free-whatsapp-bot-groups-nigeria',
     type: 'article',
     images: [{ url: '/api/og?title=Best+Free+WhatsApp+Bot+for+Groups+in+Nigeria+(2026)', width: 1200, height: 630 }],
@@ -20,19 +20,19 @@ const content = `
 
 **Last updated: May 2026** | 6 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-If you manage a WhatsApp group in Nigeria — whether it's a class group, church group, business community, or just a group of friends — you know how chaotic things can get. Spam, off-topic messages, people asking the same questions repeatedly. What if a bot could handle all of that for you?
+If you manage a WhatsApp group in Nigeria - whether it's a class group, church group, business community, or just a group of friends - you know how chaotic things can get. Spam, off-topic messages, people asking the same questions repeatedly. What if a bot could handle all of that for you?
 
 ## Why Nigerian Groups Need a Bot
 
-Nigeria has over 100 million WhatsApp users. For many Nigerians, WhatsApp IS the internet. Class groups, business networks, church communities, neighborhood associations — everything runs on WhatsApp.
+Nigeria has over 100 million WhatsApp users. For many Nigerians, WhatsApp IS the internet. Class groups, business networks, church communities, neighborhood associations - everything runs on WhatsApp.
 
 But managing these groups is a nightmare:
-- **Spam** — people sharing irrelevant links, promotions, chain messages
-- **Repetitive questions** — "When is the exam?", "What's the price?", "Where's the location?"
-- **Low engagement** — people join but never interact
-- **Admin burnout** — you spend hours managing instead of participating
+- **Spam** - people sharing irrelevant links, promotions, chain messages
+- **Repetitive questions** - "When is the exam?", "What's the price?", "Where's the location?"
+- **Low engagement** - people join but never interact
+- **Admin burnout** - you spend hours managing instead of participating
 
 A good WhatsApp bot solves all of these problems.
 
@@ -52,11 +52,11 @@ Clean, organized voting that everyone can see.
 
 ### Games & Entertainment
 Keep your group active with:
-- \`!trivia\` — General knowledge trivia with leaderboards
-- \`!hangman\` — Classic word guessing game
-- \`!joke\` — Random jokes
-- \`!quote\` — Inspirational quotes
-- \`!8ball\` — Ask the magic 8-ball anything
+- \`!trivia\` - General knowledge trivia with leaderboards
+- \`!hangman\` - Classic word guessing game
+- \`!joke\` - Random jokes
+- \`!quote\` - Inspirational quotes
+- \`!8ball\` - Ask the magic 8-ball anything
 
 ### AI Chat
 Your group gets access to an AI assistant. Ask any question:
@@ -96,19 +96,19 @@ That's it. The bot works in every group where your connected WhatsApp number is 
 
 ## Why BotWave Beats Other Options
 
-- **It's actually free** — not a "free trial" that expires after 7 days
-- **Built for Nigeria** — Naira payments, optimized for Nigerian internet
-- **Advanced anti-ban** — your account is protected with human-like behavior simulation
-- **No coding needed** — sign up, scan QR, done
-- **50+ commands** — more features than most paid bots
+- **It's actually free** - not a "free trial" that expires after 7 days
+- **Built for Nigeria** - Naira payments, optimized for Nigerian internet
+- **Advanced anti-ban** - your account is protected with human-like behavior simulation
+- **No coding needed** - sign up, scan QR, done
+- **50+ commands** - more features than most paid bots
 
 ## Real Use Cases in Nigeria
 
-- **University class groups** — Polls for meeting times, AI for homework help, anti-spam for focus
-- **Church/mosque groups** — Share quotes, organize events with polls, keep discussions on-topic
-- **Business communities** — Automated FAQs, customer engagement, clean group management
-- **Gaming communities** — Trivia, hangman, and other games to keep members active
-- **Neighborhood groups** — Weather updates, polls for community decisions, anti-spam
+- **University class groups** - Polls for meeting times, AI for homework help, anti-spam for focus
+- **Church/mosque groups** - Share quotes, organize events with polls, keep discussions on-topic
+- **Business communities** - Automated FAQs, customer engagement, clean group management
+- **Gaming communities** - Trivia, hangman, and other games to keep members active
+- **Neighborhood groups** - Weather updates, polls for community decisions, anti-spam
 
 ## Conclusion
 
@@ -118,9 +118,9 @@ If you're managing a WhatsApp group in Nigeria, BotWave is the best free option 
 `;
 
 const relatedPosts = [
-  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
-  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically' },
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically' },
 ];
 
 export default function Article() {

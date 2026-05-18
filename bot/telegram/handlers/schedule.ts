@@ -25,11 +25,11 @@ export function registerScheduleHandlers(bot: Bot, sessionId: string): void {
     if (!raw) {
       await ctx.reply(
         '<b>Schedule Messages</b>\n\n' +
-        '<code>/schedule 30m Hello world</code> — send in 30 minutes\n' +
-        '<code>/schedule 2h Reminder!</code> — send in 2 hours\n' +
-        '<code>/schedule daily 09:00 Good morning!</code> — daily at 09:00 UTC\n' +
-        '<code>/schedule list</code> — view scheduled messages\n' +
-        '<code>/schedule cancel 5</code> — cancel message #5',
+        '<code>/schedule 30m Hello world</code> - send in 30 minutes\n' +
+        '<code>/schedule 2h Reminder!</code> - send in 2 hours\n' +
+        '<code>/schedule daily 09:00 Good morning!</code> - daily at 09:00 UTC\n' +
+        '<code>/schedule list</code> - view scheduled messages\n' +
+        '<code>/schedule cancel 5</code> - cancel message #5',
         { parse_mode: 'HTML' },
       );
       return;

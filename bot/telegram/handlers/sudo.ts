@@ -1,5 +1,5 @@
 /**
- * Sudo User Management — /addsudo, /delsudo, /sudolist commands.
+ * Sudo User Management - /addsudo, /delsudo, /sudolist commands.
  * Bot owner only.
  */
 

@@ -3,11 +3,11 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for South Africa (2026) — Free Automation for SA Businesses & Communities',
+  title: 'WhatsApp Bot for South Africa (2026) - Free Automation for SA Businesses & Communities',
   description: 'Free WhatsApp bot for South African businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. Works with any SA number. No coding needed.',
   keywords: ['whatsapp bot south africa', 'free whatsapp bot sa', 'whatsapp automation south africa', 'whatsapp business bot sa', 'chatbot south africa', 'botwave south africa'],
   openGraph: {
-    title: 'WhatsApp Bot for South Africa (2026) — Free Automation',
+    title: 'WhatsApp Bot for South Africa (2026) - Free Automation',
     description: 'Free WhatsApp bot for SA businesses and communities. 100+ commands, no coding. Set up in 2 minutes.',
     url: 'https://www.botwave.online/whatsapp-bot-south-africa',
     type: 'website',
@@ -39,7 +39,7 @@ export default function SouthAfricaLandingPage() {
             Free WhatsApp Bot<br />for South Africa
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8">
-            100+ commands for SA businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management — all free. Works with Vodacom, MTN, Cell C, and Telkom numbers.
+            100+ commands for SA businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management - all free. Works with Vodacom, MTN, Cell C, and Telkom numbers.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
@@ -63,9 +63,9 @@ export default function SouthAfricaLandingPage() {
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-8 text-center">Why South African Users Choose BotWave</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { title: 'Works with Any SA Number', desc: 'Vodacom, MTN, Cell C, Telkom — BotWave works with all South African mobile networks.' },
+              { title: 'Works with Any SA Number', desc: 'Vodacom, MTN, Cell C, Telkom - BotWave works with all South African mobile networks.' },
               { title: 'Business Automation', desc: 'Auto-replies for customer queries, order confirmations, and promotions. Ideal for SA SMEs and entrepreneurs.' },
-              { title: 'Community Management', desc: 'Church groups, stokvel communities, sports clubs — manage large WhatsApp groups with anti-spam and moderation.' },
+              { title: 'Community Management', desc: 'Church groups, stokvel communities, sports clubs - manage large WhatsApp groups with anti-spam and moderation.' },
               { title: 'AI Chat in Any Language', desc: 'AI assistant works in English, Afrikaans, Zulu, Xhosa, and more. Powered by Google Gemini.' },
               { title: 'Anti-Ban Protection', desc: 'Human-like response delays, message variation, and rate limiting keep your number safe.' },
               { title: 'Free Tier Available', desc: 'Start with 300 messages/month free. No credit card needed. Upgrade only when you need more.' },
@@ -84,7 +84,7 @@ export default function SouthAfricaLandingPage() {
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6 text-center">Related Articles</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {[
-              { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa — Full Guide (2026)' },
+              { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa - Full Guide (2026)' },
               { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?' },
               { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
               { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026' },

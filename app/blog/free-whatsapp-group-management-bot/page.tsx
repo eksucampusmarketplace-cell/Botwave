@@ -3,12 +3,12 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-whatsapp-group-management-bot' },
-  title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games',
-  description: 'Your WhatsApp groups deserve better. Get free anti-spam, welcome messages, polls, trivia games & moderation — all automatic. 10,000+ groups already use BotWave →',
+  title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games',
+  description: 'Your WhatsApp groups deserve better. Get free anti-spam, welcome messages, polls, trivia games & moderation - all automatic. 10,000+ groups already use BotWave →',
   keywords: ['whatsapp group management bot', 'whatsapp group bot free', 'whatsapp anti spam bot', 'whatsapp group admin bot', 'whatsapp group moderation', 'manage whatsapp group', 'whatsapp group tools'],
   openGraph: {
     title: 'Free WhatsApp Group Management Bot (2026)',
-    description: 'Anti-spam, polls, games, welcome messages — manage your WhatsApp groups for free with BotWave.',
+    description: 'Anti-spam, polls, games, welcome messages - manage your WhatsApp groups for free with BotWave.',
     url: 'https://www.botwave.online/blog/free-whatsapp-group-management-bot',
     type: 'article',
     images: [{ url: '/api/og?title=Free+WhatsApp+Group+Management+Bot+(2026)', width: 1200, height: 630 }],
@@ -16,17 +16,17 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games
+# Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games
 
 **Last updated: May 2026** | 7 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-Running a WhatsApp group with more than 20 people is a nightmare. Spam messages, irrelevant links, people fighting, no engagement — it's exhausting being a group admin. A group management bot fixes all of this automatically.
+Running a WhatsApp group with more than 20 people is a nightmare. Spam messages, irrelevant links, people fighting, no engagement - it's exhausting being a group admin. A group management bot fixes all of this automatically.
 
 ## The Problem Every Group Admin Faces
 
-If you manage a WhatsApp group — whether it's a campus class group, a community chat, a church group, or a business community — you've dealt with:
+If you manage a WhatsApp group - whether it's a campus class group, a community chat, a church group, or a business community - you've dealt with:
 
 - **Spam and scam links** posted by random members
 - **Offensive content** that needs immediate removal
@@ -45,7 +45,7 @@ BotWave's anti-spam system automatically:
 - **Detects and removes spam links** (betting sites, scam URLs, etc.)
 - **Filters offensive language** with customizable word filters
 - **Blocks chain messages** and forwards
-- **Rate-limits message flooding** — if someone sends 20 messages in 10 seconds, the bot catches it
+- **Rate-limits message flooding** - if someone sends 20 messages in 10 seconds, the bot catches it
 - **Warns repeat offenders** before removing them
 
 ### Welcome Messages
@@ -67,20 +67,20 @@ Members vote directly in the chat. Great for class groups deciding topics, commu
 ### Trivia & Games for Engagement
 
 Keep your group active with built-in games:
-- **!trivia** — General knowledge quiz with leaderboards
-- **!hangman** — Classic word guessing game
-- **!wordchain** — Word association game
-- **!joke** — Random jokes to lighten the mood
-- **!quote** — Inspirational quotes
+- **!trivia** - General knowledge quiz with leaderboards
+- **!hangman** - Classic word guessing game
+- **!wordchain** - Word association game
+- **!joke** - Random jokes to lighten the mood
+- **!quote** - Inspirational quotes
 
 These games are the #1 reason dead groups come back to life. Members actually want to participate when there's something fun to do.
 
 ### AI Chat for Group Q&A
 
 Enable AI chat so members can get instant answers:
-- \`!ai When is WAEC 2026?\` — Instant factual answers
-- \`!ai Translate "good morning" to Yoruba\` — Translation
-- \`!ai Summarize photosynthesis\` — Quick study help
+- \`!ai When is WAEC 2026?\` - Instant factual answers
+- \`!ai Translate "good morning" to Yoruba\` - Translation
+- \`!ai Summarize photosynthesis\` - Quick study help
 
 ### Sticker Creation
 
@@ -121,7 +121,7 @@ Let members know about the new bot:
 1. **Start with anti-spam first**: The immediate benefit your members will notice is cleaner chat
 2. **Run a trivia session weekly**: Schedule "Trivia Friday" to boost engagement
 3. **Use polls for decisions**: Members feel heard when they can vote
-4. **Don't over-moderate**: Set the bot to warn before removing — give people a chance
+4. **Don't over-moderate**: Set the bot to warn before removing - give people a chance
 5. **Let members discover commands**: Post !help once, then let people explore
 
 ## Types of Groups BotWave Works Great For
@@ -180,7 +180,7 @@ For larger groups with heavy usage, plans start at ₦500/month.
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically' },
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically' },
   { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
 ];

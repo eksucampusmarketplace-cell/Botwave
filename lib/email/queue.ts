@@ -51,7 +51,7 @@ export async function enqueueEmail(envelope: EmailEnvelope): Promise<string> {
   };
 
   if (!r) {
-    // No Redis — send directly (fire-and-forget)
+    // No Redis - send directly (fire-and-forget)
     sendEmailDirect(envelope).catch((err) =>
       console.error('[EMAIL-QUEUE] Direct send failed:', err),
     );

@@ -1,5 +1,5 @@
 /**
- * Ticket/Support system — users can create support tickets
+ * Ticket/Support system - users can create support tickets
  * that admins can manage, assign, and escalate.
  */
 
@@ -9,7 +9,7 @@ import { getGroupConfig, createTicket, getTicket, getOpenTickets, closeTicket, a
 import { resolveTarget } from '../utils/resolve';
 
 export function registerTicketHandlers(bot: Bot, sessionId: string): void {
-  // /ticket <subject> — open a support ticket
+  // /ticket <subject> - open a support ticket
   bot.command('ticket', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
 
@@ -56,7 +56,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /tickets — list open tickets (admin)
+  // /tickets - list open tickets (admin)
   bot.command('tickets', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -68,7 +68,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     }
 
     const list = tickets.map(t =>
-      `#${t.id} [${t.priority.toUpperCase()}] ${t.status} — ${t.subject}`
+      `#${t.id} [${t.priority.toUpperCase()}] ${t.status} - ${t.subject}`
     ).join('\n');
 
     await ctx.reply(
@@ -77,7 +77,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /closeticket <ticket_id> — close a ticket
+  // /closeticket <ticket_id> - close a ticket
   bot.command('closeticket', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -108,7 +108,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     } catch {}
   });
 
-  // /assign <ticket_id> <@admin> — assign ticket to admin
+  // /assign <ticket_id> <@admin> - assign ticket to admin
   bot.command('assign', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -135,7 +135,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Ticket #${ticketId} assigned to ${assignee}.`);
   });
 
-  // /escalate <ticket_id> — escalate priority
+  // /escalate <ticket_id> - escalate priority
   bot.command('escalate', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -158,7 +158,7 @@ export function registerTicketHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`⚠️ Ticket #${ticketId} has been escalated to HIGH priority.`);
   });
 
-  // /reply <ticket_id> <message> — reply to ticket (DMs the creator)
+  // /reply <ticket_id> <message> - reply to ticket (DMs the creator)
   bot.command('treply', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (!(await requireAdmin(ctx, sessionId))) return;

@@ -28,7 +28,7 @@ export async function GET() {
     const status = value ? 'ok' : 'missing';
     const detail = value
       ? `Set (${value.substring(0, 8)}...)`
-      : 'NOT SET — feature will not work';
+      : 'NOT SET - feature will not work';
     checks.push({ name: env.label, status, detail });
     console.log(`[STARTUP] ${env.label}: ${status === 'ok' ? 'CONFIGURED' : 'MISSING'}`);
   }
@@ -64,14 +64,14 @@ export async function GET() {
           const { error } = await supabase.from(table).select('id').limit(1);
           if (error) {
             checks.push({ name: `Table: ${table}`, status: 'fail', detail: error.message });
-            console.log(`[STARTUP] Table ${table}: FAIL — ${error.message}`);
+            console.log(`[STARTUP] Table ${table}: FAIL - ${error.message}`);
           } else {
             checks.push({ name: `Table: ${table}`, status: 'ok', detail: 'Accessible' });
             console.log(`[STARTUP] Table ${table}: OK`);
           }
         } catch (err) {
           checks.push({ name: `Table: ${table}`, status: 'fail', detail: String(err) });
-          console.log(`[STARTUP] Table ${table}: ERROR — ${err}`);
+          console.log(`[STARTUP] Table ${table}: ERROR - ${err}`);
         }
       }
     } catch (err) {
@@ -91,12 +91,12 @@ export async function GET() {
         headers: { Authorization: `Bearer ${squadKey}` },
       });
       const status = res.ok ? 'ok' : 'fail';
-      const detail = res.ok ? `Connected (HTTP ${res.status})` : `HTTP ${res.status} — check key`;
+      const detail = res.ok ? `Connected (HTTP ${res.status})` : `HTTP ${res.status} - check key`;
       checks.push({ name: 'Squad Payment Gateway', status, detail });
       console.log(`[STARTUP] Squad API: ${status === 'ok' ? 'CONNECTED' : `FAIL (${res.status})`}`);
     } catch (err) {
       checks.push({ name: 'Squad Payment Gateway', status: 'fail', detail: `Network error: ${err}` });
-      console.error('[STARTUP] Squad API: NETWORK ERROR —', err);
+      console.error('[STARTUP] Squad API: NETWORK ERROR -', err);
     }
   } else {
     checks.push({ name: 'Squad Payment Gateway', status: 'missing', detail: 'SQUAD_SECRET_KEY not set' });
@@ -111,12 +111,12 @@ export async function GET() {
         headers: { Authorization: `Bearer ${inlomaxKey}` },
       });
       const status = res.ok ? 'ok' : 'fail';
-      const detail = res.ok ? `Connected (HTTP ${res.status})` : `HTTP ${res.status} — check key`;
+      const detail = res.ok ? `Connected (HTTP ${res.status})` : `HTTP ${res.status} - check key`;
       checks.push({ name: 'Inlomax Airtime API', status, detail });
       console.log(`[STARTUP] Inlomax API: ${status === 'ok' ? 'CONNECTED' : `FAIL (${res.status})`}`);
     } catch (err) {
       checks.push({ name: 'Inlomax Airtime API', status: 'fail', detail: `Network error: ${err}` });
-      console.error('[STARTUP] Inlomax API: NETWORK ERROR —', err);
+      console.error('[STARTUP] Inlomax API: NETWORK ERROR -', err);
     }
   } else {
     checks.push({ name: 'Inlomax Airtime API', status: 'missing', detail: 'INLOMAX_API_KEY not set' });

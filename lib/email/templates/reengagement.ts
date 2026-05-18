@@ -14,7 +14,7 @@ export function reengagementTemplate(username: string, hasLinkedDevice: boolean)
         <p style="color:#f1f5f9;font-size:13px;margin:0 0 10px"><strong style="color:#60a5fa">Step 2:</strong> On your phone, open <strong>WhatsApp</strong> &rarr; tap the <strong>three dots</strong> (top right) &rarr; <strong>Linked Devices</strong> &rarr; <strong>Link a Device</strong></p>
         <p style="color:#f1f5f9;font-size:13px;margin:0"><strong style="color:#60a5fa">Step 3:</strong> Tap <strong>"Link with phone number instead"</strong> and enter the 8-digit code shown on screen</p>
       </div>
-      <p style="color:#94a3b8;font-size:12px;margin:0">If WhatsApp shows a warning, tap <strong style="color:#cbd5e1">Continue</strong> — it's safe. BotWave runs on your own device, not our servers.</p>
+      <p style="color:#94a3b8;font-size:12px;margin:0">If WhatsApp shows a warning, tap <strong style="color:#cbd5e1">Continue</strong> - it's safe. BotWave runs on your own device, not our servers.</p>
     </div>
   ` : '';
 
@@ -74,7 +74,7 @@ export function reengagementTemplate(username: string, hasLinkedDevice: boolean)
     <div style="background:linear-gradient(135deg,#0f172a,#1a2744);border-radius:8px;padding:20px;margin:0 0 20px;border:1px solid #334155">
       <p style="color:#f1f5f9;font-size:14px;font-weight:600;margin:0 0 8px">Your account is safe with us</p>
       <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0">
-        BotWave uses an advanced anti-ban system: session warmup (gradual activity increase over 7 days), ghost reads, media fingerprint jitter, presence simulation, and quiet hours. Your WhatsApp number runs on <strong style="color:#cbd5e1">your own device</strong>, not our servers — so there's no shared IP risk.
+        BotWave uses an advanced anti-ban system: session warmup (gradual activity increase over 7 days), ghost reads, media fingerprint jitter, presence simulation, and quiet hours. Your WhatsApp number runs on <strong style="color:#cbd5e1">your own device</strong>, not our servers - so there's no shared IP risk.
       </p>
     </div>
 

@@ -2,7 +2,7 @@ import { registerCommand, type MessageContext } from './registry';
 import { sendReply } from './helpers';
 import { searchKnowledge } from './knowledgeBase';
 
-// ─── !ask — Smart FAQ with fuzzy matching ───────────────────────────────────
+// ─── !ask - Smart FAQ with fuzzy matching ───────────────────────────────────
 
 async function handleAsk(
   context: MessageContext,
@@ -35,8 +35,8 @@ async function handleAsk(
       context.chatJid,
       `I couldn't find an answer for "${query}".\n\n` +
       'Try rephrasing your question, or use:\n' +
-      '• *!help text* — Quick command list\n' +
-      '• *!help* — Full guide (.docx)\n' +
+      '• *!help text* - Quick command list\n' +
+      '• *!help* - Full guide (.docx)\n' +
       '• The support chat at www.botwave.online',
       sock,
       context.rawMessage.key,
@@ -65,10 +65,10 @@ registerCommand({
   name: 'ask',
   aliases: ['ask', 'faq', 'support'],
   category: 'info',
-  description: 'Smart FAQ — ask anything about BotWave',
+  description: 'Smart FAQ - ask anything about BotWave',
   execute: async (context, args, sock) => {
     await handleAsk(context, args, sock);
   },
 });
 
-// !diagnose command removed — exposed internal system info (URLs, memory, API keys).
+// !diagnose command removed - exposed internal system info (URLs, memory, API keys).

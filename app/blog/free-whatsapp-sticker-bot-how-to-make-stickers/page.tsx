@@ -3,11 +3,11 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-whatsapp-sticker-bot-how-to-make-stickers' },
-  title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly (2026)',
-  description: 'Ditch sticker maker apps. Reply to any image with !sticker and get a custom WhatsApp sticker instantly — no downloads, no cropping, no hassle. Works in groups too. Try free →',
+  title: 'Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly (2026)',
+  description: 'Ditch sticker maker apps. Reply to any image with !sticker and get a custom WhatsApp sticker instantly - no downloads, no cropping, no hassle. Works in groups too. Try free →',
   keywords: ['whatsapp sticker bot', 'make whatsapp stickers', 'whatsapp sticker maker', 'custom whatsapp stickers', 'free sticker bot', 'whatsapp sticker creator', 'how to make whatsapp stickers'],
   openGraph: {
-    title: 'Free WhatsApp Sticker Bot — Make Custom Stickers Instantly',
+    title: 'Free WhatsApp Sticker Bot - Make Custom Stickers Instantly',
     description: 'Turn any image into a WhatsApp sticker with one command. No app needed. Free.',
     url: 'https://www.botwave.online/blog/free-whatsapp-sticker-bot-how-to-make-stickers',
     type: 'article',
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly
+# Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly
 
 **Last updated: May 2026** | 4 min read
 
-[Visit BotWave](https://www.botwave.online) — the free WhatsApp bot platform with 100+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free WhatsApp bot platform with 100+ commands built in.
 
-Custom WhatsApp stickers are one of the most fun things about WhatsApp — but creating them usually requires downloading a separate app, cropping images, importing packs, and a lot of hassle. What if you could just reply to any image and instantly get a sticker?
+Custom WhatsApp stickers are one of the most fun things about WhatsApp - but creating them usually requires downloading a separate app, cropping images, importing packs, and a lot of hassle. What if you could just reply to any image and instantly get a sticker?
 
 ## The Fastest Way to Make WhatsApp Stickers
 
@@ -36,12 +36,12 @@ That's it. The bot converts the image into a WhatsApp sticker and sends it back 
 ## What Types of Images Work?
 
 BotWave's sticker maker works with:
-- **Photos** — selfies, group photos, pictures of anything
-- **Memes** — turn popular memes into stickers
-- **Screenshots** — even screenshots work
-- **Downloaded images** — any image from the internet
-- **Camera shots** — take a photo, reply with !sticker
-- **GIFs** — animated GIFs become animated stickers
+- **Photos** - selfies, group photos, pictures of anything
+- **Memes** - turn popular memes into stickers
+- **Screenshots** - even screenshots work
+- **Downloaded images** - any image from the internet
+- **Camera shots** - take a photo, reply with !sticker
+- **GIFs** - animated GIFs become animated stickers
 
 ## How to Set It Up
 
@@ -50,7 +50,7 @@ BotWave's sticker maker works with:
 1. Go to [www.botwave.online/signup](https://www.botwave.online/signup) and create a free account
 2. In the dashboard, click "Connect WhatsApp"
 3. Scan the QR code with your phone
-4. Done — your sticker bot is live
+4. Done - your sticker bot is live
 
 ### Step 2: Start Making Stickers
 
@@ -95,9 +95,9 @@ In our experience, the sticker command is the **#1 most used** command across al
 
 BotWave has more than just stickers:
 
-- \`!sticker\` — Convert image to sticker
-- \`!toimg\` — Convert sticker back to image
-- \`!download [URL]\` — Download images/videos from URLs
+- \`!sticker\` - Convert image to sticker
+- \`!toimg\` - Convert sticker back to image
+- \`!download [URL]\` - Download images/videos from URLs
 
 ## Frequently Asked Questions
 
@@ -124,9 +124,9 @@ Stop downloading sticker maker apps that take up space on your phone. BotWave do
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) — 100+ Commands' },
+  { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
   { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
 ];
 
 export default function Article() {

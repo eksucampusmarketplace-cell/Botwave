@@ -1,5 +1,5 @@
 /**
- * Community VoteKick — /votekick @user starts a vote, 5 votes in 60s kicks.
+ * Community VoteKick - /votekick @user starts a vote, 5 votes in 60s kicks.
  */
 
 import { Bot, InlineKeyboard } from 'grammy';

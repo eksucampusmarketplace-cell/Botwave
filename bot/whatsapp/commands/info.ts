@@ -81,7 +81,7 @@ export async function handleAIReply(
       prompt: query,
       maxTokens: 500,
       temperature: 0.7,
-      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context — refer back to previous messages naturally.',
+      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context - refer back to previous messages naturally.',
       history,
     });
 
@@ -95,7 +95,7 @@ export async function handleAIReply(
     console.error('AI reply error:', error);
     let msg = 'AI service temporarily unavailable. Please try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted — the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+      msg = 'AI quota exhausted - the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
     } else if (error instanceof AIRateLimitError) {
       const secs = Math.ceil(error.retryAfterMs / 1000);
       msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
@@ -133,7 +133,7 @@ async function handleAICommand(
       prompt: query,
       maxTokens: 500,
       temperature: 0.7,
-      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context — refer back to previous messages naturally.',
+      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context - refer back to previous messages naturally.',
       history,
     });
 
@@ -148,7 +148,7 @@ async function handleAICommand(
     console.error('AI error:', error);
     let msg = 'AI service temporarily unavailable. Please try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted — the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+      msg = 'AI quota exhausted - the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
     } else if (error instanceof AIRateLimitError) {
       const secs = Math.ceil(error.retryAfterMs / 1000);
       msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
@@ -325,8 +325,8 @@ async function handleTranslate(
       context.chatJid,
       getHelpHint('translate') +
         '\n\n*Usage:*\n' +
-        '• `!translate en Hello` — auto-detect source → English\n' +
-        '• `!translate fr en Bonjour` — French → English\n' +
+        '• `!translate en Hello` - auto-detect source → English\n' +
+        '• `!translate fr en Bonjour` - French → English\n' +
         '• Reply to a message with `!translate en` to translate it',
       sock, context.rawMessage.key, context.queue,
     );
@@ -453,7 +453,7 @@ async function handleLyrics(context: MessageContext, args: string[], sock: any):
         });
         const results = resp.data;
         if (Array.isArray(results) && results.length > 0) {
-          // Find best match — prefer plain lyrics over synced
+          // Find best match - prefer plain lyrics over synced
           const best = results.find((r: any) => r.plainLyrics) || results[0];
           lyrics = best?.plainLyrics || best?.syncedLyrics?.replace(/\[\d+:\d+\.\d+\]\s*/g, '') || '';
         }
@@ -683,7 +683,7 @@ async function handleWhois(context: MessageContext, args: string[], sock: any): 
     // Standard format: 2348012345678@s.whatsapp.net
     const standard = jid.replace(/@s\.whatsapp\.net$|@g\.us$/, '');
     if (/^\d{7,15}$/.test(standard)) return standard;
-    // LID or other format — can't extract number
+    // LID or other format - can't extract number
     return null;
   }
 
@@ -711,7 +711,7 @@ async function handleWhois(context: MessageContext, args: string[], sock: any): 
           }
         }
       }
-    } catch { /* profile fetch failed — privacy settings or API unavailable */ }
+    } catch { /* profile fetch failed - privacy settings or API unavailable */ }
 
     // Fallback: try to get profile pic separately
     if (!profilePicUrl) {

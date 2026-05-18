@@ -47,7 +47,7 @@ async function start() {
   await cleanupOnStartup();
   startHeartbeatLoop();
 
-  // Immediate orphan recovery on startup — don't wait 120s for the regular cycle.
+  // Immediate orphan recovery on startup - don't wait 120s for the regular cycle.
   // This ensures active sessions from a crashed/redeployed worker are unlocked
   // and ready for reconnection BEFORE the first sync picks them up.
   if (!IS_WORKER) {
@@ -68,19 +68,19 @@ async function start() {
     console.log('[BOT] Waiting for Evolution API to become ready...');
     const ready = await waitForEvolutionReady(15, 2000);
     if (ready) {
-      console.log('[BOT] Evolution API is ready — proceeding with session sync');
+      console.log('[BOT] Evolution API is ready - proceeding with session sync');
       resetEvolutionHealth();
 
-      // Verify data persistence — warn loudly if instances won't survive restarts
+      // Verify data persistence - warn loudly if instances won't survive restarts
       const { persisted, instanceCount } = await verifyEvolutionDataPersistence();
       if (instanceCount > 0) {
-        console.log(`[BOT] Evolution API has ${instanceCount} persisted instance(s) — DATABASE_SAVE_DATA_INSTANCE=true is working`);
+        console.log(`[BOT] Evolution API has ${instanceCount} persisted instance(s) - DATABASE_SAVE_DATA_INSTANCE=true is working`);
       } else {
         console.warn('[BOT] ⚠ Evolution API has 0 persisted instances. If you have active sessions, DATABASE_SAVE_DATA_INSTANCE may not be set to true on your Evolution API service. Sessions will be lost on Evolution API restart and users will need to re-pair.');
         console.warn('[BOT] ⚠ To fix: set DATABASE_SAVE_DATA_INSTANCE=true in your Evolution API environment variables');
       }
     } else {
-      console.warn('[BOT] Evolution API did not become ready — sessions will retry during sync loop');
+      console.warn('[BOT] Evolution API did not become ready - sessions will retry during sync loop');
     }
   }
 
@@ -172,7 +172,7 @@ async function start() {
 
   // Coordinator: orphan recovery (every 120s, main only) + audit (every 300s)
   if (!IS_WORKER) {
-    // Accelerated orphan recovery 15s after startup — catches any sessions that
+    // Accelerated orphan recovery 15s after startup - catches any sessions that
     // became orphaned between our startup recovery and the first sync completing.
     setTimeout(async () => {
       if (isShutdown() || isCircuitOpen()) return;
@@ -229,7 +229,7 @@ async function start() {
     }, 300_000));
 
     // Cleanup: mark sessions stuck in pairing_sent/qr_pending for 48+ hours
-    // as inactive. Runs every 30 minutes — these are abandoned pairing attempts.
+    // as inactive. Runs every 30 minutes - these are abandoned pairing attempts.
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
@@ -331,7 +331,7 @@ async function start() {
         keepAliveTargets.push({ name: `worker(${wUrl})`, url: `${wUrl}/api/health` });
       }
     } else if (WORKER_URLS.length > 0) {
-      console.log(`[KEEPALIVE] All ${WORKER_URLS.length} worker(s) in extended backoff — skipping worker pings. Consider removing WORKER_URLS env var if workers are permanently disabled.`);
+      console.log(`[KEEPALIVE] All ${WORKER_URLS.length} worker(s) in extended backoff - skipping worker pings. Consider removing WORKER_URLS env var if workers are permanently disabled.`);
     }
     const evoUrl = process.env.EVOLUTION_API_URL;
     if (evoUrl) {
@@ -360,14 +360,14 @@ async function start() {
               console.warn(`[KEEPALIVE] ${target.name} (${target.url}): status=${res.status}`);
               if (target.name === 'evolution-api') evoConsecutiveFailures++;
             } else {
-              // Evolution API came back online after failures — trigger recovery
+              // Evolution API came back online after failures - trigger recovery
               if (target.name === 'evolution-api' && evoConsecutiveFailures >= 3 && !evoRecoveryInProgress) {
                 evoRecoveryInProgress = true;
-                console.log(`[KEEPALIVE] Evolution API recovered after ${evoConsecutiveFailures} consecutive failures — triggering session re-sync`);
+                console.log(`[KEEPALIVE] Evolution API recovered after ${evoConsecutiveFailures} consecutive failures - triggering session re-sync`);
                 evoConsecutiveFailures = 0;
                 resetEvolutionHealth();
                 // Run a sync cycle to reconnect all sessions to the
-                // now-healthy Evolution API — don't wait for the regular 5s cycle
+                // now-healthy Evolution API - don't wait for the regular 5s cycle
                 syncSessionsWithDb(IS_WORKER).catch(err =>
                   console.error('[KEEPALIVE] Recovery sync failed:', err)
                 ).finally(() => { evoRecoveryInProgress = false; });
@@ -385,7 +385,7 @@ async function start() {
 
       // Log when Evolution API is consistently failing
       if (evoConsecutiveFailures >= 3 && evoConsecutiveFailures % 3 === 0) {
-        console.error(`[KEEPALIVE] Evolution API has been unreachable for ${evoConsecutiveFailures} consecutive checks (${evoConsecutiveFailures}min) — sessions may be disconnecting`);
+        console.error(`[KEEPALIVE] Evolution API has been unreachable for ${evoConsecutiveFailures} consecutive checks (${evoConsecutiveFailures}min) - sessions may be disconnecting`);
       }
     };
     pingAll();
@@ -427,7 +427,7 @@ const healthServer = createHttpServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'Forbidden' }));
       return;
     }
-    console.log('[INTERNAL] Trigger-sync received — running immediate session sync');
+    console.log('[INTERNAL] Trigger-sync received - running immediate session sync');
     try {
       await syncSessionsWithDb(IS_WORKER);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -454,4 +454,4 @@ start().catch((error) => {
   console.error('[BOT] FATAL: Bot startup failed:', error);
   process.exit(1);
 });
-// SIGTERM/SIGINT are now handled by gracefulShutdown.ts — no manual handlers needed
+// SIGTERM/SIGINT are now handled by gracefulShutdown.ts - no manual handlers needed

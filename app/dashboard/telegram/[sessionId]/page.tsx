@@ -874,7 +874,7 @@ export default function TelegramConfigPage() {
                   <Toggle configKey="captcha_kick" label="Kick unverified users" desc="Kick users who don't solve the CAPTCHA in time." />
                   <TextInput configKey="captcha_kick_time" label="CAPTCHA kick time" desc="Time after which unverified users are kicked. E.g. 5m, 1h, 1d. Leave empty for default (60s)." placeholder="5m" />
                   <TextInput configKey="captcha_mute_time" label="CAPTCHA mute time" desc="Auto-unmute time for CAPTCHA. Leave empty to keep muted until solved." placeholder="5m" />
-                  <TextInput configKey="captcha_button_text" label="Custom CAPTCHA button text" desc="Custom text for the verify button. Leave empty for default." placeholder="I'm human — click to verify" />
+                  <TextInput configKey="captcha_button_text" label="Custom CAPTCHA button text" desc="Custom text for the verify button. Leave empty for default." placeholder="I'm human - click to verify" />
                 </div>
               )}
             </SectionCard>
@@ -1010,7 +1010,7 @@ export default function TelegramConfigPage() {
                       { value: 'new', label: 'New members only' },
                       { value: 'all', label: 'All members' },
                     ]} />
-                  <Toggle configKey="memberbooster_hard_mode" label="Hard mode (!hard_mode)" desc="Strict enforcement — users cannot send any messages until requirement is met." />
+                  <Toggle configKey="memberbooster_hard_mode" label="Hard mode (!hard_mode)" desc="Strict enforcement - users cannot send any messages until requirement is met." />
                 </SectionCard>
 
                 <SectionCard title="Daily Limits">

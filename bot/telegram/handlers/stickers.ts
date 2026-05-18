@@ -1,12 +1,12 @@
 /**
- * Sticker management — steal/kang stickers, get sticker info.
+ * Sticker management - steal/kang stickers, get sticker info.
  */
 
 import { Bot } from 'grammy';
 import { InputFile } from 'grammy';
 
 export function registerStickerHandlers(bot: Bot, sessionId: string): void {
-  // /kang — reply to a sticker to steal it to your personal pack
+  // /kang - reply to a sticker to steal it to your personal pack
   bot.command('kang', async (ctx) => {
     if (!ctx.from || !ctx.message?.reply_to_message?.sticker) {
       await ctx.reply('Reply to a sticker with /kang to steal it to your personal pack.');
@@ -60,7 +60,7 @@ export function registerStickerHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /stickerinfo — reply to sticker to get info
+  // /stickerinfo - reply to sticker to get info
   bot.command('stickerinfo', async (ctx) => {
     if (!ctx.message?.reply_to_message?.sticker) {
       await ctx.reply('Reply to a sticker with /stickerinfo to get its details.');
@@ -80,7 +80,7 @@ export function registerStickerHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /getsticker — reply to sticker to get it as PNG
+  // /getsticker - reply to sticker to get it as PNG
   bot.command('getsticker', async (ctx) => {
     if (!ctx.message?.reply_to_message?.sticker) {
       await ctx.reply('Reply to a sticker with /getsticker to get it as a file.');

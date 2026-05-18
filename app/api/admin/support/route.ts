@@ -5,7 +5,7 @@ import { sendSupportReplyEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/admin/support — list all tickets with last message preview
+// GET /api/admin/support - list all tickets with last message preview
 export async function GET(request: NextRequest) {
   try {
     const adminToken = request.cookies.get('admin_token');
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/admin/support — admin reply or update ticket
+// POST /api/admin/support - admin reply or update ticket
 export async function POST(request: NextRequest) {
   try {
     const adminToken = request.cookies.get('admin_token');

@@ -8,7 +8,7 @@ import { requireAdmin } from '../utils/permissions';
 import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void {
-  // /cleancommand <yes/no> — Auto-delete command messages after processing
+  // /cleancommand <yes/no> - Auto-delete command messages after processing
   bot.command('cleancommand', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -30,7 +30,7 @@ export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void 
     }
   });
 
-  // /keepcommand <command> — Exclude a command from auto-deletion
+  // /keepcommand <command> - Exclude a command from auto-deletion
   bot.command('keepcommand', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const cmd = (ctx.match?.toString() || '').trim().toLowerCase().replace(/^\//, '');
@@ -47,7 +47,7 @@ export function registerCleanCommandHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`✅ /${cmd} will not be auto-deleted.`);
   });
 
-  // /cleancommandtypes — Show which commands are kept/cleaned
+  // /cleancommandtypes - Show which commands are kept/cleaned
   bot.command('cleancommandtypes', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());

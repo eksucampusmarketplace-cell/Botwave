@@ -1,5 +1,5 @@
 /**
- * Userbot Manager — manages multiple Telegram userbot instances.
+ * Userbot Manager - manages multiple Telegram userbot instances.
  * Each BotWave session with platform=telegram_userbot gets its own GramJS client.
  * Follows the same pattern as TelegramBotInstance / BotManager.
  */
@@ -202,10 +202,10 @@ export class UserbotManager {
         message: `🎉 **Welcome to BotWave Userbot, ${firstName}!**\n\n` +
           `Your Telegram Userbot is now live and connected.\n\n` +
           `**Quick start:**\n` +
-          `  \`.help\` — See all commands\n` +
-          `  \`.alive\` — Check bot status\n` +
-          `  \`.lang list\` — Change language\n` +
-          `  \`.setprefix !\` — Change command prefix\n\n` +
+          `  \`.help\` - See all commands\n` +
+          `  \`.alive\` - Check bot status\n` +
+          `  \`.lang list\` - Change language\n` +
+          `  \`.setprefix !\` - Change command prefix\n\n` +
           `**Manage from dashboard:** https://www.botwave.online/dashboard\n\n` +
           `_This is a one-time message. You won't see it again._`,
         parseMode: 'md',
@@ -241,7 +241,7 @@ export class UserbotManager {
               );
               await updateSessionLastActive(sessionId);
             } catch (pingErr) {
-              console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} ping failed — connection stale, forcing reconnect`);
+              console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} ping failed - connection stale, forcing reconnect`);
               await this.reconnectSession(sessionId, ub);
             }
           } else {
@@ -262,7 +262,7 @@ export class UserbotManager {
 
       const reconnected = await ub.client.connect();
       if (reconnected) {
-        // Re-register event handlers — they are lost on manual reconnect
+        // Re-register event handlers - they are lost on manual reconnect
         this.registerHandlers(ub.client, sessionId);
         await updateSessionState(sessionId, 'connected');
         console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnected + handlers re-registered`);
@@ -356,7 +356,7 @@ export class UserbotManager {
     // Check if command's module is disabled
     const moduleName = COMMAND_TO_MODULE[command];
     if (moduleName && config.disabled_modules.includes(moduleName)) {
-      console.log(`[USERBOT-MGR] ${sessionId.slice(0, 8)} command ${command} blocked — module "${moduleName}" disabled`);
+      console.log(`[USERBOT-MGR] ${sessionId.slice(0, 8)} command ${command} blocked - module "${moduleName}" disabled`);
       return;
     }
 
@@ -405,7 +405,7 @@ export class UserbotManager {
     // Humanized read delay
     await readDelay();
 
-    // Mark as read (probabilistic — humans don't always read every message)
+    // Mark as read (probabilistic - humans don't always read every message)
     if (shouldMarkRead() && msg.chatId) {
       try {
         const ub = this.userbots.get(sessionId);

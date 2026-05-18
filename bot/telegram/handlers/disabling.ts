@@ -16,7 +16,7 @@ const DISABLEABLE_COMMANDS = [
 ] as const;
 
 export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
-  // /disable <command> — Disable a command in this chat
+  // /disable <command> - Disable a command in this chat
   bot.command('disable', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const cmd = (ctx.match?.toString() || '').trim().toLowerCase().replace(/^\//, '');
@@ -37,7 +37,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ /${cmd} has been disabled in this chat.`);
   });
 
-  // /enable <command> — Re-enable a disabled command
+  // /enable <command> - Re-enable a disabled command
   bot.command('enable', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const cmd = (ctx.match?.toString() || '').trim().toLowerCase().replace(/^\//, '');
@@ -52,13 +52,13 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ /${cmd} has been re-enabled.`);
   });
 
-  // /disableable — List all commands that can be disabled
+  // /disableable - List all commands that can be disabled
   bot.command('disableable', async (ctx) => {
     const list = DISABLEABLE_COMMANDS.map(c => `• <code>/${c}</code>`).join('\n');
     await ctx.reply(`<b>Disableable Commands</b>\n\n${list}`, { parse_mode: 'HTML' });
   });
 
-  // /disabledel <yes/no> — Delete disabled command messages
+  // /disabledel <yes/no> - Delete disabled command messages
   bot.command('disabledel', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -73,7 +73,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /disableadmin <yes/no> — Whether disabled commands also apply to admins
+  // /disableadmin <yes/no> - Whether disabled commands also apply to admins
   bot.command('disableadmin', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();
@@ -88,7 +88,7 @@ export function registerDisablingHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /disabled — List all currently disabled commands
+  // /disabled - List all currently disabled commands
   bot.command('disabled', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const disabled: string[] = (config as Record<string, unknown>).disabled_commands as string[] || [];

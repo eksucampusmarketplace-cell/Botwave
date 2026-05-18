@@ -308,7 +308,7 @@ function getQuotaMessage(type: NotificationType, used: number, limit: number, pl
   }
 
   return (
-    `📊 *Quota Warning* — ${percent}% used\n\n` +
+    `📊 *Quota Warning* - ${percent}% used\n\n` +
     `You've used ${used.toLocaleString()} of ${limit.toLocaleString()} messages this month.\n\n` +
     `At this rate, you may run out before your reset date.\n` +
     `Consider upgrading for more capacity: Send *!upgrade*\n\n` +
@@ -326,7 +326,7 @@ function getRenewalMessage(plan: string, renewalDate: Date): string {
     `🔄 *Renewal Reminder*\n\n` +
     `Your ${planName} subscription renews on *${dateStr}*.\n\n` +
     `Make sure your payment method is ready, or send *!upgrade* to manage your plan.\n\n` +
-    `_No action needed if you want to continue — renewal is automatic._`
+    `_No action needed if you want to continue - renewal is automatic._`
   );
 }
 

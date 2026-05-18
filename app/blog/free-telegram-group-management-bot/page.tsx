@@ -3,11 +3,11 @@ import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-telegram-group-management-bot' },
-  title: 'Free Telegram Group Management Bot (2026) — Anti-Spam, Polls, Games & More',
-  description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools — all built in.',
+  title: 'Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More',
+  description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools - all built in.',
   keywords: ['telegram group management bot', 'free telegram bot', 'telegram anti-spam bot', 'telegram group bot free', 'telegram moderation bot', 'botwave telegram', 'telegram group admin bot'],
   openGraph: {
-    title: 'Free Telegram Group Management Bot (2026) — Anti-Spam, Polls, Games & More',
+    title: 'Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More',
     description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools.',
     url: 'https://www.botwave.online/blog/free-telegram-group-management-bot',
     type: 'article',
@@ -16,21 +16,21 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free Telegram Group Management Bot (2026) — Anti-Spam, Polls, Games & More
+# Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More
 
 **Last updated: May 2026** | 7 min read
 
-[Visit BotWave](https://www.botwave.online) — the free multi-platform bot for WhatsApp & Telegram with 50+ commands built in.
+[Visit BotWave](https://www.botwave.online) - the free multi-platform bot for WhatsApp & Telegram with 50+ commands built in.
 
-Running a Telegram group with 100+ members? You need a bot. Manual moderation doesn't scale — spam messages pile up, new members don't get welcomed, and engagement drops. Here's how to set up a free Telegram group management bot that handles everything automatically.
+Running a Telegram group with 100+ members? You need a bot. Manual moderation doesn't scale - spam messages pile up, new members don't get welcomed, and engagement drops. Here's how to set up a free Telegram group management bot that handles everything automatically.
 
 ## The Problem: Manual Group Management
 
 If you manage a Telegram group, you've seen this:
 - Spam messages and scam links flooding the chat
 - New members joining without any welcome or rules
-- Low engagement — nobody talks unless prompted
-- Admin burnout — you're spending hours moderating
+- Low engagement - nobody talks unless prompted
+- Admin burnout - you're spending hours moderating
 
 A good group bot fixes all of this on autopilot.
 
@@ -38,11 +38,11 @@ A good group bot fixes all of this on autopilot.
 
 ### Anti-Spam Protection
 The bot automatically detects and removes:
-- **Scam links** — phishing URLs, betting site ads
-- **Flood messages** — rapid spam from the same user
-- **Forward spam** — mass-forwarded chain messages
-- **Offensive content** — customizable word filters
-- **New account spam** — accounts created just to spam
+- **Scam links** - phishing URLs, betting site ads
+- **Flood messages** - rapid spam from the same user
+- **Forward spam** - mass-forwarded chain messages
+- **Offensive content** - customizable word filters
+- **New account spam** - accounts created just to spam
 
 ### Welcome Bot
 When new members join:
@@ -52,24 +52,24 @@ When new members join:
 
 ### Engagement Tools
 Keep your group active with:
-- **/trivia** — Start trivia games with leaderboards
-- **/poll** — Create polls and get group opinions
-- **/joke** — Random jokes to lighten the mood
-- **/quote** — Inspirational quotes for daily engagement
-- **/hangman** — Play hangman in the group chat
-- **/wordchain** — Word chain game for groups
+- **/trivia** - Start trivia games with leaderboards
+- **/poll** - Create polls and get group opinions
+- **/joke** - Random jokes to lighten the mood
+- **/quote** - Inspirational quotes for daily engagement
+- **/hangman** - Play hangman in the group chat
+- **/wordchain** - Word chain game for groups
 
 ### AI Chat
-- **/ai [question]** — Ask anything, get AI-powered answers
-- Powered by Google Gemini — smart, accurate responses
+- **/ai [question]** - Ask anything, get AI-powered answers
+- Powered by Google Gemini - smart, accurate responses
 - Works for homework help, coding questions, general knowledge
 
 ### Media Tools
-- **/sticker** — Convert any image to a Telegram sticker
-- **/download [url]** — Download videos from YouTube, TikTok, Instagram
-- **/weather [city]** — Get real-time weather info
-- **/define [word]** — Dictionary lookups
-- **/translate [text]** — Translate between languages
+- **/sticker** - Convert any image to a Telegram sticker
+- **/download [url]** - Download videos from YouTube, TikTok, Instagram
+- **/weather [city]** - Get real-time weather info
+- **/define [word]** - Dictionary lookups
+- **/translate [text]** - Translate between languages
 
 ## Setup in 3 Steps
 
@@ -98,30 +98,30 @@ Add the bot to your Telegram group → make it admin → start using commands.
 | WhatsApp support | Yes | No | No | No |
 | Commands | 50+ | ~10 | ~20 | ~15 |
 
-BotWave gives you the most features for free — and it works on WhatsApp too. One bot platform, two messaging apps.
+BotWave gives you the most features for free - and it works on WhatsApp too. One bot platform, two messaging apps.
 
 ## Why BotWave for Telegram Groups?
 
-1. **Completely free** — No trial, no credit card, no hidden fees
-2. **50+ commands** — More features than paid alternatives
-3. **AI-powered** — Google Gemini integration for smart responses
-4. **Multi-platform** — Also works on WhatsApp from the same dashboard
-5. **Web dashboard** — Manage everything from your browser
-6. **Zero ban risk** — Uses official Telegram Bot API
-7. **No coding** — Set up in 2 minutes without touching code
+1. **Completely free** - No trial, no credit card, no hidden fees
+2. **50+ commands** - More features than paid alternatives
+3. **AI-powered** - Google Gemini integration for smart responses
+4. **Multi-platform** - Also works on WhatsApp from the same dashboard
+5. **Web dashboard** - Manage everything from your browser
+6. **Zero ban risk** - Uses official Telegram Bot API
+7. **No coding** - Set up in 2 minutes without touching code
 
 ## Popular Group Types Using BotWave
 
-- **Tech & dev communities** — Code help with AI, resource sharing
-- **Crypto & trading groups** — Anti-spam keeps scammers out
-- **Campus & student groups** — Study tools, trivia, engagement
-- **Business & brand groups** — Auto-replies, customer tools
-- **Gaming communities** — Mini games, leaderboards, polls
-- **Religious & community groups** — Quotes, polls, management
+- **Tech & dev communities** - Code help with AI, resource sharing
+- **Crypto & trading groups** - Anti-spam keeps scammers out
+- **Campus & student groups** - Study tools, trivia, engagement
+- **Business & brand groups** - Auto-replies, customer tools
+- **Gaming communities** - Mini games, leaderboards, polls
+- **Religious & community groups** - Quotes, polls, management
 
 ## Get Started Now
 
-Your Telegram group deserves better than manual moderation. Set up BotWave in 2 minutes and let the bot handle anti-spam, welcome messages, games, and engagement — while you focus on building your community.
+Your Telegram group deserves better than manual moderation. Set up BotWave in 2 minutes and let the bot handle anti-spam, welcome messages, games, and engagement - while you focus on building your community.
 
 **[Set Up Your Free Telegram Bot →](https://www.botwave.online/signup)**
 `;
@@ -129,7 +129,7 @@ Your Telegram group deserves better than manual moderation. Set up BotWave in 2 
 const relatedPosts = [
   { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria (2026)' },
   { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
-  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026) — Automate Your Real Account' },
+  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026) - Automate Your Real Account' },
 ];
 
 export default function Article() {

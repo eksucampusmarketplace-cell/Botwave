@@ -553,7 +553,7 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
                 onChange={v => setConfig(prev => ({ ...prev, alive_message: v }))} />
               <div>
                 <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>Alive Image</label>
-                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image/GIF shown with .alive — paste a URL or upload a file (leave blank for text only)</p>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image/GIF shown with .alive - paste a URL or upload a file (leave blank for text only)</p>
                 <div className="flex gap-2">
                   <input type="text" value={config.alive_image} onChange={e => setConfig(prev => ({ ...prev, alive_image: e.target.value }))}
                     placeholder="https://example.com/image.jpg"
@@ -630,7 +630,7 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
           <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
             Control who can PM you. Unapproved users get warned, then blocked after exceeding the limit.
           </p>
-          <Toggle label="PM Guard" desc="Enable PM protection — unapproved users will be warned" checked={config.pm_permit_enabled}
+          <Toggle label="PM Guard" desc="Enable PM protection - unapproved users will be warned" checked={config.pm_permit_enabled}
             onChange={v => { setConfig(prev => ({ ...prev, pm_permit_enabled: v })); saveConfig({ pm_permit_enabled: v }); }} />
           <Toggle label="Anti-PM" desc="Automatically ignore all PMs from unknown users" checked={config.anti_pm}
             onChange={v => { setConfig(prev => ({ ...prev, anti_pm: v })); saveConfig({ anti_pm: v }); }} />
@@ -652,7 +652,7 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
             </div>
             <div>
               <label className="text-sm font-medium block mb-1" style={{ color: 'var(--text-primary)' }}>PM Permit Image</label>
-              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image shown with PM warning — paste a URL or upload a file (leave blank for text only)</p>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Image shown with PM warning - paste a URL or upload a file (leave blank for text only)</p>
               <div className="flex gap-2">
                 <input type="text" value={config.pm_permit_image} onChange={e => setConfig(prev => ({ ...prev, pm_permit_image: e.target.value }))}
                   placeholder="https://example.com/image.jpg"
@@ -788,7 +788,7 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
                 <div key={gban.user_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
                   <div>
                     <span className="text-sm font-mono" style={{ color: 'var(--text-primary)' }}>{gban.user_id}</span>
-                    {gban.reason && <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>— {gban.reason}</span>}
+                    {gban.reason && <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}> - {gban.reason}</span>}
                   </div>
                   <button onClick={() => removeGban(gban.user_id)} className="text-xs text-green-500 hover:text-green-400">Ungban</button>
                 </div>

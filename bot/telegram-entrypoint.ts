@@ -1,5 +1,5 @@
 /**
- * Telegram Bot — Isolated Entrypoint
+ * Telegram Bot - Isolated Entrypoint
  *
  * Starts ONLY Telegram bot sessions. Connects to Redis for shared state.
  * Skips all WhatsApp/Evolution API logic.

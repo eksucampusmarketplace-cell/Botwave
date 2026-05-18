@@ -1,7 +1,7 @@
 /**
  * In-memory i18n system for BotWave.
  *
- * All translations are loaded once into memory at startup — no DB/Redis lookups
+ * All translations are loaded once into memory at startup - no DB/Redis lookups
  * per message. Language resolution order:
  *   1. User-level preference (DM interactions)
  *   2. Group-level setting (per-group override)
@@ -110,7 +110,7 @@ export function resolveLocale(
 // ── Translation ──────────────────────────────────────────────────────
 
 /**
- * Get a translated string. Blazing fast — single Map lookup.
+ * Get a translated string. Blazing fast - single Map lookup.
  *
  * @param key - Translation key (e.g. 'welcome.greeting')
  * @param locale - Target locale

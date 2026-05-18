@@ -1,6 +1,6 @@
 /**
  * Image editing handler: /blur, /grayscale, /rotate, /resize, /invert, /brightness
- * Uses Canvas-free approach — processes images via sharp-like pixel manipulation.
+ * Uses Canvas-free approach - processes images via sharp-like pixel manipulation.
  * Since we can't add packages, this uses Telegram's native photo handling
  * and provides helpful image utility commands.
  */
@@ -17,9 +17,9 @@ export function registerImageEditHandlers(bot: Bot, _sessionId: string): void {
       await ctx.reply(
         '🖼️ <b>Image Tools</b>\n\n' +
         'Reply to a photo with one of these commands:\n\n' +
-        '/imginfo — Get image details (size, dimensions)\n' +
-        '/sticker — Convert image to sticker\n' +
-        '/getfile — Get original file download link\n\n' +
+        '/imginfo - Get image details (size, dimensions)\n' +
+        '/sticker - Convert image to sticker\n' +
+        '/getfile - Get original file download link\n\n' +
         '<i>Reply to any photo or document to use these commands.</i>',
         { parse_mode: 'HTML' },
       );

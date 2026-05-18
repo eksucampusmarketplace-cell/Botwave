@@ -1,5 +1,5 @@
 /**
- * Monetization module — dunning, notifications, and in-WhatsApp upgrade.
+ * Monetization module - dunning, notifications, and in-WhatsApp upgrade.
  */
 
 // Register the !upgrade command (self-registering on import)

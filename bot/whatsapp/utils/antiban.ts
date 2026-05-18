@@ -36,7 +36,7 @@ export async function humanSend(
   msgKey: any,
   content: any,
 ): Promise<void> {
-  // Step 1 – mark as read (with small natural delay before reading)
+  // Step 1 - mark as read (with small natural delay before reading)
   const preReadDelay = 200 + Math.random() * 300; // 0.2-0.5s before even "seeing" it
   await delay(preReadDelay);
   try {
@@ -45,17 +45,17 @@ export async function humanSend(
     // non-critical
   }
 
-  // Step 2 – "reading" delay — simulate reading the message before responding
+  // Step 2 - "reading" delay - simulate reading the message before responding
   const msgLength = typeof content === 'string' ? content.length : (content?.text?.length ?? 40);
   const incomingLength = 20; // rough average incoming message length
   const readTime = Math.min(500 + incomingLength * 20 + Math.random() * 1000, 2000);
   await delay(readTime);
 
-  // Step 3 – "thinking" pause before typing (humans don't type instantly)
+  // Step 3 - "thinking" pause before typing (humans don't type instantly)
   const thinkTime = 200 + Math.random() * 500;
   await delay(thinkTime);
 
-  // Step 4 – show typing or recording indicator
+  // Step 4 - show typing or recording indicator
   const isAudio = content?.audio || content?.mimetype?.includes('audio');
   const presenceType = isAudio ? 'recording' : 'composing';
   try {
@@ -64,7 +64,7 @@ export async function humanSend(
     // non-critical
   }
 
-  // Step 5 – typing duration (based on response length, varies by time of day)
+  // Step 5 - typing duration (based on response length, varies by time of day)
   // Average human types ~40 WPM = ~200 chars/min = ~3.3 chars/sec
   // But on phone it's slower: ~25 WPM = ~125 chars/min = ~2 chars/sec
   const charsPerSecond = 4 + Math.random() * 2; // 4-6 chars/sec (faster typer)
@@ -72,7 +72,7 @@ export async function humanSend(
   const typingTime = Math.max(400, Math.round(baseTypingTime * getTypingSpeedMultiplier()));
   await delay(typingTime);
 
-  // Step 6 – brief pause after typing (reviewing before send)
+  // Step 6 - brief pause after typing (reviewing before send)
   // 10% chance of a shorter "re-read" pause
   if (Math.random() < 0.1) {
     try {
@@ -85,17 +85,17 @@ export async function humanSend(
     await delay(100 + Math.random() * 200);
   }
 
-  // Step 7 – stop typing
+  // Step 7 - stop typing
   try {
     await sock.sendPresenceUpdate('paused', jid);
   } catch {
     // non-critical
   }
 
-  // Step 8 – tiny delay before send (finger moving to send button)
+  // Step 8 - tiny delay before send (finger moving to send button)
   await delay(100 + Math.random() * 300);
 
-  // Step 9 – send
+  // Step 9 - send
   const messageContent =
     typeof content === 'string' ? { text: content } : content;
   await sock.sendMessage(jid, messageContent);

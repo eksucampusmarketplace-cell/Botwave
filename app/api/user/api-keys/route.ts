@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: { ...data, rawKey },
-      message: 'Save this key now — it will not be shown again.',
+      message: 'Save this key now - it will not be shown again.',
     });
   } catch (error) {
     console.error('Create API key error:', error);

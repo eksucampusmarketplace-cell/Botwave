@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch {
-      // Non-critical — don't block login
+      // Non-critical - don't block login
     }
 
     return response;

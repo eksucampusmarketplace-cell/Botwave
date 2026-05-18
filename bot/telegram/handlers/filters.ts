@@ -59,7 +59,7 @@ export function registerFiltersHandlers(bot: Bot, sessionId: string): void {
 }
 
 /**
- * Middleware-style filter checker — call this from the main message handler.
+ * Middleware-style filter checker - call this from the main message handler.
  */
 export async function checkFilters(
   sessionId: string,

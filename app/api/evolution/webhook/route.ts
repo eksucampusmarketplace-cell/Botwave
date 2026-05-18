@@ -12,11 +12,11 @@ import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolut
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
 
-// Throttle heartbeat/last_active updates — at most once per 60s per session
+// Throttle heartbeat/last_active updates - at most once per 60s per session
 const lastHeartbeatUpdate = new Map<string, number>();
 const HEARTBEAT_THROTTLE_MS = 60_000;
 
-// Dedup cache — prevents processing the same message multiple times when
+// Dedup cache - prevents processing the same message multiple times when
 // Evolution API fires duplicate webhooks (common for ACK re-deliveries).
 // Keys are scoped by session so the same WhatsApp message reaching two
 // different bot sessions (sender's bot + recipient's bot) is processed
@@ -59,7 +59,7 @@ async function touchSessionActivity(supabase: ReturnType<typeof getSupabase>, se
 }
 
 /**
- * Redis-cached session lookup — checks Redis first, falls back to Supabase.
+ * Redis-cached session lookup - checks Redis first, falls back to Supabase.
  * Avoids hitting Supabase on every single webhook event.
  */
 interface WebhookSession {
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const sessionId = resolveSessionId(instance);
 
     if (!sessionId) {
-      // Global error webhooks from Evolution API don't carry an instance field —
+      // Global error webhooks from Evolution API don't carry an instance field -
       // this is expected and not actionable on the Botwave side.
       if (event !== 'error') {
         console.warn('[EVO-WEBHOOK] No session ID in payload:', JSON.stringify({ event, instance }).slice(0, 200));
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     // In Docker deployments, only the web container (botwave-web) receives
     // webhooks via the global WEBHOOK_GLOBAL_URL. The bot/worker containers
     // do NOT run Next.js and never receive webhooks directly. So the web
-    // container must process ALL events — no routing guard needed.
+    // container must process ALL events - no routing guard needed.
     //
     // On Render (legacy), both web and bot services could receive the same
     // webhook, requiring deduplication. That's handled by checking SELF_URL:
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
             ? SELF_URL === ownerUrl
             : !IS_WORKER;
         if (!isCorrectInstance) {
-          console.log(`[EVO-WEBHOOK] SKIP ${event} for ${sessionId.slice(0, 8)} — owner=${ownerUrl || 'main'}, self=${SELF_URL || 'main'} (not ours)`);
+          console.log(`[EVO-WEBHOOK] SKIP ${event} for ${sessionId.slice(0, 8)} - owner=${ownerUrl || 'main'}, self=${SELF_URL || 'main'} (not ours)`);
           return NextResponse.json({ ok: true });
         }
       }
@@ -168,12 +168,12 @@ export async function POST(request: NextRequest) {
       const statusCode = data?.statusCode || data?.disconnectionReasonCode;
       console.log(`[EVO-WEBHOOK] connection.update for ${sessionId}: state=${state} statusCode=${statusCode}`);
 
-      // Detect 428 (WhatsApp rate limit) — trigger global cooldown to prevent cascading disconnects
+      // Detect 428 (WhatsApp rate limit) - trigger global cooldown to prevent cascading disconnects
       if (statusCode === 428) {
         trigger428Cooldown(`webhook connection.update for ${sessionId}`);
       }
 
-      // Track activity on connection events — proves the session is alive
+      // Track activity on connection events - proves the session is alive
       if (state === 'open') {
         recordMessageActivity(sessionId);
       }
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
         lastHeartbeatUpdate.set(sessionId, Date.now());
 
         // Send one-time welcome message when pairing/QR scan completes for the first time.
-        // Triggers on any pre-active state (pairing_sent, qr_pending, connecting) — not
+        // Triggers on any pre-active state (pairing_sent, qr_pending, connecting) - not
         // on reconnections from 'inactive' (those are auto-reconnects, not first time).
         const isFirstConnection = current?.state && ['pairing_sent', 'qr_pending', 'connecting'].includes(current.state);
         if (isFirstConnection && current?.phone_number) {
@@ -213,8 +213,8 @@ export async function POST(request: NextRequest) {
             `Here are a few things to get started:\n` +
             `• Type *!help* in any chat to see all commands\n` +
             `• Add BotWave to your homescreen for quick access: ${dashUrl}\n\n` +
-            `⚠️ *Important — Please read:*\n` +
-            `1. Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss — use wisely!\n` +
+            `⚠️ *Important - Please read:*\n` +
+            `1. Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss - use wisely!\n` +
             `2. *Your bot can disconnect* if WhatsApp drops the session or if our server restarts. If your bot stops responding, go to your dashboard at ${dashUrl} and reconnect. You are in control of your session.\n\n` +
             `_Created by Decisive Analyst_`,
 
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
             `• Bookmark the dashboard: ${dashUrl}\n\n` +
             `⚠️ *Things you should know:*\n` +
             `1. Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions.\n` +
-            `2. *Disconnections can happen* — if the bot stops working, visit ${dashUrl} and reconnect your session. The bot doesn't stay online forever on its own.\n\n` +
+            `2. *Disconnections can happen* - if the bot stops working, visit ${dashUrl} and reconnect your session. The bot doesn't stay online forever on its own.\n\n` +
             `_Powered by Decisive Analyst_`,
 
             `You're all set! ✨ BotWave is connected and ready.\n\n` +
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
             `• Try *!help* to see everything your bot can do\n` +
             `• Save the dashboard for easy access: ${dashUrl}\n\n` +
             `⚠️ *Keep in mind:*\n` +
-            `1. Don't overuse or spam automated messages — if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
+            `1. Don't overuse or spam automated messages - if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
             `2. *Your bot session may disconnect* sometimes. When it does, just go to ${dashUrl} and click reconnect. You're always in control.\n\n` +
             `_Built by Decisive Analyst_`,
           ];
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
           // terminal logout regardless of current session state. Stale auth
           // must be cleared so the next pairing attempt starts fresh instead
           // of reusing rejected credentials in an infinite 401 loop.
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} got 401 close (current state: ${current?.state ?? 'unknown'}) — clearing auth and setting needs_reauth`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} got 401 close (current state: ${current?.state ?? 'unknown'}) - clearing auth and setting needs_reauth`);
           await supabase.from('bot_sessions')
             .update({
               state: 'needs_reauth',
@@ -278,10 +278,10 @@ export async function POST(request: NextRequest) {
             .eq('id', sessionId);
           await invalidateSessionCache(sessionId);
         } else if (current?.state === 'active') {
-          // Temporary disconnect — preserve auth state so Evolution API can
+          // Temporary disconnect - preserve auth state so Evolution API can
           // auto-reconnect without forcing the user to re-pair.  Only clear
           // transient fields (locks, QR) so the sync loop picks this up.
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} — setting inactive (auth preserved for auto-reconnect)`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} was active, now ${state} - setting inactive (auth preserved for auto-reconnect)`);
           await supabase.from('bot_sessions')
             .update({
               state: 'inactive',
@@ -297,12 +297,12 @@ export async function POST(request: NextRequest) {
             .eq('id', sessionId);
           await invalidateSessionCache(sessionId);
         } else {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused — ignoring (handled by sync loop)`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused - ignoring (handled by sync loop)`);
         }
         } else if (state === 'connecting') {
           // Only update to qr_pending if not already in a pairing or active state.
           // "active" is preserved because the bot may be auto-reconnecting after a
-          // redeploy — changing to qr_pending would trigger the sync loop to
+          // redeploy - changing to qr_pending would trigger the sync loop to
           // create a duplicate bot and force a fresh pairing code.
           const { data: current } = await supabase
             .from('bot_sessions')
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
             const lastUpdate = current?.updated_at ? new Date(current.updated_at).getTime() : 0;
             const debounceMs = 30_000;
             if (current?.state === 'qr_pending' && Date.now() - lastUpdate < debounceMs) {
-              // Already qr_pending and updated recently — skip
+              // Already qr_pending and updated recently - skip
             } else {
               await supabase.from('bot_sessions')
                 .update({
@@ -328,7 +328,7 @@ export async function POST(request: NextRequest) {
               await invalidateSessionCache(sessionId);
             }
           } else {
-            console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting — preserving state (reconnect in progress)`);
+            console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state} got connecting - preserving state (reconnect in progress)`);
           }
         }
 
@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
 
     // --- Instance logout (WhatsApp terminated the linked device) ---
     if (event === 'logout.instance') {
-      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} — clearing all auth data and locks`);
+      console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} - clearing all auth data and locks`);
       await supabase.from('bot_sessions')
         .update({
           state: 'needs_reauth',
@@ -380,11 +380,11 @@ export async function POST(request: NextRequest) {
 
       // Never regress an active session back to pairing_sent.
       if (current?.state === 'active') {
-        console.log(`[PAIRING-WEBHOOK] BLOCKED — session ${sessionId} is already active. Ignoring stale qrcode.updated (code="${pairingCode || 'none'}")`);
+        console.log(`[PAIRING-WEBHOOK] BLOCKED - session ${sessionId} is already active. Ignoring stale qrcode.updated (code="${pairingCode || 'none'}")`);
         return NextResponse.json({ ok: true });
       }
 
-      // Always update QR code unconditionally — it rotates every ~20-30s
+      // Always update QR code unconditionally - it rotates every ~20-30s
       // independently of the pairing code. The duplicate/lock checks below
       // only protect the pairing code; QR must stay fresh for scan users.
       if (qrCode) {
@@ -403,13 +403,13 @@ export async function POST(request: NextRequest) {
 
       // Skip exact duplicate pairing code deliveries (QR already updated above)
       if (pairingCode && current?.pairing_code === pairingCode) {
-        console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" — QR already updated above. Done.`);
+        console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" - QR already updated above. Done.`);
         return NextResponse.json({ ok: true });
       }
 
       // Always accept a different pairing code. Evolution API only generates
       // a new code on reconnect (requestPairingCode), which invalidates the
-      // old one. So a different code means the old one is already dead — we
+      // old one. So a different code means the old one is already dead - we
       // must save the new one immediately regardless of age.
       if (pairingCode) {
         if (current?.pairing_code && current.pairing_code !== pairingCode) {
@@ -459,11 +459,11 @@ export async function POST(request: NextRequest) {
 
       // Auto-correct session state: if we're receiving messages from
       // Evolution API but the DB thinks the session is qr_pending/pairing_sent,
-      // the instance is clearly connected — update the state to active.
+      // the instance is clearly connected - update the state to active.
       if (session.state && session.state !== 'active' && session.state !== 'needs_reauth') {
         const hasFromMe = messages.some((m: any) => m.key?.fromMe);
         if (hasFromMe) {
-          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${String(session.state)} but receiving fromMe messages — auto-correcting to active`);
+          console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${String(session.state)} but receiving fromMe messages - auto-correcting to active`);
           await supabase.from('bot_sessions')
             .update({
               state: 'active',
@@ -482,7 +482,7 @@ export async function POST(request: NextRequest) {
           const { getUserSettings } = await import('@/bot/database');
           const settings = await getUserSettings(session.user_id);
           if (settings?.command_prefix) cmdPrefix = settings.command_prefix;
-        } catch { /* non-critical — fall back to default */ }
+        } catch { /* non-critical - fall back to default */ }
       }
 
       // Log and filter messages synchronously, then fire-and-forget the
@@ -510,7 +510,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Cache every message for anti-delete recovery — including ACK
+        // Cache every message for anti-delete recovery - including ACK
         // re-deliveries.  ACKs still carry the full message content and
         // cacheMessage() deduplicates by msgId internally (Map.set is a
         // no-op for the same key).  This ensures fromMe messages (which
@@ -519,14 +519,14 @@ export async function POST(request: NextRequest) {
         cacheMsgs.push(msg);
 
         // Evolution API always sets a status on messages.upsert (SERVER_ACK,
-        // DELIVERY_ACK, READ, PLAYED) — unlike Baileys which separates new
+        // DELIVERY_ACK, READ, PLAYED) - unlike Baileys which separates new
         // messages from status updates. We use timestamp + dedup to determine
         // if a message is recent enough to process.
         const LATE_STATUS = ['READ', 'PLAYED'];
         const LATE_CODES = [4, 5];
         const isLateStatus = msgStatus && (LATE_STATUS.includes(String(msgStatus)) || LATE_CODES.includes(Number(msgStatus)));
 
-        // Always skip READ/PLAYED — these fire long after the message arrived
+        // Always skip READ/PLAYED - these fire long after the message arrived
         if (isLateStatus) {
           console.log(`[EVO-WEBHOOK] SKIP late status ${msgStatus} for msg ${msg.key?.id?.slice(0, 12) || 'unknown'}`);
           continue;
@@ -589,14 +589,14 @@ export async function POST(request: NextRequest) {
         const sock = new EvolutionSocketAdapter(sessionId, sid, uid, phone);
         const queue = new MessageQueue(sock as unknown as import('@whiskeysockets/baileys').WASocket, sessionId);
 
-        // Use void to fire-and-forget — do NOT await
+        // Use void to fire-and-forget - do NOT await
         void (async () => {
           // Cache messages for anti-delete recovery (non-blocking)
           for (const msg of cacheMsgs) {
             cacheMessage(sid, msg).catch(() => {});
           }
 
-          // Autoview removed — status broadcasts no longer processed
+          // Autoview removed - status broadcasts no longer processed
           // for (const msg of statusMsgs) {
           //   try {
           //     await handleStatusUpdate(msg, sock, sid, uid);
@@ -732,7 +732,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    console.log(`[EVO-WEBHOOK] Unhandled event=${event} for session=${sessionId} — ignoring`);
+    console.log(`[EVO-WEBHOOK] Unhandled event=${event} for session=${sessionId} - ignoring`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('[EVO-WEBHOOK] CRITICAL ERROR processing webhook:', error);

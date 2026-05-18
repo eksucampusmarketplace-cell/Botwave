@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
       const html = `
         <div style="font-family:sans-serif;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:8px;">
-          <h2 style="color:#60a5fa;margin-top:0;">Test Email — ${channel}</h2>
+          <h2 style="color:#60a5fa;margin-top:0;">Test Email - ${channel}</h2>
           <p>${content || 'This is a test email sent from the BotWave Admin Panel.'}</p>
           <hr style="border-color:#334155;margin:16px 0;" />
           <p style="color:#64748b;font-size:12px;">

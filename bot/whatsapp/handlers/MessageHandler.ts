@@ -202,7 +202,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     const isCommand = content.startsWith(commandPrefix);
 
-    // Owner's outgoing messages — autopilot learning disabled
+    // Owner's outgoing messages - autopilot learning disabled
     if (fromMe && !isCommand) {
       // if (userId && sessionId) {
       //   markOwnerActiveForContact(sessionId, chatJid);
@@ -513,7 +513,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
   let commandName = parts[0].toLowerCase();
   let args = parts.slice(1);
 
-  // Alias expansion (async — loads from Redis if not cached)
+  // Alias expansion (async - loads from Redis if not cached)
   const aliasExpansion = await expandAlias(context.senderJid, commandName);
   if (aliasExpansion) {
     const aliasParts = aliasExpansion.replace(new RegExp(`^\\${prefix}`), '').split(' ');
@@ -530,7 +530,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
 
   // Edit-on-reply: replace the command text with the result in-place.
   // Evolution API stores DM messages with @lid remoteJid but the webhook
-  // sends @s.whatsapp.net — the retry in evolutionClient.updateMessage
+  // sends @s.whatsapp.net - the retry in evolutionClient.updateMessage
   // looks up the stored @lid key and retries with it.
   const cmdKey = context.rawMessage.key;
   if (cmdKey.fromMe) {
@@ -585,7 +585,7 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       console.log(`Command !${commandName} completed in ${durationMs}ms`);
       trackCommandExecution(commandName, true, durationMs, context.sessionId);
     } else {
-      console.log(`Unknown command: !${commandName} — sending help hint`);
+      console.log(`Unknown command: !${commandName} - sending help hint`);
       await sendUnknownCommand(context, sock, vars);
     }
   } catch (err: any) {
@@ -697,7 +697,7 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
 //   - The user is clearly addressing the bot (group) or sending a request (DM)
 //   - No auto-reply rule already handled the message
 
-// NLP Processing — disabled
+// NLP Processing - disabled
 // async function processNLP(context: MessageContext, sock: any): Promise<void> {
 //   if (!context.userId) return;
 //   try {

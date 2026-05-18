@@ -1,5 +1,5 @@
 /**
- * Handler registration factory — wires all Telegram handlers to a Bot instance.
+ * Handler registration factory - wires all Telegram handlers to a Bot instance.
  * Each handler set is scoped by sessionId for per-session isolation.
  */
 

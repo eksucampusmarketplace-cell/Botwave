@@ -1,5 +1,5 @@
 /**
- * Error Rate Tracker — tracks command success/failure rates with spike detection.
+ * Error Rate Tracker - tracks command success/failure rates with spike detection.
  *
  * Maintains a sliding window of command executions and calculates failure rates.
  * Triggers alerts when failure rate exceeds configurable thresholds.

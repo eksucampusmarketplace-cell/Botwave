@@ -941,7 +941,7 @@ export const INTENT_MAP: IntentPattern[] = [
     extractArgs: (match) => match[1] ? [match[1].trim()] : [],
   },
 
-  // ── AI Chat (catch-all for long questions — MUST be last) ──────────────────
+  // ── AI Chat (catch-all for long questions - MUST be last) ──────────────────
   {
     command: 'ai',
     confidence: 0.7,

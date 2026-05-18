@@ -237,7 +237,7 @@ export async function PATCH(request: NextRequest) {
 
     const supabase = getAdminClient();
 
-    // Verify ownership — check the specified mailbox or any owned mailbox
+    // Verify ownership - check the specified mailbox or any owned mailbox
     const ownershipQuery = supabase
       .from('user_mailboxes')
       .select('id')

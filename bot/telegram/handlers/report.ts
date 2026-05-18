@@ -79,7 +79,7 @@ export function registerReportHandlers(bot: Bot, sessionId: string): void {
     let text = `<b>Pending Reports</b> (${reports.length})\n\n`;
     for (const r of reports.slice(0, 10)) {
       const date = new Date(r.created_at).toLocaleDateString();
-      text += `#${r.id} — Reporter: ${r.reporter_user_id}, ` +
+      text += `#${r.id} - Reporter: ${r.reporter_user_id}, ` +
         `Reported: ${r.reported_user_id}\n` +
         `Reason: ${escapeHtml(truncate(r.reason || 'N/A', 40))} (${date})\n\n`;
     }

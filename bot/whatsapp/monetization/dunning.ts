@@ -9,7 +9,7 @@
  * Schedule:
  * - Attempt 1 (Day 0): Immediate "payment failed" notification
  * - Attempt 2 (Day 3): "Retry reminder" with payment link
- * - Attempt 3 (Day 7): "Final warning — downgrade in 24h"
+ * - Attempt 3 (Day 7): "Final warning - downgrade in 24h"
  * - Day 8: Auto-downgrade to free plan
  */
 

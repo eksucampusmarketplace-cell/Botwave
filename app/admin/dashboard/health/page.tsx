@@ -282,8 +282,8 @@ export default function HealthPage() {
               <div className={`w-3 h-3 rounded-full ${health.alerting.emailConfigured ? 'bg-green-400' : 'bg-gray-500'}`} />
               <span className="text-sm text-white">
                 {health.alerting.emailConfigured
-                  ? `Configured — SMTP: ${health.alerting.smtpHost}`
-                  : 'Not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS, ALERT_EMAIL in .env'}
+                  ? `Configured - SMTP: ${health.alerting.smtpHost}`
+                  : 'Not configured - set SMTP_HOST, SMTP_USER, SMTP_PASS, ALERT_EMAIL in .env'}
               </span>
             </div>
           </div>

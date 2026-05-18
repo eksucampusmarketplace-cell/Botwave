@@ -1,7 +1,7 @@
 /**
  * Proxy rotation for Telegram userbot MTProto connections.
  * Uses SOCKS5 proxies (required by MTProto/GramJS) with round-robin rotation.
- * Never falls back to VPS IP — if no proxies configured, connections are refused.
+ * Never falls back to VPS IP - if no proxies configured, connections are refused.
  */
 
 import { SocksProxyAgent } from 'socks-proxy-agent';
@@ -71,7 +71,7 @@ export function getNextProxy(): ProxyEntry | null {
     return proxy;
   }
 
-  // All proxies exhausted — reset all and try first
+  // All proxies exhausted - reset all and try first
   proxyHealth.clear();
   return USERBOT_PROXY_LIST[0] || null;
 }
@@ -117,7 +117,7 @@ export function getGramJSProxyConfig(proxy: ProxyEntry): {
 export function logProxyStatus(): void {
   if (USERBOT_PROXY_LIST.length === 0) {
     console.warn('[USERBOT-PROXY] WARNING: No proxies configured (USERBOT_PROXY_LIST is empty)');
-    console.warn('[USERBOT-PROXY] Userbot will connect using server IP — NOT recommended');
+    console.warn('[USERBOT-PROXY] Userbot will connect using server IP - NOT recommended');
   } else {
     console.log(`[USERBOT-PROXY] ${USERBOT_PROXY_LIST.length} SOCKS5 proxies loaded`);
     USERBOT_PROXY_LIST.forEach((p, i) => {

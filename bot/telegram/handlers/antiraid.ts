@@ -1,5 +1,5 @@
 /**
- * Anti-Raid system — automatic detection and response to mass-join raids.
+ * Anti-Raid system - automatic detection and response to mass-join raids.
  * Tracks join rate per group and triggers protective measures.
  */
 
@@ -8,7 +8,7 @@ import { requireAdmin } from '../utils/permissions';
 import { getGroupConfig, updateTelegramConfig, trackJoin, getRecentJoinCount, startRaidSession, endRaidSession, isRaidActive } from '../utils/db';
 
 export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
-  // /antiraid — show or toggle anti-raid settings
+  // /antiraid - show or toggle anti-raid settings
   bot.command('antiraid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -32,10 +32,10 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
         `Duration: ${config.antiraid_duration_mins} minutes\n` +
         `Raid Active: ${raidActive ? '⚠️ YES' : 'No'}\n\n` +
         `<b>Commands:</b>\n` +
-        `/antiraid on/off — Enable/disable\n` +
-        `/antiraid threshold <n> — Set joins/min threshold\n` +
+        `/antiraid on/off - Enable/disable\n` +
+        `/antiraid threshold <n> - Set joins/min threshold\n` +
         `/antiraid mode <restrict|ban|captcha|lockdown>\n` +
-        `/antiraid duration <mins> — Set auto-end duration`,
+        `/antiraid duration <mins> - Set auto-end duration`,
         { parse_mode: 'HTML' },
       );
       return;
@@ -77,7 +77,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /raidtime — View or set the desired antiraid duration
+  // /raidtime - View or set the desired antiraid duration
   bot.command('raidtime', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -98,7 +98,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Antiraid duration set to: ${arg}`);
   });
 
-  // /raidactiontime — View or set how long new joiners are temp-banned
+  // /raidactiontime - View or set how long new joiners are temp-banned
   bot.command('raidactiontime', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -119,7 +119,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Raid action time set to: ${arg}`);
   });
 
-  // /autoantiraid — Set joins per minute to auto-enable antiraid
+  // /autoantiraid - Set joins per minute to auto-enable antiraid
   bot.command('autoantiraid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -148,7 +148,7 @@ export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply(`✅ Auto antiraid will trigger if over ${num} users join in under a minute.`);
   });
 
-  // /raid on|off — manually trigger or end raid mode
+  // /raid on|off - manually trigger or end raid mode
   bot.command('raid', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {

@@ -54,7 +54,7 @@ export default function AutopilotPage() {
           if (!session?.user) { window.location.href = '/login'; return; }
         }
       } catch {
-        console.warn('[Autopilot] Auth check failed (network error) — staying on page');
+        console.warn('[Autopilot] Auth check failed (network error) - staying on page');
       }
 
       // Fetch sessions
@@ -213,7 +213,7 @@ export default function AutopilotPage() {
               <p className="text-xs text-gray-500 mt-3">
                 {mode === 'offline' && 'Replies only when you haven\'t sent a message in a while'}
                 {mode === 'always' && 'Replies to all DMs even when you\'re online'}
-                {mode === 'manual' && 'Same as always — toggle on/off explicitly'}
+                {mode === 'manual' && 'Same as always - toggle on/off explicitly'}
               </p>
             </motion.div>
 
@@ -224,7 +224,7 @@ export default function AutopilotPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-3 h-3 rounded-full bg-green-500" />
-                    <span className="text-gray-300">Profile active — {data.sampleCount} messages analyzed</span>
+                    <span className="text-gray-300">Profile active - {data.sampleCount} messages analyzed</span>
                   </div>
                   <p className="text-gray-400 text-sm">{profileSummary}</p>
                   {data.lastSyncAt && (

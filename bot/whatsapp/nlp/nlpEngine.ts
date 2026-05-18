@@ -7,7 +7,7 @@
 //      (e.g. "bot, what's the weather" or "@bot tell me a joke")
 //   2. In DMs: only activates when the message clearly looks like a
 //      request/command directed at the bot (questions, imperatives)
-//   3. High confidence threshold — casual chat is ignored
+//   3. High confidence threshold - casual chat is ignored
 //   4. Gated behind a per-user feature toggle (default OFF)
 //   5. AI fallback for unmatched but clearly bot-directed requests
 
@@ -82,10 +82,10 @@ const CASUAL_PATTERNS = [
   /^(?:good (?:morning|afternoon|evening|night)|gm|gn|morning|evening|night|afternoon)!?$/i,
   // Reactions / agreement
   /^(?:yesss*|nooo*|facts|real|valid|word|swear|on god|i swear|for real|no lie|100|💯)!?$/i,
-  // Short conversational phrases — these are NOT bot requests even though they
+  // Short conversational phrases - these are NOT bot requests even though they
   // start with question words. Common in DM conversations.
   /^(?:what'?s that|what'?s this|who'?s this|who'?s that|what happened|what'?s up|what'?s good|where you dey|how far|how you dey|how body|what do you mean|wdym|what'?s wrong|you good|you okay|you sure|you serious|you dey|i miss you|miss you|i love you|love you|explain yourself|say what|huh|what the|come on|for real|are you there|you there|who are you|who is this|who dis|na who|na what|see eh|look at you|calm down|relax|chill|stop|wait|hold on|come again|say again|repeat|pardon|excuse me|i don'?t understand|i no understand|wetin you mean|you dey mad|you dey craze|leave me|go away|not now|later|not interested|no thanks|i'?m good|i dey fine|i'?m fine|nothing|never mind|forget it|drop it|skip).*$/i,
-  // Personal / emotional messages — clearly human-to-human, not bot commands
+  // Personal / emotional messages - clearly human-to-human, not bot commands
   /^(?:i'?m (?:sorry|sad|angry|upset|tired|hungry|sleepy|bored|sick|lonely|happy|excited)|you (?:hurt|annoy|bore|scare|confuse) me|why (?:did you|would you|are you)|how (?:could you|dare you)|you'?re (?:crazy|mad|annoying|sweet|nice|mean|funny)|that'?s (?:crazy|wild|funny|sad|true|fake|cap)|stop (?:it|that|playing)|don'?t (?:do that|say that|start|lie|play)).*$/i,
 ];
 
@@ -93,7 +93,7 @@ export function isRequestLike(text: string): boolean {
   if (CASUAL_PATTERNS.some((re) => re.test(text))) return false;
   // Short messages (under 15 chars) that start with question words are usually
   // conversational ("What's that", "Who's this") not bot commands. Require a
-  // stronger signal — the message must contain a specific bot-related keyword.
+  // stronger signal - the message must contain a specific bot-related keyword.
   if (text.length < 15) {
     const hasBotKeyword = /(?:bot|weather|translate|joke|sticker|meme|quote|help|download|remind|define|play|trivia|music|lyrics|crypto|poll|wiki|horoscope|password|roast|dice|coinflip|flashcard|pomodoro)\b/i.test(text);
     if (!hasBotKeyword) return false;
@@ -178,7 +178,7 @@ const MAX_MESSAGE_LENGTH = 300;
 /**
  * Try to match a natural-language message to a bot command.
  *
- * Returns null when no confident match is found — the message is treated
+ * Returns null when no confident match is found - the message is treated
  * as regular chat and falls through to auto-reply / ignore.
  */
 export function matchIntent(
@@ -219,7 +219,7 @@ export function matchIntent(
     }
   }
 
-  // Step 4: fuzzy keyword fallback — single words that map directly to commands
+  // Step 4: fuzzy keyword fallback - single words that map directly to commands
   const normalized = stripped.toLowerCase().trim();
   const keywordMatch = KEYWORD_INTENTS[normalized];
   if (keywordMatch) {
@@ -331,7 +331,7 @@ const AI_COMMAND_MAP: Record<string, string> = {
   bmi: 'Calculate BMI. Args: [weight, height]',
   age: 'Calculate age. Args: [birthdate]',
   country: 'Country info. Args: [countryName]',
-  ai: 'AI chat — answer a question or have a conversation. Args: [fullMessage]',
+  ai: 'AI chat - answer a question or have a conversation. Args: [fullMessage]',
 };
 
 const AI_COMMAND_LIST = Object.keys(AI_COMMAND_MAP);
@@ -346,16 +346,16 @@ const AI_CLASSIFY_PROMPT = `You are the brain of BotWave, a WhatsApp bot used pr
 AVAILABLE COMMANDS AND THEIR PURPOSES:
 ${Object.entries(AI_COMMAND_MAP).map(([cmd, desc]) => `- ${cmd}: ${desc}`).join('\n')}
 
-RESPONSE FORMAT — respond with ONLY valid JSON, no markdown:
+RESPONSE FORMAT - respond with ONLY valid JSON, no markdown:
 {"command": "commandName", "args": ["arg1", "arg2"], "reason": "brief explanation"}
 
 CRITICAL RULES:
 1. If the message is casual chat (greetings, reactions, "lol", "ok", emojis, small talk), return: {"command": "none", "args": [], "reason": "casual chat"}
-2. For ambiguous messages that could be casual chat OR a bot request, return "none" — do NOT guess. Only classify as "ai" when the user is CLEARLY asking a question or requesting information (e.g. "explain quantum physics", "what is the capital of Nigeria"). Short phrases like "what's that", "who's this", "explain yourself" are CASUAL CHAT, not bot requests
+2. For ambiguous messages that could be casual chat OR a bot request, return "none" - do NOT guess. Only classify as "ai" when the user is CLEARLY asking a question or requesting information (e.g. "explain quantum physics", "what is the capital of Nigeria"). Short phrases like "what's that", "who's this", "explain yourself" are CASUAL CHAT, not bot requests
 3. For "ai" command, put the FULL user message in args[0]
-4. Extract real arguments — e.g. "what's the weather like in Abuja" → {"command": "weather", "args": ["Abuja"]}
+4. Extract real arguments - e.g. "what's the weather like in Abuja" → {"command": "weather", "args": ["Abuja"]}
 5. "I'm bored" or "entertain me" → randomly pick joke, meme, fact, riddle, or trivia
-6. Be SMART about argument extraction — pull out city names, song names, people names, URLs, etc.
+6. Be SMART about argument extraction - pull out city names, song names, people names, URLs, etc.
 7. Understand context: "translate this to Yoruba: hello" → {"command": "translate", "args": ["yoruba", "hello"]}
 8. Currency: "how much is 100 dollars in naira" → {"command": "currency", "args": ["100", "USD", "NGN"]}`;
 
@@ -393,7 +393,7 @@ export async function classifyWithAI(
       temperature: 0.1,
     });
 
-    // Parse the AI response — handle various response formats
+    // Parse the AI response - handle various response formats
     const cleaned = response
       .replace(/```json\n?|\n?```/g, '')
       .replace(/^[^{]*/, '') // strip anything before the JSON

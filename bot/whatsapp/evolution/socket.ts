@@ -1,7 +1,7 @@
 // bot/evolutionSocket.ts
 // Baileys-compatible socket adapter that routes calls through Evolution API.
 // This allows MessageHandler.ts, antiban.ts, and MessageQueue.ts to work
-// unchanged — they call sock.sendMessage(), sock.readMessages(), etc. and
+// unchanged - they call sock.sendMessage(), sock.readMessages(), etc. and
 // the calls are transparently forwarded to Evolution API REST endpoints.
 
 import {
@@ -29,7 +29,7 @@ export class EvolutionSocketAdapter {
   public sessionId: string;
   public userId: string;
   private instanceName: string;
-  // Mimics Baileys sock.user — used by MessageQueue to check connection
+  // Mimics Baileys sock.user - used by MessageQueue to check connection
   public user: { id: string } | null = null;
 
   constructor(instanceName: string, sessionId: string, userId: string, phoneNumber?: string) {
@@ -49,7 +49,7 @@ export class EvolutionSocketAdapter {
    * Handles text, sticker, document, image content types.
    */
   async sendMessage(jid: string, content: Record<string, unknown>, _options?: Record<string, unknown>) {
-    // React to a message — only for regular chats (not status broadcasts).
+    // React to a message - only for regular chats (not status broadcasts).
     // Status reactions via Evolution API's sendReaction endpoint are unreliable
     // and can send garbled messages to contacts, so skip them entirely.
     if (content.react) {
@@ -63,7 +63,7 @@ export class EvolutionSocketAdapter {
       return sendReaction(this.instanceName, reactData.key, reactData.text);
     }
 
-    // Status broadcast — route through the dedicated sendStatus endpoint
+    // Status broadcast - route through the dedicated sendStatus endpoint
     if (jid === 'status@broadcast') {
       return this.sendStatusMessage(content, _options);
     }
@@ -136,7 +136,7 @@ export class EvolutionSocketAdapter {
       return sendMedia(this.instanceName, to, base64, mimetype, 'video', 'video.mp4');
     }
 
-    // Audio — use dedicated WhatsApp audio endpoint for proper opus encoding
+    // Audio - use dedicated WhatsApp audio endpoint for proper opus encoding
     if (content.audio) {
       let base64: string;
       if (Buffer.isBuffer(content.audio)) {
@@ -232,7 +232,7 @@ export class EvolutionSocketAdapter {
   /**
    * Baileys-compatible sendPresenceUpdate.
    * Evolution API's sendPresence requires a target phone number.
-   * Global presence updates (no JID) are not supported via REST — skip them.
+   * Global presence updates (no JID) are not supported via REST - skip them.
    */
   async sendPresenceUpdate(type: string, jid?: string) {
     if (!jid) return;
@@ -268,7 +268,7 @@ export class EvolutionSocketAdapter {
     if (!message) return null;
 
     // Primary: use Evolution API to decrypt and fetch media via the active session.
-    // Pass the FULL message object (with key + message) — Evolution API needs the
+    // Pass the FULL message object (with key + message) - Evolution API needs the
     // key to look up the message in its database for decryption.
     try {
       const buffer = await getBase64FromMediaMessage(this.instanceName, msg);

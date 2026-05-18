@@ -27,14 +27,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // ─── In-memory cache layer ──────────────────────────────────────────────────
 // Reduces Supabase load for frequently-read, rarely-changed data.
 // Each cache entry stores the value and an expiry timestamp.
-// TTL is 60s — stale data is acceptable for settings/features/auto-replies
+// TTL is 60s - stale data is acceptable for settings/features/auto-replies
 // since they only change when the user explicitly updates them.
 
 interface CacheEntry<T> { value: T; expiresAt: number; }
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
-const CACHE_TTL_MEDIUM_MS = 120_000; // 2 minutes — leaderboard, stats
-const CACHE_TTL_LONG_MS = 300_000; // 5 minutes — settings, features, subscriptions, welcome msgs
+const CACHE_TTL_MEDIUM_MS = 120_000; // 2 minutes - leaderboard, stats
+const CACHE_TTL_LONG_MS = 300_000; // 5 minutes - settings, features, subscriptions, welcome msgs
 
 const settingsCache = new Map<string, CacheEntry<any>>();
 const featureCache = new Map<string, CacheEntry<boolean>>();
@@ -273,9 +273,9 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
   if (error) {
     console.error(`[PAIRING-DB] ERROR saving pairing code for ${sessionId}: code=${error.code} message=${error.message} details=${error.details}`);
   } else if (count === 0) {
-    console.warn(`[PAIRING-DB] BLOCKED — no rows updated for ${sessionId}. Session is likely in 'active' state (protected). code="${code}"`);
+    console.warn(`[PAIRING-DB] BLOCKED - no rows updated for ${sessionId}. Session is likely in 'active' state (protected). code="${code}"`);
   } else {
-    console.log(`[PAIRING-DB] SUCCESS — pairing code saved for ${sessionId}: code="${code}" rowsUpdated=${count} at=${dbTimestamp}`);
+    console.log(`[PAIRING-DB] SUCCESS - pairing code saved for ${sessionId}: code="${code}" rowsUpdated=${count} at=${dbTimestamp}`);
   }
 
   // Post-update verification: confirm the code actually persisted
@@ -289,7 +289,7 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
     console.error(`[PAIRING-DB] Post-read FAILED for ${sessionId}:`, postErr.message);
   } else {
     const codeMatch = postState?.pairing_code === code;
-    console.log(`[PAIRING-DB] VERIFY — session=${sessionId} state=${postState?.state} dbCode="${postState?.pairing_code}" expected="${code}" match=${codeMatch} updatedAt=${postState?.updated_at}`);
+    console.log(`[PAIRING-DB] VERIFY - session=${sessionId} state=${postState?.state} dbCode="${postState?.pairing_code}" expected="${code}" match=${codeMatch} updatedAt=${postState?.updated_at}`);
     if (!codeMatch && !isEmptyCode) {
       console.error(`[PAIRING-DB] CODE MISMATCH! Saved "${code}" but DB has "${postState?.pairing_code}". Possible race condition or filter blocked the update.`);
     }
@@ -453,7 +453,7 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
     // a worker that's no longer managing it. The user can retry from the
     // dashboard, and the session will be assigned to any available worker.
     if (session.state === 'needs_reauth') {
-      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} is needs_reauth on ${session.worker_url} — clearing worker assignment so user can retry`);
+      console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} is needs_reauth on ${session.worker_url} - clearing worker assignment so user can retry`);
       const { error: updateErr } = await supabase
         .from('bot_sessions')
         .update({
@@ -487,19 +487,19 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
 
       if (!updateErr) {
         recovered++;
-        console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} recovered successfully — reset to qr_pending on main`);
+        console.log(`[RECOVERY] Session ${session.id.slice(0, 8)} recovered successfully - reset to qr_pending on main`);
       } else {
         console.error(`[RECOVERY] Failed to recover session ${session.id.slice(0, 8)}:`, updateErr);
       }
     } else {
-      console.log(`[RECOVERY] Worker ${session.worker_url} is healthy for session ${session.id.slice(0, 8)} — skipping`);
+      console.log(`[RECOVERY] Worker ${session.worker_url} is healthy for session ${session.id.slice(0, 8)} - skipping`);
     }
   }
   return recovered;
 }
 
 /**
- * Standalone stale session recovery — for when no workers are configured.
+ * Standalone stale session recovery - for when no workers are configured.
  * Finds sessions stuck in qr_pending/pairing_sent/inactive with stale
  * updated_at and no live heartbeat, then resets them so the sync loop
  * can retry. This replaces the worker-based recovery that only checked
@@ -524,7 +524,7 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
   // (if heartbeat is recent, the bot process is alive and working on it)
   const heartbeatCutoff = Date.now() - STALE_THRESHOLD_MS;
   const trulyStuck = stuck.filter(s => {
-    if (!s.heartbeat_at) return true; // no heartbeat at all — definitely stuck
+    if (!s.heartbeat_at) return true; // no heartbeat at all - definitely stuck
     return new Date(s.heartbeat_at).getTime() < heartbeatCutoff;
   });
 
@@ -535,9 +535,9 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
   let recovered = 0;
   for (const session of trulyStuck) {
     if (session.state === 'inactive') {
-      // Inactive sessions should be retried — reset to active so the
+      // Inactive sessions should be retried - reset to active so the
       // sync loop creates a new EvolutionBot that tries tryReconnectExisting
-      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as inactive — resetting to active for reconnection`);
+      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as inactive - resetting to active for reconnection`);
       const { error: updateErr } = await supabase
         .from('bot_sessions')
         .update({
@@ -550,12 +550,12 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
         .eq('id', session.id);
       if (!updateErr) recovered++;
     } else {
-      // qr_pending / pairing_sent stuck without heartbeat — clear locks
+      // qr_pending / pairing_sent stuck without heartbeat - clear locks
       // so the sync loop can pick them up fresh. For pairing_sent, set a
       // fresh heartbeat so orphan recovery doesn't immediately re-detect
       // and reset the session (which would destroy the active pairing code).
       const freshHeartbeat = session.state === 'pairing_sent' ? new Date().toISOString() : null;
-      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as ${session.state} — clearing locks for retry`);
+      console.log(`[RECOVERY-STANDALONE] Session ${session.id.slice(0, 8)} stuck as ${session.state} - clearing locks for retry`);
       const { error: updateErr } = await supabase
         .from('bot_sessions')
         .update({
@@ -576,7 +576,7 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
 }
 
 /**
- * Standalone needs_reauth recovery — replicates the worker relay system.
+ * Standalone needs_reauth recovery - replicates the worker relay system.
  *
  * In the 3-worker setup, when a session hit needs_reauth on Worker 1,
  * orphan recovery would reassign it to Worker 2, which would create a
@@ -590,7 +590,7 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
  * so the sync loop creates a new EvolutionBot that goes through the full
  * reconnect flow (tryReconnectExisting → trySoftReconnect → fresh pairing).
  *
- * Respects a cooldown to avoid infinite retry storms — only recovers sessions
+ * Respects a cooldown to avoid infinite retry storms - only recovers sessions
  * that have been in needs_reauth for at least RECOVERY_COOLDOWN_MS.
  */
 export async function recoverNeedsReauthSessions(): Promise<number> {
@@ -647,7 +647,7 @@ export async function recoverNeedsReauthSessions(): Promise<number> {
   }
 
   if (recovered > 0) {
-    console.log(`[RECOVERY-REAUTH] Recovered ${recovered}/${reauthSessions.length} needs_reauth session(s) — sync loop will retry them`);
+    console.log(`[RECOVERY-REAUTH] Recovered ${recovered}/${reauthSessions.length} needs_reauth session(s) - sync loop will retry them`);
   }
   return recovered;
 }
@@ -703,7 +703,7 @@ export async function expireStuckPairingSessions(): Promise<number> {
 
 /**
  * Auto-delete needs_reauth sessions older than 7 days.
- * These sessions are dead — the user needs to create a new session.
+ * These sessions are dead - the user needs to create a new session.
  */
 export async function cleanupOldNeedsReauthSessions(): Promise<number> {
   const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -729,7 +729,7 @@ export async function cleanupOldNeedsReauthSessions(): Promise<number> {
 
     if (!deleteErr) {
       deleted++;
-      console.log(`[CLEANUP] Deleted old session ${session.id.slice(0, 8)} (${session.session_name || session.phone_number}) — needs_reauth since ${session.updated_at}`);
+      console.log(`[CLEANUP] Deleted old session ${session.id.slice(0, 8)} (${session.session_name || session.phone_number}) - needs_reauth since ${session.updated_at}`);
     }
   }
 
@@ -853,7 +853,7 @@ export async function logPairingEvent(
       .maybeSingle();
 
     if (!exists) {
-      console.warn(`[AUDIT] Skipping pairing event ${eventType} — session ${sessionId} not found in bot_sessions`);
+      console.warn(`[AUDIT] Skipping pairing event ${eventType} - session ${sessionId} not found in bot_sessions`);
       return;
     }
     await cacheSessionExists(sessionId);
@@ -870,7 +870,7 @@ export async function logPairingEvent(
     });
 
   if (error) {
-    // Non-critical — don't block pairing flow on audit logging failures.
+    // Non-critical - don't block pairing flow on audit logging failures.
     // The table may not exist yet if the migration hasn't been run.
     if (error.code !== 'PGRST205' && error.code !== '42P01') {
       console.error(`[AUDIT] Failed to log pairing event ${eventType} for ${sessionId}:`, error.message);
@@ -923,7 +923,7 @@ export async function releasePairingLock(sessionId: string, workerUrl?: string |
  * that is less than 3 minutes old (the pairing code TTL).
  */
 export async function isWorkerPairingLocked(workerUrl: string | null): Promise<boolean> {
-  // Try Redis first — avoids a Supabase round-trip on every sync cycle
+  // Try Redis first - avoids a Supabase round-trip on every sync cycle
   const cachedLock = await getCachedPairingLock(workerUrl);
   if (cachedLock) return true;
 
@@ -1028,7 +1028,7 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
   const cached = getCached(leaderboardCache, cacheKey);
   if (cached !== undefined) return cached;
 
-  // Redis tier — survives across serverless invocations
+  // Redis tier - survives across serverless invocations
   const redisCached = await getCachedLeaderboard(sessionId, limit);
   if (redisCached) {
     setCache(leaderboardCache, cacheKey, redisCached, CACHE_TTL_MEDIUM_MS);
@@ -1107,7 +1107,7 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
 
 export async function incrementLeaderboard(sessionId: string, userJid: string, userName: string) {
   try {
-    // Try Redis buffer first — avoids 2 Supabase calls per group message
+    // Try Redis buffer first - avoids 2 Supabase calls per group message
     const buffered = await bufferLeaderboardIncrement(sessionId, userJid, userName);
     if (buffered) return;
 
@@ -1138,7 +1138,7 @@ export async function incrementLeaderboard(sessionId: string, userJid: string, u
     }
     invalidateCache(sessionId);
   } catch {
-    // non-critical — leaderboard tracking should never break message handling
+    // non-critical - leaderboard tracking should never break message handling
   }
 }
 
@@ -1405,7 +1405,7 @@ export async function getSessionUserId(sessionId: string): Promise<string | null
   const cached = getCached(sessionUserIdCache, sessionId);
   if (cached !== undefined) return cached;
 
-  // Try Redis before hitting Supabase — user_id never changes for a session
+  // Try Redis before hitting Supabase - user_id never changes for a session
   const redisCached = await getCachedSessionUserId(sessionId);
   if (redisCached) {
     setCache(sessionUserIdCache, sessionId, redisCached, CACHE_TTL_LONG_MS);
@@ -1782,7 +1782,7 @@ export async function trackMessage(
   isGroup: boolean,
   groupJid: string | null,
 ): Promise<void> {
-  // Try Redis buffer first — bulk-insert later to cut per-message Supabase writes
+  // Try Redis buffer first - bulk-insert later to cut per-message Supabase writes
   const buffered = await bufferTrackMessage({
     session_id: sessionId,
     sender_jid: senderJid,

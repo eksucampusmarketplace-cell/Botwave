@@ -71,7 +71,7 @@ async function restoreAutoSendConfig(): Promise<void> {
       }
     }
   } catch {
-    // Table may not exist yet — non-fatal
+    // Table may not exist yet - non-fatal
   }
 }
 
@@ -122,7 +122,7 @@ async function getEnrichedUsers(inactiveHours: number) {
   const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
   // Get bot sessions for device linking + last activity
-  // Only count 'active' sessions for lastActivity — 'needs_reauth' sessions
+  // Only count 'active' sessions for lastActivity - 'needs_reauth' sessions
   // are updated by the system (not the user) and would falsely mark users as active.
   const { data: sessions } = await supabase
     .from('bot_sessions')
@@ -316,7 +316,7 @@ async function startAutoSend(skipImmediateTick = false): Promise<void> {
         }
       }
     } catch {
-      // DB check failed — fall through to normal schedule
+      // DB check failed - fall through to normal schedule
     }
   }
 

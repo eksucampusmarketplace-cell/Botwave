@@ -9,7 +9,7 @@ import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
-  // /connect — Connect this group to your PM for remote management
+  // /connect - Connect this group to your PM for remote management
   bot.command('connect', async (ctx) => {
     if (!ctx.from || !ctx.chat) return;
     if (ctx.chat.type === 'private') {
@@ -32,7 +32,7 @@ export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
     );
   });
 
-  // /disconnect — Disconnect current group from PM
+  // /disconnect - Disconnect current group from PM
   bot.command('disconnect', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, {
@@ -42,7 +42,7 @@ export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Disconnected from PM management.');
   });
 
-  // /reconnect — Reconnect to previously connected group
+  // /reconnect - Reconnect to previously connected group
   bot.command('reconnect', async (ctx) => {
     if (!ctx.from) return;
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
@@ -58,7 +58,7 @@ export function registerConnectionsHandlers(bot: Bot, sessionId: string): void {
     }
   });
 
-  // /connection — Show current connection status
+  // /connection - Show current connection status
   bot.command('connection', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const connectedId = (config as Record<string, unknown>).connected_chat_id as string | null;

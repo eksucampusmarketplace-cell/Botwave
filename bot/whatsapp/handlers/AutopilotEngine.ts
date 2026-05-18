@@ -1,14 +1,14 @@
-// ─── Autopilot Engine — Deep AI Persona Clone ─────────────────────────────────
+// ─── Autopilot Engine - Deep AI Persona Clone ─────────────────────────────────
 //
 // Learns the owner's messaging DNA and generates replies that sound exactly
 // like them.  Every layer is AI-powered (Groq → Gemini fallback).
 //
 // Core subsystems:
-//   1. **Message Collector** — silently records every outgoing owner message
-//   2. **Persona Analyzer** — AI builds a multi-dimensional style profile
-//   3. **Conversation Memory** — per-contact context window
-//   4. **Reply Generator** — AI responds AS the owner using full persona
-//   5. **Daily Sync** — periodic deep re-analysis of new messages
+//   1. **Message Collector** - silently records every outgoing owner message
+//   2. **Persona Analyzer** - AI builds a multi-dimensional style profile
+//   3. **Conversation Memory** - per-contact context window
+//   4. **Reply Generator** - AI responds AS the owner using full persona
+//   5. **Daily Sync** - periodic deep re-analysis of new messages
 //
 // Premium only. Gated in the command layer.
 
@@ -481,7 +481,7 @@ export async function analyzePersona(userId: string, sessionId: string): Promise
       state.lastSyncAt = new Date().toISOString();
     }
 
-    console.log(`[AUTOPILOT] Persona analyzed for ${userId} — ${samples.length} samples processed`);
+    console.log(`[AUTOPILOT] Persona analyzed for ${userId} - ${samples.length} samples processed`);
     return profile;
   } catch (err) {
     console.error('[AUTOPILOT] Persona analysis failed:', (err as Error).message);
@@ -492,12 +492,12 @@ export async function analyzePersona(userId: string, sessionId: string): Promise
 // ─── Reply Generation (AI Clone) ───────────────────────────────────────────
 
 function buildPersonaSystemPrompt(profile: PersonaProfile, selfDesc: string): string {
-  return `You ARE this person. You are not an AI — you are roleplaying as a real human in a WhatsApp chat. Your goal is to reply EXACTLY like this person would. You must become them completely.
+  return `You ARE this person. You are not an AI - you are roleplaying as a real human in a WhatsApp chat. Your goal is to reply EXACTLY like this person would. You must become them completely.
 
 ═══ WRITING STYLE ═══
 - Formality: ${profile.formality}
 - Message length: ${profile.avgMessageLength} (match this closely)
-- Emoji usage: ${profile.emojiFrequency} — favorites: ${profile.favoriteEmojis.join(' ')}
+- Emoji usage: ${profile.emojiFrequency} - favorites: ${profile.favoriteEmojis.join(' ')}
 - Punctuation: ${profile.punctuationStyle}
 - Capitalization: ${profile.capitalization}
 - Sticker/GIF usage: ${profile.stickerGifUsage}
@@ -556,12 +556,12 @@ function buildPersonaSystemPrompt(profile: PersonaProfile, selfDesc: string): st
 ${selfDesc || 'None provided'}
 
 ═══ RULES (NEVER BREAK THESE) ═══
-1. Write EXACTLY like this person — match their length, slang, emoji, tone, capitalization
+1. Write EXACTLY like this person - match their length, slang, emoji, tone, capitalization
 2. NEVER reveal you're an AI, bot, or autopilot. You ARE this person
 3. If you don't know something specific, deflect naturally ("I'll check later", "not sure rn", etc.)
-4. Match the conversation energy — casual to casual, serious to serious
+4. Match the conversation energy - casual to casual, serious to serious
 5. Use the person's ACTUAL phrases and slang, not generic alternatives
-6. Keep responses the right length — if they write short, you write short
+6. Keep responses the right length - if they write short, you write short
 7. If the language is pidgin/yoruba/igbo, respond in the same language mix
 8. Match their sarcasm level, confidence, and emotional expressiveness exactly
 9. If they're the type to gossip, gossip. If reserved, stay reserved
@@ -620,7 +620,7 @@ export async function shouldAutopilotReply(
     const override = state.contactOverrides.get(chatJid);
     if (override === 'off') return false;  // explicitly disabled for this contact
     if (override === 'on') {
-      // Explicitly enabled for this contact — skip global check
+      // Explicitly enabled for this contact - skip global check
       // But still respect per-contact recent activity
       if (isOwnerActiveWithContact(sessionId, chatJid)) return false;
       return true;
@@ -637,7 +637,7 @@ export async function shouldAutopilotReply(
 
   // Mode checks
   if (state.mode === 'offline' && !isOwnerInactive(sessionId, state.inactivityMinutes)) {
-    return false; // Owner is globally active — don't reply
+    return false; // Owner is globally active - don't reply
   }
   // 'always' mode: reply regardless of global activity
   // 'manual' mode: treated same as 'always' (toggled on/off explicitly)
@@ -675,7 +675,7 @@ export async function generateAutopilotReply(
 
     let extraInstruction = '';
     if (isCallRequest) {
-      extraInstruction += `\n\nIMPORTANT: They are asking for a voice/video call. You are NOT available to take calls right now. Decline naturally in your style — say you'll call back later, or that you can't talk right now. Do NOT say you're an AI or on autopilot.`;
+      extraInstruction += `\n\nIMPORTANT: They are asking for a voice/video call. You are NOT available to take calls right now. Decline naturally in your style - say you'll call back later, or that you can't talk right now. Do NOT say you're an AI or on autopilot.`;
     }
 
     // Mood-adaptive instructions
@@ -713,7 +713,7 @@ Reply as yourself. Output ONLY the reply text:`;
 
     if (!reply || reply.length < 1) return null;
 
-    // Clean up — remove any quotes the AI might wrap the reply in
+    // Clean up - remove any quotes the AI might wrap the reply in
     let cleaned = reply.trim();
     if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
         (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
@@ -961,7 +961,7 @@ export function bufferIncomingForBatch(
   const existing = batchBuffers.get(key);
 
   if (existing) {
-    // More messages coming — reset timer, append
+    // More messages coming - reset timer, append
     clearTimeout(existing.timer);
     existing.messages.push(text);
     if (contactName) existing.contactName = contactName;
@@ -971,7 +971,7 @@ export function bufferIncomingForBatch(
       onBatchReady(combined, existing.contactName);
     }, BATCH_WAIT_MS);
   } else {
-    // First message — start buffer
+    // First message - start buffer
     const timer = setTimeout(() => {
       const buf = batchBuffers.get(key);
       batchBuffers.delete(key);
@@ -1006,7 +1006,7 @@ export function detectMood(text: string): MoodHint {
 export function getTimePersonalityHint(): string {
   const hour = new Date().getHours();
   if (hour >= 0 && hour < 6) return 'It is very late at night/early morning. Reply sleepy, brief, minimal energy. Shorter messages, less emoji.';
-  if (hour >= 6 && hour < 9) return 'It is early morning. Reply with morning energy — slightly groggy but warming up.';
+  if (hour >= 6 && hour < 9) return 'It is early morning. Reply with morning energy - slightly groggy but warming up.';
   if (hour >= 9 && hour < 12) return 'It is mid-morning. Reply with normal energy.';
   if (hour >= 12 && hour < 14) return 'It is around lunchtime. Reply casually.';
   if (hour >= 14 && hour < 18) return 'It is afternoon. Reply with normal energy.';

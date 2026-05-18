@@ -5,12 +5,12 @@
  * undetectable by WhatsApp's automated systems. These are the techniques
  * that separate a bot that lasts months from one that gets banned in a week.
  *
- * 1. Read-But-Skip — sometimes reads but doesn't respond (like a real person)
- * 2. Group Cooldown — per-group rate limiting to avoid dominating conversations
- * 3. Media Fingerprint Jitter — randomize sticker/image bytes for uniqueness
- * 4. Presence Simulation — randomly toggle online/offline throughout the day
- * 5. Message Length Jitter — invisible byte-level variations in every message
- * 6. Activity Hours — quiet hours where bot responds minimally
+ * 1. Read-But-Skip - sometimes reads but doesn't respond (like a real person)
+ * 2. Group Cooldown - per-group rate limiting to avoid dominating conversations
+ * 3. Media Fingerprint Jitter - randomize sticker/image bytes for uniqueness
+ * 4. Presence Simulation - randomly toggle online/offline throughout the day
+ * 5. Message Length Jitter - invisible byte-level variations in every message
+ * 6. Activity Hours - quiet hours where bot responds minimally
  */
 
 import { delay } from '../../../lib/utils';
@@ -21,7 +21,7 @@ import { delay } from '../../../lib/utils';
  * people read messages and ignore them all the time. This function returns
  * true ~15% of the time for group messages, simulating this behavior.
  *
- * The bot still marks the message as read (seen) but doesn't respond —
+ * The bot still marks the message as read (seen) but doesn't respond -
  * which is exactly what a real person does.
  *
  * Never skips DMs or command messages (starting with !).
@@ -279,7 +279,7 @@ export function getActivityConfig(): ActivityConfig {
 }
 
 /**
- * Shorten a response for quiet hours — strip emoji, truncate to first sentence.
+ * Shorten a response for quiet hours - strip emoji, truncate to first sentence.
  */
 export function shortenForQuietHours(text: string): string {
   // Remove leading emoji
@@ -317,7 +317,7 @@ export function getAntiPatternDelay(): number {
   const roll = Math.random();
 
   if (roll < 0.01) {
-    // 1% — brief pause
+    // 1% - brief pause
     return 1000 + Math.random() * 2000; // 1-3s
   }
 
@@ -328,7 +328,7 @@ export function getAntiPatternDelay(): number {
 /**
  * Tracks how often the bot replies to each individual contact. If the bot
  * has replied to the same person more than N times in a window, it starts
- * skipping replies with increasing probability — just like a real person
+ * skipping replies with increasing probability - just like a real person
  * who gets tired of replying to the same person over and over.
  *
  * Window: 10 minutes
@@ -401,10 +401,10 @@ export function getGroupReplyDelay(groupJid: string): number {
   const timestamps = groupActivityTracker.get(groupJid) || [];
   const recentCount = timestamps.filter(t => Date.now() - t < GROUP_ACTIVITY_WINDOW).length;
 
-  if (recentCount <= 1) return 0; // Quiet group — reply normally
-  if (recentCount <= 3) return 300 + Math.random() * 700; // Moderate — 0.3-1s extra
-  if (recentCount <= 6) return 500 + Math.random() * 1500; // Busy — 0.5-2s extra
-  return 1000 + Math.random() * 2000; // Very busy — 1-3s extra
+  if (recentCount <= 1) return 0; // Quiet group - reply normally
+  if (recentCount <= 3) return 300 + Math.random() * 700; // Moderate - 0.3-1s extra
+  if (recentCount <= 6) return 500 + Math.random() * 1500; // Busy - 0.5-2s extra
+  return 1000 + Math.random() * 2000; // Very busy - 1-3s extra
 }
 
 // ─── Connection Fingerprint Diversity ─────────────────────────────────────────
@@ -478,7 +478,7 @@ export function checkBurstAndDelay(sessionId: string): number {
   burstTracker.set(sessionId, recent);
 
   if (recent.length >= BURST_THRESHOLD) {
-    // Burst detected — add cooldown
+    // Burst detected - add cooldown
     return BURST_COOLDOWN + Math.random() * 1000; // 2-3s cooldown
   }
   return 0;

@@ -106,7 +106,7 @@ export function getGhostDelay(userJid: string): number | null {
   return ghostTimers.get(userJid) ?? null;
 }
 
-// ─── !afk — Away From Keyboard ──────────────────────────────────────────────
+// ─── !afk - Away From Keyboard ──────────────────────────────────────────────
 
 async function handleAfk(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!context.sessionId) {
@@ -131,7 +131,7 @@ async function handleAfk(context: MessageContext, args: string[], sock: any): Pr
   );
 }
 
-// ─── !roast — Savage (Friendly) Roasts ──────────────────────────────────────
+// ─── !roast - Savage (Friendly) Roasts ──────────────────────────────────────
 
 const roastTemplates: string[] = [
   'If {name} was a spice, they\'d be flour.',
@@ -146,13 +146,13 @@ const roastTemplates: string[] = [
   'They say opposites attract. I hope {name} finds someone intelligent, beautiful, and cultured.',
   '{name} is the human equivalent of a participation trophy.',
   'I\'m not saying {name} is boring, but their autobiography would be a pamphlet.',
-  '{name}\'s brain is like a browser — 19 tabs open, 3 frozen, and they can\'t find where the music is coming from.',
+  '{name}\'s brain is like a browser - 19 tabs open, 3 frozen, and they can\'t find where the music is coming from.',
   'If {name} was any more basic, they\'d have a pH of 14.',
   '{name} types "lol" with a straight face.',
   '{name} puts the "pro" in "procrastination" and the "hot" in... nothing actually.',
   'Scientists say the universe is expanding, but {name}\'s IQ seems to be contracting.',
   'I\'d call {name} a tool but even tools are useful.',
-  '{name} is like a cloud — everything brightens up when they disappear.',
+  '{name} is like a cloud - everything brightens up when they disappear.',
   '{name}\'s idea of a balanced diet is a phone in each hand.',
   'If {name} was a candle, they\'d be unscented.',
   '{name}\'s search history is just \'how to be interesting\'.',
@@ -162,7 +162,7 @@ const roastTemplates: string[] = [
   'If {name} was a vegetable, they\'d be a plain potato.',
   '{name}\'s energy drink of choice is warm water.',
   'I\'ve met rocks with more personality than {name}.',
-  '{name} is like a software update — when I see them, I think \'not now.\'',
+  '{name} is like a software update - when I see them, I think \'not now.\'',
   '{name}\'s so boring, their dreams have a loading screen.',
   '{name} peaked in preschool.',
   'If {name} were a season, they\'d be a Tuesday in February.',
@@ -172,7 +172,7 @@ const roastTemplates: string[] = [
   'Even {name}\'s imaginary friend ghosted them.',
   '{name} is living proof that not all opinions are equal.',
   'If {name} was a superhero, they\'d be Captain Obvious.',
-  '{name}\'s personality is like elevator music — technically there but nobody notices.',
+  '{name}\'s personality is like elevator music - technically there but nobody notices.',
   '{name} is the type to lose a debate with Siri.',
   'If you Googled \'basic\', {name}\'s picture would be the first result.',
   '{name}\'s autobiography would be titled \'Nothing Happened.\'',
@@ -191,7 +191,7 @@ const roastTemplates: string[] = [
   '{name} is proof that Wi-Fi isn\'t the only thing with a weak signal.',
   'If personality were currency, {name} would be broke.',
   '{name}\'s playlist is just the default ringtone on repeat.',
-  'Light travels faster than sound — that\'s why {name} looks okay until they speak.',
+  'Light travels faster than sound - that\'s why {name} looks okay until they speak.',
   '{name}\'s smile is their best feature... and even that\'s debatable.',
   'The only thing {name} brings to the table is their elbows.',
   'If {name} was a movie, they\'d be straight-to-DVD.',
@@ -204,7 +204,7 @@ const roastTemplates: string[] = [
   '{name} is the type to bring a salad to a barbecue.',
   'If {name} was a font, they\'d be Comic Sans.',
   '{name}\'s blood type is B-Negative, just like their personality.',
-  '{name} is like a screen door on a submarine — not useful.',
+  '{name} is like a screen door on a submarine - not useful.',
   'If mediocrity was an art, {name} would have a gallery.',
   'I\'ve seen more fire in a wet match than in {name}.',
   '{name} is the type to say \'no offense\' after every sentence.',
@@ -220,7 +220,7 @@ const roastTemplates: string[] = [
   'If {name} was a phone, they\'d be permanently on silent.',
   'Even Siri would leave {name} on read.',
   '{name} couldn\'t even win a staring contest with a mirror.',
-  'The zoo called — even the sloths move faster than {name}.',
+  'The zoo called - even the sloths move faster than {name}.',
   '{name}\'s motivational speech would be \'it is what it is.\'',
   'If {name} was an app, they\'d be the one nobody downloads.',
   '{name} walks into a room and the vibe walks out.',
@@ -230,7 +230,7 @@ const roastTemplates: string[] = [
   'Even a broken clock is right twice a day. {name}, on the other hand...',
   '{name}\'s highlight reel is just a blank screen.',
   'If {name} had a theme song, it\'d be elevator music.',
-  '{name} is like the end credits — everyone leaves when they show up.',
+  '{name} is like the end credits - everyone leaves when they show up.',
   'The best part about {name} is that they\'re consistently disappointing.',
   '{name} brings the same energy as a library on a Friday night.',
   'If {name} was a drink, they\'d be lukewarm tap water.',
@@ -250,7 +250,7 @@ const roastTemplates: string[] = [
   'If boredom was a virus, {name} would be patient zero.',
   '{name} once entered a personality contest and came last. It was a solo contest.',
   'The only thing sharp about {name} is their elbows.',
-  '{name}\'s presence at a party is like a browser popup — unwanted.',
+  '{name}\'s presence at a party is like a browser popup - unwanted.',
   'If {name} was a video game character, they\'d be the NPC that gives wrong directions.',
   '{name}\'s idea of multitasking is breathing and blinking at the same time.',
   'Even a rock has a harder surface than {name}\'s comebacks.',
@@ -264,7 +264,7 @@ const roastTemplates: string[] = [
   '{name} peaked when they learned to tie their shoes.',
   'If {name} was a sandwich, they\'d be two slices of white bread. No filling.',
   'Even a fortune cookie has deeper insights than {name}.',
-  '{name} is like a cloud — everything\'s brighter when they disappear.',
+  '{name} is like a cloud - everything\'s brighter when they disappear.',
   '{name}\'s idea of adventure is choosing a different cereal brand.',
   'Even a brick wall has more depth than {name}.',
   'If {name} was a streaming service, nobody would subscribe.',
@@ -274,26 +274,26 @@ const roastTemplates: string[] = [
   '{name} is the kind of person who says \'same\' to everything.',
   'Even Bluetooth connects faster than {name} gets a joke.',
   '{name}\'s most interesting fact is that they have no interesting facts.',
-  'If {name} was a password, they\'d be \'password123\' — weak and predictable.',
+  'If {name} was a password, they\'d be \'password123\' - weak and predictable.',
   '{name} is like the buffering icon of people.',
   'Even a blank piece of paper has more depth than {name}.',
   '{name}\'s personality has less range than a microwave oven.',
   '{name} is the type to lose at solitaire.',
   'Even a calendar has more dates than {name}.',
   '{name}\'s energy level is permanently on low power mode.',
-  'If {name} was a planet, they\'d be Pluto — barely counts.',
+  'If {name} was a planet, they\'d be Pluto - barely counts.',
   '{name} is the type to burn water.',
   'Even a silent film has more drama than {name}.',
   'If {name} was a WiFi network, they\'d be the unsecured one nobody connects to.',
   '{name} is the kind of person who watches ads without skipping.',
   'Even a cactus gets more hugs than {name}.',
-  '{name}\'s life is like a browser with 50 tabs open — none of them loading.',
+  '{name}\'s life is like a browser with 50 tabs open - none of them loading.',
   'If {name} was a notification, they\'d be the one you swipe away.',
   '{name} is the type to congratulate themselves for making toast.',
   'Even a stop sign gets more attention than {name}.',
   '{name}\'s credit score is higher than their personality score.',
   'If {name} was a sound, they\'d be the Windows error noise.',
-  '{name} is like a participation certificate — technically there, nobody cares.',
+  '{name} is like a participation certificate - technically there, nobody cares.',
   'Even autocorrect has given up on {name}.',
   'If {name} was a kitchen appliance, they\'d be a broken toaster.',
   '{name}\'s comeback game is weaker than airport WiFi.',
@@ -367,13 +367,13 @@ const roastTemplates: string[] = [
   'If {name}\'s brain was dynamite, they wouldn\'t have enough to blow their nose.',
   '{name} is the reason we can\'t have nice things in this group.',
   'Damn {name}, your face could make an onion cry.',
-  '{name} is like a broken pencil — completely damn pointless.',
+  '{name} is like a broken pencil - completely damn pointless.',
   'I\'ve seen smarter things come out of a vending machine than {name}.',
   '{name}, you\'re not just a clown, you\'re the entire damn circus.',
-  'If I wanted to hear from an ass, I\'d fart — not listen to {name}.',
+  'If I wanted to hear from an ass, I\'d fart - not listen to {name}.',
   '{name} is the human version of a participation trophy nobody wanted.',
   'Someone give {name} a map because they\'re clearly lost in life.',
-  '{name}\'s brain is like a browser with 100 tabs open — all of them frozen.',
+  '{name}\'s brain is like a browser with 100 tabs open - all of them frozen.',
   'If {name} was any dumber, someone would have to water them twice a week.',
   '{name} looks like they were drawn with the wrong hand.',
   'I\'d tell {name} to go to hell but I don\'t want to see them there either.',
@@ -385,16 +385,16 @@ const roastTemplates: string[] = [
   'Bro {name} really woke up today and chose to be trash. Again.',
   '{name} has the depth of a damn puddle in a drought.',
   'If {name} disappeared tomorrow, nobody would notice for a week.',
-  '{name}, your opinion is like a fart in a hurricane — nobody gives a damn.',
+  '{name}, your opinion is like a fart in a hurricane - nobody gives a damn.',
   'Even bacteria wouldn\'t culture with {name}.',
   '{name} is the human equivalent of stepping in wet dog shit.',
   'If brains were leather, {name} wouldn\'t have enough to saddle a flea.',
   '{name} is so irrelevant, even their notifications don\'t pop up.',
   'Damn {name}, you look like something I\'d draw with my left foot.',
-  '{name} is like a slinky — useless, but fun to push down stairs.',
+  '{name} is like a slinky - useless, but fun to push down stairs.',
   'I\'ve met smarter sandwiches than {name}.',
   '{name} couldn\'t pour water out of a boot if the instructions were on the heel.',
-  'If {name} was a crayon, they\'d be the white one — nobody uses that shit.',
+  'If {name} was a crayon, they\'d be the white one - nobody uses that shit.',
   '{name}\'s family tree is a straight line.',
   'Bro {name}, you\'re the reason warning labels exist.',
   '{name} is the type to study for a blood test and still fail.',
@@ -414,7 +414,7 @@ const roastTemplates: string[] = [
   '{name} is the human equivalent of a \'terms and conditions\' nobody agrees to.',
   'If {name} was food, they\'d be unseasoned boiled chicken.',
   '{name} talks like they\'ve got a PhD in bullshit.',
-  'Bro {name}, you\'re built like a question mark — confused and bent.',
+  'Bro {name}, you\'re built like a question mark - confused and bent.',
   '{name}\'s whole existence is a typo that never got corrected.',
   'If {name} was any more basic, they\'d be a pH of 14.',
   '{name} is the kind of person who ruins a whole damn group photo.',
@@ -430,11 +430,11 @@ const roastTemplates: string[] = [
   '{name} is so slow, they\'d lose a race against a parked car.',
   'If {name} was on fire, I\'d roast marshmallows.',
   'Damn {name}, even your shadow tries to distance itself from you.',
-  '{name} is the reason autocorrect was invented — always wrong.',
+  '{name} is the reason autocorrect was invented - always wrong.',
   'If {name} had a spirit animal, it\'d be a headless chicken.',
   'Bro {name}, you\'ve got the personality of wet cardboard.',
-  '{name} is like a broken escalator — still technically a staircase, but disappointing as hell.',
-  'If {name} was a haircut, they\'d be the mullet — a mistake from every angle.',
+  '{name} is like a broken escalator - still technically a staircase, but disappointing as hell.',
+  'If {name} was a haircut, they\'d be the mullet - a mistake from every angle.',
   '{name} is so annoying, even their echo doesn\'t respond.',
   'If {name} tried to mind their own business, their mind would be empty.',
   '{name}\'s favorite color is probably beige. Fitting.',
@@ -452,7 +452,7 @@ const roastTemplates: string[] = [
   'Bro {name}, your existence is God\'s way of saying \'my bad.\'',
   '{name} is so damn boring, insomnia uses them as a cure.',
   'The best part of {name} ran down their mama\'s leg.',
-  'If {name} was a season, they\'d be allergy season — annoying as hell.',
+  'If {name} was a season, they\'d be allergy season - annoying as hell.',
   '{name} peaked when the doctor slapped their ass at birth.',
   'Every time {name} speaks, brain cells commit suicide worldwide.',
   '{name} is the type of fool who\'d bring sand to the beach.',
@@ -464,15 +464,15 @@ const roastTemplates: string[] = [
   'Damn {name}, even roaches scatter when you enter a room.',
   '{name} has more issues than a newsstand and less solutions than a desert.',
   'If I throw a stick, will {name} leave?',
-  '{name}\'s brain called — it wants a damn refund.',
+  '{name}\'s brain called - it wants a damn refund.',
   'Even a dumpster fire keeps people warm. {name} just wastes everyone\'s time.',
   '{name} is the friend nobody actually invited.',
   'If {name} was weather, they\'d be a shitstorm with no rainbow.',
   '{name}\'s face looks like it caught fire and someone put it out with a fork.',
-  'Bro {name}, you were born on a highway — that\'s where most accidents happen.',
+  'Bro {name}, you were born on a highway - that\'s where most accidents happen.',
   '{name} has the charm of a wet sock in a microwave.',
   'The last time {name} had an original thought, they were still in diapers.',
-  '{name}, if you were a fruit, you\'d be a damn lemon — sour and unwanted.',
+  '{name}, if you were a fruit, you\'d be a damn lemon - sour and unwanted.',
   'If {name} jumped off their ego and landed on their IQ, they\'d be dead.',
   '{name} is the type to get rejected by a mirror.',
   'I\'d insult {name} but nature already did the job better than I ever could.',
@@ -504,8 +504,8 @@ const roastTemplates: string[] = [
   '{name}\'s entire vibe is \'error 404: personality not found.\'',
   'If {name} was a country, it\'d be a failed state.',
   '{name} makes watching paint dry seem like a Netflix binge.',
-  'If {name} was an ingredient, they\'d be expired flour — bland and useless.',
-  '{name} is the reason people believe in karma — someone had to pay for something.',
+  'If {name} was an ingredient, they\'d be expired flour - bland and useless.',
+  '{name} is the reason people believe in karma - someone had to pay for something.',
   'Bro {name}, you\'re about as useful as a screen door on a submarine.',
   '{name} is the NPC that the devs programmed to be annoying on purpose.',
   'If {name} was a superhero power, they\'d be the ability to clear a room.',
@@ -533,7 +533,7 @@ const roastTemplates: string[] = [
   '{name}\'s barber clearly hates them.',
   'If {name}\'s face was a map, it\'d say \'you are nowhere.\'',
   '{name} looks like their avatar was randomly generated.',
-  'Bro {name}, you look like you were photoshopped in real life — badly.',
+  'Bro {name}, you look like you were photoshopped in real life - badly.',
   '{name} is built like a stick figure that gave up halfway.',
   'If {name} was in a lineup, witnesses would pick someone else just to be safe.',
   '{name} looks like they got dressed in the dark during an earthquake.',
@@ -553,7 +553,7 @@ const roastTemplates: string[] = [
   'Bro {name}, your brain has more cobwebs than a haunted house.',
   '{name} thinks WiFi grows on trees and common sense is a superpower.',
   '{name} is the reason they put \'do not eat\' labels on silica gel packets.',
-  '{name}\'s love life is more tragic than a Shakespeare play — except nobody cares.',
+  '{name}\'s love life is more tragic than a Shakespeare play - except nobody cares.',
   'If {name}\'s dating profile was honest, it\'d say \'desperately available.\'',
   '{name} is the type to get friendzoned by their imaginary friend.',
   'Bro {name}, even your dog pretends not to know you in public.',
@@ -582,15 +582,15 @@ const roastTemplates: string[] = [
   'If {name} was half as smart as they think they are, they\'d still be dumb.',
   '{name} came in here thinking they\'re a 10 when they\'re barely a participation ribbon.',
   'Silence is golden. Too bad {name} can\'t afford it.',
-  '{name} typed that like it was a mic drop. It was more like a phone drop — cracked screen, no insurance.',
+  '{name} typed that like it was a mic drop. It was more like a phone drop - cracked screen, no insurance.',
   '{name} is the human equivalent of a YouTube ad you can\'t skip.',
   'If {name} was a meme, they\'d be the one that died in 2012.',
   '{name} gives off strong \'reply-all to company email\' energy.',
-  'Bro {name}, you\'re the human version of clickbait — all title, no substance.',
-  '{name} is the internet explorer of people — slow, outdated, and nobody uses them.',
+  'Bro {name}, you\'re the human version of clickbait - all title, no substance.',
+  '{name} is the internet explorer of people - slow, outdated, and nobody uses them.',
   'If {name} was a social media platform, they\'d be Google Plus.',
   '{name} has the same energy as a \'this page cannot be found\' error.',
-  'Bro {name}, you\'re like a pop-up ad — nobody asked and nobody wants you here.',
+  'Bro {name}, you\'re like a pop-up ad - nobody asked and nobody wants you here.',
   '{name} is the type to go viral for all the wrong reasons.',
   '{name} is giving \'main character syndrome\' with \'background extra\' skills.',
   'If {name} was a TikTok, they\'d be the one everyone scrolls past.',
@@ -599,20 +599,20 @@ const roastTemplates: string[] = [
   '{name} has all the relevance of a MySpace profile in 2026.',
   '{name} gives off \'peaked in middle school\' energy and it shows.',
   '{name} is blander than unseasoned rice at a gas station.',
-  'If {name} was a meal, they\'d be plain toast — dry and disappointing.',
+  'If {name} was a meal, they\'d be plain toast - dry and disappointing.',
   '{name} has the flavor of a rice cake and the personality to match.',
   'Bro {name}, you\'re about as exciting as watching bread get stale.',
-  '{name} is like expired milk — nobody wants them and they just make things worse.',
-  'If {name} was ice cream, they\'d be the flavor nobody picks — plain vanilla with freezer burn.',
+  '{name} is like expired milk - nobody wants them and they just make things worse.',
+  'If {name} was ice cream, they\'d be the flavor nobody picks - plain vanilla with freezer burn.',
   '{name} has all the spice of a boiled potato in distilled water.',
   'If {name} was a restaurant, they\'d have zero stars and a health code violation.',
-  '{name}\'s personality is like unseasoned chicken — technically edible but nobody\'s happy about it.',
+  '{name}\'s personality is like unseasoned chicken - technically edible but nobody\'s happy about it.',
   '{name} is the human equivalent of getting socks for Christmas.',
-  'Bro {name}, you\'re like day-old pizza — cold, flat, and regrettable.',
-  '{name} is like a stale chip — barely crunchy, zero flavor, and you regret putting them in your mouth.',
+  'Bro {name}, you\'re like day-old pizza - cold, flat, and regrettable.',
+  '{name} is like a stale chip - barely crunchy, zero flavor, and you regret putting them in your mouth.',
   'If {name} was a drink, they\'d be room-temperature tap water in a dirty cup.',
   '{name} adds the same value to a conversation as ketchup on cereal.',
-  '{name} is proof that not everything ages like fine wine — some things age like milk.',
+  '{name} is proof that not everything ages like fine wine - some things age like milk.',
   '{name}\'s LinkedIn profile is just a long list of things they\'re bad at.',
   'If {name} put their work ethic on a resume, it would be blank.',
   '{name} has the career trajectory of a ball rolling downhill.',
@@ -628,7 +628,7 @@ const roastTemplates: string[] = [
   '{name} is the type to fail upward and still end up at the bottom.',
   '{name}\'s dream job is apparently being a professional disappointment.',
   '{name} has less drive than a parked car with a dead battery.',
-  '{name} is the reason \'it\'s not you, it\'s me\' was invented — it\'s definitely them.',
+  '{name} is the reason \'it\'s not you, it\'s me\' was invented - it\'s definitely them.',
   'If {name} was a relationship status, it\'d be \'permanently single by choice... of everyone else.\'',
   '{name}\'s love language is being annoying and their fluency is off the charts.',
   'Bro {name}, even Cupid looked at you and said \'nah, I\'m good.\'',
@@ -647,16 +647,16 @@ const roastTemplates: string[] = [
 
 const textRoasts: string[] = [
   'Bro really typed "{text}" like it was a TED talk. Sit down.',
-  '"{text}" — Said no intelligent person ever.',
+  '"{text}" - Said no intelligent person ever.',
   'I read "{text}" and my brain asked for a refund.',
   'Nobody:\nAbsolutely nobody:\n{name}: "{text}"',
   '"{text}" is the kind of thing you whisper to your pillow, not type in a chat.',
   'I\'ve seen better takes from a fortune cookie. "{text}" really?',
   'Auto-correct read "{text}" and gave up.',
-  '"{text}" — The message that made Siri question her existence.',
+  '"{text}" - The message that made Siri question her existence.',
   'Bro typed "{text}" like the whole group was waiting for it. We weren\'t.',
   'If "{text}" was a movie, it would go straight to DVD.',
-  '"{text}" — Someone call the grammar police.',
+  '"{text}" - Someone call the grammar police.',
   'Bro really hit send on "{text}" without a second thought.',
   '"{text}" sounds like something a bot with a fever would generate.',
   'I showed "{text}" to my therapist. We now have two sessions a week.',
@@ -665,15 +665,15 @@ const textRoasts: string[] = [
   'Bro typed "{text}" like it was poetry. It was not.',
   '"{text}" is why aliens won\'t visit us.',
   'I read "{text}" three times hoping it would get better. It didn\'t.',
-  '"{text}" hits different — and by different, I mean worse.',
+  '"{text}" hits different - and by different, I mean worse.',
   'Google translate couldn\'t even help "{text}" make sense.',
   '"{text}" is the textual equivalent of a sad trombone.',
   'My phone tried to autocorrect "{text}" into something better. Failed.',
-  '"{text}" — Bold of {name} to say that with their whole chest.',
+  '"{text}" - Bold of {name} to say that with their whole chest.',
   'Shakespeare rolled in his grave when {name} typed "{text}".',
   '"{text}" just made my spell-check resign.',
   'Even Siri would respond with "I can\'t help with that" to "{text}".',
-  '"{text}" — The message nobody needed but {name} delivered anyway.',
+  '"{text}" - The message nobody needed but {name} delivered anyway.',
   'I forwarded "{text}" to my friend. We\'re no longer friends.',
   '"{text}" is proof that not all messages deserve to be sent.',
   '"{text}" should come with a warning label.',
@@ -692,50 +692,50 @@ const textRoasts: string[] = [
   'Even a chatbot from 2005 could outwrite "{text}".',
   '"{text}" is what happens when brain cells go on strike.',
   'I read "{text}" and my phone dimmed itself in shame.',
-  '"{text}" — This is why we need a license to post online.',
+  '"{text}" - This is why we need a license to post online.',
   'Auto-save rejected "{text}" for quality reasons.',
   '"{text}" has the literary depth of a puddle.',
   'Bro {name} typed "{text}" thinking it was profound. Narrator: It was not.',
-  '"{text}" — Bro really typed that with confidence. Tragic.',
+  '"{text}" - Bro really typed that with confidence. Tragic.',
   'Holy hell, "{text}" might be the dumbest thing I\'ve read all week.',
-  '"{text}" — Even a monkey with a keyboard would do better.',
+  '"{text}" - Even a monkey with a keyboard would do better.',
   'Bro sent "{text}" like it was a damn thesis. It\'s barely a footnote.',
   '"{text}" is what happens when brain cells take a vacation.',
-  '"{text}" — Delete this before more people see it, {name}.',
+  '"{text}" - Delete this before more people see it, {name}.',
   'The fact that {name} typed "{text}" and hit send is honestly concerning.',
   '"{text}" just made everyone in this chat lose brain cells.',
-  '"{text}" — I\'ve seen better writing on a bathroom wall.',
-  '"{text}" hit this chat like a wet fart — unexpected and unwanted.',
+  '"{text}" - I\'ve seen better writing on a bathroom wall.',
+  '"{text}" hit this chat like a wet fart - unexpected and unwanted.',
   '"{text}" is what you get when autocorrect gives up on life.',
   'Bro {name} really said "{text}" like the whole group was waiting for that. We weren\'t.',
-  '"{text}" — That\'s it? That\'s all you had? Damn {name}, that\'s sad.',
+  '"{text}" - That\'s it? That\'s all you had? Damn {name}, that\'s sad.',
   'I showed "{text}" to my phone and it tried to factory reset itself.',
-  '"{text}" carries the same energy as a spoiled milk carton — past its date.',
-  '"{text}" — {name} put their whole two brain cells into that.',
+  '"{text}" carries the same energy as a spoiled milk carton - past its date.',
+  '"{text}" - {name} put their whole two brain cells into that.',
   'If "{text}" was a person, it would be {name}. Make of that what you will.',
   '"{text}" reads like a cry for help that even emergency services would ignore.',
   'Bro really crafted "{text}" like Shakespeare and delivered it like a drunk parrot.',
-  '"{text}" — This is why some people should require a license to type.',
-  '"{text}" is the textual equivalent of a car crash — horrible but you can\'t look away.',
-  '"{text}" — Even ChatGPT would refuse to generate something that bad.',
+  '"{text}" - This is why some people should require a license to type.',
+  '"{text}" is the textual equivalent of a car crash - horrible but you can\'t look away.',
+  '"{text}" - Even ChatGPT would refuse to generate something that bad.',
   'Someone please tell {name} that "{text}" isn\'t the flex they think it is.',
-  '"{text}" — My brain just filed a restraining order against {name}.',
+  '"{text}" - My brain just filed a restraining order against {name}.',
   '"{text}" is proof that {name} peaked in elementary school spelling bees. And lost.',
   '"{text}" reads like a fortune cookie written by someone having a bad day.',
   'Bro typed "{text}" and really thought the group would applaud. We\'re calling an ambulance.',
-  '"{text}" — The only crime here is that {name} hit send.',
+  '"{text}" - The only crime here is that {name} hit send.',
   '"{text}" has the same intellectual value as a blank piece of paper.',
-  '"{text}" — And just like that, {name} set a new record for the worst message in this chat.',
-  '"{text}" — I\'d roast this harder but it roasted itself.',
+  '"{text}" - And just like that, {name} set a new record for the worst message in this chat.',
+  '"{text}" - I\'d roast this harder but it roasted itself.',
   'The confidence {name} had typing "{text}" is genuinely terrifying.',
-  '"{text}" — Somewhere, an English teacher just felt a disturbance in the force.',
+  '"{text}" - Somewhere, an English teacher just felt a disturbance in the force.',
   '"{text}" is what you\'d get if you ran garbage through Google Translate five times.',
-  '"{text}" — {name} really said this out loud in their head and still hit send.',
+  '"{text}" - {name} really said this out loud in their head and still hit send.',
   '"{text}" just set this group chat back to the Stone Age.',
   'Bro {name} typed "{text}" thinking it would go hard. It went straight to the trash.',
-  '"{text}" — I\'ve seen better sentences in spam emails from Nigerian princes.',
+  '"{text}" - I\'ve seen better sentences in spam emails from Nigerian princes.',
   '"{text}" is the written equivalent of nails on a chalkboard.',
-  '"{text}" — This belongs in a museum of terrible messages. Front and center.',
+  '"{text}" - This belongs in a museum of terrible messages. Front and center.',
 ];
 
 async function handleRoast(context: MessageContext, args: string[], sock: any): Promise<void> {
@@ -749,7 +749,7 @@ async function handleRoast(context: MessageContext, args: string[], sock: any): 
   const mentionedJids: string[] = contextInfo?.mentionedJid || [];
 
   if (mentionedJids.length > 0) {
-    // User tagged someone — try to get their display name
+    // User tagged someone - try to get their display name
     const mentionJid = mentionedJids[0];
     try {
       if (typeof sock.fetchProfile === 'function') {
@@ -766,7 +766,7 @@ async function handleRoast(context: MessageContext, args: string[], sock: any): 
       targetName = '+' + mentionJid.replace(/@.*$/, '');
     }
   } else if (quotedMsg && contextInfo?.participant) {
-    // Replying to someone's message — use their name
+    // Replying to someone's message - use their name
     try {
       if (typeof sock.fetchProfile === 'function') {
         const profile = await sock.fetchProfile(contextInfo.participant);
@@ -794,7 +794,7 @@ async function handleRoast(context: MessageContext, args: string[], sock: any): 
   await sendReply(context.chatJid, `*ROAST* 🔥\n\n${roast}`, sock, context.rawMessage.key, context.queue);
 }
 
-// ─── !tldr — Summarize Long Messages ────────────────────────────────────────
+// ─── !tldr - Summarize Long Messages ────────────────────────────────────────
 
 function scoreSentences(text: string): string[] {
   const sentences = text.split(/[.!?\n]+/)
@@ -868,7 +868,7 @@ async function handleTldr(context: MessageContext, args: string[], sock: any): P
   );
 }
 
-// ─── !encrypt / !decrypt — Message Encryption ──────────────────────────────
+// ─── !encrypt / !decrypt - Message Encryption ──────────────────────────────
 
 function encryptText(text: string, pin: string): string {
   const key = crypto.scryptSync(pin, 'botwave-salt', 32);
@@ -896,7 +896,7 @@ function decryptText(data: string, pin: string): string | null {
 
 async function handleEncrypt(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (args.length < 2) {
-    await sendReply(context.chatJid, 'Usage: !encrypt [PIN] [message]\n\nExample: !encrypt 1234 This is my secret message\n\nShare the encrypted text — only !decrypt with the same PIN reveals it.', sock, context.rawMessage.key, context.queue);
+    await sendReply(context.chatJid, 'Usage: !encrypt [PIN] [message]\n\nExample: !encrypt 1234 This is my secret message\n\nShare the encrypted text - only !decrypt with the same PIN reveals it.', sock, context.rawMessage.key, context.queue);
     return;
   }
   const pin = args[0];
@@ -904,7 +904,7 @@ async function handleEncrypt(context: MessageContext, args: string[], sock: any)
   const encrypted = encryptText(message, pin);
   await sendReply(
     context.chatJid,
-    `*ENCRYPTED MESSAGE*\n\n\`\`\`${encrypted}\`\`\`\n\n_Decrypt with: !decrypt [your PIN] [paste encrypted text]_\n_Share the PIN privately — don't post it here!_`,
+    `*ENCRYPTED MESSAGE*\n\n\`\`\`${encrypted}\`\`\`\n\n_Decrypt with: !decrypt [your PIN] [paste encrypted text]_\n_Share the PIN privately - don't post it here!_`,
     sock, context.rawMessage.key, context.queue,
   );
 }
@@ -939,7 +939,7 @@ async function handleDecrypt(context: MessageContext, args: string[], sock: any)
   await sendReply(context.chatJid, `*DECRYPTED*\n\n${decrypted}`, sock, context.rawMessage.key, context.queue);
 }
 
-// ─── !ghost — Auto-Delete Messages ──────────────────────────────────────────
+// ─── !ghost - Auto-Delete Messages ──────────────────────────────────────────
 
 async function handleGhost(context: MessageContext, args: string[], sock: any): Promise<void> {
   const sub = args[0]?.toLowerCase();
@@ -953,7 +953,7 @@ async function handleGhost(context: MessageContext, args: string[], sock: any): 
   if (sub === 'status') {
     const timer = ghostTimers.get(context.senderJid);
     if (timer) {
-      await sendReply(context.chatJid, `Ghost mode ON — messages auto-delete after ${timer} seconds.`, sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `Ghost mode ON - messages auto-delete after ${timer} seconds.`, sock, context.rawMessage.key, context.queue);
     } else {
       await sendReply(context.chatJid, 'Ghost mode is OFF.', sock, context.rawMessage.key, context.queue);
     }
@@ -971,7 +971,7 @@ async function handleGhost(context: MessageContext, args: string[], sock: any): 
   );
 }
 
-// ─── !alias — Custom Command Shortcuts ──────────────────────────────────────
+// ─── !alias - Custom Command Shortcuts ──────────────────────────────────────
 
 async function handleAlias(context: MessageContext, args: string[], sock: any): Promise<void> {
   const sub = args[0]?.toLowerCase();
@@ -1037,7 +1037,7 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
     // Prevent recursive aliases
     const expandedCmd = command.replace(/^!/, '').split(/\s+/)[0].toLowerCase();
     if (expandedCmd === aliasName) {
-      await sendReply(context.chatJid, `Cannot create recursive alias — "!${aliasName}" would call itself.`, sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `Cannot create recursive alias - "!${aliasName}" would call itself.`, sock, context.rawMessage.key, context.queue);
       return;
     }
     if (!aliasStore.has(context.senderJid)) {
@@ -1053,10 +1053,10 @@ async function handleAlias(context: MessageContext, args: string[], sock: any): 
     return;
   }
 
-  await sendReply(context.chatJid, 'Usage:\n!alias list — see your aliases\n!alias set [name] = [command]\n!alias delete [name]', sock, context.rawMessage.key, context.queue);
+  await sendReply(context.chatJid, 'Usage:\n!alias list - see your aliases\n!alias set [name] = [command]\n!alias delete [name]', sock, context.rawMessage.key, context.queue);
 }
 
-// ─── !chain — Command Piping ────────────────────────────────────────────────
+// ─── !chain - Command Piping ────────────────────────────────────────────────
 
 async function handleChain(context: MessageContext, args: string[], sock: any): Promise<void> {
   const fullArgs = args.join(' ');
@@ -1113,7 +1113,7 @@ async function handleChain(context: MessageContext, args: string[], sock: any): 
   }
 }
 
-// ─── !recap — Group Chat Summarizer ─────────────────────────────────────────
+// ─── !recap - Group Chat Summarizer ─────────────────────────────────────────
 
 async function handleRecap(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!context.isGroup) {
@@ -1174,7 +1174,7 @@ async function handleRecap(context: MessageContext, args: string[], sock: any): 
   const oldest = messages[0];
   const newest = messages[messages.length - 1];
   const timeRange = oldest && newest
-    ? `${new Date(oldest.timestamp).toLocaleTimeString()} — ${new Date(newest.timestamp).toLocaleTimeString()}`
+    ? `${new Date(oldest.timestamp).toLocaleTimeString()} - ${new Date(newest.timestamp).toLocaleTimeString()}`
     : 'Unknown';
 
   await sendReply(
@@ -1189,7 +1189,7 @@ async function handleRecap(context: MessageContext, args: string[], sock: any): 
   );
 }
 
-// ─── !react — Auto-React to Patterns ────────────────────────────────────────
+// ─── !react - Auto-React to Patterns ────────────────────────────────────────
 
 async function handleReact(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!context.isGroup) {
@@ -1243,7 +1243,7 @@ async function handleReact(context: MessageContext, args: string[], sock: any): 
   );
 }
 
-// ─── !spy — Group Analytics ─────────────────────────────────────────────────
+// ─── !spy - Group Analytics ─────────────────────────────────────────────────
 
 async function handleSpy(context: MessageContext, args: string[], sock: any): Promise<void> {
   if (!context.isGroup) {
@@ -1339,7 +1339,7 @@ async function handleSpy(context: MessageContext, args: string[], sock: any): Pr
   );
 }
 
-// ─── !deadman — Safety Switch ───────────────────────────────────────────────
+// ─── !deadman - Safety Switch ───────────────────────────────────────────────
 
 async function handleDeadman(context: MessageContext, args: string[], sock: any): Promise<void> {
   const sub = args[0]?.toLowerCase();
@@ -1371,7 +1371,7 @@ async function handleDeadman(context: MessageContext, args: string[], sock: any)
   if (args.length < 3) {
     await sendReply(
       context.chatJid,
-      '*DEADMAN SWITCH*\n\nUsage: !deadman [time] [phone] [message]\n\nExample:\n!deadman 24h 2348164143260 If I don\'t check in, something may be wrong\n\nThe message is sent to the phone number if you don\'t type !alive before time runs out.\n\n!deadman status — check timer\n!deadman off — cancel',
+      '*DEADMAN SWITCH*\n\nUsage: !deadman [time] [phone] [message]\n\nExample:\n!deadman 24h 2348164143260 If I don\'t check in, something may be wrong\n\nThe message is sent to the phone number if you don\'t type !alive before time runs out.\n\n!deadman status - check timer\n!deadman off - cancel',
       sock, context.rawMessage.key, context.queue,
     );
     return;
@@ -1457,7 +1457,7 @@ async function handleAlive(context: MessageContext, _args: string[], sock: any):
   await sendReply(context.chatJid, `You're alive! Deadman switch timer reset. ✓`, sock, context.rawMessage.key, context.queue);
 }
 
-// ─── !type — Typing Animation Effect ────────────────────────────────────────
+// ─── !type - Typing Animation Effect ────────────────────────────────────────
 
 async function handleType(context: MessageContext, args: string[], sock: any): Promise<void> {
   const text = args.join(' ');
@@ -1473,7 +1473,7 @@ async function handleType(context: MessageContext, args: string[], sock: any): P
   }
 
   try {
-    // Show "typing..." indicator — this appears as "composing" in WhatsApp
+    // Show "typing..." indicator - this appears as "composing" in WhatsApp
     await sock.sendPresenceUpdate('composing', context.chatJid);
 
     // Simulate typing duration based on text length (~50ms per char, min 1s, max 8s)
@@ -1494,7 +1494,7 @@ async function handleType(context: MessageContext, args: string[], sock: any): P
   }
 }
 
-// ─── !birthday — Birthday Tracker ───────────────────────────────────────────
+// ─── !birthday - Birthday Tracker ───────────────────────────────────────────
 
 async function handleBirthday(context: MessageContext, args: string[], sock: any): Promise<void> {
   const sub = args[0]?.toLowerCase();
@@ -1567,19 +1567,19 @@ async function handleBirthday(context: MessageContext, args: string[], sock: any
       await sendReply(context.chatJid, 'No birthdays registered yet.', sock, context.rawMessage.key, context.queue);
     } else {
       const c = closest as { name: string; day: number; month: number; daysUntil: number };
-      await sendReply(context.chatJid, `*NEXT BIRTHDAY* 🎂\n\n${c.name} — in ${c.daysUntil} day(s)!`, sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, `*NEXT BIRTHDAY* 🎂\n\n${c.name} - in ${c.daysUntil} day(s)!`, sock, context.rawMessage.key, context.queue);
     }
     return;
   }
 
   await sendReply(
     context.chatJid,
-    '*BIRTHDAY TRACKER* 🎂\n\n!birthday set DD/MM — set your birthday\n!birthday list — see all birthdays\n!birthday next — see who\'s next',
+    '*BIRTHDAY TRACKER* 🎂\n\n!birthday set DD/MM - set your birthday\n!birthday list - see all birthdays\n!birthday next - see who\'s next',
     sock, context.rawMessage.key, context.queue,
   );
 }
 
-// ─── !profile — User Profile Card ───────────────────────────────────────────
+// ─── !profile - User Profile Card ───────────────────────────────────────────
 
 async function handleProfile(context: MessageContext, _args: string[], sock: any): Promise<void> {
   const cache = messageCache.get(context.chatJid) || [];
@@ -1659,7 +1659,7 @@ async function handleProfile(context: MessageContext, _args: string[], sock: any
   );
 }
 
-// ─── !wrap — Month/Year in Review ───────────────────────────────────────────
+// ─── !wrap - Month/Year in Review ───────────────────────────────────────────
 
 async function handleWrap(context: MessageContext, _args: string[], sock: any): Promise<void> {
   const cache = messageCache.get(context.chatJid) || [];
@@ -1695,12 +1695,12 @@ async function handleWrap(context: MessageContext, _args: string[], sock: any): 
   // Personality type based on behavior
   const avgLen = userMsgs.reduce((s: number, m: { text: string }) => s + m.text.length, 0) / userMsgs.length;
   let personality: string;
-  if (avgLen > 80) personality = 'The Novelist 📖 — You write essays in chat';
-  else if (avgLen < 15) personality = 'The Sniper 🎯 — Short and deadly messages';
-  else if (totalEmojis > userMsgs.length) personality = 'The Emoji Artist 🎨 — More emojis than words';
-  else if (peakHour >= 0 && peakHour <= 5) personality = 'The Night Owl 🦉 — Active when everyone sleeps';
-  else if (peakHour >= 6 && peakHour <= 10) personality = 'The Early Bird 🐦 — First to text in the morning';
-  else personality = 'The Regular 😎 — Balanced and consistent';
+  if (avgLen > 80) personality = 'The Novelist 📖 - You write essays in chat';
+  else if (avgLen < 15) personality = 'The Sniper 🎯 - Short and deadly messages';
+  else if (totalEmojis > userMsgs.length) personality = 'The Emoji Artist 🎨 - More emojis than words';
+  else if (peakHour >= 0 && peakHour <= 5) personality = 'The Night Owl 🦉 - Active when everyone sleeps';
+  else if (peakHour >= 6 && peakHour <= 10) personality = 'The Early Bird 🐦 - First to text in the morning';
+  else personality = 'The Regular 😎 - Balanced and consistent';
 
   const name = context.pushName || 'You';
   const longestPreview = longestMsg.length > 80 ? longestMsg.substring(0, 77) + '...' : longestMsg;

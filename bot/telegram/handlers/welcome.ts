@@ -97,21 +97,21 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Goodbye message updated.');
   });
 
-  // /resetwelcome — Reset welcome message to default
+  // /resetwelcome - Reset welcome message to default
   bot.command('resetwelcome', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { welcome_message: 'Welcome {name} to {group}!' });
     await ctx.reply('✅ Welcome message reset to default.');
   });
 
-  // /resetgoodbye — Reset goodbye message to default
+  // /resetgoodbye - Reset goodbye message to default
   bot.command('resetgoodbye', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { goodbye_message: '' });
     await ctx.reply('✅ Goodbye message reset to default.');
   });
 
-  // /cleanwelcome — Auto-delete old welcome messages
+  // /cleanwelcome - Auto-delete old welcome messages
   bot.command('cleanwelcome', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     const arg = (ctx.match?.toString() || '').trim().toLowerCase();

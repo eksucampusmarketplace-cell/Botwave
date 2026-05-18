@@ -24,7 +24,7 @@ export class MessageQueue {
 
   async enqueue(jid: string, content: any, options?: any) {
     if (this.connectionDead) {
-      console.warn(`[QUEUE] ${this.sessionId.slice(0, 8)} — dropping message (connection dead)`);
+      console.warn(`[QUEUE] ${this.sessionId.slice(0, 8)} - dropping message (connection dead)`);
       return;
     }
     this.queue.push({ jid, content, options, timestamp: Date.now() });
@@ -46,7 +46,7 @@ export class MessageQueue {
 
     while (this.queue.length > 0) {
       if (this.connectionDead) {
-        console.warn(`[QUEUE] ${this.sessionId.slice(0, 8)} — connection dead, flushing ${this.queue.length} queued messages`);
+        console.warn(`[QUEUE] ${this.sessionId.slice(0, 8)} - connection dead, flushing ${this.queue.length} queued messages`);
         this.queue = [];
         break;
       }
@@ -82,7 +82,7 @@ export class MessageQueue {
         if (statusCode === 428 || statusCode === 408 || statusCode === 440 ||
             errorMessage.includes('Connection Closed') ||
             errorMessage.includes('Connection was lost')) {
-          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} — FATAL: connection terminated (${statusCode || errorMessage}). Stopping queue and marking session.`);
+          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} - FATAL: connection terminated (${statusCode || errorMessage}). Stopping queue and marking session.`);
           this.connectionDead = true;
           this.queue = [];
           this.markSessionNeedsReauth();
@@ -91,16 +91,16 @@ export class MessageQueue {
 
         // No active socket
         if (!this.socket.user) {
-          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} — socket.user gone, stopping queue`);
+          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} - socket.user gone, stopping queue`);
           this.connectionDead = true;
           this.queue = [];
           break;
         }
 
-        // Consecutive error threshold — if 5 sends fail in a row, connection is likely dead
+        // Consecutive error threshold - if 5 sends fail in a row, connection is likely dead
         this.consecutiveErrors++;
         if (this.consecutiveErrors >= 5) {
-          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} — ${this.consecutiveErrors} consecutive errors, treating as dead connection`);
+          console.error(`[QUEUE] ${this.sessionId.slice(0, 8)} - ${this.consecutiveErrors} consecutive errors, treating as dead connection`);
           this.connectionDead = true;
           this.queue = [];
           this.markSessionNeedsReauth();

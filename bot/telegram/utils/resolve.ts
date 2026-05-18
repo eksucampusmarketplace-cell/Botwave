@@ -13,7 +13,7 @@ export interface ResolvedTarget {
 }
 
 export function resolveTarget(ctx: Context): ResolvedTarget {
-  // 1. Reply to message — use replied-to user
+  // 1. Reply to message - use replied-to user
   if (ctx.message?.reply_to_message?.from) {
     const args = (ctx.match?.toString() || '').trim();
     return {
@@ -39,7 +39,7 @@ export function resolveTarget(ctx: Context): ResolvedTarget {
     return { user: null, userId: numId, reason };
   }
 
-  // @username — return username for async resolution by caller
+  // @username - return username for async resolution by caller
   if (firstArg.startsWith('@')) {
     return { user: null, userId: null, username: firstArg.slice(1), reason };
   }

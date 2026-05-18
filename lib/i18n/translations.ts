@@ -1,7 +1,7 @@
 /**
  * In-memory translation strings for BotWave.
  *
- * All strings are loaded at import time — zero runtime cost per lookup.
+ * All strings are loaded at import time - zero runtime cost per lookup.
  * Add new keys to the `en` map first, then translate to other locales.
  */
 
