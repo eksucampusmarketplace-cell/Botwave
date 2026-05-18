@@ -3,14 +3,14 @@
 /**
  * Joyride-based language onboarding for new users.
  *
- * CRITICAL: This tour NEVER persists — no localStorage, no cookies, no DB.
- * It runs once per page load in the current session only.
- * Once dismissed or completed, it's gone until the next fresh page load.
+ * Persists completion state in localStorage so it only shows once.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/i18n';
+
+const LANG_ONBOARDING_KEY = 'botwave_lang_onboarding_completed';
 
 // Dynamic import to avoid SSR issues with Joyride
 // eslint-disable-next-line
@@ -39,9 +39,16 @@ interface LanguageOnboardingProps {
 }
 
 export default function LanguageOnboarding({ onLanguageSelect }: LanguageOnboardingProps) {
-  // State is session-only — NEVER persisted
-  const [run, setRun] = useState(true);
+  const [run, setRun] = useState(false);
   const [selectedLang, setSelectedLang] = useState<SupportedLocale | null>(null);
+
+  useEffect(() => {
+    const completed = localStorage.getItem(LANG_ONBOARDING_KEY);
+    if (!completed) {
+      const timer = setTimeout(() => setRun(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const handleSelect = useCallback((code: SupportedLocale) => {
     setSelectedLang(code);
@@ -53,7 +60,8 @@ export default function LanguageOnboarding({ onLanguageSelect }: LanguageOnboard
       select.dispatchEvent(new Event('change'));
     }
     window.dispatchEvent(new CustomEvent('botwave-lang-change', { detail: { locale: code } }));
-    // Auto-close tour after selection
+    // Auto-close tour after selection and persist
+    localStorage.setItem(LANG_ONBOARDING_KEY, 'true');
     setTimeout(() => setRun(false), 600);
   }, [onLanguageSelect]);
 
@@ -122,7 +130,7 @@ export default function LanguageOnboarding({ onLanguageSelect }: LanguageOnboard
         const { status } = data;
         if (status === 'finished' || status === 'skipped') {
           setRun(false);
-          // NO persistence — intentionally empty
+          localStorage.setItem(LANG_ONBOARDING_KEY, 'true');
         }
       }}
       styles={{

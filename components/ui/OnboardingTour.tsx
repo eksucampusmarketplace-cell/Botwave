@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { EventData, Step, Controls } from 'react-joyride';
+import type { Step } from 'react-joyride';
 
 const Joyride = dynamic(
   () => import('react-joyride').then((mod) => mod.Joyride),
@@ -56,7 +56,7 @@ export default function OnboardingTour() {
     }
   }, []);
 
-  const handleEvent = (data: EventData, _controls: Controls) => {
+  const handleCallback = (data: { status: string; action: string }) => {
     const { status, action } = data;
     if (status === 'finished' || status === 'skipped' || action === 'close') {
       setRun(false);
@@ -71,7 +71,7 @@ export default function OnboardingTour() {
       steps={steps}
       run={run}
       continuous
-      onEvent={handleEvent}
+      callback={handleCallback}
       options={{
         backgroundColor: '#16161f',
         textColor: '#e2e8f0',

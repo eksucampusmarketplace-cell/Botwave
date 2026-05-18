@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import DashboardNav from '@/components/layout/DashboardNav';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
@@ -611,42 +612,63 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {featureCategories.map((cat) => {
-                const catFeatures = defaultFeatures.filter(f => f.category === cat.id);
-                if (!catFeatures.length) return null;
-                const isExpanded = expandedCategory === cat.id;
-                const enabledCount = catFeatures.filter(f => activeFeatures.includes(f.id)).length;
-                return (
-                  <div key={cat.id} className="mb-3">
-                    <button
-                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
-                      className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-blue-500/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{cat.icon}</span>
-                        <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.label}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
-                          {enabledCount}/{catFeatures.length}
-                        </span>
-                      </div>
-                      <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    {isExpanded && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pl-2">
-                        {catFeatures.map((feature, index) => (
-                          <FeatureToggle
-                            key={feature.id}
-                            feature={feature}
-                            enabled={activeFeatures.includes(feature.id)}
-                            onToggle={() => toggleFeature(feature.id)}
-                            index={index}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {(() => {
+                const selectedSession = sessions.find(s => s.id === selectedFeatureSession);
+                const isTelegram = selectedSession?.platform === 'telegram_bot' || selectedSession?.platform === 'telegram_userbot';
+
+                if (isTelegram) {
+                  return (
+                    <div className="text-center py-8 space-y-4">
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        Telegram bot features are managed from the Telegram configure panel.
+                      </p>
+                      <Link
+                        href={`/dashboard/telegram/${selectedFeatureSession}`}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+                      >
+                        Configure Telegram Bot &rarr;
+                      </Link>
+                    </div>
+                  );
+                }
+
+                return featureCategories.map((cat) => {
+                  const catFeatures = defaultFeatures.filter(f => f.category === cat.id);
+                  if (!catFeatures.length) return null;
+                  const isExpanded = expandedCategory === cat.id;
+                  const enabledCount = catFeatures.filter(f => activeFeatures.includes(f.id)).length;
+                  return (
+                    <div key={cat.id} className="mb-3">
+                      <button
+                        onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-blue-500/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{cat.icon}</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.label}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+                            {enabledCount}/{catFeatures.length}
+                          </span>
+                        </div>
+                        <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      {isExpanded && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pl-2">
+                          {catFeatures.map((feature, index) => (
+                            <FeatureToggle
+                              key={feature.id}
+                              feature={feature}
+                              enabled={activeFeatures.includes(feature.id)}
+                              onToggle={() => toggleFeature(feature.id)}
+                              index={index}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </motion.section>
 
             {/* Bot Owner Settings */}
