@@ -341,6 +341,30 @@ export default function RootLayout({
                     text: 'No. BotWave only processes messages in groups where the bot is active. Private/DM messages are never read, stored, or logged. All message processing happens in memory and is discarded immediately. Your session runs on your device IP, not our servers.',
                   },
                 },
+                {
+                  '@type': 'Question',
+                  name: 'What Telegram userbot commands does BotWave support?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave supports 100+ userbot commands: admin (.ban, .mute, .kick, .promote), purge (.purge, .del), gban, PM Permit (.approve, .block, .pmguard), AFK, Notes, Filters, Stickers (.kang), Translate (.tr), Text tools, Fun games (.dice, .slot), Chat tools, Reminders, and full settings (.setprefix, .lang, .setalive). See the complete list at botwave.online/telegram-userbot-commands.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is BotWave better than Combot or Rose Bot for Telegram?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave offers more features for free than Combot ($5-15/mo) and Rose Bot. It includes AI chat (Gemini), sticker creation, games, WhatsApp support, antiflood, captcha, and a full web dashboard. Combot and Rose Bot are Telegram-only with limited free tiers. BotWave supports WhatsApp + Telegram from one dashboard.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How do I set up a Telegram anti-spam bot for free?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Create a bot via @BotFather on Telegram, paste the token in BotWave dashboard, add the bot to your group as admin. Anti-spam activates automatically. For advanced protection, use the Telegram Userbot with .antiflood and .gban commands. Full guide at botwave.online/blog/telegram-anti-spam-bot.',
+                  },
+                },
               ],
             }),
           }}

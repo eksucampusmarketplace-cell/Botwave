@@ -393,6 +393,12 @@ export default function HomePage() {
               </ul>
             </motion.div>
           </div>
+          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} viewport={{ once: true }} className="flex flex-wrap gap-4 justify-center mt-10">
+            <Link href="/telegram-bot-nigeria" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">Telegram Bot Nigeria</Link>
+            <Link href="/telegram-userbot-commands" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">All Userbot Commands</Link>
+            <Link href="/blog/telegram-bot-vs-whatsapp-bot" className="px-6 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold rounded-xl hover:border-blue-500/30 transition-colors">TG Bot vs WA Bot</Link>
+            <Link href="/blog/telegram-anti-spam-bot" className="px-6 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold rounded-xl hover:border-blue-500/30 transition-colors">Anti-Spam Guide</Link>
+          </motion.div>
         </div>
       </section>
 
