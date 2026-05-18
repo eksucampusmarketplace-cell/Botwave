@@ -10,8 +10,12 @@ export function getInternalSupabaseUrl(): string {
 export async function createClient() {
   const cookieStore = await cookies();
 
+  // Use internal URL for server-side requests (avoids Docker networking issues
+  // where the public URL may not be reliably reachable from within containers)
+  const url = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    url,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -46,4 +50,20 @@ export async function createAdminClient() {
     getInternalSupabaseUrl(),
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+}
+
+/**
+ * Get the authenticated user with fallback to getSession().
+ *
+ * getUser() validates the JWT by calling GoTRUE's /user endpoint.
+ * If GoTRUE's token refresh is broken (e.g. oauth_client_id schema mismatch),
+ * getUser() returns null even though the JWT is still valid.
+ * In that case we fall back to getSession() which validates the JWT locally.
+ */
+export async function getAuthenticatedUser(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) return user;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
 }
