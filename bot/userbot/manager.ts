@@ -187,7 +187,7 @@ export class UserbotManager {
     if (this.welcomeSent.has(sessionId)) return;
 
     const config = await getUserbotConfig(sessionId);
-    if ((config as Record<string, unknown>).welcome_sent) {
+    if ((config as unknown as Record<string, unknown>).welcome_sent) {
       this.welcomeSent.add(sessionId);
       return;
     }
@@ -210,7 +210,8 @@ export class UserbotManager {
       });
 
       // Mark as sent in DB so it persists
-      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const { createClient } = await import('@supabase/supabase-js');
+      const createAdminClient = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
       const admin = await createAdminClient();
       await admin.from('userbot_config').update({ welcome_sent: true }).eq('session_id', sessionId);
 
