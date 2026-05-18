@@ -238,8 +238,26 @@ function ShareButtons({ slug }: { slug: string }) {
 }
 
 export default function BlogArticle({ content, date, readTime, slug, relatedPosts }: BlogArticleProps) {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : '';
+  const wordCount = content.split(/\s+/).length;
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title,
+    datePublished: date,
+    dateModified: date,
+    author: { '@type': 'Organization', name: 'BotWave', url: 'https://www.botwave.online' },
+    publisher: { '@type': 'Organization', name: 'BotWave', url: 'https://www.botwave.online' },
+    url: `https://www.botwave.online/blog/${slug}`,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.botwave.online/blog/${slug}` },
+    wordCount,
+    inLanguage: 'en',
+  };
+
   return (
     <main className="min-h-screen bg-[var(--bg)]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <Navbar />
 
       <article className="pt-32 pb-24 px-6">

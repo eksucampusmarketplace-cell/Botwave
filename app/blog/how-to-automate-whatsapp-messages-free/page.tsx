@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/how-to-automate-whatsapp-messages-free' },
   title: 'How to Automate WhatsApp Messages for Free (2026 Guide)',
   description: 'Automate WhatsApp messages without coding or monthly fees. Auto-replies, scheduled messages, AI responses — this step-by-step guide gets you live in 2 minutes. Try free →',
   keywords: ['automate whatsapp messages', 'whatsapp automation free', 'auto reply whatsapp', 'scheduled whatsapp messages', 'whatsapp auto message', 'bulk whatsapp messages', 'whatsapp message bot free'],

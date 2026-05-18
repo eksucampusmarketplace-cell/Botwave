@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-anti-spam-bot-for-groups' },
   title: 'WhatsApp Anti-Spam Bot for Groups (2026) — Stop Spam Automatically',
   description: 'Tired of spam in your WhatsApp groups? This free bot blocks scam links, betting ads, chain messages & offensive content automatically. Set up in 2 minutes →',
   keywords: ['whatsapp anti spam bot', 'whatsapp spam blocker', 'whatsapp group spam', 'stop whatsapp spam', 'whatsapp group protection', 'block spam whatsapp group', 'whatsapp spam filter'],

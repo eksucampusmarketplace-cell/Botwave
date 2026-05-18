@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/free-telegram-group-management-bot' },
   title: 'Free Telegram Group Management Bot (2026) — Anti-Spam, Polls, Games & More',
   description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools — all built in.',
   keywords: ['telegram group management bot', 'free telegram bot', 'telegram anti-spam bot', 'telegram group bot free', 'telegram moderation bot', 'botwave telegram', 'telegram group admin bot'],

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/free-whatsapp-group-management-bot' },
   title: 'Free WhatsApp Group Management Bot (2026) — Anti-Spam, Polls, Games',
   description: 'Your WhatsApp groups deserve better. Get free anti-spam, welcome messages, polls, trivia games & moderation — all automatic. 10,000+ groups already use BotWave →',
   keywords: ['whatsapp group management bot', 'whatsapp group bot free', 'whatsapp anti spam bot', 'whatsapp group admin bot', 'whatsapp group moderation', 'manage whatsapp group', 'whatsapp group tools'],

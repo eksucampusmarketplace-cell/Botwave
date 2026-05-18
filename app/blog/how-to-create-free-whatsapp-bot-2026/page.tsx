@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/how-to-create-free-whatsapp-bot-2026' },
   title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)',
   description: 'Your own WhatsApp bot — live in under 2 minutes. Free. No coding. Stickers, AI chat, games, polls & 100+ commands. Follow this step-by-step guide to get started now →',
   keywords: ['how to create whatsapp bot', 'free whatsapp bot', 'whatsapp bot tutorial', 'make whatsapp bot 2026', 'whatsapp bot no coding', 'botwave tutorial'],

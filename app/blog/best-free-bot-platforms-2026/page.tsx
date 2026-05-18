@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/best-free-bot-platforms-2026' },
   title: 'Best Free Bot Platforms in 2026 Compared — BotWave vs ManyChat vs Chatfuel',
   description: 'We tested BotWave, ManyChat, Chatfuel & Tidio side-by-side. See which free bot platform actually delivers in 2026 — features, pricing, and real results compared →',
   keywords: ['best free bot platform', 'bot platform comparison 2026', 'free chatbot platform', 'manychat alternative', 'chatfuel alternative', 'best whatsapp bot platform', 'free bot maker 2026'],

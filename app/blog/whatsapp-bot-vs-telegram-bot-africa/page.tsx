@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-bot-vs-telegram-bot-africa' },
   title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa? (2026)',
   description: 'Telegram bots have more features, but WhatsApp has 10x the users in Africa. We compared both platforms on features, reach & cost — the winner might surprise you →',
   keywords: ['whatsapp bot vs telegram bot', 'telegram bot alternative', 'whatsapp bot africa', 'whatsapp vs telegram', 'botwave vs evolution api', 'best messaging bot africa'],

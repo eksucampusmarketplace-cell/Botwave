@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-bot-commands-list-2026' },
   title: 'Complete WhatsApp Bot Commands List (2026) — 100+ BotWave Commands',
   description: 'The ultimate reference: all 100+ BotWave commands with examples. Stickers, AI chat, games, music, logos, study tools, media downloads & more. Bookmark this guide →',
   keywords: ['whatsapp bot commands', 'whatsapp bot commands list', 'botwave commands', 'whatsapp bot help', 'whatsapp bot features', 'all whatsapp bot commands 2026', 'whatsapp sticker bot', 'whatsapp ai bot', 'whatsapp game bot', 'whatsapp group bot', 'whatsapp download bot', 'whatsapp music bot', 'whatsapp logo maker bot'],

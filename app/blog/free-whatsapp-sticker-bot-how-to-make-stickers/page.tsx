@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/free-whatsapp-sticker-bot-how-to-make-stickers' },
   title: 'Free WhatsApp Sticker Bot — How to Make Custom Stickers Instantly (2026)',
   description: 'Ditch sticker maker apps. Reply to any image with !sticker and get a custom WhatsApp sticker instantly — no downloads, no cropping, no hassle. Works in groups too. Try free →',
   keywords: ['whatsapp sticker bot', 'make whatsapp stickers', 'whatsapp sticker maker', 'custom whatsapp stickers', 'free sticker bot', 'whatsapp sticker creator', 'how to make whatsapp stickers'],

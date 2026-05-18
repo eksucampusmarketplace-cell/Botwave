@@ -77,9 +77,7 @@ export const metadata: Metadata = {
   publisher: 'BotWave',
   manifest: '/manifest.json',
   metadataBase: new URL('https://www.botwave.online'),
-  alternates: {
-    canonical: '/',
-  },
+  alternates: {},
   openGraph: {
     type: 'website',
     locale: 'en_NG',
