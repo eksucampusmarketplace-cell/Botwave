@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-bot-for-business-nigeria' },
   title: 'WhatsApp Bot for Business in Nigeria (2026) — Automate Sales & Support',
   description: 'Stop answering "How much?" 50 times a day. Nigerian businesses use BotWave to automate support, orders & promotions on WhatsApp. Free setup, Naira pricing. Start now →',
   keywords: ['whatsapp bot business nigeria', 'whatsapp automation nigeria', 'whatsapp business bot', 'automate whatsapp business', 'whatsapp customer support bot', 'nigerian business whatsapp bot', 'whatsapp bot for sales'],

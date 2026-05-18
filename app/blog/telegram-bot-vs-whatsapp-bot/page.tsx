@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/telegram-bot-vs-whatsapp-bot' },
   title: 'Telegram Bot vs WhatsApp Bot (2026) — Which is Better? Full Comparison',
   description: 'Telegram Bot vs WhatsApp Bot: ban risk, features, setup difficulty, group limits, API access, pricing compared. Which platform should you automate in 2026? BotWave supports both.',
   keywords: ['telegram bot vs whatsapp bot', 'whatsapp bot vs telegram bot', 'telegram or whatsapp bot', 'best bot platform 2026', 'telegram bot comparison', 'whatsapp bot ban risk', 'telegram vs whatsapp groups'],
@@ -166,6 +167,13 @@ Same dashboard. Same account. Same free tier.
 - [Best Free Bot Platforms 2026](/blog/best-free-bot-platforms-2026)
 `;
 
+const relatedPosts = [
+  { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria (2026)' },
+  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation Guide' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot (2026)' },
+  { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms 2026' },
+];
+
 export default function TelegramBotVsWhatsAppBot() {
-  return <BlogArticle content={content} />;
+  return <BlogArticle content={content} date="May 18, 2026" readTime="8 min read" slug="telegram-bot-vs-whatsapp-bot" relatedPosts={relatedPosts} />;
 }

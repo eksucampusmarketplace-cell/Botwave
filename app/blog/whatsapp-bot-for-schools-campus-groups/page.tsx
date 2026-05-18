@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-bot-for-schools-campus-groups' },
   title: 'WhatsApp Bot for Schools & Campus Groups (2026) — Study, Manage, Engage',
   description: 'Turn your campus WhatsApp group into a smart hub — study tools, AI homework help, anti-spam, polls & attendance. Used by Nigerian universities. Free setup in 2 minutes →',
   keywords: ['whatsapp bot for school', 'whatsapp bot campus', 'whatsapp class group bot', 'student whatsapp bot', 'university whatsapp bot', 'whatsapp bot education', 'nigerian campus whatsapp bot'],

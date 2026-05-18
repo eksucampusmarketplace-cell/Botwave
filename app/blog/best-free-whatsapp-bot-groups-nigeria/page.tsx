@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/best-free-whatsapp-bot-groups-nigeria' },
   title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
   description: 'The best WhatsApp group bot for Nigeria — anti-spam, polls, games, AI chat, stickers & 100+ commands. Free forever, no catch. See why Nigerian groups are switching →',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],

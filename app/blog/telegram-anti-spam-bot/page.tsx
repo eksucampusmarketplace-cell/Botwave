@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/telegram-anti-spam-bot' },
   title: 'Free Telegram Anti-Spam Bot (2026) — Protect Your Groups | BotWave',
   description: 'Set up a free Telegram anti-spam bot in 2 minutes. Block spam, scam links, flood messages, and raid attacks. Works with Telegram Bot API and Userbot. No coding needed.',
   keywords: ['telegram anti-spam bot', 'telegram anti-spam bot free', 'telegram spam protection', 'telegram group protection', 'telegram antiflood', 'telegram anti raid bot', 'telegram group management bot', 'telegram moderation bot'],
@@ -122,6 +123,12 @@ BotWave supports 25+ languages including English, French, Spanish, Arabic, Hindi
 - [All Telegram Userbot Commands](/telegram-userbot-commands)
 `;
 
+const relatedPosts = [
+  { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria (2026)' },
+  { slug: 'telegram-bot-vs-whatsapp-bot', title: 'Telegram Bot vs WhatsApp Bot — Full Comparison' },
+  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation Guide' },
+];
+
 export default function TelegramAntiSpamBot() {
-  return <BlogArticle content={content} />;
+  return <BlogArticle content={content} date="May 18, 2026" readTime="5 min read" slug="telegram-anti-spam-bot" relatedPosts={relatedPosts} />;
 }

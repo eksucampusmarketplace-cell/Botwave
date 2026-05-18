@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/telegram-userbot-automation' },
   title: 'Telegram Userbot Automation (2026) — Automate Your Real Telegram Account',
   description: 'Automate your real Telegram account with BotWave userbot mode. Auto-replies, AI chat, media tools — all running from your personal account. Free setup.',
   keywords: ['telegram userbot', 'telegram userbot automation', 'telegram account automation', 'telegram mtproto bot', 'automate telegram account', 'botwave userbot', 'telegram self-bot'],

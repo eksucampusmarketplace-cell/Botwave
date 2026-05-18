@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-bot-south-africa' },
   title: 'WhatsApp Bot for South Africa (2026) — Free Automation & Group Management',
   description: 'Free WhatsApp bot for South Africa — auto-replies, AI chat, anti-spam, stickers & group management. Works with Vodacom, MTN, Cell C. Set up in 2 minutes, no coding needed. Try it free →',
   keywords: ['whatsapp bot south africa', 'whatsapp automation south africa', 'free whatsapp bot sa', 'whatsapp business bot south africa', 'whatsapp group bot south africa', 'chatbot south africa'],

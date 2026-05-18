@@ -3,6 +3,7 @@ import HomePage from './HomePageClient';
 
 export const metadata: Metadata = {
   alternates: {
+    canonical: '/',
     languages: {
       'en-NG': '/whatsapp-bot-nigeria',
       'en-ZA': '/whatsapp-bot-south-africa',

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/telegram-bot-for-groups-nigeria' },
   title: 'Telegram Bot for Groups in Nigeria (2026) — Free Setup with BotWave',
   description: 'Set up a free Telegram bot for your Nigerian group in under 2 minutes. AI chat, stickers, games, polls, anti-spam — all built in. No coding needed.',
   keywords: ['telegram bot nigeria', 'telegram group bot', 'telegram bot for groups', 'free telegram bot', 'botwave telegram', 'telegram bot africa', 'telegram automation nigeria'],

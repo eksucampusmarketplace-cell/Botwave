@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/blog/whatsapp-ai-chatbot-free' },
   title: 'Free WhatsApp AI Chatbot (2026) — ChatGPT-Like AI on WhatsApp',
   description: 'Get ChatGPT-like AI on your WhatsApp for free. Ask anything, get homework help, translate 100+ languages, write messages — powered by Google Gemini. No app needed. Try it now →',
   keywords: ['whatsapp ai chatbot', 'whatsapp ai bot free', 'chatgpt whatsapp', 'ai on whatsapp', 'whatsapp chatbot free', 'google gemini whatsapp', 'ai assistant whatsapp', 'free whatsapp ai'],

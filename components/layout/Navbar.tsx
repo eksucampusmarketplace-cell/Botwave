@@ -10,10 +10,7 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <motion.nav
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <nav
       className="fixed top-0 left-0 right-0 z-[1000] bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]/50"
     >
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
@@ -168,6 +165,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </nav>
   );
 }
