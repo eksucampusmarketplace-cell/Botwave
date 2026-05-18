@@ -26,12 +26,12 @@ export default function Navbar() {
 
         <ul className="hidden md:flex gap-8 list-none">
           {[
-            { href: '#features', label: 'Features' },
-            { href: '#how', label: 'How it Works' },
-            { href: '#security', label: 'Security' },
-            { href: '#faq', label: 'FAQ' },
+            { href: '/commands', label: 'Commands' },
+            { href: '/docs', label: 'Docs' },
+            { href: '/use-cases', label: 'Use Cases' },
             { href: '/blog', label: 'Blog' },
-            { href: '/status', label: 'Status' },
+            { href: '/faq', label: 'FAQ' },
+            { href: '/changelog', label: 'Changelog' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -118,12 +118,12 @@ export default function Navbar() {
           >
             <div className="flex flex-col px-6 py-4 gap-3">
               {[
-                { href: '#features', label: 'Features' },
-                { href: '#how', label: 'How it Works' },
-                { href: '#security', label: 'Security' },
-                { href: '#faq', label: 'FAQ' },
+                { href: '/commands', label: 'Commands' },
+                { href: '/docs', label: 'Docs' },
+                { href: '/use-cases', label: 'Use Cases' },
                 { href: '/blog', label: 'Blog' },
-                { href: '/status', label: 'Status' },
+                { href: '/faq', label: 'FAQ' },
+                { href: '/changelog', label: 'Changelog' },
               ].map((link) => (
                 <Link
                   key={link.href}

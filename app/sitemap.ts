@@ -1,9 +1,82 @@
 import type { MetadataRoute } from 'next';
+import { whatsappCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
+import { docPages } from '@/lib/docs/data';
+import { faqItems } from '@/lib/faq/data';
+import { useCases } from '@/lib/usecases/data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://www.botwave.online';
+  const now = new Date('2026-05-18');
+
+  const commandPages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/commands`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/commands/whatsapp`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/commands/telegram`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/commands/userbot`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...whatsappCommands.map(cmd => ({
+      url: `${baseUrl}/commands/whatsapp/${cmd.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    ...telegramCommands.map(cmd => ({
+      url: `${baseUrl}/commands/telegram/${cmd.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    ...userbotCommands.map(cmd => ({
+      url: `${baseUrl}/commands/userbot/${cmd.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  const docsPagesSitemap: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/docs`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    ...docPages.map(doc => ({
+      url: `${baseUrl}/docs/${doc.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  const faqPagesSitemap: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/faq`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...faqItems.map(faq => ({
+      url: `${baseUrl}/faq/${faq.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+  ];
+
+  const useCasePages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/use-cases`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    ...useCases.map(uc => ({
+      url: `${baseUrl}/use-cases/${uc.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  const comparePages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/compare/evolution-api`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/compare/baileys`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/compare/telegram-bots`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+  ];
 
   return [
+    ...commandPages,
+    ...docsPagesSitemap,
+    ...faqPagesSitemap,
+    ...useCasePages,
+    ...comparePages,
+    { url: `${baseUrl}/changelog`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     {
       url: baseUrl,
       lastModified: new Date('2026-05-16'),
