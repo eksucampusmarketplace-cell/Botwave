@@ -48,8 +48,8 @@ export class UserbotClient {
     this.currentProxy = getNextProxy();
 
     const clientOpts: ConstructorParameters<typeof TelegramClient>[3] = {
-      connectionRetries: 5,
-      retryDelay: 2000,
+      connectionRetries: 10,
+      retryDelay: 3000,
       autoReconnect: true,
       deviceModel: this.deviceModel,
       systemVersion: this.systemVersion,
@@ -57,6 +57,7 @@ export class UserbotClient {
       langCode: 'en',
       systemLangCode: 'en',
       useWSS: false,
+      floodSleepThreshold: 60,
     };
 
     if (this.currentProxy) {

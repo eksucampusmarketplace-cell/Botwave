@@ -79,16 +79,35 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden flex flex-col gap-1.5 p-2"
-          aria-label="Toggle menu"
-        >
-          <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
-          <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-opacity ${mobileOpen ? 'opacity-0' : ''}`} />
-          <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
-        </button>
+        {/* Mobile controls: theme + translate + hamburger */}
+        <div className="md:hidden flex items-center gap-2">
+          <button
+            onClick={() => {
+              const wrapper = document.getElementById('gtx-wrapper');
+              if (wrapper) wrapper.classList.toggle('gtx-collapsed');
+            }}
+            className="gtx-nav-toggle w-8 h-8 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] flex items-center justify-center transition-colors"
+            title="Translate"
+          >
+            <span className="text-xs">{'\u{1F310}'}</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-light)] border border-[var(--border)] flex items-center justify-center transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <span className="text-xs">{theme === 'dark' ? '\u2600\uFE0F' : '\u{1F319}'}</span>
+          </button>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex flex-col gap-1.5 p-2"
+            aria-label="Toggle menu"
+          >
+            <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-opacity ${mobileOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-[var(--text-muted)] transition-transform ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}

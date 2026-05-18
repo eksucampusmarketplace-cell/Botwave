@@ -137,6 +137,11 @@ export class UserbotManager {
     await updateSessionState(sessionId, 'connected');
     console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} started successfully`);
 
+    // Send one-time welcome message on first connect
+    this.sendOneTimeWelcome(ubClient, sessionId).catch(err =>
+      console.warn(`[USERBOT-MGR] Welcome message failed for ${sessionId.slice(0, 8)}:`, err),
+    );
+
     return true;
   }
 
@@ -174,6 +179,46 @@ export class UserbotManager {
     return this.userbots.size;
   }
 
+  private welcomeSent = new Set<string>();
+
+  private async sendOneTimeWelcome(ubClient: UserbotClient, sessionId: string): Promise<void> {
+    if (this.welcomeSent.has(sessionId)) return;
+
+    const config = await getUserbotConfig(sessionId);
+    if ((config as Record<string, unknown>).welcome_sent) {
+      this.welcomeSent.add(sessionId);
+      return;
+    }
+
+    try {
+      const me = await ubClient.client.getMe();
+      const firstName = (me && 'firstName' in me) ? (me as { firstName?: string }).firstName || 'there' : 'there';
+
+      await ubClient.client.sendMessage('me', {
+        message: `🎉 **Welcome to BotWave Userbot, ${firstName}!**\n\n` +
+          `Your Telegram Userbot is now live and connected.\n\n` +
+          `**Quick start:**\n` +
+          `  \`.help\` — See all commands\n` +
+          `  \`.alive\` — Check bot status\n` +
+          `  \`.lang list\` — Change language\n` +
+          `  \`.setprefix !\` — Change command prefix\n\n` +
+          `**Manage from dashboard:** https://www.botwave.online/dashboard\n\n` +
+          `_This is a one-time message. You won't see it again._`,
+        parseMode: 'md',
+      });
+
+      // Mark as sent in DB so it persists
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const admin = await createAdminClient();
+      await admin.from('userbot_config').update({ welcome_sent: true }).eq('session_id', sessionId);
+
+      this.welcomeSent.add(sessionId);
+      console.log(`[USERBOT-MGR] Welcome message sent for ${sessionId.slice(0, 8)}`);
+    } catch (err) {
+      console.warn(`[USERBOT-MGR] Failed to send welcome for ${sessionId.slice(0, 8)}:`, err);
+    }
+  }
+
   startHeartbeat(intervalMs = 30_000): void {
     if (this.heartbeatHandle) return;
 
@@ -184,11 +229,26 @@ export class UserbotManager {
             await updateSessionLastActive(sessionId);
           } else {
             console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} disconnected, attempting reconnect...`);
-            const reconnected = await ub.client.connect();
-            if (reconnected) {
-              await updateSessionState(sessionId, 'connected');
-            } else {
-              await updateSessionState(sessionId, 'error');
+            try {
+              const reconnected = await ub.client.connect();
+              if (reconnected) {
+                await updateSessionState(sessionId, 'connected');
+                console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnected successfully`);
+              } else {
+                console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect returned false`);
+                await updateSessionState(sessionId, 'error');
+              }
+            } catch (reconnectErr) {
+              console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect failed:`, reconnectErr);
+              // Don't set error state immediately — let the next heartbeat try again
+              // Only set error after 3 consecutive failures
+              const failKey = `_reconnectFails_${sessionId}`;
+              const fails = ((this as unknown as Record<string, number>)[failKey] || 0) + 1;
+              (this as unknown as Record<string, number>)[failKey] = fails;
+              if (fails >= 3) {
+                await updateSessionState(sessionId, 'error');
+                (this as unknown as Record<string, number>)[failKey] = 0;
+              }
             }
           }
         } catch (err) {
