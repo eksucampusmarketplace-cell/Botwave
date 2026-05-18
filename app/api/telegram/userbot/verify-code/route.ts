@@ -125,10 +125,11 @@ export async function POST(request: NextRequest) {
         session: sessionRecord,
         message: 'Login successful! Session created and saved automatically.',
       });
-    } catch (err: any) {
-      console.error('[TG-UB-VERIFY] Error:', err);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('[TG-UB-VERIFY] Error:', errMsg, err);
       return NextResponse.json({
-        error: 'Verification failed. Please try again.',
+        error: `Verification failed: ${errMsg}`,
       }, { status: 500 });
     }
   } catch (error) {
