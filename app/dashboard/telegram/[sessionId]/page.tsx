@@ -55,7 +55,7 @@ export default function TelegramConfigPage() {
   const [success, setSuccess] = useState('');
   const [ownerDisabledFeatures, setOwnerDisabledFeatures] = useState<Set<string>>(new Set());
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   const [config, setConfig] = useState<Record<string, any>>({
     antiflood_enabled: false,
     antiflood_max_per_min: 10,

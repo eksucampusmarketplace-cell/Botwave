@@ -13,7 +13,11 @@ import dynamic from 'next/dynamic';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/i18n';
 
 // Dynamic import to avoid SSR issues with Joyride
-const Joyride = dynamic(() => import('react-joyride'), { ssr: false });
+// eslint-disable-next-line
+const Joyride: any = dynamic(
+  () => import('react-joyride').then(mod => mod.Joyride) as any,
+  { ssr: false }
+);
 
 const POPULAR_LANGS: { code: SupportedLocale; flag: string }[] = [
   { code: 'en', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
@@ -114,7 +118,7 @@ export default function LanguageOnboarding({ onLanguageSelect }: LanguageOnboard
       hideCloseButton={false}
       disableOverlayClose={false}
       disableScrolling
-      callback={(data) => {
+      callback={(data: { status: string }) => {
         const { status } = data;
         if (status === 'finished' || status === 'skipped') {
           setRun(false);
