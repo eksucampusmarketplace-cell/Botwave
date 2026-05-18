@@ -4,7 +4,7 @@
 
 -- Userbot per-session configuration
 CREATE TABLE IF NOT EXISTS userbot_config (
-  session_id TEXT PRIMARY KEY REFERENCES bot_sessions(id) ON DELETE CASCADE,
+  session_id UUID PRIMARY KEY REFERENCES bot_sessions(id) ON DELETE CASCADE,
   prefix TEXT NOT NULL DEFAULT '.',
   anti_pm BOOLEAN NOT NULL DEFAULT false,
   anti_pm_block BOOLEAN NOT NULL DEFAULT false,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS userbot_config (
 -- Userbot notes (per-session)
 CREATE TABLE IF NOT EXISTS userbot_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id TEXT NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   content TEXT NOT NULL,
   media_type TEXT,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS userbot_notes (
 -- Userbot chat filters (per-session, per-chat)
 CREATE TABLE IF NOT EXISTS userbot_filters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id TEXT NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
   chat_id TEXT NOT NULL,
   keyword TEXT NOT NULL,
   response TEXT NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS userbot_filters (
 
 -- Userbot PM permit tracking
 CREATE TABLE IF NOT EXISTS userbot_pm_permit (
-  session_id TEXT NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
   approved BOOLEAN NOT NULL DEFAULT false,
   warn_count INTEGER NOT NULL DEFAULT 0,
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS userbot_pm_permit (
 
 -- Userbot global bans
 CREATE TABLE IF NOT EXISTS userbot_gbans (
-  session_id TEXT NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES bot_sessions(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL,
   reason TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
