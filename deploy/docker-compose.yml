@@ -147,17 +147,54 @@ services:
       retries: 5
       start_period: 40s
 
-  # ── BotWave Bot (Main orchestrator) ────────────────────
-  botwave-bot:
-    container_name: botwave_bot_main
+  # ── BotWave Telegram Bot (isolated) ───────────────────
+  botwave-telegram:
+    container_name: botwave_telegram
     <<: *botwave-build
     restart: unless-stopped
     env_file:
       - .env.botwave
     environment:
       - NODE_ENV=production
+      - BOT_PLATFORM=telegram
       - IS_WORKER=false
-      - SELF_URL=http://botwave-bot:10000
+      - REDIS_URL=redis://redis:6379
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
+    command: ["node", "dist/bot/bot/telegram-entrypoint.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+      update_config:
+        order: start-first
+        failure_action: rollback
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "try { const http = require('http'); const r = http.get('http://localhost:10000/health', res => { process.exit(res.statusCode === 200 ? 0 : 1); }); r.on('error', () => process.exit(1)); r.setTimeout(5000, () => process.exit(1)); } catch(e) { process.exit(1); }"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── BotWave WhatsApp Bot (isolated) ──────────────────
+  botwave-whatsapp:
+    container_name: botwave_whatsapp
+    <<: *botwave-build
+    restart: unless-stopped
+    env_file:
+      - .env.botwave
+    environment:
+      - NODE_ENV=production
+      - BOT_PLATFORM=whatsapp
+      - IS_WORKER=false
+      - SELF_URL=http://botwave-whatsapp:10000
       - WORKER_URLS=
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
@@ -165,7 +202,7 @@ services:
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
       - MAX_WORKER_THREADS=${MAX_WORKER_THREADS:-40}
       - SCALE_THRESHOLD=${SCALE_THRESHOLD:-25}
-    command: ["node", "dist/bot/bot/index.js"]
+    command: ["node", "dist/bot/bot/whatsapp-entrypoint.js"]
     networks:
       - botwave-net
     depends_on:
@@ -176,21 +213,24 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 2G
         reservations:
-          memory: 1G
+          memory: 512M
+      update_config:
+        order: start-first
+        failure_action: rollback
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
+      test: ["CMD", "node", "-e", "try { const http = require('http'); const r = http.get('http://localhost:10000/health', res => { process.exit(res.statusCode === 200 ? 0 : 1); }); r.on('error', () => process.exit(1)); r.setTimeout(5000, () => process.exit(1)); } catch(e) { process.exit(1); }"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 20s
 
-  # NOTE: Docker container workers (worker-1, worker-2, worker-3) have been
-  # replaced by in-process worker_threads managed by the auto-scaler in
-  # botwave-bot. The auto-scaler spawns/kills worker threads dynamically
-  # based on session count — no separate containers needed.
+  # NOTE: The old single botwave-bot container has been replaced by
+  # botwave-telegram + botwave-whatsapp for fault isolation.
+  # Each platform runs independently — if one crashes, the other keeps running.
+  # Both share the same Docker image, just with different CMD entrypoints.
 
   # ── BotWave Postgres (Supabase data) ────────────────────
   botwave-postgres:

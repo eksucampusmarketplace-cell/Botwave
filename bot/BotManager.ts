@@ -36,6 +36,12 @@ import { cacheJSON, getCachedJSON } from './infrastructure/redisSessionCache';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 
+// ─── Platform Isolation ──────────────────────────────────────────────────────
+// When BOT_PLATFORM is set, this process only handles sessions for that platform.
+// 'telegram' = only telegram_bot sessions, 'whatsapp' = only whatsapp sessions.
+// Unset or empty = handle all platforms (legacy single-container mode).
+const BOT_PLATFORM = process.env.BOT_PLATFORM || '';
+
 // ─── Session Welcome Video (sent once on first pairing) ─────────────────────
 
 let sessionWelcomeVideoBuffer: Buffer | null = null;
@@ -1746,7 +1752,23 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     console.log('[SYNC] Evolution API recently recovered — reconnections will be staggered via queue');
   }
 
-  const sessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
+  const allSessions = await getSessionsNeedingBot(SELF_URL || undefined, isWorker);
+
+  // ─── Platform isolation filter ──────────────────────────────────────────
+  // When BOT_PLATFORM is set, only process sessions matching that platform.
+  // This enables running separate containers for WhatsApp and Telegram.
+  const sessions = BOT_PLATFORM
+    ? allSessions.filter(s => {
+        const platform = (s as any).platform || 'whatsapp';
+        if (BOT_PLATFORM === 'telegram') return platform === 'telegram_bot' || platform === 'telegram_userbot';
+        if (BOT_PLATFORM === 'whatsapp') return platform === 'whatsapp' || !platform;
+        return true;
+      })
+    : allSessions;
+
+  if (BOT_PLATFORM && allSessions.length !== sessions.length) {
+    console.log(`[SYNC] Platform filter (${BOT_PLATFORM}): ${sessions.length}/${allSessions.length} sessions match`);
+  }
 
   // Active-first startup: sort sessions so active/inactive sessions connect
   // first, then qr_pending/pairing_sent sessions. This ensures established
