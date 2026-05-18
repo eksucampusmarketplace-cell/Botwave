@@ -2,46 +2,46 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import type { Step } from 'react-joyride';
 
-const Joyride = dynamic(
-  () => import('react-joyride').then((mod) => mod.Joyride),
+// eslint-disable-next-line
+const Joyride: any = dynamic(
+  () => import('react-joyride').then((mod) => mod.Joyride) as any,
   { ssr: false },
 );
 
 const TOUR_KEY = 'botwave_tour_completed';
 
-const steps: Step[] = [
+const steps = [
   {
     target: '[data-tour="sessions"]',
     content: 'This is where your WhatsApp sessions live. Each session connects one WhatsApp number to BotWave.',
-    skipBeacon: true,
-    placement: 'bottom',
+    disableBeacon: true,
+    placement: 'bottom' as const,
   },
   {
     target: '[data-tour="add-session"]',
     content: 'Click here to connect a new WhatsApp number. You\'ll get a pairing code to link your device.',
-    placement: 'top',
+    placement: 'top' as const,
   },
   {
     target: '[data-tour="features"]',
     content: 'Toggle bot features on and off. Each feature adds new commands to your WhatsApp — stickers, AI chat, games, and more!',
-    placement: 'top',
+    placement: 'top' as const,
   },
   {
     target: '[data-tour="stats"]',
     content: 'Track your bot\'s activity: messages processed, commands run, and uptime percentage.',
-    placement: 'top',
+    placement: 'top' as const,
   },
   {
     target: '[data-tour="nav-sessions"]',
     content: 'Manage all your sessions in detail — connect, disconnect, or delete WhatsApp connections.',
-    placement: 'bottom',
+    placement: 'bottom' as const,
   },
   {
     target: '[data-tour="nav-settings"]',
     content: 'Configure anti-ban settings, bot customization, and manage your account here.',
-    placement: 'bottom',
+    placement: 'bottom' as const,
   },
 ];
 
@@ -51,18 +51,11 @@ export default function OnboardingTour() {
   useEffect(() => {
     const completed = localStorage.getItem(TOUR_KEY);
     if (!completed) {
+      localStorage.setItem(TOUR_KEY, 'true');
       const timer = setTimeout(() => setRun(true), 1500);
       return () => clearTimeout(timer);
     }
   }, []);
-
-  const handleCallback = (data: { status: string; action: string }) => {
-    const { status, action } = data;
-    if (status === 'finished' || status === 'skipped' || action === 'close') {
-      setRun(false);
-      localStorage.setItem(TOUR_KEY, 'true');
-    }
-  };
 
   if (!run) return null;
 
@@ -71,17 +64,21 @@ export default function OnboardingTour() {
       steps={steps}
       run={run}
       continuous
-      callback={handleCallback}
-      options={{
-        backgroundColor: '#16161f',
-        textColor: '#e2e8f0',
-        primaryColor: '#10b981',
-        overlayColor: 'rgba(0, 0, 0, 0.75)',
-        zIndex: 10000,
-        showProgress: true,
-        buttons: ['back', 'primary', 'skip', 'close'],
+      showSkipButton
+      callback={(data: { status: string; action: string }) => {
+        const { status, action } = data;
+        if (status === 'finished' || status === 'skipped' || action === 'close') {
+          setRun(false);
+        }
       }}
       styles={{
+        options: {
+          backgroundColor: '#16161f',
+          textColor: '#e2e8f0',
+          primaryColor: '#10b981',
+          overlayColor: 'rgba(0, 0, 0, 0.75)',
+          zIndex: 10000,
+        },
         tooltip: {
           borderRadius: '12px',
           border: '1px solid #1e293b',
