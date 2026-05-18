@@ -3,6 +3,10 @@ import { whatsappCommands, telegramCommands, userbotCommands } from '@/lib/comma
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
 import { useCases } from '@/lib/usecases/data';
+import { fixPages } from '@/lib/fix/data';
+import { howToPages } from '@/lib/howto/data';
+import { comparePages as compareData } from '@/lib/compare/data';
+import { landingPages } from '@/lib/landing/data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://www.botwave.online';
@@ -63,11 +67,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
-  const comparePages: MetadataRoute.Sitemap = [
+  const comparePagesSitemap: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/compare/evolution-api`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/compare/baileys`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/compare/telegram-bots`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    ...compareData.map(page => ({
+      url: `${baseUrl}/compare/${page.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  const fixPagesSitemap: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/fix`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...fixPages.map(page => ({
+      url: `${baseUrl}/fix/${page.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ];
+
+  const howToPagesSitemap: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/how-to`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...howToPages.map(page => ({
+      url: `${baseUrl}/how-to/${page.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
   ];
 
   return [
@@ -75,7 +102,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...docsPagesSitemap,
     ...faqPagesSitemap,
     ...useCasePages,
-    ...comparePages,
+    ...comparePagesSitemap,
+    ...fixPagesSitemap,
+    ...howToPagesSitemap,
+    ...landingPages.map(page => ({
+      url: `${baseUrl}/${page.slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
     { url: `${baseUrl}/changelog`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     {
       url: baseUrl,
@@ -185,30 +220,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
-    {
-      url: `${baseUrl}/whatsapp-bot-nigeria`,
-      lastModified: new Date('2026-05-13'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/whatsapp-bot-south-africa`,
-      lastModified: new Date('2026-05-13'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/whatsapp-bot-india`,
-      lastModified: new Date('2026-05-13'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/whatsapp-bot-usa`,
-      lastModified: new Date('2026-05-13'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
+    // Country landing pages (whatsapp-bot-nigeria, etc) are now generated from lib/landing/data.ts
     // Telegram blog posts
     {
       url: `${baseUrl}/blog/telegram-bot-for-groups-nigeria`,
@@ -228,33 +240,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
-    // Telegram deploy page
-    {
-      url: `${baseUrl}/deploy-telegram-bot`,
-      lastModified: new Date('2026-05-18'),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    // Entity / About page (AI crawlers love this)
-    {
-      url: `${baseUrl}/what-is-botwave`,
-      lastModified: new Date('2026-05-18'),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    // Telegram landing pages
-    {
-      url: `${baseUrl}/telegram-bot-nigeria`,
-      lastModified: new Date('2026-05-18'),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/telegram-userbot-commands`,
-      lastModified: new Date('2026-05-18'),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
+    // Landing pages (deploy, what-is, country, feature pages) are now generated from lib/landing/data.ts
     // New Telegram blog posts
     {
       url: `${baseUrl}/blog/telegram-bot-vs-whatsapp-bot`,
