@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { escapeHtml } from '../utils/format';
-import {  } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 
 const URL_REGEX = /https?:\/\/[^\s]+/;
 

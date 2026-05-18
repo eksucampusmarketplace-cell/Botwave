@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { mentionUser, escapeHtml } from '../utils/format';
-import {  } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(

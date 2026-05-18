@@ -4,7 +4,7 @@
 
 import { Bot, Context } from 'grammy';
 import { requireAdmin, isElevated } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 const URL_REGEX = /https?:\/\/[^\s]+|t\.me\/[^\s]+|telegram\.me\/[^\s]+/i;
 

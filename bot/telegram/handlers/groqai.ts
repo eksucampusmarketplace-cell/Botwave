@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { escapeHtml } from '../utils/format';
-import {  } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 
 async function queryGroq(prompt: string, systemPrompt?: string): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY;

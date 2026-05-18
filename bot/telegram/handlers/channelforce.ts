@@ -5,7 +5,7 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerChannelForceHandlers(bot: Bot, sessionId: string): void {

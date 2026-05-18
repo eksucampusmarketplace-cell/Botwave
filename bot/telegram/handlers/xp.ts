@@ -4,7 +4,7 @@
 
 import { Bot, Context } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { , updateTelegramConfig, awardXp, getXp, getXpLeaderboard } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, awardXp, getXp, getXpLeaderboard } from '../utils/db';
 import { escapeHtml, mentionById } from '../utils/format';
 
 export function registerXpHandlers(bot: Bot, sessionId: string): void {

@@ -5,7 +5,7 @@
 
 import { Bot, type Context } from 'grammy';
 import { requireAdmin, isAdmin } from '../utils/permissions';
-import { getLocks, setLock, clearAllLocks, , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, getLocks, setLock, clearAllLocks, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 const VALID_LOCK_TYPES = [

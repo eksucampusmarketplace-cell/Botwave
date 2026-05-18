@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 const SERVICE_TYPES = ['join', 'leave', 'pin', 'photo_change', 'title_change', 'video_chat'] as const;
 

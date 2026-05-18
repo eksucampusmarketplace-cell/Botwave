@@ -6,7 +6,7 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { , updateTelegramConfig, getActiveGroups } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, getActiveGroups } from '../utils/db';
 import { requireAdmin } from '../utils/permissions';
 
 const POWERED_BY = '\n\n⚡ <b>Powered by Botwave</b>';

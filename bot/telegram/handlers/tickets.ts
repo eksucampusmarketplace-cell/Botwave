@@ -5,16 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import {
-  createTicket,
-  getTicket,
-  getOpenTickets,
-  closeTicket,
-  assignTicket,
-  escalateTicket,
-  addTicketMessage,
-  ,
-} from '../utils/db';
+import { getGroupConfig, createTicket, getTicket, getOpenTickets, closeTicket, assignTicket, escalateTicket, addTicketMessage } from '../utils/db';
 import { resolveTarget } from '../utils/resolve';
 
 export function registerTicketHandlers(bot: Bot, sessionId: string): void {

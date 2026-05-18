@@ -5,13 +5,7 @@
 
 import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import {
-  ,
-  updateTelegramConfig,
-  setCaptchaPending,
-  markCaptchaVerified,
-  isCaptchaVerified,
-} from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, setCaptchaPending, markCaptchaVerified, isCaptchaVerified } from '../utils/db';
 
 export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
   bot.on(':new_chat_members', async (ctx) => {

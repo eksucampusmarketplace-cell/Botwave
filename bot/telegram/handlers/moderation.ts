@@ -8,15 +8,7 @@ import { Bot, type Context, InlineKeyboard } from 'grammy';
 import { checkPermissions, isSudoUser } from '../utils/permissions';
 import { resolveTarget, parseDuration } from '../utils/resolve';
 import { mentionUser, mentionById, formatDurationLong, escapeHtml } from '../utils/format';
-import {
-  ,
-  addWarning,
-  removeWarning,
-  getWarnings,
-  getWarningCount,
-  resetWarnings,
-  logModAction,
-} from '../utils/db';
+import { getGroupConfig, addWarning, removeWarning, getWarnings, getWarningCount, resetWarnings, logModAction } from '../utils/db';
 
 /**
  * Resolve target ID, handling @username async resolution.

@@ -10,7 +10,7 @@
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
 import { escapeHtml } from '../utils/format';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void {
   // ── /memberbooster — Show help ───────────────────────────────────────────

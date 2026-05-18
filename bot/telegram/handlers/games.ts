@@ -4,7 +4,7 @@
  */
 
 import { Bot } from 'grammy';
-import {  } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 
 interface TriviaQuestion {
   question: string;

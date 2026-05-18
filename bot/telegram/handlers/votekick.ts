@@ -5,7 +5,7 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { resolveTarget } from '../utils/resolve';
 import { mentionUser, escapeHtml } from '../utils/format';
-import {  } from '../utils/db';
+import { getGroupConfig } from '../utils/db';
 import { isAdmin } from '../utils/permissions';
 
 interface ActiveVote {

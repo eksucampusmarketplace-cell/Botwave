@@ -17,7 +17,7 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { , registerGroup, unregisterGroup } from '../utils/db';
+import { getGroupConfig, registerGroup, unregisterGroup } from '../utils/db';
 import { isOwner } from '../utils/permissions';
 
 const POWERED_BY = '\n\n<b>Powered by Botwave</b>';

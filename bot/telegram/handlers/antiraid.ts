@@ -5,15 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import {
-  ,
-  updateTelegramConfig,
-  trackJoin,
-  getRecentJoinCount,
-  startRaidSession,
-  endRaidSession,
-  isRaidActive,
-} from '../utils/db';
+import { getGroupConfig, updateTelegramConfig, trackJoin, getRecentJoinCount, startRaidSession, endRaidSession, isRaidActive } from '../utils/db';
 
 export function registerAntiraidHandlers(bot: Bot, sessionId: string): void {
   // /antiraid — show or toggle anti-raid settings

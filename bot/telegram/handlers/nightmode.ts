@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerNightmodeHandlers(bot: Bot, sessionId: string): void {
   bot.command('nightmode', async (ctx) => {

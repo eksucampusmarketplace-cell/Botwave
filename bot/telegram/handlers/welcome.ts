@@ -5,7 +5,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { mentionUser } from '../utils/format';
 
 export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {

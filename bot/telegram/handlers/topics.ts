@@ -6,7 +6,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin, requireBotAdmin } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerTopicsHandlers(bot: Bot, sessionId: string): void {
   // /actiontopic — Show current action topic setting

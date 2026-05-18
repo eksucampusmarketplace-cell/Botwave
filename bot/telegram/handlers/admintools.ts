@@ -4,7 +4,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin, getAdminList, invalidateAdminCache } from '../utils/permissions';
-import { , updateTelegramConfig } from '../utils/db';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
 import { escapeHtml } from '../utils/format';
 
 export function registerAdminToolsHandlers(bot: Bot, sessionId: string): void {
