@@ -166,6 +166,33 @@ export interface TelegramConfig {
   antiraid_time: string;
   antiraid_action_time: string;
   auto_antiraid_threshold: number;
+  // CAPTCHA enhancements
+  captcha_mode: string;
+  captcha_rules: boolean;
+  captcha_mute_time: string | null;
+  captcha_kick: boolean;
+  captcha_kick_time: string | null;
+  captcha_button_text: string | null;
+  // MemberBooster
+  memberbooster_enabled: boolean;
+  memberbooster_max: number;
+  memberbooster_max_mode: string;
+  memberbooster_text: string;
+  memberbooster_text_enabled: boolean;
+  memberbooster_channel_text: string;
+  memberbooster_daily_text: string;
+  memberbooster_daily: number;
+  memberbooster_daily_minute: number;
+  memberbooster_daily_mode: string;
+  memberbooster_channel_enabled: boolean;
+  memberbooster_channel: string;
+  memberbooster_channel2_enabled: boolean;
+  memberbooster_channel2: string;
+  memberbooster_forced_boost: boolean;
+  memberbooster_btn_enabled: boolean;
+  memberbooster_btn_link: string;
+  memberbooster_btn_text: string;
+  memberbooster_hard_mode: boolean;
 }
 
 const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
@@ -320,6 +347,33 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   antiraid_time: '6h',
   antiraid_action_time: '1h',
   auto_antiraid_threshold: 0,
+  // CAPTCHA enhancements
+  captcha_mode: 'button',
+  captcha_rules: false,
+  captcha_mute_time: null,
+  captcha_kick: true,
+  captcha_kick_time: null,
+  captcha_button_text: null,
+  // MemberBooster
+  memberbooster_enabled: false,
+  memberbooster_max: 0,
+  memberbooster_max_mode: 'new',
+  memberbooster_text: '',
+  memberbooster_text_enabled: true,
+  memberbooster_channel_text: '',
+  memberbooster_daily_text: '',
+  memberbooster_daily: 0,
+  memberbooster_daily_minute: 1440,
+  memberbooster_daily_mode: 'reset',
+  memberbooster_channel_enabled: false,
+  memberbooster_channel: '',
+  memberbooster_channel2_enabled: false,
+  memberbooster_channel2: '',
+  memberbooster_forced_boost: false,
+  memberbooster_btn_enabled: false,
+  memberbooster_btn_link: '',
+  memberbooster_btn_text: '',
+  memberbooster_hard_mode: false,
 };
 
 const configCache = new Map<string, { data: TelegramConfig; expiresAt: number }>();
