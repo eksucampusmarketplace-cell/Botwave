@@ -1411,6 +1411,7 @@ export function trackInstance(instanceName: string): void {
 export function untrackInstance(instanceName: string): void {
   trackedInstances.delete(instanceName);
   lastActivityTimestamp.delete(instanceName);
+  instanceOwnerCache.delete(instanceName);
   if (trackedInstances.size === 0 && keepAliveHandle) {
     clearInterval(keepAliveHandle);
     keepAliveHandle = null;
@@ -1439,18 +1440,32 @@ const UNKNOWN_GRACE_THRESHOLD = 5; // 5 × 60s = 5 min grace period
 const PRESENCE_HEARTBEAT_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
 let presenceHeartbeatHandle: NodeJS.Timeout | null = null;
 
+// Cache ownerJid per instance for presence heartbeat (avoids extra API calls)
+const instanceOwnerCache = new Map<string, string>();
+
+export function setInstanceOwner(instanceName: string, ownerJid: string): void {
+  instanceOwnerCache.set(instanceName, ownerJid);
+}
+
 function ensurePresenceHeartbeat(): void {
   if (presenceHeartbeatHandle) return;
   presenceHeartbeatHandle = setInterval(async () => {
     for (const name of trackedInstances) {
       try {
-        // Send 'available' then 'unavailable' after a short delay.
-        // This resets WhatsApp's "last active" timer without keeping the
-        // session permanently online (which would suppress phone notifications).
+        // Evolution API requires `number` and `delay` fields — omitting them
+        // causes 400 errors. Use cached ownerJid to get the number.
+        const ownerJid = instanceOwnerCache.get(name);
+        if (!ownerJid) {
+          // No owner cached — skip this instance silently
+          continue;
+        }
+        const number = ownerJid.replace(/@s\.whatsapp\.net$|@g\.us$/g, '');
+        if (!number) continue;
+
         await apiFetch(`${BASE}/chat/sendPresence/${name}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ presence: 'available' }),
+          body: JSON.stringify({ number, presence: 'available', delay: 0 }),
         });
         // Brief delay then go offline — mimics a real user checking their phone
         setTimeout(async () => {
@@ -1458,7 +1473,7 @@ function ensurePresenceHeartbeat(): void {
             await apiFetch(`${BASE}/chat/sendPresence/${name}`, {
               method: 'POST',
               headers,
-              body: JSON.stringify({ presence: 'unavailable' }),
+              body: JSON.stringify({ number, presence: 'unavailable', delay: 0 }),
             });
           } catch { /* non-critical */ }
         }, 5000 + Math.random() * 5000);
