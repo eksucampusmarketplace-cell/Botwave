@@ -216,7 +216,7 @@ const HELP_MODULES: { name: string; emoji: string; commands: string[] }[] = [
   { name: 'Media', emoji: '📁', commands: ['download (reply)', 'forward (reply)', 'copy (reply)', 'mediainfo (reply)'] },
   { name: 'Antiflood', emoji: '🚫', commands: ['antiflood <count>', 'antiflood off'] },
   { name: 'Welcome', emoji: '👋', commands: ['setwelcome <text>', 'setgoodbye <text>', 'welcome', 'goodbye'] },
-  { name: 'Settings', emoji: '⚙️', commands: ['setprefix <char>', 'setalive <msg>', 'setlog here/off/<id>', 'addsudo <user>', 'rmsudo <user>'] },
+  { name: 'Settings', emoji: '⚙️', commands: ['setprefix <char>', 'setalive <msg>', 'setlog here/off/<id>', 'addsudo <user>', 'rmsudo <user>', 'lang [set/list/reset] <code>'] },
   { name: 'Utility', emoji: '🔧', commands: ['alive', 'ping', 'info', 'id', 'stats', 'help'] },
 ];
 

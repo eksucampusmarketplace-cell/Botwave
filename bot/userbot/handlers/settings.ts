@@ -165,6 +165,69 @@ export const sudoListHandler: HandlerFn = async (client, event) => {
   await msg.edit({ text: `📋 **Sudo Users** (${config.sudo_users.length}):\n\n${list}` });
 };
 
+// ─── Language Command ─────────────────────────────────────────────────────────
+
+const USERBOT_LANGUAGES: Record<string, string> = {
+  en: 'English', fr: 'French', es: 'Spanish', pt: 'Portuguese', de: 'German',
+  ar: 'Arabic', hi: 'Hindi', yo: 'Yoruba', ig: 'Igbo', ha: 'Hausa',
+  sw: 'Swahili', zu: 'Zulu', am: 'Amharic', zh: 'Chinese', ja: 'Japanese',
+  ko: 'Korean', ru: 'Russian', tr: 'Turkish', it: 'Italian', nl: 'Dutch',
+  pl: 'Polish', uk: 'Ukrainian', vi: 'Vietnamese', th: 'Thai', id: 'Indonesian',
+};
+
+const langMemory = new Map<string, string>();
+
+export const langHandler: HandlerFn = async (client, event) => {
+  await waitForRateLimit('message_send');
+  const msg = event.message;
+  const sessionId = (client as unknown as { _sessionId: string })._sessionId;
+  const args = (msg.text || '').split(/\s+/).slice(1);
+  const sub = args[0]?.toLowerCase();
+
+  if (!sub || sub === 'help') {
+    const current = langMemory.get(sessionId) || 'en';
+    const name = USERBOT_LANGUAGES[current] || 'English';
+    await msg.edit({
+      text: `🌍 **Language Settings**\n\nCurrent: ${name} (${current})\n\n**Commands:**\n  \`.lang list\` — Show all languages\n  \`.lang set <code>\` — Set language\n  \`.lang reset\` — Reset to English`,
+    });
+    return;
+  }
+
+  if (sub === 'list' || sub === 'ls') {
+    const list = Object.entries(USERBOT_LANGUAGES).map(([c, n]) => `  \`${c}\` — ${n}`).join('\n');
+    await msg.edit({ text: `🌍 **Supported Languages**\n\n${list}\n\nUse \`.lang set <code>\` to change.` });
+    return;
+  }
+
+  if (sub === 'set') {
+    const code = args[1]?.toLowerCase();
+    if (!code || !USERBOT_LANGUAGES[code]) {
+      await msg.edit({ text: `❌ Invalid language code. Use \`.lang list\` to see available languages.` });
+      return;
+    }
+    langMemory.set(sessionId, code);
+    await shortPause();
+    await msg.edit({ text: `✅ Language set to **${USERBOT_LANGUAGES[code]}** (${code})` });
+    return;
+  }
+
+  if (sub === 'reset' || sub === 'off') {
+    langMemory.set(sessionId, 'en');
+    await msg.edit({ text: '✅ Language reset to **English**.' });
+    return;
+  }
+
+  // Direct shortcut: .lang fr
+  if (USERBOT_LANGUAGES[sub]) {
+    langMemory.set(sessionId, sub);
+    await shortPause();
+    await msg.edit({ text: `✅ Language set to **${USERBOT_LANGUAGES[sub]}** (${sub})` });
+    return;
+  }
+
+  await msg.edit({ text: `❌ Unknown language: ${sub}\nUse \`.lang list\` to see codes.` });
+};
+
 export const settingsHandlers: Record<string, HandlerFn> = {
   setprefix: setPrefixHandler,
   setalive: setAliveHandler,
@@ -172,4 +235,5 @@ export const settingsHandlers: Record<string, HandlerFn> = {
   addsudo: addSudoHandler,
   rmsudo: rmSudoHandler,
   sudolist: sudoListHandler,
+  lang: langHandler,
 };

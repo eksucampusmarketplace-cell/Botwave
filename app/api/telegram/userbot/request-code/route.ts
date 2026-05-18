@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import { Api } from 'telegram/tl';
 import { pendingClients } from '@/botwave/platforms/telegram/userbot/pendingAuthStore';
 
 export const dynamic = 'force-dynamic';
@@ -38,17 +39,20 @@ export async function POST(request: NextRequest) {
     try {
       const session = new StringSession('');
       const client = new TelegramClient(session, numericApiId, apiHash, {
-        connectionRetries: 3,
+        connectionRetries: 5,
+        retryDelay: 1000,
+        timeout: 15,
+        autoReconnect: false,
       });
 
       await client.connect();
 
       const result = await client.invoke(
-        new (await import('telegram/tl')).Api.auth.SendCode({
+        new Api.auth.SendCode({
           phoneNumber,
           apiId: numericApiId,
           apiHash,
-          settings: new (await import('telegram/tl')).Api.CodeSettings({}),
+          settings: new Api.CodeSettings({}),
         }),
       );
 

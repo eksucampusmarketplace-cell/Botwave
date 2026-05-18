@@ -130,5 +130,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // Telegram blog posts
+    {
+      url: `${baseUrl}/blog/telegram-bot-for-groups-nigeria`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/telegram-userbot-automation`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/free-telegram-group-management-bot`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    // Telegram deploy page
+    {
+      url: `${baseUrl}/deploy-telegram-bot`,
+      lastModified: new Date('2026-05-18'),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ];
 }

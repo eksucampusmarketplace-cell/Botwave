@@ -153,16 +153,18 @@ const fadeUp = {
 };
 
 const faqs = [
-  { q: 'What is BotWave?', a: 'BotWave is a free multi-platform bot automation platform for WhatsApp and Telegram. Connect your WhatsApp via QR code, set up a Telegram bot via @BotFather, or automate a Telegram userbot \u2014 and get 50+ features like sticker creation, AI chat, media downloads, games, polls, and group management.' },
-  { q: 'Is BotWave free to use?', a: 'Yes! BotWave has a free tier that includes all basic commands, 300 messages per month, 10 AI queries per day, and 1 WhatsApp session. Paid plans start at just \u20a6500/month for more messages and features.' },
+  { q: 'Is BotWave actually free or is there a hidden catch?', a: 'No catch. BotWave is genuinely free with 300 messages/month, 10 AI queries/day, and 1 WhatsApp session. Most bot platforms charge $20-50/month because they host your connection on their servers. BotWave runs from your own device via QR code, so infrastructure costs per user are near zero. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
+  { q: 'Will WhatsApp ban my number?', a: 'BotWave has the most advanced anti-ban system of any WhatsApp bot. Session warmup over 7 days, human-like typing delays, 50-100 message variations, rate limiting, presence simulation, read-but-skip in groups, activity hours (quiet at night), and media fingerprint jittering. Your session runs from your own device IP \u2014 not a shared server \u2014 which drastically reduces ban risk.' },
+  { q: "What's the difference between Telegram Bot and Telegram Userbot on BotWave?", a: 'Telegram Bot uses the official Bot API via @BotFather \u2014 zero ban risk, ideal for group management, auto-replies, and moderation. Telegram Userbot uses your real Telegram account via MTProto (GramJS) to automate actions like .ban, .mute, .afk, .purge, .kang as if you typed them yourself. Both are managed from the same BotWave dashboard.' },
+  { q: 'How many groups can my bot manage at once?', a: 'There is no group limit on any plan. Your bot automatically works in every group your connected account is in. The only limit is messages per month (300 on free, unlimited on paid plans).' },
+  { q: 'Does BotWave work on iPhone or only Android?', a: 'BotWave works on any device with WhatsApp or Telegram. You connect through the web dashboard at www.botwave.online \u2014 scan a QR code for WhatsApp, paste a token for Telegram Bot, or enter API credentials for Telegram Userbot. Works on iPhone, Android, desktop, any browser.' },
+  { q: 'Can I use BotWave for my church / school / business group?', a: 'Yes! BotWave is used by church groups, campus groups, business communities, and social clubs across Nigeria and Africa. Polls for engagement, trivia for fun, anti-spam to keep groups clean, AI chat for answering questions, and auto-replies for announcements. Many admins manage groups of 500+ members with BotWave.' },
+  { q: 'What happens if I hit the 300 message free limit?', a: 'Your bot stops sending automated responses until the next month. You can upgrade to the Standard plan (\u20a6500/month) for unlimited messages, or the Boss plan (\u20a62,000/month) for unlimited everything including multiple sessions and white-label options.' },
+  { q: 'Is my WhatsApp number safe \u2014 can BotWave read my private chats?', a: 'No. BotWave only processes messages in groups where the bot is active. Private/DM messages are never read, stored, or logged. All message processing happens in memory and is immediately discarded. Your session runs on your device IP, not our servers.' },
   { q: 'How do I set up a bot with BotWave?', a: 'Sign up at www.botwave.online, go to your dashboard, and choose your platform. For WhatsApp: scan the QR code. For Telegram Bot: paste your @BotFather token. For Telegram Userbot: enter your API credentials. Your bot is live in under 2 minutes \u2014 no coding needed.' },
-  { q: 'Will my WhatsApp number get banned?', a: 'BotWave has built-in anti-ban protection including human-like response delays, message variation, rate limiting, and session warmup. Your session runs from your own device IP, which significantly reduces ban risk compared to server-based bots.' },
-  { q: 'What commands does BotWave support?', a: 'BotWave supports 50+ commands on WhatsApp (!sticker, !ai, !download, !trivia, !poll, !weather, etc.) and Telegram (/sticker, /ai, /download, /trivia, /poll, etc.). Telegram userbots use dot-prefix commands (.ai, .sticker). Type !help or /help to see the full list.' },
-  { q: 'Can I use BotWave for my business?', a: 'Absolutely. BotWave works great for businesses \u2014 use auto-replies for customer support, polls for feedback, stickers for branding, and AI chat for answering FAQs. The Standard and Boss plans support multiple WhatsApp sessions and unlimited messages.' },
+  { q: 'Does BotWave support Telegram?', a: 'Yes! BotWave supports three platforms from one dashboard: WhatsApp (via QR code), Telegram Bot (via @BotFather token with zero ban risk), and Telegram Userbot (automate your real Telegram account via MTProto with 100+ commands like .ban, .mute, .sticker, .translate, .gban). All managed from one place.' },
   { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for users in Nigeria and across Africa. Payments are in Naira (\u20a6) via bank transfer, and the platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.' },
-  { q: 'How is BotWave different from other bots?', a: 'BotWave is the only platform that supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, includes advanced anti-ban protection for WhatsApp, uses the official Telegram Bot API, supports AI chat via Google Gemini, and has 50+ built-in commands. Most alternatives only support one platform and charge more.' },
-  { q: 'Does BotWave support Telegram?', a: 'Yes! BotWave now supports three platforms: WhatsApp (via QR code), Telegram Bot (via @BotFather token with zero ban risk), and Telegram Userbot (automate your real Telegram account via MTProto). You can run sessions on all three platforms from one dashboard.' },
-  { q: 'Is BotWave safe to use? Will my data be secure?', a: "Yes. BotWave takes security seriously. Your WhatsApp session runs from your own device IP (not our servers), so your messages are never routed through us. We use end-to-end encryption for API communication, your credentials are stored securely in Supabase with row-level security, and we never read or store your WhatsApp messages. The anti-ban system also protects your account from WhatsApp's automated detection." },
+  { q: 'How is BotWave different from other bots?', a: 'BotWave is the only platform that supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, includes the most advanced anti-ban protection, uses the official Telegram Bot API, supports AI chat via Google Gemini, and has 50+ built-in commands. Most alternatives only support one platform and charge more.' },
 ];
 
 export default function HomePage() {
@@ -185,10 +187,10 @@ export default function HomePage() {
                 <span className="text-[var(--text-secondary)] text-sm font-medium">Free Forever &mdash; No Catch</span>
               </div>
 
-              <h2 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[var(--text-primary)] leading-[1.1] mb-6 tracking-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[var(--text-primary)] leading-[1.1] mb-6 tracking-tight">
                 Automate Your<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">WhatsApp &amp; Telegram</span>
-              </h2>
+              </h1>
 
               <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
                 One platform, three ways to connect. WhatsApp QR scan, Telegram Bot token, or Telegram Userbot &mdash; 50+ commands, AI chat, games, group management. No coding, no credit card.
@@ -356,6 +358,82 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Telegram Section */}
+      <section className="py-24 px-6 bg-[var(--bg)]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
+            <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Telegram</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Now Supporting Telegram</h2>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Connect your Telegram Bot token or link your Telegram Userbot. Manage groups, auto-reply, anti-spam &mdash; all from the same dashboard.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} viewport={{ once: true }} className="glass-card rounded-2xl p-8">
+              <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl flex items-center justify-center text-2xl mb-5">{'🤖'}</div>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Telegram Bot</h3>
+              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">Create a bot via @BotFather, paste the token in BotWave, done. Zero ban risk since it uses the official Telegram Bot API. Perfect for group management, auto-replies, polls, and moderation.</p>
+              <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> Official Bot API &mdash; zero ban risk</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> /sticker, /ai, /poll, /trivia, /translate</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> Multi-language auto-detection</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> Group-level settings &amp; per-chat config</li>
+              </ul>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} viewport={{ once: true }} className="glass-card rounded-2xl p-8">
+              <div className="w-14 h-14 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-xl flex items-center justify-center text-2xl mb-5">{'⚡'}</div>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Telegram Userbot</h3>
+              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">Automate your real Telegram account via MTProto (GramJS). Execute commands like .ban, .mute, .afk, .purge, .kang as if you typed them yourself. 100+ commands with anti-ban protection.</p>
+              <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> MTProto &mdash; full account automation</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> .ban, .mute, .purge, .gban, .sticker, .translate</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> PM Permit, AFK, Notes, Filters</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> In-memory state &amp; anti-flood protection</li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Table */}
+      <section className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+        <div className="max-w-4xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
+            <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Compare</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">BotWave vs Other Bot Platforms</h2>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }} className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="py-4 px-4 text-sm font-bold text-[var(--text-primary)]">Feature</th>
+                  <th className="py-4 px-4 text-sm font-bold text-[var(--primary)]">BotWave</th>
+                  <th className="py-4 px-4 text-sm font-bold text-[var(--text-muted)]">Other Bots</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {[
+                  ['Price', 'Free forever', '$10-50/month'],
+                  ['WhatsApp support', 'Yes (QR code)', 'Some'],
+                  ['Telegram Bot', 'Yes (Bot API)', 'Some'],
+                  ['Telegram Userbot', 'Yes (MTProto)', 'No'],
+                  ['One dashboard', 'All 3 platforms', '1 platform only'],
+                  ['Anti-ban system', 'Advanced (7-day warmup)', 'Basic or none'],
+                  ['AI chat', 'Google Gemini', 'ChatGPT ($$$)'],
+                  ['Commands', '50+ built-in', '10-20'],
+                  ['Coding required', 'No', 'Usually yes'],
+                  ['Nigeria support', 'Naira payments', 'USD only'],
+                ].map(([feature, botwave, others], i) => (
+                  <tr key={i} className="border-b border-[var(--border)]/50">
+                    <td className="py-3 px-4 text-[var(--text-secondary)] font-medium">{feature}</td>
+                    <td className="py-3 px-4 text-[var(--primary)] font-semibold">{botwave}</td>
+                    <td className="py-3 px-4 text-[var(--text-muted)]">{others}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </motion.div>
         </div>
       </section>
 

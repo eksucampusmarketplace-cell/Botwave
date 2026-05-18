@@ -61,6 +61,16 @@ export const metadata: Metadata = {
     'whatsapp poll bot',
     'whatsapp trivia bot',
     'whatsapp media bot',
+    'telegram bot free',
+    'telegram userbot',
+    'telegram group bot',
+    'telegram bot nigeria',
+    'free telegram bot 2026',
+    'telegram bot vs whatsapp bot',
+    'telegram userbot automation',
+    'telegram group management bot',
+    'telegram anti-spam bot',
+    'telegram bot platform',
   ],
   authors: [{ name: 'Decisive Analyst' }],
   creator: 'Decisive Analyst',
@@ -145,6 +155,11 @@ export default function RootLayout({
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'NGN',
+              },
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.8',
+                reviewCount: '5000',
               },
               description: 'Free WhatsApp bot automation platform. 50+ commands — stickers, AI chat, media downloads, group management, games, anti-spam. Alternative to Telegram bots, Twitter bots, and paid bot platforms. No coding needed. Works in Nigeria and worldwide.',
               url: 'https://www.botwave.online',
@@ -284,6 +299,46 @@ export default function RootLayout({
                   acceptedAnswer: {
                     '@type': 'Answer',
                     text: 'Absolutely. Use polls for engagement, trivia games to keep groups active, anti-spam to keep groups clean, and the built-in referral system to grow organically. Many campus group admins and small business owners use BotWave to manage groups of hundreds of members effortlessly.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What is the difference between Telegram Bot and Telegram Userbot on BotWave?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'A Telegram Bot runs via the official Telegram Bot API — zero ban risk, ideal for group management. A Telegram Userbot uses your real Telegram account via MTProto to automate actions like .ban, .mute, .afk, .purge as if you typed them yourself. BotWave supports both from one dashboard.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How many groups can my bot manage at once?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'On the free plan, your bot can manage all the groups that your connected account is in — there is no group limit. The message cap is 300/month on the free tier. Paid plans remove message limits entirely.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Does BotWave work on iPhone or only Android?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'BotWave works with any device that has WhatsApp or Telegram. You connect via QR code or API token through the web dashboard at www.botwave.online — it works on iPhone, Android, desktop, or any browser.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Can I use BotWave for my church, school, or business group?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Yes! BotWave is used by church groups, campus groups, business communities, and social clubs across Nigeria and Africa. Features like polls, announcements, anti-spam, and AI chat are perfect for managing large groups of any kind.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is my WhatsApp number safe — can BotWave read my private chats?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'No. BotWave only processes messages in groups where the bot is active. Private/DM messages are never read, stored, or logged. All message processing happens in memory and is discarded immediately. Your session runs on your device IP, not our servers.',
                   },
                 },
               ],

@@ -14,12 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return (
-    <>
-      <h1 className="sr-only">
-        BotWave — Free WhatsApp Bot That Actually Works (2026)
-      </h1>
-      <HomePage />
-    </>
-  );
+  return <HomePage />;
 }

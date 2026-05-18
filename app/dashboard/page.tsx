@@ -239,7 +239,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (sessions.length > 0 && !selectedFeatureSession) {
-      setSelectedFeatureSession(sessions[0].id);
+      const whatsappSession = sessions.find(s => (s.platform || 'whatsapp') === 'whatsapp');
+      setSelectedFeatureSession(whatsappSession?.id || sessions[0].id);
     }
   }, [sessions, selectedFeatureSession]);
 

@@ -67,7 +67,7 @@ async function restoreAutoSendConfig(): Promise<void> {
       autoSendInactiveHours = config.inactiveHours ?? 12;
       if (config.enabled && !autoSendEnabled) {
         console.log('[EMAIL-BROADCAST] Restoring auto-send from DB config');
-        startAutoSend();
+        startAutoSend(true);
       }
     }
   } catch {
@@ -284,12 +284,46 @@ async function autoSendTick(): Promise<void> {
   }
 }
 
-function startAutoSend(): void {
+async function startAutoSend(skipImmediateTick = false): Promise<void> {
   stopAutoSend();
   autoSendEnabled = true;
   const intervalMs = autoSendIntervalHours * 60 * 60 * 1000;
-  // Run first tick immediately, then repeat at interval
-  autoSendTick();
+
+  if (skipImmediateTick) {
+    // On restore after deploy: check last run time from DB to avoid re-sending
+    try {
+      const supabase = getSupabase();
+      const { data: lastRun } = await supabase
+        .from('email_broadcast_log')
+        .select('created_at')
+        .eq('campaign_type', 'reengagement')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastRun?.created_at) {
+        const lastRunTime = new Date(lastRun.created_at).getTime();
+        const elapsed = Date.now() - lastRunTime;
+        if (elapsed < intervalMs) {
+          const remainingMs = intervalMs - elapsed;
+          console.log(`[EMAIL-BROADCAST] Last auto-send was ${Math.round(elapsed / 60000)}m ago, next in ${Math.round(remainingMs / 60000)}m`);
+          setTimeout(() => {
+            autoSendTick();
+            autoSendTimer = setInterval(autoSendTick, intervalMs);
+          }, remainingMs);
+          persistAutoSendConfig();
+          return;
+        }
+      }
+    } catch {
+      // DB check failed — fall through to normal schedule
+    }
+  }
+
+  // Run first tick immediately (for manual enable or if enough time has passed)
+  if (!skipImmediateTick) {
+    autoSendTick();
+  }
   autoSendTimer = setInterval(autoSendTick, intervalMs);
   console.log(`[EMAIL-BROADCAST] Auto-send enabled: every ${autoSendIntervalHours}h for users inactive ${autoSendInactiveHours}h+`);
   persistAutoSendConfig();
