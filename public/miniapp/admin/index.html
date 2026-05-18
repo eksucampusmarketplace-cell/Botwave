@@ -67,12 +67,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .toast.show { opacity: 1; }
 .loading { text-align: center; padding: 20px; color: var(--hint); }
 .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.feature-card { background: var(--card-bg); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.feature-card { background: var(--card-bg); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+.feature-card:hover { border-color: rgba(94,174,255,0.3); }
+.feature-card.disabled { opacity: 0.45; }
+.feature-card.gated { display: none; }
 .feature-card .fc-header { display: flex; align-items: center; justify-content: space-between; }
 .feature-card .fc-icon { font-size: 1.4rem; margin-bottom: 4px; }
 .feature-card .fc-name { font-size: 0.82rem; font-weight: 600; }
 .feature-card .fc-desc { font-size: 0.7rem; color: var(--hint); line-height: 1.3; }
 .feature-card .toggle { transform: scale(0.8); transform-origin: right center; }
+.feature-card .fc-expand { font-size: 0.65rem; color: var(--link); margin-top: 4px; opacity: 0.7; }
+.fc-config-panel { display: none; background: var(--secondary-bg); border-radius: 12px; padding: 14px; margin-top: 12px; margin-bottom: 12px; border: 1px solid rgba(94,174,255,0.2); }
+.fc-config-panel.open { display: block; }
+.fc-config-panel h4 { font-size: 0.85rem; margin-bottom: 10px; color: var(--link); }
+.fc-config-panel .input-group { margin-bottom: 10px; }
+.fc-config-panel .input-group label { font-size: 0.75rem; }
+.fc-config-panel .input-group input, .fc-config-panel .input-group select { padding: 8px 10px; font-size: 0.82rem; }
+.fc-config-panel .btn { padding: 8px 14px; font-size: 0.82rem; margin-top: 6px; }
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .stat-card { background: var(--card-bg); border-radius: 14px; padding: 16px; text-align: center; }
 .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--btn); }
@@ -424,6 +435,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         <div class="fc-desc">Crypto, IP, WHOIS, weather, npm</div>
       </div>
     </div>
+
+    <!-- Per-feature config panel (dynamic) -->
+    <div class="fc-config-panel" id="feature-config-panel">
+      <h4 id="fcp-title">Feature Settings</h4>
+      <div id="fcp-body"></div>
+      <button class="btn" id="fcp-save" style="margin-top:8px">Save Feature Config</button>
+    </div>
+
     <button class="btn" id="save-features">Save Features</button>
   </div>
 
@@ -1060,6 +1079,138 @@ loadGroups().then(function() {
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) { stopPolling(); } else { startPolling(); }
 });
+
+// ── Per-feature config panels ──────────────────────────────────────────────
+
+var FEATURE_CONFIGS = {
+  'ft-antiflood': { title: '🛡️ Anti-Flood Settings', fields: [
+    { key: 'antiflood_max_per_min', label: 'Max messages per minute', type: 'number', min: 1, max: 100, default: 10 },
+    { key: 'antiflood_action', label: 'Action on flood', type: 'select', options: ['mute','ban','kick','warn'], default: 'mute' },
+    { key: 'antiflood_mute_duration', label: 'Mute duration (minutes)', type: 'number', min: 1, max: 1440, default: 5 },
+  ]},
+  'ft-antilink': { title: '🔗 Anti-Link Settings', fields: [
+    { key: 'antilink_action', label: 'Action on link', type: 'select', options: ['delete','warn','mute','ban'], default: 'delete' },
+    { key: 'antilink_whitelist', label: 'Whitelisted domains (comma-separated)', type: 'text', default: '' },
+  ]},
+  'ft-antiraid': { title: '🚨 Anti-Raid Settings', fields: [
+    { key: 'antiraid_threshold', label: 'Joins per minute to trigger', type: 'number', min: 3, max: 100, default: 15 },
+    { key: 'antiraid_mode', label: 'Raid action', type: 'select', options: ['restrict','ban','captcha','lockdown'], default: 'restrict' },
+    { key: 'antiraid_duration_mins', label: 'Lockdown duration (minutes)', type: 'number', min: 1, max: 1440, default: 15 },
+  ]},
+  'ft-nightmode': { title: '🌙 Night Mode Settings', fields: [
+    { key: 'night_mode_start', label: 'Start time (HH:MM, 24h)', type: 'text', default: '23:00' },
+    { key: 'night_mode_end', label: 'End time (HH:MM, 24h)', type: 'text', default: '06:00' },
+    { key: 'night_mode_timezone', label: 'Timezone', type: 'select', options: ['UTC','Africa/Lagos','Europe/London','US/Eastern','Asia/Kolkata'], default: 'UTC' },
+  ]},
+  'ft-captcha': { title: '🔒 Captcha Settings', fields: [
+    { key: 'captcha_type', label: 'Captcha type', type: 'select', options: ['math','button','text'], default: 'math' },
+    { key: 'captcha_timeout', label: 'Timeout (seconds)', type: 'number', min: 10, max: 300, default: 60 },
+    { key: 'captcha_kick_on_fail', label: 'Kick on failure', type: 'select', options: ['yes','no'], default: 'yes' },
+  ]},
+  'ft-xp': { title: '⭐ XP System Settings', fields: [
+    { key: 'xp_per_message', label: 'XP per message', type: 'number', min: 1, max: 50, default: 5 },
+    { key: 'xp_cooldown_seconds', label: 'Cooldown between XP (seconds)', type: 'number', min: 0, max: 300, default: 30 },
+    { key: 'xp_announce_levelup', label: 'Announce level-up', type: 'select', options: ['yes','no'], default: 'yes' },
+  ]},
+  'ft-karma': { title: '👍 Karma Settings', fields: [
+    { key: 'karma_cooldown', label: 'Cooldown between votes (seconds)', type: 'number', min: 0, max: 3600, default: 60 },
+  ]},
+  'ft-votekick': { title: '🗳️ VoteKick Settings', fields: [
+    { key: 'votekick_threshold', label: 'Votes needed', type: 'number', min: 2, max: 50, default: 5 },
+    { key: 'votekick_duration', label: 'Vote window (minutes)', type: 'number', min: 1, max: 60, default: 5 },
+  ]},
+  'ft-welcome': { title: '👋 Welcome Settings', fields: [
+    { key: 'welcome_message', label: 'Welcome message (use {first_name}, {group_name})', type: 'textarea', default: '' },
+    { key: 'goodbye_message', label: 'Goodbye message', type: 'textarea', default: '' },
+  ]},
+  'ft-games': { title: '🎮 Mini Games Settings', fields: [
+    { key: 'games_timeout', label: 'Game timeout (seconds)', type: 'number', min: 10, max: 120, default: 30 },
+  ]},
+};
+
+var openFeaturePanel = null;
+
+document.querySelectorAll('.feature-card').forEach(function(card) {
+  card.addEventListener('click', function(e) {
+    if (e.target.closest('.toggle')) return;
+    var checkbox = card.querySelector('input[type="checkbox"]');
+    if (!checkbox) return;
+    var featureId = checkbox.id;
+    var panel = document.getElementById('feature-config-panel');
+    var conf = FEATURE_CONFIGS[featureId];
+
+    if (!conf) { panel.classList.remove('open'); openFeaturePanel = null; return; }
+    if (openFeaturePanel === featureId) { panel.classList.remove('open'); openFeaturePanel = null; return; }
+
+    openFeaturePanel = featureId;
+    document.getElementById('fcp-title').textContent = conf.title;
+    var html = '';
+    conf.fields.forEach(function(f) {
+      var val = (cachedConfig && cachedConfig[f.key] != null) ? cachedConfig[f.key] : f.default;
+      html += '<div class="input-group"><label>' + f.label + '</label>';
+      if (f.type === 'select') {
+        html += '<select data-key="' + f.key + '">' + f.options.map(function(o) { return '<option value="' + o + '"' + (o === val ? ' selected' : '') + '>' + o.charAt(0).toUpperCase() + o.slice(1) + '</option>'; }).join('') + '</select>';
+      } else if (f.type === 'textarea') {
+        html += '<textarea data-key="' + f.key + '" rows="3">' + (val || '') + '</textarea>';
+      } else {
+        html += '<input type="' + f.type + '" data-key="' + f.key + '" value="' + (val || '') + '"' + (f.min != null ? ' min="' + f.min + '"' : '') + (f.max != null ? ' max="' + f.max + '"' : '') + '>';
+      }
+      html += '</div>';
+    });
+    document.getElementById('fcp-body').innerHTML = html;
+    panel.classList.add('open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+});
+
+document.getElementById('fcp-save').addEventListener('click', function() {
+  var panel = document.getElementById('fcp-body');
+  var payload = { sessionId: sessionId };
+  panel.querySelectorAll('[data-key]').forEach(function(el) {
+    var val = el.value;
+    if (el.type === 'number') val = parseInt(val, 10);
+    payload[el.dataset.key] = val || null;
+  });
+  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
+    .then(function(res) { toast(res.success ? 'Feature config saved!' : 'Failed to save'); if (res.success) loadFeatures(); })
+    .catch(function() { toast('Error saving feature config'); });
+});
+
+// ── Feature gating: hide disabled features for non-admin users ─────────────
+
+function applyFeatureGating() {
+  if (currentRole === 'owner' || currentRole === 'admin') return;
+  document.querySelectorAll('.feature-card').forEach(function(card) {
+    var cb = card.querySelector('input[type="checkbox"]');
+    if (cb && !cb.checked) card.classList.add('gated');
+    else card.classList.remove('gated');
+  });
+}
+
+var origApplyRole = applyRole;
+applyRole = function(role) {
+  origApplyRole(role);
+  setTimeout(applyFeatureGating, 200);
+};
+
+// ── Feature card visual feedback for disabled state ────────────────────────
+
+function updateFeatureCardStates() {
+  document.querySelectorAll('.feature-card').forEach(function(card) {
+    var cb = card.querySelector('input[type="checkbox"]');
+    if (cb) { card.classList[cb.checked ? 'remove' : 'add']('disabled'); }
+  });
+}
+
+document.querySelectorAll('.feature-card input[type="checkbox"]').forEach(function(cb) {
+  cb.addEventListener('change', function() { updateFeatureCardStates(); applyFeatureGating(); });
+});
+
+var origLoadFeatures = loadFeatures;
+loadFeatures = function() {
+  origLoadFeatures();
+  setTimeout(function() { updateFeatureCardStates(); applyFeatureGating(); }, 500);
+};
 </script>
 </body>
 </html>

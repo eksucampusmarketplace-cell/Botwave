@@ -212,8 +212,8 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   });
 
   // Middleware: auto-filter responses and XP on text messages (runs after commands)
-  bot.on('message:text', async (ctx) => {
-    if (!ctx.from || !ctx.chat) return;
+  bot.on('message:text', async (ctx, next) => {
+    if (!ctx.from || !ctx.chat) { await next(); return; }
 
     // Check keyword filters
     const filterResponse = await checkFilters(
@@ -230,5 +230,7 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
 
     // Track analytics
     await processAnalytics(sessionId, ctx.chat.id.toString(), ctx.from.id.toString(), 'text');
+
+    await next();
   });
 }

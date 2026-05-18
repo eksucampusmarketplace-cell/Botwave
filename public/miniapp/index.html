@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotWave</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --bg: var(--tg-theme-bg-color, #1a1a2e);
+  --text: var(--tg-theme-text-color, #fff);
+  --hint: var(--tg-theme-hint-color, #999);
+  --link: var(--tg-theme-link-color, #5eaeff);
+  --btn: var(--tg-theme-button-color, #5eaeff);
+  --btn-text: var(--tg-theme-button-text-color, #fff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #16213e);
+  --card-bg: var(--tg-theme-secondary-bg-color, #1e2a4a);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.container { max-width: 480px; margin: 0 auto; padding: 16px; }
+.header { text-align: center; padding: 20px 0; }
+.header h1 { font-size: 1.4rem; margin-bottom: 4px; }
+.header p { font-size: 0.85rem; color: var(--hint); }
+.tabs { display: flex; gap: 4px; background: var(--secondary-bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.tab { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--hint); border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.tab.active { background: var(--btn); color: var(--btn-text); }
+.section { display: none; }
+.section.active { display: block; }
+.card { background: var(--card-bg); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+.card p { font-size: 0.82rem; color: var(--hint); margin-bottom: 8px; }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.list-item:last-child { border-bottom: none; }
+.list-item .name { font-size: 0.9rem; font-weight: 500; }
+.list-item .meta { font-size: 0.75rem; color: var(--hint); }
+.empty { text-align: center; padding: 24px; color: var(--hint); font-size: 0.85rem; }
+.loading { text-align: center; padding: 20px; color: var(--hint); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card { background: var(--card-bg); border-radius: 14px; padding: 16px; text-align: center; }
+.stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--btn); }
+.stat-card .stat-label { font-size: 0.75rem; color: var(--hint); margin-top: 4px; }
+.feature-list { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.feature-pill { background: var(--card-bg); border-radius: 10px; padding: 10px 8px; text-align: center; font-size: 0.72rem; }
+.feature-pill .fp-icon { font-size: 1.2rem; margin-bottom: 2px; }
+.feature-pill .fp-name { font-weight: 500; }
+.feature-pill.off { opacity: 0.3; }
+.rules-box { background: var(--card-bg); border-radius: 14px; padding: 16px; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.5; }
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--btn); color: var(--btn-text); padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; z-index: 100; }
+.toast.show { opacity: 1; }
+.admin-link { display: block; text-align: center; margin-top: 16px; padding: 12px; background: var(--card-bg); border-radius: 12px; color: var(--link); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>BotWave</h1>
+    <p id="bot-info">Loading...</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="features">Features</button>
+    <button class="tab" data-tab="xp">XP</button>
+    <button class="tab" data-tab="rules">Rules</button>
+  </div>
+
+  <!-- Overview -->
+  <div class="section active" id="sec-overview">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="m-stat-members">-</div>
+        <div class="stat-label">Members</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="m-stat-messages">-</div>
+        <div class="stat-label">Messages (7d)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Your Stats</h3>
+      <div id="my-stats"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Recent Activity</h3>
+      <div id="recent-activity"><div class="loading">Loading...</div></div>
+    </div>
+    <a href="#" id="admin-link" class="admin-link" style="display:none">Open Admin Panel</a>
+  </div>
+
+  <!-- Features (read-only for members) -->
+  <div class="section" id="sec-features">
+    <div class="card"><h3>Active Features</h3><p>These features are currently enabled in this group.</p></div>
+    <div class="feature-list" id="feature-list"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- XP Leaderboard -->
+  <div class="section" id="sec-xp">
+    <div class="card"><h3>XP Leaderboard</h3><div id="xp-list"><div class="loading">Loading...</div></div></div>
+  </div>
+
+  <!-- Rules -->
+  <div class="section" id="sec-rules">
+    <div class="card"><h3>Group Rules</h3></div>
+    <div class="rules-box" id="rules-text"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+var API_BASE = '';
+var sessionId = '';
+var tgUserId = '';
+var currentChatId = '';
+
+var urlParams = new URLSearchParams(window.location.search);
+sessionId = urlParams.get('sessionId') || '';
+currentChatId = urlParams.get('chatId') || '';
+
+try {
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+    tgUserId = tg.initDataUnsafe.user.id.toString();
+  }
+} catch (e) {}
+if (!tgUserId) { tgUserId = urlParams.get('userId') || ''; }
+
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2000);
+}
+
+function apiCall(path) {
+  var sep = path.indexOf('?') !== -1 ? '&' : '?';
+  var url = API_BASE + path + sep + 'sessionId=' + sessionId;
+  if (currentChatId) url += '&chatId=' + encodeURIComponent(currentChatId);
+  return fetch(url, { headers: { 'Content-Type': 'application/json' } }).then(function(r) { return r.json(); });
+}
+
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('sec-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+var FEATURES = [
+  { icon: '🛡️', name: 'Anti-Flood', key: 'antiflood_enabled' },
+  { icon: '🔗', name: 'Anti-Link', key: 'antilink_enabled' },
+  { icon: '🚨', name: 'Anti-Raid', key: 'antiraid_enabled' },
+  { icon: '🌙', name: 'Night Mode', key: 'night_mode_enabled' },
+  { icon: '🔒', name: 'Captcha', key: 'captcha_enabled' },
+  { icon: '⭐', name: 'XP', key: 'xp_enabled' },
+  { icon: '👍', name: 'Karma', key: 'karma_enabled' },
+  { icon: '🤖', name: 'AI Chat', key: 'ai_enabled' },
+  { icon: '🎮', name: 'Games', key: 'games_enabled' },
+  { icon: '👋', name: 'Welcome', key: 'welcome_enabled' },
+  { icon: '🗳️', name: 'VoteKick', key: 'votekick_enabled' },
+  { icon: '📢', name: 'Mention All', key: 'mentionall_enabled' },
+];
+
+function loadFeatures() {
+  apiCall('/api/telegram/config').then(function(res) {
+    if (res.success && res.data) {
+      var c = res.data;
+      document.getElementById('bot-info').textContent = 'Connected';
+      var el = document.getElementById('feature-list');
+      el.innerHTML = FEATURES.map(function(f) {
+        var on = c[f.key] !== false && c[f.key] !== null;
+        return '<div class="feature-pill' + (on ? '' : ' off') + '"><div class="fp-icon">' + f.icon + '</div><div class="fp-name">' + f.name + '</div></div>';
+      }).join('');
+    }
+  }).catch(function() {});
+}
+
+function loadXP() {
+  var el = document.getElementById('xp-list');
+  apiCall('/api/telegram/xp/leaderboard').then(function(res) {
+    if (res.success && res.data && res.data.length) {
+      var medals = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+      el.innerHTML = res.data.map(function(u, i) {
+        return '<div class="list-item"><div><div class="name">' + (i < 3 ? medals[i] : (i+1) + '.') + ' User ' + u.user_id + '</div><div class="meta">Level ' + (u.level || 1) + ' &bull; ' + (u.xp || 0) + ' XP</div></div></div>';
+      }).join('');
+    } else { el.innerHTML = '<div class="empty">No XP data yet.</div>'; }
+  }).catch(function() { el.innerHTML = '<div class="empty">Failed to load.</div>'; });
+}
+
+function loadRules() {
+  apiCall('/api/telegram/messages').then(function(res) {
+    var el = document.getElementById('rules-text');
+    if (res.success && res.data && res.data.rules_text) {
+      el.textContent = res.data.rules_text;
+    } else { el.innerHTML = '<div class="empty">No rules set for this group.</div>'; }
+  }).catch(function() {
+    document.getElementById('rules-text').innerHTML = '<div class="empty">Failed to load rules.</div>';
+  });
+}
+
+function loadOverview() {
+  apiCall('/api/telegram/analytics/summary').then(function(res) {
+    if (res.success && res.data) {
+      document.getElementById('m-stat-members').textContent = res.data.total_members || '-';
+      document.getElementById('m-stat-messages').textContent = res.data.messages_7d || '-';
+    }
+  }).catch(function() {});
+
+  var myEl = document.getElementById('my-stats');
+  if (tgUserId) {
+    apiCall('/api/telegram/xp/user?userId=' + tgUserId).then(function(res) {
+      if (res.success && res.data) {
+        myEl.innerHTML = '<div class="list-item"><div><div class="name">Level ' + (res.data.level || 1) + '</div><div class="meta">' + (res.data.xp || 0) + ' XP &bull; Rank #' + (res.data.rank || '?') + '</div></div></div>';
+      } else { myEl.innerHTML = '<div class="empty">Send messages to earn XP!</div>'; }
+    }).catch(function() { myEl.innerHTML = '<div class="empty">Could not load your stats.</div>'; });
+  } else { myEl.innerHTML = '<div class="empty">Open from Telegram to see your stats.</div>'; }
+
+  document.getElementById('recent-activity').innerHTML = '<div class="empty">Activity feed coming soon.</div>';
+}
+
+function checkAdmin() {
+  if (!sessionId || !tgUserId) return;
+  apiCall('/api/telegram/user-role?userId=' + tgUserId).then(function(res) {
+    if (res.success && (res.role === 'owner' || res.role === 'admin')) {
+      var link = document.getElementById('admin-link');
+      link.style.display = 'block';
+      link.href = '/miniapp/admin/index.html?sessionId=' + sessionId + (currentChatId ? '&chatId=' + currentChatId : '');
+      link.textContent = (res.role === 'owner' ? '👑' : '🛡️') + ' Open Admin Panel';
+    }
+  }).catch(function() {});
+}
+
+loadOverview();
+loadFeatures();
+loadXP();
+loadRules();
+checkAdmin();
+</script>
+</body>
+</html>

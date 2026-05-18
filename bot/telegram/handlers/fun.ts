@@ -214,8 +214,8 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
   });
 
   // AFK mention detection — reply-based and @username-based
-  bot.on('message:text', async (ctx) => {
-    if (!ctx.from || !ctx.chat) return;
+  bot.on('message:text', async (ctx, next) => {
+    if (!ctx.from || !ctx.chat) { await next(); return; }
 
     // Check if replying to an AFK user
     if (ctx.message?.reply_to_message?.from) {
@@ -261,5 +261,7 @@ export function registerFunHandlers(bot: Bot, sessionId: string): void {
       await removeAfk(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
       await ctx.reply(`👋 Welcome back, ${ctx.from.first_name}!`);
     }
+
+    await next();
   });
 }

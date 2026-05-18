@@ -301,8 +301,12 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
 
     const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-    const keyboard = new InlineKeyboard()
-      .webApp('⚡ Open Settings Panel', panelUrl);
+    const keyboard = new InlineKeyboard();
+    if (ctx.chat!.type === 'private') {
+      keyboard.webApp('⚡ Open Settings Panel', panelUrl);
+    } else {
+      keyboard.url('⚡ Open Settings Panel', panelUrl);
+    }
 
     await ctx.reply('📱 <b>Open the panel below to manage your bot:</b>', {
       parse_mode: 'HTML',
@@ -522,7 +526,7 @@ function buildCategoryKeyboard(): InlineKeyboard {
 // ── Helper: send help message with mini app + categories ─────────────────
 
 async function sendHelpMessage(
-  ctx: { reply: (...args: any[]) => Promise<any>; me: any; chat: { id: number } },
+  ctx: { reply: (...args: any[]) => Promise<any>; me: any; chat: { id: number; type?: string } },
   sessionId: string,
 ): Promise<void> {
   const config = await getGroupConfig(sessionId, ctx.chat.id.toString());
@@ -539,7 +543,11 @@ async function sendHelpMessage(
 
   if (miniappUrl) {
     const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-    keyboard.webApp('📱 Open Mini App', panelUrl).row();
+    if (ctx.chat.type === 'private') {
+      keyboard.webApp('📱 Open Mini App', panelUrl).row();
+    } else {
+      keyboard.url('📱 Open Mini App', panelUrl).row();
+    }
   }
 
   keyboard.text('📖 Browse Commands', 'help_categories').row();
