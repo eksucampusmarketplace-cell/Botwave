@@ -116,7 +116,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <div class="tabs" id="tabs-container">
     <button class="tab active" data-tab="features" data-roles="owner,admin">Features</button>
-    <button class="tab" data-tab="config" data-roles="owner,admin">Settings</button>
     <button class="tab" data-tab="stats" data-roles="owner">Stats</button>
     <button class="tab" data-tab="broadcast" data-roles="owner">Broadcast</button>
     <button class="tab" data-tab="groupmsgs" data-roles="owner,admin">Group Msgs</button>
@@ -503,32 +502,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
   </div>
 
-  <!-- Config Section (Owner + Admin) -->
-  <div class="section" id="sec-config">
-    <div class="card">
-      <h3>Anti-Raid Settings</h3>
-      <div class="input-group"><label>Threshold (joins/min)</label><input type="number" id="cfg-antiraid-threshold" value="15" min="1"></div>
-      <div class="input-group"><label>Mode</label>
-        <select id="cfg-antiraid-mode"><option value="restrict">Restrict</option><option value="ban">Ban</option><option value="captcha">Captcha</option><option value="lockdown">Lockdown</option></select>
-      </div>
-      <div class="input-group"><label>Duration (minutes)</label><input type="number" id="cfg-antiraid-duration" value="15" min="1"></div>
-    </div>
-    <div class="card" id="owner-settings-card" style="display:none">
-      <h3>Bot Owner Settings</h3>
-      <div class="input-group"><label>Warn Limit</label><input type="number" id="cfg-warn-limit" value="3" min="1" max="20"></div>
-      <div class="input-group"><label>Warn Action</label>
-        <select id="cfg-warn-action"><option value="mute">Mute</option><option value="ban">Ban</option><option value="kick">Kick</option></select>
-      </div>
-      <div class="input-group"><label>Anti-Flood Max Per Minute</label><input type="number" id="cfg-antiflood-max" value="10" min="1" max="100"></div>
-      <div class="input-group"><label>Log Channel ID</label><input type="text" id="cfg-log-channel" placeholder="e.g. -1001234567890"></div>
-      <div class="input-group"><label>Bot Language</label>
-        <select id="cfg-bot-language"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="ar">العربية</option><option value="hi">हिन्दी</option><option value="ru">Русский</option><option value="tr">Türkçe</option></select>
-      </div>
-      <div class="input-group"><label>Force Join Channel</label><input type="text" id="cfg-force-channel" placeholder="@channel_username"></div>
-      <div id="miniapp-url-display" style="display:none"><label style="font-size:0.82rem;color:var(--hint)">Mini App Base URL</label><div style="padding:10px 12px;background:var(--secondary-bg);border-radius:10px;font-size:0.9rem;color:var(--hint);margin-top:4px" id="cfg-miniapp-url-text"></div></div>
-    </div>
-    <button class="btn" id="save-config">Save Settings</button>
-  </div>
 
   <!-- Group Messages Section (Owner + Admin) -->
   <div class="section" id="sec-groupmsgs">
@@ -590,7 +563,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 var tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
-var API_BASE = '';
+var API_BASE = window.location.origin;
 var sessionId = '';
 var currentRole = 'user';
 var tgUserId = '';
@@ -601,6 +574,15 @@ var POLL_SECONDS = 30;
 
 var urlParams = new URLSearchParams(window.location.search);
 sessionId = urlParams.get('sessionId') || '';
+
+try {
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+    var startParam = tg.initDataUnsafe.start_param;
+    if (!sessionId && startParam.indexOf('session_') === 0) {
+      sessionId = startParam.replace('session_', '');
+    }
+  }
+} catch (e) {}
 
 try {
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
@@ -693,8 +675,6 @@ function applyRole(role) {
     tab.classList[roles.indexOf(role) !== -1 ? 'remove' : 'add']('hidden');
   });
 
-  var ownerCard = document.getElementById('owner-settings-card');
-  if (ownerCard) ownerCard.style.display = role === 'owner' ? 'block' : 'none';
 
   var resetXp = document.getElementById('reset-xp');
   if (resetXp) resetXp.style.display = (role === 'user') ? 'none' : 'block';
@@ -724,6 +704,10 @@ document.querySelectorAll('.tab').forEach(function(tab) {
 var cachedConfig = null;
 
 function loadFeatures() {
+  if (!sessionId) {
+    document.getElementById('bot-info').textContent = 'No session — open via bot /panel command';
+    return;
+  }
   apiCall('/api/telegram/config').then(function(res) {
     if (res.success && res.data) {
       cachedConfig = res.data;
@@ -801,47 +785,6 @@ document.getElementById('save-features').addEventListener('click', function() {
     .catch(function() { toast('Error saving features'); });
 });
 
-function loadConfig() {
-  apiCall('/api/telegram/config').then(function(res) {
-    if (res.success && res.data) {
-      cachedConfig = res.data;
-      var c = res.data;
-      document.getElementById('cfg-antiraid-threshold').value = c.antiraid_threshold || 15;
-      document.getElementById('cfg-antiraid-mode').value = c.antiraid_mode || 'restrict';
-      document.getElementById('cfg-antiraid-duration').value = c.antiraid_duration_mins || 15;
-      document.getElementById('cfg-warn-limit').value = c.warn_limit || 3;
-      document.getElementById('cfg-warn-action').value = c.warn_action || 'mute';
-      document.getElementById('cfg-antiflood-max').value = c.antiflood_max_per_min || 10;
-      document.getElementById('cfg-log-channel').value = c.log_channel_id || '';
-      document.getElementById('cfg-bot-language').value = c.bot_language || 'en';
-      document.getElementById('cfg-force-channel').value = c.force_channel || '';
-      if (c.miniapp_base_url && currentRole === 'owner') {
-        document.getElementById('miniapp-url-display').style.display = 'block';
-        document.getElementById('cfg-miniapp-url-text').textContent = c.miniapp_base_url;
-      }
-    }
-  }).catch(function() {});
-}
-
-document.getElementById('save-config').addEventListener('click', function() {
-  var payload = {
-    sessionId: sessionId,
-    antiraid_threshold: parseInt(document.getElementById('cfg-antiraid-threshold').value),
-    antiraid_mode: document.getElementById('cfg-antiraid-mode').value,
-    antiraid_duration_mins: parseInt(document.getElementById('cfg-antiraid-duration').value),
-  };
-  if (currentRole === 'owner') {
-    payload.warn_limit = parseInt(document.getElementById('cfg-warn-limit').value);
-    payload.warn_action = document.getElementById('cfg-warn-action').value;
-    payload.antiflood_max_per_min = parseInt(document.getElementById('cfg-antiflood-max').value);
-    payload.log_channel_id = document.getElementById('cfg-log-channel').value || null;
-    payload.bot_language = document.getElementById('cfg-bot-language').value || 'en';
-    payload.force_channel = document.getElementById('cfg-force-channel').value || null;
-  }
-  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
-    .then(function(res) { toast(res.success ? 'Settings saved!' : 'Failed to save'); })
-    .catch(function() { toast('Error saving settings'); });
-});
 
 function loadStats() {
   apiCall('/api/telegram/groups?sessionId=' + sessionId).then(function(res) {
@@ -1056,7 +999,6 @@ document.getElementById('reset-xp').addEventListener('click', function() {
 function loadTabData(tab, silent) {
   switch(tab) {
     case 'features': loadFeatures(); break;
-    case 'config': loadConfig(); break;
     case 'stats': if (!silent) loadStats(); break;
     case 'broadcast': break;
     case 'groupmsgs': loadGroupMessages(); break;
@@ -1125,6 +1067,22 @@ var FEATURE_CONFIGS = {
   ]},
   'ft-games': { title: '🎮 Mini Games Settings', fields: [
     { key: 'games_timeout', label: 'Game timeout (seconds)', type: 'number', min: 10, max: 120, default: 30 },
+  ]},
+  'ft-channelforce': { title: '📢 Force Join Channel Settings', fields: [
+    { key: 'force_channel', label: 'Required channel (@username or ID)', type: 'text', default: '' },
+    { key: 'force_channel_action', label: 'Action on non-member', type: 'select', options: ['delete','restrict','kick'], default: 'delete' },
+  ]},
+  'ft-language': { title: '🌐 Language Settings', fields: [
+    { key: 'bot_language', label: 'Group language', type: 'select', options: ['en','es','fr','de','pt','ar','hi','ru','tr','yo','ha','ig','pcm'], default: 'en' },
+  ]},
+  'ft-ai': { title: '🤖 AI Settings', fields: [
+    { key: 'ai_provider', label: 'AI Provider', type: 'select', options: ['groq','gemini','auto'], default: 'groq' },
+    { key: 'ai_system_prompt', label: 'System prompt (personality)', type: 'textarea', default: '' },
+    { key: 'ai_max_response_length', label: 'Max response length (chars)', type: 'number', min: 50, max: 2000, default: 500 },
+  ]},
+  'ft-booster': { title: '📢 Booster Settings', fields: [
+    { key: 'boost_goal', label: 'Invites needed for boost goal', type: 'number', min: 1, max: 100, default: 5 },
+    { key: 'boost_reward_text', label: 'Reward message ({name}, {count})', type: 'textarea', default: '' },
   ]},
 };
 
