@@ -210,8 +210,8 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
   });
 
   // Answer detection for games
-  bot.on('message:text', async (ctx) => {
-    if (!ctx.chat || !ctx.from || !ctx.message?.text) return;
+  bot.on('message:text', async (ctx, next) => {
+    if (!ctx.chat || !ctx.from || !ctx.message?.text) { await next(); return; }
     const chatKey = ctx.chat.id.toString();
     const text = ctx.message.text.trim();
 
@@ -221,6 +221,7 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
       if (text.toLowerCase() === trivia.question.answer.toLowerCase()) {
         activeTrivia.delete(chatKey);
         await ctx.reply(`🎉 Correct, ${ctx.from.first_name}! The answer is <b>${trivia.question.answer}</b>!`, { parse_mode: 'HTML' });
+        await next();
         return;
       }
     }
@@ -231,6 +232,7 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
       if (text.toUpperCase() === scramble.original) {
         activeScramble.delete(chatKey);
         await ctx.reply(`🎉 ${ctx.from.first_name} got it! The word was <b>${scramble.original}</b>!`, { parse_mode: 'HTML' });
+        await next();
         return;
       }
     }
@@ -242,8 +244,11 @@ export function registerGamesHandlers(bot: Bot, sessionId: string): void {
       if (!isNaN(num) && num === math.answer) {
         activeMath.delete(chatKey);
         await ctx.reply(`🎉 ${ctx.from.first_name} is right! <code>${math.expression}</code> = <b>${math.answer}</b>`, { parse_mode: 'HTML' });
+        await next();
         return;
       }
     }
+
+    await next();
   });
 }
