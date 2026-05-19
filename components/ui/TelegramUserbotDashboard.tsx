@@ -492,21 +492,6 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
     { id: 'commands', label: 'Commands' },
   ];
 
-  const Toggle = ({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) => (
-    <div className="flex items-center justify-between py-3 border-b" style={{ borderColor: 'var(--border)' }}>
-      <div className="flex-1 mr-4">
-        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{label}</p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-      >
-        <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
-      </button>
-    </div>
-  );
-
   if (loading) return <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>Loading...</div>;
 
   return (
@@ -828,6 +813,23 @@ export default function TelegramUserbotDashboard({ sessionId }: Props) {
           </div>
         </Section>
       )}
+    </div>
+  );
+}
+
+function Toggle({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex-1 mr-4">
+        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{label}</p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+      </div>
+      <button
+        onClick={() => onChange(!checked)}
+        className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+      >
+        <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      </button>
     </div>
   );
 }
