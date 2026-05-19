@@ -44,12 +44,12 @@ async function start() {
 
   await bot.start();
 
-  await cleanupOnStartup();
+  await cleanupOnStartup('telegram');
   startHeartbeatLoop();
 
   // Orphan recovery on startup
   try {
-    const recovered = await recoverOrphanedSessions();
+    const recovered = await recoverOrphanedSessions('telegram');
     if (recovered > 0) {
       console.log(`[TELEGRAM] Recovered ${recovered} orphaned session(s)`);
     }
@@ -80,7 +80,7 @@ async function start() {
   registerInterval(setInterval(async () => {
     if (isShutdown()) return;
     try {
-      const recovered = await recoverOrphanedSessions();
+      const recovered = await recoverOrphanedSessions('telegram');
       if (recovered > 0) {
         console.log(`[TELEGRAM] Recovered ${recovered} orphaned session(s)`);
       }

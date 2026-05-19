@@ -229,18 +229,31 @@ export function stopHeartbeatLoop(): void {
  *  - Sessions locked by dead instances
  *  - Sessions with no lock at all but in active/pairing state
  */
-export async function detectOrphanedSessions(): Promise<any[]> {
+export async function detectOrphanedSessions(platformFilter?: string): Promise<any[]> {
   if (isCircuitOpen() || isShutdown()) return [];
   const staleTime = new Date(Date.now() - LOCK_EXPIRY_MS).toISOString();
 
   // Only select sessions with stale or missing heartbeats. Sessions with
   // locked_by=null but a recent heartbeat_at are likely mid-recovery -
   // their worker will re-lock them on the next sync cycle.
-  const { data, error } = await supabase
+  let query = supabase
     .from('bot_sessions')
-    .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, phone_number, updated_at')
+    .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, phone_number, updated_at, platform')
     .in('state', ['qr_pending', 'pairing_sent', 'active'])
     .or(`heartbeat_at.is.null,heartbeat_at.lt.${staleTime}`);
+
+  // Platform isolation: only recover sessions matching our platform
+  if (platformFilter === 'whatsapp') {
+    query = query.or('platform.eq.whatsapp,platform.is.null');
+  } else if (platformFilter === 'telegram') {
+    query = query.in('platform', ['telegram_bot', 'telegram_userbot']);
+  } else if (platformFilter === 'telegram_userbot') {
+    query = query.eq('platform', 'telegram_userbot');
+  } else if (platformFilter === 'telegram_bot') {
+    query = query.eq('platform', 'telegram_bot');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[COORD] Error detecting orphaned sessions:', error);
@@ -253,11 +266,12 @@ export async function detectOrphanedSessions(): Promise<any[]> {
 /**
  * Recover orphaned sessions - reset them to a recoverable state.
  * Only the main service should run this (not workers).
+ * When platformFilter is set, only recovers sessions matching that platform.
  */
-export async function recoverOrphanedSessions(): Promise<number> {
+export async function recoverOrphanedSessions(platformFilter?: string): Promise<number> {
   if (IS_WORKER) return 0;
 
-  const orphans = await detectOrphanedSessions();
+  const orphans = await detectOrphanedSessions(platformFilter);
   if (orphans.length === 0) return 0;
 
   console.log(`[COORD] Found ${orphans.length} orphaned session(s): ${orphans.map(s =>
@@ -367,20 +381,33 @@ export async function recoverOrphanedSessions(): Promise<number> {
 /**
  * On process startup, release any stale locks that belong to our instance ID.
  * This handles the case where the process crashed without cleaning up.
+ * When platformFilter is set, only releases locks for sessions matching that platform.
  */
-export async function cleanupOnStartup(): Promise<void> {
-  console.log(`[COORD] Startup cleanup for instance ${INSTANCE_ID}...`);
+export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
+  console.log(`[COORD] Startup cleanup for instance ${INSTANCE_ID} (platform=${platformFilter || 'all'})...`);
 
   // Release any locks from a previous run of this same instance
-  const { data, error } = await supabase
+  let cleanupQuery = supabase
     .from('bot_sessions')
     .update({
       locked_by: null,
       locked_at: null,
       heartbeat_at: null,
     })
-    .eq('locked_by', INSTANCE_ID)
-    .select('id, state');
+    .eq('locked_by', INSTANCE_ID);
+
+  // Platform isolation: only clean up sessions matching our platform
+  if (platformFilter === 'whatsapp') {
+    cleanupQuery = cleanupQuery.or('platform.eq.whatsapp,platform.is.null');
+  } else if (platformFilter === 'telegram') {
+    cleanupQuery = cleanupQuery.in('platform', ['telegram_bot', 'telegram_userbot']);
+  } else if (platformFilter === 'telegram_userbot') {
+    cleanupQuery = cleanupQuery.eq('platform', 'telegram_userbot');
+  } else if (platformFilter === 'telegram_bot') {
+    cleanupQuery = cleanupQuery.eq('platform', 'telegram_bot');
+  }
+
+  const { data, error } = await cleanupQuery.select('id, state');
 
   // Also clean up locks from previous main instances with different PIDs.
   // When INSTANCE_ID is 'main-{PID}', the PID changes on every restart,

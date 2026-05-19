@@ -1992,6 +1992,23 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   for (const [id, bot] of activeBots) {
     const session = sessions.find(s => s.id === id);
     if (!session) {
+      // Platform isolation: if a session from the wrong platform ended up in
+      // activeBots (e.g. race during container restart), stop it immediately.
+      // Check allSessions to see if it's a cross-platform intruder.
+      const allSession = allSessions.find(s => s.id === id);
+      if (BOT_PLATFORM && allSession) {
+        const platform = (allSession as any).platform || 'whatsapp';
+        const isWrongPlatform = (BOT_PLATFORM === 'whatsapp' && platform !== 'whatsapp' && platform) ||
+          (BOT_PLATFORM === 'telegram' && platform !== 'telegram_bot' && platform !== 'telegram_userbot');
+        if (isWrongPlatform) {
+          console.log(`[SYNC] Evicting cross-platform session ${id.slice(0, 8)} (platform=${platform}) from ${BOT_PLATFORM} container`);
+          await bot.stop();
+          await releaseLock(id);
+          activeBots.delete(id);
+          continue;
+        }
+      }
+
       // Don't kill bots that are mid-reconnect (e.g. 515 pairing restart)
       // or in qr_pending state during the handshake
       const status = bot.getStatus();
