@@ -134,7 +134,16 @@ export default function RootLayout({
     <html lang="en" data-theme="light">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -154,7 +163,7 @@ export default function RootLayout({
               offers: {
                 '@type': 'Offer',
                 price: '0',
-                priceCurrency: 'NGN',
+                priceCurrency: 'USD',
                 availability: 'https://schema.org/InStock',
               },
               aggregateRating: {

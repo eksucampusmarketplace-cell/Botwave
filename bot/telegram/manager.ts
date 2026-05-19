@@ -316,7 +316,7 @@ export class TelegramBotInstance {
     // native check and fall through to the WhatsApp bridge, producing
     // garbled responses (e.g. docx caption sent as plain text).
     const NATIVE_TG_COMMANDS = new Set([
-      'start', 'help', 'h', 'commands', 'panel', 'setstart', 'sethelp',
+      'start', 'help', 'h', 'commands', 'panel', 'setstart', 'setstartimage', 'sethelp',
       'ban', 'unban', 'tban', 'mute', 'unmute', 'tmute', 'kick', 'warn',
       'unwarn', 'warns', 'resetwarns', 'promote', 'demote', 'settitle',
       'welcome', 'setwelcome', 'goodbye', 'setgoodbye',

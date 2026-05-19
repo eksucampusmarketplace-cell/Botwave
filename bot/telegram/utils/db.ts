@@ -31,6 +31,7 @@ export interface TelegramConfig {
   xp_enabled: boolean;
   log_channel_id: string | null;
   start_text: string | null;
+  start_image_file_id: string | null;
   start_group_dm_text: string | null;
   help_text: string | null;
   owner_user_id: string | null;
@@ -230,6 +231,7 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   xp_enabled: true,
   log_channel_id: null,
   start_text: null,
+  start_image_file_id: null,
   start_group_dm_text: null,
   help_text: null,
   owner_user_id: null,
