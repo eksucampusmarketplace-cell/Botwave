@@ -47,10 +47,10 @@ const clusters = [
 
 const additionalFeatures = [
   { title: 'Games and Engagement', icon: '🎮', description: 'Trivia, hangman, word chain, polls, leaderboards, and XP systems to keep groups active.', link: '/commands' },
-  { title: 'Anti-Ban Engine', icon: '🔒', description: 'Session warmup, message variation, human-like timing, presence simulation, and daily caps.', link: '/docs/anti-ban-system' },
+  { title: 'Anti-Ban Engine', icon: '🔒', description: 'Session warmup, message variation, human-like timing, presence simulation, and daily caps.', link: '/docs/anti-ban-explained' },
   { title: 'SafeConnect Layer', icon: '📡', description: 'QR-based connection from your own device. Your IP, your session, no shared infrastructure.', link: '/docs/connect-whatsapp' },
-  { title: 'Smart Session Recovery', icon: '🔄', description: 'Automatic reconnection with exponential backoff. Sessions survive container restarts and network drops.', link: '/docs/reconnecting' },
-  { title: 'Ghost Mode Moderation', icon: '👻', description: 'Read-but-skip behavior where the bot occasionally ignores messages like a real person would.', link: '/docs/anti-ban-system' },
+  { title: 'Smart Session Recovery', icon: '🔄', description: 'Automatic reconnection with exponential backoff. Sessions survive container restarts and network drops.', link: '/docs/reconnecting-sessions' },
+  { title: 'Ghost Mode Moderation', icon: '👻', description: 'Read-but-skip behavior where the bot occasionally ignores messages like a real person would.', link: '/docs/anti-ban-explained' },
   { title: 'Multi-Platform Dashboard', icon: '📊', description: 'Manage WhatsApp Bot, Telegram Bot, and Telegram Userbot from one unified dashboard.', link: '/docs/getting-started' },
 ];
 
