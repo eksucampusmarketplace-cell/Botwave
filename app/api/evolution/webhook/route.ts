@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/infrastructure/redisSessionCache';
+import { invalidateSessions } from '@/lib/redisApiCache';
 import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolution/client';
 
 const SELF_URL = process.env.SELF_URL || '';
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
         // Check if this is a first-time connection (pairing just completed)
         const { data: current } = await supabase
           .from('bot_sessions')
-          .select('state, phone_number')
+          .select('state, phone_number, user_id')
           .eq('id', sessionId)
           .single();
 
@@ -200,6 +201,7 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', sessionId);
         await invalidateSessionCache(sessionId);
+        if (current?.user_id) await invalidateSessions(current.user_id);
         lastHeartbeatUpdate.set(sessionId, Date.now());
 
         // Send one-time welcome message when pairing/QR scan completes for the first time.
@@ -251,7 +253,7 @@ export async function POST(request: NextRequest) {
         const statusReason = data?.statusReason || data?.statusCode || data?.disconnectionReasonCode;
         const { data: current } = await supabase
           .from('bot_sessions')
-          .select('state')
+          .select('state, user_id')
           .eq('id', sessionId)
           .single();
 
@@ -277,6 +279,7 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', sessionId);
           await invalidateSessionCache(sessionId);
+          if (current?.user_id) await invalidateSessions(current.user_id);
         } else if (current?.state === 'active') {
           // Temporary disconnect - preserve auth state so Evolution API can
           // auto-reconnect without forcing the user to re-pair.  Only clear
@@ -296,6 +299,7 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', sessionId);
           await invalidateSessionCache(sessionId);
+          if (current?.user_id) await invalidateSessions(current.user_id);
         } else {
           console.log(`[EVO-WEBHOOK] Session ${sessionId} in ${current?.state ?? 'unknown'} got close/refused - ignoring (handled by sync loop)`);
         }
@@ -338,6 +342,11 @@ export async function POST(request: NextRequest) {
     // --- Instance logout (WhatsApp terminated the linked device) ---
     if (event === 'logout.instance') {
       console.log(`[EVO-WEBHOOK] logout.instance for ${sessionId} - clearing all auth data and locks`);
+      const { data: logoutSession } = await supabase
+        .from('bot_sessions')
+        .select('user_id')
+        .eq('id', sessionId)
+        .single();
       await supabase.from('bot_sessions')
         .update({
           state: 'needs_reauth',
@@ -353,6 +362,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', sessionId);
       await invalidateSessionCache(sessionId);
+      if (logoutSession?.user_id) await invalidateSessions(logoutSession.user_id);
 
       return NextResponse.json({ ok: true });
     }
@@ -368,7 +378,7 @@ export async function POST(request: NextRequest) {
 
       const { data: current, error: stateErr } = await supabase
         .from('bot_sessions')
-        .select('state, pairing_code, updated_at')
+        .select('state, pairing_code, updated_at, user_id')
         .eq('id', sessionId)
         .single();
 
@@ -399,6 +409,11 @@ export async function POST(request: NextRequest) {
         } else {
           console.log(`[PAIRING-WEBHOOK] QR updated for ${sessionId} (len=${qrCode.length})`);
         }
+      }
+
+      // Invalidate the user's sessions list cache so the frontend sees the updated QR/pairing code
+      if (current?.user_id) {
+        await invalidateSessions(current.user_id);
       }
 
       // Skip exact duplicate pairing code deliveries (QR already updated above)
