@@ -190,8 +190,11 @@ export default function HomePage() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">WhatsApp &amp; Telegram</span>
               </h1>
 
-              <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
-                One platform, three ways to connect. WhatsApp QR scan, Telegram Bot token, or Telegram Userbot. 150+ commands, AI chat, games, group management. No coding, no credit card.
+              <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-4 leading-relaxed">
+                <strong>BotWave is a free bot automation platform for WhatsApp and Telegram.</strong> Connect via QR scan, Bot token, or Userbot credentials — all from one dashboard.
+              </p>
+              <p className="text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
+                150+ built-in commands: AI chat, stickers, games, anti-spam, media downloads, and group management. No coding, no credit card, no catch.
               </p>
 
               <div className="flex gap-4 flex-wrap mb-10">
@@ -336,16 +339,16 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Security</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Your Accounts Are Safe With BotWave</h2>
-            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">BotWave is built with your account safety in mind. Your WhatsApp session runs from your own device IP, and the anti-ban system reduces risk significantly.</p>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Your WhatsApp session runs from your own device IP, not a shared server. The advanced anti-ban system uses 7-day session warmup, human-like delays, and message variation to reduce risk significantly.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: 'Your Device, Your IP', desc: 'Your WhatsApp session runs from your own device via QR code \u2014 not from a shared server. This means your real IP is used, drastically reducing ban risk.' },
-              { title: 'Zero Message Storage', desc: 'BotWave never reads, stores, or logs your WhatsApp messages. All message processing happens in memory and is discarded immediately.' },
-              { title: 'Advanced Anti-Ban System', desc: 'Session warmup over 7 days, human-like typing delays, message variation, rate limiting, activity hours simulation, and media fingerprint jittering.' },
-              { title: 'Smart Rate Limiting', desc: 'Hard 200 messages/day cap, 10 msgs/min session limit, 20 msgs/min per user. Anti-spam flood detection warns after 5 messages in 10 seconds.' },
-              { title: 'Human-Like Behavior', desc: 'The bot simulates real human patterns \u2014 quiet at night, random delays, read-but-skip in groups, and presence toggling based on time of day.' },
-              { title: 'Secure Infrastructure', desc: 'Credentials stored in Supabase with row-level security. API communication encrypted. No plain-text secrets. Your data is protected at every layer.' },
+              { title: 'Your Device, Your IP', desc: 'Sessions run from your own device via QR code. Your real IP is used, not a shared server IP. This drastically reduces ban risk.' },
+              { title: 'Zero Message Storage', desc: 'Messages are never read, stored, or logged. All processing happens in memory and is discarded immediately after response.' },
+              { title: 'Advanced Anti-Ban System', desc: '7-day session warmup. Human-like typing delays. 50–100 message variations. Rate limiting. Activity hours simulation. Media fingerprint jittering.' },
+              { title: 'Smart Rate Limiting', desc: '200 messages/day hard cap. 10 msgs/min per session. 20 msgs/min per user. Flood detection warns after 5 messages in 10 seconds.' },
+              { title: 'Human-Like Behavior', desc: 'Quiet at night. Random response delays. 15% read-but-skip in groups. Presence toggling by time of day. Distracted delays up to 2 minutes.' },
+              { title: 'Secure Infrastructure', desc: 'Supabase with row-level security. Encrypted API communication. No plain-text secrets. Your credentials are protected at every layer.' },
             ].map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.08 }} viewport={{ once: true }} className="glass-card rounded-2xl p-7">
                 <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
@@ -371,7 +374,7 @@ export default function HomePage() {
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} viewport={{ once: true }} className="glass-card rounded-2xl p-8">
               <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl flex items-center justify-center text-2xl mb-5">{'🤖'}</div>
               <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Telegram Bot</h3>
-              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">Create a bot via @BotFather, paste the token in BotWave, done. Zero ban risk since it uses the official Telegram Bot API. Perfect for group management, auto-replies, polls, and moderation.</p>
+              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">Create a bot via @BotFather, paste the token in BotWave, done. Zero ban risk \u2014 uses the official Telegram Bot API. Ideal for group management, auto-replies, polls, and moderation.</p>
               <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> Official Bot API, zero ban risk</li>
                 <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> /sticker, /ai, /poll, /trivia, /translate</li>
@@ -463,6 +466,30 @@ export default function HomePage() {
       </section>
 
       <Disclaimer />
+
+      {/* Summary / TL;DR for AI extractability */}
+      <section className="py-16 px-6 bg-[var(--bg)] border-t border-[var(--border)]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-6 text-center">What Is BotWave?</h2>
+          <div className="space-y-4 text-base text-[var(--text-secondary)] leading-relaxed">
+            <p>
+              <strong>BotWave</strong> is a free, no-code bot automation platform that works across WhatsApp, Telegram Bot, and Telegram Userbot. It was created by Decisive Analyst in 2026 and serves users in Nigeria and worldwide.
+            </p>
+            <p>
+              <strong>How it works:</strong> Sign up at botwave.online, connect your account (WhatsApp via QR scan, Telegram Bot via @BotFather token, Telegram Userbot via MTProto API credentials), and your bot is live in under 2 minutes.
+            </p>
+            <p>
+              <strong>Key features:</strong> 150+ built-in commands including AI chat (Google Gemini), sticker creation, media downloads, trivia games, polls, anti-spam protection, auto-reply, and group management.
+            </p>
+            <p>
+              <strong>Anti-ban protection:</strong> BotWave includes 7-day session warmup, human-like typing delays, 50–100 message variations, rate limiting (200 msgs/day cap), activity hours simulation, and media fingerprint jittering. Sessions run from your own device IP.
+            </p>
+            <p>
+              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans from ₦500/month for unlimited messages and multiple sessions.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-violet-600 relative overflow-hidden">
