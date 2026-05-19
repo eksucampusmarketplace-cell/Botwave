@@ -199,7 +199,27 @@ export default function SessionsPage() {
   };
 
   const handleConnect = async (session: BotSession) => {
-    // For disconnected sessions, reset state so the worker generates a fresh pairing code
+    // Telegram bot and userbot don't use QR/pairing codes — they reconnect automatically
+    if (session.platform === 'telegram_bot' || session.platform === 'telegram_userbot') {
+      try {
+        const response = await fetch('/api/bot/sessions', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: session.id }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          fetchSessions();
+        } else {
+          setError(data.error || 'Failed to reconnect session');
+        }
+      } catch (err) {
+        console.error('Reconnect error:', err);
+        setError('Failed to reconnect session');
+      }
+      return;
+    }
+    // For WhatsApp sessions, reset state so the worker generates a fresh pairing code
     if (session.state === 'needs_reauth' || session.state === 'inactive') {
       try {
         const response = await fetch('/api/bot/sessions', {
@@ -591,7 +611,7 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {showQR && (
+      {showQR && activeSession?.platform !== 'telegram_bot' && activeSession?.platform !== 'telegram_userbot' && (
         <QRCodeDisplay 
           onClose={() => {
             setShowQR(false);
