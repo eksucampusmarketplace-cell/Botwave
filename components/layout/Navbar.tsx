@@ -116,9 +116,9 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[var(--surface)] border-t border-[var(--border)]"
+            className="md:hidden bg-[var(--surface)] border-t border-[var(--border)] max-h-[70vh] overflow-y-auto"
           >
-            <div className="flex flex-col px-6 py-4 gap-3">
+            <div className="flex flex-col px-6 py-4 gap-1">
               {[
                 { href: '/commands', label: 'Commands' },
                 { href: '/docs', label: 'Docs' },
@@ -137,7 +137,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="text-sm text-[var(--text-secondary)] hover:text-[var(--primary)] py-2 font-medium"
+                  className="text-sm text-[var(--text-secondary)] hover:text-[var(--primary)] active:text-[var(--primary)] py-3 font-medium touch-manipulation"
                 >
                   {link.label}
                 </Link>

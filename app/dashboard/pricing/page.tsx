@@ -40,7 +40,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   lite: {
     name: 'Lite',
-    price: 500,
+    price: 0,
     quotaLimit: 2000,
     sessionLimit: 1,
     aiDailyLimit: 50,
@@ -58,7 +58,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   standard: {
     name: 'Standard',
-    price: 1000,
+    price: 0,
     quotaLimit: 10000,
     sessionLimit: 3,
     aiDailyLimit: 200,
@@ -80,7 +80,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   boss: {
     name: 'Boss',
-    price: 2000,
+    price: 0,
     quotaLimit: -1,
     sessionLimit: 5,
     aiDailyLimit: -1,
@@ -241,7 +241,7 @@ export default function PricingPage() {
             key: data.publicKey,
             email: data.email,
             amount: data.amount * 100,
-            currency_code: 'NGN',
+            currency_code: 'USD',
             transaction_ref: data.transactionRef,
             payment_channels: ['bank', 'transfer'],
             customer_name: '',
@@ -347,10 +347,10 @@ export default function PricingPage() {
 
                 <div className="mb-6">
                   <span className="font-display text-3xl font-black text-blue-600 dark:text-blue-400">
-                    {plan.price === 0 ? 'FREE' : `₦${plan.price.toLocaleString()}`}
+                    {plan.price === 0 && key === 'free' ? 'FREE' : 'Coming Soon'}
                   </span>
-                  {plan.price > 0 && (
-                    <span className="font-mono text-xs text-[#5a9a7a] ml-1">/month</span>
+                  {key !== 'free' && (
+                    <span className="font-mono text-xs text-[#5a9a7a] ml-1"></span>
                   )}
                 </div>
 
@@ -412,7 +412,7 @@ export default function PricingPage() {
                       <span className="text-[#5a9a7a] ml-2">{new Date(p.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-blue-600 dark:text-blue-400">₦{p.amount?.toLocaleString()}</span>
+                      <span className="text-blue-600 dark:text-blue-400">${p.amount?.toLocaleString()}</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] ${
                         p.status === 'completed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
                         p.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :

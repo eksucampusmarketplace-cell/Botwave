@@ -76,7 +76,6 @@ const DEFAULT_HELP_TEXT =
   `🚨 <b>Anti-Raid</b>  <code>/antiraid</code> <code>/raid</code>\n\n` +
   `🎫 <b>Tickets</b>  <code>/ticket</code> <code>/tickets</code> <code>/closeticket</code> <code>/assign</code> <code>/treply</code>\n\n` +
   `🎨 <b>Stickers</b>  <code>/kang</code> <code>/stickerinfo</code> <code>/getsticker</code>\n\n` +
-  `📡 <b>Broadcast</b> <i>(owner)</i>  <code>/broadcast</code> <code>/broadcaststats</code>\n\n` +
   `📋 <b>Logs</b>  <code>/setlog</code> <code>/unsetlog</code> <code>/logchannel</code> <code>/schedule</code>\n\n` +
   `⭐ <b>XP</b>  <code>/xp</code> <code>/leaderboard</code>\n\n` +
   `━━━━━━━━━━━━━━━━━━━━\n` +
@@ -197,10 +196,7 @@ const HELP_CATEGORIES: Record<string, string[]> = {
     '/stickerinfo - Reply to sticker for info',
     '/getsticker - Reply to sticker to get as file',
   ],
-  '📡 Broadcast': [
-    '/broadcast &lt;message&gt; - Send to all groups (owner)',
-    '/broadcaststats - Show last broadcast stats',
-  ],
+
 };
 
 export function registerStartHandlers(bot: Bot, sessionId: string): void {
@@ -233,10 +229,34 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
         .url('➕ Add to Group', `https://t.me/${botInfo.username}?startgroup=true`)
         .row();
 
-      await ctx.reply(appendFooter(text), {
-        parse_mode: 'HTML',
-        reply_markup: keyboard,
-      });
+      // Add custom inline buttons if configured
+      if (config.start_buttons_json) {
+        try {
+          const customButtons = JSON.parse(config.start_buttons_json);
+          if (Array.isArray(customButtons)) {
+            for (const btn of customButtons) {
+              if (btn.url) {
+                keyboard.url(btn.text, btn.url).row();
+              } else if (btn.callback_data) {
+                keyboard.text(btn.text, btn.callback_data).row();
+              }
+            }
+          }
+        } catch { /* ignore invalid JSON */ }
+      }
+
+      if (config.start_image_file_id) {
+        await ctx.replyWithPhoto(config.start_image_file_id, {
+          caption: appendFooter(text),
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.reply(appendFooter(text), {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      }
     } else {
       // Group: silently init, try to DM the admin with setup instructions
       const user = ctx.from;
@@ -333,6 +353,36 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     await ctx.reply('✅ Start message updated!');
   });
 
+  // ── /setstartimage - set image for /start message ───────────────────────
+
+  bot.command('setstartimage', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+
+    const photo = ctx.message?.photo;
+    const replyPhoto = ctx.message?.reply_to_message?.photo;
+    const targetPhoto = photo || replyPhoto;
+
+    if (!targetPhoto || targetPhoto.length === 0) {
+      await ctx.reply(
+        '📸 <b>Set Start Image</b>\n\n' +
+        'Send a photo with <code>/setstartimage</code> as the caption, or reply to a photo with <code>/setstartimage</code>.\n\n' +
+        'Use <code>/setstartimage clear</code> to remove the image.',
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+
+    const fileId = targetPhoto[targetPhoto.length - 1].file_id;
+    await updateTelegramConfig(sessionId, { start_image_file_id: fileId });
+    await ctx.reply('✅ Start image updated! New users will see this image with /start.');
+  });
+
+  bot.hears(/^\/setstartimage\s+clear$/i, async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+    await updateTelegramConfig(sessionId, { start_image_file_id: null });
+    await ctx.reply('✅ Start image removed.');
+  });
+
   // ── /sethelp - customize help message ───────────────────────────────────
 
   bot.command('sethelp', async (ctx) => {
@@ -402,11 +452,15 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     const text = (ctx.match?.toString() || '').trim();
     if (!text) {
       await ctx.reply(
-        '📝 <b>Set Start Buttons</b>\n\n' +
-        'Usage: <code>/setstartbuttons &lt;json&gt;</code>\n\n' +
-        '<b>Example:</b>\n' +
+        '📝 <b>Set Start Inline Buttons</b>\n\n' +
+        '<b>Simple format:</b>\n' +
+        '<code>/setstartbuttons Label | url</code>\n' +
+        '<code>/setstartbuttons Label1 | url1 , Label2 | url2</code>\n\n' +
+        '<b>JSON format:</b>\n' +
         '<code>[{"text":"🌐 Website","url":"https://example.com"}]</code>\n\n' +
-        'Use <code>/setstartbuttons clear</code> to remove custom buttons.',
+        '<b>Example:</b>\n' +
+        '<code>/setstartbuttons 🌐 Website | https://example.com , 📢 Channel | https://t.me/mychannel</code>\n\n' +
+        'Use <code>/setstartbuttons clear</code> to remove buttons.',
         { parse_mode: 'HTML' },
       );
       return;
@@ -417,17 +471,31 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       return;
     }
     try {
-      const buttons = JSON.parse(text);
-      if (!Array.isArray(buttons)) throw new Error('Must be an array');
+      let buttons: Array<{ text: string; url?: string; callback_data?: string }>;
+
+      if (text.startsWith('[')) {
+        // JSON format
+        buttons = JSON.parse(text);
+        if (!Array.isArray(buttons)) throw new Error('Must be an array');
+      } else {
+        // Simple format: "Label | url , Label2 | url2"
+        buttons = text.split(',').map(part => {
+          const [label, url] = part.split('|').map(s => s.trim());
+          if (!label || !url) throw new Error('Use format: Label | url');
+          return { text: label, url };
+        });
+      }
+
       for (const btn of buttons) {
         if (!btn.text) throw new Error('Each button needs "text"');
         if (!btn.url && !btn.callback_data) throw new Error('Each button needs "url" or "callback_data"');
       }
-      await updateTelegramConfig(sessionId, { start_buttons_json: text } as Record<string, unknown>);
-      await ctx.reply(`✅ Updated ${buttons.length} custom button${buttons.length === 1 ? '' : 's'}.`);
+      const json = JSON.stringify(buttons);
+      await updateTelegramConfig(sessionId, { start_buttons_json: json } as Record<string, unknown>);
+      await ctx.reply(`✅ Updated ${buttons.length} inline button${buttons.length === 1 ? '' : 's'}.`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      await ctx.reply(`❌ Invalid JSON: ${msg}`);
+      await ctx.reply(`❌ Invalid format: ${msg}\n\nUse: /setstartbuttons Label | url , Label2 | url2`);
     }
   });
 

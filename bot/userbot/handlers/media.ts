@@ -198,8 +198,56 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
+export const uploadHandler: HandlerFn = async (client, event) => {
+  await waitForRateLimit('api_call');
+  const msg = event.message;
+  const args = (msg.text || '').split(/\s+/).slice(1);
+  const url = args[0];
+
+  if (!url || !msg.chatId) {
+    await msg.edit({ text: '❌ Usage: .upload <url> [caption]' });
+    return;
+  }
+
+  try {
+    await msg.edit({ text: '📤 Uploading...' });
+    await mediumPause();
+
+    const caption = args.slice(1).join(' ') || '';
+    const https = await import('https');
+    const http = await import('http');
+    const fetcher = url.startsWith('https') ? https : http;
+
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      fetcher.get(url, (res: { statusCode?: number; on: (event: string, cb: (...args: unknown[]) => void) => void }) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: unknown) => chunks.push(chunk as Buffer));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      }).on('error', reject);
+    });
+
+    const fileName = url.split('/').pop()?.split('?')[0] || 'file';
+    await client.sendFile(msg.chatId, {
+      file: buffer,
+      caption: caption || `📎 ${fileName}`,
+      forceDocument: true,
+      fileName,
+    });
+    await msg.delete({ revoke: true });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    await msg.edit({ text: `❌ Upload failed: ${errorMsg}` });
+  }
+};
+
 export const mediaHandlers: Record<string, HandlerFn> = {
   download: downloadHandler,
+  upload: uploadHandler,
   save: saveHandler,
   forward: forwardHandler,
   copy: copyHandler,

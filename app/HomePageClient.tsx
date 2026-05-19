@@ -278,9 +278,9 @@ export default function HomePage() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: 'Free', price: '\u20a60', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false },
-              { name: 'Standard', price: '\u20a6500', period: '/month', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Coming Soon', highlight: true },
-              { name: 'Boss', price: '\u20a62,000', period: '/month', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Coming Soon', highlight: false },
+              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false },
+              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Coming Soon', highlight: true },
+              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Coming Soon', highlight: false },
             ].map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
@@ -485,7 +485,7 @@ export default function HomePage() {
               <strong>Anti-ban protection:</strong> BotWave includes 7-day session warmup, human-like typing delays, 50–100 message variations, rate limiting (200 msgs/day cap), activity hours simulation, and media fingerprint jittering. Sessions run from your own device IP.
             </p>
             <p>
-              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans from ₦500/month for unlimited messages and multiple sessions.
+              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans coming soon with unlimited messages and multiple sessions.
             </p>
           </div>
         </div>
