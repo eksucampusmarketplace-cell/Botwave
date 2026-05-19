@@ -236,8 +236,7 @@ export const uploadHandler: HandlerFn = async (client, event) => {
       file: buffer,
       caption: caption || `📎 ${fileName}`,
       forceDocument: true,
-      fileName,
-    });
+    } as any);
     await msg.delete({ revoke: true });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
