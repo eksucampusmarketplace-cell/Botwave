@@ -44,6 +44,11 @@ export async function GET(request: NextRequest) {
       .eq('session_id', sessionId)
       .single();
 
+    // Convert antilink_whitelist array to comma-separated string for the dashboard
+    if (config && Array.isArray(config.antilink_whitelist)) {
+      config.antilink_whitelist = config.antilink_whitelist.join(', ');
+    }
+
     return NextResponse.json({ success: true, data: config });
   } catch (error) {
     console.error('[TG-CONFIG] GET error:', error);
@@ -77,6 +82,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const table = type === 'userbot' ? 'telegram_userbot_configs' : 'telegram_bot_configs';
+
+    // Convert antilink_whitelist from string to array if needed
+    if (typeof configFields.antilink_whitelist === 'string') {
+      configFields.antilink_whitelist = configFields.antilink_whitelist
+        ? configFields.antilink_whitelist.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    }
+
+    // Strip internal-only fields that don't exist in the DB
+    delete configFields.id;
+    delete configFields.created_at;
 
     const { data: config, error } = await supabase
       .from(table)
