@@ -1932,8 +1932,10 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       }
 
       if (platform === 'telegram_userbot') {
-        // Telegram userbot support not yet implemented - skip
-        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} - not yet supported, skipping`);
+        // Telegram userbots are managed by the dedicated userbot container
+        // (bot/userbot/entrypoint.ts). Release the lock so that container
+        // can pick up the session without conflict.
+        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} - managed by userbot container, skipping`);
         await releaseLock(session.id);
         continue;
       }

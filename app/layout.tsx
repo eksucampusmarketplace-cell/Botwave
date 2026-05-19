@@ -13,10 +13,10 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'BotWave - Free WhatsApp Bot That Actually Works (2026) | Stop Paying for Bots',
+    default: 'BotWave - Free WhatsApp & Telegram Bot Platform (2026) | Stop Paying for Bots',
     template: '%s | BotWave',
   },
-  description: 'Everyone is paying $20/mo for WhatsApp bots that barely work. BotWave is 100% free with 50+ commands - stickers, AI chat, games, anti-spam, media downloads. No coding. No catch. Works in Nigeria & worldwide. Why is nobody talking about this?',
+  description: 'Everyone is paying $20/mo for bots that barely work. BotWave is 100% free with 150+ commands across WhatsApp & Telegram - stickers, AI chat, games, anti-spam, media downloads. WhatsApp Bot, Telegram Bot & Userbot. No coding. No catch. Works in Nigeria & worldwide.',
   keywords: [
     'whatsapp bot',
     'whatsapp automation',
@@ -83,21 +83,21 @@ export const metadata: Metadata = {
     locale: 'en_NG',
     url: 'https://www.botwave.online',
     siteName: 'BotWave',
-    title: 'BotWave - The Free Bot Platform Everyone is Switching To',
-    description: 'Why pay for Telegram bots, Twitter bots, or TikTok automation when BotWave gives you 50+ WhatsApp commands for FREE? AI chat, stickers, games, anti-spam. No coding. No catch.',
+    title: 'BotWave - Free WhatsApp & Telegram Bot Platform Everyone is Switching To',
+    description: 'Why pay for bots when BotWave gives you 150+ commands across WhatsApp & Telegram for FREE? AI chat, stickers, games, anti-spam. WhatsApp Bot, Telegram Bot & Userbot. No coding. No catch.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'BotWave - Free WhatsApp Bot Automation Platform',
+        alt: 'BotWave - Free WhatsApp & Telegram Bot Automation Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BotWave - Free WhatsApp Bot That Puts Paid Bots to Shame',
-    description: 'I replaced my $20/mo Telegram bot with this FREE WhatsApp bot. 50+ commands, AI chat, stickers, games. No coding needed. Why is nobody talking about this?',
+    title: 'BotWave - Free WhatsApp & Telegram Bot Platform That Puts Paid Bots to Shame',
+    description: 'BotWave gives you 150+ commands across WhatsApp & Telegram for FREE. AI chat, stickers, games, group management. WhatsApp Bot, Telegram Bot & Userbot. No coding needed.',
     images: ['/og-image.png'],
   },
   robots: {

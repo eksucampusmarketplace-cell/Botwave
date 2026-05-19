@@ -39,7 +39,7 @@ async function syncSessions(): Promise<void> {
       .from('bot_sessions')
       .select('id, user_id, credentials, state, platform')
       .eq('platform', 'telegram_userbot')
-      .in('state', ['active', 'pairing_sent']);
+      .in('state', ['active', 'pairing_sent', 'connecting']);
 
     if (error) {
       console.error('[USERBOT] Session sync error:', error.message);
