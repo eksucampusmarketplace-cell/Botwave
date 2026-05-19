@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Telegram Userbot Commands List (2026) - 100+ Commands | BotWave',
@@ -293,6 +294,8 @@ export default function TelegramUserbotCommands() {
           </div>
         </div>
       </section>
+
+        <Footer />
     </main>
   );
 }

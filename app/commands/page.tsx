@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { allCommands, platformMeta, type Platform } from '@/lib/commands/data';
 
 export const metadata: Metadata = {
@@ -105,6 +106,7 @@ export default function CommandsPage() {
           <div id="userbot"><PlatformSection platform="userbot" /></div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

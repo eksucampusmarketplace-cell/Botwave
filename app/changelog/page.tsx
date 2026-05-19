@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Changelog - Updates and Release Notes | BotWave',
@@ -140,6 +141,8 @@ export default function ChangelogPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'AI Features - WaveAI Chat, Digest, Translation, OCR | BotWave',
@@ -172,6 +173,8 @@ export default function AIFeaturesPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

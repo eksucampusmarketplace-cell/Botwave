@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'What is BotWave? - Free Multi-Platform Bot Automation (2026)',
@@ -125,6 +126,8 @@ export default function WhatIsBotWavePage() {
           </div>
         </div>
       </article>
+
+        <Footer />
     </main>
   );
 }

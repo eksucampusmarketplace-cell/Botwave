@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'BotWave Academy - Learn WhatsApp Automation and Community Growth',
@@ -161,6 +162,8 @@ export default function AcademyPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

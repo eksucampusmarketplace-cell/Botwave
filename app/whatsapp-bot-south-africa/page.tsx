@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot for South Africa (2026) - Free Automation for SA Businesses & Communities',
@@ -96,6 +97,8 @@ export default function SouthAfricaLandingPage() {
           </div>
         </div>
       </section>
+
+        <Footer />
     </main>
   );
 }

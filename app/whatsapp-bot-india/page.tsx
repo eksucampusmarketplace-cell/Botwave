@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Bot for India (2026) - Free Automation for Indian Businesses & Groups',
@@ -96,6 +97,8 @@ export default function IndiaLandingPage() {
           </div>
         </div>
       </section>
+
+        <Footer />
     </main>
   );
 }

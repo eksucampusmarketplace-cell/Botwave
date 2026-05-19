@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { comparePages } from '@/lib/compare/data';
 
 export const metadata: Metadata = {
@@ -32,6 +33,8 @@ export default function CompareIndexPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

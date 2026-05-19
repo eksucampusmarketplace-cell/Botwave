@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Moderation Features - Community Shield Anti-Spam & Protection | BotWave',
@@ -218,6 +219,8 @@ export default function ModerationFeaturesPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

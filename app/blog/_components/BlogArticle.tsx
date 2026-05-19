@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 interface RelatedPost {
   slug: string;
@@ -316,6 +317,7 @@ export default function BlogArticle({ content, date, readTime, slug, relatedPost
           </motion.div>
         </div>
       </article>
+      <Footer />
     </main>
   );
 }
