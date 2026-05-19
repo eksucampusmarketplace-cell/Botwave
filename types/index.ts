@@ -13,7 +13,7 @@ export interface BotSession {
   user_id: string;
   phone_number: string;
   session_name: string;
-  state: 'active' | 'inactive' | 'qr_pending' | 'needs_reauth';
+  state: 'active' | 'inactive' | 'connecting' | 'qr_pending' | 'needs_reauth';
   qr_code: string | null;
   qr_expires_at: string | null;
   pairing_code: string | null;

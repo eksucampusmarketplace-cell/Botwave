@@ -270,7 +270,7 @@ export async function detectOrphanedSessions(platformFilter?: string): Promise<a
   let query = supabase
     .from('bot_sessions')
     .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, phone_number, updated_at, platform')
-    .in('state', ['qr_pending', 'pairing_sent', 'active'])
+    .in('state', ['qr_pending', 'pairing_sent', 'active', 'connecting'])
     .or(`heartbeat_at.is.null,heartbeat_at.lt.${staleTime}`);
 
   // Platform isolation: only recover sessions matching our platform
@@ -694,7 +694,7 @@ export async function auditSessions(): Promise<void> {
   const { data: sessions, error } = await supabase
     .from('bot_sessions')
     .select('id, state, locked_by, locked_at, heartbeat_at, worker_url, updated_at')
-    .in('state', ['qr_pending', 'pairing_sent', 'active', 'needs_reauth']);
+    .in('state', ['qr_pending', 'pairing_sent', 'active', 'connecting', 'needs_reauth']);
 
   if (error || !sessions) return;
 

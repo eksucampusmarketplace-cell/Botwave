@@ -479,7 +479,7 @@ export async function PATCH(request: NextRequest) {
     // Verify the session belongs to this user
     const { data: existing, error: fetchError } = await supabase
       .from('bot_sessions')
-      .select('id, state, worker_url')
+      .select('id, state, worker_url, platform')
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single();
@@ -494,36 +494,69 @@ export async function PATCH(request: NextRequest) {
     // Reassign to the least-loaded worker instead of keeping the session
     // on its current (potentially overloaded) worker.
     const newWorkerUrl = await assignWorkerAsync();
-    console.log(`[API] PATCH reconnect: session=${sessionId} previousState=${existing.state} oldWorker=${existing.worker_url ?? 'main'} newWorker=${newWorkerUrl ?? 'main'}`);
+    console.log(`[API] PATCH reconnect: session=${sessionId} platform=${existing.platform} previousState=${existing.state} oldWorker=${existing.worker_url ?? 'main'} newWorker=${newWorkerUrl ?? 'main'}`);
 
-    // Reset session for fresh pairing: clear old auth, QR, pairing code,
-    // and the DB-level pairing lock so the new worker doesn't see a stale
-    // lock and block the session from starting.
-    const { data: session, error } = await supabase
-      .from('bot_sessions')
-      .update({
-        state: 'qr_pending',
-        pairing_code: null,
-        qr_code: null,
-        qr_expires_at: null,
-        qr_generated_at: null,
-        auth_state: null,
-        locked_by: null,
-        locked_at: null,
-        heartbeat_at: null,
-        pairing_lock_acquired_at: null,
-        worker_url: newWorkerUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .select()
-      .single();
+    let session;
+    let error;
+
+    if (existing.platform === 'telegram_bot' || existing.platform === 'telegram_userbot') {
+      // Telegram sessions reconnect using stored credentials (bot token or MTProto session).
+      // Do NOT reset auth_state or set qr_pending — just mark as connecting and reassign worker.
+      const result = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'connecting',
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          worker_url: newWorkerUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      session = result.data;
+      error = result.error;
+
+      if (!error) {
+        console.log(`[API] PATCH reconnect: telegram session=${sessionId} set to connecting, worker=${newWorkerUrl ?? 'main'}`);
+      }
+    } else {
+      // WhatsApp sessions need fresh pairing: clear old auth, QR, pairing code,
+      // and the DB-level pairing lock so the new worker doesn't see a stale
+      // lock and block the session from starting.
+      const result = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'qr_pending',
+          pairing_code: null,
+          qr_code: null,
+          qr_expires_at: null,
+          qr_generated_at: null,
+          auth_state: null,
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          pairing_lock_acquired_at: null,
+          worker_url: newWorkerUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      session = result.data;
+      error = result.error;
+
+      if (!error) {
+        console.log(`[API] PATCH reconnect: whatsapp session=${sessionId} reset to qr_pending with fresh auth, worker=${newWorkerUrl ?? 'main'}`);
+      }
+    }
 
     if (error) {
       throw error;
     }
-    console.log(`[API] PATCH reconnect: session=${sessionId} reset to qr_pending with fresh auth, worker=${newWorkerUrl ?? 'main'}`);
 
     // Notify the newly assigned worker to pick up the session
     const workerUrl = newWorkerUrl;

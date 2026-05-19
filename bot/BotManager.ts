@@ -1781,6 +1781,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   sessions.sort((a, b) => {
     const priority = (s: typeof a) => {
       if (s.state === 'active') return 0;
+      if (s.state === 'connecting') return 0; // Treat connecting like active (Telegram reconnect)
       if (s.state === 'inactive') return 1;
       if (s.state === 'pairing_sent') return 2;
       if (s.state === 'qr_pending') return 3;
@@ -1816,7 +1817,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
 
-    if ((session.state === 'active' || session.state === 'inactive') && bot) {
+    if ((session.state === 'active' || session.state === 'inactive' || session.state === 'connecting') && bot) {
       // If the session is inactive and the bot is dead (not ready, not
       // reconnecting), clean it up so a fresh bot can retry on the next cycle.
       // This prevents sessions from getting permanently stuck after a transient

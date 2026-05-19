@@ -16,6 +16,7 @@ export interface ApiResponse<T> {
 export type SessionState =
   | 'active'
   | 'inactive'
+  | 'connecting'
   | 'qr_pending'
   | 'pairing_sent'
   | 'needs_reauth';
