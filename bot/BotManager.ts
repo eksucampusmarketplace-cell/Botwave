@@ -20,6 +20,7 @@ import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
 import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, type PairingResult } from './whatsapp/evolution/client';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
+import { TelegramUserbotInstance } from './userbot/instance';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -1932,11 +1933,23 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       }
 
       if (platform === 'telegram_userbot') {
-        // Telegram userbots are managed by the dedicated userbot container
-        // (bot/userbot/entrypoint.ts). Release the lock so that container
-        // can pick up the session without conflict.
-        console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} - managed by userbot container, skipping`);
-        await releaseLock(session.id);
+        const sessionString = (session as any).telegram_session_string;
+        if (!sessionString) {
+          console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} has no session_string - skipping`);
+          await releaseLock(session.id);
+          continue;
+        }
+        console.log(`[SYNC] Starting Telegram userbot for session: ${session.id.slice(0, 8)} | platform: telegram_userbot | state: ${session.state}`);
+        const ubInstance = new TelegramUserbotInstance({
+          sessionId: session.id,
+          userId: session.user_id,
+          apiId: (session as any).telegram_api_id || 0,
+          apiHash: (session as any).telegram_api_hash || '',
+          sessionString,
+          phoneNumber: (session as any).phone_number,
+        });
+        activeBots.set(session.id, ubInstance);
+        ubInstance.start().catch(err => console.error(`[SYNC] Failed to start Telegram userbot ${session.id.slice(0, 8)}:`, err));
         continue;
       }
 

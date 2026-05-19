@@ -37,9 +37,9 @@ async function syncSessions(): Promise<void> {
   try {
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
-      .select('id, user_id, credentials, state, platform')
+      .select('id, user_id, state, platform, telegram_api_id, telegram_api_hash, telegram_session_string, phone_number')
       .eq('platform', 'telegram_userbot')
-      .in('state', ['active', 'pairing_sent', 'connecting']);
+      .in('state', ['active', 'connecting']);
 
     if (error) {
       console.error('[USERBOT] Session sync error:', error.message);
@@ -70,25 +70,28 @@ async function syncSessions(): Promise<void> {
     for (const session of sessions) {
       if (manager.getStatus(session.id) !== 'stopped') continue;
 
-      const creds = session.credentials as Record<string, string> | null;
-      if (!creds?.session_string) {
+      const sessionString = (session as any).telegram_session_string;
+      if (!sessionString) {
         console.warn(`[USERBOT] Session ${session.id.slice(0, 8)} has no session_string, skipping`);
+        continue;
+      }
+
+      const apiId = (session as any).telegram_api_id || DEFAULT_API_ID;
+      const apiHash = (session as any).telegram_api_hash || DEFAULT_API_HASH;
+
+      if (!apiId || !apiHash) {
+        console.error(`[USERBOT] Session ${session.id.slice(0, 8)} missing api_id/api_hash`);
         continue;
       }
 
       const config: UserbotClientConfig = {
         sessionId: session.id,
         userId: session.user_id,
-        apiId: parseInt(creds.api_id || String(DEFAULT_API_ID), 10),
-        apiHash: creds.api_hash || DEFAULT_API_HASH,
-        sessionString: creds.session_string,
-        phoneNumber: creds.phone_number,
+        apiId,
+        apiHash,
+        sessionString,
+        phoneNumber: (session as any).phone_number,
       };
-
-      if (!config.apiId || !config.apiHash) {
-        console.error(`[USERBOT] Session ${session.id.slice(0, 8)} missing api_id/api_hash`);
-        continue;
-      }
 
       try {
         await manager.startUserbot(config);
