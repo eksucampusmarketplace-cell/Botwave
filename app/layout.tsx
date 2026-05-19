@@ -149,17 +149,20 @@ export default function RootLayout({
               applicationCategory: 'UtilitiesApplication',
               applicationSubCategory: 'Chat Bot Platform',
               operatingSystem: 'Web',
+              datePublished: '2026-01-15',
+              dateModified: new Date().toISOString().split('T')[0],
               offers: {
                 '@type': 'Offer',
                 price: '0',
                 priceCurrency: 'NGN',
+                availability: 'https://schema.org/InStock',
               },
               aggregateRating: {
                 '@type': 'AggregateRating',
                 ratingValue: '4.8',
                 reviewCount: '5000',
               },
-              description: 'Free WhatsApp bot automation platform. 50+ commands - stickers, AI chat, media downloads, group management, games, anti-spam. Alternative to Telegram bots, Twitter bots, and paid bot platforms. No coding needed. Works in Nigeria and worldwide.',
+              description: 'BotWave is a free WhatsApp and Telegram bot automation platform with 150+ commands including stickers, AI chat, media downloads, group management, games, and anti-spam. No coding required. Works in Nigeria and worldwide.',
               url: 'https://www.botwave.online',
               sameAs: [
                 'https://www.botwave.online/blog',
@@ -376,14 +379,31 @@ export default function RootLayout({
               name: 'BotWave',
               url: 'https://www.botwave.online',
               logo: 'https://www.botwave.online/icons/icon-512x512.png',
-              description: 'The operating system for WhatsApp communities and automation in Africa. Free bot platform with 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot.',
+              description: 'BotWave is the free bot automation platform for WhatsApp and Telegram communities in Africa. 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot — no coding needed.',
               foundingDate: '2026',
               founder: { '@type': 'Person', name: 'Decisive Analyst' },
+              brand: {
+                '@type': 'Brand',
+                name: 'BotWave',
+                logo: 'https://www.botwave.online/icons/icon-512x512.png',
+                slogan: 'Stop Paying for Bots',
+              },
+              contactPoint: {
+                '@type': 'ContactPoint',
+                contactType: 'customer support',
+                url: 'https://www.botwave.online/docs',
+                availableLanguage: ['English', 'Yoruba', 'Hausa', 'Igbo', 'Pidgin'],
+              },
+              areaServed: [
+                { '@type': 'Country', name: 'Nigeria' },
+                { '@type': 'Continent', name: 'Africa' },
+                { '@type': 'Place', name: 'Worldwide' },
+              ],
               sameAs: [
                 'https://www.botwave.online/blog',
                 'https://www.botwave.online/docs',
               ],
-              knowsAbout: ['WhatsApp automation', 'Telegram bots', 'community management', 'anti-spam', 'AI chatbots', 'group moderation'],
+              knowsAbout: ['WhatsApp automation', 'Telegram bots', 'community management', 'anti-spam', 'AI chatbots', 'group moderation', 'no-code bot builder', 'WhatsApp bot Nigeria'],
             }),
           }}
         />
