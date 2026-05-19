@@ -46,21 +46,37 @@ const ownedSessions: Set<string> = new Set();
 /**
  * Try to acquire a lock on a session. Returns true if acquired (or already owned).
  * Idempotent: calling multiple times with the same instance is safe.
+ * Platform isolation: when BOT_PLATFORM is set, refuses to lock sessions
+ * belonging to a different platform (prevents cross-platform lock theft).
  */
 export async function tryAcquireLock(sessionId: string): Promise<boolean> {
   if (isCircuitOpen() || isShutdown()) return false;
   const now = new Date().toISOString();
+  const botPlatform = process.env.BOT_PLATFORM || '';
 
   // First check current lock state
   const { data: session, error: fetchErr } = await supabase
     .from('bot_sessions')
-    .select('locked_by, locked_at, heartbeat_at')
+    .select('locked_by, locked_at, heartbeat_at, platform')
     .eq('id', sessionId)
     .single();
 
   if (fetchErr || !session) {
     console.error(`[COORD] Failed to check lock for ${sessionId}:`, fetchErr);
     return false;
+  }
+
+  // Platform isolation: refuse to lock sessions from a different platform.
+  // This prevents the WhatsApp container from stealing Telegram/userbot locks
+  // (and vice versa) during startup cleanup or orphan recovery.
+  if (botPlatform) {
+    const sessionPlatform = session.platform || 'whatsapp';
+    const isOurPlatform =
+      (botPlatform === 'whatsapp' && (sessionPlatform === 'whatsapp' || !session.platform)) ||
+      (botPlatform === 'telegram' && (sessionPlatform === 'telegram_bot' || sessionPlatform === 'telegram_userbot'));
+    if (!isOurPlatform) {
+      return false;
+    }
   }
 
   // Already owned by us - refresh
@@ -161,10 +177,16 @@ export async function refreshHeartbeat(sessionId: string): Promise<void> {
  * Used by worker threads whose normal heartbeats go to Redis only. Without
  * periodic Supabase syncs, the orphan detector (which queries Supabase) would
  * see stale heartbeat_at values and reclaim the session.
+ *
+ * Platform isolation: only re-acquires the lock if the session belongs to
+ * our platform (or if BOT_PLATFORM is not set). This prevents a WhatsApp
+ * worker from silently claiming a Telegram session's lock.
  */
 export async function refreshHeartbeatToSupabase(sessionId: string): Promise<void> {
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const botPlatform = process.env.BOT_PLATFORM || '';
+
+  let query = supabase
     .from('bot_sessions')
     .update({
       heartbeat_at: now,
@@ -172,6 +194,15 @@ export async function refreshHeartbeatToSupabase(sessionId: string): Promise<voi
       locked_at: now,
     })
     .eq('id', sessionId);
+
+  // Only re-acquire lock for sessions matching our platform
+  if (botPlatform === 'whatsapp') {
+    query = query.or('platform.eq.whatsapp,platform.is.null');
+  } else if (botPlatform === 'telegram') {
+    query = query.in('platform', ['telegram_bot', 'telegram_userbot']);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error(`[COORD] Supabase heartbeat failed for ${sessionId}:`, error);
@@ -412,8 +443,11 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
   // Also clean up locks from previous main instances with different PIDs.
   // When INSTANCE_ID is 'main-{PID}', the PID changes on every restart,
   // leaving orphaned locks that only get cleaned by the 120s orphan cycle.
+  // CRITICAL: Apply platform filter here too - without it, a WhatsApp container
+  // restart would release locks held by the Telegram container (and vice versa),
+  // causing cross-platform lock theft.
   if (INSTANCE_ID.startsWith('main-')) {
-    const { data: mainLocks, error: mainErr } = await supabase
+    let mainLockQuery = supabase
       .from('bot_sessions')
       .update({
         locked_by: null,
@@ -421,11 +455,23 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
         heartbeat_at: null,
       })
       .like('locked_by', 'main-%')
-      .neq('locked_by', INSTANCE_ID)
-      .select('id, state');
+      .neq('locked_by', INSTANCE_ID);
+
+    // Apply the same platform filter so we only release locks for our platform
+    if (platformFilter === 'whatsapp') {
+      mainLockQuery = mainLockQuery.or('platform.eq.whatsapp,platform.is.null');
+    } else if (platformFilter === 'telegram') {
+      mainLockQuery = mainLockQuery.in('platform', ['telegram_bot', 'telegram_userbot']);
+    } else if (platformFilter === 'telegram_userbot') {
+      mainLockQuery = mainLockQuery.eq('platform', 'telegram_userbot');
+    } else if (platformFilter === 'telegram_bot') {
+      mainLockQuery = mainLockQuery.eq('platform', 'telegram_bot');
+    }
+
+    const { data: mainLocks, error: mainErr } = await mainLockQuery.select('id, state');
 
     if (!mainErr && mainLocks && mainLocks.length > 0) {
-      console.log(`[COORD] Released ${mainLocks.length} stale lock(s) from previous main instances: ${mainLocks.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
+      console.log(`[COORD] Released ${mainLocks.length} stale lock(s) from previous main instances (platform=${platformFilter || 'all'}): ${mainLocks.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
     }
   }
 

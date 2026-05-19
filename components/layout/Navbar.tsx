@@ -24,14 +24,16 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <ul className="hidden md:flex gap-8 list-none">
+        <ul className="hidden md:flex gap-6 list-none">
           {[
             { href: '/commands', label: 'Commands' },
             { href: '/docs', label: 'Docs' },
+            { href: '/how-to', label: 'Guides' },
+            { href: '/compare', label: 'Compare' },
             { href: '/use-cases', label: 'Use Cases' },
             { href: '/blog', label: 'Blog' },
             { href: '/faq', label: 'FAQ' },
-            { href: '/changelog', label: 'Changelog' },
+            { href: '/fix', label: 'Fix' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -120,9 +122,15 @@ export default function Navbar() {
               {[
                 { href: '/commands', label: 'Commands' },
                 { href: '/docs', label: 'Docs' },
+                { href: '/how-to', label: 'Guides' },
+                { href: '/compare', label: 'Compare' },
                 { href: '/use-cases', label: 'Use Cases' },
                 { href: '/blog', label: 'Blog' },
                 { href: '/faq', label: 'FAQ' },
+                { href: '/fix', label: 'Troubleshooting' },
+                { href: '/features', label: 'Features' },
+                { href: '/integrations', label: 'Integrations' },
+                { href: '/templates', label: 'Templates' },
                 { href: '/changelog', label: 'Changelog' },
               ].map((link) => (
                 <Link
