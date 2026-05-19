@@ -40,7 +40,7 @@ const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 // When BOT_PLATFORM is set, this process only handles sessions for that platform.
 // 'telegram' = only telegram_bot sessions, 'whatsapp' = only whatsapp sessions.
 // Unset or empty = handle all platforms (legacy single-container mode).
-const BOT_PLATFORM = process.env.BOT_PLATFORM || '';
+export const BOT_PLATFORM = process.env.BOT_PLATFORM || '';
 
 // ─── Session Welcome Video (sent once on first pairing) ─────────────────────
 

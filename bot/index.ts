@@ -1,6 +1,6 @@
 import './env';
 import { isMainThread } from 'worker_threads';
-import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
+import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration, BOT_PLATFORM } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './scaling/sessionCoordinator';
@@ -43,8 +43,10 @@ async function start() {
 
   await bot.start();
 
-  // Coordinator: clean up stale locks from previous run, start heartbeat
-  await cleanupOnStartup();
+  // Coordinator: clean up stale locks from previous run, start heartbeat.
+  // Pass BOT_PLATFORM so WhatsApp container only cleans its own sessions,
+  // never touching Telegram bot/userbot locks.
+  await cleanupOnStartup(BOT_PLATFORM || undefined);
   startHeartbeatLoop();
 
   // Immediate orphan recovery on startup - don't wait 120s for the regular cycle.
@@ -52,7 +54,7 @@ async function start() {
   // and ready for reconnection BEFORE the first sync picks them up.
   if (!IS_WORKER) {
     try {
-      const recovered = await recoverOrphanedSessions();
+      const recovered = await recoverOrphanedSessions(BOT_PLATFORM || undefined);
       if (recovered > 0) {
         console.log(`[STARTUP] Immediately recovered ${recovered} orphaned session(s) for fast reconnection`);
       }
@@ -177,7 +179,7 @@ async function start() {
     setTimeout(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
-        const recovered = await recoverOrphanedSessions();
+        const recovered = await recoverOrphanedSessions(BOT_PLATFORM || undefined);
         if (recovered > 0) {
           console.log(`[STARTUP] Accelerated recovery: ${recovered} orphaned session(s)`);
         }
@@ -189,7 +191,7 @@ async function start() {
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
-        const recovered = await recoverOrphanedSessions();
+        const recovered = await recoverOrphanedSessions(BOT_PLATFORM || undefined);
         if (recovered > 0) {
           console.log(`[COORD] Recovered ${recovered} orphaned session(s)`);
         }
