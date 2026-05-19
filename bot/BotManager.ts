@@ -1559,13 +1559,20 @@ export class EvolutionBot {
 
       const silentMs = Date.now() - lastActivity;
       if (silentMs > DEAF_SESSION_THRESHOLD_MS) {
-        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min - forcing instance restart to recover`);
+        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min - checking instance status before restart`);
         try {
+          // Check instance status first — only restart if actually disconnected
+          const instanceState = await getInstanceStatus(this.sessionId);
+          if (instanceState === 'open') {
+            console.log(`[DEAF-DETECT] Session ${this.sessionId} instance is still 'open' — skipping restart, resetting activity timer`);
+            recordMessageActivity(this.sessionId);
+            return;
+          }
+          console.warn(`[DEAF-DETECT] Session ${this.sessionId} instance state='${instanceState}' — restarting`);
           await restartInstance(this.sessionId);
-          // Reset activity timestamp so we don't immediately trigger again
           recordMessageActivity(this.sessionId);
         } catch (err) {
-          console.error(`[DEAF-DETECT] Failed to restart instance ${this.sessionId}:`, err);
+          console.error(`[DEAF-DETECT] Failed to check/restart instance ${this.sessionId}:`, err);
         }
       }
     }, DEAF_SESSION_CHECK_INTERVAL_MS);

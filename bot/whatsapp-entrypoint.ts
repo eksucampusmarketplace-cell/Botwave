@@ -21,7 +21,7 @@ process.env.BOT_PLATFORM = 'whatsapp';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './scaling/sessionCoordinator';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './whatsapp/evolution/client';
@@ -42,6 +42,7 @@ async function start() {
   console.log(`[WHATSAPP] Starting WhatsApp-only bot service... IS_WORKER=${IS_WORKER} WORKER_URLS=${WORKER_URLS.join(',') || 'none'} SELF_URL=${process.env.SELF_URL || 'not set'} INSTANCE=${getInstanceId()}`);
 
   installShutdownHandlers();
+  onShutdown('releaseLocks', async () => { await releaseAllOwnedLocks(); });
   onShutdown('heartbeat', async () => { stopHeartbeatLoop(); });
   onShutdown('monetization', async () => { stopMonetizationScheduler(); });
   onShutdown('memoryGuard', async () => { stopMemoryGuard(); });

@@ -3,7 +3,7 @@ import { isMainThread } from 'worker_threads';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration, BOT_PLATFORM } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions } from './scaling/sessionCoordinator';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './whatsapp/evolution/client';
@@ -31,6 +31,7 @@ async function start() {
 
   // ── Install graceful shutdown before anything else ──
   installShutdownHandlers();
+  onShutdown('releaseLocks', async () => { await releaseAllOwnedLocks(); });
   onShutdown('heartbeat', async () => { stopHeartbeatLoop(); });
   onShutdown('monetization', async () => { stopMonetizationScheduler(); });
   onShutdown('memoryGuard', async () => { stopMemoryGuard(); });

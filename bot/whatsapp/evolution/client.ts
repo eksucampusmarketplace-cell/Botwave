@@ -1,6 +1,8 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock } from '../../infrastructure/redis';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -45,27 +47,56 @@ if (PROXY_LIST.length > 0) {
 let consecutiveFailures = 0;
 const MAX_CONSECUTIVE_FAILURES = 5;
 
-// ─── Global 428 Cooldown ───────────────────────────────────────────────
+// ─── Global 428 Cooldown (Redis-backed, shared across workers) ─────────
 // When ANY instance receives a 428 ("Connection Closed" - WhatsApp rate limit),
-// ALL new connection/creation attempts are paused for COOLDOWN_DURATION_MS.
-// This prevents the thrash loop: connect → 428 → retry immediately → 428 again.
+// ALL new connection/creation attempts are paused. The cooldown is stored in
+// Redis so all workers share the same state. Falls back to in-memory if Redis
+// is unavailable.
 let global428CooldownUntil = 0;
-const COOLDOWN_DURATION_MS = 60_000; // 60 seconds - WhatsApp rate limit resets in ~30-60s
+const COOLDOWN_DURATION_MS = 300_000; // 5 minutes — WhatsApp 428 often needs >60s
 
-/** Activate the global 428 cooldown. Called when any instance receives 428. */
-export function trigger428Cooldown(source: string): void {
+/** Activate the 428 cooldown. Stores in Redis (shared) + local fallback. */
+export function trigger428Cooldown(source: string, retryAfterSec?: number): void {
+  const cooldownSec = retryAfterSec && retryAfterSec > 0 ? retryAfterSec : COOLDOWN_DURATION_MS / 1000;
   const now = Date.now();
   if (now < global428CooldownUntil) {
     console.log(`[428-COOLDOWN] Already in cooldown (${Math.round((global428CooldownUntil - now) / 1000)}s remaining) - triggered by ${source}`);
     return;
   }
-  global428CooldownUntil = now + COOLDOWN_DURATION_MS;
-  console.warn(`[428-COOLDOWN] ⚠️ ACTIVATED - all new connections paused for ${COOLDOWN_DURATION_MS / 1000}s (triggered by ${source})`);
+  global428CooldownUntil = now + cooldownSec * 1000;
+  // Store in Redis for cross-worker visibility (fire-and-forget)
+  redisSet428Cooldown('global', cooldownSec).catch(() => {});
+  console.warn(`[428-COOLDOWN] ⚠️ ACTIVATED - all new connections paused for ${cooldownSec}s (triggered by ${source})`);
 }
 
-/** Check if the global 428 cooldown is currently active. */
+/** Activate a per-session 428 cooldown in Redis. */
+export function triggerSession428Cooldown(sessionId: string, cooldownSec = 300): void {
+  redisSet428Cooldown(sessionId, cooldownSec).catch(() => {});
+  // Also set global fallback
+  trigger428Cooldown(`session ${sessionId.slice(0, 8)}`, cooldownSec);
+}
+
+/** Check if the global 428 cooldown is currently active (local + Redis). */
 export function is428CooldownActive(): boolean {
   return Date.now() < global428CooldownUntil;
+}
+
+/** Async check of 428 cooldown including Redis (for cross-worker accuracy). */
+export async function is428CooldownActiveAsync(sessionId?: string): Promise<boolean> {
+  if (Date.now() < global428CooldownUntil) return true;
+  // Check Redis for global cooldown
+  const globalRemaining = await redisGet428Cooldown('global');
+  if (globalRemaining > 0) {
+    // Sync local state
+    global428CooldownUntil = Date.now() + globalRemaining * 1000;
+    return true;
+  }
+  // Check per-session cooldown if provided
+  if (sessionId) {
+    const sessionRemaining = await redisGet428Cooldown(sessionId);
+    if (sessionRemaining > 0) return true;
+  }
+  return false;
 }
 
 /** Get remaining cooldown time in seconds (0 if not active). */
@@ -336,18 +367,56 @@ export function resetEvolutionHealth(): void {
   consecutiveFailures = 0;
 }
 
+// Sticky proxy: remember which proxy each session used, reuse on reconnect
+const sessionProxyMap = new Map<string, number>();
+
+/** Set the sticky proxy for a session (call after successful proxy assignment). */
+export function setSessionProxy(sessionId: string, proxyIndex: number): void {
+  sessionProxyMap.set(sessionId, proxyIndex);
+}
+
+/** Get the sticky proxy index for a session, or -1 if none assigned. */
+export function getSessionProxyIndex(sessionId: string): number {
+  return sessionProxyMap.get(sessionId) ?? -1;
+}
+
 /**
- * Pick the next proxy from the pool in round-robin order.
- * Returns proxy config or null if no proxies configured or pool is disabled.
+ * Pick the next proxy from the pool.
+ * If sessionId is provided, tries to reuse the same proxy (sticky).
+ * Falls back to round-robin if the sticky proxy is disabled.
  */
-function getNextProxy(): { host: string; port: string; protocol: string; username: string; password: string } | null {
+function getNextProxy(sessionId?: string): { host: string; port: string; protocol: string; username: string; password: string } | null {
   if (PROXY_LIST.length === 0) return null;
   if (proxyPoolDisabled) {
     console.log('[PROXY] Pool disabled (fallback mode) - skipping proxy assignment');
     return null;
   }
-  const proxy = PROXY_LIST[proxyCounter % PROXY_LIST.length];
-  proxyCounter++;
+
+  // Sticky proxy: prefer the same proxy used last time for this session
+  let index: number;
+  if (sessionId) {
+    const stickyIdx = sessionProxyMap.get(sessionId);
+    if (stickyIdx !== undefined && stickyIdx < PROXY_LIST.length) {
+      const stickyHost = PROXY_LIST[stickyIdx].split(':')[0];
+      const failures = proxyFailures.get(stickyHost) || 0;
+      if (failures < PROXY_FAIL_THRESHOLD) {
+        index = stickyIdx;
+      } else {
+        // Sticky proxy is unhealthy, rotate to next
+        index = proxyCounter % PROXY_LIST.length;
+        proxyCounter++;
+      }
+    } else {
+      index = proxyCounter % PROXY_LIST.length;
+      proxyCounter++;
+    }
+    sessionProxyMap.set(sessionId, index);
+  } else {
+    index = proxyCounter % PROXY_LIST.length;
+    proxyCounter++;
+  }
+
+  const proxy = PROXY_LIST[index];
   const parts = proxy.split(':');
   if (parts.length < 4) return null;
   return {
@@ -594,7 +663,7 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     const maxProxyAttempts = PROXY_LIST.length || 0;
     let proxySet = false;
     for (let pi = 0; pi < maxProxyAttempts && !proxySet; pi++) {
-      const p = getNextProxy();
+      const p = getNextProxy(instanceName);
       if (!p) break;
       try {
         const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
@@ -750,6 +819,21 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
   const flowStart = Date.now();
   console.log(`[PAIRING-EVO-CLIENT] ======= getPairingCode START ======= instance=${instanceName} phone=${cleanPhone} at=${new Date(flowStart).toISOString()}`);
 
+  // Distributed pairing lock: prevent concurrent pairing requests from multiple workers
+  const lockAcquired = await redisAcquirePairingLock(instanceName);
+  if (!lockAcquired) {
+    console.warn(`[PAIRING-EVO-CLIENT] Another worker is already pairing instance=${instanceName} — aborting`);
+    return null;
+  }
+
+  try {
+    return await getPairingCodeInner(instanceName, cleanPhone, flowStart);
+  } finally {
+    await redisReleasePairingLock(instanceName);
+  }
+}
+
+async function getPairingCodeInner(instanceName: string, cleanPhone: string, flowStart: number): Promise<PairingResult | null> {
   const connectStart = Date.now();
   const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {

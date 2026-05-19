@@ -192,6 +192,84 @@ export async function redisGetKeepalive(targetUrl: string): Promise<{ status: st
   }
 }
 
+// ─── 428 Cooldown (shared across workers) ────────────────────────────────────
+
+/**
+ * Activate a 428 cooldown for a specific session in Redis.
+ * Key: `cooldown428:{sessionId}`, TTL: cooldownSec.
+ * Falls back to global key if sessionId is 'global'.
+ */
+export async function redisSet428Cooldown(sessionId: string, cooldownSec: number): Promise<boolean> {
+  if (!isRedisAvailable()) return false;
+  try {
+    const key = sessionId === 'global' ? 'cooldown428:global' : `cooldown428:${sessionId}`;
+    await redis!.set(key, JSON.stringify({ ts: Date.now(), expiresAt: Date.now() + cooldownSec * 1000 }), 'EX', cooldownSec);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a 428 cooldown is active for a session (or globally).
+ * Returns remaining seconds, or 0 if not active.
+ */
+export async function redisGet428Cooldown(sessionId: string): Promise<number> {
+  if (!isRedisAvailable()) return 0;
+  try {
+    const key = sessionId === 'global' ? 'cooldown428:global' : `cooldown428:${sessionId}`;
+    const ttl = await redis!.ttl(key);
+    return ttl > 0 ? ttl : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ─── Webhook Dedup (shared across workers) ───────────────────────────────────
+
+/**
+ * Mark a webhook message as seen using Redis SETNX (atomic).
+ * Returns true if this is the first time (not a duplicate), false if already seen.
+ * Key: `webhookdedup:{sessionId}:{messageId}`, TTL: 300s (5 minutes).
+ */
+export async function redisMarkWebhookSeen(sessionId: string, messageId: string): Promise<boolean> {
+  if (!isRedisAvailable()) return true; // fallback: treat as unseen
+  try {
+    const key = `webhookdedup:${sessionId}:${messageId}`;
+    const result = await redis!.set(key, '1', 'EX', 300, 'NX');
+    return result === 'OK'; // true = first time, false = duplicate
+  } catch {
+    return true; // on error, treat as unseen to avoid dropping messages
+  }
+}
+
+// ─── Distributed Pairing Lock ────────────────────────────────────────────────
+
+/**
+ * Acquire a distributed pairing lock for a session.
+ * Prevents multiple workers from requesting pairing codes simultaneously.
+ * Key: `pairinglock:{sessionId}`, TTL: 60s.
+ */
+export async function redisAcquirePairingLock(sessionId: string): Promise<boolean> {
+  if (!isRedisAvailable()) return true; // fallback: allow
+  try {
+    const result = await redis!.set(`pairinglock:${sessionId}`, '1', 'EX', 60, 'NX');
+    return result === 'OK';
+  } catch {
+    return true; // on error, allow pairing to proceed
+  }
+}
+
+/**
+ * Release a distributed pairing lock for a session.
+ */
+export async function redisReleasePairingLock(sessionId: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    await redis!.del(`pairinglock:${sessionId}`);
+  } catch { /* ignore */ }
+}
+
 // ─── Health Check ────────────────────────────────────────────────────────────
 
 /**

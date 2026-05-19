@@ -1,6 +1,7 @@
-import { is428CooldownActive, get428CooldownRemaining } from '../whatsapp/evolution/client';
+import { is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining } from '../whatsapp/evolution/client';
+import { redisGet428Cooldown } from './redis';
 
-const DELAY_MS = 5_000; // 5s gap between Baileys pairing requests (avoids 428)
+const DELAY_MS = 30_000; // 30s gap between pairing requests (prevents 428 storms)
 
 interface LinkJob {
   sessionId: string;
@@ -31,11 +32,16 @@ async function processQueue() {
   processing = true;
   console.log(`[PAIRING-QUEUE] Processing started. queueLen=${queue.length}`);
   while (queue.length > 0) {
-    // Respect 428 cooldown before attempting any pairing request
-    if (is428CooldownActive()) {
-      const remaining = get428CooldownRemaining() * 1000;
-      console.log(`[PAIRING-QUEUE] 428 cooldown active, waiting ${Math.ceil(remaining / 1000)}s`);
-      await new Promise(r => setTimeout(r, remaining + 1000));
+    // Respect 428 cooldown (global + per-session via Redis) before attempting any pairing request
+    const nextJob = queue[0];
+    const sessionCooldown = nextJob ? await redisGet428Cooldown(nextJob.sessionId) : 0;
+    if (is428CooldownActive() || sessionCooldown > 0) {
+      const globalRemaining = get428CooldownRemaining();
+      const waitSec = Math.max(globalRemaining, sessionCooldown);
+      console.log(`[PAIRING-QUEUE] 428 cooldown active (global=${globalRemaining}s, session=${sessionCooldown}s), waiting ${waitSec}s`);
+      if (waitSec > 0) {
+        await new Promise(r => setTimeout(r, waitSec * 1000 + 1000));
+      }
     }
 
     const job = queue.shift()!;

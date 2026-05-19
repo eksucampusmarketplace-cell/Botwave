@@ -22,7 +22,7 @@ import {
   markEvolutionRecovered,
   isEvolutionHealthy,
 } from '../whatsapp/evolution/client';
-import { refreshHeartbeat, tryAcquireLock, untrackSession } from './sessionCoordinator';
+import { refreshHeartbeat, tryAcquireLock, untrackSession, releaseLock } from './sessionCoordinator';
 import { getSessionsNeedingBot } from '../database';
 import { stopAndRemoveBot } from '../BotManager';
 
@@ -578,6 +578,7 @@ function scaleDown(count: number): void {
     sendToWorker(w.id, { type: 'shutdown' });
 
     // Redistribute sessions to remaining workers
+    let reassigned = 0;
     for (const sid of sessionIds) {
       const target = getLeastLoadedWorker(w.id);
       if (target) {
@@ -589,8 +590,14 @@ function scaleDown(count: number): void {
           cached?.state || 'active',
           cached?.userId || '',
         );
+        reassigned++;
+      } else {
+        // No healthy worker available — release lock so main service picks it up
+        console.warn(`[SCALE] No target worker for session ${sid.slice(0, 8)} during scale-down — releasing lock for main to pick up`);
+        releaseLock(sid).catch(() => {});
       }
     }
+    console.log(`[SCALE] Worker ${w.id} shutdown: ${reassigned}/${sessionIds.length} sessions reassigned`);
   }
 }
 

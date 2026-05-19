@@ -294,10 +294,25 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
       console.error(`[PAIRING-DB] CODE MISMATCH! Saved "${code}" but DB has "${postState?.pairing_code}". Possible race condition or filter blocked the update.`);
     }
   }
+
+  // Invalidate Redis caches after pairing code change
+  await invalidateSessionCache(sessionId);
+  await invalidateQRCache(sessionId);
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
   const timestamp = new Date().toISOString();
+
+  // Valid state transitions — prevents illegal jumps (e.g. active→pairing).
+  // Any transition not listed here is blocked in application code.
+  const VALID_TRANSITIONS: Record<string, string[]> = {
+    inactive:       ['qr_pending', 'pairing_sent', 'active', 'needs_reauth'],
+    qr_pending:     ['pairing_sent', 'active', 'inactive', 'needs_reauth'],
+    pairing_sent:   ['active', 'qr_pending', 'inactive', 'needs_reauth'],
+    active:         ['inactive', 'needs_reauth'],
+    needs_reauth:   ['qr_pending', 'pairing_sent', 'active', 'inactive'],
+  };
+
   // Defense-in-depth: never regress an active session to pairing_sent or
   // qr_pending. Stale webhooks or race conditions can attempt this; the
   // Supabase filter ensures the update is silently skipped in those cases.
@@ -312,6 +327,20 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     .eq('id', sessionId)
     .single();
   console.log(`[PAIRING-STATE] Updating session=${sessionId}: ${preState?.state || 'unknown'} → ${status} (isRegression=${isRegression}, hasPairingCode=${!!preState?.pairing_code}) at=${timestamp}`);
+
+  // Validate state transition
+  const currentState = preState?.state || 'inactive';
+  const allowedNextStates = VALID_TRANSITIONS[currentState];
+  if (allowedNextStates && !allowedNextStates.includes(status) && currentState !== status) {
+    console.warn(`[PAIRING-STATE] BLOCKED invalid transition for ${sessionId}: ${currentState} → ${status} (allowed: ${allowedNextStates.join(', ')})`);
+    return;
+  }
+
+  // Skip no-op updates (idempotency — Bug 15)
+  if (currentState === status) {
+    console.log(`[PAIRING-STATE] SKIP no-op update for ${sessionId}: already in state ${status}`);
+    return;
+  }
 
   const updatePayload: Record<string, any> = {
     state: status,
@@ -506,7 +535,7 @@ export async function recoverStaleSessions(isWorkerHealthy: (url: string) => Pro
  * sessions with worker_url IS NOT NULL (useless in standalone mode).
  */
 export async function recoverStaleStandaloneSessions(): Promise<number> {
-  const STALE_THRESHOLD_MS = 120_000; // 2 minutes without update
+  const STALE_THRESHOLD_MS = 300_000; // 5 minutes — aligned with LOCK_EXPIRY_MS grace period
   const cutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
 
   // Find sessions on main (no worker_url) stuck in non-terminal states
