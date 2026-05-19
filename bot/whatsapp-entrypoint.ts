@@ -54,13 +54,13 @@ async function start() {
 
   await bot.start();
 
-  await cleanupOnStartup();
+  await cleanupOnStartup('whatsapp');
   startHeartbeatLoop();
 
   // Immediate orphan recovery on startup
   if (!IS_WORKER) {
     try {
-      const recovered = await recoverOrphanedSessions();
+      const recovered = await recoverOrphanedSessions('whatsapp');
       if (recovered > 0) {
         console.log(`[WHATSAPP] Immediately recovered ${recovered} orphaned session(s)`);
       }
@@ -156,7 +156,7 @@ async function start() {
     setTimeout(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
-        const recovered = await recoverOrphanedSessions();
+        const recovered = await recoverOrphanedSessions('whatsapp');
         if (recovered > 0) {
           console.log(`[WHATSAPP] Accelerated recovery: ${recovered} orphaned session(s)`);
         }
@@ -168,7 +168,7 @@ async function start() {
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
       try {
-        const recovered = await recoverOrphanedSessions();
+        const recovered = await recoverOrphanedSessions('whatsapp');
         if (recovered > 0) {
           console.log(`[WHATSAPP] Recovered ${recovered} orphaned session(s)`);
         }
