@@ -266,6 +266,21 @@ async function start() {
   registerInterval(startWriteQueueReplay());
   registerInterval(startMemoryGuard());
 
+  // Webhook retry processing (every 30s, non-worker only)
+  if (!IS_WORKER) {
+    const healthPort = process.env.HEALTH_PORT || '10000';
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        const internalSecret = process.env.INTERNAL_SECRET || process.env.BOT_SECRET_KEY || '';
+        await fetch(`http://localhost:${healthPort}/api/bot/webhook-retry`, {
+          headers: { 'x-internal-secret': internalSecret },
+          signal: AbortSignal.timeout(10_000),
+        }).catch(() => {});
+      } catch { /* non-critical */ }
+    }, 30_000));
+  }
+
   // Circuit breaker + write queue status log (every 60s)
   registerInterval(setInterval(() => {
     const stats = getCircuitStats();

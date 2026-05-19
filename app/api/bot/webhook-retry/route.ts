@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,13 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * or an external cron. Picks up to 10 pending retries, attempts to re-process
  * them, and updates their status accordingly.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Require internal secret to prevent external abuse
+  const secret = request.headers.get('x-internal-secret');
+  const internalSecret = process.env.INTERNAL_SECRET || process.env.BOT_SECRET_KEY;
+  if (internalSecret && secret !== internalSecret) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

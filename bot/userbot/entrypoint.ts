@@ -13,6 +13,7 @@ import http from 'http';
 import { createClient } from '@supabase/supabase-js';
 import { UserbotManager } from './manager';
 import type { UserbotClientConfig } from './client';
+import { decrypt } from '@/lib/crypto';
 
 // ─── Environment ─────────────────────────────────────────────────────────────
 
@@ -70,11 +71,12 @@ async function syncSessions(): Promise<void> {
     for (const session of sessions) {
       if (manager.getStatus(session.id) !== 'stopped') continue;
 
-      const sessionString = (session as any).telegram_session_string;
-      if (!sessionString) {
+      const rawSessionString = (session as any).telegram_session_string;
+      if (!rawSessionString) {
         console.warn(`[USERBOT] Session ${session.id.slice(0, 8)} has no session_string, skipping`);
         continue;
       }
+      const sessionString = decrypt(rawSessionString, session.user_id);
 
       const apiId = (session as any).telegram_api_id || DEFAULT_API_ID;
       const apiHash = (session as any).telegram_api_hash || DEFAULT_API_HASH;

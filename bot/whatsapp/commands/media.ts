@@ -453,7 +453,13 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
       const outFile = files.trim();
       if (outFile) {
-        const { readFile } = await import('fs/promises');
+        const { readFile, stat } = await import('fs/promises');
+        const fileStat = await stat(outFile);
+        if (fileStat.size > 50 * 1024 * 1024) {
+          await sendReply(context.chatJid, 'File too large (>50MB). WhatsApp can\'t send it.', sock, context.rawMessage.key, context.queue);
+          await unlink(outFile).catch(() => {});
+          return;
+        }
         const buffer = await readFile(outFile);
         const ext = path.extname(outFile).toLowerCase();
         if (['.mp4', '.webm', '.mkv', '.mov'].includes(ext)) {

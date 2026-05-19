@@ -1,3 +1,5 @@
+import { is428CooldownActive, get428CooldownRemaining } from '../whatsapp/evolution/client';
+
 const DELAY_MS = 5_000; // 5s gap between Baileys pairing requests (avoids 428)
 
 interface LinkJob {
@@ -29,6 +31,13 @@ async function processQueue() {
   processing = true;
   console.log(`[PAIRING-QUEUE] Processing started. queueLen=${queue.length}`);
   while (queue.length > 0) {
+    // Respect 428 cooldown before attempting any pairing request
+    if (is428CooldownActive()) {
+      const remaining = get428CooldownRemaining() * 1000;
+      console.log(`[PAIRING-QUEUE] 428 cooldown active, waiting ${Math.ceil(remaining / 1000)}s`);
+      await new Promise(r => setTimeout(r, remaining + 1000));
+    }
+
     const job = queue.shift()!;
     const waitTime = Date.now() - job.queuedAt;
     console.log(`[PAIRING-QUEUE] Processing job: session=${job.sessionId} phone=${job.phoneNumber} waitedInQueue=${waitTime}ms remainingJobs=${queue.length}`);

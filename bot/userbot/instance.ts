@@ -11,6 +11,7 @@
 import { type UserbotClientConfig } from './client';
 import { UserbotManager } from './manager';
 import { createClient } from '@supabase/supabase-js';
+import { decrypt } from '@/lib/crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -78,7 +79,7 @@ export class TelegramUserbotInstance {
       userId: this.userId,
       apiId: this.apiId,
       apiHash: this.apiHash,
-      sessionString: this.sessionString,
+      sessionString: decrypt(this.sessionString, this.userId),
       phoneNumber: this.phoneNumber,
     };
 

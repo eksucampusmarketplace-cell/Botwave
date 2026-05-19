@@ -73,7 +73,11 @@ export class RateLimiter {
     }
 
     validTimestamps.push(now);
-    this.requests.set(key, validTimestamps);
+    if (validTimestamps.length === 0) {
+      this.requests.delete(key);
+    } else {
+      this.requests.set(key, validTimestamps);
+    }
     return true;
   }
 

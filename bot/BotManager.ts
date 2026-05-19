@@ -21,6 +21,7 @@ import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
 import { TelegramUserbotInstance } from './userbot/instance';
+import { decrypt } from '@/lib/crypto';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -1933,12 +1934,13 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
       }
 
       if (platform === 'telegram_userbot') {
-        const sessionString = (session as any).telegram_session_string;
-        if (!sessionString) {
+        const rawSessionString = (session as any).telegram_session_string;
+        if (!rawSessionString) {
           console.log(`[SYNC] Telegram userbot session ${session.id.slice(0, 8)} has no session_string - skipping`);
           await releaseLock(session.id);
           continue;
         }
+        const sessionString = decrypt(rawSessionString, session.user_id);
         console.log(`[SYNC] Starting Telegram userbot for session: ${session.id.slice(0, 8)} | platform: telegram_userbot | state: ${session.state}`);
         const ubInstance = new TelegramUserbotInstance({
           sessionId: session.id,

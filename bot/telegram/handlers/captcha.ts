@@ -48,8 +48,12 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
         try {
           const verified = await isCaptchaVerified(sessionId, chatId.toString(), memberId.toString());
           if (!verified) {
-            await bot.api.banChatMember(chatId, memberId);
-            await bot.api.unbanChatMember(chatId, memberId);
+            // Only kick if captcha_kick is enabled in config
+            const latestConfig = await getGroupConfig(sessionId, chatId.toString());
+            if ((latestConfig as Record<string, unknown>).captcha_kick !== false) {
+              await bot.api.banChatMember(chatId, memberId);
+              await bot.api.unbanChatMember(chatId, memberId);
+            }
             await bot.api.deleteMessage(chatId, msgId).catch(() => {});
           }
         } catch (err) {

@@ -2,6 +2,7 @@ import { registerCommand, type MessageContext, type TemplateVars } from './regis
 import { sendReply, downloadMedia, getQuotedMessage, getImageFromContext, axios } from './helpers';
 import { getBase64FromMediaMessage } from '../evolution/client';
 import { callAI, callAIVision, AIQuotaExhaustedError, AIRateLimitError } from '../../../lib/ai-provider';
+import { getUserSubscription } from '../../database';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink, readFile, access } from 'fs/promises';
@@ -252,6 +253,17 @@ async function handleDigest(
   }
 
   try {
+    // Plan gating: digest is a premium feature
+    const sub = await getUserSubscription(context.userId);
+    if (sub?.plan === 'free') {
+      await sendReply(
+        context.chatJid,
+        'Group digest is available on Standard plan and above. Use *!upgrade* to see plans.',
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+
     await sendReply(context.chatJid, 'Generating digest...', sock, context.rawMessage.key, context.queue);
 
     // Determine how many messages or time range

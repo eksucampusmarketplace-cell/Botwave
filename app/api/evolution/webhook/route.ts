@@ -24,13 +24,28 @@ const HEARTBEAT_THROTTLE_MS = 60_000;
 // independently by each.
 const seenMsgs = new Map<string, number>();
 const SEEN_TTL = 150_000; // 150 seconds (matches 120s timestamp guard + buffer)
+const SEEN_MAX_SIZE = 5000;
+
+// Periodic cleanup — prevents unbounded growth regardless of traffic patterns
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, t] of seenMsgs) {
+      if (now - t > SEEN_TTL) seenMsgs.delete(k);
+    }
+  }, 60_000);
+}
+
 function markSeen(sessionId: string, msgId: string): boolean {
   const key = `${sessionId}:${msgId}`;
   const now = Date.now();
-  // Prune old entries
-  if (seenMsgs.size > 1000) {
-    for (const [k, t] of seenMsgs) {
-      if (now - t > SEEN_TTL) seenMsgs.delete(k);
+  // Hard cap: evict oldest entries if over max size
+  if (seenMsgs.size > SEEN_MAX_SIZE) {
+    const iter = seenMsgs.keys();
+    let toDelete = seenMsgs.size - SEEN_MAX_SIZE + 100;
+    while (toDelete-- > 0) {
+      const k = iter.next().value;
+      if (k) seenMsgs.delete(k);
     }
   }
   if (seenMsgs.has(key)) return false; // already seen
