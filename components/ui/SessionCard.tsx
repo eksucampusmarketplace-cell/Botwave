@@ -82,7 +82,7 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
         <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColors[status]}`}>
           {statusLabels[status]}
         </span>
-        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'qr_pending' || status === 'pairing_sent' || status === 'pending') && status !== 'connecting' && (
+        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'qr_pending' || status === 'pairing_sent' || status === 'pending') && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
