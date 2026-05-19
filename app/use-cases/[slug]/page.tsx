@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { useCases, getUseCaseBySlug } from '@/lib/usecases/data';
 
 export function generateStaticParams() {
@@ -105,6 +106,8 @@ export default function UseCasePage({ params }: { params: { slug: string } }) {
           </section>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { faqItems, getAllFaqCategories } from '@/lib/faq/data';
 
 export const metadata: Metadata = {
@@ -76,6 +77,8 @@ export default function FAQPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

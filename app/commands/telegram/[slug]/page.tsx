@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { telegramCommands, getCommandBySlug, getCommandsByCategory } from '@/lib/commands/data';
 
 export function generateStaticParams() {
@@ -135,6 +136,8 @@ export default function TelegramCommandPage({ params }: { params: { slug: string
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

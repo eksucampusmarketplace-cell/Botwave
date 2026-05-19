@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Media Features - Sticker Maker, Video Download, Logo Generator | BotWave',
@@ -177,6 +178,8 @@ export default function MediaFeaturesPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

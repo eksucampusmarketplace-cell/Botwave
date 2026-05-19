@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Bot Templates - Ready-Made Setups for WhatsApp & Telegram | BotWave',
@@ -168,6 +169,8 @@ export default function TemplatesPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Telegram Bot for Nigeria (2026) - Free Group Management & AI Chat',
@@ -152,6 +153,8 @@ export default function TelegramBotNigeria() {
           </div>
         </div>
       </section>
+
+        <Footer />
     </main>
   );
 }

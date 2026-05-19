@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { docPages, getDocBySlug } from '@/lib/docs/data';
 
 export function generateStaticParams() {
@@ -127,6 +128,8 @@ export default function DocPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

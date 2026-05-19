@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { fixPages } from '@/lib/fix/data';
 
 export function generateStaticParams() {
@@ -89,6 +90,8 @@ export default function FixPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

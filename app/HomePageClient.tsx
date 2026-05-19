@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import FeatureCard from '@/components/ui/FeatureCard';
 import HowItWorks from '@/components/ui/HowItWorks';
 import Disclaimer from '@/components/ui/Disclaimer';
@@ -508,32 +509,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 px-6 bg-[var(--bg)] border-t border-[var(--border)]">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-center md:text-left">
-              <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">Bot<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Wave</span></div>
-              <p className="text-base text-[var(--text-secondary)]">WhatsApp &amp; Telegram Automation Platform</p>
-              <p className="text-sm text-[var(--text-muted)] mt-1">Created by Decisive Analyst</p>
-            </div>
-            <div className="flex gap-8 text-base">
-              <Link href="#features" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">Features</Link>
-              <Link href="#how" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">How it Works</Link>
-              <Link href="#pricing" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">Pricing</Link>
-              <Link href="#faq" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">FAQ</Link>
-            </div>
-            <div className="flex gap-3">
-              {['Node.js', 'Baileys', 'grammy', 'Supabase', 'AI'].map((tech) => (
-                <span key={tech} className="px-2.5 py-1.5 bg-[var(--bg-alt)] border border-[var(--border)] rounded-lg text-xs text-[var(--text-muted)] font-medium">{tech}</span>
-              ))}
-            </div>
-          </div>
-          <div className="border-t border-[var(--border)] mt-8 pt-6 text-center">
-            <p className="text-sm text-[var(--text-muted)]">&copy; {new Date().getFullYear()} BotWave &middot; Built with care by Decisive Analyst</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Security - How BotWave Protects Your Account | BotWave',
@@ -105,6 +106,8 @@ export default function SecurityPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }

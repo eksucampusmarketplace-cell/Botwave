@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Case Studies - Real Results with BotWave | BotWave',
@@ -134,6 +135,8 @@ export default function CaseStudiesPage() {
           </div>
         </div>
       </div>
+
+        <Footer />
     </main>
   );
 }
