@@ -1637,7 +1637,7 @@ export class EvolutionBot {
 
 // ─── Shared Bot Map + Sync ────────────────────────────────────────────────────
 
-type AnyBot = BotWaveBot | EvolutionBot | TelegramBotInstance;
+type AnyBot = BotWaveBot | EvolutionBot | TelegramBotInstance | TelegramUserbotInstance;
 const activeBots: Map<string, AnyBot> = new Map();
 
 // ─── Worker Thread Integration ────────────────────────────────────────────────
