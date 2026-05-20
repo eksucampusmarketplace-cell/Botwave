@@ -67,6 +67,7 @@ async function sendHelp(
 !palette / !pick / !coinflip / !dice
 !password / !uuid / !epoch / !bmi / !age
 !unit / !paste / !uptime / !id / !stats
+!feature [idea] - Suggest a new feature
 
 *INFO*
 !crypto / !ud / !ip / !npm / !whois [domain]

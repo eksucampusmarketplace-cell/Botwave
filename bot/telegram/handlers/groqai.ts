@@ -1,37 +1,27 @@
 /**
- * Groq AI Integration - /ask, /summarize commands using Groq API.
+ * Groq AI Integration - /ask, /summarize, /translate commands using
+ * the shared multi-key AI provider (Groq primary, Gemini fallback).
  */
 
 import { Bot } from 'grammy';
 import { escapeHtml } from '../utils/format';
 import { getGroupConfig } from '../utils/db';
+import { callAI, AIRateLimitError, AIQuotaExhaustedError } from '../../../lib/ai-provider';
 
 async function queryGroq(prompt: string, systemPrompt?: string): Promise<string | null> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return null;
-
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
-        messages: [
-          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 1024,
-        temperature: 0.7,
-      }),
+    return await callAI({
+      prompt,
+      systemPrompt,
+      maxTokens: 1024,
+      temperature: 0.7,
     });
-
-    if (!response.ok) return null;
-    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    return data.choices?.[0]?.message?.content || null;
-  } catch {
+  } catch (err: unknown) {
+    if (err instanceof AIRateLimitError || err instanceof AIQuotaExhaustedError) {
+      console.warn(`[GroqAI] All AI providers rate-limited: ${(err as Error).message}`);
+    } else {
+      console.error(`[GroqAI] AI call failed:`, err);
+    }
     return null;
   }
 }
@@ -56,7 +46,7 @@ export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
 
     const answer = await queryGroq(question, 'You are a helpful assistant in a Telegram group chat. Keep answers concise and informative.');
     if (!answer) {
-      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is unavailable. Check GROQ_API_KEY configuration.');
+      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is temporarily unavailable. All providers are rate-limited — try again in a minute.');
       return;
     }
 
@@ -79,7 +69,7 @@ export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
     const thinking = await ctx.reply('📝 Summarizing...');
     const summary = await queryGroq(text, 'Summarize the following text concisely. Keep it under 200 words.');
     if (!summary) {
-      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is unavailable.');
+      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is temporarily unavailable.');
       return;
     }
 
@@ -105,7 +95,7 @@ export function registerGroqAiHandlers(bot: Bot, sessionId: string): void {
     const thinking = await ctx.reply('🌐 Translating...');
     const translated = await queryGroq(text, `Translate the following text to ${targetLang}. Only output the translation, nothing else.`);
     if (!translated) {
-      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is unavailable.');
+      await ctx.api.editMessageText(ctx.chat!.id, thinking.message_id, '❌ AI is temporarily unavailable.');
       return;
     }
 
