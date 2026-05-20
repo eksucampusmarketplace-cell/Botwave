@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
             `⚠️ *Important - Please read:*\n` +
             `1. Don't spam or send excessive automated messages. Other WhatsApp users can report your number, which may lead to account restrictions. We are not responsible for any account loss - use wisely!\n` +
             `2. *Your bot can disconnect* if WhatsApp drops the session or if our server restarts. If your bot stops responding, go to your dashboard at ${dashUrl} and reconnect. You are in control of your session.\n\n` +
-            `_Created by Decisive Analyst_`,
+            `_Created by BotWave Team_`,
 
             `Welcome to BotWave! 🚀 Your WhatsApp bot is live.\n\n` +
             `Quick start:\n` +
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
             `⚠️ *Things you should know:*\n` +
             `1. Avoid spamming or flooding chats with bot messages. If other users report you, WhatsApp may restrict or ban your number. We're not responsible for any account actions.\n` +
             `2. *Disconnections can happen* - if the bot stops working, visit ${dashUrl} and reconnect your session. The bot doesn't stay online forever on its own.\n\n` +
-            `_Powered by Decisive Analyst_`,
+            `_Powered by BotWave Team_`,
 
             `You're all set! ✨ BotWave is connected and ready.\n\n` +
             `Get started:\n` +
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
             `⚠️ *Keep in mind:*\n` +
             `1. Don't overuse or spam automated messages - if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
             `2. *Your bot session may disconnect* sometimes. When it does, just go to ${dashUrl} and click reconnect. You're always in control.\n\n` +
-            `_Built by Decisive Analyst_`,
+            `_Built by BotWave Team_`,
           ];
           const welcomeText = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
           const selfJid = current.phone_number.replace(/\D/g, '');

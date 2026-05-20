@@ -129,7 +129,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-[var(--border)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[var(--text-muted)]">
-            &copy; {new Date().getFullYear()} BotWave &middot; Built by Decisive Analyst &middot; Free WhatsApp &amp; Telegram Bot Platform
+            &copy; {new Date().getFullYear()} BotWave &middot; Built by BotWave Team &middot; Free WhatsApp &amp; Telegram Bot Platform
           </p>
           <div className="flex gap-4 text-xs text-[var(--text-muted)]">
             <Link href="/privacy" className="hover:text-[var(--primary)] transition-colors">Privacy</Link>

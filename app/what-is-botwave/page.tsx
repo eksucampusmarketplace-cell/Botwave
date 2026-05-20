@@ -41,7 +41,7 @@ export default function WhatIsBotWavePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 ['Founded', '2026'],
-                ['Creator', 'Decisive Analyst'],
+                ['Creator', 'BotWave Team'],
                 ['Platforms', 'WhatsApp, Telegram Bot, Telegram Userbot'],
                 ['Price', 'Free tier (300 msgs/mo), Paid from ₦500/mo'],
                 ['Commands', '50+ built-in (AI, stickers, games, admin, media)'],

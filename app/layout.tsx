@@ -72,8 +72,8 @@ export const metadata: Metadata = {
     'telegram anti-spam bot',
     'telegram bot platform',
   ],
-  authors: [{ name: 'Decisive Analyst' }],
-  creator: 'Decisive Analyst',
+  authors: [{ name: 'BotWave Team' }],
+  creator: 'BotWave Team',
   publisher: 'BotWave',
   manifest: '/manifest.json',
   metadataBase: new URL('https://www.botwave.online'),
@@ -179,7 +179,7 @@ export default function RootLayout({
               keywords: 'whatsapp bot, free whatsapp bot, telegram bot alternative, whatsapp automation, bot maker, chatbot platform, whatsapp bot nigeria, messaging bot, no code bot builder, whatsapp group bot, ai chatbot whatsapp',
               author: {
                 '@type': 'Person',
-                name: 'Decisive Analyst',
+                name: 'BotWave Team',
               },
             }),
           }}
@@ -390,7 +390,7 @@ export default function RootLayout({
               logo: 'https://www.botwave.online/icons/icon-512x512.png',
               description: 'BotWave is the free bot automation platform for WhatsApp and Telegram communities in Africa. 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot — no coding needed.',
               foundingDate: '2026',
-              founder: { '@type': 'Person', name: 'Decisive Analyst' },
+              founder: { '@type': 'Organization', name: 'BotWave Team' },
               brand: {
                 '@type': 'Brand',
                 name: 'BotWave',

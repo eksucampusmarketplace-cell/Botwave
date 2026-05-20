@@ -474,7 +474,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-6 text-center">What Is BotWave?</h2>
           <div className="space-y-4 text-base text-[var(--text-secondary)] leading-relaxed">
             <p>
-              <strong>BotWave</strong> is a free, no-code bot automation platform that works across WhatsApp, Telegram Bot, and Telegram Userbot. It was created by Decisive Analyst in 2026 and serves users in Nigeria and worldwide.
+              <strong>BotWave</strong> is a free, no-code bot automation platform that works across WhatsApp, Telegram Bot, and Telegram Userbot. It was created by BotWave Team in 2026 and serves users in Nigeria and worldwide.
             </p>
             <p>
               <strong>How it works:</strong> Sign up at botwave.online, connect your account (WhatsApp via QR scan, Telegram Bot via @BotFather token, Telegram Userbot via MTProto API credentials), and your bot is live in under 2 minutes.
