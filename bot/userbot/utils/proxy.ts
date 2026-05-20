@@ -38,6 +38,10 @@ const proxyHealth: Map<string, { failures: number; lastFailure: number }> = new 
 const MAX_FAILURES = 5;
 const FAILURE_RESET_MS = 5 * 60 * 1000;
 
+// Circuit breaker: track when all proxies were exhausted
+let allProxiesExhaustedAt = 0;
+const CIRCUIT_BREAKER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minute backoff when all proxies fail
+
 function proxyKey(proxy: ProxyEntry): string {
   return `${proxy.host}:${proxy.port}`;
 }
@@ -46,10 +50,62 @@ export function getProxyCount(): number {
   return USERBOT_PROXY_LIST.length;
 }
 
+/**
+ * Get a sticky proxy for a session. Same session always gets the same proxy
+ * (based on hash of session ID) to prevent WhatsApp/Telegram from detecting
+ * IP changes and forcing re-authentication.
+ */
+export function getStickyProxy(sessionId: string): ProxyEntry | null {
+  if (USERBOT_PROXY_LIST.length === 0) return null;
+
+  // Simple hash of session ID to get a stable index
+  let hash = 0;
+  for (let i = 0; i < sessionId.length; i++) {
+    hash = ((hash << 5) - hash + sessionId.charCodeAt(i)) | 0;
+  }
+  const baseIndex = Math.abs(hash) % USERBOT_PROXY_LIST.length;
+
+  const now = Date.now();
+  // Try the sticky proxy first, then fall back to neighbors
+  for (let offset = 0; offset < USERBOT_PROXY_LIST.length; offset++) {
+    const proxy = USERBOT_PROXY_LIST[(baseIndex + offset) % USERBOT_PROXY_LIST.length];
+    const key = proxyKey(proxy);
+    const health = proxyHealth.get(key);
+
+    if (health && health.failures >= MAX_FAILURES) {
+      if (now - health.lastFailure > FAILURE_RESET_MS) {
+        proxyHealth.delete(key);
+      } else {
+        continue;
+      }
+    }
+
+    return proxy;
+  }
+
+  // All proxies exhausted — circuit breaker: wait before retrying
+  if (now - allProxiesExhaustedAt < CIRCUIT_BREAKER_COOLDOWN_MS) {
+    console.warn(`[USERBOT-PROXY] Circuit breaker open - all proxies failed, waiting ${Math.round((CIRCUIT_BREAKER_COOLDOWN_MS - (now - allProxiesExhaustedAt)) / 1000)}s`);
+    return null;
+  }
+
+  allProxiesExhaustedAt = now;
+  console.warn(`[USERBOT-PROXY] All proxies exhausted - resetting health and entering 5min cooldown`);
+  proxyHealth.clear();
+  return USERBOT_PROXY_LIST[baseIndex] || null;
+}
+
 export function getNextProxy(): ProxyEntry | null {
   if (USERBOT_PROXY_LIST.length === 0) return null;
 
   const now = Date.now();
+
+  // Circuit breaker check
+  if (allProxiesExhaustedAt > 0 && now - allProxiesExhaustedAt < CIRCUIT_BREAKER_COOLDOWN_MS) {
+    console.warn(`[USERBOT-PROXY] Circuit breaker open - waiting`);
+    return null;
+  }
+
   let attempts = 0;
 
   while (attempts < USERBOT_PROXY_LIST.length) {
@@ -71,7 +127,9 @@ export function getNextProxy(): ProxyEntry | null {
     return proxy;
   }
 
-  // All proxies exhausted - reset all and try first
+  // All proxies exhausted - circuit breaker
+  allProxiesExhaustedAt = now;
+  console.warn(`[USERBOT-PROXY] All proxies exhausted - circuit breaker activated for 5 minutes`);
   proxyHealth.clear();
   return USERBOT_PROXY_LIST[0] || null;
 }

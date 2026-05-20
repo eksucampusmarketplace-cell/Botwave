@@ -22,6 +22,7 @@ import {
   getUserbotConfig,
   updateSessionState,
   updateSessionLastActive,
+  saveSessionString,
 } from './utils/db';
 import {
   readDelay,
@@ -85,6 +86,7 @@ interface ManagedUserbot {
   sessionId: string;
   userId: string;
   startedAt: number;
+  lastSessionRefresh: number;
 }
 
 export class UserbotManager {
@@ -134,6 +136,7 @@ export class UserbotManager {
       sessionId,
       userId: config.userId,
       startedAt: Date.now(),
+      lastSessionRefresh: Date.now(),
     });
 
     await updateSessionState(sessionId, 'connected');
@@ -232,17 +235,45 @@ export class UserbotManager {
         try {
           const connected = ub.client.isConnected();
 
-          // Even if client.connected is true, verify with a real API call
-          // GramJS can report connected on a stale TCP socket
           if (connected) {
+            // Ping with 5-second timeout to detect half-open sockets
             try {
-              await ub.client.client.invoke(
-                new Api.Ping({ pingId: BigInt(Math.floor(Math.random() * 1e15)) as any }),
-              );
+              await Promise.race([
+                ub.client.client.invoke(
+                  new Api.Ping({ pingId: BigInt(Math.floor(Math.random() * 1e15)) as any }),
+                ),
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Ping timeout (5s)')), 5000),
+                ),
+              ]);
               await updateSessionLastActive(sessionId);
             } catch (pingErr) {
-              console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} ping failed - connection stale, forcing reconnect`);
+              const errMsg = pingErr instanceof Error ? pingErr.message : String(pingErr);
+              console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} ping failed: ${errMsg} - forcing reconnect`);
+
+              // Check for terminal session errors
+              if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+                console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} terminal error: ${errMsg} - marking needs_reauth`);
+                await updateSessionState(sessionId, 'needs_reauth');
+                continue;
+              }
+
               await this.reconnectSession(sessionId, ub);
+            }
+
+            // Session refresh every 4 hours: re-save session string to prevent expiration
+            const SESSION_REFRESH_MS = 4 * 60 * 60_000;
+            if (Date.now() - ub.lastSessionRefresh > SESSION_REFRESH_MS) {
+              try {
+                const newSessionString = ub.client.getSessionString();
+                if (newSessionString) {
+                  await saveSessionString(sessionId, newSessionString);
+                  ub.lastSessionRefresh = Date.now();
+                  console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} string refreshed (4h cycle)`);
+                }
+              } catch (refreshErr) {
+                console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} refresh failed:`, refreshErr);
+              }
             }
           } else {
             console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} disconnected, attempting reconnect...`);
@@ -260,22 +291,43 @@ export class UserbotManager {
       // Disconnect first to clean up stale state
       try { await ub.client.client.disconnect(); } catch {}
 
+      // Clear any previous auth error
+      ub.client.authError = null;
+
       const reconnected = await ub.client.connect();
       if (reconnected) {
         // Re-register event handlers - they are lost on manual reconnect
         this.registerHandlers(ub.client, sessionId);
         await updateSessionState(sessionId, 'connected');
+        ub.lastSessionRefresh = Date.now();
         console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnected + handlers re-registered`);
 
         // Reset fail counter
         const failKey = `_reconnectFails_${sessionId}`;
         (this as unknown as Record<string, number>)[failKey] = 0;
       } else {
+        // Check if this was a terminal auth error
+        if (ub.client.authError) {
+          console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auth dead: ${ub.client.authError} - marking needs_reauth`);
+          await updateSessionState(sessionId, 'needs_reauth');
+          this.userbots.delete(sessionId);
+          return;
+        }
+
         console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect returned false`);
         await updateSessionState(sessionId, 'error');
       }
     } catch (reconnectErr) {
-      console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect failed:`, reconnectErr);
+      const errMsg = reconnectErr instanceof Error ? reconnectErr.message : String(reconnectErr);
+      console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect failed: ${errMsg}`);
+
+      // Check for terminal auth errors
+      if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+        await updateSessionState(sessionId, 'needs_reauth');
+        this.userbots.delete(sessionId);
+        return;
+      }
+
       const failKey = `_reconnectFails_${sessionId}`;
       const fails = ((this as unknown as Record<string, number>)[failKey] || 0) + 1;
       (this as unknown as Record<string, number>)[failKey] = fails;

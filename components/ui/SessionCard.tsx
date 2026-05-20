@@ -10,6 +10,7 @@ interface SessionCardProps {
   phone: string;
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth' | 'connecting';
   lastActive: string;
+  lastActiveRaw?: string | null;
   platform?: Platform;
   sessionId?: string;
   onConnect: () => void;
@@ -29,7 +30,15 @@ const platformLabels: Record<Platform, string> = {
   telegram_userbot: 'TG User',
 };
 
-export default function SessionCard({ name, phone, status, lastActive, platform, sessionId, onConnect, onDisconnect, onDelete }: SessionCardProps) {
+export default function SessionCard({ name, phone, status, lastActive, lastActiveRaw, platform, sessionId, onConnect, onDisconnect, onDelete }: SessionCardProps) {
+  // Detect stale sessions: active but last_active > 2 hours ago
+  const isStale = (() => {
+    if (status !== 'active' && status !== 'connected') return false;
+    if (!lastActiveRaw) return false;
+    const lastActiveTime = new Date(lastActiveRaw).getTime();
+    if (isNaN(lastActiveTime)) return false;
+    return Date.now() - lastActiveTime > 2 * 60 * 60 * 1000;
+  })();
   const statusColors = {
     connected: 'bg-green-500 text-white',
     active: 'bg-green-500 text-white',
@@ -75,6 +84,11 @@ export default function SessionCard({ name, phone, status, lastActive, platform,
           </div>
           <p className="text-sm text-[var(--text-secondary)] mt-1">{phone}</p>
           <p className="text-xs text-[var(--text-muted)] mt-1">Last active: {lastActive}</p>
+          {isStale && (
+            <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5 font-medium">
+              &#9888; Session may be unresponsive (no activity for 2+ hours)
+            </p>
+          )}
         </div>
       </div>
 
