@@ -17,7 +17,8 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './scaling/workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
 import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, type PairingResult } from './whatsapp/evolution/client';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
+import { redisGetSessionProxy } from './infrastructure/redis';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
 import { TelegramUserbotInstance } from './userbot/instance';
@@ -104,6 +105,7 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const SESSION_STAGGER_DELAY = 15_000; // 15s between pairing starts to avoid WhatsApp 428 rate limits
 const PAIRING_TIMEOUT_MS = 180_000; // 3 min - matches UI countdown in QRCodeDisplay
 const MAX_CONCURRENT_PAIRING = 2; // Max sessions pairing simultaneously - prevents 428 storms
+const MAX_PAIRING_RETRIES = 3; // Max auto-retries before giving up on pairing (rotates proxy each time)
 
 // Proxy pool for Baileys direct mode - distributes WebSocket connections
 // across different IPs to avoid WhatsApp 428 bans from shared Render IP.
@@ -1122,6 +1124,7 @@ export class EvolutionBot {
     let unknownStateCount = 0;
     const MAX_UNKNOWN_BEFORE_RECREATE = 6;
     let isRecreating = false;
+    let pairingRetryCount = 0; // Tracks auto-retries during pairing (resets on success)
 
     this.pollHandle = setInterval(async () => {
       if (isRecreating) return;
@@ -1131,6 +1134,7 @@ export class EvolutionBot {
 
         if (state === 'open' && !this.isReady) {
           unknownStateCount = 0;
+          pairingRetryCount = 0;
           this.isReady = true;
           this.isPairingSent = false;
           this.isReconnecting = false;
@@ -1207,10 +1211,28 @@ export class EvolutionBot {
                 void sendSessionWelcome(this.sessionId, ownerJid, this.socketAdapter);
                 return;
               }
-              // Auto-retry with fresh code
-              console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) - auto-retrying`);
+              // Auto-retry with fresh code + proxy rotation
+              pairingRetryCount++;
+              console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) - auto-retry ${pairingRetryCount}/${MAX_PAIRING_RETRIES}`);
+
+              if (pairingRetryCount > MAX_PAIRING_RETRIES) {
+                console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting needs_reauth`);
+                await updateSessionStatus(this.sessionId, 'needs_reauth');
+                this.isPairingSent = false;
+                if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+                return;
+              }
+
               isRecreating = true;
               try {
+                // Record proxy failure and clear sticky assignment so createInstance picks a fresh proxy
+                const currentProxy = await redisGetSessionProxy(this.sessionId);
+                if (currentProxy) {
+                  const proxyHost = currentProxy.split(':')[0];
+                  recordProxyFailure(this.sessionId, proxyHost, `pairing stuck in connecting for ${PAIRING_TIMEOUT_MS / 1000}s`);
+                }
+                await clearSessionProxy(this.sessionId);
+
                 await deleteInstanceAndVerify(this.sessionId);
                 if (this.stopped) { isRecreating = false; return; }
                 await createInstance(this.sessionId, this.phoneNumber);
@@ -1225,7 +1247,7 @@ export class EvolutionBot {
                   await updateSessionPairingCode(this.sessionId, freshResult.pairingCode);
                   this.pairingStartedAt = Date.now();
                   pairingWaitStart = Date.now();
-                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
+                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
                 } else {
                   console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} - setting needs_reauth`);
                   await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1375,15 +1397,30 @@ export class EvolutionBot {
               return;
             }
 
-            // Pairing timed out - auto-retry with a fresh code instead of
-            // going straight to needs_reauth. This gives users another chance
-            // without requiring manual reconnection from the dashboard.
-            console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) - auto-retrying with fresh code`);
+            // Pairing timed out - auto-retry with a fresh code + proxy rotation
+            pairingRetryCount++;
+            console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) - auto-retry ${pairingRetryCount}/${MAX_PAIRING_RETRIES}`);
+
+            if (pairingRetryCount > MAX_PAIRING_RETRIES) {
+              console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting needs_reauth`);
+              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              this.isPairingSent = false;
+              if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+              return;
+            }
+
             isRecreating = true;
             try {
+              // Clear sticky proxy so createInstance picks a different one
+              const currentProxy2 = await redisGetSessionProxy(this.sessionId);
+              if (currentProxy2) {
+                const proxyHost2 = currentProxy2.split(':')[0];
+                recordProxyFailure(this.sessionId, proxyHost2, `pairing closed/refused after ${Math.round((Date.now() - pairingWaitStart) / 1000)}s`);
+              }
+              await clearSessionProxy(this.sessionId);
+
               await deleteInstanceAndVerify(this.sessionId);
               if (this.stopped) { isRecreating = false; return; }
-              // createInstance already calls setWebhook internally after success
               await createInstance(this.sessionId, this.phoneNumber);
               if (this.stopped) { isRecreating = false; return; }
               const freshResult2 = await getPairingCode(this.sessionId, this.phoneNumber);
@@ -1396,24 +1433,18 @@ export class EvolutionBot {
                 await updateSessionPairingCode(this.sessionId, freshResult2.pairingCode);
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
-                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode}`);
+                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
               } else {
                 console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} - setting needs_reauth`);
                 await updateSessionStatus(this.sessionId, 'needs_reauth');
                 this.isPairingSent = false;
-                if (this.pollHandle) {
-                  clearInterval(this.pollHandle);
-                  this.pollHandle = null;
-                }
+                if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
               }
             } catch (retryErr) {
               console.error(`[EVO] Auto-retry error for ${this.sessionId}:`, retryErr);
               await updateSessionStatus(this.sessionId, 'needs_reauth');
               this.isPairingSent = false;
-              if (this.pollHandle) {
-                clearInterval(this.pollHandle);
-                this.pollHandle = null;
-              }
+              if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
             }
             isRecreating = false;
           } else if (this.isReconnecting && !this.isPairingSent) {
