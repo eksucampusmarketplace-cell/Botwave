@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy } from '../../infrastructure/redis';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -378,6 +378,16 @@ export function setSessionProxy(sessionId: string, proxyIndex: number): void {
 /** Get the sticky proxy index for a session, or -1 if none assigned. */
 export function getSessionProxyIndex(sessionId: string): number {
   return sessionProxyMap.get(sessionId) ?? -1;
+}
+
+/**
+ * Clear the sticky proxy for a session (both in-memory and Redis).
+ * Call this before re-creating an instance so a fresh proxy is assigned.
+ */
+export async function clearSessionProxy(sessionId: string): Promise<void> {
+  sessionProxyMap.delete(sessionId);
+  await redisClearSessionProxy(sessionId);
+  console.log(`[PROXY] Cleared sticky proxy for session ${sessionId.slice(0, 8)} — will pick a fresh proxy on next assignment`);
 }
 
 /** Parse a proxy string (host:port:user:pass) into a structured object. */
