@@ -13,6 +13,7 @@ import './smart';
 import './social';
 import './multiplayerGame';
 import './lang';
+import './featureRequest';
 
 // Re-export registry for use by MessageHandler
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';
