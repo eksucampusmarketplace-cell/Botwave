@@ -603,14 +603,12 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     }
 
     const attempts = autoRecoveryAttempts.get(session.id) || 0;
-    if (attempts >= AUTO_RECOVERY_MAX_ATTEMPTS) {
-      continue; // exhausted auto-recovery for this session
-    }
 
-    // Exponential backoff: 2min, 4min, 8min, 16min, 32min per attempt.
-    // This prevents rapid-fire reconnection that triggers WhatsApp's
-    // anti-automation detection and mass LOGOUTs.
-    const backoffMs = AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, attempts);
+    // Exponential backoff with ±20% jitter: 2min, 4min, 8min, 16min, 32min base.
+    // Jitter prevents multiple sessions from retrying at exactly the same time.
+    const baseBackoffMs = AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, attempts);
+    const jitter = baseBackoffMs * 0.2 * (Math.random() * 2 - 1); // ±20%
+    const backoffMs = baseBackoffMs + jitter;
     const sessionAge = Date.now() - new Date(session.updated_at).getTime();
     if (sessionAge < backoffMs) {
       continue; // not ready yet - backoff period hasn't elapsed
@@ -620,13 +618,62 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     const newAttempt = attempts + 1;
     autoRecoveryAttempts.set(session.id, newAttempt);
 
-    // NEVER auto-delete Evolution API instances — destructive recovery causes
-    // users to re-pair unnecessarily. Always preserve auth and try soft reconnect.
-    // If all attempts fail, set state to 'reauth_required' and notify user.
-    const preserveAuth = true;
+    // After exhausting all soft recovery attempts, perform hard reset:
+    // logout + clear auth + set qr_pending for fresh pairing
+    if (attempts >= AUTO_RECOVERY_MAX_ATTEMPTS) {
+      console.log(`[AUTO-RECOVERY] Session ${sid} exhausted soft recovery (${AUTO_RECOVERY_MAX_ATTEMPTS} attempts) - performing hard reset (logout + fresh QR)`);
+
+      // Try to logout via Evolution API to clean up server-side state
+      const evoUrl = process.env.EVOLUTION_API_URL || 'http://evolution-api:8080';
+      const evoKey = process.env.EVOLUTION_API_KEY || '';
+      try {
+        await fetch(`${evoUrl}/instance/logout/${session.id}`, {
+          method: 'DELETE',
+          headers: { apikey: evoKey },
+        });
+      } catch {
+        // Logout may fail if instance is already gone - that's fine
+      }
+
+      // Hard reset: clear all auth data and set qr_pending for fresh pairing
+      const { error: hardResetErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'qr_pending',
+          auth_state: null,
+          qr_code: null,
+          qr_expires_at: null,
+          qr_generated_at: null,
+          pairing_code: null,
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          worker_url: null,
+          pairing_lock_acquired_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id)
+        .eq('state', 'needs_reauth');
+
+      if (!hardResetErr) {
+        recovered++;
+        console.log(`[AUTO-RECOVERY] Session ${sid} hard reset to qr_pending. User will need to scan a new QR code.`);
+        // Notify user that manual re-pairing is needed
+        const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+        if (appUrl && session.user_id) {
+          fetch(`${appUrl}/api/notify/session-down`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: session.id, userId: session.user_id }),
+          }).catch(() => {});
+        }
+      }
+      // Don't increment attempts further - hard reset is the final action
+      continue;
+    }
 
     const nextBackoffMin = Math.round(AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, newAttempt) / 60_000);
-    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
+    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ~${nextBackoffMin}min). Soft recovery (preserving auth)...`);
 
     // Keep auth_state intact, just reset the lock and state
     // so the sync loop's EvolutionBot can reconnect using saved credentials.
@@ -653,20 +700,6 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     if (!updateErr) {
       recovered++;
       console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Sync loop will attempt reconnection.`);
-
-      // Send push notification to user about auto-recovery attempt
-      if (newAttempt >= AUTO_RECOVERY_MAX_ATTEMPTS) {
-        console.log(`[AUTO-RECOVERY] Session ${sid} exhausted auto-recovery (${AUTO_RECOVERY_MAX_ATTEMPTS} attempts). User must re-pair manually.`);
-        // Try to notify via session-down endpoint
-        const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-        if (appUrl && session.user_id) {
-          fetch(`${appUrl}/api/notify/session-down`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: session.id, userId: session.user_id }),
-          }).catch(() => {});
-        }
-      }
     } else {
       console.error(`[AUTO-RECOVERY] Failed to reset session ${sid}:`, updateErr);
     }
