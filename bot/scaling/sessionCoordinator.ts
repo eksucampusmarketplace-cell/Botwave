@@ -20,7 +20,7 @@ import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync, areAllWorkersD
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from '../infrastructure/redis';
 import { isCircuitOpen } from '../infrastructure/circuitBreaker';
 import { isShutdown } from '../infrastructure/gracefulShutdown';
-import { deleteInstanceAndVerify } from '../whatsapp/evolution/client';
+import { deleteInstanceAndVerify, restartInstance } from '../whatsapp/evolution/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -652,20 +652,20 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
     if (!updateErr) {
       recovered++;
-      console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Sync loop will attempt reconnection.`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Restarting Evolution instance...`);
 
-      // Send push notification to user about auto-recovery attempt
-      if (newAttempt >= AUTO_RECOVERY_MAX_ATTEMPTS) {
-        console.log(`[AUTO-RECOVERY] Session ${sid} exhausted auto-recovery (${AUTO_RECOVERY_MAX_ATTEMPTS} attempts). User must re-pair manually.`);
-        // Try to notify via session-down endpoint
-        const appUrl = SELF_URL || process.env.NEXT_PUBLIC_APP_URL || '';
-        if (appUrl && session.user_id) {
-          fetch(`${appUrl}/api/notify/session-down`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: session.id, userId: session.user_id }),
-          }).catch(() => {});
+      // Restart the Evolution instance to force a fresh WebSocket connection.
+      // Without this, the instance may remain in a stale/close state even though
+      // the DB says 'active', and the sync loop won't reconnect.
+      try {
+        const restarted = await restartInstance(session.id);
+        if (restarted) {
+          console.log(`[AUTO-RECOVERY] Session ${sid} Evolution instance restarted successfully`);
+        } else {
+          console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution restart returned false - sync loop will handle`);
         }
+      } catch (restartErr) {
+        console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution restart failed:`, restartErr);
       }
     } else {
       console.error(`[AUTO-RECOVERY] Failed to reset session ${sid}:`, updateErr);

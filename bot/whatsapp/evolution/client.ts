@@ -744,7 +744,17 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
       }
     }
     if (!proxySet && maxProxyAttempts > 0) {
-      console.error(`[PROXY] All ${maxProxyAttempts} proxies failed for ${instanceName} - session will run on server IP`);
+      console.error(`[PROXY] All ${maxProxyAttempts} proxies failed for ${instanceName} - aborting instance creation (server IP fallback disabled)`);
+      // Delete the instance we just created to avoid running on server IP
+      try {
+        await apiFetch(`${BASE}/instance/delete/${instanceName}`, {
+          method: 'DELETE',
+          headers,
+        });
+      } catch {
+        // best-effort cleanup
+      }
+      return null;
     }
   }
 
@@ -918,8 +928,8 @@ async function getPairingCodeInner(instanceName: string, cleanPhone: string, flo
     return { pairingCode: connectData.pairingCode, qrCode: connectData.code || null, qrBase64: connectData.base64 || null };
   }
 
-  const POLL_ATTEMPTS = 12;
-  const POLL_INTERVAL_MS = 2000;
+  const POLL_ATTEMPTS = 20;
+  const POLL_INTERVAL_MS = 3000;
   const INITIAL_WAIT_MS = 2000;
   console.log(`[PAIRING-EVO-CLIENT] No code on first try, waiting ${INITIAL_WAIT_MS}ms then polling (${POLL_ATTEMPTS} attempts, ${POLL_INTERVAL_MS}ms apart)...`);
   await new Promise(r => setTimeout(r, INITIAL_WAIT_MS));

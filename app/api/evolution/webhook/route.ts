@@ -17,52 +17,29 @@ const IS_WORKER = process.env.IS_WORKER === 'true';
 // Throttle heartbeat/last_active updates - at most once per 60s per session
 const lastHeartbeatUpdate = new Map<string, number>();
 const HEARTBEAT_THROTTLE_MS = 60_000;
+const HEARTBEAT_MAP_MAX_SIZE = 500;
 
-// Dedup cache - prevents processing the same message multiple times when
-// Evolution API fires duplicate webhooks (common for ACK re-deliveries).
-// Keys are scoped by session so the same WhatsApp message reaching two
-// different bot sessions (sender's bot + recipient's bot) is processed
-// independently by each.
-const seenMsgs = new Map<string, number>();
-const SEEN_TTL = 150_000; // 150 seconds (matches 120s timestamp guard + buffer)
-const SEEN_MAX_SIZE = 5000;
-
-// Periodic cleanup — prevents unbounded growth regardless of traffic patterns
+// Periodic cleanup for lastHeartbeatUpdate — prevents unbounded growth
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
+    if (lastHeartbeatUpdate.size <= HEARTBEAT_MAP_MAX_SIZE) return;
     const now = Date.now();
-    for (const [k, t] of seenMsgs) {
-      if (now - t > SEEN_TTL) seenMsgs.delete(k);
+    for (const [k, t] of lastHeartbeatUpdate) {
+      if (now - t > HEARTBEAT_THROTTLE_MS * 5) lastHeartbeatUpdate.delete(k);
     }
-  }, 60_000);
+  }, 300_000); // clean every 5 minutes
 }
 
 /**
- * Mark a message as seen. Uses Redis SETNX for cross-worker dedup,
- * falls back to in-memory Map if Redis is unavailable.
+ * Mark a message as seen. Uses Redis SETNX for cross-worker dedup.
  * Returns true if first time seen, false if duplicate.
  */
 async function markSeen(sessionId: string, msgId: string): Promise<boolean> {
-  // Try Redis first (shared across all workers)
+  // Redis handles cross-worker dedup with TTL — no in-memory Map needed.
+  // redisMarkWebhookSeen returns true = first time, false = duplicate.
+  // If Redis is unavailable, it returns true (allow processing to avoid drops).
   const redisResult = await redisMarkWebhookSeen(sessionId, msgId);
-  // redisMarkWebhookSeen returns true = first time, false = duplicate
-  // If Redis handled it, trust that result
-  if (redisResult === false) return false; // Redis says duplicate
-
-  // Also check/update local cache as secondary layer
-  const key = `${sessionId}:${msgId}`;
-  const now = Date.now();
-  if (seenMsgs.size > SEEN_MAX_SIZE) {
-    const iter = seenMsgs.keys();
-    let toDelete = seenMsgs.size - SEEN_MAX_SIZE + 100;
-    while (toDelete-- > 0) {
-      const k = iter.next().value;
-      if (k) seenMsgs.delete(k);
-    }
-  }
-  if (seenMsgs.has(key)) return false; // already seen locally
-  seenMsgs.set(key, now);
-  return true; // first time
+  return redisResult !== false;
 }
 
 function getServerSupabaseUrl(): string {
