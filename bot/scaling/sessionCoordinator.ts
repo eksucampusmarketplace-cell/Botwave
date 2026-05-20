@@ -28,8 +28,8 @@ const supabase = createClient(
 );
 
 const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
-const LOCK_EXPIRY_MS = 180_000; // 180s without heartbeat = stale lock
-const HEARTBEAT_INTERVAL = 60_000; // heartbeat every 60s (was 30s)
+const LOCK_EXPIRY_MS = 300_000; // 300s (5 min) without heartbeat = stale lock
+const HEARTBEAT_INTERVAL = 30_000; // heartbeat every 30s — gives 10 heartbeats before lock expiry
 const AUTO_RECOVERY_BASE_COOLDOWN_MS = 120_000; // base cooldown: 2 minutes
 const AUTO_RECOVERY_MAX_ATTEMPTS = 5; // max auto-recovery tries per session
 const AUTO_RECOVERY_MAX_PER_CYCLE = 2; // max sessions to recover per 180s cycle (prevent thundering herd)
@@ -152,6 +152,33 @@ export async function releaseLock(sessionId: string): Promise<void> {
   ownedSessions.delete(sessionId);
 }
 
+/**
+ * Release all session locks owned by this instance.
+ * Called during graceful shutdown (SIGTERM) to prevent cleanupOnStartup
+ * from marking sessions as inactive on the next restart.
+ */
+export async function releaseAllOwnedLocks(): Promise<void> {
+  const sessions = Array.from(ownedSessions);
+  if (sessions.length === 0) {
+    console.log('[COORD] No owned sessions to release on shutdown');
+    return;
+  }
+  console.log(`[COORD] Releasing ${sessions.length} owned session lock(s) on shutdown...`);
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      locked_by: null,
+      locked_at: null,
+    })
+    .eq('locked_by', INSTANCE_ID);
+  if (error) {
+    console.error('[COORD] Failed to release locks on shutdown:', error);
+  } else {
+    console.log(`[COORD] Released ${sessions.length} lock(s) on shutdown`);
+  }
+  ownedSessions.clear();
+}
+
 // ─── Heartbeat ────────────────────────────────────────────────────────────────
 
 /**
@@ -161,14 +188,22 @@ export async function releaseLock(sessionId: string): Promise<void> {
 export async function refreshHeartbeat(sessionId: string): Promise<void> {
   if (await redisSetHeartbeat(sessionId, INSTANCE_ID)) return;
 
-  const { error } = await supabase
-    .from('bot_sessions')
-    .update({ heartbeat_at: new Date().toISOString() })
-    .eq('id', sessionId)
-    .eq('locked_by', INSTANCE_ID);
+  // Retry heartbeat with exponential backoff to survive transient Supabase hiccups
+  const maxRetries = 3;
+  for (let i = 0; i < maxRetries; i++) {
+    const { error } = await supabase
+      .from('bot_sessions')
+      .update({ heartbeat_at: new Date().toISOString() })
+      .eq('id', sessionId)
+      .eq('locked_by', INSTANCE_ID);
 
-  if (error) {
-    console.error(`[COORD] Heartbeat failed for ${sessionId}:`, error);
+    if (!error) return;
+    if (i < maxRetries - 1) {
+      console.warn(`[COORD] Heartbeat failed for ${sessionId} (attempt ${i + 1}/${maxRetries}): ${error.message} — retrying...`);
+      await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    } else {
+      console.error(`[COORD] Heartbeat failed for ${sessionId} after ${maxRetries} attempts:`, error);
+    }
   }
 }
 
@@ -415,7 +450,13 @@ export async function recoverOrphanedSessions(platformFilter?: string): Promise<
  * When platformFilter is set, only releases locks for sessions matching that platform.
  */
 export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
-  console.log(`[COORD] Startup cleanup for instance ${INSTANCE_ID} (platform=${platformFilter || 'all'})...`);
+  // Gate: only run aggressive cleanup when FORCE_CLEANUP=true.
+  // Normal deploys should just release our own stale locks and let
+  // the heartbeat system handle everything else gracefully.
+  const forceCleanup = process.env.FORCE_CLEANUP === 'true';
+  const deployGraceMs = 300_000; // 5 minutes grace period for deploy recovery
+
+  console.log(`[COORD] Startup cleanup for instance ${INSTANCE_ID} (platform=${platformFilter || 'all'}, force=${forceCleanup})...`);
 
   // Release any locks from a previous run of this same instance
   let cleanupQuery = supabase
@@ -423,7 +464,7 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
     .update({
       locked_by: null,
       locked_at: null,
-      heartbeat_at: null,
+      // Preserve heartbeat_at so sessions aren't immediately marked stale
     })
     .eq('locked_by', INSTANCE_ID);
 
@@ -446,16 +487,22 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
   // CRITICAL: Apply platform filter here too - without it, a WhatsApp container
   // restart would release locks held by the Telegram container (and vice versa),
   // causing cross-platform lock theft.
+  // Only release locks that are genuinely stale (heartbeat >5 min old) unless FORCE_CLEANUP.
   if (INSTANCE_ID.startsWith('main-')) {
+    const staleCutoff = new Date(Date.now() - deployGraceMs).toISOString();
     let mainLockQuery = supabase
       .from('bot_sessions')
       .update({
         locked_by: null,
         locked_at: null,
-        heartbeat_at: null,
       })
       .like('locked_by', 'main-%')
       .neq('locked_by', INSTANCE_ID);
+
+    // Only release locks with stale heartbeats unless force cleanup
+    if (!forceCleanup) {
+      mainLockQuery = mainLockQuery.lt('heartbeat_at', staleCutoff);
+    }
 
     // Apply the same platform filter so we only release locks for our platform
     if (platformFilter === 'whatsapp') {
@@ -471,7 +518,9 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
     const { data: mainLocks, error: mainErr } = await mainLockQuery.select('id, state');
 
     if (!mainErr && mainLocks && mainLocks.length > 0) {
-      console.log(`[COORD] Released ${mainLocks.length} stale lock(s) from previous main instances (platform=${platformFilter || 'all'}): ${mainLocks.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
+      console.log(`[COORD] Released ${mainLocks.length} stale lock(s) from previous main instances (platform=${platformFilter || 'all'}, force=${forceCleanup}): ${mainLocks.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`);
+    } else if (!forceCleanup) {
+      console.log(`[COORD] No stale main locks to clean (grace period: ${deployGraceMs / 1000}s)`);
     }
   }
 
@@ -571,32 +620,18 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     const newAttempt = attempts + 1;
     autoRecoveryAttempts.set(session.id, newAttempt);
 
-    // First 2 attempts: preserve auth and try reconnection (avoids re-pairing).
-    // Later attempts: full cleanup with instance deletion for a clean slate.
-    const preserveAuth = newAttempt <= 2;
+    // NEVER auto-delete Evolution API instances — destructive recovery causes
+    // users to re-pair unnecessarily. Always preserve auth and try soft reconnect.
+    // If all attempts fail, set state to 'reauth_required' and notify user.
+    const preserveAuth = true;
 
     const nextBackoffMin = Math.round(AUTO_RECOVERY_BASE_COOLDOWN_MS * Math.pow(2, newAttempt) / 60_000);
-    if (preserveAuth) {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
-    } else {
-      console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Full cleanup and reset to qr_pending...`);
+    console.log(`[AUTO-RECOVERY] Session ${sid} (${session.session_name || session.phone_number || 'unknown'}) - attempt ${newAttempt}/${AUTO_RECOVERY_MAX_ATTEMPTS} (next backoff: ${nextBackoffMin}min). Preserving auth for reconnect (soft recovery)...`);
 
-      // Force-delete the Evolution API instance before resetting. This prevents
-      // the 400 "instance already exists" / 404 "instance does not exist" loop
-      // that occurs when Evolution API's internal state is stale after a WhatsApp
-      // logout. A fresh createInstance call will succeed after this cleanup.
-      try {
-        await deleteInstanceAndVerify(session.id);
-        console.log(`[AUTO-RECOVERY] Session ${sid}: Evolution instance cleaned up`);
-      } catch (err) {
-        console.warn(`[AUTO-RECOVERY] Session ${sid}: Evolution cleanup failed (non-fatal, proceeding):`, err);
-      }
-    }
-
-    // For soft recovery: keep auth_state intact, just reset the lock and state
+    // Keep auth_state intact, just reset the lock and state
     // so the sync loop's EvolutionBot can reconnect using saved credentials.
     const updateFields: Record<string, unknown> = {
-      state: preserveAuth ? 'active' : 'qr_pending',
+      state: 'active',
       locked_by: null,
       locked_at: null,
       heartbeat_at: new Date().toISOString(),
@@ -608,9 +643,6 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
       pairing_lock_acquired_at: null,
       updated_at: new Date().toISOString(),
     };
-    if (!preserveAuth) {
-      updateFields.auth_state = null;
-    }
 
     const { error: updateErr } = await supabase
       .from('bot_sessions')
@@ -620,7 +652,7 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
     if (!updateErr) {
       recovered++;
-      console.log(`[AUTO-RECOVERY] Session ${sid} reset to ${preserveAuth ? 'active (soft)' : 'qr_pending (full)'} (attempt ${newAttempt}). Sync loop will attempt reconnection.`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Sync loop will attempt reconnection.`);
 
       // Send push notification to user about auto-recovery attempt
       if (newAttempt >= AUTO_RECOVERY_MAX_ATTEMPTS) {

@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/infrastructure/redisSessionCache';
 import { invalidateSessions } from '@/lib/redisApiCache';
 import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolution/client';
+import { redisMarkWebhookSeen } from '@/bot/infrastructure/redis';
 
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
@@ -36,10 +37,21 @@ if (typeof setInterval !== 'undefined') {
   }, 60_000);
 }
 
-function markSeen(sessionId: string, msgId: string): boolean {
+/**
+ * Mark a message as seen. Uses Redis SETNX for cross-worker dedup,
+ * falls back to in-memory Map if Redis is unavailable.
+ * Returns true if first time seen, false if duplicate.
+ */
+async function markSeen(sessionId: string, msgId: string): Promise<boolean> {
+  // Try Redis first (shared across all workers)
+  const redisResult = await redisMarkWebhookSeen(sessionId, msgId);
+  // redisMarkWebhookSeen returns true = first time, false = duplicate
+  // If Redis handled it, trust that result
+  if (redisResult === false) return false; // Redis says duplicate
+
+  // Also check/update local cache as secondary layer
   const key = `${sessionId}:${msgId}`;
   const now = Date.now();
-  // Hard cap: evict oldest entries if over max size
   if (seenMsgs.size > SEEN_MAX_SIZE) {
     const iter = seenMsgs.keys();
     let toDelete = seenMsgs.size - SEEN_MAX_SIZE + 100;
@@ -48,7 +60,7 @@ function markSeen(sessionId: string, msgId: string): boolean {
       if (k) seenMsgs.delete(k);
     }
   }
-  if (seenMsgs.has(key)) return false; // already seen
+  if (seenMsgs.has(key)) return false; // already seen locally
   seenMsgs.set(key, now);
   return true; // first time
 }
@@ -564,7 +576,7 @@ export async function POST(request: NextRequest) {
 
         // Dedup: skip if we already processed this exact message ID for THIS session
         const msgId = msg.key?.id || '';
-        if (msgId && !markSeen(sessionId, msgId)) {
+        if (msgId && !(await markSeen(sessionId, msgId))) {
           console.log(`[EVO-WEBHOOK] SKIP duplicate msg ${msgId.slice(0, 12)} "${text.slice(0, 40)}"`);
           continue;
         }

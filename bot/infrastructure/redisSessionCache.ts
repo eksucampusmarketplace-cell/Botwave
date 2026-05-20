@@ -39,8 +39,8 @@ if (REDIS_URL) {
   }
 }
 
-const SESSION_TTL = 30; // 30 seconds - short TTL for session data
-const QR_TTL = 15; // 15 seconds - QR changes frequently during pairing
+const SESSION_TTL = 10; // 10 seconds — reduced to prevent stale state display after transitions
+const QR_TTL = 10; // 10 seconds — reduced to prevent stale QR display during pairing
 
 function isAvailable(): boolean {
   return redis !== null && isRedisAvailable();
