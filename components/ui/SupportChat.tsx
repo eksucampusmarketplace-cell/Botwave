@@ -64,6 +64,7 @@ export default function SupportChat() {
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatSessionId] = useState(() => `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchTickets = useCallback(async () => {
@@ -238,7 +239,7 @@ export default function SupportChat() {
       const res = await fetch('/api/support/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({ question: q, sessionId: chatSessionId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -249,6 +250,10 @@ export default function SupportChat() {
           timestamp: Date.now(),
         };
         setChatMessages(prev => [...prev, botMsg]);
+        // If AI escalated to human, auto-switch to tickets tab
+        if (data.data.wantsHuman) {
+          setTimeout(() => setTab('tickets'), 2000);
+        }
       } else {
         setChatMessages(prev => [...prev, {
           role: 'bot',
@@ -468,6 +473,12 @@ export default function SupportChat() {
                       </svg>
                     </button>
                   </div>
+                  <button
+                    onClick={() => sendChatMessage('talk to human')}
+                    className="text-xs text-[var(--primary)] hover:underline mt-1.5 font-medium"
+                  >
+                    Need a real person? Click here
+                  </button>
                 </div>
               </>
             )}

@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -418,6 +418,13 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (!isCommand && !otherHandlerReplied) {
+      const flowHandled = await processChatbotFlow(context, sock);
+      if (flowHandled) {
+        otherHandlerReplied = true;
+      }
+    }
+
+    if (!isCommand && !otherHandlerReplied) {
       const autoReplied = await processAutoReply(context, sock);
       if (autoReplied) {
         otherHandlerReplied = true;
@@ -663,6 +670,35 @@ async function checkAfkMentions(context: MessageContext, sock: any): Promise<voi
 
 // ─── Auto Reply ─────────────────────────────────────────────────────────────
 
+function isAutoReplyActiveNow(rule: any, userTimezone?: string): boolean {
+  if (!rule.schedule_enabled) return true;
+  const tz = userTimezone || 'UTC';
+  let now: Date;
+  try {
+    const formatted = new Date().toLocaleString('en-US', { timeZone: tz });
+    now = new Date(formatted);
+  } catch {
+    now = new Date();
+  }
+  const currentDay = now.getDay();
+  if (rule.active_days && Array.isArray(rule.active_days) && !rule.active_days.includes(currentDay)) {
+    return false;
+  }
+  if (rule.schedule_start && rule.schedule_end) {
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = rule.schedule_start.split(':').map(Number);
+    const [endH, endM] = rule.schedule_end.split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+    if (startMinutes <= endMinutes) {
+      if (currentMinutes < startMinutes || currentMinutes > endMinutes) return false;
+    } else {
+      if (currentMinutes < startMinutes && currentMinutes > endMinutes) return false;
+    }
+  }
+  return true;
+}
+
 async function processAutoReply(context: MessageContext, sock: any): Promise<boolean> {
   if (!context.sessionId) return false;
   const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
@@ -672,11 +708,21 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
     const rules = await getAutoReplies(context.sessionId);
     if (!rules.length) return false;
 
+    let userTimezone: string | undefined;
+    if (context.userId) {
+      try {
+        const settings = await getUserSettings(context.userId);
+        userTimezone = settings?.timezone;
+      } catch { /* use UTC */ }
+    }
+
     const msgLower = context.message.toLowerCase();
 
     for (const rule of rules) {
       const trigger = (rule.trigger || '').toLowerCase();
       if (!trigger) continue;
+
+      if (!isAutoReplyActiveNow(rule, userTimezone)) continue;
 
       const matches =
         rule.match_type === 'exact'
@@ -690,6 +736,87 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
         }, false);
         await sendReply(context.chatJid, replyText, sock, context.rawMessage.key, context.queue);
         return true;
+      }
+    }
+  } catch {
+    // non-critical
+  }
+  return false;
+}
+
+// ─── Chatbot Flow Execution ─────────────────────────────────────────────────
+
+const flowSessionState = new Map<string, { flowId: string; nodeIndex: number; expiry: number }>();
+
+async function processChatbotFlow(context: MessageContext, sock: any): Promise<boolean> {
+  if (!context.userId) return false;
+
+  const stateKey = `${context.userId}:${context.chatJid}`;
+  const msgLower = context.message.toLowerCase().trim();
+
+  // Check if user is mid-flow
+  const activeState = flowSessionState.get(stateKey);
+  if (activeState && activeState.expiry > Date.now()) {
+    try {
+      const flows = await getChatbotFlows(context.userId);
+      const flow = flows.find((f: any) => f.id === activeState.flowId);
+      if (flow && Array.isArray(flow.nodes)) {
+        const currentNode = flow.nodes[activeState.nodeIndex];
+        if (currentNode) {
+          // Check if user input matches an option or advance to next node
+          let nextIndex = activeState.nodeIndex + 1;
+          if (currentNode.options && Array.isArray(currentNode.options)) {
+            const matchedOption = currentNode.options.find(
+              (opt: any) => msgLower === String(opt.value || opt.label || '').toLowerCase()
+            );
+            if (matchedOption && typeof matchedOption.next === 'number') {
+              nextIndex = matchedOption.next;
+            }
+          }
+
+          if (nextIndex < flow.nodes.length) {
+            const nextNode = flow.nodes[nextIndex];
+            const responseText = nextNode.message || nextNode.text || '';
+            if (responseText) {
+              await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
+            }
+            if (nextIndex + 1 < flow.nodes.length && nextNode.options) {
+              flowSessionState.set(stateKey, { flowId: flow.id, nodeIndex: nextIndex, expiry: Date.now() + 5 * 60 * 1000 });
+            } else {
+              flowSessionState.delete(stateKey);
+            }
+            return true;
+          }
+        }
+      }
+      flowSessionState.delete(stateKey);
+    } catch {
+      flowSessionState.delete(stateKey);
+    }
+  }
+
+  // Check if message matches any flow trigger
+  try {
+    const flows = await getChatbotFlows(context.userId);
+    if (!flows.length) return false;
+
+    for (const flow of flows) {
+      const trigger = (flow.trigger || '').toLowerCase();
+      if (!trigger) continue;
+
+      if (msgLower === trigger || msgLower.includes(trigger)) {
+        const nodes = Array.isArray(flow.nodes) ? flow.nodes : [];
+        if (nodes.length > 0) {
+          const firstNode = nodes[0];
+          const responseText = firstNode.message || firstNode.text || '';
+          if (responseText) {
+            await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
+          }
+          if (nodes.length > 1 && firstNode.options) {
+            flowSessionState.set(stateKey, { flowId: flow.id, nodeIndex: 0, expiry: Date.now() + 5 * 60 * 1000 });
+          }
+          return true;
+        }
       }
     }
   } catch {
