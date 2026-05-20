@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -382,9 +382,19 @@ export function getSessionProxyIndex(sessionId: string): number {
 
 /**
  * Clear the sticky proxy for a session (both in-memory and Redis).
+ * Also removes the session from the proxy's country group so the slot is freed.
  * Call this before re-creating an instance so a fresh proxy is assigned.
  */
-export async function clearSessionProxy(sessionId: string): Promise<void> {
+export async function clearSessionProxy(sessionId: string, phoneNumber?: string): Promise<void> {
+  // Remove from country group if we know the proxy + phone
+  const proxyStr = await redisGetSessionProxy(sessionId);
+  if (proxyStr && phoneNumber) {
+    const proxyHost = proxyStr.split(':')[0];
+    const countryCode = extractCountryCode(phoneNumber);
+    if (countryCode) {
+      await redisRemoveProxyCountrySession(proxyHost, countryCode, sessionId);
+    }
+  }
   sessionProxyMap.delete(sessionId);
   await redisClearSessionProxy(sessionId);
   console.log(`[PROXY] Cleared sticky proxy for session ${sessionId.slice(0, 8)} — will pick a fresh proxy on next assignment`);
@@ -397,19 +407,48 @@ function parseProxy(proxyStr: string): { host: string; port: string; protocol: s
   return { host: parts[0], port: parts[1], protocol: 'http', username: parts[2], password: parts[3] };
 }
 
+// Max sessions from the same country code per proxy IP.
+// Keeps WhatsApp traffic on each proxy looking like a single geographic region.
+const MAX_SESSIONS_PER_PROXY_COUNTRY = 5;
+
+/**
+ * Extract the country dial code from a phone number (e.g. "+62895..." → "62").
+ * Returns the first 1-3 digits after stripping non-digits and leading '+'.
+ */
+export function extractCountryCode(phoneNumber: string): string {
+  const digits = phoneNumber.replace(/\D/g, '');
+  // ITU country codes are 1-3 digits. Check common 1-digit first, then 2, then 3.
+  const oneDigit = ['1', '7'];
+  const twoDigit = [
+    '20', '27', '30', '31', '32', '33', '34', '36', '39', '40', '41', '43', '44', '45',
+    '46', '47', '48', '49', '51', '52', '53', '54', '55', '56', '57', '58', '60', '61',
+    '62', '63', '64', '65', '66', '81', '82', '84', '86', '90', '91', '92', '93', '94',
+    '95', '98',
+  ];
+  if (oneDigit.includes(digits.slice(0, 1))) return digits.slice(0, 1);
+  if (twoDigit.includes(digits.slice(0, 2))) return digits.slice(0, 2);
+  return digits.slice(0, 3);
+}
+
 /**
  * Pick a healthy proxy from the pool (async — uses Redis for health + sticky assignment).
- * 1. Checks Redis for a sticky proxy assigned to this session.
- * 2. If that proxy is not blacklisted, reuses it.
- * 3. Otherwise, round-robins among non-blacklisted proxies.
- * 4. Falls back to in-memory map if Redis is unavailable.
+ * Country-aware: groups sessions by phone country code per proxy IP.
+ *
+ * Priority order:
+ * 1. Reuse sticky proxy (if still healthy and not blacklisted)
+ * 2. Prefer a proxy that already has sessions from the same country code (< cap)
+ * 3. Prefer a proxy with no sessions yet (empty)
+ * 4. Fall back to least-loaded proxy that hasn't hit the per-country cap
+ * 5. If all proxies are full or blacklisted, return null (caller falls back to direct)
  */
-async function getNextProxyAsync(sessionId?: string): Promise<{ host: string; port: string; protocol: string; username: string; password: string } | null> {
+async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Promise<{ host: string; port: string; protocol: string; username: string; password: string } | null> {
   if (PROXY_LIST.length === 0) return null;
   if (proxyPoolDisabled) {
     console.log('[PROXY] Pool disabled (fallback mode) - skipping proxy assignment');
     return null;
   }
+
+  const countryCode = phoneNumber ? extractCountryCode(phoneNumber) : '';
 
   // Try Redis-backed sticky proxy first
   if (sessionId) {
@@ -425,28 +464,95 @@ async function getNextProxyAsync(sessionId?: string): Promise<{ host: string; po
     }
   }
 
-  // Round-robin among non-blacklisted proxies
-  const startIdx = proxyCounter % PROXY_LIST.length;
+  // Gather health + country data for all proxies
+  type ProxyScore = {
+    idx: number;
+    host: string;
+    sameCountryCount: number;
+    totalCount: number;
+    blacklisted: boolean;
+  };
+  const scores: ProxyScore[] = [];
+
   for (let i = 0; i < PROXY_LIST.length; i++) {
-    const idx = (startIdx + i) % PROXY_LIST.length;
-    const candidate = PROXY_LIST[idx];
+    const candidate = PROXY_LIST[i];
     const candidateHost = candidate.split(':')[0];
     const blacklisted = await redisIsProxyBlacklisted(candidateHost);
-    if (!blacklisted) {
-      proxyCounter = idx + 1;
-      // Persist sticky assignment in Redis and in-memory
-      if (sessionId) {
-        await redisSetSessionProxy(sessionId, candidate);
-        sessionProxyMap.set(sessionId, idx);
-        console.log(`[PROXY] Assigned healthy proxy ${candidateHost} to session ${sessionId?.slice(0, 8)}`);
+    if (blacklisted) {
+      scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
+      continue;
+    }
+
+    const members = await redisGetProxyCountrySessions(candidateHost);
+    const totalCount = members.length;
+    const sameCountryCount = countryCode
+      ? members.filter(m => m.startsWith(`${countryCode}:`)).length
+      : 0;
+
+    scores.push({ idx: i, host: candidateHost, sameCountryCount, totalCount, blacklisted: false });
+  }
+
+  const healthy = scores.filter(s => !s.blacklisted);
+  if (healthy.length === 0) {
+    console.warn(`[PROXY] All ${PROXY_LIST.length} proxies are blacklisted — no proxy available`);
+    return null;
+  }
+
+  let chosen: ProxyScore | null = null;
+
+  if (countryCode) {
+    // 1st: proxy that already has same-country sessions and hasn't hit the cap
+    const sameCountry = healthy
+      .filter(s => s.sameCountryCount > 0 && s.sameCountryCount < MAX_SESSIONS_PER_PROXY_COUNTRY)
+      .sort((a, b) => a.sameCountryCount - b.sameCountryCount);
+    if (sameCountry.length > 0) {
+      chosen = sameCountry[0];
+    }
+
+    // 2nd: empty proxy (no sessions yet)
+    if (!chosen) {
+      const empty = healthy.filter(s => s.totalCount === 0);
+      if (empty.length > 0) {
+        chosen = empty[0];
       }
-      return parseProxy(candidate);
+    }
+
+    // 3rd: proxy with fewest total sessions that doesn't have a conflicting country
+    if (!chosen) {
+      const noConflict = healthy
+        .filter(s => s.sameCountryCount === 0 && s.totalCount < MAX_SESSIONS_PER_PROXY_COUNTRY)
+        .sort((a, b) => a.totalCount - b.totalCount);
+      if (noConflict.length > 0) {
+        chosen = noConflict[0];
+      }
     }
   }
 
-  // All proxies blacklisted — log warning, return null (caller falls back to direct)
-  console.warn(`[PROXY] All ${PROXY_LIST.length} proxies are blacklisted — no proxy available`);
-  return null;
+  // Fallback: least-loaded healthy proxy
+  if (!chosen) {
+    const leastLoaded = [...healthy].sort((a, b) => a.totalCount - b.totalCount);
+    chosen = leastLoaded[0];
+  }
+
+  if (!chosen) {
+    console.warn(`[PROXY] No suitable proxy found for country +${countryCode}`);
+    return null;
+  }
+
+  const proxyStr = PROXY_LIST[chosen.idx];
+  proxyCounter = chosen.idx + 1;
+
+  // Persist sticky assignment and country grouping
+  if (sessionId) {
+    await redisSetSessionProxy(sessionId, proxyStr);
+    sessionProxyMap.set(sessionId, chosen.idx);
+    if (countryCode) {
+      await redisAddProxyCountrySession(chosen.host, countryCode, sessionId);
+    }
+    console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount})`);
+  }
+
+  return parseProxy(proxyStr);
 }
 
 /**
@@ -717,8 +823,8 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     const maxProxyAttempts = PROXY_LIST.length || 0;
     let proxySet = false;
     for (let pi = 0; pi < maxProxyAttempts && !proxySet; pi++) {
-      // Use async Redis-backed proxy picker (health-aware + sticky)
-      const p = await getNextProxyAsync(instanceName);
+      // Use async Redis-backed proxy picker (health-aware + sticky + country-grouped)
+      const p = await getNextProxyAsync(instanceName, phoneNumber);
       if (!p) break;
       try {
         const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {

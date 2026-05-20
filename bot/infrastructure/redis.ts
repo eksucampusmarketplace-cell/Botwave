@@ -353,6 +353,45 @@ export async function redisClearSessionProxy(sessionId: string): Promise<void> {
   } catch { /* ignore */ }
 }
 
+// ─── Country-Proxy Grouping ──────────────────────────────────────────────────
+
+/**
+ * Add a session to a proxy's country group in Redis.
+ * Key: proxy:country:{proxyHost} → Redis Set of "countryCode:sessionId" entries.
+ * TTL: 24h (matches session proxy TTL).
+ */
+export async function redisAddProxyCountrySession(proxyHost: string, countryCode: string, sessionId: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    const key = `proxy:country:${proxyHost}`;
+    await redis!.sadd(key, `${countryCode}:${sessionId}`);
+    await redis!.expire(key, 86400);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Remove a session from a proxy's country group.
+ */
+export async function redisRemoveProxyCountrySession(proxyHost: string, countryCode: string, sessionId: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    await redis!.srem(`proxy:country:${proxyHost}`, `${countryCode}:${sessionId}`);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Get all country:session entries for a proxy.
+ * Returns an array of "countryCode:sessionId" strings.
+ */
+export async function redisGetProxyCountrySessions(proxyHost: string): Promise<string[]> {
+  if (!isRedisAvailable()) return [];
+  try {
+    return await redis!.smembers(`proxy:country:${proxyHost}`);
+  } catch {
+    return [];
+  }
+}
+
 // ─── Health Check ────────────────────────────────────────────────────────────
 
 /**
