@@ -2,6 +2,7 @@ import { is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining 
 import { redisGet428Cooldown } from './redis';
 
 const DELAY_MS = 30_000; // 30s gap between pairing requests (prevents 428 storms)
+const PAIRING_REQUEST_TIMEOUT_MS = 30_000; // 30s timeout per requestPairingCode call
 
 interface LinkJob {
   sessionId: string;
@@ -49,7 +50,12 @@ async function processQueue() {
     console.log(`[PAIRING-QUEUE] Processing job: session=${job.sessionId} phone=${job.phoneNumber} waitedInQueue=${waitTime}ms remainingJobs=${queue.length}`);
     try {
       const jobStart = Date.now();
-      const code = await job.requestPairingCode(job.phoneNumber);
+      const code = await Promise.race([
+        job.requestPairingCode(job.phoneNumber),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`requestPairingCode timed out after ${PAIRING_REQUEST_TIMEOUT_MS / 1000}s`)), PAIRING_REQUEST_TIMEOUT_MS)
+        ),
+      ]);
       const jobDuration = Date.now() - jobStart;
       console.log(`[PAIRING-QUEUE] Job completed: session=${job.sessionId} code="${code}" duration=${jobDuration}ms totalWait=${Date.now() - job.queuedAt}ms`);
       job.resolve(code);

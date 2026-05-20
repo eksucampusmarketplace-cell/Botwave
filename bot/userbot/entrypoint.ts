@@ -13,7 +13,7 @@ import http from 'http';
 import { createClient } from '@supabase/supabase-js';
 import { UserbotManager } from './manager';
 import type { UserbotClientConfig } from './client';
-import { decrypt } from '@/lib/crypto';
+import { decrypt } from '../../lib/crypto';
 
 // ─── Environment ─────────────────────────────────────────────────────────────
 

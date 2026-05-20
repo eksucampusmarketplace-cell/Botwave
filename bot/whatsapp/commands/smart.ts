@@ -254,7 +254,7 @@ async function handleDigest(
 
   try {
     // Plan gating: digest is a premium feature
-    const sub = await getUserSubscription(context.userId);
+    const sub = context.userId ? await getUserSubscription(context.userId) : null;
     if (sub?.plan === 'free') {
       await sendReply(
         context.chatJid,

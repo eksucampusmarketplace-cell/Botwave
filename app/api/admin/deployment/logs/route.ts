@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 const VALID_CONTAINERS = [
   'botwave_web',
-  'botwave_bot_main',
+  'botwave_whatsapp',
   'botwave_worker_1',
   'botwave_worker_2',
   'botwave_worker_3',

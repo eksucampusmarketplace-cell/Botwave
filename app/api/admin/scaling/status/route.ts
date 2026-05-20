@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const raw = execSync(
-      `docker exec botwave_bot_main wget -qO- http://localhost:10000/api/scaling/status 2>/dev/null`,
+      `docker exec botwave_whatsapp wget -qO- http://localhost:10000/api/scaling/status 2>/dev/null`,
       { encoding: 'utf-8', timeout: 10000 }
     ).trim();
 
