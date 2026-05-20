@@ -81,8 +81,13 @@ export async function GET() {
       );
     }
 
+    // Skip cache when any session is in pairing flow (QR codes expire quickly)
     const cached = await getCachedSessions(user.id);
-    if (cached) return NextResponse.json({ success: true, data: cached });
+    const hasPairingSession = cached && Array.isArray(cached) &&
+      cached.some((s: any) => s.state === 'qr_pending' || s.state === 'pairing_sent');
+    if (cached && !hasPairingSession) {
+      return NextResponse.json({ success: true, data: cached });
+    }
 
     const { data: sessions, error } = await supabase
       .from('bot_sessions')

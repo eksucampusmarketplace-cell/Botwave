@@ -38,7 +38,7 @@ async function saveAliasesToRedis(userJid: string, aliases: Map<string, string>)
     if (aliases.size === 0) {
       await aliasRedis.del(`${ALIAS_REDIS_PREFIX}${userJid}`);
     } else {
-      await aliasRedis.set(`${ALIAS_REDIS_PREFIX}${userJid}`, JSON.stringify(Object.fromEntries(aliases)));
+      await aliasRedis.set(`${ALIAS_REDIS_PREFIX}${userJid}`, JSON.stringify(Object.fromEntries(aliases)), 'EX', 7 * 24 * 60 * 60);
     }
   } catch { /* ignore */ }
 }

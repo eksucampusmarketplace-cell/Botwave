@@ -136,6 +136,16 @@ function resolveSessionId(instance: unknown): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate webhook secret if configured
+    const webhookSecret = process.env.EVOLUTION_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const authHeader = request.headers.get('x-webhook-secret') || request.headers.get('authorization');
+      if (!authHeader || (authHeader !== webhookSecret && authHeader !== `Bearer ${webhookSecret}`)) {
+        console.warn('[EVO-WEBHOOK] Invalid or missing webhook secret');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await request.json();
     const { instance, data, event } = body;
 

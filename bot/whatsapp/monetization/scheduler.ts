@@ -29,6 +29,13 @@ import {
   recordNotification,
   type SubscriptionNotification,
 } from './trialNotifications';
+import {
+  sendTrialExpiryEmail,
+  sendTrialExpiredEmail,
+  sendRenewalReminderEmail,
+  sendQuotaWarningEmail,
+  sendPaymentFailedEmail,
+} from '../../../lib/email';
 
 const SCHEDULER_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const NOTIFICATION_DELAY_MS = 3000; // 3s between DMs (anti-ban)
@@ -82,6 +89,7 @@ async function runSchedulerCycle(): Promise<void> {
     const dunningNotifs = await getDueRetryNotifications();
     for (const notif of dunningNotifs) {
       await sendNotification(notif);
+      await sendEmailForNotification(notif.userId, notif.notificationType, notif);
       await delay(NOTIFICATION_DELAY_MS);
     }
 
@@ -103,6 +111,7 @@ async function runSchedulerCycle(): Promise<void> {
     const trialNotifs = await getTrialExpiryNotifications();
     for (const notif of trialNotifs) {
       await sendNotification(notif);
+      await sendEmailForNotification(notif.userId, notif.notificationType, notif);
       await recordNotification(notif.userId, notif.notificationType, notif.sessionId);
       await delay(NOTIFICATION_DELAY_MS);
     }
@@ -111,6 +120,7 @@ async function runSchedulerCycle(): Promise<void> {
     const expiredNotifs = await getExpiredTrialNotifications();
     for (const notif of expiredNotifs) {
       await sendNotification(notif);
+      await sendEmailForNotification(notif.userId, notif.notificationType, notif);
       await recordNotification(notif.userId, notif.notificationType, notif.sessionId);
       await delay(NOTIFICATION_DELAY_MS);
     }
@@ -119,6 +129,7 @@ async function runSchedulerCycle(): Promise<void> {
     const quotaNotifs = await getQuotaNotifications();
     for (const notif of quotaNotifs) {
       await sendNotification(notif);
+      await sendEmailForNotification(notif.userId, notif.notificationType, notif);
       await recordNotification(notif.userId, notif.notificationType, notif.sessionId);
       await delay(NOTIFICATION_DELAY_MS);
     }
@@ -127,6 +138,7 @@ async function runSchedulerCycle(): Promise<void> {
     const renewalNotifs = await getRenewalReminders();
     for (const notif of renewalNotifs) {
       await sendNotification(notif);
+      await sendEmailForNotification(notif.userId, notif.notificationType, notif);
       await recordNotification(notif.userId, notif.notificationType, notif.sessionId);
       await delay(NOTIFICATION_DELAY_MS);
     }
@@ -181,6 +193,74 @@ function getDowngradeMessage(): string {
     `💳 Send *!upgrade* to pay directly here\n` +
     `🌐 Dashboard: ${appUrl}/dashboard`
   );
+}
+
+/**
+ * Send an email notification alongside the WhatsApp DM.
+ * Looks up the user's email from auth and sends the appropriate template.
+ */
+async function sendEmailForNotification(
+  userId: string,
+  type: string,
+  notif?: DunningNotification | SubscriptionNotification,
+): Promise<void> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
+    if (!authUser?.email) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    const username = profile?.username || 'User';
+
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan, quota_used, quota_limit, next_renewal, failed_payment_count')
+      .eq('user_id', userId)
+      .single();
+
+    const plan = sub?.plan || 'unknown';
+
+    switch (type) {
+      case 'trial_expiry_7d':
+        await sendTrialExpiryEmail(authUser.email, username, plan, 7);
+        break;
+      case 'trial_expiry_3d':
+        await sendTrialExpiryEmail(authUser.email, username, plan, 3);
+        break;
+      case 'trial_expiry_1d':
+        await sendTrialExpiryEmail(authUser.email, username, plan, 1);
+        break;
+      case 'trial_expired':
+        await sendTrialExpiredEmail(authUser.email, username, plan);
+        break;
+      case 'renewal_reminder':
+        if (sub?.next_renewal) {
+          await sendRenewalReminderEmail(authUser.email, username, plan, new Date(sub.next_renewal));
+        }
+        break;
+      case 'quota_80':
+      case 'quota_100':
+        if (sub) {
+          await sendQuotaWarningEmail(authUser.email, username, sub.quota_used || 0, sub.quota_limit || 1, plan);
+        }
+        break;
+      case 'payment_failed':
+      case 'retry_reminder':
+      case 'final_warning':
+        await sendPaymentFailedEmail(authUser.email, username, sub?.failed_payment_count || 1, 3);
+        break;
+    }
+  } catch (err) {
+    console.error(`[MONETIZATION] Email notification failed for ${type}:`, err);
+  }
 }
 
 /**

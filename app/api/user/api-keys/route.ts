@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHash } from 'crypto';
 import { getCachedApiKeys, cacheApiKeys, invalidateApiKeys } from '@/lib/redisApiCache';
+import { sendApiKeyCreatedEmail, sendApiKeyRevokedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,13 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
 
     await invalidateApiKeys(user.id);
+
+    // Send email notification (fire-and-forget)
+    if (user.email) {
+      sendApiKeyCreatedEmail(user.email, user.user_metadata?.username || 'User', name, keyPrefix)
+        .catch(err => console.error('[API-KEY] Email notification failed:', err));
+    }
+
     return NextResponse.json({
       success: true,
       data: { ...data, rawKey },
@@ -106,6 +114,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing key ID' }, { status: 400 });
     }
 
+    // Get key name before deleting for email notification
+    const { data: keyData } = await supabase
+      .from('api_keys')
+      .select('name')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+
     const { error } = await supabase
       .from('api_keys')
       .delete()
@@ -115,6 +131,13 @@ export async function DELETE(request: NextRequest) {
     if (error) throw error;
 
     await invalidateApiKeys(user.id);
+
+    // Send email notification (fire-and-forget)
+    if (user.email) {
+      sendApiKeyRevokedEmail(user.email, user.user_metadata?.username || 'User', keyData?.name || 'Unknown')
+        .catch(err => console.error('[API-KEY] Revocation email failed:', err));
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete API key error:', error);

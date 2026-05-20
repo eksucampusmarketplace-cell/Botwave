@@ -2,6 +2,13 @@
 
 import { motion } from 'framer-motion';
 
+interface SessionDetail {
+  sessionId: string;
+  sessionName: string;
+  state: string;
+  lastActive: string | null;
+}
+
 interface SessionHealthProps {
   total: number;
   active: number;
@@ -9,9 +16,19 @@ interface SessionHealthProps {
   pairingSent: number;
   qrPending: number;
   inactive: number;
+  sessions?: SessionDetail[];
 }
 
-export default function SessionHealthWidget({ total, active, needsReauth, pairingSent, qrPending, inactive }: SessionHealthProps) {
+function formatLatency(lastActive: string | null): string {
+  if (!lastActive) return 'Never';
+  const diff = Date.now() - new Date(lastActive).getTime();
+  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
+export default function SessionHealthWidget({ total, active, needsReauth, pairingSent, qrPending, inactive, sessions }: SessionHealthProps) {
   const healthPercent = total > 0 ? Math.round((active / total) * 100) : 0;
 
   const healthColor = healthPercent >= 70
@@ -116,6 +133,33 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
           </div>
         )}
       </div>
+
+      {/* Per-session latency details */}
+      {sessions && sessions.length > 0 && (
+        <div className="border-t border-[var(--border)] pt-3 mt-3 space-y-2">
+          <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+            Per-Session Activity
+          </h3>
+          {sessions.slice(0, 5).map(s => {
+            const stateColor = s.state === 'active'
+              ? 'bg-green-500' : s.state === 'needs_reauth'
+              ? 'bg-yellow-500' : 'bg-red-400';
+            return (
+              <div key={s.sessionId} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`w-2 h-2 rounded-full ${stateColor} flex-shrink-0`} />
+                  <span className="text-[var(--text-secondary)] truncate">
+                    {s.sessionName || s.sessionId.slice(0, 8)}
+                  </span>
+                </div>
+                <span className="text-xs text-[var(--text-muted)] whitespace-nowrap ml-2">
+                  {formatLatency(s.lastActive)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
