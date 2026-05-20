@@ -22,6 +22,10 @@ export default function SessionsPage() {
   const [newSession, setNewSession] = useState({ name: '', phone: '' });
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+  const [proxyType, setProxyType] = useState<'shared' | 'custom'>('shared');
+  const [customProxy, setCustomProxy] = useState({ host: '', port: '', username: '', password: '' });
+  const [proxyTesting, setProxyTesting] = useState(false);
+  const [proxyTestResult, setProxyTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const supabase = useRef(createClient()).current;
   const activeSessionRef = useRef<BotSession | null>(null);
@@ -118,6 +122,13 @@ export default function SessionsPage() {
           sessionName: newSession.name,
           phoneNumber: newSession.phone,
           platform: 'whatsapp',
+          proxyType,
+          ...(proxyType === 'custom' && customProxy.host && customProxy.port ? {
+            proxyHost: customProxy.host,
+            proxyPort: customProxy.port,
+            proxyUsername: customProxy.username || undefined,
+            proxyPassword: customProxy.password || undefined,
+          } : {}),
         }),
       });
       const data = await response.json();
@@ -125,6 +136,9 @@ export default function SessionsPage() {
         setShowAddModal(false);
         setNewSession({ name: '', phone: '' });
         setSelectedPlatform(null);
+        setProxyType('shared');
+        setCustomProxy({ host: '', port: '', username: '', password: '' });
+        setProxyTestResult(null);
         fetchSessions();
         setActiveSession(data.data);
         setShowQR(true);
@@ -537,6 +551,156 @@ export default function SessionsPage() {
                       />
                       <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Use international format with country code (e.g. +234 for Nigeria, +1 for US, +44 for UK)</p>
                     </div>
+
+                    {/* Proxy Selection */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Connection Proxy</label>
+                      <div className="space-y-2">
+                        <label
+                          className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${proxyType === 'shared' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'hover:border-blue-300 dark:hover:border-blue-500/30'}`}
+                          style={{ borderColor: proxyType === 'shared' ? undefined : 'var(--border)' }}
+                        >
+                          <input
+                            type="radio"
+                            name="proxy_type"
+                            value="shared"
+                            checked={proxyType === 'shared'}
+                            onChange={() => { setProxyType('shared'); setProxyTestResult(null); }}
+                            className="mt-0.5 accent-blue-600"
+                          />
+                          <div>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                              BotWave shared proxy pool (free)
+                            </span>
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                              Limited reliability for numbers outside the US, Canada, UK. Best for testing or low-volume use. May experience disconnections.
+                            </p>
+                          </div>
+                        </label>
+                        <label
+                          className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${proxyType === 'custom' ? 'border-green-500 bg-green-50/50 dark:bg-green-500/5' : 'hover:border-green-300 dark:hover:border-green-500/30'}`}
+                          style={{ borderColor: proxyType === 'custom' ? undefined : 'var(--border)' }}
+                        >
+                          <input
+                            type="radio"
+                            name="proxy_type"
+                            value="custom"
+                            checked={proxyType === 'custom'}
+                            onChange={() => setProxyType('custom')}
+                            className="mt-0.5 accent-green-600"
+                          />
+                          <div>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                              Bring your own proxy (recommended for production)
+                            </span>
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                              Stable, dedicated connection. Works from any country. You provide the proxy details.
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+
+                      {proxyType === 'custom' && (
+                        <div className="space-y-3 pl-1">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Proxy Host</label>
+                              <input
+                                type="text"
+                                value={customProxy.host}
+                                onChange={(e) => setCustomProxy({ ...customProxy, host: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                                placeholder="proxy.example.com"
+                                disabled={isCreating}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Port</label>
+                              <input
+                                type="text"
+                                value={customProxy.port}
+                                onChange={(e) => setCustomProxy({ ...customProxy, port: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                                placeholder="8080"
+                                disabled={isCreating}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Username <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+                              <input
+                                type="text"
+                                value={customProxy.username}
+                                onChange={(e) => setCustomProxy({ ...customProxy, username: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                                placeholder="user"
+                                disabled={isCreating}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Password <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+                              <input
+                                type="password"
+                                value={customProxy.password}
+                                onChange={(e) => setCustomProxy({ ...customProxy, password: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                                placeholder="pass"
+                                disabled={isCreating}
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!customProxy.host || !customProxy.port || proxyTesting}
+                            onClick={async () => {
+                              setProxyTesting(true);
+                              setProxyTestResult(null);
+                              try {
+                                const res = await fetch('/api/bot/proxy-test', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(customProxy),
+                                });
+                                const data = await res.json();
+                                setProxyTestResult({
+                                  success: data.success,
+                                  message: data.success ? data.message : data.error,
+                                });
+                              } catch {
+                                setProxyTestResult({ success: false, message: 'Test request failed' });
+                              } finally {
+                                setProxyTesting(false);
+                              }
+                            }}
+                            className="w-full border p-2 text-xs font-medium rounded-lg transition-colors hover:bg-green-50 dark:hover:bg-green-500/10 text-green-600 dark:text-green-400 disabled:opacity-50"
+                            style={{ borderColor: 'var(--border)' }}
+                          >
+                            {proxyTesting ? 'Testing...' : 'Test Proxy Connection'}
+                          </button>
+
+                          {proxyTestResult && (
+                            <div className={`p-2 rounded-lg text-xs ${proxyTestResult.success ? 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-50 dark:bg-red-500/10 text-red-500'}`}>
+                              {proxyTestResult.message}
+                            </div>
+                          )}
+
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            Need a proxy?{' '}
+                            <a href="https://www.webshare.io/" target="_blank" rel="noopener noreferrer" className="text-green-600 dark:text-green-400 underline">
+                              Get one from Webshare
+                            </a>{' '}
+                            — residential proxies as low as $0.0034/IP.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex gap-4 pt-4">
                       <button
                         type="button"
@@ -563,6 +727,7 @@ export default function SessionsPage() {
                       <div className="space-y-2">
                         <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Name: <span className="text-blue-600 dark:text-blue-400 font-medium">{newSession.name}</span></p>
                         <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Phone: <span className="text-blue-600 dark:text-blue-400 font-medium">{newSession.phone}</span></p>
+                        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Proxy: <span className={`font-medium ${proxyType === 'custom' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>{proxyType === 'custom' ? `Custom (${customProxy.host}:${customProxy.port})` : 'Shared pool'}</span></p>
                       </div>
                       <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
                         Please verify this is the correct WhatsApp number you want to connect. Make sure it includes your country code.

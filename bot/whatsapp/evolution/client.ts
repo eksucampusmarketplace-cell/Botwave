@@ -2,6 +2,7 @@
 // REST client for Evolution API endpoints.
 
 import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
+import { getSessionById } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -442,6 +443,25 @@ export function extractCountryCode(phoneNumber: string): string {
  * 5. If all proxies are full or blacklisted, return null (caller falls back to direct)
  */
 async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Promise<{ host: string; port: string; protocol: string; username: string; password: string } | null> {
+  // Check for user's custom (BYOP) proxy before using the shared pool
+  if (sessionId) {
+    try {
+      const session = await getSessionById(sessionId);
+      if (session?.proxy_type === 'custom' && session.proxy_host && session.proxy_port) {
+        console.log(`[PROXY] Using custom BYOP proxy for session ${sessionId.slice(0, 8)}: ${session.proxy_host}:${session.proxy_port}`);
+        return {
+          host: session.proxy_host,
+          port: session.proxy_port,
+          protocol: 'http',
+          username: session.proxy_username || '',
+          password: session.proxy_password || '',
+        };
+      }
+    } catch (err) {
+      console.warn(`[PROXY] Failed to check custom proxy for session ${sessionId.slice(0, 8)}:`, err);
+    }
+  }
+
   if (PROXY_LIST.length === 0) return null;
   if (proxyPoolDisabled) {
     console.log('[PROXY] Pool disabled (fallback mode) - skipping proxy assignment');

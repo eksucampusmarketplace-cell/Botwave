@@ -46,6 +46,11 @@ export interface BotSession {
   telegram_api_id?: number;
   telegram_api_hash?: string;
   telegram_session_string?: string;
+  proxy_type?: 'shared' | 'custom';
+  proxy_host?: string;
+  proxy_port?: string;
+  proxy_username?: string;
+  proxy_password?: string;
 }
 
 // ─── Feature Types ────────────────────────────────────────────────────────────
