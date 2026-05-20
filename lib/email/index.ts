@@ -15,10 +15,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
 export async function sendEmailDirect(envelope: EmailEnvelope): Promise<EmailResult> {
   // Check bounce/unsubscribe status before sending
-  const sendCheck = await shouldSendEmail(envelope.to).catch(() => ({ allowed: true }));
+  const sendCheck = await shouldSendEmail(envelope.to).catch(() => ({ allowed: true, reason: undefined as string | undefined }));
   if (!sendCheck.allowed) {
-    console.log(`[EMAIL] Skipped ${envelope.to}: ${sendCheck.reason}`);
-    return { success: false, error: `recipient_${sendCheck.reason}` };
+    const reason = 'reason' in sendCheck ? sendCheck.reason : 'blocked';
+    console.log(`[EMAIL] Skipped ${envelope.to}: ${reason}`);
+    return { success: false, error: `recipient_${reason}` };
   }
 
   // Check domain rate limit

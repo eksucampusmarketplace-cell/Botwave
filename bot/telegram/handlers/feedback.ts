@@ -72,13 +72,15 @@ export function registerFeedbackHandlers(bot: Bot, sessionId: string): void {
     }
 
     // Store in DB regardless
-    await supabase.from('telegram_feedback').insert({
-      session_id: sessionId,
-      user_id: ctx.from.id.toString(),
-      user_name: userName,
-      chat_id: ctx.chat?.id?.toString(),
-      message: text,
-    }).catch(() => {});
+    try {
+      await supabase.from('telegram_feedback').insert({
+        session_id: sessionId,
+        user_id: ctx.from.id.toString(),
+        user_name: userName,
+        chat_id: ctx.chat?.id?.toString(),
+        message: text,
+      });
+    } catch {}
 
     await ctx.reply(sent
       ? 'Thank you! Your feedback has been forwarded to the admin.'
