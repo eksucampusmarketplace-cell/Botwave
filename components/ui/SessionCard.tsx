@@ -8,7 +8,8 @@ type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
 interface SessionCardProps {
   name: string;
   phone: string;
-  status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth' | 'connecting';
+  status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'qr_pending' | 'pairing_sent' | 'needs_reauth' | 'pairing_failed' | 'connecting';
+  lastPairingError?: string | null;
   lastActive: string;
   lastActiveRaw?: string | null;
   platform?: Platform;
@@ -30,7 +31,7 @@ const platformLabels: Record<Platform, string> = {
   telegram_userbot: 'TG User',
 };
 
-export default function SessionCard({ name, phone, status, lastActive, lastActiveRaw, platform, sessionId, onConnect, onDisconnect, onDelete }: SessionCardProps) {
+export default function SessionCard({ name, phone, status, lastActive, lastActiveRaw, platform, sessionId, lastPairingError, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   // Detect stale sessions: active but last_active > 2 hours ago
   const isStale = (() => {
     if (status !== 'active' && status !== 'connected') return false;
@@ -45,6 +46,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
     disconnected: 'bg-red-100 dark:bg-red-400/20 text-red-600 dark:text-red-400',
     inactive: 'bg-red-100 dark:bg-red-400/20 text-red-600 dark:text-red-400',
     needs_reauth: 'bg-red-600 text-white',
+    pairing_failed: 'bg-red-700 text-white',
     pending: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
     qr_pending: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
     pairing_sent: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
@@ -57,6 +59,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
     disconnected: 'OFFLINE',
     inactive: 'OFFLINE',
     needs_reauth: 'RE-AUTH',
+    pairing_failed: 'PAIRING FAILED',
     pending: 'QR PENDING',
     qr_pending: 'QR PENDING',
     pairing_sent: 'PAIRING CODE SENT',
@@ -89,6 +92,11 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
               &#9888; Session may be unresponsive (no activity for 2+ hours)
             </p>
           )}
+          {lastPairingError && (status === 'needs_reauth' || status === 'pairing_failed') && (
+            <p className="text-xs text-red-400 mt-0.5">
+              {lastPairingError}
+            </p>
+          )}
         </div>
       </div>
 
@@ -96,7 +104,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
         <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColors[status]}`}>
           {statusLabels[status]}
         </span>
-        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'qr_pending' || status === 'pairing_sent' || status === 'pending') && (
+        {(status === 'disconnected' || status === 'inactive' || status === 'needs_reauth' || status === 'pairing_failed' || status === 'qr_pending' || status === 'pairing_sent' || status === 'pending') && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

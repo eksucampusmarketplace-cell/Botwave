@@ -633,6 +633,7 @@ function loadGroups() {
 
 document.getElementById('group-select').addEventListener('change', function() {
   currentChatId = this.value;
+  detectRole().then(function(role) { applyRole(role); });
   var activeTab = document.querySelector('.tab.active');
   if (activeTab) loadTabData(activeTab.dataset.tab);
 });

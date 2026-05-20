@@ -346,6 +346,7 @@ export default function SessionsPage() {
                     status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                     lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
                     lastActiveRaw={session.last_active}
+                    lastPairingError={session.last_pairing_error}
                     platform={session.platform}
                     onConnect={() => handleConnect(session)}
                     onDisconnect={() => handleDisconnectSession(session.id)}

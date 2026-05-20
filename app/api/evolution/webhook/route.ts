@@ -222,6 +222,7 @@ export async function POST(request: NextRequest) {
             qr_expires_at: null,
             qr_generated_at: null,
             pairing_code: null,
+            last_pairing_error: null,
             updated_at: nowIso,
           })
           .eq('id', sessionId);
@@ -300,6 +301,7 @@ export async function POST(request: NextRequest) {
               locked_at: null,
               heartbeat_at: null,
               pairing_lock_acquired_at: null,
+              last_pairing_error: 'WhatsApp rejected credentials (401). Session needs re-authentication.',
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
@@ -383,6 +385,7 @@ export async function POST(request: NextRequest) {
           locked_by: null,
           locked_at: null,
           heartbeat_at: null,
+          last_pairing_error: 'WhatsApp terminated the linked device (logout). Re-pairing required.',
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
@@ -426,7 +429,7 @@ export async function POST(request: NextRequest) {
         const { error: qrErr } = await supabase.from('bot_sessions').update({
           qr_code: qrCode,
           qr_generated_at: webhookReceivedAt,
-          qr_expires_at: new Date(Date.now() + 180_000).toISOString(),
+          qr_expires_at: new Date(Date.now() + 300_000).toISOString(),
           updated_at: webhookReceivedAt,
         }).eq('id', sessionId).neq('state', 'active');
         if (qrErr) {
@@ -445,6 +448,16 @@ export async function POST(request: NextRequest) {
       if (pairingCode && current?.pairing_code === pairingCode) {
         console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" - QR already updated above. Done.`);
         return NextResponse.json({ ok: true });
+      }
+
+      // Short-circuit rapid-fire code changes within 2 seconds of the last update.
+      // This prevents the ~45s reconnect loop from producing codes the user can't enter.
+      if (pairingCode && current?.updated_at) {
+        const sinceLastUpdate = Date.now() - new Date(current.updated_at).getTime();
+        if (sinceLastUpdate < 2000) {
+          console.log(`[PAIRING-WEBHOOK] THROTTLED - code "${pairingCode}" arrived ${sinceLastUpdate}ms after last update. Ignoring rapid-fire event.`);
+          return NextResponse.json({ ok: true });
+        }
       }
 
       // Always accept a different pairing code. Evolution API only generates

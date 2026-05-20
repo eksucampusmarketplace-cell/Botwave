@@ -604,7 +604,28 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
     const attempts = autoRecoveryAttempts.get(session.id) || 0;
     if (attempts >= AUTO_RECOVERY_MAX_ATTEMPTS) {
-      continue; // exhausted auto-recovery for this session
+      // Set pairing_failed so the dashboard can show an error to the user
+      // instead of silently looping forever.
+      const sid = session.id.slice(0, 8);
+      const { data: current } = await supabase
+        .from('bot_sessions')
+        .select('state')
+        .eq('id', session.id)
+        .single();
+
+      if (current?.state === 'needs_reauth') {
+        await supabase
+          .from('bot_sessions')
+          .update({
+            state: 'pairing_failed',
+            last_pairing_error: `Auto-recovery exhausted after ${AUTO_RECOVERY_MAX_ATTEMPTS} attempts. WhatsApp rejected the connection — check proxy settings or re-pair manually.`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', session.id)
+          .eq('state', 'needs_reauth');
+        console.log(`[AUTO-RECOVERY] Session ${sid} exhausted ${AUTO_RECOVERY_MAX_ATTEMPTS} attempts - set to pairing_failed`);
+      }
+      continue;
     }
 
     // Exponential backoff: 2min, 4min, 8min, 16min, 32min per attempt.
