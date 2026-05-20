@@ -180,7 +180,7 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
     cacheKey: `sessionsNeeding:${selfUrl || 'main'}:${isWorker}`,
     fallbackValue: [] as any[],
     queryFn: async () => {
-      const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'inactive', 'connecting'];
+      const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'connecting'];
 
       let query = supabase
         .from('bot_sessions')
@@ -543,7 +543,7 @@ export async function recoverStaleStandaloneSessions(): Promise<number> {
   const { data: stuck, error } = await supabase
     .from('bot_sessions')
     .select('id, state, updated_at, heartbeat_at, locked_by')
-    .in('state', ['qr_pending', 'pairing_sent', 'inactive'])
+    .in('state', ['qr_pending', 'pairing_sent'])
     .is('worker_url', null)
     .lt('updated_at', cutoff);
 

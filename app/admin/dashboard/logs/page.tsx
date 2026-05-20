@@ -10,7 +10,7 @@ interface LogLine {
 type LogLevel = 'all' | 'error' | 'warn' | 'info';
 
 const CONTAINERS = [
-  'botwave_web', 'botwave_bot_main', 'evolution_api',
+  'botwave_web', 'botwave_whatsapp', 'evolution_api',
   'evolution_postgres', 'botwave_redis', 'botwave_nginx',
 ];
 

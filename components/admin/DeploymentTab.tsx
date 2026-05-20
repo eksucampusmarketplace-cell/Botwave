@@ -79,10 +79,10 @@ const VPS_HELP = [
       { cmd: 'docker ps', desc: 'Show all running containers' },
       { cmd: 'docker ps -a', desc: 'Show all containers (including stopped)' },
       { cmd: 'docker logs botwave_web --tail 50', desc: 'See last 50 lines of web logs' },
-      { cmd: 'docker logs botwave_bot_main --tail 50', desc: 'See last 50 lines of bot logs' },
+      { cmd: 'docker logs botwave_whatsapp --tail 50', desc: 'See last 50 lines of bot logs' },
       { cmd: 'docker logs evolution_api --tail 50', desc: 'See last 50 lines of Evolution API logs' },
       { cmd: 'docker restart botwave_web', desc: 'Restart just the web container' },
-      { cmd: 'docker restart botwave_bot_main', desc: 'Restart just the bot' },
+      { cmd: 'docker restart botwave_whatsapp', desc: 'Restart just the bot' },
       { cmd: 'docker stop botwave_web', desc: 'Stop the web container' },
       { cmd: 'docker start botwave_web', desc: 'Start the web container' },
     ],
@@ -130,7 +130,7 @@ const VPS_HELP = [
 // ── Container name map ─────────────────────────────────
 const CONTAINER_LABELS: Record<string, string> = {
   botwave_web: 'Web (Next.js)',
-  botwave_bot_main: 'Bot (Main)',
+  botwave_whatsapp: 'Bot (Main)',
   evolution_api: 'Evolution API',
   evolution_postgres: 'Postgres DB',
   botwave_redis: 'Redis Cache',

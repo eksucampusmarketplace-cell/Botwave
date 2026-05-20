@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
     const workers = getWorkerContainers();
     const runningWorkers = workers.filter(w => w.state === 'running').length;
 
-    // Get active session count from botwave_bot_main logs
+    // Get active session count from botwave_whatsapp logs
     let totalActiveSessions = 0;
     try {
       const logLine = execSync(
-        `docker logs botwave_bot_main --tail 50 2>&1 | grep -oP 'activeSessions=\\K\\d+' | tail -1`,
+        `docker logs botwave_whatsapp --tail 50 2>&1 | grep -oP 'activeSessions=\\K\\d+' | tail -1`,
         { encoding: 'utf-8', timeout: 5000 }
       ).trim();
       if (logLine) totalActiveSessions = parseInt(logLine, 10) || 0;
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     if (totalActiveSessions === 0) {
       try {
         const statsRaw = execSync(
-          `docker exec botwave_bot_main sh -c 'wget -qO- http://localhost:10000/api/admin/stats 2>/dev/null || true'`,
+          `docker exec botwave_whatsapp sh -c 'wget -qO- http://localhost:10000/api/admin/stats 2>/dev/null || true'`,
           { encoding: 'utf-8', timeout: 10000 }
         ).trim();
         if (statsRaw) {

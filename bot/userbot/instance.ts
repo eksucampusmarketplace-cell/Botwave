@@ -11,7 +11,7 @@
 import { type UserbotClientConfig } from './client';
 import { UserbotManager } from './manager';
 import { createClient } from '@supabase/supabase-js';
-import { decrypt } from '@/lib/crypto';
+import { decrypt } from '../../lib/crypto';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

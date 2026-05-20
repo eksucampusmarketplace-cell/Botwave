@@ -21,7 +21,7 @@ import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
 import { TelegramUserbotInstance } from './userbot/instance';
-import { decrypt } from '@/lib/crypto';
+import { decrypt } from '../lib/crypto';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
 try {
@@ -1756,7 +1756,7 @@ export async function syncSessionsWithDb(isWorker?: boolean) {
 
 async function _syncSessionsWithDbInner(isWorker?: boolean) {
   // Skip sync entirely during 428 cooldown - no new connections should be attempted
-  if (is428CooldownActive()) {
+  if (await is428CooldownActiveAsync()) {
     console.log(`[SYNC] Skipping sync cycle - 428 cooldown active (${get428CooldownRemaining()}s remaining)`);
     return;
   }
@@ -1826,7 +1826,7 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
   for (const session of sessions) {
     const bot = activeBots.get(session.id);
 
-    if ((session.state === 'active' || session.state === 'inactive' || session.state === 'connecting') && bot) {
+    if ((session.state === 'active' || session.state === 'connecting') && bot) {
       // If the session is inactive and the bot is dead (not ready, not
       // reconnecting), clean it up so a fresh bot can retry on the next cycle.
       // This prevents sessions from getting permanently stuck after a transient
