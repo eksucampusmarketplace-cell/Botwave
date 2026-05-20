@@ -802,7 +802,7 @@ export default function MiniAppPage() {
           </SectionCard>
         )}
 
-        <button onClick={saveConfig} disabled={saving}
+        <button onClick={() => saveConfig()} disabled={saving}
           className="w-full p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-colors disabled:opacity-50 mt-4">
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
