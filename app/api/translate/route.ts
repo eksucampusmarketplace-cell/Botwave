@@ -3,25 +3,27 @@ import { callAI } from '@/lib/ai-provider';
 
 export const dynamic = 'force-dynamic';
 
-// In-memory cache for translations (key: `${lang}:${hash}`, value: translated text)
-const translationCache = new Map<string, { text: string; ts: number }>();
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-function hashText(text: string): string {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return hash.toString(36);
-}
-
-const SUPPORTED_LANGS: Record<string, string> = {
-  en: 'English', fr: 'French', yo: 'Yoruba', ha: 'Hausa', ig: 'Igbo',
-  hi: 'Hindi', ar: 'Arabic', es: 'Spanish', pt: 'Portuguese', de: 'German',
-  sw: 'Swahili', zh: 'Chinese', ja: 'Japanese', ko: 'Korean', ru: 'Russian',
-  tr: 'Turkish', af: 'Afrikaans', zu: 'Zulu', am: 'Amharic', pcm: 'Nigerian Pidgin',
+const SUPPORTED_LANGUAGES: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  pt: 'Portuguese',
+  de: 'German',
+  ar: 'Arabic',
+  zh: 'Chinese (Simplified)',
+  hi: 'Hindi',
+  yo: 'Yoruba',
+  ig: 'Igbo',
+  ha: 'Hausa',
+  sw: 'Swahili',
+  ru: 'Russian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  tr: 'Turkish',
+  it: 'Italian',
+  nl: 'Dutch',
+  pl: 'Polish',
+  vi: 'Vietnamese',
 };
 
 export async function POST(request: NextRequest) {
@@ -29,63 +31,47 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, targetLang, sourceLang } = body;
 
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Missing text' }, { status: 400 });
-    }
-
-    if (!targetLang || !SUPPORTED_LANGS[targetLang]) {
-      return NextResponse.json({
-        error: 'Unsupported target language',
-        supported: Object.keys(SUPPORTED_LANGS),
-      }, { status: 400 });
-    }
-
-    if (targetLang === (sourceLang || 'en')) {
-      return NextResponse.json({ translated: text, cached: false });
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
     if (text.length > 5000) {
       return NextResponse.json({ error: 'Text too long (max 5000 chars)' }, { status: 400 });
     }
 
-    // Check cache
-    const cacheKey = `${targetLang}:${hashText(text)}`;
-    const cached = translationCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      return NextResponse.json({ translated: cached.text, cached: true });
-    }
+    const target = targetLang && SUPPORTED_LANGUAGES[targetLang] ? targetLang : 'en';
+    const targetName = SUPPORTED_LANGUAGES[target];
+    const sourceName = sourceLang && SUPPORTED_LANGUAGES[sourceLang]
+      ? SUPPORTED_LANGUAGES[sourceLang]
+      : null;
 
-    const srcLangName = SUPPORTED_LANGS[sourceLang || 'en'] || 'English';
-    const tgtLangName = SUPPORTED_LANGS[targetLang];
+    const sourceHint = sourceName ? ` from ${sourceName}` : '';
 
     const translated = await callAI({
-      prompt: text,
-      systemPrompt: `Translate the following text from ${srcLangName} to ${tgtLangName}. Output ONLY the translation, nothing else. Preserve formatting, line breaks, and markdown.`,
-      maxTokens: 4000,
+      prompt: `Translate the following text${sourceHint} to ${targetName}. Return ONLY the translated text, nothing else. No explanations, no quotes, no labels.\n\nText:\n${text.trim()}`,
+      systemPrompt: 'You are a precise translator. Output only the translated text. Preserve formatting, line breaks, and tone. Do not add any commentary.',
+      maxTokens: 2000,
       temperature: 0.2,
     });
 
-    if (translated) {
-      translationCache.set(cacheKey, { text: translated, ts: Date.now() });
-
-      // Cleanup old entries
-      if (translationCache.size > 1000) {
-        const now = Date.now();
-        for (const [k, v] of translationCache) {
-          if (now - v.ts > CACHE_TTL_MS) translationCache.delete(k);
-        }
-      }
+    if (!translated) {
+      return NextResponse.json(
+        { error: 'Translation service temporarily unavailable' },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({
-      translated: translated || text,
-      cached: false,
-      lang: targetLang,
+      success: true,
+      original: text.trim(),
+      translated: translated.trim(),
+      targetLang: target,
+      targetLanguage: targetName,
     });
   } catch (error) {
-    console.error('[Translate API] Error:', error);
+    console.error('[Translate] Error:', error);
     return NextResponse.json(
-      { error: 'Translation failed', translated: null },
+      { error: 'Translation failed' },
       { status: 500 },
     );
   }
@@ -93,7 +79,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    supported: SUPPORTED_LANGS,
-    description: 'POST { text, targetLang, sourceLang? } to translate content.',
+    languages: SUPPORTED_LANGUAGES,
   });
 }
