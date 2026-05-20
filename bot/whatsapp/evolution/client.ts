@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy } from '../../infrastructure/redis';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -367,7 +367,7 @@ export function resetEvolutionHealth(): void {
   consecutiveFailures = 0;
 }
 
-// Sticky proxy: remember which proxy each session used, reuse on reconnect
+// Sticky proxy: in-memory fallback (used when Redis is unavailable)
 const sessionProxyMap = new Map<string, number>();
 
 /** Set the sticky proxy for a session (call after successful proxy assignment). */
@@ -380,19 +380,73 @@ export function getSessionProxyIndex(sessionId: string): number {
   return sessionProxyMap.get(sessionId) ?? -1;
 }
 
+/** Parse a proxy string (host:port:user:pass) into a structured object. */
+function parseProxy(proxyStr: string): { host: string; port: string; protocol: string; username: string; password: string } | null {
+  const parts = proxyStr.split(':');
+  if (parts.length < 4) return null;
+  return { host: parts[0], port: parts[1], protocol: 'http', username: parts[2], password: parts[3] };
+}
+
 /**
- * Pick the next proxy from the pool.
- * If sessionId is provided, tries to reuse the same proxy (sticky).
- * Falls back to round-robin if the sticky proxy is disabled.
+ * Pick a healthy proxy from the pool (async — uses Redis for health + sticky assignment).
+ * 1. Checks Redis for a sticky proxy assigned to this session.
+ * 2. If that proxy is not blacklisted, reuses it.
+ * 3. Otherwise, round-robins among non-blacklisted proxies.
+ * 4. Falls back to in-memory map if Redis is unavailable.
  */
-function getNextProxy(sessionId?: string): { host: string; port: string; protocol: string; username: string; password: string } | null {
+async function getNextProxyAsync(sessionId?: string): Promise<{ host: string; port: string; protocol: string; username: string; password: string } | null> {
   if (PROXY_LIST.length === 0) return null;
   if (proxyPoolDisabled) {
     console.log('[PROXY] Pool disabled (fallback mode) - skipping proxy assignment');
     return null;
   }
 
-  // Sticky proxy: prefer the same proxy used last time for this session
+  // Try Redis-backed sticky proxy first
+  if (sessionId) {
+    const stickyProxyStr = await redisGetSessionProxy(sessionId);
+    if (stickyProxyStr) {
+      const stickyHost = stickyProxyStr.split(':')[0];
+      const blacklisted = await redisIsProxyBlacklisted(stickyHost);
+      if (!blacklisted) {
+        const parsed = parseProxy(stickyProxyStr);
+        if (parsed) return parsed;
+      }
+      console.log(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is blacklisted — rotating`);
+    }
+  }
+
+  // Round-robin among non-blacklisted proxies
+  const startIdx = proxyCounter % PROXY_LIST.length;
+  for (let i = 0; i < PROXY_LIST.length; i++) {
+    const idx = (startIdx + i) % PROXY_LIST.length;
+    const candidate = PROXY_LIST[idx];
+    const candidateHost = candidate.split(':')[0];
+    const blacklisted = await redisIsProxyBlacklisted(candidateHost);
+    if (!blacklisted) {
+      proxyCounter = idx + 1;
+      // Persist sticky assignment in Redis and in-memory
+      if (sessionId) {
+        await redisSetSessionProxy(sessionId, candidate);
+        sessionProxyMap.set(sessionId, idx);
+        console.log(`[PROXY] Assigned healthy proxy ${candidateHost} to session ${sessionId?.slice(0, 8)}`);
+      }
+      return parseProxy(candidate);
+    }
+  }
+
+  // All proxies blacklisted — log warning, return null (caller falls back to direct)
+  console.warn(`[PROXY] All ${PROXY_LIST.length} proxies are blacklisted — no proxy available`);
+  return null;
+}
+
+/**
+ * Synchronous proxy picker (legacy fallback — used where async is impractical).
+ * Prefers sticky proxy from in-memory map, falls back to round-robin.
+ */
+function getNextProxy(sessionId?: string): { host: string; port: string; protocol: string; username: string; password: string } | null {
+  if (PROXY_LIST.length === 0) return null;
+  if (proxyPoolDisabled) return null;
+
   let index: number;
   if (sessionId) {
     const stickyIdx = sessionProxyMap.get(sessionId);
@@ -402,7 +456,6 @@ function getNextProxy(sessionId?: string): { host: string; port: string; protoco
       if (failures < PROXY_FAIL_THRESHOLD) {
         index = stickyIdx;
       } else {
-        // Sticky proxy is unhealthy, rotate to next
         index = proxyCounter % PROXY_LIST.length;
         proxyCounter++;
       }
@@ -416,16 +469,7 @@ function getNextProxy(sessionId?: string): { host: string; port: string; protoco
     proxyCounter++;
   }
 
-  const proxy = PROXY_LIST[index];
-  const parts = proxy.split(':');
-  if (parts.length < 4) return null;
-  return {
-    host: parts[0],
-    port: parts[1],
-    protocol: 'http',
-    username: parts[2],
-    password: parts[3],
-  };
+  return parseProxy(PROXY_LIST[index]);
 }
 
 const headers: Record<string, string> = {
@@ -663,7 +707,8 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
     const maxProxyAttempts = PROXY_LIST.length || 0;
     let proxySet = false;
     for (let pi = 0; pi < maxProxyAttempts && !proxySet; pi++) {
-      const p = getNextProxy(instanceName);
+      // Use async Redis-backed proxy picker (health-aware + sticky)
+      const p = await getNextProxyAsync(instanceName);
       if (!p) break;
       try {
         const proxyRes = await apiFetch(`${BASE}/proxy/set/${instanceName}`, {
@@ -681,20 +726,21 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
         if (proxyRes.status === 200 || proxyRes.status === 201) {
           console.log(`[PROXY] Proxy SET for ${instanceName} - ${p.host}:${p.port} (attempt ${pi + 1}/${maxProxyAttempts})`);
           recordProxySuccess(p.host);
+          await redisClearProxyFailures(p.host);
           proxySet = true;
         } else if (proxyRes.status === 404) {
-          // Instance doesn't exist in Evolution API - not a proxy problem.
-          // Stop trying more proxies; the instance itself is gone.
           console.warn(`[PROXY] Instance ${instanceName} not found (404) - skipping remaining proxy attempts`);
           break;
         } else {
           const body = await proxyRes.text().catch(() => '');
           console.warn(`[PROXY] Failed to set proxy for ${instanceName} (status=${proxyRes.status}, attempt ${pi + 1}/${maxProxyAttempts}): ${body.slice(0, 200)}`);
           recordProxyFailure(instanceName, p.host, `setProxy status=${proxyRes.status}`);
+          await redisRecordProxyFailure(p.host);
         }
       } catch (err) {
         console.warn(`[PROXY] setProxy attempt ${pi + 1}/${maxProxyAttempts} failed for ${instanceName} (${p.host}:${p.port}):`, err);
         recordProxyFailure(instanceName, p.host, String(err));
+        await redisRecordProxyFailure(p.host);
       }
     }
     if (!proxySet && maxProxyAttempts > 0) {
@@ -744,9 +790,9 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
 export async function enableInstanceProxy(instanceName: string): Promise<boolean> {
   const maxAttempts = PROXY_LIST.length || 1;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const proxy = getNextProxy();
+    const proxy = await getNextProxyAsync(instanceName);
     if (!proxy) {
-      console.log(`[PROXY] enableInstanceProxy: no proxy available for ${instanceName}`);
+      console.log(`[PROXY] enableInstanceProxy: no healthy proxy available for ${instanceName}`);
       return false;
     }
     try {
@@ -767,17 +813,19 @@ export async function enableInstanceProxy(instanceName: string): Promise<boolean
       console.log(`[PROXY] enableInstanceProxy ${instanceName}: status=${res.status} ok=${ok} proxy=${proxy.host}:${proxy.port} attempt=${attempt + 1}/${maxAttempts}`);
       if (ok) {
         recordProxySuccess(proxy.host);
+        await redisClearProxyFailures(proxy.host);
         return true;
       }
       if (res.status === 404) {
-        // Instance doesn't exist - not a proxy problem, stop trying.
         console.warn(`[PROXY] enableInstanceProxy: instance ${instanceName} not found (404) - aborting`);
         return false;
       }
       recordProxyFailure(instanceName, proxy.host, `enableInstanceProxy status=${res.status}`);
+      await redisRecordProxyFailure(proxy.host);
     } catch (err) {
       console.warn(`[PROXY] enableInstanceProxy ${instanceName} attempt ${attempt + 1} failed for ${proxy.host}:${proxy.port}:`, err);
       recordProxyFailure(instanceName, proxy.host, String(err));
+      await redisRecordProxyFailure(proxy.host);
     }
   }
   console.error(`[PROXY] enableInstanceProxy ${instanceName}: all ${maxAttempts} proxies failed`);
