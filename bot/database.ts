@@ -306,11 +306,12 @@ export async function updateSessionStatus(sessionId: string, status: string) {
   // Valid state transitions — prevents illegal jumps (e.g. active→pairing).
   // Any transition not listed here is blocked in application code.
   const VALID_TRANSITIONS: Record<string, string[]> = {
-    inactive:       ['qr_pending', 'pairing_sent', 'active', 'needs_reauth'],
-    qr_pending:     ['pairing_sent', 'active', 'inactive', 'needs_reauth'],
-    pairing_sent:   ['active', 'qr_pending', 'inactive', 'needs_reauth'],
-    active:         ['inactive', 'needs_reauth'],
-    needs_reauth:   ['qr_pending', 'pairing_sent', 'active', 'inactive'],
+    inactive:        ['qr_pending', 'pairing_sent', 'active', 'needs_reauth'],
+    qr_pending:      ['pairing_sent', 'active', 'inactive', 'needs_reauth'],
+    pairing_sent:    ['active', 'qr_pending', 'inactive', 'needs_reauth', 'pairing_failed'],
+    active:          ['inactive', 'needs_reauth'],
+    needs_reauth:    ['qr_pending', 'pairing_sent', 'active', 'inactive'],
+    pairing_failed:  ['qr_pending', 'inactive'],
   };
 
   // Defense-in-depth: never regress an active session to pairing_sent or
@@ -685,14 +686,16 @@ export async function recoverNeedsReauthSessions(): Promise<number> {
  * Auto-expire stuck pairing_sent sessions after 10 minutes.
  * These sessions had pairing codes sent but WhatsApp never confirmed them.
  * Resets them to qr_pending so the user can retry.
+ * After 3 consecutive failures, transitions to pairing_failed.
  */
 export async function expireStuckPairingSessions(): Promise<number> {
   const PAIRING_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+  const MAX_PAIRING_RETRIES = 3;
   const cutoff = new Date(Date.now() - PAIRING_EXPIRY_MS).toISOString();
 
   const { data: stuckSessions, error } = await supabase
     .from('bot_sessions')
-    .select('id, phone_number, updated_at')
+    .select('id, phone_number, updated_at, pairing_retries')
     .eq('state', 'pairing_sent')
     .lt('updated_at', cutoff);
 
@@ -702,10 +705,14 @@ export async function expireStuckPairingSessions(): Promise<number> {
 
   let expired = 0;
   for (const session of stuckSessions) {
+    const retries = ((session as Record<string, unknown>).pairing_retries as number) || 0;
+    const newRetries = retries + 1;
+    const nextState = newRetries >= MAX_PAIRING_RETRIES ? 'pairing_failed' : 'qr_pending';
+
     const { error: updateErr } = await supabase
       .from('bot_sessions')
       .update({
-        state: 'qr_pending',
+        state: nextState,
         pairing_code: null,
         qr_code: null,
         qr_expires_at: null,
@@ -713,6 +720,7 @@ export async function expireStuckPairingSessions(): Promise<number> {
         locked_by: null,
         locked_at: null,
         worker_url: null,
+        pairing_retries: newRetries,
         updated_at: new Date().toISOString(),
       })
       .eq('id', session.id)
@@ -720,7 +728,7 @@ export async function expireStuckPairingSessions(): Promise<number> {
 
     if (!updateErr) {
       expired++;
-      console.log(`[CLEANUP] Session ${session.id.slice(0, 8)} expired: pairing_sent → qr_pending (was stuck since ${session.updated_at})`);
+      console.log(`[CLEANUP] Session ${session.id.slice(0, 8)} expired: pairing_sent → ${nextState} (retry ${newRetries}/${MAX_PAIRING_RETRIES}, stuck since ${session.updated_at})`);
     }
   }
 

@@ -2,15 +2,37 @@ import type { EmailChannel, EmailEnvelope, EmailResult } from './types';
 import { CHANNEL_CONFIG } from './types';
 import { getTransporter } from './transporter';
 import { enqueueEmail } from './queue';
+import { shouldSendEmail } from './bounce';
+import { checkDomainRateLimit } from './domain-rate-limit';
 
 export type { EmailChannel, EmailEnvelope, EmailResult };
 export { CHANNEL_CONFIG } from './types';
 export { enqueueEmail, getQueueStats, retryDeadLetterQueue, startEmailQueueProcessor, stopEmailQueueProcessor } from './queue';
+export { shouldSendEmail, recordBounce, recordUnsubscribe } from './bounce';
+export { checkDomainRateLimit, getDomainQuota } from './domain-rate-limit';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
 export async function sendEmailDirect(envelope: EmailEnvelope): Promise<EmailResult> {
+  // Check bounce/unsubscribe status before sending
+  const sendCheck = await shouldSendEmail(envelope.to).catch(() => ({ allowed: true }));
+  if (!sendCheck.allowed) {
+    console.log(`[EMAIL] Skipped ${envelope.to}: ${sendCheck.reason}`);
+    return { success: false, error: `recipient_${sendCheck.reason}` };
+  }
+
+  // Check domain rate limit
+  if (!checkDomainRateLimit(envelope.to)) {
+    return { success: false, error: 'domain_rate_limited' };
+  }
+
   const config = CHANNEL_CONFIG[envelope.channel];
   const from = envelope.fromAddress || config.defaultFrom;
   const fromName = envelope.fromName || config.defaultFromName;
+
+  // Build unsubscribe URL
+  const unsubToken = Buffer.from(envelope.to).toString('base64url');
+  const unsubUrl = `${APP_URL}/api/email/unsubscribe?token=${unsubToken}`;
 
   try {
     const transport = getTransporter(envelope.channel);
@@ -23,7 +45,8 @@ export async function sendEmailDirect(envelope: EmailEnvelope): Promise<EmailRes
       replyTo: envelope.replyTo,
       headers: {
         'X-BotWave-Channel': envelope.channel,
-        'List-Unsubscribe': `<mailto:unsubscribe@${config.domain}>`,
+        'List-Unsubscribe': `<${unsubUrl}>, <mailto:unsubscribe@${config.domain}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     });
 

@@ -1,14 +1,41 @@
 /**
  * Poll/quiz handler: /poll, /quiz, /stoppoll, /pollresults
  * Native Telegram poll creation with flags.
+ * Supports --timer <minutes> to auto-close polls after a timeout.
  */
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
 
+// Track active poll timers so they can be cleaned up
+const pollTimers = new Map<string, NodeJS.Timeout>();
+
+function parseTimer(raw: string): { cleaned: string; minutes: number | null } {
+  const timerMatch = raw.match(/--timer\s+(\d+)/);
+  const minutes = timerMatch ? parseInt(timerMatch[1], 10) : null;
+  const cleaned = raw.replace(/--timer\s+\d+/g, '').trim();
+  return { cleaned, minutes: minutes && minutes > 0 && minutes <= 1440 ? minutes : null };
+}
+
+function scheduleAutoClose(
+  bot: Bot,
+  chatId: number,
+  messageId: number,
+  minutes: number,
+): void {
+  const key = `${chatId}:${messageId}`;
+  const timeout = setTimeout(async () => {
+    try {
+      await bot.api.stopPoll(chatId, messageId);
+    } catch {}
+    pollTimers.delete(key);
+  }, minutes * 60 * 1000);
+  pollTimers.set(key, timeout);
+}
+
 export function registerPollHandlers(bot: Bot, sessionId: string): void {
   /**
-   * /poll <question> | <option1> | <option2> [| option3] [--anon] [--multi]
+   * /poll <question> | <option1> | <option2> [| option3] [--anon] [--multi] [--timer <min>]
    */
   bot.command('poll', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
@@ -20,8 +47,9 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
         'Usage: /poll Question | Option 1 | Option 2 | ...\n\n' +
         'Flags:\n' +
         '<code>--anon</code> - anonymous voting\n' +
-        '<code>--multi</code> - allow multiple answers\n\n' +
-        'Example: /poll Best language? | TypeScript | Python | Rust --multi',
+        '<code>--multi</code> - allow multiple answers\n' +
+        '<code>--timer &lt;minutes&gt;</code> - auto-close after N minutes\n\n' +
+        'Example: /poll Best language? | TypeScript | Python | Rust --multi --timer 60',
         { parse_mode: 'HTML' },
       );
       return;
@@ -29,7 +57,8 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
 
     const isAnon = raw.includes('--anon');
     const isMulti = raw.includes('--multi');
-    const cleaned = raw.replace(/--anon/g, '').replace(/--multi/g, '').trim();
+    const { cleaned: timerCleaned, minutes } = parseTimer(raw);
+    const cleaned = timerCleaned.replace(/--anon/g, '').replace(/--multi/g, '').trim();
 
     const parts = cleaned.split('|').map((s) => s.trim()).filter(Boolean);
     if (parts.length < 3) {
@@ -46,17 +75,21 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
     }
 
     try {
-      await ctx.api.sendPoll(ctx.chat!.id, question, options, {
+      const sent = await ctx.api.sendPoll(ctx.chat!.id, question, options, {
         is_anonymous: isAnon,
         allows_multiple_answers: isMulti,
       });
+      if (minutes) {
+        scheduleAutoClose(bot, ctx.chat!.id, sent.message_id, minutes);
+        await ctx.reply(`Poll will auto-close in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+      }
     } catch (err) {
       await ctx.reply(`❌ Failed to create poll: ${err}`);
     }
   });
 
   /**
-   * /quiz <question> | <correct_answer> | <wrong1> | <wrong2> [--anon]
+   * /quiz <question> | <correct_answer> | <wrong1> | <wrong2> [--anon] [--timer <min>]
    * First option after question is the correct answer.
    */
   bot.command('quiz', async (ctx) => {
@@ -68,15 +101,17 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
         '<b>Create a Quiz</b>\n\n' +
         'Usage: /quiz Question | Correct Answer | Wrong 1 | Wrong 2\n\n' +
         'The first option is always the correct answer.\n' +
-        'Options are shuffled when displayed.\n\n' +
-        'Example: /quiz Capital of France? | Paris | London | Berlin',
+        'Options are shuffled when displayed.\n' +
+        '<code>--timer &lt;minutes&gt;</code> - auto-close after N minutes\n\n' +
+        'Example: /quiz Capital of France? | Paris | London | Berlin --timer 30',
         { parse_mode: 'HTML' },
       );
       return;
     }
 
     const isAnon = raw.includes('--anon');
-    const cleaned = raw.replace(/--anon/g, '').trim();
+    const { cleaned: timerCleaned, minutes } = parseTimer(raw);
+    const cleaned = timerCleaned.replace(/--anon/g, '').trim();
 
     const parts = cleaned.split('|').map((s) => s.trim()).filter(Boolean);
     if (parts.length < 3) {
@@ -92,13 +127,16 @@ export function registerPollHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    // correct_option_id is 0 (first option is always correct)
     try {
-      await ctx.api.sendPoll(ctx.chat!.id, question, options, {
+      const sent = await ctx.api.sendPoll(ctx.chat!.id, question, options, {
         type: 'quiz',
         correct_option_ids: [0],
         is_anonymous: isAnon,
       });
+      if (minutes) {
+        scheduleAutoClose(bot, ctx.chat!.id, sent.message_id, minutes);
+        await ctx.reply(`Quiz will auto-close in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+      }
     } catch (err) {
       await ctx.reply(`❌ Failed to create quiz: ${err}`);
     }

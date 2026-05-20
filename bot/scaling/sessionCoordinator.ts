@@ -808,7 +808,7 @@ export async function cleanupStuckPairingSessions(): Promise<number> {
   const { data: stuck, error } = await supabase
     .from('bot_sessions')
     .select('id, state, phone_number, session_name, updated_at')
-    .in('state', ['pairing_sent', 'qr_pending'])
+    .in('state', ['pairing_sent', 'qr_pending', 'pairing_failed'])
     .lt('updated_at', cutoff);
 
   if (error || !stuck || stuck.length === 0) return 0;
@@ -843,7 +843,7 @@ export async function cleanupStuckPairingSessions(): Promise<number> {
         updated_at: new Date().toISOString(),
       })
       .eq('id', session.id)
-      .in('state', ['pairing_sent', 'qr_pending']);
+      .in('state', ['pairing_sent', 'qr_pending', 'pairing_failed']);
 
     if (!updateErr) {
       cleaned++;

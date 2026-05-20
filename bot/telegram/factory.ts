@@ -63,9 +63,12 @@ import { registerCleanServiceHandlers } from './handlers/cleanservice';
 import { registerConnectionsHandlers } from './handlers/connections';
 import { registerDisablingHandlers } from './handlers/disabling';
 import { registerTopicsHandlers } from './handlers/topics';
+import { registerFeedbackHandlers } from './handlers/feedback';
+import { registerExportConfigHandlers } from './handlers/exportconfig';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
+import { checkCooldown, setCooldown } from './utils/cooldown';
 
 /**
  * Register all Telegram-specific command handlers on the bot instance.
@@ -125,6 +128,22 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   bot.on('message', async (ctx, next) => {
     const blocked = await checkLocks(ctx, sessionId);
     if (blocked) return;
+    await next();
+  });
+
+  // Middleware: command cooldown per user
+  bot.on('message:text', async (ctx, next) => {
+    if (!ctx.from || !ctx.message?.text) { await next(); return; }
+    const text = ctx.message.text;
+    if (!text.startsWith('/')) { await next(); return; }
+    const cmd = text.split(/[@\s]/)[0].slice(1).toLowerCase();
+    if (!cmd) { await next(); return; }
+    const remaining = checkCooldown(ctx.from.id, cmd);
+    if (remaining > 0) {
+      await ctx.reply(`Please wait ${remaining}s before using /${cmd} again.`).catch(() => {});
+      return;
+    }
+    setCooldown(ctx.from.id, cmd);
     await next();
   });
 
@@ -190,6 +209,8 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerConnectionsHandlers(bot, sessionId);
   registerDisablingHandlers(bot, sessionId);
   registerTopicsHandlers(bot, sessionId);
+  registerFeedbackHandlers(bot, sessionId);
+  registerExportConfigHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {

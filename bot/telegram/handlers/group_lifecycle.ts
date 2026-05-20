@@ -19,6 +19,7 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { getGroupConfig, registerGroup, unregisterGroup } from '../utils/db';
 import { isOwner } from '../utils/permissions';
+import { notifyAdmin } from '../services/adminNotifier';
 
 const POWERED_BY = '\n\n<b>Powered by Botwave</b>';
 
@@ -68,6 +69,15 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
     if (isBotRemove(newMember.status, oldMember.status)) {
       console.log(`[TG-LIFECYCLE] Removed from "${chatTitle}" (${chatId}) by user ${actor.id}`);
       await unregisterGroup(sessionId, chatId);
+
+      // Notify admin that bot was kicked
+      await notifyAdmin(bot, sessionId, {
+        title: 'Bot Removed from Group',
+        details: `Removed by: ${actor.first_name || 'Unknown'} (${actor.id})`,
+        severity: 'warning',
+        chatId,
+        chatTitle,
+      });
       return;
     }
 

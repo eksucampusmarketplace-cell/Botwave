@@ -1,6 +1,9 @@
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
 
-export function baseTemplate(title: string, content: string): string {
+export function baseTemplate(title: string, content: string, recipientEmail?: string): string {
+  const unsubToken = recipientEmail ? Buffer.from(recipientEmail).toString('base64url') : '';
+  const unsubUrl = unsubToken ? `${APP_URL}/api/email/unsubscribe?token=${unsubToken}` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -23,7 +26,8 @@ export function baseTemplate(title: string, content: string): string {
         <a href="https://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X" style="color:#22c55e;text-decoration:none">📢 Follow our WhatsApp Channel</a>
       </p>
       <p style="color:#334155;font-size:11px;margin:8px 0 0">
-        You received this because you have a BotWave account.
+        You received this because you have a BotWave account.${unsubUrl ? `
+        <a href="${unsubUrl}" style="color:#475569;text-decoration:underline">Unsubscribe</a>` : ''}
       </p>
     </div>
   </div>
