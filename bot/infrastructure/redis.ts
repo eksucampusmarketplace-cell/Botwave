@@ -270,6 +270,89 @@ export async function redisReleasePairingLock(sessionId: string): Promise<void> 
   } catch { /* ignore */ }
 }
 
+// ─── Proxy Health & Blacklist (shared across workers) ────────────────────────
+
+const PROXY_FAILURES_PREFIX = 'proxy:failure:';
+const PROXY_BLACKLIST_PREFIX = 'proxy:blacklist:';
+const PROXY_BLACKLIST_TTL = 300; // 5 minutes
+const REDIS_PROXY_FAIL_THRESHOLD = 3;
+
+/**
+ * Record a proxy failure in Redis. After REDIS_PROXY_FAIL_THRESHOLD failures
+ * within 5 minutes, the proxy is blacklisted for PROXY_BLACKLIST_TTL seconds.
+ * Returns the current failure count.
+ */
+export async function redisRecordProxyFailure(proxyHost: string): Promise<number> {
+  if (!isRedisAvailable()) return 0;
+  try {
+    const key = `${PROXY_FAILURES_PREFIX}${proxyHost}`;
+    const failures = await redis!.incr(key);
+    await redis!.expire(key, 300);
+    if (failures >= REDIS_PROXY_FAIL_THRESHOLD) {
+      await redis!.setex(`${PROXY_BLACKLIST_PREFIX}${proxyHost}`, PROXY_BLACKLIST_TTL, '1');
+    }
+    return failures;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Check if a proxy is currently blacklisted (too many recent failures).
+ */
+export async function redisIsProxyBlacklisted(proxyHost: string): Promise<boolean> {
+  if (!isRedisAvailable()) return false;
+  try {
+    return (await redis!.get(`${PROXY_BLACKLIST_PREFIX}${proxyHost}`)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Clear proxy failure count and blacklist status (call on successful connection).
+ */
+export async function redisClearProxyFailures(proxyHost: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    await redis!.del(`${PROXY_FAILURES_PREFIX}${proxyHost}`);
+    await redis!.del(`${PROXY_BLACKLIST_PREFIX}${proxyHost}`);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Get the sticky proxy assignment for a session from Redis.
+ * Returns the proxy string (host:port:user:pass) or null.
+ */
+export async function redisGetSessionProxy(sessionId: string): Promise<string | null> {
+  if (!isRedisAvailable()) return null;
+  try {
+    return await redis!.get(`session:proxy:${sessionId}`);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Store the sticky proxy assignment for a session in Redis (24h TTL).
+ */
+export async function redisSetSessionProxy(sessionId: string, proxy: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    await redis!.set(`session:proxy:${sessionId}`, proxy, 'EX', 86400);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Clear the sticky proxy assignment for a session.
+ */
+export async function redisClearSessionProxy(sessionId: string): Promise<void> {
+  if (!isRedisAvailable()) return;
+  try {
+    await redis!.del(`session:proxy:${sessionId}`);
+  } catch { /* ignore */ }
+}
+
 // ─── Health Check ────────────────────────────────────────────────────────────
 
 /**
