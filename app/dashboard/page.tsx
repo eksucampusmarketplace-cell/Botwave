@@ -528,6 +528,7 @@ export default function DashboardPage() {
                     phone={session.phone_number}
                     status={session.state === 'qr_pending' || session.state === 'pairing_sent' ? 'pending' : session.state}
                     lastActive={session.last_active ? new Date(session.last_active).toLocaleString() : 'Never'}
+                    lastActiveRaw={session.last_active}
                     platform={session.platform}
                     sessionId={session.id}
                     onConnect={() => handleConnect(session)}

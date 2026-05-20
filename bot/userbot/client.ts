@@ -6,7 +6,7 @@
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
-import { getNextProxy, getGramJSProxyConfig, recordProxyFailure, recordProxySuccess, type ProxyEntry } from './utils/proxy';
+import { getStickyProxy, getGramJSProxyConfig, recordProxyFailure, recordProxySuccess, type ProxyEntry } from './utils/proxy';
 import {
   getRandomDeviceModel,
   getRandomSystemVersion,
@@ -45,7 +45,7 @@ export class UserbotClient {
     this.appVersion = getRandomAppVersion();
 
     const session = new StringSession(config.sessionString || '');
-    this.currentProxy = getNextProxy();
+    this.currentProxy = getStickyProxy(config.sessionId);
 
     const clientOpts: ConstructorParameters<typeof TelegramClient>[3] = {
       connectionRetries: 10,
@@ -85,18 +85,30 @@ export class UserbotClient {
         recordProxySuccess(this.currentProxy);
       }
 
+      // Verify the session is actually valid with a real API call
       const me = await this.client.getMe() as Api.User;
       console.log(`[USERBOT-CLIENT] Connected as ${me.firstName} (@${me.username || 'no_username'}) ID: ${me.id}`);
 
       return true;
     } catch (err) {
-      console.error(`[USERBOT-CLIENT] Connection failed for ${this.sessionId.slice(0, 8)}:`, err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[USERBOT-CLIENT] Connection failed for ${this.sessionId.slice(0, 8)}: ${errMsg}`);
+
+      // Detect terminal auth errors that require re-pairing
+      if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+        console.error(`[USERBOT-CLIENT] ${this.sessionId.slice(0, 8)} session is dead (${errMsg}) - requires re-auth`);
+        this.authError = errMsg;
+      }
+
       if (this.currentProxy) {
         recordProxyFailure(this.currentProxy);
       }
       return false;
     }
   }
+
+  /** If set, the last auth error that caused connection failure */
+  public authError: string | null = null;
 
   async disconnect(): Promise<void> {
     this.stopped = true;

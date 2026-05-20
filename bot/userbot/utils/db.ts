@@ -292,6 +292,16 @@ export async function getGbanList(sessionId: string): Promise<{ user_id: string;
 
 // ─── Session state ────────────────────────────────────────────────────────────
 
+export async function saveSessionString(
+  sessionId: string,
+  sessionString: string,
+): Promise<void> {
+  await supabase
+    .from('bot_sessions')
+    .update({ telegram_session_string: sessionString, updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
+}
+
 export async function updateSessionState(
   sessionId: string,
   state: string,

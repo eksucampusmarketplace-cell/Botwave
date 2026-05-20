@@ -18,17 +18,31 @@ let processingInterval: ReturnType<typeof setInterval> | null = null;
 
 function getRedis(): Redis | null {
   if (redis && redis.status === 'ready') return redis;
+  if (redis && (redis.status === 'connecting' || redis.status === 'reconnecting')) return null;
   const url = process.env.REDIS_URL;
   if (!url) return null;
   try {
+    // Close stale connection if it exists
+    if (redis) {
+      try { redis.disconnect(false); } catch {}
+      redis = null;
+    }
     redis = new Redis(url, {
-      maxRetriesPerRequest: 1,
+      maxRetriesPerRequest: 2,
       retryStrategy(times) {
-        if (times > 3) return null;
-        return Math.min(times * 500, 2000);
+        if (times > 5) return null;
+        return Math.min(times * 1000, 5000);
       },
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,
+      offlineQueue: true,
       lazyConnect: true,
+      reconnectOnError(err) {
+        // Reconnect on connection reset errors
+        return err.message.includes('ECONNRESET') || err.message.includes('ECONNREFUSED');
+      },
+    });
+    redis.on('error', (err) => {
+      console.warn('[EMAIL-QUEUE] Redis error:', err.message);
     });
     redis.connect().catch(() => {});
     return redis;

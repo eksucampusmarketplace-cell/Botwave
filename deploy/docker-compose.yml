@@ -87,7 +87,7 @@ services:
     container_name: botwave_redis
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 300mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
@@ -97,7 +97,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
         reservations:
           memory: 128M
     logging: *default-logging
@@ -127,7 +127,7 @@ services:
     volumes:
       - /opt/botwave:/opt/botwave
       - /var/run/docker.sock:/var/run/docker.sock
-    command: ["node", "dist/bot/server/customServer.js"]
+    command: ["node", "--max-old-space-size=900", "dist/bot/server/customServer.js"]
     networks:
       - botwave-net
     depends_on:
@@ -138,9 +138,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1280M
         reservations:
-          memory: 256M
+          memory: 512M
     logging: *default-logging
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:10000/"]
@@ -162,7 +162,7 @@ services:
       - IS_WORKER=false
       - REDIS_URL=redis://redis:6379
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
-    command: ["node", "dist/bot/bot/telegram-entrypoint.js"]
+    command: ["node", "--max-old-space-size=768", "dist/bot/bot/telegram-entrypoint.js"]
     networks:
       - botwave-net
     depends_on:
@@ -204,7 +204,7 @@ services:
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
       - MAX_WORKER_THREADS=${MAX_WORKER_THREADS:-40}
       - SCALE_THRESHOLD=${SCALE_THRESHOLD:-25}
-    command: ["node", "dist/bot/bot/whatsapp-entrypoint.js"]
+    command: ["node", "--max-old-space-size=1536", "dist/bot/bot/whatsapp-entrypoint.js"]
     networks:
       - botwave-net
     depends_on:
@@ -246,7 +246,7 @@ services:
       - USERBOT_PROXY_LIST=${USERBOT_PROXY_LIST:-}
       - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
       - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
-    command: ["node", "dist/bot/bot/userbot/entrypoint.js"]
+    command: ["node", "--max-old-space-size=576", "dist/bot/bot/userbot/entrypoint.js"]
     networks:
       - botwave-net
     depends_on:
@@ -255,9 +255,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 768M
         reservations:
-          memory: 128M
+          memory: 256M
       update_config:
         order: start-first
         failure_action: rollback

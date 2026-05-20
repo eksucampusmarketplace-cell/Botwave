@@ -31,7 +31,7 @@ const INSTANCE_ID = SELF_URL || `main-${process.pid}`;
 const LOCK_EXPIRY_MS = 300_000; // 300s (5 min) without heartbeat = stale lock
 const HEARTBEAT_INTERVAL = 30_000; // heartbeat every 30s — gives 10 heartbeats before lock expiry
 const AUTO_RECOVERY_BASE_COOLDOWN_MS = 120_000; // base cooldown: 2 minutes
-const AUTO_RECOVERY_MAX_ATTEMPTS = 0; // DISABLED — was 5, orphaning sessions // max auto-recovery tries per session
+const AUTO_RECOVERY_MAX_ATTEMPTS = 5; // Re-enabled with exponential backoff (2m, 4m, 8m, 16m, 32m)
 const AUTO_RECOVERY_MAX_PER_CYCLE = 2; // max sessions to recover per 180s cycle (prevent thundering herd)
 
 let heartbeatHandle: NodeJS.Timeout | null = null;

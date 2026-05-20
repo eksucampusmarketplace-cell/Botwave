@@ -160,6 +160,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // Early-exit for events we don't handle — avoids creating DB connections
+    // and holding the deserialized payload in memory unnecessarily
+    const HANDLED_EVENTS = new Set([
+      'messages.upsert', 'messages.delete', 'messages.edited',
+      'group-participants.update', 'qrcode.updated',
+      'connection.update', 'logout.instance',
+    ]);
+    if (!HANDLED_EVENTS.has(event)) {
+      return NextResponse.json({ ok: true });
+    }
+
     console.log(`[EVO-WEBHOOK] event=${event} session=${sessionId}`);
 
     const supabase = getSupabase();
