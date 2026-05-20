@@ -1,6 +1,6 @@
 # BotWave - WhatsApp Bot Automation SaaS
 
-Created by Decisive Analyst | 2026
+Created by BotWave Team | 2026
 
 ## Project Overview
 BotWave is a WhatsApp bot automation platform built as a SaaS. Users connect their own WhatsApp number via QR code. Each user's session runs from their own device IP (via Baileys), not the server — significantly reducing ban risk.

@@ -80,7 +80,7 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
       `1. Don't overuse or spam automated messages \u2014 if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
       `2. *Your bot session may disconnect* sometimes. When it does, just go to https://botwave.online and click reconnect. You're always in control.\n\n` +
       `\u{1F4E2} *Join our WhatsApp channel for updates & tips:*\nhttps://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X\n\n` +
-      `_Built by Decisive Analyst_`;
+      `_Built by BotWave Team_`;
 
     if (video) {
       await sock.sendMessage(ownerJid, {

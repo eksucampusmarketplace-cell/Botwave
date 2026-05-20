@@ -815,7 +815,7 @@ export const promoMessages: string[] = [
   `\n─────────────────────────────\nThis bot runs on BotWave\nMake yours: ${APP_URL}/signup\n📢 Updates & tips: ${CHANNEL_URL}`,
   `\n─────────────────────────────\nBotWave powers this bot\nYour own bot: ${APP_URL}/signup\n📢 Follow us: ${CHANNEL_URL}`,
   `\n─────────────────────────────\nAutomate WhatsApp for free\n${APP_URL}/signup\n📢 Channel: ${CHANNEL_URL}`,
-  `\n─────────────────────────────\nBotWave - by Decisive Analyst\nGet started: ${APP_URL}/signup\n📢 Follow: ${CHANNEL_URL}`,
+  `\n─────────────────────────────\nBotWave - by BotWave Team\nGet started: ${APP_URL}/signup\n📢 Follow: ${CHANNEL_URL}`,
 ];
 
 // ─── Ping Replies ─────────────────────────────────────────────────────────────
