@@ -10,6 +10,9 @@ import { landingPages } from '@/lib/landing/data';
 
 const LANDING_CHUNK_SIZE = 5000;
 
+// Use build time as a dynamic lastModified for pages that change with deploys
+const BUILD_DATE = new Date();
+
 export async function generateSitemaps() {
   const landingChunks = Math.ceil(landingPages.length / LANDING_CHUNK_SIZE);
   const ids = [
@@ -38,47 +41,47 @@ export default function sitemap({ id }: { id: number }): MetadataRoute.Sitemap {
 
 function corePages(baseUrl: string): MetadataRoute.Sitemap {
   return [
-    { url: baseUrl, lastModified: new Date('2026-05-16'), changeFrequency: 'weekly', priority: 1 },
-    { url: `${baseUrl}/signup`, lastModified: new Date('2026-05-07'), changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${baseUrl}/login`, lastModified: new Date('2026-05-07'), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/features`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${baseUrl}/features/ai`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/features/moderation`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/features/media`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/status`, lastModified: new Date('2026-05-19'), changeFrequency: 'daily', priority: 0.5 },
-    { url: `${baseUrl}/changelog`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${baseUrl}/templates`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/integrations`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/academy`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/case-studies`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/security`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/privacy`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/community-commands`, lastModified: new Date('2026-05-19'), changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${baseUrl}/about`, lastModified: new Date('2026-05-19'), changeFrequency: 'monthly', priority: 0.6 },
+    { url: baseUrl, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 1 },
+    { url: `${baseUrl}/signup`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/login`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/features`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/features/ai`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/features/moderation`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/features/media`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/status`, lastModified: BUILD_DATE, changeFrequency: 'daily', priority: 0.5 },
+    { url: `${baseUrl}/changelog`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.5 },
+    { url: `${baseUrl}/templates`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/integrations`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/academy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/case-studies`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/security`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/privacy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/community-commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/about`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
   ];
 }
 
 function commandPages(baseUrl: string): MetadataRoute.Sitemap {
   return [
-    { url: `${baseUrl}/commands`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${baseUrl}/commands/whatsapp`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${baseUrl}/commands/telegram`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${baseUrl}/commands/userbot`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/commands/whatsapp`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/commands/userbot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     ...whatsappCommands.map(cmd => ({
       url: `${baseUrl}/commands/whatsapp/${cmd.slug}`,
-      lastModified: new Date('2026-05-15'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     ...telegramCommands.map(cmd => ({
       url: `${baseUrl}/commands/telegram/${cmd.slug}`,
-      lastModified: new Date('2026-05-15'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     ...userbotCommands.map(cmd => ({
       url: `${baseUrl}/commands/userbot/${cmd.slug}`,
-      lastModified: new Date('2026-05-15'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
@@ -87,45 +90,45 @@ function commandPages(baseUrl: string): MetadataRoute.Sitemap {
 
 function contentPages(baseUrl: string): MetadataRoute.Sitemap {
   return [
-    { url: `${baseUrl}/docs`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/docs`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
     ...docPages.map(doc => ({
       url: `${baseUrl}/docs/${doc.slug}`,
-      lastModified: new Date('2026-05-14'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
-    { url: `${baseUrl}/faq`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/faq`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     ...faqItems.map(faq => ({
       url: `${baseUrl}/faq/${faq.slug}`,
-      lastModified: new Date('2026-05-12'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
-    { url: `${baseUrl}/use-cases`, lastModified: new Date('2026-05-16'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/use-cases`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.8 },
     ...useCases.map(uc => ({
       url: `${baseUrl}/use-cases/${uc.slug}`,
-      lastModified: new Date('2026-05-14'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
-    { url: `${baseUrl}/compare`, lastModified: new Date('2026-05-16'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/compare`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
     ...compareData.map(page => ({
       url: `${baseUrl}/compare/${page.slug}`,
-      lastModified: new Date('2026-05-14'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
-    { url: `${baseUrl}/fix`, lastModified: new Date('2026-05-16'), changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/fix`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     ...fixPages.map(page => ({
       url: `${baseUrl}/fix/${page.slug}`,
-      lastModified: new Date('2026-05-14'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
-    { url: `${baseUrl}/how-to`, lastModified: new Date('2026-05-16'), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/how-to`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     ...howToPages.map(page => ({
       url: `${baseUrl}/how-to/${page.slug}`,
-      lastModified: new Date('2026-05-14'),
+      lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
@@ -163,7 +166,7 @@ function landingChunk(baseUrl: string, chunkIndex: number): MetadataRoute.Sitema
 
   return chunk.map((page, i) => ({
     url: `${baseUrl}/${page.slug}`,
-    lastModified: new Date('2026-05-17'),
+    lastModified: BUILD_DATE,
     changeFrequency: 'monthly' as const,
     priority: page.category === 'country' ? 0.6 : 0.5,
   }));

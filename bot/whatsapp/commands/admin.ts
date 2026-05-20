@@ -1,6 +1,6 @@
 import { registerCommand, type MessageContext } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, pickResponse } from './helpers';
-import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId, getUserReferralCode } from '../../database';
+import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId, getUserReferralCode, getReferralLeaderboard } from '../../database';
 import { getDeletedMessages, clearRecoveredMessages } from '../handlers/AntiDeleteHandler';
 
 const CASHOUT_THRESHOLD = 100;
@@ -796,7 +796,29 @@ function buildMediaPayload(
 
 // ─── Refer Command ──────────────────────────────────────────────────────────
 
-async function handleRefer(context: MessageContext, sock: any): Promise<void> {
+async function handleRefer(context: MessageContext, args: string[], sock: any): Promise<void> {
+  // !refer leaderboard – show top referrers
+  if (args[0]?.toLowerCase() === 'leaderboard' || args[0]?.toLowerCase() === 'top') {
+    const leaders = await getReferralLeaderboard(10);
+    if (leaders.length === 0) {
+      await sendReply(context.chatJid, 'No referrals yet! Be the first – use *!refer* to get your link.', sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    const rows = leaders.map((r, i) => {
+      const badge = medals[i] || `${i + 1}.`;
+      return `${badge} *${r.code}* — ${r.totalReferred} referrals (₦${r.totalEarned} earned)`;
+    }).join('\n');
+
+    await sendReply(
+      context.chatJid,
+      `🏆 *REFERRAL LEADERBOARD*\n\n${rows}\n\n_Use !refer to get your link and start climbing!_`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
   const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
   if (!userId) {
     await sendReply(context.chatJid, 'Could not determine your account.', sock, context.rawMessage.key, context.queue);
@@ -822,9 +844,96 @@ async function handleRefer(context: MessageContext, sock: any): Promise<void> {
     `• Friends referred: *${referral.totalReferred}*\n` +
     `• Total earned: *₦${referral.totalEarned}*\n\n` +
     `Share your code or link with friends. You earn *₦20* for each friend who joins, and they get *₦10* too!\n\n` +
-    `_Cash out at ₦100 for free airtime via !cashout_`;
+    `_Cash out at ₦100 for free airtime via !cashout_\n` +
+    `_See top referrers: !refer leaderboard_`;
 
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+}
+
+// ─── Cashout Command ────────────────────────────────────────────────────────
+
+async function handleCashout(context: MessageContext, args: string[], sock: any): Promise<void> {
+  const userId = context.userId || (context.sessionId ? await getSessionUserId(context.sessionId) : null);
+  if (!userId) {
+    await sendReply(context.chatJid, 'Could not determine your account.', sock, context.rawMessage.key, context.queue);
+    return;
+  }
+
+  const balance = await getRewardBalance(userId);
+  if (balance.balance < CASHOUT_THRESHOLD) {
+    await sendReply(
+      context.chatJid,
+      `You need at least *₦${CASHOUT_THRESHOLD}* to cash out. Current balance: *₦${balance.balance}*.\n\n_Earn more by using commands daily, referring friends (!refer), and staying active!_`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  const method = args[0]?.toLowerCase();
+
+  if (method === 'bank') {
+    // Bank transfer cashout — collect or confirm details
+    const bankName = args[1];
+    const accountNumber = args[2];
+    const accountName = args.slice(3).join(' ');
+
+    if (!bankName || !accountNumber || !accountName) {
+      await sendReply(
+        context.chatJid,
+        `*BANK CASHOUT*\n\n` +
+        `Usage: *!cashout bank [bank name] [account number] [account name]*\n\n` +
+        `Example:\n` +
+        `!cashout bank GTBank 0123456789 John Doe\n\n` +
+        `Your balance: *₦${balance.balance}*\n` +
+        `_Bank transfers are processed within 24-48 hours._`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+
+    // Store bank cashout request in Supabase
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    );
+    await supabase.from('bank_cashout_requests').insert({
+      user_id: userId,
+      phone_number: context.senderJid.replace(/@.*/, ''),
+      bank_name: bankName,
+      account_number: accountNumber,
+      account_name: accountName,
+      amount: CASHOUT_THRESHOLD,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    });
+
+    await sendReply(
+      context.chatJid,
+      `*BANK CASHOUT REQUEST SUBMITTED*\n\n` +
+      `Bank: *${bankName}*\n` +
+      `Account: *${accountNumber}*\n` +
+      `Name: *${accountName}*\n` +
+      `Amount: *₦${CASHOUT_THRESHOLD}*\n\n` +
+      `_Your request is being processed. Bank transfers take 24-48 hours._`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
+  // Default: airtime cashout
+  await sendReply(
+    context.chatJid,
+    `*CASHOUT OPTIONS*\n\n` +
+    `Balance: *₦${balance.balance}*\n\n` +
+    `*1. Airtime (instant)*\n` +
+    `   !cashout airtime\n\n` +
+    `*2. Bank Transfer (24-48h)*\n` +
+    `   !cashout bank [bank] [account no] [name]\n` +
+    `   Example: !cashout bank GTBank 0123456789 John Doe\n\n` +
+    `_Minimum cashout: ₦${CASHOUT_THRESHOLD}_`,
+    sock, context.rawMessage.key, context.queue,
+  );
 }
 
 // ─── Register Admin Commands ────────────────────────────────────────────────
@@ -893,4 +1002,5 @@ registerCommand({
     }
   },
 });
-registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, _a, sock) => handleRefer(ctx, sock) });
+registerCommand({ name: 'refer', aliases: ['refer', 'referral', 'invite'], category: 'admin', description: 'Get your referral code and link', execute: (ctx, args, sock) => handleRefer(ctx, args, sock) });
+registerCommand({ name: 'cashout', aliases: ['cashout', 'withdraw', 'payout'], category: 'admin', description: 'Cash out reward balance (airtime or bank)', execute: (ctx, args, sock) => handleCashout(ctx, args, sock) });

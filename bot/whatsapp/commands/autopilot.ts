@@ -19,8 +19,8 @@ import {
 } from '../handlers/AutopilotEngine';
 
 // ─── Premium Gate ───────────────────────────────────────────────────────────
-// Currently free for all users. The subscription check is wired up and ready -
-// flip AUTOPILOT_PREMIUM_ENABLED to true (or remove the early return) when
+// Autopilot is enabled and free for all users. The subscription check is wired
+// up — set AUTOPILOT_PREMIUM_ENABLED to true to restrict to paid plans when
 // pricing goes live.
 
 const AUTOPILOT_PREMIUM_ENABLED = false;

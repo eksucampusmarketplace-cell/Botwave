@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import HomePage from './HomePageClient';
+import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema';
 
 export const metadata: Metadata = {
+  description: 'Free WhatsApp & Telegram bot with 150+ commands. AI chat, stickers, anti-spam, group management. No coding. Used by 5,000+ users in Nigeria.',
   alternates: {
     canonical: '/',
     languages: {
@@ -78,6 +80,7 @@ const faqJsonLd = {
 export default function Page() {
   return (
     <>
+      <BreadcrumbSchema items={[{ name: 'Home', url: '/' }]} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}

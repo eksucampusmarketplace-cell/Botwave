@@ -224,6 +224,146 @@ async function handleSchedule(context: MessageContext, args: string[], sock: any
     return;
   }
 
+  // Templates: !schedule template save/list/use
+  if (args[0].toLowerCase() === 'template' || args[0].toLowerCase() === 'tpl') {
+    const sub = args[1]?.toLowerCase();
+
+    if (sub === 'save' && args.length >= 4) {
+      // !schedule template save weekly-motivation 1w Good morning! Stay motivated this week!
+      const tplName = args[2];
+      const tplTime = args[3];
+      const tplMsg = args.slice(4).join(' ') || 'Scheduled message';
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      );
+      const phone = context.senderJid.replace(/@.*/, '');
+      const { data: existing } = await supabase
+        .from('schedule_templates')
+        .select('id')
+        .eq('phone_number', phone)
+        .eq('name', tplName)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        await supabase.from('schedule_templates').update({ interval: tplTime, message: tplMsg, updated_at: new Date().toISOString() }).eq('id', existing[0].id);
+      } else {
+        await supabase.from('schedule_templates').insert({
+          phone_number: phone,
+          session_id: context.sessionId,
+          name: tplName,
+          interval: tplTime,
+          message: tplMsg,
+          chat_jid: context.chatJid,
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      await sendReply(
+        context.chatJid,
+        `Template *${tplName}* saved!\nInterval: ${tplTime}\nMessage: "${tplMsg}"\n\n_Use: !schedule template use ${tplName}_`,
+        sock, context.rawMessage.key, context.queue,
+      );
+      return;
+    }
+
+    if (sub === 'list' || !sub) {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      );
+      const phone = context.senderJid.replace(/@.*/, '');
+      const { data: templates } = await supabase
+        .from('schedule_templates')
+        .select('name, interval, message')
+        .eq('phone_number', phone)
+        .limit(20);
+
+      if (!templates || templates.length === 0) {
+        await sendReply(
+          context.chatJid,
+          `No saved templates.\n\nSave one:\n!schedule template save weekly-motivation 1w Stay motivated!`,
+          sock, context.rawMessage.key, context.queue,
+        );
+        return;
+      }
+
+      let msg = '*Saved Templates:*\n\n';
+      templates.forEach((t, i) => {
+        const preview = t.message.length > 40 ? t.message.slice(0, 40) + '...' : t.message;
+        msg += `${i + 1}. *${t.name}* (every ${t.interval})\n   "${preview}"\n`;
+      });
+      msg += '\n_Use: !schedule template use <name>_';
+      await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    if (sub === 'use' && args[2]) {
+      const tplName = args[2];
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      );
+      const phone = context.senderJid.replace(/@.*/, '');
+      const { data: tpl } = await supabase
+        .from('schedule_templates')
+        .select('interval, message')
+        .eq('phone_number', phone)
+        .eq('name', tplName)
+        .limit(1)
+        .single();
+
+      if (!tpl) {
+        await sendReply(context.chatJid, `Template "${tplName}" not found. Use !schedule template list.`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+
+      const sendAt = parseTimeString(tpl.interval);
+      if (!sendAt) {
+        await sendReply(context.chatJid, `Invalid interval "${tpl.interval}" in template.`, sock, context.rawMessage.key, context.queue);
+        return;
+      }
+
+      const scheduled = await createScheduledMessage(context.sessionId!, context.senderJid, context.chatJid, tpl.message, sendAt);
+      if (scheduled) {
+        const mins = Math.ceil((sendAt.getTime() - Date.now()) / 60000);
+        await sendReply(context.chatJid, `Template *${tplName}* scheduled! "${tpl.message}" in ${mins} min(s).`, sock, context.rawMessage.key, context.queue);
+      } else {
+        await sendReply(context.chatJid, 'Failed to schedule from template.', sock, context.rawMessage.key, context.queue);
+      }
+      return;
+    }
+
+    if (sub === 'delete' && args[2]) {
+      const tplName = args[2];
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      );
+      const phone = context.senderJid.replace(/@.*/, '');
+      await supabase.from('schedule_templates').delete().eq('phone_number', phone).eq('name', tplName);
+      await sendReply(context.chatJid, `Template "${tplName}" deleted.`, sock, context.rawMessage.key, context.queue);
+      return;
+    }
+
+    await sendReply(
+      context.chatJid,
+      `*Schedule Templates*\n\n` +
+      `Save: !schedule template save <name> <interval> <message>\n` +
+      `List: !schedule template list\n` +
+      `Use: !schedule template use <name>\n` +
+      `Delete: !schedule template delete <name>\n\n` +
+      `Example:\n` +
+      `!schedule template save monday-motivation 1w Good morning! New week, new goals!`,
+      sock, context.rawMessage.key, context.queue,
+    );
+    return;
+  }
+
   // Cancel: !schedule cancel 1
   if (args[0].toLowerCase() === 'cancel' && args[1]) {
     const scheduled = await getUserScheduledMessages(context.sessionId, context.senderJid);

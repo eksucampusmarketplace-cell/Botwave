@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema';
 import { landingPages } from '@/lib/landing/data';
 
 export function generateStaticParams() {
@@ -45,6 +46,10 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
 
   return (
     <main className="min-h-screen bg-[var(--bg)]">
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: '/' },
+        { name: page.title, url: `/${page.slug}` },
+      ]} />
       <Navbar />
 
       <section className="pt-32 pb-16 px-6">
