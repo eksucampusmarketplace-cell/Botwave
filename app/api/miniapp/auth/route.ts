@@ -69,16 +69,16 @@ export async function POST(request: NextRequest) {
     // Get bot token for this session
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('bot_token')
+      .select('telegram_bot_token')
       .eq('id', sessionId)
       .single();
 
-    if (!session?.bot_token) {
+    if (!session?.telegram_bot_token) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     // Verify initData
-    const verified = verifyTelegramInitData(initData, session.bot_token);
+    const verified = verifyTelegramInitData(initData, session.telegram_bot_token);
     if (!verified) {
       return NextResponse.json({ error: 'Invalid initData' }, { status: 401 });
     }
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     let role: 'admin' | 'member' = 'member';
     try {
       const res = await fetch(
-        `https://api.telegram.org/bot${session.bot_token}/getChatMember?chat_id=${chatId}&user_id=${telegramUser.id}`,
+        `https://api.telegram.org/bot${session.telegram_bot_token}/getChatMember?chat_id=${chatId}&user_id=${telegramUser.id}`,
       );
       const data = await res.json();
       if (data.ok) {
