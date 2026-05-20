@@ -67,6 +67,11 @@ const createSessionSchema = z.object({
   telegramApiId: z.number().optional(),
   telegramApiHash: z.string().optional(),
   telegramSessionString: z.string().optional(),
+  proxyType: z.enum(['shared', 'custom']).default('shared'),
+  proxyHost: z.string().optional(),
+  proxyPort: z.string().optional(),
+  proxyUsername: z.string().optional(),
+  proxyPassword: z.string().optional(),
 });
 
 export async function GET() {
@@ -154,7 +159,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { phoneNumber, sessionName, platform, telegramBotToken, telegramBotUsername, telegramApiId, telegramApiHash, telegramSessionString } = validation.data;
+    const { phoneNumber, sessionName, platform, telegramBotToken, telegramBotUsername, telegramApiId, telegramApiHash, telegramSessionString, proxyType, proxyHost, proxyPort, proxyUsername, proxyPassword } = validation.data;
 
     // Enforce session limit: check how many sessions this user already has
     const adminClient = await createAdminClient();
@@ -187,7 +192,15 @@ export async function POST(request: NextRequest) {
       state: initialState,
       platform,
       worker_url: workerUrl,
+      proxy_type: proxyType,
     };
+
+    if (proxyType === 'custom' && proxyHost && proxyPort) {
+      insertData.proxy_host = proxyHost;
+      insertData.proxy_port = proxyPort;
+      if (proxyUsername) insertData.proxy_username = proxyUsername;
+      if (proxyPassword) insertData.proxy_password = proxyPassword;
+    }
 
     if (platform === 'telegram_bot') {
       insertData.telegram_bot_token = telegramBotToken;
