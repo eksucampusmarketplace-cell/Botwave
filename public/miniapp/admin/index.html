@@ -567,6 +567,7 @@ var API_BASE = window.location.origin;
 var sessionId = '';
 var currentRole = 'user';
 var tgUserId = '';
+var tgInitData = '';
 var currentChatId = '';
 var groups = [];
 var pollInterval = null;
@@ -591,6 +592,12 @@ try {
 } catch (e) {}
 
 if (!tgUserId) { tgUserId = urlParams.get('userId') || ''; }
+
+try {
+  if (tg && tg.initData) {
+    tgInitData = tg.initData;
+  }
+} catch (e) {}
 
 function toast(msg) {
   var el = document.getElementById('toast');
@@ -659,8 +666,14 @@ function stopPolling() {
 }
 
 function detectRole() {
-  if (!sessionId || !tgUserId) return Promise.resolve('user');
-  return apiCall('/api/telegram/user-role?userId=' + tgUserId)
+  if (!sessionId) return Promise.resolve('user');
+  if (!tgUserId && !tgInitData) return Promise.resolve('user');
+  var roleUrl = '/api/telegram/user-role?';
+  var params = [];
+  if (tgUserId) params.push('userId=' + encodeURIComponent(tgUserId));
+  if (tgInitData) params.push('initData=' + encodeURIComponent(tgInitData));
+  roleUrl += params.join('&');
+  return apiCall(roleUrl)
     .then(function(res) { return (res.success && res.role) ? res.role : 'user'; })
     .catch(function() { return 'user'; });
 }
