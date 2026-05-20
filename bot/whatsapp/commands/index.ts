@@ -13,7 +13,6 @@ import './smart';
 import './social';
 import './multiplayerGame';
 import './lang';
-// import './autopilot'; // Autopilot disabled
 
 // Re-export registry for use by MessageHandler
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';

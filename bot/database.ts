@@ -1995,6 +1995,28 @@ export async function markWebhookRetryFailed(id: string, errorMessage: string, a
     .eq('id', id);
 }
 
+// ─── Dead Letter Cleanup ──────────────────────────────────────────────────────
+
+/**
+ * Delete dead letters older than the specified number of days.
+ * Prevents unbounded growth of the webhook_retry_queue table.
+ */
+export async function cleanupDeadLetters(olderThanDays: number = 7): Promise<number> {
+  const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('webhook_retry_queue')
+    .delete()
+    .eq('status', 'dead_letter')
+    .lt('updated_at', cutoff)
+    .select('id');
+
+  if (error) {
+    console.error('[CLEANUP] Failed to delete dead letters:', error.message);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
 // ─── Bot Settings (per-session, for !settings command) ────────────────────────
 
 export async function getSessionSettings(sessionId: string) {
