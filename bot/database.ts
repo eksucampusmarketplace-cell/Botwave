@@ -2499,4 +2499,30 @@ export async function getReferralLeaderboard(limit = 10): Promise<Array<{ code: 
   });
 }
 
+// ─── Chatbot Flows ──────────────────────────────────────────────────────────
+
+const flowCache = new Map<string, { data: any[]; expiry: number }>();
+trackMap('flowCache', flowCache as Map<string, unknown>, CACHE_TTL_LONG_MS);
+
+export async function getChatbotFlows(userId: string): Promise<any[]> {
+  const cached = flowCache.get(userId);
+  if (cached && cached.expiry > Date.now()) return cached.data;
+
+  return resilientRead({
+    cacheKey: `chatbot_flows:${userId}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('chatbot_flows')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('enabled', true);
+
+      const result = data || [];
+      flowCache.set(userId, { data: result, expiry: Date.now() + CACHE_TTL_LONG_MS });
+      return result;
+    },
+  });
+}
+
 export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };

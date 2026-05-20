@@ -2,6 +2,7 @@ import { registerCommand, type MessageContext, type TemplateVars } from './regis
 import { sendReply, pickResponse, getHelpHint, getQuotedMessage, axios } from './helpers';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
 import { callAI, AIQuotaExhaustedError, AIRateLimitError } from '../../../lib/ai-provider';
+import { searchKnowledgeBase, getBotwaveSystemPrompt } from '../../../lib/botwave-knowledge';
 import {
   weatherReplies,
   dictReplies,
@@ -77,11 +78,17 @@ export async function handleAIReply(
   try {
     const history = getAIHistory(context.chatJid);
 
+    const kbResults = searchKnowledgeBase(query, 2);
+    const kbContext = kbResults.length > 0
+      ? kbResults.map(r => `Q: ${r.question}\nA: ${r.answer}`).join('\n\n')
+      : '';
+    const systemPrompt = getBotwaveSystemPrompt(kbContext);
+
     const aiResponse = await callAI({
       prompt: query,
       maxTokens: 500,
       temperature: 0.7,
-      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context - refer back to previous messages naturally.',
+      systemPrompt,
       history,
     });
 
@@ -129,11 +136,17 @@ async function handleAICommand(
     // Get conversation history for this chat
     const history = getAIHistory(context.chatJid);
 
+    const kbResults = searchKnowledgeBase(query, 2);
+    const kbContext = kbResults.length > 0
+      ? kbResults.map(r => `Q: ${r.question}\nA: ${r.answer}`).join('\n\n')
+      : '';
+    const systemPrompt = getBotwaveSystemPrompt(kbContext);
+
     const aiResponse = await callAI({
       prompt: query,
       maxTokens: 500,
       temperature: 0.7,
-      systemPrompt: 'You are a helpful WhatsApp bot assistant called BotWave. Keep responses concise and friendly. Max 300 words. You remember the conversation context - refer back to previous messages naturally.',
+      systemPrompt,
       history,
     });
 
