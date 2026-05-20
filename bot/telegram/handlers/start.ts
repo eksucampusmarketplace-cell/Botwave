@@ -199,6 +199,86 @@ const HELP_CATEGORIES: Record<string, string[]> = {
 
 };
 
+import { createClient } from '@supabase/supabase-js';
+import { Context, InlineKeyboard as IK2 } from 'grammy';
+
+const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const deepLinkSupabase = createClient(supabaseUrl, supabaseKey);
+
+/**
+ * Handle deep link payloads:
+ *   /start note_<name>      - Send a saved note
+ *   /start rules_<chatId>   - Show group rules
+ *   /start ref_<code>       - Referral tracking
+ *   /start settings         - Open settings panel
+ */
+async function handleDeepLink(
+  ctx: Context,
+  sessionId: string,
+  payload: string,
+  botName: string,
+  miniappUrl: string,
+): Promise<boolean> {
+  // /start note_<name> - retrieve a saved note
+  if (payload.startsWith('note_')) {
+    const noteName = payload.slice(5);
+    const { data } = await deepLinkSupabase
+      .from('telegram_notes')
+      .select('content')
+      .eq('session_id', sessionId)
+      .eq('name', noteName)
+      .single();
+    if (data?.content) {
+      await ctx.reply(data.content, { parse_mode: 'HTML' });
+    } else {
+      await ctx.reply(`Note "${noteName}" not found.`);
+    }
+    return true;
+  }
+
+  // /start rules_<chatId> - show group rules
+  if (payload.startsWith('rules_')) {
+    const chatId = payload.slice(6);
+    const { data } = await deepLinkSupabase
+      .from('telegram_rules')
+      .select('rules_text')
+      .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
+      .single();
+    if (data?.rules_text) {
+      await ctx.reply(`<b>Group Rules</b>\n\n${data.rules_text}`, { parse_mode: 'HTML' });
+    } else {
+      await ctx.reply('No rules set for that group.');
+    }
+    return true;
+  }
+
+  // /start ref_<code> - track referral
+  if (payload.startsWith('ref_')) {
+    const referrerCode = payload.slice(4);
+    await deepLinkSupabase.from('referrals').insert({
+      referrer_code: referrerCode,
+      referred_user_id: ctx.from?.id?.toString(),
+      platform: 'telegram',
+    }).catch(() => {});
+    return false; // Continue to normal start message
+  }
+
+  // /start settings - open settings panel
+  if (payload === 'settings' && miniappUrl) {
+    const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+    const kb = new IK2().webApp('Open Settings', settingsUrl);
+    await ctx.reply(`Open the settings panel for <b>${botName}</b>:`, {
+      parse_mode: 'HTML',
+      reply_markup: kb,
+    });
+    return true;
+  }
+
+  return false;
+}
+
 export function registerStartHandlers(bot: Bot, sessionId: string): void {
   // ── /start ──────────────────────────────────────────────────────────────
 
@@ -207,6 +287,13 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     const botInfo = ctx.me;
     const botName = botInfo.first_name || botInfo.username || 'Botwave';
     const miniappUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
+
+    // Deep linking: /start <payload>
+    const payload = (ctx.match?.toString() || '').trim();
+    if (payload && ctx.chat.type === 'private') {
+      const handled = await handleDeepLink(ctx, sessionId, payload, botName, miniappUrl);
+      if (handled) return;
+    }
 
     if (ctx.chat.type === 'private') {
       const template = config.start_text || DEFAULT_START_PRIVATE;

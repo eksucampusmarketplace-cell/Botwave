@@ -11,6 +11,7 @@
 import { Bot } from 'grammy';
 import { createClient } from '@supabase/supabase-js';
 import { callAI } from '../../../lib/ai-provider';
+import { notifyAdmin } from './adminNotifier';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -158,6 +159,13 @@ Rules:
       });
     } catch {
       console.error(`[DAILY-SUMMARY] AI retry also failed for chat ${group.chat_id}, skipping`);
+      await notifyAdmin(bot, sessionId, {
+        title: 'Daily Summary Generation Failed',
+        details: 'AI provider failed after 2 attempts. Summary was not generated.',
+        severity: 'warning',
+        chatId: group.chat_id.toString(),
+        chatTitle: group.chat_title,
+      });
       return;
     }
   }
