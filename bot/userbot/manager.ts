@@ -139,7 +139,7 @@ export class UserbotManager {
       lastSessionRefresh: Date.now(),
     });
 
-    await updateSessionState(sessionId, 'connected');
+    await updateSessionState(sessionId, 'active');
     console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} started successfully`);
 
     // Send one-time welcome message on first connect
@@ -298,7 +298,7 @@ export class UserbotManager {
       if (reconnected) {
         // Re-register event handlers - they are lost on manual reconnect
         this.registerHandlers(ub.client, sessionId);
-        await updateSessionState(sessionId, 'connected');
+        await updateSessionState(sessionId, 'active');
         ub.lastSessionRefresh = Date.now();
         console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnected + handlers re-registered`);
 

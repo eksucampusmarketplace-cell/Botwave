@@ -180,7 +180,7 @@ export async function getSessionsNeedingBot(selfUrl?: string, isWorker?: boolean
     cacheKey: `sessionsNeeding:${selfUrl || 'main'}:${isWorker}`,
     fallbackValue: [] as any[],
     queryFn: async () => {
-      const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'connecting'];
+      const actionableStates = ['qr_pending', 'pairing_sent', 'active', 'connecting', 'connected'];
 
       let query = supabase
         .from('bot_sessions')
