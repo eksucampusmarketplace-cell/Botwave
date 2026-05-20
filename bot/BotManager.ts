@@ -102,9 +102,9 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
 const logger = P({ level: 'info' }) as any;
 
 const MAX_RECONNECT_ATTEMPTS = 5;
-const SESSION_STAGGER_DELAY = 15_000; // 15s between pairing starts to avoid WhatsApp 428 rate limits
+const SESSION_STAGGER_DELAY = 5_000; // 5s between pairing starts — enough to avoid WhatsApp detection without blocking user-initiated sessions
 const PAIRING_TIMEOUT_MS = 180_000; // 3 min - matches UI countdown in QRCodeDisplay
-const MAX_CONCURRENT_PAIRING = 2; // Max sessions pairing simultaneously - prevents 428 storms
+const MAX_CONCURRENT_PAIRING = 4; // Max sessions pairing simultaneously per sync cycle
 const MAX_PAIRING_RETRIES = 3; // Max auto-retries before giving up on pairing (rotates proxy each time)
 
 // Proxy pool for Baileys direct mode - distributes WebSocket connections

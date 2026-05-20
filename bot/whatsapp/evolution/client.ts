@@ -54,7 +54,7 @@ const MAX_CONSECUTIVE_FAILURES = 5;
 // Redis so all workers share the same state. Falls back to in-memory if Redis
 // is unavailable.
 let global428CooldownUntil = 0;
-const COOLDOWN_DURATION_MS = 300_000; // 5 minutes — WhatsApp 428 often needs >60s
+const COOLDOWN_DURATION_MS = 120_000; // 2 minutes — enough for WhatsApp rate limit to clear without blocking user-initiated sessions too long
 
 /** Activate the 428 cooldown. Stores in Redis (shared) + local fallback. */
 export function trigger428Cooldown(source: string, retryAfterSec?: number): void {
@@ -165,7 +165,7 @@ export function wasEvolutionRecentlyDown(): boolean {
 // WhatsApp's thundering herd detection (multiple Baileys connections
 // from the same IP within seconds).
 let lastInstanceCreatedAt = 0;
-const RATE_LIMIT_INTERVAL_MS = 8_000; // 8 seconds between instance creations
+const RATE_LIMIT_INTERVAL_MS = 3_000; // 3 seconds between instance creations
 
 // ─── Pairing Code Stability ───────────────────────────────────────────
 // Once a pairing code is generated for an instance, don't allow deletion
@@ -408,6 +408,36 @@ function parseProxy(proxyStr: string): { host: string; port: string; protocol: s
   return { host: parts[0], port: parts[1], protocol: 'http', username: parts[2], password: parts[3] };
 }
 
+/**
+ * Pre-flight health check: verify a proxy can reach web.whatsapp.com before
+ * assigning it to a session. Returns true if the proxy is reachable.
+ * Uses a short timeout (5s) so it doesn't block session creation for long.
+ */
+async function proxyHealthCheck(proxyStr: string): Promise<boolean> {
+  if (!HttpsProxyAgent) return true; // can't test without agent, assume ok
+  const parts = proxyStr.split(':');
+  if (parts.length < 4) return false;
+  const [host, port, user, pass] = parts;
+  const proxyUrl = `http://${user}:${pass}@${host}:${port}`;
+  const agent = new HttpsProxyAgent(proxyUrl);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5_000);
+  try {
+    await fetch('https://web.whatsapp.com', {
+      method: 'HEAD',
+      signal: controller.signal,
+      // @ts-expect-error -- Node fetch supports agent option
+      agent,
+    });
+    clearTimeout(timeout);
+    return true;
+  } catch {
+    clearTimeout(timeout);
+    console.warn(`[PROXY] Health check FAILED for ${host}:${port} — cannot reach web.whatsapp.com`);
+    return false;
+  }
+}
+
 // Max sessions from the same country code per proxy IP.
 // Keeps WhatsApp traffic on each proxy looking like a single geographic region.
 const MAX_SESSIONS_PER_PROXY_COUNTRY = 5;
@@ -560,6 +590,17 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   }
 
   const proxyStr = PROXY_LIST[chosen.idx];
+
+  // Pre-flight health check: verify the proxy can reach WhatsApp before assigning
+  const isHealthy = await proxyHealthCheck(proxyStr);
+  if (!isHealthy) {
+    // Blacklist this proxy and try the next healthy one
+    await redisRecordProxyFailure(chosen.host);
+    recordProxyFailure('health-check', chosen.host, 'pre-flight health check failed');
+    // Recurse to pick a different proxy (the failing one is now blacklisted)
+    return getNextProxyAsync(sessionId, phoneNumber);
+  }
+
   proxyCounter = chosen.idx + 1;
 
   // Persist sticky assignment and country grouping
@@ -1800,7 +1841,9 @@ function ensureKeepAlive(): void {
         // Notify BotManager when a tracked instance is disconnected so it can
         // trigger reconnection immediately instead of waiting for the 5s poll.
         if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
-          console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} - notifying BotManager for reconnection`);
+          console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} - clearing sticky proxy and notifying BotManager for reconnection`);
+          // Clear sticky proxy so the session gets a fresh one on reconnect
+          clearSessionProxy(name).catch(() => {});
           onDisconnectDetected(name, state);
         }
 
@@ -1976,7 +2019,8 @@ export function startEvolutionWebSocket(): void {
       }
 
       if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
-        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket - notifying BotManager`);
+        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket - clearing sticky proxy and notifying BotManager`);
+        clearSessionProxy(instanceName).catch(() => {});
         onDisconnectDetected(instanceName, state);
       }
     });

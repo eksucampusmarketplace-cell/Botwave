@@ -274,7 +274,7 @@ export async function redisReleasePairingLock(sessionId: string): Promise<void> 
 
 const PROXY_FAILURES_PREFIX = 'proxy:failure:';
 const PROXY_BLACKLIST_PREFIX = 'proxy:blacklist:';
-const PROXY_BLACKLIST_TTL = 300; // 5 minutes
+const PROXY_BLACKLIST_TTL = 1800; // 30 minutes — keep bad proxies blocked longer to prevent flapping
 const REDIS_PROXY_FAIL_THRESHOLD = 3;
 
 /**
