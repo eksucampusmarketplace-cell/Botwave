@@ -162,6 +162,7 @@ export default function TelegramConfigPage() {
   const [groups, setGroups] = useState<GroupInfo[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [configMode, setConfigMode] = useState<'global' | 'group'>('global');
+  const [settingsSearch, setSettingsSearch] = useState('');
 
   // eslint-disable-next-line
   const [config, setConfig] = useState<Record<string, any>>({
@@ -487,8 +488,17 @@ export default function TelegramConfigPage() {
           body: JSON.stringify({ sessionId, chatId: selectedGroup, ...config }),
         });
         const data = await res.json();
-        if (data.success) setSuccess('Group settings saved!');
-        else setError('Failed to save group settings');
+        if (data.success) {
+          setSuccess('Group settings saved!');
+          // Save config snapshot for rollback
+          fetch('/api/telegram/config-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, type: 'group', chatId: selectedGroup, snapshot: data.data }),
+          }).catch(() => {});
+        } else {
+          setError(data.error || 'Failed to save group settings');
+        }
       } else {
         const res = await fetch('/api/telegram/config', {
           method: 'PUT',
@@ -496,8 +506,17 @@ export default function TelegramConfigPage() {
           body: JSON.stringify({ sessionId, ...config }),
         });
         const data = await res.json();
-        if (data.success) setSuccess('Settings saved!');
-        else setError('Failed to save');
+        if (data.success) {
+          setSuccess('Settings saved!');
+          // Save config snapshot for rollback
+          fetch('/api/telegram/config-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, type: 'bot', snapshot: data.data }),
+          }).catch(() => {});
+        } else {
+          setError(data.error || 'Failed to save');
+        }
       }
     } catch { setError('Error saving settings'); }
     setSaving(false);
@@ -645,9 +664,16 @@ export default function TelegramConfigPage() {
           </div>
         )}
 
+        {/* Quick Settings Search */}
+        <div className="mb-4">
+          <input type="text" value={settingsSearch} onChange={e => setSettingsSearch(e.target.value)}
+            placeholder="Search settings... (e.g. antiflood, welcome, captcha)"
+            className="w-full p-3 rounded-xl text-sm" style={INPUT_STYLE} />
+        </div>
+
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
+          {tabs.filter(t => !settingsSearch || t.label.toLowerCase().includes(settingsSearch.toLowerCase())).map(t => (
+            <button key={t.id} onClick={() => { setActiveTab(t.id); setSettingsSearch(''); }}
               className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeTab === t.id ? 'bg-blue-600 text-white' : ''}`}
               style={activeTab !== t.id ? { background: 'var(--card-bg)', color: 'var(--text-secondary)' } : undefined}>
               {t.icon} {t.label}
@@ -1209,7 +1235,13 @@ export default function TelegramConfigPage() {
                 </div>
               )}
             </SectionCard>
-            <button onClick={resetXP} className="w-full p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Reset All XP</button>
+            <div className="flex gap-3">
+              <a href={`/api/telegram/xp/export?sessionId=${sessionId}${selectedGroup ? `&chatId=${selectedGroup}` : ''}`}
+                download className="flex-1 p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold text-center">
+                Export CSV
+              </a>
+              <button onClick={resetXP} className="flex-1 p-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">Reset All XP</button>
+            </div>
           </div>
         )}
 
@@ -1237,18 +1269,27 @@ export default function TelegramConfigPage() {
 
         {activeTab === 'stats' && (
           <div className="space-y-6">
+            <SectionCard title="Daily AI Summary">
+              <Toggle config={config} updateConfig={updateConfig} configKey="daily_summary_enabled" label="Enable Daily Summary" desc="AI-powered daily digest sent to the group or a log channel." />
+              {config.daily_summary_enabled && (
+                <div className="mt-3 space-y-0">
+                  <NumberInput config={config} updateConfig={updateConfig} configKey="daily_summary_hour" label="Summary Hour (UTC, 0-23)" desc="Hour of day to send the summary." min={0} max={23} />
+                  <TextInput config={config} updateConfig={updateConfig} configKey="daily_summary_channel_id" label="Override Channel ID" desc="Optional: send summary to a different channel instead of the group." placeholder="e.g. -1001234567890" />
+                </div>
+              )}
+            </SectionCard>
             <SectionCard title="Group Statistics">
               <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                 Statistics are tracked automatically when the bot is active in groups.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-6 rounded-xl text-center" style={{ background: 'var(--bg)' }}>
-                  <div className="text-4xl mb-2">\ud83d\udcc8</div>
+                  <div className="text-4xl mb-2">{'\ud83d\udcc8'}</div>
                   <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>--</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>New Members (30 days)</div>
                 </div>
                 <div className="p-6 rounded-xl text-center" style={{ background: 'var(--bg)' }}>
-                  <div className="text-4xl mb-2">\ud83d\udcac</div>
+                  <div className="text-4xl mb-2">{'\ud83d\udcac'}</div>
                   <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>--</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Group Messages (30 days)</div>
                 </div>
@@ -1257,6 +1298,7 @@ export default function TelegramConfigPage() {
                 Statistics update in real-time as the bot processes events.
               </p>
             </SectionCard>
+            <SaveButton onClick={saveConfig} saving={saving} />
           </div>
         )}
       </div>

@@ -8,6 +8,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  TELEGRAM_BOT_CONFIG_COLUMNS,
+  USERBOT_CONFIG_COLUMNS,
+  filterValidColumns,
+  normalizeAntilinkWhitelist,
+  validateNumericFields,
+  parseSupabaseError,
+} from '@/lib/telegram-valid-columns';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,29 +90,36 @@ export async function PUT(request: NextRequest) {
     }
 
     const table = type === 'userbot' ? 'telegram_userbot_configs' : 'telegram_bot_configs';
+    const validColumns = type === 'userbot' ? USERBOT_CONFIG_COLUMNS : TELEGRAM_BOT_CONFIG_COLUMNS;
 
     // Convert antilink_whitelist from string to array if needed
-    if (typeof configFields.antilink_whitelist === 'string') {
-      configFields.antilink_whitelist = configFields.antilink_whitelist
-        ? configFields.antilink_whitelist.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : [];
+    if ('antilink_whitelist' in configFields) {
+      configFields.antilink_whitelist = normalizeAntilinkWhitelist(configFields.antilink_whitelist);
     }
 
-    // Strip internal-only fields that don't exist in the DB
-    delete configFields.id;
-    delete configFields.created_at;
+    // Filter to only valid DB columns
+    let filtered = filterValidColumns(configFields, validColumns);
+
+    // Validate numeric fields
+    filtered = validateNumericFields(filtered);
 
     const { data: config, error } = await supabase
       .from(table)
       .upsert({
         session_id: sessionId,
-        ...configFields,
+        ...filtered,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'session_id' })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[TG-CONFIG] Upsert error:', error);
+      return NextResponse.json(
+        { error: parseSupabaseError(error), details: error.details || null },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ success: true, data: config });
   } catch (error) {

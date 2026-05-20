@@ -7,6 +7,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import {
+  USERBOT_CONFIG_COLUMNS,
+  filterValidColumns,
+  validateNumericFields,
+  parseSupabaseError,
+} from '@/lib/telegram-valid-columns';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,13 +80,16 @@ export async function PUT(request: NextRequest) {
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-    // Remove any unknown fields that might not exist in the table
-    delete (updates as Record<string, unknown>).updated_at;
+    // Filter to only valid DB columns
+    let filtered = filterValidColumns(updates, USERBOT_CONFIG_COLUMNS);
+
+    // Validate numeric fields
+    filtered = validateNumericFields(filtered);
 
     const { data, error } = await admin
       .from('userbot_config')
       .upsert(
-        { session_id: sessionId, ...updates },
+        { session_id: sessionId, ...filtered },
         { onConflict: 'session_id' },
       )
       .select()
@@ -88,7 +97,10 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       console.error('[UB-CONFIG] Upsert error:', error);
-      throw error;
+      return NextResponse.json(
+        { error: parseSupabaseError(error), details: error.details || null },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ success: true, data });
