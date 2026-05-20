@@ -39,7 +39,7 @@ if (REDIS_URL) {
   }
 }
 
-const SESSION_TTL = 10; // 10 seconds — reduced to prevent stale state display after transitions
+const SESSION_TTL = 60; // 60 seconds — reduces Supabase load; invalidated explicitly on state changes
 const QR_TTL = 10; // 10 seconds — reduced to prevent stale QR display during pairing
 
 function isAvailable(): boolean {

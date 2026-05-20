@@ -60,7 +60,7 @@ let syncLoopHandle: ReturnType<typeof setInterval> | null = null;
 let lastSyncCycleMs = 0;
 let dbInitialized = false;
 let syncCycleCount = 0;
-const SUPABASE_SYNC_EVERY_N_CYCLES = 6; // Force Supabase heartbeat every 30s (6 * 5s)
+const SUPABASE_SYNC_EVERY_N_CYCLES = 2; // Force Supabase heartbeat every 10s (2 * 5s) for faster orphan detection
 
 // ─── Shared Flag Readers ────────────────────────────────────────────────────
 
