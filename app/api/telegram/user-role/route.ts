@@ -94,11 +94,11 @@ export async function GET(request: NextRequest) {
     // Check if user is a Telegram group admin via getChatMember API
     const { data: botSession } = await supabase
       .from('bot_sessions')
-      .select('bot_token')
+      .select('telegram_bot_token')
       .eq('id', sessionId)
       .single();
 
-    if (botSession?.bot_token) {
+    if (botSession?.telegram_bot_token) {
       let groupsToCheck: { chat_id: string }[] = [];
 
       if (chatId) {
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         for (const group of groupsToCheck) {
           try {
             const res = await fetch(
-              `https://api.telegram.org/bot${botSession.bot_token}/getChatMember?chat_id=${group.chat_id}&user_id=${userId}`,
+              `https://api.telegram.org/bot${botSession.telegram_bot_token}/getChatMember?chat_id=${group.chat_id}&user_id=${userId}`,
             );
             const data = await res.json();
             if (data.ok) {
