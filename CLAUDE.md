@@ -80,5 +80,25 @@ npm run lint         # Run ESLint
 - Only on: sticker, doc, translate, img2text
 - Never on: joke, weather, ai, ping, afk, games
 
+## Deployment Safety Rules
+
+**CRITICAL — follow these rules during any deploy, rebuild, or container restart:**
+
+1. **NEVER use `docker kill`, `kill -9`, or any force-kill on bot containers.** Always use `docker stop` (sends SIGTERM) or `docker compose down` (graceful shutdown). The bot handles SIGTERM gracefully — it releases locks, saves state, and disconnects cleanly. Force-killing skips all cleanup and can leave stale locks that orphan sessions.
+
+2. **NEVER use `docker compose down -v` unless explicitly instructed.** The `-v` flag deletes volumes, which wipes Evolution API's persistent database. All WhatsApp sessions will require re-pairing.
+
+3. **NEVER change `EVOLUTION_API_KEY` or `EVOLUTION_API_URL` between deploys** without also deleting all Evolution instances and resetting sessions. Old instances become unreachable with new credentials.
+
+4. **Always rebuild with `docker compose build` then `docker compose up -d`.** The bot's graceful shutdown handler preserves auth state in Supabase. On restart, `tryReconnectExisting()` reconnects using saved credentials — no re-pairing needed.
+
+5. **Container name references:** The WhatsApp bot container is `botwave_whatsapp` (NOT `botwave_bot_main`). Always use the correct name in logs, admin panels, and scripts.
+
+6. **Session persistence:** Auth state is stored in Supabase (`auth_state` column) and in Evolution API's PostgreSQL (if `DATABASE_SAVE_DATA_INSTANCE=true`). Normal restarts do NOT require users to re-pair. Only infrastructure changes (wiping Evolution DB, changing API keys) or user-initiated logouts break sessions.
+
+7. **Auto-recovery is disabled** (`AUTO_RECOVERY_MAX_ATTEMPTS = 0` in `sessionCoordinator.ts`). Do NOT re-enable without also having a working proxy pool configured. Without proxies, auto-recovery creates an orphan cycle: reconnect → WhatsApp 401 → delete instance → retry.
+
+8. **Proxy pool (`PROXY_LIST`)** must be configured before scaling beyond 1 WhatsApp session. Without proxies, all sessions connect from the server IP and get mass-disconnected by WhatsApp.
+
 ## Environment Variables
 See `.env.example` for required environment variables.

@@ -19,7 +19,7 @@ if (!isMainThread) {
 process.env.BOT_PLATFORM = 'whatsapp';
 
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
-import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent } from './database';
+import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, cleanupDeadLetters } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
@@ -216,6 +216,19 @@ async function start() {
         console.error('[WHATSAPP] Stuck session cleanup error:', err);
       }
     }, 1_800_000));
+
+    // Dead letter cleanup (every 6 hours) - delete dead_letter entries older than 7 days
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        const deleted = await cleanupDeadLetters(7);
+        if (deleted > 0) {
+          console.log(`[WHATSAPP] Cleaned ${deleted} dead letter(s) older than 7 days`);
+        }
+      } catch (err) {
+        console.error('[WHATSAPP] Dead letter cleanup error:', err);
+      }
+    }, 6 * 60 * 60 * 1000));
   }
 
   // Reminder + Scheduled Message delivery (every 30s)

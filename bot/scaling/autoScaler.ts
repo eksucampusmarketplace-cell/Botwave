@@ -601,7 +601,34 @@ function scaleDown(count: number): void {
   }
 }
 
+// ─── Session Data Cache Cleanup ─────────────────────────────────────────────
+
+/**
+ * Prune sessionDataCache entries that are no longer tracked by any worker.
+ * Prevents unbounded memory growth under heavy session churn.
+ */
+function pruneSessionDataCache(): void {
+  const activeSessionIds = new Set<string>();
+  for (const worker of workers.values()) {
+    for (const sid of worker.sessions) {
+      activeSessionIds.add(sid);
+    }
+  }
+  let pruned = 0;
+  for (const sid of sessionDataCache.keys()) {
+    if (!activeSessionIds.has(sid)) {
+      sessionDataCache.delete(sid);
+      pruned++;
+    }
+  }
+  if (pruned > 0) {
+    console.log(`[SCALE] Pruned ${pruned} stale entries from sessionDataCache (remaining: ${sessionDataCache.size})`);
+  }
+}
+
 // ─── Start / Stop ───────────────────────────────────────────────────────────
+
+let cacheCleanupHandle: ReturnType<typeof setInterval> | null = null;
 
 export function startAutoScaler(): void {
   if (autoScaleHandle) return;
@@ -616,12 +643,19 @@ export function startAutoScaler(): void {
       console.error('[SCALE] Auto-scale loop error:', err);
     }
   }, AUTO_SCALE_INTERVAL_MS);
+
+  // Prune stale sessionDataCache entries every 10 minutes
+  cacheCleanupHandle = setInterval(pruneSessionDataCache, 10 * 60 * 1000);
 }
 
 export function stopAutoScaler(): void {
   if (autoScaleHandle) {
     clearInterval(autoScaleHandle);
     autoScaleHandle = null;
+  }
+  if (cacheCleanupHandle) {
+    clearInterval(cacheCleanupHandle);
+    cacheCleanupHandle = null;
   }
 
   // Gracefully shut down all workers
