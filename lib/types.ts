@@ -19,7 +19,8 @@ export type SessionState =
   | 'connecting'
   | 'qr_pending'
   | 'pairing_sent'
-  | 'needs_reauth';
+  | 'needs_reauth'
+  | 'pairing_failed';
 
 export type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
 
@@ -38,6 +39,7 @@ export interface BotSession {
   qr_generated_at?: string;
   pairing_code?: string;
   queue_position?: number | null;
+  last_pairing_error?: string | null;
   platform?: Platform;
   telegram_bot_token?: string;
   telegram_bot_username?: string;
