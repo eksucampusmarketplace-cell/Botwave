@@ -1,36 +1,109 @@
 /**
  * User Role API for Telegram Mini App
  *
- * GET /api/telegram/user-role?sessionId=X&userId=Y[&chatId=Z]
+ * GET /api/telegram/user-role?sessionId=X&userId=Y[&chatId=Z][&initData=...]
  * Returns the role of the user: "owner", "admin", or "user"
  *
  * Checks (in order):
  * 1. telegram_bot_configs.owner_user_id (explicit /setowner)
  * 2. telegram_groups.added_by_user_id (dashboard connector)
- * 3. telegram_sudo_users (sudo list)
- * 4. Telegram Bot API getChatMember (group admin detection)
- * 5. Default: "user"
+ * 3. Auto-assign owner if initData is verified and no owner is configured
+ * 4. telegram_sudo_users (sudo list)
+ * 5. Telegram Bot API getChatMember (group admin detection)
+ * 6. Default: "user"
  *
  * If chatId is provided, only that group is checked for admin status.
  * Otherwise, all active groups for the session are checked.
+ *
+ * When `initData` is provided, the server verifies it with HMAC-SHA256
+ * using the bot token, extracts the real user ID, and uses that instead
+ * of the client-supplied userId. This prevents spoofing and enables
+ * auto-owner assignment for verified users.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+
+function verifyAndExtractUser(
+  initData: string,
+  botToken: string,
+): { id: string; firstName?: string } | null {
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+
+    params.delete('hash');
+    const entries = Array.from(params.entries());
+    entries.sort(([a], [b]) => a.localeCompare(b));
+    const dataCheckString = entries.map(([k, v]) => `${k}=${v}`).join('\n');
+
+    const secretKey = crypto
+      .createHmac('sha256', 'WebAppData')
+      .update(botToken)
+      .digest();
+
+    const computedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
+
+    if (computedHash !== hash) return null;
+
+    const authDate = parseInt(params.get('auth_date') || '0', 10);
+    const now = Math.floor(Date.now() / 1000);
+    if (now - authDate > 86400) return null;
+
+    const userJson = params.get('user');
+    if (!userJson) return null;
+    const user = JSON.parse(userJson);
+    if (!user?.id) return null;
+
+    return { id: user.id.toString(), firstName: user.first_name };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    const userId = searchParams.get('userId');
+    let userId = searchParams.get('userId');
     const chatId = searchParams.get('chatId');
+    const initData = searchParams.get('initData');
 
-    if (!sessionId || !userId) {
+    if (!sessionId) {
       return NextResponse.json(
-        { error: 'sessionId and userId are required' },
+        { error: 'sessionId is required' },
+        { status: 400 },
+      );
+    }
+
+    // Get bot token early — needed for initData verification and getChatMember
+    const { data: botSession } = await supabase
+      .from('bot_sessions')
+      .select('user_id, telegram_bot_token')
+      .eq('id', sessionId)
+      .single();
+
+    // If initData is provided, verify it and extract the real user ID
+    let initDataVerified = false;
+    if (initData && botSession?.telegram_bot_token) {
+      const verifiedUser = verifyAndExtractUser(initData, botSession.telegram_bot_token);
+      if (verifiedUser) {
+        userId = verifiedUser.id;
+        initDataVerified = true;
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userId is required (provide userId param or initData)' },
         { status: 400 },
       );
     }
@@ -48,17 +121,7 @@ export async function GET(request: NextRequest) {
 
     // Fallback: check if the Telegram user who added the bot to a group
     // matches the person who connected the bot via the dashboard.
-    // The dashboard connector's Telegram ID is stored as added_by_user_id
-    // in telegram_groups when they add the bot to a group.
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('user_id')
-      .eq('id', sessionId)
-      .single();
-
-    if (session?.user_id) {
-      // Check if this Telegram user ID appears as the added_by for any group
-      // belonging to this session - that links them to the dashboard owner
+    if (botSession?.user_id) {
       const { data: group } = await supabase
         .from('telegram_groups')
         .select('added_by_user_id')
@@ -68,7 +131,6 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       if (group) {
-        // Auto-set owner_user_id so future checks are faster
         await supabase
           .from('telegram_bot_configs')
           .upsert(
@@ -77,6 +139,20 @@ export async function GET(request: NextRequest) {
           );
         return NextResponse.json({ success: true, role: 'owner' });
       }
+    }
+
+    // Auto-assign owner: if initData is cryptographically verified and
+    // no owner_user_id is configured yet, grant owner to this user.
+    // This covers the common case where the bot creator opens the panel
+    // for the first time before running /setowner.
+    if (initDataVerified && (!config?.owner_user_id)) {
+      await supabase
+        .from('telegram_bot_configs')
+        .upsert(
+          { session_id: sessionId, owner_user_id: userId, updated_at: new Date().toISOString() },
+          { onConflict: 'session_id' },
+        );
+      return NextResponse.json({ success: true, role: 'owner' });
     }
 
     // Check if user is a sudo user
@@ -92,12 +168,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is a Telegram group admin via getChatMember API
-    const { data: botSession } = await supabase
-      .from('bot_sessions')
-      .select('telegram_bot_token')
-      .eq('id', sessionId)
-      .single();
-
     if (botSession?.telegram_bot_token) {
       let groupsToCheck: { chat_id: string }[] = [];
 
