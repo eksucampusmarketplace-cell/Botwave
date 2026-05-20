@@ -415,21 +415,31 @@ export class UserbotManager {
       } catch {}
     }
 
-    // Run passive handlers in priority order:
+    try {
+      // Run passive handlers in priority order:
 
-    // 1. Antiflood check (mutes flooders before anything else)
-    if (await handleAntifloodCheck(client, event)) return;
+      // 1. Antiflood check (mutes flooders before anything else)
+      if (await handleAntifloodCheck(client, event)) return;
 
-    // 2. PM Permit check (blocks further processing if handled)
-    if (await handleIncomingPm(client, event, sessionId)) return;
+      // 2. PM Permit check (blocks further processing if handled)
+      if (await handleIncomingPm(client, event, sessionId)) return;
 
-    // 3. AFK auto-reply
-    if (await handleAfkMention(client, event, sessionId)) return;
+      // 3. AFK auto-reply
+      if (await handleAfkMention(client, event, sessionId)) return;
 
-    // 4. Note retrieval (#notename)
-    if (await handleNoteRetrieval(client, event, sessionId)) return;
+      // 4. Note retrieval (#notename)
+      if (await handleNoteRetrieval(client, event, sessionId)) return;
 
-    // 5. Filter matching
-    if (await handleFilterCheck(client, event, sessionId)) return;
+      // 5. Filter matching
+      if (await handleFilterCheck(client, event, sessionId)) return;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'seconds' in err) {
+        const floodErr = err as { seconds: number };
+        console.warn(`[USERBOT-MGR] FloodWait in incoming handler: ${floodErr.seconds}s`);
+        await floodWaitDelay(floodErr.seconds);
+      } else {
+        console.error(`[USERBOT-MGR] Incoming handler error for ${sessionId.slice(0, 8)}:`, err);
+      }
+    }
   }
 }

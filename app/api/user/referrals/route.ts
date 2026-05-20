@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedReferralData, cacheReferralData, invalidateReferralData, invalidateRewards, getCachedReferralByCode, cacheReferralByCode, invalidateReferralByCode } from '@/lib/redisApiCache';
+import { sendReferralMilestoneEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -353,6 +354,36 @@ export async function POST(request: NextRequest) {
     ]);
 
     console.log(`[REFERRAL] Success: code=${code} referrer=${referral.user_id} referred=${user.id} ip=${clientIp} rewards=₦${REFERRAL_REWARD}+₦${REFERRED_REWARD}`);
+
+    // Send referral milestone email to referrer at milestones (5, 10, 25, 50, 100)
+    try {
+      const { data: updatedRef } = await supabase
+        .from('referrals')
+        .select('total_referred, total_earned')
+        .eq('user_id', referral.user_id)
+        .single();
+
+      const milestones = [5, 10, 25, 50, 100];
+      if (updatedRef && milestones.includes(updatedRef.total_referred)) {
+        const { data: { user: referrerAuth } } = await supabase.auth.admin.getUserById(referral.user_id);
+        const { data: referrerProfile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', referral.user_id)
+          .single();
+
+        if (referrerAuth?.email) {
+          sendReferralMilestoneEmail(
+            referrerAuth.email,
+            referrerProfile?.username || 'User',
+            updatedRef.total_referred,
+            updatedRef.total_earned,
+          ).catch(err => console.error('[REFERRAL] Milestone email failed:', err));
+        }
+      }
+    } catch (milestoneErr) {
+      console.error('[REFERRAL] Milestone check error:', milestoneErr);
+    }
 
     await invalidateReferralData(referral.user_id);
     await invalidateReferralData(user.id);

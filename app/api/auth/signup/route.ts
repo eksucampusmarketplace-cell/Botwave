@@ -3,8 +3,44 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { generateCode, storeVerificationCode, checkRateLimit, storePendingSignup } from '@/lib/email/verification-store';
 import { sendVerificationEmail } from '@/lib/email';
 
+// IP-based rate limiting: max 5 signups per IP per 15 minutes
+const ipAttempts = new Map<string, { count: number; resetAt: number }>();
+const IP_RATE_LIMIT = 5;
+const IP_RATE_WINDOW_MS = 15 * 60 * 1000;
+
+function checkIpRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = ipAttempts.get(ip);
+  if (!record || now > record.resetAt) {
+    ipAttempts.set(ip, { count: 1, resetAt: now + IP_RATE_WINDOW_MS });
+    return true;
+  }
+  if (record.count >= IP_RATE_LIMIT) return false;
+  record.count++;
+  return true;
+}
+
+// Periodic cleanup
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of ipAttempts) {
+      if (now > record.resetAt) ipAttempts.delete(ip);
+    }
+  }, 60_000);
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // IP-based rate limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (!checkIpRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many signup attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const { email, password, username, referralCode, signup_source, signup_referrer, utm_source, utm_medium, utm_campaign } = body;
 

@@ -130,6 +130,126 @@ export async function sendSupportReplyEmail(
   });
 }
 
+export async function sendTrialExpiryEmail(
+  to: string,
+  username: string,
+  plan: string,
+  daysLeft: number,
+): Promise<string> {
+  const { trialExpiryTemplate } = await import('./templates/trial-expiry');
+  return sendEmail({
+    channel: 'billing',
+    to,
+    subject: `Your ${plan} trial expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+    html: trialExpiryTemplate(username, plan, daysLeft),
+  });
+}
+
+export async function sendTrialExpiredEmail(
+  to: string,
+  username: string,
+  plan: string,
+): Promise<string> {
+  const { trialExpiredTemplate } = await import('./templates/trial-expiry');
+  return sendEmail({
+    channel: 'billing',
+    to,
+    subject: 'Your trial has ended - you\'re now on the Free plan',
+    html: trialExpiredTemplate(username, plan),
+  });
+}
+
+export async function sendRenewalReminderEmail(
+  to: string,
+  username: string,
+  plan: string,
+  renewalDate: Date,
+): Promise<string> {
+  const { renewalReminderTemplate } = await import('./templates/renewal-reminder');
+  return sendEmail({
+    channel: 'billing',
+    to,
+    subject: `Subscription renewal reminder - ${plan} plan`,
+    html: renewalReminderTemplate(username, plan, renewalDate),
+  });
+}
+
+export async function sendQuotaWarningEmail(
+  to: string,
+  username: string,
+  used: number,
+  limit: number,
+  plan: string,
+): Promise<string> {
+  const { quotaWarningTemplate } = await import('./templates/quota-warning');
+  const percent = Math.round((used / limit) * 100);
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: percent >= 100 ? 'Message quota reached' : `Message quota at ${percent}%`,
+    html: quotaWarningTemplate(username, used, limit, plan),
+  });
+}
+
+export async function sendPaymentFailedEmail(
+  to: string,
+  username: string,
+  attempt: number,
+  maxAttempts: number,
+): Promise<string> {
+  const { paymentFailedTemplate } = await import('./templates/payment-failed');
+  return sendEmail({
+    channel: 'billing',
+    to,
+    subject: attempt >= maxAttempts ? 'Final payment warning - action required' : 'Payment failed - please update',
+    html: paymentFailedTemplate(username, attempt, maxAttempts),
+  });
+}
+
+export async function sendApiKeyCreatedEmail(
+  to: string,
+  username: string,
+  keyName: string,
+  keyPrefix: string,
+): Promise<string> {
+  const { apiKeyCreatedTemplate } = await import('./templates/api-key-event');
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: 'New API key created on your account',
+    html: apiKeyCreatedTemplate(username, keyName, keyPrefix),
+  });
+}
+
+export async function sendApiKeyRevokedEmail(
+  to: string,
+  username: string,
+  keyName: string,
+): Promise<string> {
+  const { apiKeyRevokedTemplate } = await import('./templates/api-key-event');
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: 'API key revoked from your account',
+    html: apiKeyRevokedTemplate(username, keyName),
+  });
+}
+
+export async function sendReferralMilestoneEmail(
+  to: string,
+  username: string,
+  totalReferred: number,
+  totalEarned: number,
+): Promise<string> {
+  const { referralMilestoneTemplate } = await import('./templates/referral-milestone');
+  return sendEmail({
+    channel: 'notify',
+    to,
+    subject: `Referral milestone: ${totalReferred} users referred!`,
+    html: referralMilestoneTemplate(username, totalReferred, totalEarned),
+  });
+}
+
 export async function sendReengagementEmail(
   to: string,
   username: string,

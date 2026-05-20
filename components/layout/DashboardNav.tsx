@@ -21,8 +21,9 @@ interface NavGroup {
 
 const primaryLinks: NavLink[] = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/sessions', label: 'Sessions', tour: 'nav-sessions' },
+  { href: '/dashboard/sessions', label: 'WhatsApp Sessions', tour: 'nav-sessions' },
   { href: '/dashboard/messages', label: 'Messages' },
+  { href: '/dashboard/telegram', label: 'Telegram Bot Manager' },
 ];
 
 const navGroups: NavGroup[] = [
@@ -33,9 +34,9 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/health', label: 'Health' },
       { href: '/dashboard/templates', label: 'Msg Templates' },
       { href: '/dashboard/auto-replies', label: 'Auto-Reply' },
-      // { href: '/dashboard/autopilot', label: 'Autopilot', accent: true },
       { href: '/dashboard/custom-commands', label: 'Custom Cmds' },
       { href: '/dashboard/flows', label: 'Chat Flows' },
+      { href: '/dashboard/scheduled', label: 'Scheduled' },
     ],
   },
   {

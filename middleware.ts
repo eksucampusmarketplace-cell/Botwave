@@ -2,9 +2,29 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAdminToken } from '@/lib/admin-auth'
 
+const ALLOWED_ORIGINS = [
+  'https://www.botwave.online',
+  'https://botwave.online',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+
 export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const { pathname, search } = request.nextUrl;
+
+  // CSRF protection: validate Origin header on mutating requests
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    // Skip CSRF for webhook endpoints (called by external services)
+    const isWebhook = pathname.startsWith('/api/evolution/webhook') ||
+      pathname.startsWith('/api/telegram/webhook') ||
+      pathname.startsWith('/api/notify/') ||
+      pathname.startsWith('/api/payments/webhook');
+    if (!isWebhook && origin && !ALLOWED_ORIGINS.includes(origin)) {
+      return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
+    }
+  }
 
   // Redirect non-www to www (canonical domain)
   if (host === 'botwave.online' || host === 'botwave.online:443') {
