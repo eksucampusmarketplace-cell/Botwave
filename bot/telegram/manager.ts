@@ -15,6 +15,7 @@ import { refreshHeartbeat } from '../scaling/sessionCoordinator';
 import { registerAllHandlers } from './factory';
 import { getTelegramConfig, getDueScheduledMessages, markScheduledMessageSent } from './utils/db';
 import { checkNightMode } from './handlers/nightmode';
+import { checkDailySummaries } from './services/dailySummary';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,8 +78,11 @@ export class TelegramBotInstance {
   private heartbeatHandle: NodeJS.Timeout | null = null;
   private nightModeHandle: NodeJS.Timeout | null = null;
   private scheduleHandle: NodeJS.Timeout | null = null;
+  private dailySummaryHandle: NodeJS.Timeout | null = null;
 
   public getSocket(): any { return this.isReady ? this.socketAdapter : null; }
+  public getBotApi(): Bot | null { return this.isReady ? this.bot : null; }
+  public getSessionId(): string { return this.sessionId; }
 
   constructor(config: TelegramBotConfig) {
     this.sessionId = config.sessionId;
@@ -266,6 +270,16 @@ export class TelegramBotInstance {
             if (error) console.error(`[TG-BOT] last_active update failed for ${this.sessionId.slice(0, 8)}:`, error);
           });
       }, 60_000);
+
+      // Daily summary: check every 30 minutes if any groups are due
+      this.dailySummaryHandle = setInterval(async () => {
+        if (this.stopped || !this.isReady || !this.bot) return;
+        try {
+          await checkDailySummaries(this.bot, this.sessionId);
+        } catch (err) {
+          console.error(`[TG-BOT] Daily summary check failed for ${this.sessionId.slice(0, 8)}:`, err);
+        }
+      }, 30 * 60_000);
 
     } catch (err) {
       console.error(`[TG-BOT] Failed to start bot for ${this.sessionId.slice(0, 8)}:`, err);
@@ -522,6 +536,10 @@ export class TelegramBotInstance {
     if (this.scheduleHandle) {
       clearInterval(this.scheduleHandle);
       this.scheduleHandle = null;
+    }
+    if (this.dailySummaryHandle) {
+      clearInterval(this.dailySummaryHandle);
+      this.dailySummaryHandle = null;
     }
 
     if (this.bot) {

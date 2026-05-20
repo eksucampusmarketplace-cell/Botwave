@@ -7,6 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  TELEGRAM_GROUP_CONFIG_COLUMNS,
+  filterValidColumns,
+  normalizeAntilinkWhitelist,
+  validateNumericFields,
+  parseSupabaseError,
+} from '@/lib/telegram-valid-columns';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +60,11 @@ export async function GET(request: NextRequest) {
       .eq('chat_id', chatId)
       .single();
 
+    // Convert antilink_whitelist array to comma-separated string for the UI
+    if (config && Array.isArray(config.antilink_whitelist)) {
+      config.antilink_whitelist = config.antilink_whitelist.join(', ');
+    }
+
     return NextResponse.json({ success: true, data: config });
   } catch (error) {
     console.error('[GROUP-CONFIG] GET error:', error);
@@ -85,10 +97,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Remove fields that shouldn't be directly set
-    delete configFields.id;
-    delete configFields.created_at;
-    delete configFields.updated_at;
+    // Convert antilink_whitelist from string to array if needed
+    if ('antilink_whitelist' in configFields) {
+      configFields.antilink_whitelist = normalizeAntilinkWhitelist(configFields.antilink_whitelist);
+    }
+
+    // Filter to only valid DB columns
+    let filtered = filterValidColumns(configFields, TELEGRAM_GROUP_CONFIG_COLUMNS);
+
+    // Validate numeric fields
+    filtered = validateNumericFields(filtered);
 
     const { data: config, error } = await supabase
       .from('telegram_group_configs')
@@ -96,7 +114,7 @@ export async function POST(request: NextRequest) {
         {
           session_id: sessionId,
           chat_id: chatId,
-          ...configFields,
+          ...filtered,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'session_id,chat_id' },
@@ -104,7 +122,13 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[GROUP-CONFIG] Upsert error:', error);
+      return NextResponse.json(
+        { error: parseSupabaseError(error), details: error.details || null },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ success: true, data: config });
   } catch (error) {

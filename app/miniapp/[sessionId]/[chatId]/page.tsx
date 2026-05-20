@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 
 interface UserInfo {
@@ -41,6 +41,10 @@ export default function MiniAppPage() {
   const [newNoteContent, setNewNoteContent] = useState('');
   const [newFilterKeyword, setNewFilterKeyword] = useState('');
   const [newFilterResponse, setNewFilterResponse] = useState('');
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const configLoadedRef = useRef(false);
 
   const authenticate = useCallback(async () => {
     try {
@@ -77,6 +81,7 @@ export default function MiniAppPage() {
       const data = await res.json();
       if (data.success && data.data) {
         setConfig(data.data);
+        configLoadedRef.current = true;
       }
     } catch {}
   }, [sessionId, chatId]);
@@ -148,8 +153,9 @@ export default function MiniAppPage() {
     }
   }, [user, fetchConfig, fetchXP, fetchNotes, fetchFilters, fetchModlog]);
 
-  const saveConfig = async () => {
-    setSaving(true); setError(''); setSuccess('');
+  const saveConfig = async (isAutoSave = false) => {
+    if (isAutoSave) setAutoSaveStatus('saving');
+    else { setSaving(true); setError(''); setSuccess(''); }
     try {
       const res = await fetch('/api/telegram/group-config', {
         method: 'POST',
@@ -157,14 +163,31 @@ export default function MiniAppPage() {
         body: JSON.stringify({ sessionId, chatId, ...config }),
       });
       const data = await res.json();
-      if (data.success) setSuccess('Saved!');
-      else setError('Failed to save');
-    } catch { setError('Error saving'); }
-    setSaving(false);
-    setTimeout(() => setSuccess(''), 3000);
+      if (data.success) {
+        if (isAutoSave) { setAutoSaveStatus('saved'); setTimeout(() => setAutoSaveStatus('idle'), 2000); }
+        else setSuccess('Saved!');
+      } else {
+        if (isAutoSave) setAutoSaveStatus('error');
+        else setError(data.error || 'Failed to save');
+      }
+    } catch {
+      if (isAutoSave) setAutoSaveStatus('error');
+      else setError('Error saving');
+    }
+    if (!isAutoSave) { setSaving(false); setTimeout(() => setSuccess(''), 3000); }
   };
 
   const updateConfig = (key: string, value: unknown) => setConfig(prev => ({ ...prev, [key]: value }));
+
+  // Auto-save with 2-second debounce
+  useEffect(() => {
+    if (!configLoadedRef.current || !autoSaveEnabled || !user || user.role !== 'admin') return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    setAutoSaveStatus('pending');
+    autoSaveTimerRef.current = setTimeout(() => { saveConfig(true); }, 2000);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config]);
 
   const Toggle = ({ configKey, label, desc }: { configKey: string; label: string; desc?: string }) => (
     <div className="flex items-center justify-between py-3 border-b last:border-b-0 border-gray-700">
@@ -343,8 +366,22 @@ export default function MiniAppPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="p-4 bg-gray-800 border-b border-gray-700">
-        <h1 className="text-lg font-bold">BotWave <span className="text-blue-400">Admin</span></h1>
-        <p className="text-xs text-gray-400">Group Admin Panel</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">BotWave <span className="text-blue-400">Admin</span></h1>
+            <p className="text-xs text-gray-400">Group Admin Panel</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {autoSaveStatus === 'pending' && <span className="text-xs text-yellow-400">Unsaved</span>}
+            {autoSaveStatus === 'saving' && <span className="text-xs text-blue-400">Saving...</span>}
+            {autoSaveStatus === 'saved' && <span className="text-xs text-green-400">Saved</span>}
+            {autoSaveStatus === 'error' && <span className="text-xs text-red-400">Save failed</span>}
+            <button onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+              className={`text-xs px-2 py-1 rounded-lg ${autoSaveEnabled ? 'bg-blue-600/20 text-blue-400' : 'bg-gray-700 text-gray-400'}`}>
+              {autoSaveEnabled ? 'Auto' : 'Manual'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {error && <div className="mx-4 mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">{error}</div>}
