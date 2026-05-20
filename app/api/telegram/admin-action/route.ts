@@ -40,14 +40,14 @@ export async function POST(request: NextRequest) {
     // Verify session
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('id, telegram_bot_token')
+      .select('id, bot_token')
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single();
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-    const botToken = session.telegram_bot_token;
+    const botToken = session.bot_token;
     if (!botToken) {
       return NextResponse.json({ error: 'Bot token not configured' }, { status: 400 });
     }
