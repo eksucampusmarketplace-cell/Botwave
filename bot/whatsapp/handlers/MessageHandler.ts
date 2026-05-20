@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -214,6 +214,15 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     if (msgId && isDuplicateMessage(msgId)) {
       return;
+    }
+
+    // Bot-detection filter: skip messages from other active BotWave sessions
+    // to prevent infinite auto-reply/AI loops between two bots.
+    if (!fromMe) {
+      try {
+        const isSenderBot = await isActiveBotPhone(senderJid);
+        if (isSenderBot) return;
+      } catch { /* non-critical – allow message through on error */ }
     }
 
     // Owner detection: compare phone JID and also LID (WhatsApp's new format)

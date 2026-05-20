@@ -153,6 +153,38 @@ const fadeUp = {
   }),
 };
 
+function NotifyMeButton({ highlight, planName }: { highlight: boolean; planName: string }) {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    // Store in localStorage as simple waitlist
+    const waitlist = JSON.parse(localStorage.getItem('botwave_waitlist') || '[]');
+    waitlist.push({ email, plan: planName, date: new Date().toISOString() });
+    localStorage.setItem('botwave_waitlist', JSON.stringify(waitlist));
+    setSubmitted(true);
+  };
+  if (submitted) {
+    return <div className={`w-full py-3 rounded-xl font-semibold text-base text-center ${highlight ? 'bg-white/20 text-white' : 'bg-green-50 text-green-700 border border-green-200'}`}>We&apos;ll notify you!</div>;
+  }
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="email"
+        required
+        placeholder="your@email.com"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        className={`flex-1 px-3 py-3 rounded-xl text-sm ${highlight ? 'bg-white/20 text-white placeholder-blue-200 border border-white/30' : 'bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)]'}`}
+      />
+      <button type="submit" className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+        Notify Me
+      </button>
+    </form>
+  );
+}
+
 const faqs = [
   { q: 'Is BotWave actually free?', a: 'Yes. Free plan includes 300 messages/month, 10 AI queries/day, and 1 WhatsApp session. BotWave runs from your own device via QR code, keeping costs low. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
   { q: 'Will WhatsApp ban my number?', a: 'No bot can guarantee zero ban risk on WhatsApp. But BotWave significantly reduces the risk with session warmup over 7 days, human-like typing delays, 50-100 message variations, rate limiting, read-but-skip in groups, and media fingerprint jittering. Your session runs from your own device IP, not a shared server.' },
@@ -279,9 +311,9 @@ export default function HomePage() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false },
-              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Coming Soon', highlight: true },
-              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Coming Soon', highlight: false },
+              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
+              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Notify Me', highlight: true, comingSoon: true },
+              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Notify Me', highlight: false, comingSoon: true },
             ].map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
@@ -298,7 +330,13 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <button className={`w-full py-3 rounded-xl font-semibold text-base transition-all ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : plan.name === 'Free' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-[var(--bg-alt)] text-[var(--text-secondary)] border border-[var(--border)] cursor-not-allowed'}`} disabled={plan.cta === 'Coming Soon'}>{plan.cta}</button>
+                {plan.comingSoon ? (
+                  <NotifyMeButton highlight={plan.highlight} planName={plan.name} />
+                ) : (
+                  <Link href="/signup" className={`block w-full py-3 rounded-xl font-semibold text-base text-center transition-all bg-blue-600 text-white hover:bg-blue-700`}>
+                    {plan.cta}
+                  </Link>
+                )}
               </motion.div>
             ))}
           </div>

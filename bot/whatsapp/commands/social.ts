@@ -1291,9 +1291,30 @@ async function handleSpy(context: MessageContext, args: string[], sock: any): Pr
     }
   }
 
-  // Most active members
-  const topMembers = Array.from(senderStats.entries())
-    .sort((a, b) => b[1].count - a[1].count)
+  // Most active members (sorted)
+  const sortedMembers = Array.from(senderStats.entries())
+    .sort((a, b) => b[1].count - a[1].count);
+
+  // CSV export: !spy csv
+  if (args[0]?.toLowerCase() === 'csv' || args[0]?.toLowerCase() === 'export') {
+    const csvHeader = 'Member,Messages,Avg Length,Emojis';
+    const csvRows = sortedMembers.map(([name, s]) =>
+      `"${name.replace(/"/g, '""')}",${s.count},${Math.round(s.totalLen / s.count)},${s.emojis}`
+    );
+    const hourHeader = '\n\nHour,Messages';
+    const hourRows = hourCounts.map((c, h) => `${String(h).padStart(2, '0')}:00,${c}`);
+    const csvContent = [csvHeader, ...csvRows, hourHeader, ...hourRows].join('\n');
+
+    await sock.sendMessage(context.chatJid, {
+      document: Buffer.from(csvContent, 'utf-8'),
+      mimetype: 'text/csv',
+      fileName: `group-analytics-${Date.now()}.csv`,
+      caption: `Group analytics export — ${messages.length} messages analyzed`,
+    }, { quoted: context.rawMessage });
+    return;
+  }
+
+  const topMembers = sortedMembers
     .slice(0, 5)
     .map(([name, s]) => `  ${name}: ${s.count} msgs (avg ${Math.round(s.totalLen / s.count)} chars)`)
     .join('\n');
@@ -1334,7 +1355,8 @@ async function handleSpy(context: MessageContext, args: string[], sock: any): Pr
     `*Top members:*\n${topMembers}\n\n` +
     `*Activity by hour:*\n${hourChart}\n\n` +
     `*Top emojis:* ${topEmojis || 'None'}\n` +
-    `*Most used words:* ${topWords || 'N/A'}`,
+    `*Most used words:* ${topWords || 'N/A'}\n\n` +
+    `_Export as CSV: !spy csv_`,
     sock, context.rawMessage.key, context.queue,
   );
 }

@@ -2444,4 +2444,59 @@ export async function checkSupabaseHealth(): Promise<{ healthy: boolean; latency
   }
 }
 
+// ─── Bot Detection ──────────────────────────────────────────────────────────
+// Check if a phone number belongs to an active BotWave session.
+// Used to prevent auto-reply/AI loops between two bots.
+
+const activeBotPhoneCache = new Map<string, CacheEntry<boolean>>();
+trackMap('activeBotPhoneCache', activeBotPhoneCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
+
+export async function isActiveBotPhone(phoneNumber: string): Promise<boolean> {
+  const phone = phoneNumber.replace(/@.*/, '').replace(/[^0-9]/g, '');
+  if (!phone) return false;
+
+  const cached = getCached(activeBotPhoneCache, phone);
+  if (cached !== undefined) return cached;
+
+  return resilientRead({
+    cacheKey: `botphone:${phone}`,
+    fallbackValue: false,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bot_sessions')
+        .select('id')
+        .eq('phone_number', phone)
+        .in('state', ['active', 'connecting', 'pairing_sent'])
+        .limit(1);
+
+      const isBot = !!(data && data.length > 0);
+      setCache(activeBotPhoneCache, phone, isBot, CACHE_TTL_LONG_MS);
+      return isBot;
+    },
+  });
+}
+
+// ─── Referral Leaderboard ───────────────────────────────────────────────────
+
+export async function getReferralLeaderboard(limit = 10): Promise<Array<{ code: string; totalReferred: number; totalEarned: number }>> {
+  return resilientRead({
+    cacheKey: `referral_leaderboard:${limit}`,
+    fallbackValue: [] as Array<{ code: string; totalReferred: number; totalEarned: number }>,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('referrals')
+        .select('code, total_referred, total_earned')
+        .gt('total_referred', 0)
+        .order('total_referred', { ascending: false })
+        .limit(limit);
+
+      return (data || []).map(r => ({
+        code: r.code,
+        totalReferred: r.total_referred || 0,
+        totalEarned: r.total_earned || 0,
+      }));
+    },
+  });
+}
+
 export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };
