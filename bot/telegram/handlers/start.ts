@@ -257,11 +257,13 @@ async function handleDeepLink(
   // /start ref_<code> - track referral
   if (payload.startsWith('ref_')) {
     const referrerCode = payload.slice(4);
-    await deepLinkSupabase.from('referrals').insert({
-      referrer_code: referrerCode,
-      referred_user_id: ctx.from?.id?.toString(),
-      platform: 'telegram',
-    }).catch(() => {});
+    try {
+      await deepLinkSupabase.from('referrals').insert({
+        referrer_code: referrerCode,
+        referred_user_id: ctx.from?.id?.toString(),
+        platform: 'telegram',
+      });
+    } catch {}
     return false; // Continue to normal start message
   }
 
