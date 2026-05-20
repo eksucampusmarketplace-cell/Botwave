@@ -1231,7 +1231,7 @@ export class EvolutionBot {
                   const proxyHost = currentProxy.split(':')[0];
                   recordProxyFailure(this.sessionId, proxyHost, `pairing stuck in connecting for ${PAIRING_TIMEOUT_MS / 1000}s`);
                 }
-                await clearSessionProxy(this.sessionId);
+                await clearSessionProxy(this.sessionId, this.phoneNumber);
 
                 await deleteInstanceAndVerify(this.sessionId);
                 if (this.stopped) { isRecreating = false; return; }
@@ -1417,7 +1417,7 @@ export class EvolutionBot {
                 const proxyHost2 = currentProxy2.split(':')[0];
                 recordProxyFailure(this.sessionId, proxyHost2, `pairing closed/refused after ${Math.round((Date.now() - pairingWaitStart) / 1000)}s`);
               }
-              await clearSessionProxy(this.sessionId);
+              await clearSessionProxy(this.sessionId, this.phoneNumber);
 
               await deleteInstanceAndVerify(this.sessionId);
               if (this.stopped) { isRecreating = false; return; }
