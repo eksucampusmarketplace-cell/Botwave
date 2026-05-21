@@ -97,6 +97,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(20);
 
+    if (!referral) {
+      return NextResponse.json({ success: true, data: { code: null, totalReferred: 0, totalEarned: 0, isFrozen: false, frozenReason: null, referrals: [] } });
+    }
+
     console.log(`[REFERRAL] User ${user.id} fetched data: code=${referral.code} referred=${referral.total_referred} frozen=${referral.is_frozen}`);
 
     const result = {

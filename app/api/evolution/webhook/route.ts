@@ -162,10 +162,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const body = await request.json() as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = await request.json() as Record<string, any>;
     const instance = body.instance;
-    const data = body.data as Record<string, unknown> | undefined;
-    const event = body.event as string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: Record<string, any> | undefined = body.data;
+    const event: string = body.event ?? '';
 
     const sessionId = resolveSessionId(instance);
 

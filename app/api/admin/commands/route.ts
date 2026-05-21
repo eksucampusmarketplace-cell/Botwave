@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     const { data: storedCommands } = await supabase
       .from('bot_command_config')
-      .select('command_key, display_name, description, category, enabled, custom_response, cooldown_sec, premium_only')
+      .select('id, command_key, display_name, description, category, enabled, custom_response, cooldown_sec, premium_only')
       .order('command_key');
 
     const commands = DEFAULT_COMMANDS.map(cmd => {
