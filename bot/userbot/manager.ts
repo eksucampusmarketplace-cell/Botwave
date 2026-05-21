@@ -251,10 +251,17 @@ export class UserbotManager {
               const errMsg = pingErr instanceof Error ? pingErr.message : String(pingErr);
               console.warn(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} ping failed: ${errMsg} - forcing reconnect`);
 
-              // Check for terminal session errors
-              if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+              // Check for terminal session errors (including AUTH_KEY_DUPLICATED
+              // which means another client is using the same session concurrently)
+              if (
+                errMsg.includes('AUTH_KEY_UNREGISTERED') ||
+                errMsg.includes('AUTH_KEY_DUPLICATED') ||
+                errMsg.includes('SESSION_REVOKED') ||
+                errMsg.includes('USER_DEACTIVATED')
+              ) {
                 console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} terminal error: ${errMsg} - marking needs_reauth`);
                 await updateSessionState(sessionId, 'needs_reauth');
+                this.userbots.delete(sessionId);
                 continue;
               }
 
@@ -321,8 +328,13 @@ export class UserbotManager {
       const errMsg = reconnectErr instanceof Error ? reconnectErr.message : String(reconnectErr);
       console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect failed: ${errMsg}`);
 
-      // Check for terminal auth errors
-      if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+      // Check for terminal auth errors (including AUTH_KEY_DUPLICATED)
+      if (
+        errMsg.includes('AUTH_KEY_UNREGISTERED') ||
+        errMsg.includes('AUTH_KEY_DUPLICATED') ||
+        errMsg.includes('SESSION_REVOKED') ||
+        errMsg.includes('USER_DEACTIVATED')
+      ) {
         await updateSessionState(sessionId, 'needs_reauth');
         this.userbots.delete(sessionId);
         return;

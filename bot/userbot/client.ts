@@ -94,8 +94,15 @@ export class UserbotClient {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error(`[USERBOT-CLIENT] Connection failed for ${this.sessionId.slice(0, 8)}: ${errMsg}`);
 
-      // Detect terminal auth errors that require re-pairing
-      if (errMsg.includes('AUTH_KEY_UNREGISTERED') || errMsg.includes('SESSION_REVOKED') || errMsg.includes('USER_DEACTIVATED')) {
+      // Detect terminal auth errors that require re-pairing.
+      // AUTH_KEY_DUPLICATED means another client is using the same session
+      // concurrently — continuing to retry just causes a reconnect loop.
+      if (
+        errMsg.includes('AUTH_KEY_UNREGISTERED') ||
+        errMsg.includes('AUTH_KEY_DUPLICATED') ||
+        errMsg.includes('SESSION_REVOKED') ||
+        errMsg.includes('USER_DEACTIVATED')
+      ) {
         console.error(`[USERBOT-CLIENT] ${this.sessionId.slice(0, 8)} session is dead (${errMsg}) - requires re-auth`);
         this.authError = errMsg;
       }

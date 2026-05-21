@@ -7,7 +7,7 @@ import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } 
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
-import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence, fetchAllEvolutionInstances } from './whatsapp/evolution/client';
+import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence, fetchAllEvolutionInstances, verifyWebhookReachability } from './whatsapp/evolution/client';
 import { disconnectRedis } from './infrastructure/redis';
 import { isCircuitOpen } from './infrastructure/circuitBreaker';
 import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './infrastructure/gracefulShutdown';
@@ -87,6 +87,10 @@ async function start() {
     } else {
       console.warn('[BOT] Evolution API did not become ready - sessions will retry during sync loop');
     }
+
+    // Verify webhook reachability so DNS/network issues are surfaced immediately
+    // instead of silently dropping all real-time events from Evolution API.
+    await verifyWebhookReachability();
   }
 
   // State reconciliation: compare DB-active sessions against what Evolution

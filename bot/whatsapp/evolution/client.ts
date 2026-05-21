@@ -628,6 +628,45 @@ function getWebhookUrl(): string {
 }
 
 /**
+ * Verify that the webhook URL is reachable from this service.
+ * Logs a loud warning at startup if the endpoint cannot be reached, since
+ * unreachable webhooks silently break all real-time event delivery.
+ */
+export async function verifyWebhookReachability(): Promise<boolean> {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) {
+    console.warn('[WEBHOOK-CHECK] No webhook URL configured (WEBHOOK_BASE_URL / NEXT_PUBLIC_APP_URL / SELF_URL) — Evolution API cannot deliver events');
+    return false;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'health_check', data: {} }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    console.log(`[WEBHOOK-CHECK] Webhook endpoint reachable: ${webhookUrl} (status=${res.status})`);
+    return true;
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const isDns = errMsg.includes('EAI_AGAIN') || errMsg.includes('ENOTFOUND') || errMsg.includes('getaddrinfo');
+    const isConn = errMsg.includes('ECONNREFUSED') || errMsg.includes('ETIMEDOUT');
+    if (isDns) {
+      console.error(`[WEBHOOK-CHECK] ⚠ DNS FAILURE: Cannot resolve webhook host in '${webhookUrl}'. Evolution API will NOT be able to deliver events. Check that botwave-web is on the same Docker network as evolution-api, or set WEBHOOK_BASE_URL to a reachable address.`);
+    } else if (isConn) {
+      console.error(`[WEBHOOK-CHECK] ⚠ CONNECTION REFUSED/TIMEOUT: Webhook endpoint '${webhookUrl}' is not accepting connections. Ensure the web service is running and listening on the configured port.`);
+    } else {
+      console.error(`[WEBHOOK-CHECK] ⚠ Webhook endpoint unreachable: ${webhookUrl} — ${errMsg}`);
+    }
+    return false;
+  }
+}
+
+/**
  * Strip a data-URI prefix ("data:…;base64,") and return raw base64.
  * Evolution API validates with isBase64() which rejects data URIs.
  */
