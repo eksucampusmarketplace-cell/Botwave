@@ -4,29 +4,29 @@
  */
 
 const cooldowns = new Map<string, number>();
-const DEFAULT_COOLDOWN_MS = 3_000; // 3 seconds default
+const DEFAULT_COOLDOWN_MS = 1_000; // 1 second default
 
 const COMMAND_COOLDOWNS: Record<string, number> = {
-  joke: 5_000,
-  quote: 5_000,
-  dice: 3_000,
-  coin: 3_000,
-  '8ball': 5_000,
-  choose: 3_000,
-  roll: 3_000,
-  sticker: 10_000,
-  ai: 15_000,
-  translate: 10_000,
-  weather: 10_000,
-  define: 5_000,
-  horoscope: 10_000,
-  imagine: 30_000,
-  download: 15_000,
-  trivia: 10_000,
-  hangman: 10_000,
-  wordchain: 10_000,
-  feedback: 30_000,
-  exportconfig: 60_000,
+  joke: 2_000,
+  quote: 2_000,
+  dice: 1_000,
+  coin: 1_000,
+  '8ball': 2_000,
+  choose: 1_000,
+  roll: 1_000,
+  sticker: 3_000,
+  ai: 5_000,
+  translate: 3_000,
+  weather: 3_000,
+  define: 2_000,
+  horoscope: 3_000,
+  imagine: 10_000,
+  download: 5_000,
+  trivia: 3_000,
+  hangman: 3_000,
+  wordchain: 3_000,
+  feedback: 10_000,
+  exportconfig: 15_000,
 };
 
 /**

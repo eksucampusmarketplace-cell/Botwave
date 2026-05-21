@@ -59,7 +59,7 @@ export default function CreateBotPage() {
             Create a New Bot
           </h1>
           <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Create Telegram bots via Bot Management Mode. Max 3 bots per day.
+            Create Telegram bots via Bot Management Mode. Max 20 bots per day.
           </p>
 
           {error && (
@@ -167,7 +167,7 @@ export default function CreateBotPage() {
               <li>Bot Management Mode must be enabled for @Botwave_telegrambot in BotFather</li>
               <li>Bot to Bot Communication must be enabled in BotFather</li>
               <li>The owner&apos;s Telegram user ID must be valid</li>
-              <li>Maximum 3 bots can be created per user per day</li>
+              <li>Maximum 20 bots can be created per user per day</li>
             </ul>
           </div>
         </motion.div>

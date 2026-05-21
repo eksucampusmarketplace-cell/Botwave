@@ -13,7 +13,7 @@ const createBotSchema = z.object({
   ownerTelegramId: z.string().min(1).regex(/^\d+$/, 'Must be a numeric Telegram user ID'),
 });
 
-const MAX_BOTS_PER_USER_PER_DAY = 3;
+const MAX_BOTS_PER_USER_PER_DAY = 20;
 
 export async function POST(request: NextRequest) {
   try {

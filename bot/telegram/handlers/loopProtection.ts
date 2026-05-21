@@ -23,8 +23,8 @@ interface RateLimitEntry {
 const dedupStore = new Map<string, DedupEntry[]>();
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-const DEDUP_WINDOW_MS = 5_000;
-const RATE_LIMIT_MS = 60_000;
+const DEDUP_WINDOW_MS = 3_000;
+const RATE_LIMIT_MS = 10_000;
 const CLEANUP_INTERVAL_MS = 30_000;
 
 function hashMessage(text: string): string {

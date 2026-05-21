@@ -71,7 +71,7 @@ function normalizeJid(jid: string): string {
 const userMessageTracker: Map<string, number[]> = new Map();
 const sessionMessageTracker: Map<string, number[]> = new Map();
 const spamTracker: Map<string, { count: number; lastTime: number; warned: boolean }> = new Map();
-const SPAM_THRESHOLD = 5;
+const SPAM_THRESHOLD = 20;
 const SPAM_WINDOW = 10000;
 
 function isUserRateLimited(userId: string): boolean {
@@ -79,7 +79,7 @@ function isUserRateLimited(userId: string): boolean {
   const timestamps = userMessageTracker.get(userId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 60) {
+  if (recentTimestamps.length >= 200) {
     return true;
   }
 
@@ -93,7 +93,7 @@ function isSessionRateLimited(sessionId: string): boolean {
   const timestamps = sessionMessageTracker.get(sessionId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 30) {
+  if (recentTimestamps.length >= 120) {
     return true;
   }
 
