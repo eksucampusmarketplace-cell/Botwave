@@ -70,6 +70,8 @@ import { registerTranslateHandlers } from './handlers/translate';
 import { registerSupportGuardHandlers } from './handlers/supportguard';
 import { registerIgnoreChatHandlers } from './handlers/ignorechat';
 import { registerGroupWelcomeHandlers } from './handlers/groupwelcome';
+import { registerLoopProtection } from './handlers/loopProtection';
+import { registerChannelHandlers } from './handlers/channels';
 import { isIgnoredChat } from './utils/db';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
@@ -245,6 +247,12 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerSupportGuardHandlers(bot, sessionId);
   registerIgnoreChatHandlers(bot, sessionId);
   registerGroupWelcomeHandlers(bot, sessionId);
+
+  // Loop protection for bot-to-bot communication
+  registerLoopProtection(bot, sessionId);
+
+  // Channel management (announce, setchannel, channels)
+  registerChannelHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {

@@ -42,7 +42,13 @@ export type FeatureId =
   | 'mandatory_membership'
   | 'forced_add'
   | 'prohibitions'
-  | 'stats';
+  | 'stats'
+  | 'custom_commands'
+  | 'ecommerce'
+  | 'chatbot_flows'
+  | 'channel_management'
+  | 'bot_to_bot'
+  | 'bot_creation';
 
 export const ALL_FEATURES: { id: FeatureId; label: string; description: string }[] = [
   { id: 'antiflood', label: 'Antiflood', description: 'Limit message flooding' },
@@ -75,6 +81,12 @@ export const ALL_FEATURES: { id: FeatureId; label: string; description: string }
   { id: 'forced_add', label: 'Forced Add', description: 'Require members to invite others' },
   { id: 'prohibitions', label: 'Prohibitions', description: 'Content type restrictions' },
   { id: 'stats', label: 'Statistics', description: 'Group activity stats' },
+  { id: 'custom_commands', label: 'Custom Commands', description: 'User-defined bot commands (WhatsApp)' },
+  { id: 'ecommerce', label: 'E-Commerce', description: 'Shop and sell products via WhatsApp' },
+  { id: 'chatbot_flows', label: 'Chatbot Flows', description: 'Multi-step conversational flows (WhatsApp)' },
+  { id: 'channel_management', label: 'Channel Management', description: 'Manage Telegram channels' },
+  { id: 'bot_to_bot', label: 'Bot-to-Bot', description: 'Cross-bot communication' },
+  { id: 'bot_creation', label: 'Bot Creation', description: 'Create new bots via dashboard' },
 ];
 
 /** In-memory: bot-owner level toggles. sessionId -> Set<FeatureId> of ENABLED features */

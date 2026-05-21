@@ -87,6 +87,20 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
           `You have ${Math.round(muteTimeMs / 1000)} seconds.`,
           { parse_mode: 'Markdown' },
         );
+      } else if (captchaMode === 'turnstile') {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
+        const siteKey = process.env.TURNSTILE_SITE_KEY || '';
+        const verifyUrl = `${appUrl}/miniapp/captcha/index.html?sessionId=${sessionId}&chatId=${ctx.chat.id}&userId=${member.id}&siteKey=${siteKey}`;
+
+        const keyboard = new InlineKeyboard()
+          .url('🔐 Verify via Turnstile', verifyUrl);
+
+        msg = await ctx.reply(
+          `👋 Welcome ${member.first_name}!\n` +
+          `Please complete the Cloudflare Turnstile challenge to verify.\n` +
+          `You have ${Math.round(muteTimeMs / 1000)} seconds.`,
+          { reply_markup: keyboard },
+        );
       } else {
         const keyboard = new InlineKeyboard()
           .text(customBtnText || `✅ I'm human - click to verify`, `captcha:${member.id}:${ctx.chat.id}`);
@@ -99,16 +113,17 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
         );
       }
 
-      // Auto-kick after 60 seconds if not verified
+      // Auto-kick after configured time if not verified
       const chatId = ctx.chat.id;
       const msgId = msg.message_id;
       const memberId = member.id;
+      const kickTimeRaw = (config as Record<string, unknown>).captcha_kick_time;
+      const kickTimeMs = (typeof kickTimeRaw === 'number' && kickTimeRaw > 0 ? kickTimeRaw : 60) * 1000;
 
       setTimeout(async () => {
         try {
           const verified = await isCaptchaVerified(sessionId, chatId.toString(), memberId.toString());
           if (!verified) {
-            // Only kick if captcha_kick is enabled in config
             const latestConfig = await getGroupConfig(sessionId, chatId.toString());
             if ((latestConfig as Record<string, unknown>).captcha_kick !== false) {
               await bot.api.banChatMember(chatId, memberId);
@@ -119,7 +134,7 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
         } catch (err) {
           console.error(`[TG-CAPTCHA] Auto-kick failed for ${memberId}:`, err);
         }
-      }, 60_000);
+      }, kickTimeMs);
     }
   });
 

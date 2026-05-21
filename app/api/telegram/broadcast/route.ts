@@ -1,36 +1,41 @@
-/**
- * Telegram Broadcast API
- *
- * POST /api/telegram/broadcast
- * Sends a message to all active groups for a bot session.
- * Body: { sessionId, message, mediaUrl? }
- */
-
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const broadcastSchema = z.object({
+  sessionId: z.string().uuid(),
+  text: z.string().min(1).max(4096),
+  pin: z.boolean().optional().default(false),
+  silent: z.boolean().optional().default(false),
+});
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await request.json();
-    const { sessionId, message, mediaUrl } = body;
+    const validation = broadcastSchema.safeParse(body);
 
-    if (!sessionId || !message) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'sessionId and message are required' },
-        { status: 400 },
+        { error: 'Invalid input', details: validation.error.flatten() },
+        { status: 400 }
       );
     }
 
-    // Verify session belongs to user (owner only)
+    const { sessionId, text, pin, silent } = validation.data;
+
+    // Verify session ownership and get bot token
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('id, telegram_bot_token')
+      .select('id, bot_token')
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single();
@@ -39,92 +44,83 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    if (!session.telegram_bot_token) {
+    const botToken = session.bot_token;
+    if (!botToken) {
       return NextResponse.json({ error: 'Bot token not configured' }, { status: 400 });
     }
 
-    // Get all active groups
-    const { data: groups } = await supabase
-      .from('telegram_groups')
-      .select('chat_id, chat_title')
-      .eq('session_id', sessionId)
-      .eq('is_active', true);
+    // Get all groups where the bot is active
+    const { data: configs } = await supabase
+      .from('telegram_group_configs')
+      .select('chat_id')
+      .eq('session_id', sessionId);
 
-    if (!groups || groups.length === 0) {
-      return NextResponse.json({ error: 'No active groups found' }, { status: 400 });
+    if (!configs || configs.length === 0) {
+      return NextResponse.json({ error: 'No active groups found' }, { status: 404 });
     }
 
-    const results: { chatId: string; title: string; success: boolean; error?: string }[] = [];
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
 
-    for (const group of groups) {
+    for (const config of configs) {
       try {
-        const apiBase = `https://api.telegram.org/bot${session.telegram_bot_token}`;
-
-        if (mediaUrl) {
-          // Send photo with caption
-          const res = await fetch(`${apiBase}/sendPhoto`, {
+        const msgRes = await fetch(
+          `https://api.telegram.org/bot${botToken}/sendMessage`,
+          {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chat_id: group.chat_id,
-              photo: mediaUrl,
-              caption: message,
+              chat_id: config.chat_id,
+              text,
               parse_mode: 'HTML',
+              disable_notification: silent,
             }),
-          });
-          const data = await res.json();
-          results.push({
-            chatId: group.chat_id,
-            title: group.chat_title || group.chat_id,
-            success: data.ok,
-            error: data.ok ? undefined : data.description,
-          });
+          }
+        );
+
+        const msgData = await msgRes.json();
+
+        if (msgData.ok) {
+          sent++;
+          if (pin) {
+            await fetch(
+              `https://api.telegram.org/bot${botToken}/pinChatMessage`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: config.chat_id,
+                  message_id: msgData.result.message_id,
+                  disable_notification: silent,
+                }),
+              }
+            ).catch(() => {});
+          }
         } else {
-          // Send text message
-          const res = await fetch(`${apiBase}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: group.chat_id,
-              text: message,
-              parse_mode: 'HTML',
-            }),
-          });
-          const data = await res.json();
-          results.push({
-            chatId: group.chat_id,
-            title: group.chat_title || group.chat_id,
-            success: data.ok,
-            error: data.ok ? undefined : data.description,
-          });
+          failed++;
+          errors.push(`${config.chat_id}: ${msgData.description || 'Unknown'}`);
         }
-
-        // Small delay between messages to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (err) {
-        results.push({
-          chatId: group.chat_id,
-          title: group.chat_title || group.chat_id,
-          success: false,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        });
+        failed++;
+        errors.push(`${config.chat_id}: Network error`);
       }
-    }
 
-    const sent = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
+      // Small delay between sends to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        total: groups.length,
         sent,
         failed,
-        results,
+        total: configs.length,
+        errors: errors.slice(0, 5),
       },
     });
   } catch (error) {
-    console.error('[TG-BROADCAST] Error:', error);
+    console.error('[BROADCAST] Error:', error);
     return NextResponse.json({ error: 'Failed to broadcast' }, { status: 500 });
   }
 }
