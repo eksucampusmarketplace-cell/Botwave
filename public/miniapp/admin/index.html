@@ -575,6 +575,7 @@ var POLL_SECONDS = 30;
 
 var urlParams = new URLSearchParams(window.location.search);
 sessionId = urlParams.get('sessionId') || '';
+currentChatId = urlParams.get('chatId') || '';
 
 try {
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
@@ -627,9 +628,16 @@ function loadGroups() {
         sel.innerHTML = groups.map(function(g) {
           return '<option value="' + g.chat_id + '">' + (g.chat_title || 'Group ' + g.chat_id) + '</option>';
         }).join('');
-        if (!currentChatId && groups.length) currentChatId = groups[0].chat_id;
-        sel.value = currentChatId;
+        // Use chatId from URL if valid, otherwise fall back to first group
+        if (currentChatId && groups.some(function(g) { return g.chat_id === currentChatId; })) {
+          sel.value = currentChatId;
+        } else if (!currentChatId && groups.length) {
+          currentChatId = groups[0].chat_id;
+          sel.value = currentChatId;
+        }
         document.getElementById('group-selector').style.display = groups.length > 0 ? 'block' : 'none';
+        // Re-detect role with the selected chatId
+        detectRole().then(function(role) { applyRole(role); });
       } else {
         document.getElementById('group-selector').style.display = 'none';
       }
