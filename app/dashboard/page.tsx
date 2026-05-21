@@ -588,6 +588,54 @@ export default function DashboardPage() {
               </div>
             </motion.section>
 
+            {/* Support & Community */}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.17 }}
+              className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-6 rounded-2xl shadow-sm"
+            >
+              <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Support &amp; Community</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <a
+                  href="https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 border border-green-400/30 hover:border-green-400 rounded-xl transition-all hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl">{'\u{1F4AC}'}</span>
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--text-primary)]">WhatsApp Support</div>
+                    <div className="text-xs text-[var(--text-muted)]">Get help from the community</div>
+                  </div>
+                </a>
+                <a
+                  href="https://t.me/botwavegrp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 border border-blue-400/30 hover:border-blue-400 rounded-xl transition-all hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl">{'\u2708\uFE0F'}</span>
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--text-primary)]">Telegram Support</div>
+                    <div className="text-xs text-[var(--text-muted)]">Chat with other users</div>
+                  </div>
+                </a>
+                <a
+                  href="https://t.me/BotWaveUpdates"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 border border-violet-400/30 hover:border-violet-400 rounded-xl transition-all hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl">{'\u{1F4E2}'}</span>
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--text-primary)]">Updates Channel</div>
+                    <div className="text-xs text-[var(--text-muted)]">Latest releases &amp; news</div>
+                  </div>
+                </a>
+              </div>
+            </motion.section>
+
             <motion.section
               data-tour="features"
               initial={{ opacity: 0, y: 20 }}
