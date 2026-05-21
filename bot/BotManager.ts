@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './scaling/workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
 import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, reconnectInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
 import { redisGetSessionProxy } from './infrastructure/redis';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
@@ -1590,20 +1590,23 @@ export class EvolutionBot {
 
       const silentMs = Date.now() - lastActivity;
       if (silentMs > DEAF_SESSION_THRESHOLD_MS) {
-        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min - checking instance status before restart`);
+        console.warn(`[DEAF-DETECT] Session ${this.sessionId} has received no events for ${Math.round(silentMs / 60_000)}min - checking instance status before reconnect`);
         try {
-          // Check instance status first — only restart if actually disconnected
+          // Check instance status first — only reconnect if actually disconnected
           const instanceState = await getInstanceStatus(this.sessionId);
           if (instanceState === 'open') {
-            console.log(`[DEAF-DETECT] Session ${this.sessionId} instance is still 'open' — skipping restart, resetting activity timer`);
+            console.log(`[DEAF-DETECT] Session ${this.sessionId} instance is still 'open' — skipping reconnect, resetting activity timer`);
             recordMessageActivity(this.sessionId);
             return;
           }
-          console.warn(`[DEAF-DETECT] Session ${this.sessionId} instance state='${instanceState}' — restarting`);
-          await restartInstance(this.sessionId);
+          // Use reconnectInstance which picks the right method based on state:
+          // - restartInstance for 'open'/'connecting' (closes + reopens WebSocket)
+          // - connectInstance for 'close' (reconnects using saved auth)
+          console.warn(`[DEAF-DETECT] Session ${this.sessionId} instance state='${instanceState}' — reconnecting`);
+          await reconnectInstance(this.sessionId, this.phoneNumber);
           recordMessageActivity(this.sessionId);
         } catch (err) {
-          console.error(`[DEAF-DETECT] Failed to check/restart instance ${this.sessionId}:`, err);
+          console.error(`[DEAF-DETECT] Failed to check/reconnect instance ${this.sessionId}:`, err);
         }
       }
     }, DEAF_SESSION_CHECK_INTERVAL_MS);

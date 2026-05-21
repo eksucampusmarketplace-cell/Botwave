@@ -1183,10 +1183,12 @@ export async function getInstanceStatus(instanceName: string): Promise<string> {
 // Restart an existing instance (reconnects without deleting auth state).
 // Uses the Evolution API restart endpoint which closes the current WebSocket
 // and re-establishes the connection using persisted auth credentials.
+// NOTE: This only works when the instance is in 'open' or 'connecting' state.
+// For instances in 'close' state, use connectInstance() instead.
 export async function restartInstance(instanceName: string): Promise<boolean> {
   console.log(`[EVO-CLIENT] restartInstance: ${instanceName}`);
   try {
-    const res = await apiFetch(`${BASE}/instance/restart`, {
+    const res = await apiFetch(`${BASE}/instance/restart/${instanceName}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ instanceName }),
@@ -1198,6 +1200,28 @@ export async function restartInstance(instanceName: string): Promise<boolean> {
     console.warn(`[EVO-CLIENT] restartInstance ${instanceName} failed:`, err);
     return false;
   }
+}
+
+// Reconnect an instance using the best available method based on its current state.
+// - 'open'/'connecting': uses restartInstance (closes + reopens WebSocket)
+// - 'close': uses connectInstance (reconnects using saved auth)
+// - 'unknown'/'gone': returns false (instance needs to be recreated)
+// This is the preferred method for auto-recovery and deaf session detection.
+export async function reconnectInstance(instanceName: string, phoneNumber?: string): Promise<boolean> {
+  const state = await getInstanceStatus(instanceName);
+  console.log(`[EVO-CLIENT] reconnectInstance: ${instanceName} state=${state}`);
+
+  if (state === 'open' || state === 'connecting') {
+    return restartInstance(instanceName);
+  }
+
+  if (state === 'close') {
+    const connectState = await connectInstance(instanceName, phoneNumber);
+    return connectState === 'open' || connectState === 'connecting';
+  }
+
+  console.warn(`[EVO-CLIENT] reconnectInstance: ${instanceName} in state '${state}' - cannot reconnect`);
+  return false;
 }
 
 // Connect to an existing instance without requesting a new pairing code.
@@ -1450,10 +1474,32 @@ export async function sendAudio(instanceName: string, to: string, audioBase64: s
   return res.json();
 }
 
+// ─── LID ↔ JID Cache ─────────────────────────────────────────────────────────
+// WhatsApp now uses LIDs (long-term identifiers) for some contacts. When the
+// bot sends a message using the phone JID but Evolution API stored it with the
+// LID, updateMessage fails with "RemoteJid does not match". This cache stores
+// the mapping so subsequent edits skip the failed first attempt.
+// Key: "instanceName:phoneJid" → Value: LID (e.g. "201503339978753@lid")
+const lidCache = new Map<string, string>();
+const LID_CACHE_MAX_SIZE = 1000;
+
+function cacheLidMapping(instanceName: string, phoneJid: string, lid: string): void {
+  if (lidCache.size >= LID_CACHE_MAX_SIZE) {
+    const firstKey = lidCache.keys().next().value;
+    if (firstKey) lidCache.delete(firstKey);
+  }
+  lidCache.set(`${instanceName}:${phoneJid}`, lid);
+}
+
+function getCachedLid(instanceName: string, phoneJid: string): string | undefined {
+  return lidCache.get(`${instanceName}:${phoneJid}`);
+}
+
 // Edit (update) an existing text message.
 // Throws on non-2xx so callers' catch blocks can fall back to normal send.
 // Handles LID/phone JID mismatch: if the first attempt fails because the
 // stored message uses LID addressing, we look up the stored key and retry.
+// Uses an in-memory LID cache to avoid the DB lookup on subsequent edits.
 export async function updateMessage(
   instanceName: string,
   key: { remoteJid: string; fromMe: boolean; id: string },
@@ -1462,15 +1508,23 @@ export async function updateMessage(
   const isGroup = key.remoteJid.endsWith('@g.us');
   const isLid = key.remoteJid.endsWith('@lid');
   const number = key.remoteJid.replace(/@s\.whatsapp\.net$|@g\.us$|@lid$/g, '');
-  console.log(`[EDIT-DEBUG] updateMessage: remoteJid=${key.remoteJid} fromMe=${key.fromMe} id=${key.id} isGroup=${isGroup} isLid=${isLid} number=${number}`);
+
+  // Check LID cache: if we previously discovered that this phone JID maps
+  // to a LID for this instance, use the LID directly to avoid the 400 error.
+  const cachedLid = !isLid && !isGroup ? getCachedLid(instanceName, key.remoteJid) : undefined;
+  const effectiveKey = cachedLid ? { ...key, remoteJid: cachedLid } : key;
+  const effectiveNumber = cachedLid || number;
+
+  if (cachedLid) {
+    console.log(`[EDIT-DEBUG] updateMessage: using cached LID ${cachedLid} for ${key.remoteJid}`);
+  }
 
   const res = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ number, key, text }),
+    body: JSON.stringify({ number: effectiveNumber, key: effectiveKey, text }),
   });
   if (res.ok) {
-    console.log(`[EDIT-DEBUG] updateMessage SUCCESS on first attempt`);
     return res.json();
   }
 
@@ -1482,11 +1536,8 @@ export async function updateMessage(
   if (body.includes('RemoteJid does not match')) {
     try {
       const stored = await findMessageByKeyId(instanceName, key.id);
-      console.log(`[EDIT-DEBUG] DB lookup: stored key=${JSON.stringify(stored?.key)}`);
-      if (stored?.key?.remoteJid && stored.key.remoteJid !== key.remoteJid) {
+      if (stored?.key?.remoteJid && stored.key.remoteJid !== effectiveKey.remoteJid) {
         const storedJid = stored.key.remoteJid;
-        // Pass the full stored JID (including @lid) as `number` - Evolution API's
-        // createJid() preserves @lid suffix, so it will match the stored remoteJid.
         const fixedKey = { ...key, remoteJid: storedJid };
         console.log(`[EDIT-DEBUG] Retrying with stored JID: ${storedJid} (was ${key.remoteJid})`);
         const res2 = await apiFetch(`${BASE}/chat/updateMessage/${instanceName}`, {
@@ -1495,15 +1546,16 @@ export async function updateMessage(
           body: JSON.stringify({ number: storedJid, key: fixedKey, text }),
         });
         if (res2.ok) {
-          console.log(`[EDIT-DEBUG] updateMessage SUCCESS on retry with stored JID`);
+          // Cache the mapping for future edits to this chat
+          if (!isGroup && storedJid !== key.remoteJid) {
+            cacheLidMapping(instanceName, key.remoteJid, storedJid);
+          }
           return res2.json();
         }
         const body2 = await res2.text();
         throw new Error(`updateMessage retry failed (${res2.status}): ${body2.slice(0, 200)}`);
       } else if (!stored) {
         console.log(`[EDIT-DEBUG] Message not found in DB by key.id=${key.id}`);
-      } else {
-        console.log(`[EDIT-DEBUG] Stored JID matches webhook JID - no alternate to try`);
       }
     } catch (lookupErr) {
       if (lookupErr instanceof Error && lookupErr.message.includes('retry failed')) throw lookupErr;
@@ -1892,6 +1944,35 @@ export async function verifyEvolutionDataPersistence(): Promise<{ persisted: boo
     return { persisted: instances.length > 0, instanceCount: instances.length };
   } catch {
     return { persisted: false, instanceCount: 0 };
+  }
+}
+
+/**
+ * Fetch all instance names currently known to Evolution API.
+ * Used for startup state reconciliation: compare DB-active sessions against
+ * what Evolution API actually has, and mark orphaned DB sessions accordingly.
+ */
+export async function fetchAllEvolutionInstances(): Promise<Set<string>> {
+  if (!BASE) return new Set();
+  try {
+    const res = await apiFetch(`${BASE}/instance/fetchInstances`, {
+      method: 'GET',
+      headers,
+      skipHealthCount: true,
+    });
+    if (!res.ok) return new Set();
+    const data: any = await res.json();
+    const instances = Array.isArray(data) ? data : [];
+    const names = new Set<string>();
+    for (const inst of instances) {
+      const name = inst?.instance?.instanceName || inst?.name || inst?.instanceName;
+      if (name) names.add(name);
+    }
+    console.log(`[EVO-CLIENT] fetchAllEvolutionInstances: ${names.size} instance(s) found`);
+    return names;
+  } catch (err) {
+    console.warn('[EVO-CLIENT] fetchAllEvolutionInstances failed:', err);
+    return new Set();
   }
 }
 
