@@ -7,7 +7,7 @@
 
 import { Bot } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
-import { getConfig, updateConfig } from '../utils/db';
+import { getTelegramConfig, updateTelegramConfig } from '../utils/db';
 
 export function registerChannelHandlers(bot: Bot, sessionId: string): void {
   // Set announcement channel
@@ -34,7 +34,7 @@ export function registerChannelHandlers(bot: Bot, sessionId: string): void {
         return;
       }
 
-      await updateConfig(sessionId, { announce_channel_id: chat.id.toString() });
+      await updateTelegramConfig(sessionId, { announce_channel_id: chat.id.toString() });
       await ctx.reply(`Announcement channel set to: ${chat.title || args}`);
     } catch (err) {
       await ctx.reply('Could not access that channel. Make sure the bot is an admin there.');
@@ -52,7 +52,7 @@ export function registerChannelHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const config = await getConfig(sessionId);
+    const config = await getTelegramConfig(sessionId);
     const channelId = (config as Record<string, unknown>)?.announce_channel_id as string | undefined;
 
     if (!channelId) {
@@ -74,7 +74,7 @@ export function registerChannelHandlers(bot: Bot, sessionId: string): void {
     const isAdmin = await requireAdmin(ctx);
     if (!isAdmin) return;
 
-    const config = await getConfig(sessionId);
+    const config = await getTelegramConfig(sessionId);
     const channelId = (config as Record<string, unknown>)?.announce_channel_id as string | undefined;
 
     let text = '<b>Channel Management</b>\n\n';

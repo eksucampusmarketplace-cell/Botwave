@@ -5,7 +5,7 @@
  */
 
 import { Bot } from 'grammy';
-import translate from '@vitalets/google-translate-api';
+import { translate } from '@vitalets/google-translate-api';
 
 const SUPPORT_GROUP_ID = '-1003986594255';
 
@@ -69,7 +69,7 @@ export function registerTranslateHandlers(bot: Bot, _sessionId: string): void {
 
     try {
       const res = await translate(text, { to: targetLang });
-      const srcLang = res.from.language.iso || 'auto';
+      const srcLang = res.raw?.src || 'auto';
       await ctx.reply(
         `\u{1F30D} <b>${langName(srcLang)}</b> \u2192 <b>${langName(targetLang)}</b>\n\n` +
         `${res.text}`,
@@ -108,7 +108,7 @@ export function registerTranslateHandlers(bot: Bot, _sessionId: string): void {
     // Auto-translate
     try {
       const res = await translate(text, { to: 'en' });
-      const srcLang = res.from.language.iso || 'auto';
+      const srcLang = res.raw?.src || 'auto';
       // Don't re-translate English
       if (srcLang === 'en') { await next(); return; }
 
