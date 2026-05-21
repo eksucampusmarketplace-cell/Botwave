@@ -381,7 +381,7 @@ export class TelegramBotInstance {
       // Language
       'setlang', 'lang', 'detectlang',
       // AI
-      'ask', 'summarize', 'translate',
+      'ask', 'summarize', 'translate', 'tr',
       // Analytics
       'stats', 'groupstats',
       // Channel Force

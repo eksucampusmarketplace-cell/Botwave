@@ -66,6 +66,7 @@ import { registerTopicsHandlers } from './handlers/topics';
 import { registerFeedbackHandlers } from './handlers/feedback';
 import { registerExportConfigHandlers } from './handlers/exportconfig';
 import { registerFeatureRequestHandlers } from './handlers/featureRequest';
+import { registerTranslateHandlers } from './handlers/translate';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -213,6 +214,7 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerFeedbackHandlers(bot, sessionId);
   registerExportConfigHandlers(bot, sessionId);
   registerFeatureRequestHandlers(bot, sessionId);
+  registerTranslateHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {

@@ -33,8 +33,7 @@ try {
   HttpsProxyAgent = null;
 }
 import P from 'pino';
-import { readFile } from 'fs/promises';
-import path from 'path';
+
 import { cacheJSON, getCachedJSON } from './infrastructure/redisSessionCache';
 
 const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
@@ -45,19 +44,7 @@ const USE_EVOLUTION = !!process.env.EVOLUTION_API_URL;
 // Unset or empty = handle all platforms (legacy single-container mode).
 export const BOT_PLATFORM = process.env.BOT_PLATFORM || '';
 
-// ─── Session Welcome Video (sent once on first pairing) ─────────────────────
-
-let sessionWelcomeVideoBuffer: Buffer | null = null;
-
-async function getSessionWelcomeVideo(): Promise<Buffer | null> {
-  if (sessionWelcomeVideoBuffer) return sessionWelcomeVideoBuffer;
-  try {
-    sessionWelcomeVideoBuffer = await readFile(path.resolve(process.cwd(), 'bot', 'assets', 'botwave-demo.mp4'));
-    return sessionWelcomeVideoBuffer;
-  } catch {
-    return null;
-  }
-}
+// ─── Session Welcome (sent once on first pairing) ───────────────────────────
 
 async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any): Promise<void> {
   const redisKey = `session_welcome:${sessionId}`;
@@ -66,33 +53,51 @@ async function sendSessionWelcome(sessionId: string, ownerJid: string, sock: any
     if (alreadySent) return;
   } catch {}
 
+  // Also check DB flag so welcome survives Redis eviction
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const { data } = await sb.from('bot_sessions').select('welcome_sent_whatsapp').eq('id', sessionId).single();
+    if (data?.welcome_sent_whatsapp) {
+      // Backfill Redis so we skip the DB check next time
+      try { await cacheJSON(redisKey, true, 365 * 24 * 60 * 60); } catch {}
+      return;
+    }
+  } catch {}
+
   try {
     await cacheJSON(redisKey, true, 365 * 24 * 60 * 60); // 1 year TTL
   } catch {}
 
   try {
-    const video = await getSessionWelcomeVideo();
     const welcomeText =
-      `You're all set! \u{2728} BotWave is connected and ready.\n\n` +
-      `Get started:\n` +
-      `\u{2022} Try *!help* to see everything your bot can do\n` +
-      `\u{2022} Save the dashboard for easy access: https://botwave.online\n\n` +
-      `\u{26A0}\u{FE0F} *Keep in mind:*\n` +
-      `1. Don't overuse or spam automated messages \u2014 if users report your number, WhatsApp could ban it. We take no responsibility for account loss, so use your bot wisely!\n` +
-      `2. *Your bot session may disconnect* sometimes. When it does, just go to https://botwave.online and click reconnect. You're always in control.\n\n` +
-      `\u{1F4E2} *Join our WhatsApp channel for updates & tips:*\nhttps://whatsapp.com/channel/0029Vb89xfPCMY0IvFWi6B0X\n\n` +
-      `_Built by BotWave Team_`;
+      `\u{1F389} *Welcome to BotWave!* \u{1F389}\n\n` +
+      `Your WhatsApp bot is now *live and connected*.\n\n` +
+      `\u{2728} *What you can do:*\n` +
+      `\u{2022} Type *!help* to see all 60+ commands\n` +
+      `\u{2022} Automate replies, moderate groups, run giveaways\n` +
+      `\u{2022} Manage everything from your dashboard\n\n` +
+      `\u{1F198} *Need help?* Join our support communities:\n` +
+      `\u{2022} WhatsApp Support: https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf\n` +
+      `\u{2022} Telegram Support: https://t.me/botwavegrp\n\n` +
+      `\u{1F916} *Also check out our Telegram bot!*\n` +
+      `Manage your WhatsApp bot and Telegram groups from one dashboard:\n` +
+      `https://botwave.online/dashboard/telegram\n\n` +
+      `\u{26A0}\u{FE0F} *Important reminders:*\n` +
+      `1. Do not spam \u2013 WhatsApp may ban your number if users report you.\n` +
+      `2. Your session may disconnect occasionally. Reconnect at:\n` +
+      `   https://botwave.online/dashboard\n\n` +
+      `_This message is sent only once. Happy automating!_ \u{1F916}`;
 
-    if (video) {
-      await sock.sendMessage(ownerJid, {
-        video,
-        caption: welcomeText,
-        gifPlayback: false,
-      });
-    } else {
-      await sock.sendMessage(ownerJid, { text: welcomeText });
-    }
+    await sock.sendMessage(ownerJid, { text: welcomeText });
     console.log(`[SESSION-WELCOME] Sent welcome to ${sessionId}`);
+
+    // Persist in DB so it survives Redis eviction
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      await sb.from('bot_sessions').update({ welcome_sent_whatsapp: true }).eq('id', sessionId);
+    } catch {}
   } catch (err) {
     console.error(`[SESSION-WELCOME] Failed to send welcome for ${sessionId}:`, err);
   }

@@ -49,6 +49,14 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/mailbox', label: 'Mailbox' },
     ],
   },
+  {
+    label: 'Support',
+    links: [
+      { href: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', label: 'WhatsApp Group' },
+      { href: 'https://t.me/botwavegrp', label: 'Telegram Group' },
+      { href: '/dashboard/feature-requests', label: 'Feature Requests' },
+    ],
+  },
 ];
 
 const allLinks = [
@@ -88,21 +96,35 @@ function Dropdown({ group }: { group: NavGroup }) {
             transition={{ duration: 0.15 }}
             className="absolute top-full left-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden z-[1001]"
           >
-            {group.links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                data-tour={link.tour}
-                onClick={() => setOpen(false)}
-                className={`block text-sm px-4 py-2.5 transition-colors font-medium ${
-                  link.accent
-                    ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {group.links.map((link) => {
+              const cls = `block text-sm px-4 py-2.5 transition-colors font-medium ${
+                link.accent
+                  ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-light)]'
+              }`;
+              return link.href.startsWith('http') ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
+                  className={cls}
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  data-tour={link.tour}
+                  onClick={() => setOpen(false)}
+                  className={cls}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -288,20 +310,34 @@ export default function DashboardNav() {
                   ))}
                 </select>
               </div>
-              {allLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`text-sm py-3 border-b border-[var(--border)] font-medium ${
-                    link.accent
-                      ? 'text-[var(--primary)]'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {allLinks.map((link) => {
+                const mobileCls = `text-sm py-3 border-b border-[var(--border)] font-medium ${
+                  link.accent
+                    ? 'text-[var(--primary)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`;
+                return link.href.startsWith('http') ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className={mobileCls}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={mobileCls}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
               <button
                 onClick={() => { setMenuOpen(false); handleLogout(); }}
                 className="text-sm text-red-500 py-3 text-left font-medium"
