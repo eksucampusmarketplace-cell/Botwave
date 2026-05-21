@@ -212,22 +212,22 @@ export default function MailboxPage() {
   return (
     <main className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <DashboardNav />
-      <div className="max-w-6xl mx-auto px-4 pt-24 pb-12">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Mailbox</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Mailbox</h1>
           {mailbox && (
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
               {/* Address switcher */}
               {allMailboxes.length > 1 ? (
-                <div className="relative">
+                <div className="relative max-w-full">
                   <button
                     onClick={() => setShowSwitcher(!showSwitcher)}
-                    className="text-sm text-slate-400 font-mono hover:text-blue-500 transition-colors flex items-center gap-1"
+                    className="text-xs sm:text-sm text-slate-400 font-mono hover:text-blue-500 transition-colors flex items-center gap-1 max-w-full"
                   >
-                    {mailbox.email}
-                    <svg className={`w-3 h-3 transition-transform ${showSwitcher ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="truncate">{mailbox.email}</span>
+                    <svg className={`w-3 h-3 shrink-0 transition-transform ${showSwitcher ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -237,29 +237,29 @@ export default function MailboxPage() {
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="absolute top-full left-0 mt-1 bg-[#0d0d14] border border-white/10 rounded-lg shadow-xl z-50 min-w-[280px]"
+                        className="absolute top-full left-0 mt-1 bg-[#0d0d14] border border-white/10 rounded-lg shadow-xl z-50 min-w-[240px] sm:min-w-[280px] max-w-[calc(100vw-2rem)]"
                       >
                         {allMailboxes.map((m) => (
                           <button
                             key={m.id}
                             onClick={() => switchMailbox(m.id)}
-                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                            className={`w-full text-left px-3 sm:px-4 py-2.5 text-sm transition-colors flex items-center justify-between gap-2 ${
                               m.id === mailbox.id
                                 ? 'bg-blue-500/10 text-blue-500'
                                 : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                           >
-                            <div>
-                              <span className="font-mono text-xs">{m.email}</span>
-                              <span className="text-[10px] text-gray-600 ml-2">{m.label}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-mono text-xs truncate">{m.email}</div>
+                              <div className="text-[10px] text-gray-600 truncate">{m.label}</div>
                             </div>
-                            {m.id === mailbox.id && <span className="text-blue-500 text-xs">Active</span>}
+                            {m.id === mailbox.id && <span className="text-blue-500 text-xs shrink-0">Active</span>}
                           </button>
                         ))}
                         {canCreateMore && (
                           <button
                             onClick={() => { setShowNewAddress(true); setShowSwitcher(false); }}
-                            className="w-full text-left px-4 py-2.5 text-sm text-blue-500 hover:bg-blue-500/10 transition-colors border-t border-white/5"
+                            className="w-full text-left px-3 sm:px-4 py-2.5 text-sm text-blue-500 hover:bg-blue-500/10 transition-colors border-t border-white/5"
                           >
                             + Generate New Address
                           </button>
@@ -269,25 +269,25 @@ export default function MailboxPage() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <span className="text-sm text-slate-500 font-mono">{mailbox.email}</span>
+                <span className="text-xs sm:text-sm text-slate-500 font-mono truncate max-w-[14rem] sm:max-w-none">{mailbox.email}</span>
               )}
-              <span className="text-sm text-slate-600">&middot;</span>
-              <span className="text-sm text-slate-500">{mailbox.dailySendCount}/{mailbox.dailySendLimit} sent today</span>
+              <span className="text-xs sm:text-sm text-slate-600 hidden sm:inline">&middot;</span>
+              <span className="text-xs sm:text-sm text-slate-500">{mailbox.dailySendCount}/{mailbox.dailySendLimit} sent today</span>
             </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:gap-2">
           {canCreateMore && allMailboxes.length <= 1 && (
             <button
               onClick={() => setShowNewAddress(true)}
-              className="bg-white/5 hover:bg-white/10 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-white/10"
+              className="flex-1 sm:flex-initial bg-white/5 hover:bg-white/10 text-gray-300 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors border border-white/10 whitespace-nowrap"
             >
               + New Address
             </button>
           )}
           <button
             onClick={() => setShowCompose(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-500 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
           >
             Compose
           </button>
@@ -308,30 +308,33 @@ export default function MailboxPage() {
         )}
       </AnimatePresence>
 
-      <div className="flex gap-4">
-        {/* Sidebar */}
-        <div className="w-48 shrink-0">
-          {FOLDERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => { setFolder(f.key); setSelectedEmail(null); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 transition-colors ${
-                folder === f.key
-                  ? 'bg-blue-500/10 text-blue-500'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} />
-              </svg>
-              {f.label}
-              {f.key === 'inbox' && unreadCount > 0 && (
-                <span className="ml-auto bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Mobile: horizontal folder tabs across the top.
+            Desktop: vertical sidebar on the left. */}
+        <div className="sm:w-48 sm:shrink-0">
+          <div className="flex sm:block gap-1 sm:gap-0 overflow-x-auto sm:overflow-visible -mx-3 sm:mx-0 px-3 sm:px-0 pb-1 sm:pb-0">
+            {FOLDERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => { setFolder(f.key); setSelectedEmail(null); }}
+                className={`shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 py-2 sm:py-2.5 rounded-lg text-sm font-medium sm:mb-0.5 transition-colors whitespace-nowrap ${
+                  folder === f.key
+                    ? 'bg-blue-500/10 text-blue-500'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} />
+                </svg>
+                {f.label}
+                {f.key === 'inbox' && unreadCount > 0 && (
+                  <span className="sm:ml-auto bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Email List / Detail */}
@@ -342,33 +345,34 @@ export default function MailboxPage() {
               animate={{ opacity: 1 }}
               className="bg-white/5 border border-white/5 rounded-xl overflow-hidden"
             >
-              <div className="p-4 border-b border-white/5 flex items-center gap-3">
+              <div className="p-3 sm:p-4 border-b border-white/5 flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setSelectedEmail(null)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base shrink-0"
                 >
                   ← Back
                 </button>
-                <div className="flex gap-2 ml-auto">
+                <div className="flex gap-1 sm:gap-2 ml-auto">
                   <button
                     onClick={() => handleAction(selectedEmail.id, selectedEmail.is_starred ? 'unstar' : 'star')}
-                    className={`text-sm px-2 py-1 rounded ${selectedEmail.is_starred ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}
+                    aria-label={selectedEmail.is_starred ? 'Unstar' : 'Star'}
+                    className={`text-base sm:text-sm px-2 py-1 rounded ${selectedEmail.is_starred ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}
                   >
                     {selectedEmail.is_starred ? '★' : '☆'}
                   </button>
-                  <button onClick={() => handleAction(selectedEmail.id, 'trash')} className="text-sm text-gray-500 hover:text-red-400 px-2 py-1">Delete</button>
-                  <button onClick={() => handleAction(selectedEmail.id, 'spam')} className="text-sm text-gray-500 hover:text-yellow-400 px-2 py-1">Spam</button>
+                  <button onClick={() => handleAction(selectedEmail.id, 'trash')} className="text-xs sm:text-sm text-gray-500 hover:text-red-400 px-2 py-1">Delete</button>
+                  <button onClick={() => handleAction(selectedEmail.id, 'spam')} className="text-xs sm:text-sm text-gray-500 hover:text-yellow-400 px-2 py-1">Spam</button>
                 </div>
               </div>
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-white mb-2">{selectedEmail.subject || '(no subject)'}</h2>
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-                  <span className="font-medium text-gray-300">{selectedEmail.from_name || selectedEmail.from_address}</span>
-                  <span>&lt;{selectedEmail.from_address}&gt;</span>
-                  <span className="ml-auto">{new Date(selectedEmail.created_at).toLocaleString()}</span>
+              <div className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-2 break-words">{selectedEmail.subject || '(no subject)'}</h2>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-400 mb-4">
+                  <span className="font-medium text-gray-300 truncate max-w-full">{selectedEmail.from_name || selectedEmail.from_address}</span>
+                  <span className="truncate max-w-full break-all">&lt;{selectedEmail.from_address}&gt;</span>
+                  <span className="sm:ml-auto text-gray-500">{new Date(selectedEmail.created_at).toLocaleString()}</span>
                 </div>
                 <div
-                  className="prose prose-invert prose-sm max-w-none"
+                  className="prose prose-invert prose-sm max-w-none overflow-x-auto break-words [&_img]:max-w-full [&_img]:h-auto [&_table]:max-w-full [&_table]:block [&_table]:overflow-x-auto"
                   dangerouslySetInnerHTML={{ __html: selectedEmail.body_html || selectedEmail.body_text || '' }}
                 />
               </div>
@@ -393,20 +397,27 @@ export default function MailboxPage() {
                     <button
                       key={email.id}
                       onClick={() => openEmail(email)}
-                      className={`w-full text-left px-4 py-3 hover:bg-white/5 transition-colors ${
+                      className={`w-full text-left px-3 sm:px-4 py-3 hover:bg-white/5 transition-colors ${
                         !email.is_read ? 'bg-white/[0.02]' : ''
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${!email.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
-                        <span className={`text-sm truncate w-36 ${!email.is_read ? 'font-semibold text-white' : 'text-gray-400'}`}>
-                          {email.direction === 'outbound' ? `To: ${email.to_address}` : (email.from_name || email.from_address)}
-                        </span>
-                        <span className={`text-sm truncate flex-1 ${!email.is_read ? 'text-gray-200' : 'text-gray-500'}`}>
-                          {email.subject || '(no subject)'}
-                        </span>
-                        {email.is_starred && <span className="text-yellow-400 text-sm">★</span>}
-                        <span className="text-xs text-gray-600 shrink-0">{formatDate(email.created_at)}</span>
+                      {/* Mobile: stacked two-line layout. Desktop: single-line. */}
+                      <div className="flex sm:items-center gap-2 sm:gap-3">
+                        <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 sm:mt-0 ${!email.is_read ? 'bg-blue-500' : 'bg-transparent'}`} />
+                        <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
+                          <div className="flex items-center justify-between gap-2 sm:contents">
+                            <span className={`text-sm truncate sm:w-36 sm:shrink-0 ${!email.is_read ? 'font-semibold text-white' : 'text-gray-400'}`}>
+                              {email.direction === 'outbound' ? `To: ${email.to_address}` : (email.from_name || email.from_address)}
+                            </span>
+                            <span className="text-xs text-gray-600 shrink-0 sm:order-3 sm:ml-auto">{formatDate(email.created_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 sm:mt-0 sm:flex-1 min-w-0">
+                            <span className={`text-sm truncate flex-1 ${!email.is_read ? 'text-gray-200' : 'text-gray-500'}`}>
+                              {email.subject || '(no subject)'}
+                            </span>
+                            {email.is_starred && <span className="text-yellow-400 text-sm shrink-0">★</span>}
+                          </div>
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -424,14 +435,14 @@ export default function MailboxPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setShowCompose(false)}
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-[#0d0d14] border border-white/10 rounded-xl w-full max-w-lg p-6"
+              className="bg-[#0d0d14] border border-white/10 rounded-t-xl sm:rounded-xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-white mb-4">New Email</h3>
@@ -492,14 +503,14 @@ export default function MailboxPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setShowNewAddress(false)}
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-[#0d0d14] border border-white/10 rounded-xl w-full max-w-md p-6"
+              className="bg-[#0d0d14] border border-white/10 rounded-t-xl sm:rounded-xl w-full max-w-md p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-white mb-2">Generate New Email Address</h3>
@@ -507,7 +518,7 @@ export default function MailboxPage() {
               <form onSubmit={handleCreateAddress} className="space-y-4">
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Email Address</label>
-                  <div className="flex items-center gap-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-0">
                     <input
                       type="text"
                       value={newLocalPart}
@@ -515,9 +526,9 @@ export default function MailboxPage() {
                       required
                       placeholder="yourname"
                       maxLength={30}
-                      className="flex-1 bg-[#0a0a0f] border border-white/10 border-r-0 px-3 py-2.5 rounded-l-lg text-white text-sm focus:border-blue-500/50 focus:outline-none font-mono"
+                      className="flex-1 bg-[#0a0a0f] border border-white/10 sm:border-r-0 px-3 py-2.5 rounded-lg sm:rounded-r-none text-white text-sm focus:border-blue-500/50 focus:outline-none font-mono min-w-0"
                     />
-                    <span className="bg-[#111118] border border-white/10 px-3 py-2.5 rounded-r-lg text-gray-500 text-sm font-mono">
+                    <span className="bg-[#111118] border border-white/10 sm:border-l-0 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-l-none text-gray-500 text-xs sm:text-sm font-mono whitespace-nowrap mt-1 sm:mt-0">
                       @mail.botwave.online
                     </span>
                   </div>

@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { landingPages } from '@/lib/landing/data';
 
-const LANDING_CHUNK_SIZE = 5000;
+// Must match LANDING_CHUNK_SIZE in app/sitemap.ts — both files reference the
+// same chunk count. Keep them in sync.
+const LANDING_CHUNK_SIZE = 2000;
+
+// Sitemap index is cheap to render and changes only on deploy. Force-static
+// so it is served from a built file without touching Node CPU.
+export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 export async function GET() {
   const baseUrl = 'https://www.botwave.online';
