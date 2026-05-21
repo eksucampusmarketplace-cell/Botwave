@@ -22,7 +22,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -70,7 +70,13 @@ function verifyAndExtractUser(
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Use the service-role client so this endpoint can resolve a user's role
+    // without depending on Supabase auth cookies. Telegram WebApp requests
+    // arrive without the dashboard's cookies, so a cookie-bound client would
+    // hit RLS and always return null rows for owner / group / sudo lookups.
+    // The route enforces its own authentication via cryptographically verified
+    // Telegram initData (HMAC over the bot token) plus DB-side identity checks.
+    const supabase = await createAdminClient();
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     let userId = searchParams.get('userId');
