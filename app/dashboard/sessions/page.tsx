@@ -362,6 +362,7 @@ export default function SessionsPage() {
                     lastActiveRaw={session.last_active}
                     lastPairingError={session.last_pairing_error}
                     platform={session.platform}
+                    sessionId={session.id}
                     onConnect={() => handleConnect(session)}
                     onDisconnect={() => handleDisconnectSession(session.id)}
                     onDelete={() => handleDeleteSession(session.id)}

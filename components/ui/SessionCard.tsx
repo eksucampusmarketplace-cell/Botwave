@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import SessionHealthBadge from './SessionHealthBadge';
 
 type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
 
@@ -97,6 +98,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
               {lastPairingError}
             </p>
           )}
+          {sessionId && <SessionHealthBadge sessionId={sessionId} />}
         </div>
       </div>
 
