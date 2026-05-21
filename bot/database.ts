@@ -2533,4 +2533,57 @@ export async function getChatbotFlows(userId: string): Promise<any[]> {
   });
 }
 
+// ─── Custom Commands (WhatsApp) ─────────────────────────────────────────────
+
+const customCmdCache = new Map<string, { data: any[]; expiry: number }>();
+trackMap('customCmdCache', customCmdCache as Map<string, unknown>, CACHE_TTL_LONG_MS);
+
+export async function getCustomCommands(userId: string): Promise<any[]> {
+  const cached = customCmdCache.get(userId);
+  if (cached && cached.expiry > Date.now()) return cached.data;
+
+  return resilientRead({
+    cacheKey: `custom_commands:${userId}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('custom_commands')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('enabled', true);
+
+      const result = data || [];
+      customCmdCache.set(userId, { data: result, expiry: Date.now() + CACHE_TTL_LONG_MS });
+      return result;
+    },
+  });
+}
+
+// ─── E-Commerce Products (WhatsApp) ────────────────────────────────────────
+
+const productCache = new Map<string, { data: any[]; expiry: number }>();
+trackMap('productCache', productCache as Map<string, unknown>, CACHE_TTL_LONG_MS);
+
+export async function getProducts(userId: string): Promise<any[]> {
+  const cached = productCache.get(userId);
+  if (cached && cached.expiry > Date.now()) return cached.data;
+
+  return resilientRead({
+    cacheKey: `products:${userId}`,
+    fallbackValue: [] as any[],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .order('name');
+
+      const result = data || [];
+      productCache.set(userId, { data: result, expiry: Date.now() + CACHE_TTL_LONG_MS });
+      return result;
+    },
+  });
+}
+
 export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };

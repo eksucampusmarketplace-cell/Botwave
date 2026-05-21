@@ -65,7 +65,7 @@ export async function checkFilters(
   sessionId: string,
   chatId: string,
   text: string,
-): Promise<string | null> {
+): Promise<{ response: string; image_url?: string } | null> {
   const filters = await getFilters(sessionId, chatId);
   const lowerText = text.toLowerCase();
 
@@ -73,10 +73,10 @@ export async function checkFilters(
     if (filter.is_regex) {
       try {
         const regex = new RegExp(filter.keyword, 'i');
-        if (regex.test(text)) return filter.response;
+        if (regex.test(text)) return { response: filter.response, image_url: filter.image_url };
       } catch { /* skip invalid regex */ }
     } else {
-      if (lowerText.includes(filter.keyword)) return filter.response;
+      if (lowerText.includes(filter.keyword)) return { response: filter.response, image_url: filter.image_url };
     }
   }
   return null;

@@ -73,7 +73,7 @@ import { registerGroupWelcomeHandlers } from './handlers/groupwelcome';
 import { isIgnoredChat } from './utils/db';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
-import { ensureConfig } from './utils/db';
+import { ensureConfig, getAdminOnlyMode } from './utils/db';
 import { checkCooldown, setCooldown } from './utils/cooldown';
 
 /**
@@ -105,6 +105,20 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
           return; // Silently drop message during night mode
         }
       }
+    }
+    await next();
+  });
+
+  // Middleware: admin-only mode check (only admins can interact when enabled)
+  bot.use(async (ctx, next) => {
+    if (ctx.chat && ctx.chat.type !== 'private') {
+      try {
+        const adminOnly = await getAdminOnlyMode(sessionId);
+        if (adminOnly) {
+          const elevated = ctx.from ? await isElevated(ctx, sessionId) : false;
+          if (!elevated) return;
+        }
+      } catch { /* non-critical */ }
     }
     await next();
   });
@@ -257,13 +271,24 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
     if (!ctx.from || !ctx.chat) { await next(); return; }
 
     // Check keyword filters
-    const filterResponse = await checkFilters(
+    const filterMatch = await checkFilters(
       sessionId,
       ctx.chat.id.toString(),
       ctx.message.text || '',
     );
-    if (filterResponse) {
-      await ctx.reply(filterResponse);
+    if (filterMatch) {
+      if (filterMatch.image_url) {
+        try {
+          await ctx.replyWithPhoto(filterMatch.image_url, {
+            caption: filterMatch.response,
+            parse_mode: 'HTML',
+          });
+        } catch {
+          await ctx.reply(filterMatch.response);
+        }
+      } else {
+        await ctx.reply(filterMatch.response);
+      }
     }
 
     // Award XP

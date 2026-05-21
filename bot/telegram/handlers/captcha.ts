@@ -7,17 +7,54 @@ import { Bot, InlineKeyboard } from 'grammy';
 import { requireAdmin } from '../utils/permissions';
 import { getGroupConfig, updateTelegramConfig, setCaptchaPending, markCaptchaVerified, isCaptchaVerified } from '../utils/db';
 
+function parseDuration(str: string): number {
+  const match = str.match(/^(\d+)\s*(s|m|h|d)?$/i);
+  if (!match) return 60_000;
+  const val = parseInt(match[1]);
+  const unit = (match[2] || 's').toLowerCase();
+  if (unit === 'm') return val * 60_000;
+  if (unit === 'h') return val * 3600_000;
+  if (unit === 'd') return val * 86400_000;
+  return val * 1000;
+}
+
+const mathChallenges = new Map<string, { answer: number; expires: number }>();
+
+function generateMathChallenge(): { question: string; answer: number } {
+  const ops = ['+', '-', '*'];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a: number, b: number, answer: number;
+  if (op === '+') { a = Math.floor(Math.random() * 50); b = Math.floor(Math.random() * 50); answer = a + b; }
+  else if (op === '-') { a = Math.floor(Math.random() * 50) + 10; b = Math.floor(Math.random() * a); answer = a - b; }
+  else { a = Math.floor(Math.random() * 12) + 1; b = Math.floor(Math.random() * 12) + 1; answer = a * b; }
+  return { question: `${a} ${op} ${b}`, answer };
+}
+
+function generateTextChallenge(): { code: string } {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return { code };
+}
+
+const textChallenges = new Map<string, { code: string; expires: number }>();
+
 export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
   bot.on(':new_chat_members', async (ctx) => {
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     if (!config.captcha_enabled) return;
+
+    const captchaMode = (config as Record<string, unknown>).captcha_mode as string || 'button';
+    const customBtnText = (config as Record<string, unknown>).captcha_button_text as string | undefined;
+    const muteTimeStr = (config as Record<string, unknown>).captcha_mute_time as string | undefined;
+    const muteTimeMs = muteTimeStr ? parseDuration(muteTimeStr) : 60_000;
 
     for (const member of ctx.message!.new_chat_members!) {
       if (member.is_bot) continue;
 
       try {
         await ctx.restrictChatMember(member.id, {
-          can_send_messages: false,
+          can_send_messages: captchaMode === 'math' || captchaMode === 'text' || captchaMode === 'text2',
           can_send_other_messages: false,
           can_add_web_page_previews: false,
         });
@@ -26,18 +63,41 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
         continue;
       }
 
-      const expiresAt = new Date(Date.now() + 60_000);
+      const expiresAt = new Date(Date.now() + muteTimeMs);
       await setCaptchaPending(sessionId, ctx.chat.id.toString(), member.id.toString(), expiresAt);
 
-      const keyboard = new InlineKeyboard()
-        .text(`✅ I'm human - click to verify`, `captcha:${member.id}:${ctx.chat.id}`);
+      let msg;
+      const chatKey = `${ctx.chat.id}:${member.id}`;
 
-      const msg = await ctx.reply(
-        `👋 Welcome ${member.first_name}!\n` +
-        `Please click the button below to verify you are human.\n` +
-        `You have 60 seconds.`,
-        { reply_markup: keyboard },
-      );
+      if (captchaMode === 'math') {
+        const challenge = generateMathChallenge();
+        mathChallenges.set(chatKey, { answer: challenge.answer, expires: Date.now() + muteTimeMs });
+        msg = await ctx.reply(
+          `👋 Welcome ${member.first_name}!\n` +
+          `🔢 Solve this to verify: *${challenge.question} = ?*\n` +
+          `Type the answer. You have ${Math.round(muteTimeMs / 1000)} seconds.`,
+          { parse_mode: 'Markdown' },
+        );
+      } else if (captchaMode === 'text' || captchaMode === 'text2') {
+        const challenge = generateTextChallenge();
+        textChallenges.set(chatKey, { code: challenge.code, expires: Date.now() + muteTimeMs });
+        msg = await ctx.reply(
+          `👋 Welcome ${member.first_name}!\n` +
+          `🔤 Type the following code to verify: \`${challenge.code}\`\n` +
+          `You have ${Math.round(muteTimeMs / 1000)} seconds.`,
+          { parse_mode: 'Markdown' },
+        );
+      } else {
+        const keyboard = new InlineKeyboard()
+          .text(customBtnText || `✅ I'm human - click to verify`, `captcha:${member.id}:${ctx.chat.id}`);
+
+        msg = await ctx.reply(
+          `👋 Welcome ${member.first_name}!\n` +
+          `Please click the button below to verify you are human.\n` +
+          `You have ${Math.round(muteTimeMs / 1000)} seconds.`,
+          { reply_markup: keyboard },
+        );
+      }
 
       // Auto-kick after 60 seconds if not verified
       const chatId = ctx.chat.id;
@@ -165,6 +225,65 @@ export function registerCaptchaHandlers(bot: Bot, sessionId: string): void {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await updateTelegramConfig(sessionId, { captcha_button_text: null } as Record<string, unknown>);
     await ctx.reply('✅ CAPTCHA button text reset to default.');
+  });
+
+  // Math/text CAPTCHA answer handler
+  bot.on('message:text', async (ctx, next) => {
+    if (!ctx.from || !ctx.chat || ctx.chat.type === 'private') { await next(); return; }
+    const chatKey = `${ctx.chat.id}:${ctx.from.id}`;
+
+    // Check math challenge
+    const mathChallenge = mathChallenges.get(chatKey);
+    if (mathChallenge && mathChallenge.expires > Date.now()) {
+      const answer = parseInt(ctx.message.text.trim());
+      if (!isNaN(answer) && answer === mathChallenge.answer) {
+        mathChallenges.delete(chatKey);
+        try {
+          await ctx.api.restrictChatMember(ctx.chat.id, ctx.from.id, {
+            can_send_messages: true,
+            can_send_audios: true,
+            can_send_documents: true,
+            can_send_photos: true,
+            can_send_videos: true,
+            can_send_video_notes: true,
+            can_send_voice_notes: true,
+            can_send_polls: true,
+            can_send_other_messages: true,
+            can_add_web_page_previews: true,
+          });
+        } catch { /* ignore */ }
+        await markCaptchaVerified(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
+        await ctx.reply(`✅ Correct! Welcome, ${ctx.from.first_name}!`);
+        return;
+      }
+    }
+
+    // Check text challenge
+    const textChallenge = textChallenges.get(chatKey);
+    if (textChallenge && textChallenge.expires > Date.now()) {
+      if (ctx.message.text.trim().toUpperCase() === textChallenge.code) {
+        textChallenges.delete(chatKey);
+        try {
+          await ctx.api.restrictChatMember(ctx.chat.id, ctx.from.id, {
+            can_send_messages: true,
+            can_send_audios: true,
+            can_send_documents: true,
+            can_send_photos: true,
+            can_send_videos: true,
+            can_send_video_notes: true,
+            can_send_voice_notes: true,
+            can_send_polls: true,
+            can_send_other_messages: true,
+            can_add_web_page_previews: true,
+          });
+        } catch { /* ignore */ }
+        await markCaptchaVerified(sessionId, ctx.chat.id.toString(), ctx.from.id.toString());
+        await ctx.reply(`✅ Correct! Welcome, ${ctx.from.first_name}!`);
+        return;
+      }
+    }
+
+    await next();
   });
 
   bot.callbackQuery(/^captcha:(\d+):(-?\d+)$/, async (ctx) => {

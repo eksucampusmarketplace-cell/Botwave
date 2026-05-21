@@ -23,12 +23,22 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
 
       const text = config.welcome_message
         .replace(/{name}/g, member.first_name)
+        .replace(/{user}/g, member.first_name)
         .replace(/{username}/g, member.username ? `@${member.username}` : member.first_name)
         .replace(/{group}/g, ctx.chat.title || '')
         .replace(/{count}/g, String(memberCount))
         .replace(/{mention}/g, mentionUser(member));
 
-      await ctx.reply(text, { parse_mode: 'HTML' });
+      const imageUrl = (config as Record<string, unknown>).welcome_image_url as string | undefined;
+      if (imageUrl) {
+        try {
+          await ctx.replyWithPhoto(imageUrl, { caption: text, parse_mode: 'HTML' });
+        } catch {
+          await ctx.reply(text, { parse_mode: 'HTML' });
+        }
+      } else {
+        await ctx.reply(text, { parse_mode: 'HTML' });
+      }
     }
   });
 
@@ -41,10 +51,20 @@ export function registerWelcomeHandlers(bot: Bot, sessionId: string): void {
 
     const text = config.goodbye_message
       .replace(/{name}/g, member.first_name)
+      .replace(/{user}/g, member.first_name)
       .replace(/{username}/g, member.username ? `@${member.username}` : member.first_name)
       .replace(/{group}/g, ctx.chat.title || '');
 
-    await ctx.reply(text, { parse_mode: 'HTML' });
+    const goodbyeImgUrl = (config as Record<string, unknown>).goodbye_image_url as string | undefined;
+    if (goodbyeImgUrl) {
+      try {
+        await ctx.replyWithPhoto(goodbyeImgUrl, { caption: text, parse_mode: 'HTML' });
+      } catch {
+        await ctx.reply(text, { parse_mode: 'HTML' });
+      }
+    } else {
+      await ctx.reply(text, { parse_mode: 'HTML' });
+    }
   });
 
   bot.command('welcome', async (ctx) => {

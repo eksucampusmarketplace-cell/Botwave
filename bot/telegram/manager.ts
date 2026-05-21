@@ -248,7 +248,18 @@ export class TelegramBotInstance {
           const due = await getDueScheduledMessages();
           for (const msg of due) {
             try {
-              await this.bot!.api.sendMessage(Number(msg.chat_id), msg.content, { parse_mode: 'HTML' });
+              if (msg.media_url) {
+                try {
+                  await this.bot!.api.sendPhoto(Number(msg.chat_id), msg.media_url, {
+                    caption: msg.content,
+                    parse_mode: 'HTML',
+                  });
+                } catch {
+                  await this.bot!.api.sendMessage(Number(msg.chat_id), msg.content, { parse_mode: 'HTML' });
+                }
+              } else {
+                await this.bot!.api.sendMessage(Number(msg.chat_id), msg.content, { parse_mode: 'HTML' });
+              }
               await markScheduledMessageSent(msg.id, msg.schedule_type, msg.time_of_day);
             } catch (sendErr) {
               console.error(`[TG-BOT] Failed to send scheduled message ${msg.id}:`, sendErr);
