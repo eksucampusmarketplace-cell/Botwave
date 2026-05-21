@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data, error } = await supabase
       .from('auto_replies')
-      .select('*')
+      .select('id, user_id, session_id, trigger_keyword, trigger, response_text, response, match_type, category, schedule_enabled, schedule_start, schedule_end, active_days, enabled, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 

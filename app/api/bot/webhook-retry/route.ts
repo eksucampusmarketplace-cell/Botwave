@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { data: pending } = await supabase
       .from('webhook_retry_queue')
-      .select('*')
+      .select('id, event, payload, session_id, retry_count, next_retry_at, status')
       .eq('status', 'pending')
       .lte('next_retry_at', new Date().toISOString())
       .order('next_retry_at', { ascending: true })

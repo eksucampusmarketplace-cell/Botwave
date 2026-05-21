@@ -96,7 +96,7 @@ export async function GET() {
 
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
-      .select('*')
+      .select('id, user_id, session_name, phone_number, platform, state, pairing_code, qr_code, qr_expires_at, qr_generated_at, worker_url, locked_by, locked_at, heartbeat_at, created_at, updated_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 

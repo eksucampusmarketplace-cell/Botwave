@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Get or create subscription (default to free)
     let { data: subscription } = await supabase
       .from('subscriptions')
-      .select('*')
+      .select('user_id, plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, billing_start, next_renewal, squad_transaction_ref, dunning_status, updated_at')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     // Get reward balance
     let { data: rewards } = await supabase
       .from('reward_balances')
-      .select('*')
+      .select('balance, total_earned, total_cashed_out')
       .eq('user_id', user.id)
       .maybeSingle();
 

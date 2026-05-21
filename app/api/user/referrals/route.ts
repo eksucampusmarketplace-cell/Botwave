@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
 
     let { data: referral } = await supabase
       .from('referrals')
-      .select('*')
+      .select('user_id, code, total_referred, total_earned, is_frozen, frozen_reason, created_at')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!referral) {
       const code = generateCode();
