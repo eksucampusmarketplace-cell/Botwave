@@ -5,8 +5,8 @@ import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/scaling/workerConfig';
 import { getCachedSessions, cacheSessions, invalidateSessions } from '@/lib/redisApiCache';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
-const ADMIN_EMAIL = 'christolu994@gmail.com';
-const MAX_SESSIONS_PER_USER = 1;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'christolu994@gmail.com';
+const MAX_SESSIONS_PER_USER = parseInt(process.env.MAX_SESSIONS_PER_USER || '1', 10);
 
 export const dynamic = 'force-dynamic';
 
@@ -117,7 +117,7 @@ export async function GET() {
       const pairingSessions = sessions.filter((s: any) => s.state === 'qr_pending' || s.state === 'pairing_sent');
       if (pairingSessions.length > 0) {
         for (const s of pairingSessions) {
-          console.log(`[PAIRING-API] Session ${s.id.slice(0, 8)}: state=${s.state} pairing_code=${s.pairing_code ? `"${s.pairing_code}"` : 'null'} updated_at=${s.updated_at}`);
+          console.log(`[PAIRING-API] Session ${s.id.slice(0, 8)}: state=${s.state} pairing_code=${s.pairing_code ? '[REDACTED]' : 'null'} updated_at=${s.updated_at}`);
         }
       }
     }

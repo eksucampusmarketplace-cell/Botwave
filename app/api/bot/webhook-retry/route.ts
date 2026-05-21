@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   // Require internal secret to prevent external abuse
   const secret = request.headers.get('x-internal-secret');
   const internalSecret = process.env.INTERNAL_SECRET || process.env.BOT_SECRET_KEY;
-  if (internalSecret && secret !== internalSecret) {
+  if (!internalSecret || secret !== internalSecret) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   try {

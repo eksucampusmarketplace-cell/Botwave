@@ -27,13 +27,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const container = searchParams.get('container');
-    const lines = Math.min(parseInt(searchParams.get('lines') || '100', 10), 500);
+    const lines = Math.min(Math.max(1, parseInt(searchParams.get('lines') || '100', 10) || 100), 500);
     const since = searchParams.get('since') || '1h';
 
     if (!container || !VALID_CONTAINERS.includes(container)) {
       return NextResponse.json({
         error: `Invalid container. Valid: ${VALID_CONTAINERS.join(', ')}`,
       }, { status: 400 });
+    }
+
+    // Validate 'since' to prevent command injection (must be like "1h", "30m", "2024-01-01")
+    if (!/^[\w.:-]+$/.test(since)) {
+      return NextResponse.json({ error: 'Invalid since parameter' }, { status: 400 });
     }
 
     const raw = execSync(

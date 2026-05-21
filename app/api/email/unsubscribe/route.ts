@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,47 @@ function getServiceClient() {
   );
 }
 
+const HMAC_SECRET = process.env.UNSUBSCRIBE_HMAC_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || 'fallback-secret';
+
+/** Generate HMAC signature for an email address. */
+function signEmail(email: string): string {
+  return crypto.createHmac('sha256', HMAC_SECRET).update(email.toLowerCase()).digest('hex').slice(0, 16);
+}
+
+/** Create a signed unsubscribe token: base64url(email).signature */
+export function createUnsubscribeToken(email: string): string {
+  const encoded = Buffer.from(email.toLowerCase(), 'utf-8').toString('base64url');
+  return `${encoded}.${signEmail(email)}`;
+}
+
+/**
+ * Decode and verify an unsubscribe token.
+ * Supports both legacy (unsigned base64url) and new (signed) tokens.
+ */
 function decodeToken(token: string): string | null {
   try {
-    return Buffer.from(token, 'base64url').toString('utf-8');
+    const dotIdx = token.lastIndexOf('.');
+    if (dotIdx > 0) {
+      const encoded = token.slice(0, dotIdx);
+      const sig = token.slice(dotIdx + 1);
+      const email = Buffer.from(encoded, 'base64url').toString('utf-8');
+      if (signEmail(email) === sig) return email;
+      return null; // signature mismatch
+    }
+    // Legacy unsigned token — accept but log warning
+    const email = Buffer.from(token, 'base64url').toString('utf-8');
+    if (email && email.includes('@')) {
+      console.warn('[UNSUB] Legacy unsigned token used — consider re-generating links');
+      return email;
+    }
+    return null;
   } catch {
     return null;
   }
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 export async function GET(req: NextRequest) {
@@ -52,7 +88,7 @@ export async function GET(req: NextRequest) {
 <body>
   <div class="card">
     <h1>Unsubscribe</h1>
-    <p>Click below to unsubscribe <span class="email">${email}</span> from BotWave emails.</p>
+    <p>Click below to unsubscribe <span class="email">${escapeHtml(email)}</span> from BotWave emails.</p>
     <form method="POST">
       <input type="hidden" name="token" value="${token}">
       <button type="submit">Unsubscribe</button>

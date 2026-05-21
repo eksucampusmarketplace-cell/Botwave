@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('bot_features')
-      .select('*')
+      .select('id, user_id, session_id, feature_name, enabled, config, updated_at')
       .eq('user_id', user.id);
 
     if (sessionId) {

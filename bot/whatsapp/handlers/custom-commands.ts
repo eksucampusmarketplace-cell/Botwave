@@ -40,8 +40,12 @@ function matchesCommand(text: string, command: CustomCommand): boolean {
   switch (command.match_type) {
     case 'exact':
       return normalized === cmd;
-    case 'contains':
-      return normalized.includes(cmd);
+    case 'contains': {
+      // Use word boundary matching to avoid partial word matches
+      // e.g. "hi" should not match "thinking"
+      const escaped = cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(normalized);
+    }
     case 'startsWith':
       return normalized.startsWith(cmd);
     default:

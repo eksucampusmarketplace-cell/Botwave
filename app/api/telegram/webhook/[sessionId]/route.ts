@@ -33,7 +33,7 @@ export async function POST(
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('id, platform, state, telegram_bot_token')
+      .select('id, platform, state, telegram_bot_token, telegram_webhook_secret')
       .eq('id', sessionId)
       .eq('platform', 'telegram_bot')
       .single();
@@ -41,6 +41,16 @@ export async function POST(
     if (!session) {
       console.error(`[TG-WEBHOOK] Session not found: ${sessionId}`);
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    // Validate Telegram secret token if configured
+    const webhookSecret = session.telegram_webhook_secret;
+    if (webhookSecret) {
+      const secretHeader = request.headers.get('x-telegram-bot-api-secret-token');
+      if (!secretHeader || secretHeader !== webhookSecret) {
+        console.warn(`[TG-WEBHOOK] Invalid secret token for session ${sessionId}`);
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     if (session.state !== 'active') {

@@ -58,6 +58,12 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    // Check Content-Length before reading the full body into memory
+    const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+    if (contentLength > 25 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File too large (max 20MB)' }, { status: 400 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const title = (formData.get('title') as string) || '';
@@ -69,12 +75,11 @@ export async function POST(request: NextRequest) {
     let originalFilename = '';
 
     if (file && file.size > 0) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      originalFilename = file.name;
-
-      if (buffer.length > 20 * 1024 * 1024) {
+      if (file.size > 20 * 1024 * 1024) {
         return NextResponse.json({ error: 'File too large (max 20MB)' }, { status: 400 });
       }
+      const buffer = Buffer.from(await file.arrayBuffer());
+      originalFilename = file.name;
 
       const extracted = await extractTextFromFile(buffer, file.name);
       content = extracted.text;

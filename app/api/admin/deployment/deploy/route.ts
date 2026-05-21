@@ -94,8 +94,9 @@ export async function POST(request: NextRequest) {
       gitPull?: boolean;
     };
 
-    if (!SERVICE_MAP[target] && target !== 'all') {
-      return NextResponse.json({ error: 'Invalid target' }, { status: 400 });
+    const ALLOWED_TARGETS: DeployTarget[] = ['all', 'botwave', 'evolution'];
+    if (!ALLOWED_TARGETS.includes(target)) {
+      return NextResponse.json({ error: 'Invalid target. Must be one of: all, botwave, evolution' }, { status: 400 });
     }
 
     const command = buildDeployCommand(target, gitPull);

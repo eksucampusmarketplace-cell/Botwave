@@ -35,9 +35,11 @@ export async function GET(request: NextRequest) {
       activeSessions = allSessions?.filter(s => s.state === 'active').length || 0;
       needsReauthSessions = allSessions?.filter(s => s.state === 'needs_reauth').length || 0;
 
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { count: msgCount } = await supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', thirtyDaysAgo);
       totalMessages = msgCount || 0;
 
       const { data: statsData } = await supabase

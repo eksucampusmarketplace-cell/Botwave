@@ -121,18 +121,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, role: 'owner' });
     }
 
-    // Fallback: check if the Telegram user who added the bot to a group
-    // matches the person who connected the bot via the dashboard.
-    if (botSession?.user_id) {
-      const { data: group } = await supabase
-        .from('telegram_groups')
-        .select('added_by_user_id')
-        .eq('session_id', sessionId)
-        .eq('added_by_user_id', userId)
-        .limit(1)
-        .maybeSingle();
-
-      if (group) {
+    // Auto-assign owner: only if initData is cryptographically verified,
+    // no owner_user_id is configured yet, AND the user is a group creator
+    // for this bot. This prevents random group admins from claiming ownership.
+    if (initDataVerified && (!config?.owner_user_id)) {
+      // Check if this user is the creator of any group with this bot
+      let isGroupCreator = false;
+      if (botSession?.telegram_bot_token) {
+        const { data: activeGroups } = await supabase
+          .from('telegram_groups')
+          .select('chat_id')
+          .eq('session_id', sessionId)
+          .eq('is_active', true)
+          .limit(5);
+        for (const group of activeGroups || []) {
+          try {
+            const res = await fetch(
+              `https://api.telegram.org/bot${botSession.telegram_bot_token}/getChatMember?chat_id=${group.chat_id}&user_id=${userId}`,
+            );
+            const memberData = await res.json();
+            if (memberData.ok && memberData.result?.status === 'creator') {
+              isGroupCreator = true;
+              break;
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      if (isGroupCreator) {
         await supabase
           .from('telegram_bot_configs')
           .upsert(
@@ -141,20 +156,6 @@ export async function GET(request: NextRequest) {
           );
         return NextResponse.json({ success: true, role: 'owner' });
       }
-    }
-
-    // Auto-assign owner: if initData is cryptographically verified and
-    // no owner_user_id is configured yet, grant owner to this user.
-    // This covers the common case where the bot creator opens the panel
-    // for the first time before running /setowner.
-    if (initDataVerified && (!config?.owner_user_id)) {
-      await supabase
-        .from('telegram_bot_configs')
-        .upsert(
-          { session_id: sessionId, owner_user_id: userId, updated_at: new Date().toISOString() },
-          { onConflict: 'session_id' },
-        );
-      return NextResponse.json({ success: true, role: 'owner' });
     }
 
     // Check if user is a sudo user

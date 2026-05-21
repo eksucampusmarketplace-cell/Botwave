@@ -81,6 +81,9 @@ export async function PUT(request: NextRequest) {
     const { key, enabled, customResponse, description } = body;
 
     if (!key) return NextResponse.json({ error: 'Missing command key' }, { status: 400 });
+    if (customResponse && typeof customResponse === 'string' && customResponse.length > 2000) {
+      return NextResponse.json({ error: 'Custom response too long (max 2000 characters)' }, { status: 400 });
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

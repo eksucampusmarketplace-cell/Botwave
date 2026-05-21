@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       afkEnabled: data?.afk_enabled ?? false,
       afkMessage: data?.afk_message ?? 'I am currently away',
       botName: data?.bot_name ?? 'BotWave',
-      skipProbability: data?.skip_probability ?? 0.15,
+      skipProbability: Math.max(0, Math.min(1, data?.skip_probability ?? 0.15)),
       welcomeMessage: data?.welcome_message ?? '',
       commandPrefix: data?.command_prefix ?? '!',
       timezone: data?.timezone ?? '',

@@ -10,6 +10,7 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/in
 import { invalidateSessions } from '@/lib/redisApiCache';
 import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolution/client';
 import { redisMarkWebhookSeen } from '@/bot/infrastructure/redis';
+import crypto from 'crypto';
 
 const SELF_URL = process.env.SELF_URL || '';
 const IS_WORKER = process.env.IS_WORKER === 'true';
@@ -31,15 +32,39 @@ if (typeof setInterval !== 'undefined') {
 }
 
 /**
+ * In-memory dedup fallback when Redis is unavailable.
+ * LRU-style map with TTL to prevent unbounded growth.
+ */
+const inMemoryDedupCache = new Map<string, number>();
+const DEDUP_TTL_MS = 300_000; // 5 minutes, matches Redis TTL
+const DEDUP_MAX_SIZE = 5000;
+
+function cleanupDedupCache(): void {
+  if (inMemoryDedupCache.size <= DEDUP_MAX_SIZE) return;
+  const cutoff = Date.now() - DEDUP_TTL_MS;
+  for (const [k, t] of inMemoryDedupCache) {
+    if (t < cutoff) inMemoryDedupCache.delete(k);
+  }
+}
+
+/**
  * Mark a message as seen. Uses Redis SETNX for cross-worker dedup.
+ * Falls back to in-memory dedup cache when Redis is unavailable.
  * Returns true if first time seen, false if duplicate.
  */
 async function markSeen(sessionId: string, msgId: string): Promise<boolean> {
-  // Redis handles cross-worker dedup with TTL — no in-memory Map needed.
-  // redisMarkWebhookSeen returns true = first time, false = duplicate.
-  // If Redis is unavailable, it returns true (allow processing to avoid drops).
   const redisResult = await redisMarkWebhookSeen(sessionId, msgId);
-  return redisResult !== false;
+
+  // If Redis handled it, trust that result
+  if (redisResult === false) return false; // duplicate in Redis
+  if (redisResult === true) return true;   // first time in Redis
+
+  // Redis unavailable — use in-memory fallback
+  const key = `${sessionId}:${msgId}`;
+  if (inMemoryDedupCache.has(key)) return false; // duplicate
+  inMemoryDedupCache.set(key, Date.now());
+  cleanupDedupCache();
+  return true;
 }
 
 function getServerSupabaseUrl(): string {
@@ -103,28 +128,44 @@ async function getCachedOrFetchSession(
  * Evolution API sends `instance` as a plain string (the instance name),
  * but older integrations may send it as `{ instanceName: "..." }`.
  */
+/**
+ * Timing-safe string comparison to prevent timing attacks on secrets.
+ */
+function timingSafeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a, 'utf-8'), Buffer.from(b, 'utf-8'));
+  } catch {
+    return false;
+  }
+}
+
 function resolveSessionId(instance: unknown): string | null {
   if (typeof instance === 'string') return instance;
   if (instance && typeof instance === 'object' && 'instanceName' in instance) {
     return (instance as Record<string, string>).instanceName || null;
   }
+  console.warn('[EVO-WEBHOOK] Unrecognized instance format:', JSON.stringify(instance).slice(0, 100));
   return null;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate webhook secret if configured
+    // Validate webhook secret if configured — use timing-safe comparison
     const webhookSecret = process.env.EVOLUTION_WEBHOOK_SECRET;
     if (webhookSecret) {
       const authHeader = request.headers.get('x-webhook-secret') || request.headers.get('authorization');
-      if (!authHeader || (authHeader !== webhookSecret && authHeader !== `Bearer ${webhookSecret}`)) {
+      const rawSecret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+      if (!rawSecret || !timingSafeCompare(rawSecret, webhookSecret)) {
         console.warn('[EVO-WEBHOOK] Invalid or missing webhook secret');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }
 
-    const body = await request.json();
-    const { instance, data, event } = body;
+    const body = await request.json() as Record<string, unknown>;
+    const instance = body.instance;
+    const data = body.data as Record<string, unknown> | undefined;
+    const event = body.event as string | undefined;
 
     const sessionId = resolveSessionId(instance);
 

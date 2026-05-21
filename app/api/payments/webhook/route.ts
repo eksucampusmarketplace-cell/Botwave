@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Find the payment record
     const { data: payment } = await supabase
       .from('payments')
-      .select('*')
+      .select('id, user_id, status, plan, amount, squad_transaction_ref')
       .eq('squad_transaction_ref', transactionRef)
       .single();
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (transactionStatus === 'success') {
       // Update payment to success
-      await supabase
+      const { error: payUpdateErr } = await supabase
         .from('payments')
         .update({
           status: 'success',
@@ -72,6 +72,11 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', payment.id);
 
+      if (payUpdateErr) {
+        console.error(`[SQUAD-WEBHOOK] Failed to update payment ${payment.id}:`, payUpdateErr);
+        return NextResponse.json({ error: 'Payment update failed' }, { status: 500 });
+      }
+
       // Activate/upgrade subscription
       const plan = payment.plan as string;
       const planConfig = PLANS[plan];
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
         const nextRenewal = new Date(now);
         nextRenewal.setMonth(nextRenewal.getMonth() + 1);
 
-        await supabase
+        const { error: subErr } = await supabase
           .from('subscriptions')
           .upsert({
             user_id: payment.user_id,
@@ -95,6 +100,15 @@ export async function POST(request: NextRequest) {
             squad_transaction_ref: transactionRef,
             updated_at: now.toISOString(),
           }, { onConflict: 'user_id' });
+
+        if (subErr) {
+          console.error(`[SQUAD-WEBHOOK] Subscription activation failed for user=${payment.user_id}, rolling back payment status:`, subErr);
+          await supabase
+            .from('payments')
+            .update({ status: 'pending', updated_at: new Date().toISOString() })
+            .eq('id', payment.id);
+          return NextResponse.json({ error: 'Subscription activation failed' }, { status: 500 });
+        }
 
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
         await invalidateSubscription(payment.user_id);
@@ -137,9 +151,9 @@ export async function POST(request: NextRequest) {
         try {
           const { data: rewardBal } = await supabase
             .from('reward_balances')
-            .select('*')
+            .select('balance, total_earned, user_id')
             .eq('user_id', payment.user_id)
-            .single();
+            .maybeSingle();
 
           if (rewardBal) {
             await supabase

@@ -67,11 +67,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing message or session' }, { status: 400 });
     }
 
+    if (typeof message !== 'string' || message.length > 4096) {
+      return NextResponse.json({ error: 'Message too long (max 4096 characters)' }, { status: 400 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify the session exists and is active
+    // Note: admin broadcasts are restricted to admin-verified users via verifyAdminToken above
     const { data: session } = await supabase
       .from('bot_sessions')
-      .select('id, session_name, phone_number')
+      .select('id, session_name, phone_number, user_id')
       .eq('id', sessionId)
       .eq('state', 'active')
       .single();

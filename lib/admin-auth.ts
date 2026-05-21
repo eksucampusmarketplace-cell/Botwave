@@ -51,7 +51,13 @@ export async function validateAdminToken(token: string): Promise<{ username: str
   const signature = token.substring(dotIndex + 1);
 
   const expectedSignature = await hmacSign(payloadB64, getSigningSecret());
-  if (signature !== expectedSignature) return null;
+  if (signature.length !== expectedSignature.length) return null;
+  // Timing-safe comparison to prevent timing attacks
+  let diff = 0;
+  for (let i = 0; i < signature.length; i++) {
+    diff |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  }
+  if (diff !== 0) return null;
 
   try {
     const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));

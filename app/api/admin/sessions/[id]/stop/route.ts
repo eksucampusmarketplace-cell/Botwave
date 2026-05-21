@@ -49,6 +49,7 @@ export async function POST(
         qr_code: null,
         qr_expires_at: null,
         qr_generated_at: null,
+        worker_url: null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);

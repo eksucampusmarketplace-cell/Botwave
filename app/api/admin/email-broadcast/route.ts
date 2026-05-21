@@ -212,6 +212,20 @@ async function runEmailCampaign(
         continue;
       }
 
+      // Check if user has unsubscribed from emails
+      try {
+        const { data: unsub } = await supabase
+          .from('email_unsubscribes')
+          .select('email')
+          .eq('email', user.email.toLowerCase())
+          .maybeSingle();
+        if (unsub) {
+          job.skippedCount++;
+          emailJobs.set(jobId, { ...job });
+          continue;
+        }
+      } catch { /* ignore — proceed with send */ }
+
       try {
         await sendReengagementEmail(user.email, user.username || 'there', user.hasLinkedDevice);
         job.sentCount++;
