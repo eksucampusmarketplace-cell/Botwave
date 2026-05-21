@@ -6,9 +6,21 @@ import { useCases } from '@/lib/usecases/data';
 import { fixPages } from '@/lib/fix/data';
 import { howToPages } from '@/lib/howto/data';
 import { comparePages as compareData } from '@/lib/compare/data';
+import { mailboxPages } from '@/lib/mailbox/data';
 import { landingPages } from '@/lib/landing/data';
 
-const LANDING_CHUNK_SIZE = 5000;
+// Smaller chunks (2000 instead of 5000) so each sitemap chunk is faster to
+// render and serve. Lots of small chunks is preferred over a few huge ones —
+// Google Search Console treats each chunk independently, so a single timeout
+// no longer blocks 5000 URLs from being indexed.
+const LANDING_CHUNK_SIZE = 2000;
+
+// Force-static so Next builds every sitemap chunk at deploy time and serves
+// the result as a static file. This removes the dependency on Node CPU at
+// request time — once built, sitemap chunks are immune to event-loop pressure
+// from other parts of the app.
+export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 // Use build time as a dynamic lastModified for pages that change with deploys
 const BUILD_DATE = new Date();
@@ -18,7 +30,7 @@ export async function generateSitemaps() {
   const ids = [
     { id: 0 },  // core pages
     { id: 1 },  // commands
-    { id: 2 },  // docs, faq, use-cases, compare, fix, how-to
+    { id: 2 },  // docs, faq, use-cases, compare, fix, how-to, mailbox
     { id: 3 },  // blog posts
   ];
   for (let i = 0; i < landingChunks; i++) {
@@ -132,6 +144,13 @@ function contentPages(baseUrl: string): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    { url: `${baseUrl}/mailbox`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
+    ...mailboxPages.map(page => ({
+      url: `${baseUrl}/mailbox/${page.slug}`,
+      lastModified: BUILD_DATE,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ];
 }
 
@@ -164,7 +183,7 @@ function landingChunk(baseUrl: string, chunkIndex: number): MetadataRoute.Sitema
   const end = Math.min(start + LANDING_CHUNK_SIZE, landingPages.length);
   const chunk = landingPages.slice(start, end);
 
-  return chunk.map((page, i) => ({
+  return chunk.map((page) => ({
     url: `${baseUrl}/${page.slug}`,
     lastModified: BUILD_DATE,
     changeFrequency: 'monthly' as const,
