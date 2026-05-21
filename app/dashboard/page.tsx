@@ -232,7 +232,7 @@ export default function DashboardPage() {
         } catch (err) {
           console.error('Polling error:', err);
         }
-      }, 2000);
+      }, 3000);
     }
     return () => clearInterval(interval);
   }, [showQR]);

@@ -10,8 +10,17 @@ const ALLOWED_ORIGINS = [
 ];
 
 // ── API Rate Limiting (in-memory, per-IP) ─────────────────────────────
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 60; // 60 requests per minute per IP
+// Authenticated dashboard users skip this entirely (see hasSupabaseAuthCookie).
+// Anonymous traffic is rate-limited to protect public endpoints from abuse.
+// Both window and max are env-configurable. Set API_RATE_LIMIT_MAX=0 to disable.
+const RATE_LIMIT_WINDOW_MS =
+  Number(process.env.API_RATE_LIMIT_WINDOW_MS) || 60_000; // 1 minute
+const RATE_LIMIT_MAX = (() => {
+  const raw = process.env.API_RATE_LIMIT_MAX;
+  if (raw === undefined || raw === '') return 300;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 300;
+})();
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
 
 // Paths exempt from rate limiting
@@ -23,7 +32,24 @@ const RATE_LIMIT_EXEMPT = [
   '/api/email/bounce',
 ];
 
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  // Supabase SSR sets cookies named `sb-<projectref>-auth-token` (sometimes
+  // split into `.0`, `.1` chunks). Treat the presence of any such cookie as a
+  // signal the request is from a logged-in dashboard user, who should not be
+  // affected by the anti-abuse IP rate limit.
+  for (const cookie of request.cookies.getAll()) {
+    const name = cookie.name;
+    if (name.startsWith('sb-') && name.includes('-auth-token')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  if (RATE_LIMIT_MAX === 0) {
+    return { allowed: true, remaining: Number.MAX_SAFE_INTEGER };
+  }
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
 
@@ -56,12 +82,19 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const { pathname, search } = request.nextUrl;
 
-  // API rate limiting (skip webhooks and static assets)
-  if (pathname.startsWith('/api/') && !RATE_LIMIT_EXEMPT.some(p => pathname.startsWith(p))) {
+  // API rate limiting (skip webhooks, static assets, and authenticated users).
+  // Authenticated dashboard users (detected via Supabase auth cookie) bypass
+  // this entirely so navigating the dashboard never trips a 429. Routes still
+  // have their own per-action limits (signup, login, send-code, etc.).
+  if (
+    pathname.startsWith('/api/') &&
+    !RATE_LIMIT_EXEMPT.some((p) => pathname.startsWith(p)) &&
+    !hasSupabaseAuthCookie(request)
+  ) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
       'unknown';
-    const { allowed, remaining } = checkRateLimit(ip);
+    const { allowed } = checkRateLimit(ip);
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
