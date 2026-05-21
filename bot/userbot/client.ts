@@ -50,7 +50,7 @@ export class UserbotClient {
     const clientOpts: ConstructorParameters<typeof TelegramClient>[3] = {
       connectionRetries: 10,
       retryDelay: 3000,
-      autoReconnect: true,
+      autoReconnect: false,
       deviceModel: this.deviceModel,
       systemVersion: this.systemVersion,
       appVersion: this.appVersion,

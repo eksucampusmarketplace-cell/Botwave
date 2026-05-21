@@ -269,7 +269,7 @@ async function handleDeepLink(
 
   // /start settings - open settings panel
   if (payload === 'settings' && miniappUrl) {
-    const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+    const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
     const kb = new IK2().webApp('Open Settings', settingsUrl);
     await ctx.reply(`Open the settings panel for <b>${botName}</b>:`, {
       parse_mode: 'HTML',
@@ -307,7 +307,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       const keyboard = new InlineKeyboard();
 
       if (miniappUrl) {
-        const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+        const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
         keyboard.webApp('📱 Open Panel', panelUrl).row();
       }
 
@@ -367,7 +367,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
 
       const dmKeyboard = new InlineKeyboard();
       if (miniappUrl) {
-        const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+        const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
         dmKeyboard.webApp('⚡ Open Settings', settingsUrl).row();
       }
       dmKeyboard.text('❓ Commands', 'help_main').text('📖 Categories', 'help_categories');
@@ -409,7 +409,8 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       return;
     }
 
-    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+    const chatId = ctx.chat!.id;
+    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${chatId}`;
     const directLink = `https://t.me/Botwave_telegrambot/panel?startapp=session_${sessionId}`;
     const keyboard = new InlineKeyboard();
     if (ctx.chat!.type === 'private') {
@@ -700,7 +701,7 @@ async function sendHelpMessage(
   const keyboard = new InlineKeyboard();
 
   if (miniappUrl) {
-    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat.id}`;
     const directLink = `https://t.me/Botwave_telegrambot/panel?startapp=session_${sessionId}`;
     if (ctx.chat.type === 'private') {
       keyboard.webApp('📱 Open Mini App', panelUrl).row();

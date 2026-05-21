@@ -98,6 +98,7 @@ const authResetCooldowns = new Map<string, number>();
 export class UserbotManager {
   private userbots: Map<string, ManagedUserbot> = new Map();
   private heartbeatHandle: ReturnType<typeof setInterval> | null = null;
+  private reconnecting: Set<string> = new Set();
 
   constructor() {
     logProxyStatus();
@@ -242,14 +243,12 @@ export class UserbotManager {
           const connected = ub.client.isConnected();
 
           if (connected) {
-            // Ping with 5-second timeout to detect half-open sockets
+            // Health check with getMe (5s timeout) - more reliable than Ping for detecting half-open sockets
             try {
               await Promise.race([
-                ub.client.client.invoke(
-                  new Api.Ping({ pingId: BigInt(Math.floor(Math.random() * 1e15)) as any }),
-                ),
+                ub.client.client.getMe(),
                 new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Ping timeout (5s)')), 5000),
+                  setTimeout(() => reject(new Error('Health check timeout (5s)')), 5000),
                 ),
               ]);
               await updateSessionLastActive(sessionId);
@@ -302,6 +301,22 @@ export class UserbotManager {
   }
 
   private async reconnectSession(sessionId: string, ub: ManagedUserbot): Promise<void> {
+    // Prevent overlapping reconnect attempts for the same session
+    if (this.reconnecting.has(sessionId)) {
+      console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} reconnect already in progress, skipping`);
+      return;
+    }
+    this.reconnecting.add(sessionId);
+
+    // Exponential backoff based on consecutive failures
+    const failKey = `_reconnectFails_${sessionId}`;
+    const currentFails = (this as unknown as Record<string, number>)[failKey] || 0;
+    if (currentFails > 0) {
+      const backoff = Math.min(30000, 1000 * Math.pow(2, currentFails));
+      console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} backoff ${backoff}ms before reconnect (attempt ${currentFails + 1})`);
+      await new Promise(r => setTimeout(r, backoff));
+    }
+
     try {
       // Disconnect first to clean up stale state
       try { await ub.client.client.disconnect(); } catch {}
@@ -359,6 +374,8 @@ export class UserbotManager {
         await updateSessionState(sessionId, 'error');
         (this as unknown as Record<string, number>)[failKey] = 0;
       }
+    } finally {
+      this.reconnecting.delete(sessionId);
     }
   }
 
@@ -393,6 +410,7 @@ export class UserbotManager {
 
     // Remove any existing handlers to prevent duplicates on reconnect
     try {
+      (client as any).removeAllListeners?.();
       (client as any)._eventBuilders = [];
     } catch {}
 

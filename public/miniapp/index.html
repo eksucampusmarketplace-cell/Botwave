@@ -225,7 +225,10 @@ function loadOverview() {
 
 function checkAdmin() {
   if (!sessionId || !tgUserId) return;
-  apiCall('/api/telegram/user-role?userId=' + tgUserId).then(function(res) {
+  var roleUrl = '/api/telegram/user-role?userId=' + tgUserId;
+  var initData = tg ? tg.initData : '';
+  if (initData) roleUrl += '&initData=' + encodeURIComponent(initData);
+  apiCall(roleUrl).then(function(res) {
     if (res.success && (res.role === 'owner' || res.role === 'admin')) {
       var link = document.getElementById('admin-link');
       link.style.display = 'block';

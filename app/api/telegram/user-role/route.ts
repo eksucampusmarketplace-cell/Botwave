@@ -108,6 +108,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log(`[USER-ROLE] sessionId=${sessionId} userId=${userId} chatId=${chatId || 'none'} initDataVerified=${initDataVerified}`);
+
     // Check if user is the bot owner (explicit config via /setowner)
     const { data: config } = await supabase
       .from('telegram_bot_configs')
@@ -182,6 +184,8 @@ export async function GET(request: NextRequest) {
         groupsToCheck = activeGroups || [];
       }
 
+      console.log(`[USER-ROLE] Checking ${groupsToCheck.length} group(s) for admin status: ${groupsToCheck.map(g => g.chat_id).join(', ')}`);
+
       if (groupsToCheck.length) {
         for (const group of groupsToCheck) {
           try {
@@ -189,6 +193,7 @@ export async function GET(request: NextRequest) {
               `https://api.telegram.org/bot${botSession.telegram_bot_token}/getChatMember?chat_id=${group.chat_id}&user_id=${userId}`,
             );
             const data = await res.json();
+            console.log(`[USER-ROLE] getChatMember chat_id=${group.chat_id} userId=${userId} ok=${data.ok} status=${data.result?.status || 'N/A'}`);
             if (data.ok) {
               const status = data.result?.status;
               if (status === 'creator') {
@@ -198,8 +203,8 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ success: true, role: 'admin' });
               }
             }
-          } catch {
-            // If API call fails for this group, try the next one
+          } catch (err) {
+            console.error(`[USER-ROLE] getChatMember failed for chat_id=${group.chat_id}:`, err);
           }
         }
       }
