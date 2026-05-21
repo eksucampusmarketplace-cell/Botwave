@@ -2354,3 +2354,77 @@ export async function getGroupStats(
 
   return data || [];
 }
+
+// ─── Bot Ignored Chats ─────────────────────────────────────────────────────
+
+export async function getIgnoredChats(
+  sessionId: string,
+): Promise<Array<{ chat_id: string; chat_title: string | null }>> {
+  const { data } = await supabase
+    .from('bot_ignored_chats')
+    .select('chat_id, chat_title')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false });
+  return (data || []) as Array<{ chat_id: string; chat_title: string | null }>;
+}
+
+export async function addIgnoredChat(
+  sessionId: string,
+  chatId: string,
+  chatTitle?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('bot_ignored_chats')
+    .upsert(
+      { session_id: sessionId, chat_id: chatId, chat_title: chatTitle || null },
+      { onConflict: 'session_id,chat_id' },
+    );
+  if (error) console.error('[TG-DB] addIgnoredChat error:', error.message);
+}
+
+export async function removeIgnoredChat(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('bot_ignored_chats')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+  if (error) console.error('[TG-DB] removeIgnoredChat error:', error.message);
+}
+
+export async function isIgnoredChat(
+  sessionId: string,
+  chatId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('bot_ignored_chats')
+    .select('id')
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId)
+    .limit(1);
+  return (data || []).length > 0;
+}
+
+// ─── Admin-Only Mode ───────────────────────────────────────────────────────
+
+export async function getAdminOnlyMode(sessionId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('telegram_config')
+    .select('admin_only_mode')
+    .eq('session_id', sessionId)
+    .single();
+  return !!(data as Record<string, unknown> | null)?.admin_only_mode;
+}
+
+export async function setAdminOnlyMode(
+  sessionId: string,
+  enabled: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_config')
+    .update({ admin_only_mode: enabled })
+    .eq('session_id', sessionId);
+  if (error) console.error('[TG-DB] setAdminOnlyMode error:', error.message);
+}

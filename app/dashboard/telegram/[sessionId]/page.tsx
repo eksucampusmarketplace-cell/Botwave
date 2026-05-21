@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import TelegramUserbotDashboard from '@/components/ui/TelegramUserbotDashboard';
 
-type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats';
+type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats' | 'ignored' | 'adminmode';
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
@@ -47,6 +47,8 @@ const TAB_FEATURE_MAP: Record<Tab, string[]> = {
   xp: ['xp'],
   scheduled: ['scheduled'],
   stats: ['stats'],
+  ignored: [],
+  adminmode: [],
 };
 
 interface GroupInfo {
@@ -163,6 +165,9 @@ export default function TelegramConfigPage() {
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [configMode, setConfigMode] = useState<'global' | 'group'>('global');
   const [settingsSearch, setSettingsSearch] = useState('');
+  const [ignoredChats, setIgnoredChats] = useState<Array<{ id: string; chat_id: string; chat_title: string | null; created_at: string }>>([]);
+  const [newIgnoreChatId, setNewIgnoreChatId] = useState('');
+  const [newIgnoreChatTitle, setNewIgnoreChatTitle] = useState('');
 
   // eslint-disable-next-line
   const [config, setConfig] = useState<Record<string, any>>({
@@ -465,6 +470,46 @@ export default function TelegramConfigPage() {
       .catch(() => {});
   }, [sessionId]);
 
+  const fetchIgnoredChats = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/telegram/bot/ignored-chats?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success) setIgnoredChats(data.data || []);
+    } catch {}
+  }, [sessionId]);
+
+  const addIgnoredChat = async () => {
+    if (!newIgnoreChatId.trim()) return;
+    try {
+      const res = await fetch('/api/telegram/bot/ignored-chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, chatId: newIgnoreChatId.trim(), chatTitle: newIgnoreChatTitle.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewIgnoreChatId('');
+        setNewIgnoreChatTitle('');
+        fetchIgnoredChats();
+        setSuccess('Chat added to ignore list!');
+        setTimeout(() => setSuccess(''), 2000);
+      } else {
+        setError(data.error || 'Failed to add');
+      }
+    } catch { setError('Failed to add ignored chat'); }
+  };
+
+  const removeIgnoredChat = async (chatId: string) => {
+    try {
+      await fetch('/api/telegram/bot/ignored-chats', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, chatId }),
+      });
+      fetchIgnoredChats();
+    } catch {}
+  };
+
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
@@ -475,8 +520,9 @@ export default function TelegramConfigPage() {
       case 'modlog': fetchModlog(); break;
       case 'xp': fetchXP(); break;
       case 'scheduled': fetchScheduled(); break;
+      case 'ignored': fetchIgnoredChats(); break;
     }
-  }, [activeTab, fetchNotes, fetchFilters, fetchModlog, fetchXP, fetchScheduled]);
+  }, [activeTab, fetchNotes, fetchFilters, fetchModlog, fetchXP, fetchScheduled, fetchIgnoredChats]);
 
   const saveConfig = async () => {
     setSaving(true); setError(''); setSuccess('');
@@ -572,6 +618,8 @@ export default function TelegramConfigPage() {
     { id: 'xp', label: 'XP', icon: '\u2b50' },
     { id: 'scheduled', label: 'Scheduled', icon: '\u23f0' },
     { id: 'stats', label: 'Statistics', icon: '\ud83d\udcca' },
+    { id: 'ignored', label: 'Ignored Chats', icon: '\ud83d\udeab' },
+    { id: 'adminmode', label: 'Admin Mode', icon: '\ud83d\udd12' },
   ];
 
   // Filter tabs: hide tabs where ALL required features are disabled by the bot owner
@@ -1297,6 +1345,69 @@ export default function TelegramConfigPage() {
               <p className="text-xs mt-4 text-center" style={{ color: 'var(--text-secondary)' }}>
                 Statistics update in real-time as the bot processes events.
               </p>
+            </SectionCard>
+            <SaveButton onClick={saveConfig} saving={saving} />
+          </div>
+        )}
+
+        {activeTab === 'ignored' && (
+          <div className="space-y-6">
+            <SectionCard title="Ignored Chats">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                The bot will completely stop responding in ignored chats. Use this to disable the bot in specific groups without removing it.
+                You can also use <code>/ignorechat</code> in any group to add it here.
+              </p>
+              <div className="space-y-3 mb-4">
+                <input type="text" value={newIgnoreChatId} onChange={e => setNewIgnoreChatId(e.target.value)}
+                  placeholder="Chat ID (e.g. -1001234567890)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <input type="text" value={newIgnoreChatTitle} onChange={e => setNewIgnoreChatTitle(e.target.value)}
+                  placeholder="Chat name (optional, for your reference)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <button onClick={addIgnoredChat}
+                  className="w-full p-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
+                  Add to Ignore List
+                </button>
+              </div>
+              {ignoredChats.length === 0 ? (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No chats are being ignored.</p>
+              ) : (
+                <div className="space-y-2">
+                  {ignoredChats.map(chat => (
+                    <div key={chat.chat_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {chat.chat_title || 'Unknown Chat'}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          ID: {chat.chat_id}
+                        </div>
+                      </div>
+                      <button onClick={() => removeIgnoredChat(chat.chat_id)}
+                        className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          </div>
+        )}
+
+        {activeTab === 'adminmode' && (
+          <div className="space-y-6">
+            <SectionCard title="Admin-Only Mode">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                When enabled, only group admins can use bot commands. Regular members will be ignored.
+                This is useful for groups where you want the bot to only respond to admin commands.
+              </p>
+              <Toggle config={config} updateConfig={updateConfig} configKey="admin_only_mode" label="Admin-Only Mode" desc="Only admins can use bot commands in groups." />
+            </SectionCard>
+            <SectionCard title="Support Group Guard">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                In the BotWave support group, the bot automatically detects and deletes userbot-style commands
+                (like .ban, !kick, ~purge) from non-admin users. Admin userbots are allowed.
+              </p>
+              <Toggle config={config} updateConfig={updateConfig} configKey="prohibit_userbots" label="Block Userbot Commands" desc="Auto-delete userbot-style commands from non-admins in this group." />
             </SectionCard>
             <SaveButton onClick={saveConfig} saving={saving} />
           </div>
