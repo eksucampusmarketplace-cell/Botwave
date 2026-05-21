@@ -290,6 +290,35 @@ export async function getGbanList(sessionId: string): Promise<{ user_id: string;
   return (data || []) as { user_id: string; reason: string }[];
 }
 
+// ─── Ignored Chats ────────────────────────────────────────────────────────
+
+export async function getIgnoredChats(sessionId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('userbot_ignored_chats')
+    .select('chat_id')
+    .eq('session_id', sessionId);
+  return (data || []).map((r: { chat_id: string }) => r.chat_id);
+}
+
+export async function addIgnoredChat(sessionId: string, chatId: string): Promise<void> {
+  const { error } = await supabase
+    .from('userbot_ignored_chats')
+    .upsert(
+      { session_id: sessionId, chat_id: chatId },
+      { onConflict: 'session_id,chat_id' },
+    );
+  if (error) console.error(`[USERBOT-DB] addIgnoredChat error:`, error.message);
+}
+
+export async function removeIgnoredChat(sessionId: string, chatId: string): Promise<void> {
+  const { error } = await supabase
+    .from('userbot_ignored_chats')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', chatId);
+  if (error) console.error(`[USERBOT-DB] removeIgnoredChat error:`, error.message);
+}
+
 // ─── Session state ────────────────────────────────────────────────────────────
 
 export async function saveSessionString(

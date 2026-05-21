@@ -24,6 +24,9 @@ import {
   updateSessionLastActive,
   saveSessionString,
   clearSessionString,
+  getIgnoredChats,
+  addIgnoredChat,
+  removeIgnoredChat,
 } from './utils/db';
 import {
   readDelay,
@@ -33,6 +36,18 @@ import {
   getMessageSendDelay,
 } from './utils/humanizer';
 import { logProxyStatus } from './utils/proxy';
+
+// BotWave support group — userbot commands are completely blocked here
+const SUPPORT_GROUP_ID = '-1003986594255';
+
+// Commands that require admin privileges in group chats
+const ADMIN_ONLY_COMMANDS = new Set([
+  'ban', 'unban', 'kick', 'mute', 'unmute', 'promote', 'demote',
+  'pin', 'unpin', 'purge', 'purgeme', 'del',
+  'gban', 'ungban',
+  'antiflood',
+  'setwelcome', 'setgoodbye',
+]);
 
 const COMMAND_TO_MODULE: Record<string, string> = {
   // admin
@@ -216,6 +231,8 @@ export class UserbotManager {
           `  \`.alive\` - Check bot status\n` +
           `  \`.lang list\` - Change language\n` +
           `  \`.setprefix !\` - Change command prefix\n\n` +
+          `🆘 **Need help?** Join our Telegram support group:\n` +
+          `https://t.me/botwavegrp\n\n` +
           `**Manage from dashboard:** https://www.botwave.online/dashboard\n\n` +
           `_This is a one-time message. You won't see it again._`,
         parseMode: 'md',
@@ -458,6 +475,13 @@ export class UserbotManager {
     const text = msg.text || '';
     if (!text) return;
 
+    const chatId = msg.chatId?.toString() || '';
+
+    // Block ALL userbot commands in the BotWave support group
+    if (chatId === SUPPORT_GROUP_ID || chatId === SUPPORT_GROUP_ID.replace('-100', '')) {
+      return;
+    }
+
     const config = await getUserbotConfig(sessionId);
     const prefix = config.prefix;
 
@@ -471,11 +495,68 @@ export class UserbotManager {
 
     const command = text.slice(prefix.length).split(/\s+/)[0].toLowerCase();
 
+    // Handle .ignorechat / .unignorechat inline (before ignored-chat check)
+    if (command === 'ignorechat') {
+      await waitForRateLimit('message_send');
+      if (!chatId) { await msg.edit({ text: '\u274C Use this command in a group chat.' }); return; }
+      await addIgnoredChat(sessionId, chatId);
+      await msg.edit({ text: `\u2705 This chat is now ignored. Userbot commands will not run here.\nUse \`${prefix}unignorechat\` to reverse.` });
+      return;
+    }
+    if (command === 'unignorechat') {
+      await waitForRateLimit('message_send');
+      if (!chatId) { await msg.edit({ text: '\u274C Use this command in a group chat.' }); return; }
+      await removeIgnoredChat(sessionId, chatId);
+      await msg.edit({ text: '\u2705 This chat is no longer ignored.' });
+      return;
+    }
+    if (command === 'ignoredchats' || command === 'ignorelist') {
+      await waitForRateLimit('message_send');
+      const ignored = await getIgnoredChats(sessionId);
+      if (ignored.length === 0) {
+        await msg.edit({ text: '\u{1F4CB} No chats are ignored.' });
+      } else {
+        const list = ignored.map((id, i) => `${i + 1}. \`${id}\``).join('\n');
+        await msg.edit({ text: `\u{1F4CB} **Ignored Chats** (${ignored.length}):\n\n${list}` });
+      }
+      return;
+    }
+
+    // Block commands in user-ignored chats
+    if (chatId) {
+      const ignoredChats = await getIgnoredChats(sessionId);
+      if (ignoredChats.includes(chatId)) {
+        return;
+      }
+    }
+
     // Check if command's module is disabled
     const moduleName = COMMAND_TO_MODULE[command];
     if (moduleName && config.disabled_modules.includes(moduleName)) {
       console.log(`[USERBOT-MGR] ${sessionId.slice(0, 8)} command ${command} blocked - module "${moduleName}" disabled`);
       return;
+    }
+
+    // Admin-only check for destructive commands in group chats
+    if (ADMIN_ONLY_COMMANDS.has(command) && chatId && chatId !== 'me') {
+      try {
+        const perms = await client.invoke(
+          new Api.channels.GetParticipant({
+            channel: msg.chatId as any,
+            participant: new Api.InputPeerSelf(),
+          }),
+        );
+        const participant = perms.participant;
+        const isAdmin =
+          participant instanceof Api.ChannelParticipantAdmin ||
+          participant instanceof Api.ChannelParticipantCreator;
+        if (!isAdmin) {
+          await msg.edit({ text: `\u274C You need admin privileges to use \`${prefix}${command}\` in this chat.` });
+          return;
+        }
+      } catch {
+        // If we can't check permissions (e.g. basic group), allow command
+      }
     }
 
     const handler = commandHandlers[command];
@@ -484,7 +565,7 @@ export class UserbotManager {
       return;
     }
 
-    console.log(`[USERBOT-MGR] ${sessionId.slice(0, 8)} executing: ${prefix}${command} (chat: ${msg.chatId})`);
+    console.log(`[USERBOT-MGR] ${sessionId.slice(0, 8)} executing: ${prefix}${command} (chat: ${chatId})`);
 
     try {
       await handler(client, event);
@@ -519,6 +600,12 @@ export class UserbotManager {
     sessionId: string,
   ): Promise<void> {
     const msg = event.message;
+    const inChatId = msg.chatId?.toString() || '';
+
+    // Skip passive handlers in the support group
+    if (inChatId === SUPPORT_GROUP_ID || inChatId === SUPPORT_GROUP_ID.replace('-100', '')) {
+      return;
+    }
 
     // Humanized read delay
     await readDelay();

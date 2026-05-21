@@ -53,6 +53,11 @@ const footerLinks = {
     { href: '/blog/whatsapp-bot-for-schools-campus-groups', label: 'Bot for Schools & Campus' },
     { href: '/blog/best-free-bot-platforms-2026', label: 'Best Bot Platforms 2026' },
   ],
+  Community: [
+    { href: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', label: 'WhatsApp Support Group' },
+    { href: 'https://t.me/botwavegrp', label: 'Telegram Support Group' },
+    { href: 'https://t.me/BotWaveUpdates', label: 'Telegram Updates Channel' },
+  ],
   Company: [
     { href: '/what-is-botwave', label: 'What is BotWave?' },
     { href: '/privacy', label: 'Privacy Policy' },
@@ -113,12 +118,23 @@ export default function Footer() {
               <ul className="space-y-2.5 list-none">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors leading-snug block"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.href.startsWith('http') ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors leading-snug block"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors leading-snug block"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
