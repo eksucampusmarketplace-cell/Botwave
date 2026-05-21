@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotWave - Verify</title>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, sans-serif; background: #0d1117; color: #e6edf3; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .container { text-align: center; max-width: 400px; padding: 2rem; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  p { color: #8b949e; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  .cf-turnstile { display: inline-block; margin-bottom: 1rem; }
+  .status { padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+  .status.success { display: block; background: rgba(46,160,67,0.15); color: #3fb950; border: 1px solid rgba(46,160,67,0.3); }
+  .status.error { display: block; background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Verify You're Human</h1>
+  <p>Complete the challenge below to gain access to the group.</p>
+  <div class="cf-turnstile" data-sitekey="" id="turnstile-widget" data-callback="onVerify" data-theme="dark"></div>
+  <div id="status" class="status"></div>
+</div>
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var sessionId = params.get('sessionId');
+  var chatId = params.get('chatId');
+  var userId = params.get('userId');
+  var siteKey = params.get('siteKey') || '';
+
+  if (siteKey) {
+    document.getElementById('turnstile-widget').setAttribute('data-sitekey', siteKey);
+  }
+
+  function onVerify(token) {
+    var status = document.getElementById('status');
+    fetch('/api/telegram/captcha/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sessionId, chatId: chatId, userId: userId, turnstileToken: token }),
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.success) {
+        status.className = 'status success';
+        status.textContent = 'Verified! You can now close this page and use the group.';
+      } else {
+        status.className = 'status error';
+        status.textContent = 'Verification failed: ' + (data.error || 'Unknown error');
+      }
+    })
+    .catch(function() {
+      status.className = 'status error';
+      status.textContent = 'Network error. Please try again.';
+    });
+  }
+</script>
+</body>
+</html>

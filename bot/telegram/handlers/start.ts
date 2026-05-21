@@ -425,6 +425,37 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     });
   });
 
+  // ── /privacy - show privacy policy link ──────────────────────────────────
+
+  bot.command('privacy', async (ctx) => {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
+    const keyboard = new InlineKeyboard()
+      .url('Read Privacy Policy', `${appUrl}/privacy`);
+
+    await ctx.reply(
+      '<b>Privacy Policy</b>\n\n' +
+      'BotWave does not store your messages or read private chats. ' +
+      'Your session runs from your own device IP.\n\n' +
+      'Click below to read the full privacy policy.',
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
+  });
+
+  // ── /terms - show terms of service link ─────────────────────────────────
+
+  bot.command('terms', async (ctx) => {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
+    const keyboard = new InlineKeyboard()
+      .url('Read Terms of Service', `${appUrl}/terms`);
+
+    await ctx.reply(
+      '<b>Terms of Service</b>\n\n' +
+      'By using BotWave, you agree to our Terms of Service.\n\n' +
+      'Click below to read the full terms.',
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
+  });
+
   // ── /setstart - customize start message ─────────────────────────────────
 
   bot.command('setstart', async (ctx) => {
