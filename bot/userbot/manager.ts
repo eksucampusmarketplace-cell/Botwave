@@ -23,6 +23,7 @@ import {
   updateSessionState,
   updateSessionLastActive,
   saveSessionString,
+  clearSessionString,
 } from './utils/db';
 import {
   readDelay,
@@ -88,6 +89,11 @@ interface ManagedUserbot {
   startedAt: number;
   lastSessionRefresh: number;
 }
+
+// Cooldown for auto-reset after terminal auth errors.
+// Prevents rapid retry loops while allowing eventual recovery.
+const AUTH_RESET_COOLDOWN_MS = 5 * 60_000; // 5 minutes
+const authResetCooldowns = new Map<string, number>();
 
 export class UserbotManager {
   private userbots: Map<string, ManagedUserbot> = new Map();
@@ -259,9 +265,11 @@ export class UserbotManager {
                 errMsg.includes('SESSION_REVOKED') ||
                 errMsg.includes('USER_DEACTIVATED')
               ) {
-                console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} terminal error: ${errMsg} - marking needs_reauth`);
+                console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} terminal error: ${errMsg} - purging session and marking needs_reauth`);
+                await clearSessionString(sessionId);
                 await updateSessionState(sessionId, 'needs_reauth');
                 this.userbots.delete(sessionId);
+                this.scheduleAuthReset(sessionId, errMsg);
                 continue;
               }
 
@@ -315,9 +323,11 @@ export class UserbotManager {
       } else {
         // Check if this was a terminal auth error
         if (ub.client.authError) {
-          console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auth dead: ${ub.client.authError} - marking needs_reauth`);
+          console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auth dead: ${ub.client.authError} - purging and marking needs_reauth`);
+          await clearSessionString(sessionId);
           await updateSessionState(sessionId, 'needs_reauth');
           this.userbots.delete(sessionId);
+          this.scheduleAuthReset(sessionId, ub.client.authError);
           return;
         }
 
@@ -335,8 +345,10 @@ export class UserbotManager {
         errMsg.includes('SESSION_REVOKED') ||
         errMsg.includes('USER_DEACTIVATED')
       ) {
+        await clearSessionString(sessionId);
         await updateSessionState(sessionId, 'needs_reauth');
         this.userbots.delete(sessionId);
+        this.scheduleAuthReset(sessionId, errMsg);
         return;
       }
 
@@ -348,6 +360,30 @@ export class UserbotManager {
         (this as unknown as Record<string, number>)[failKey] = 0;
       }
     }
+  }
+
+  /**
+   * Schedule an automatic session reset after a terminal auth error.
+   * Waits AUTH_RESET_COOLDOWN_MS (5 min) then transitions the session from
+   * needs_reauth → qr_pending so the user can re-authenticate from the dashboard.
+   */
+  private scheduleAuthReset(sessionId: string, error: string): void {
+    const lastReset = authResetCooldowns.get(sessionId) || 0;
+    if (Date.now() - lastReset < AUTH_RESET_COOLDOWN_MS) {
+      console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auto-reset skipped — cooldown active`);
+      return;
+    }
+    authResetCooldowns.set(sessionId, Date.now());
+
+    console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} scheduling auto-reset in ${AUTH_RESET_COOLDOWN_MS / 1000}s after: ${error}`);
+    setTimeout(async () => {
+      try {
+        await updateSessionState(sessionId, 'qr_pending');
+        console.log(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auto-reset complete — moved to qr_pending for re-authentication`);
+      } catch (err) {
+        console.error(`[USERBOT-MGR] Session ${sessionId.slice(0, 8)} auto-reset failed:`, err);
+      }
+    }, AUTH_RESET_COOLDOWN_MS);
   }
 
   // ─── Handler Registration ─────────────────────────────────────────────────

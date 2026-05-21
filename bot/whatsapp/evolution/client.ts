@@ -559,6 +559,39 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
     return null;
   }
 
+  // Lightweight connectivity check: verify proxy can reach WhatsApp before assigning.
+  // Skips check if HttpsProxyAgent is not available.
+  if (HttpsProxyAgent) {
+    const proxyParts = PROXY_LIST[chosen.idx].split(':');
+    if (proxyParts.length >= 4) {
+      const [pHost, pPort, pUser, pPass] = proxyParts;
+      const proxyUrl = `http://${pUser}:${pPass}@${pHost}:${pPort}`;
+      try {
+        const agent = new HttpsProxyAgent(proxyUrl);
+        const pingCtrl = new AbortController();
+        const pingTimeout = setTimeout(() => pingCtrl.abort(), 8_000);
+        await fetch('https://web.whatsapp.com', {
+          method: 'HEAD',
+          signal: pingCtrl.signal,
+          // @ts-expect-error -- Node fetch supports agent option
+          agent,
+        });
+        clearTimeout(pingTimeout);
+      } catch {
+        console.warn(`[PROXY] Health ping failed for ${pHost}:${pPort} — skipping, trying next`);
+        recordProxyFailure(sessionId || 'pre-assign', pHost, 'health ping failed');
+        // Try next best proxy from the healthy list
+        const fallback = healthy.filter(s => s.idx !== chosen!.idx).sort((a, b) => a.totalCount - b.totalCount);
+        if (fallback.length > 0) {
+          chosen = fallback[0];
+        } else {
+          console.warn(`[PROXY] No healthy proxy passed pre-assignment ping`);
+          return null;
+        }
+      }
+    }
+  }
+
   const proxyStr = PROXY_LIST[chosen.idx];
   proxyCounter = chosen.idx + 1;
 

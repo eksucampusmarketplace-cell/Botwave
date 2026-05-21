@@ -319,4 +319,19 @@ export async function updateSessionLastActive(sessionId: string): Promise<void> 
     .eq('id', sessionId);
 }
 
+/**
+ * Clear the session string for a userbot session.
+ * Called on terminal auth errors (AUTH_KEY_DUPLICATED, etc.) so the
+ * stale credentials are not reused on the next startup attempt.
+ */
+export async function clearSessionString(sessionId: string): Promise<void> {
+  await supabase
+    .from('bot_sessions')
+    .update({
+      telegram_session_string: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', sessionId);
+}
+
 export { supabase };
