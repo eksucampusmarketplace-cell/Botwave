@@ -1,12 +1,13 @@
 import './env';
 import { isMainThread } from 'worker_threads';
+import { createClient } from '@supabase/supabase-js';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration, BOT_PLATFORM } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, getCircuitStats } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
-import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './whatsapp/evolution/client';
+import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence, fetchAllEvolutionInstances } from './whatsapp/evolution/client';
 import { disconnectRedis } from './infrastructure/redis';
 import { isCircuitOpen } from './infrastructure/circuitBreaker';
 import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './infrastructure/gracefulShutdown';
@@ -67,10 +68,11 @@ async function start() {
   // Wait for Evolution API to be reachable before syncing sessions.
   // This prevents the cascade where 404s during loading poison the health counter.
   const USE_EVOLUTION = !!(process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY);
+  let evolutionReady = false;
   if (USE_EVOLUTION) {
     console.log('[BOT] Waiting for Evolution API to become ready...');
-    const ready = await waitForEvolutionReady(15, 2000);
-    if (ready) {
+    evolutionReady = await waitForEvolutionReady(15, 2000);
+    if (evolutionReady) {
       console.log('[BOT] Evolution API is ready - proceeding with session sync');
       resetEvolutionHealth();
 
@@ -84,6 +86,50 @@ async function start() {
       }
     } else {
       console.warn('[BOT] Evolution API did not become ready - sessions will retry during sync loop');
+    }
+  }
+
+  // State reconciliation: compare DB-active sessions against what Evolution
+  // API actually has. Sessions marked 'active' in the DB but missing from
+  // Evolution API (e.g. after an Evolution API restart that lost instances)
+  // are reset to 'needs_reauth' so the sync loop can re-pair them.
+  if (USE_EVOLUTION && !IS_WORKER) {
+    try {
+      const evoInstances = await fetchAllEvolutionInstances();
+      if (evoInstances.size > 0 || evolutionReady) {
+        const reconcileSupa = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        );
+        const { data: activeSessions } = await reconcileSupa
+          .from('bot_sessions')
+          .select('id, state, phone_number')
+          .in('state', ['active', 'inactive'])
+          .eq('platform', 'whatsapp');
+        if (activeSessions && activeSessions.length > 0) {
+          let reconciled = 0;
+          for (const session of activeSessions) {
+            if (!evoInstances.has(session.id)) {
+              await reconcileSupa
+                .from('bot_sessions')
+                .update({
+                  state: 'needs_reauth',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', session.id)
+                .in('state', ['active', 'inactive']);
+              reconciled++;
+            }
+          }
+          if (reconciled > 0) {
+            console.log(`[STARTUP-RECONCILE] Marked ${reconciled} DB-active session(s) as needs_reauth (missing from Evolution API)`);
+          } else {
+            console.log(`[STARTUP-RECONCILE] All ${activeSessions.length} DB-active session(s) have matching Evolution API instances`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[STARTUP-RECONCILE] State reconciliation failed (non-fatal):', err);
     }
   }
 

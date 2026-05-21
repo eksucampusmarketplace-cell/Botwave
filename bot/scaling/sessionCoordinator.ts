@@ -20,7 +20,7 @@ import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync, areAllWorkersD
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from '../infrastructure/redis';
 import { isCircuitOpen } from '../infrastructure/circuitBreaker';
 import { isShutdown } from '../infrastructure/gracefulShutdown';
-import { deleteInstanceAndVerify, restartInstance } from '../whatsapp/evolution/client';
+import { deleteInstanceAndVerify, reconnectInstance } from '../whatsapp/evolution/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -673,20 +673,23 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
     if (!updateErr) {
       recovered++;
-      console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Restarting Evolution instance...`);
+      console.log(`[AUTO-RECOVERY] Session ${sid} reset to active (soft recovery, attempt ${newAttempt}). Reconnecting Evolution instance...`);
 
-      // Restart the Evolution instance to force a fresh WebSocket connection.
-      // Without this, the instance may remain in a stale/close state even though
-      // the DB says 'active', and the sync loop won't reconnect.
+      // Reconnect the Evolution instance using the best method for its current state.
+      // reconnectInstance checks the instance state and uses:
+      // - restartInstance for 'open'/'connecting' (closes + reopens WebSocket)
+      // - connectInstance for 'close' (reconnects using saved auth)
+      // Previously used restartInstance directly, which always failed for
+      // 'close' state instances (Evolution API returns 400 "not connected").
       try {
-        const restarted = await restartInstance(session.id);
-        if (restarted) {
-          console.log(`[AUTO-RECOVERY] Session ${sid} Evolution instance restarted successfully`);
+        const reconnected = await reconnectInstance(session.id, session.phone_number);
+        if (reconnected) {
+          console.log(`[AUTO-RECOVERY] Session ${sid} Evolution instance reconnected successfully`);
         } else {
-          console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution restart returned false - sync loop will handle`);
+          console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution reconnect returned false - sync loop will handle`);
         }
       } catch (restartErr) {
-        console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution restart failed:`, restartErr);
+        console.warn(`[AUTO-RECOVERY] Session ${sid} Evolution reconnect failed:`, restartErr);
       }
     } else {
       console.error(`[AUTO-RECOVERY] Failed to reset session ${sid}:`, updateErr);
