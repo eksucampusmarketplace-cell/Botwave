@@ -156,6 +156,7 @@ export default function FlowsPage() {
             <div>
               <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 Chatbot Flow Builder
+                <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">WhatsApp Only</span>
               </h1>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                 Build automated conversation flows triggered by keywords
