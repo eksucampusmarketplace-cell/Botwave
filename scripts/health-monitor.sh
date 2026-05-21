@@ -51,13 +51,18 @@ check "botwave-web HTTP" "curl -sf -o /dev/null -w '%{http_code}' --max-time 10 
 check "evolution-api HTTP" "curl -sf -o /dev/null --max-time 10 http://localhost:8080/"
 
 # 4. Webhook reachability (Evolution → BotWave via Docker network)
+# wget returns non-zero for 4xx/5xx, but 405 (Method Not Allowed) means
+# the endpoint IS reachable — it just rejects GET. Check the output for 405.
 echo ""
 echo "─── Webhook Connectivity ───"
-WEBHOOK_STATUS=$(docker exec evolution_api wget -q -O /dev/null --timeout=5 http://botwave-web:10000/api/evolution/webhook 2>&1; echo $?)
-if [ "$WEBHOOK_STATUS" = "0" ] || docker exec evolution_api wget -q -O /dev/null --timeout=5 http://botwave-web:10000/api/evolution/webhook 2>&1 | grep -q "405"; then
+WEBHOOK_OUTPUT=$(docker exec evolution_api wget -q -S -O /dev/null --timeout=5 http://botwave-web:10000/api/evolution/webhook 2>&1 || true)
+if echo "$WEBHOOK_OUTPUT" | grep -qE "200|405|Method Not Allowed"; then
   echo -e "${GREEN}[OK]${NC} evolution-api → botwave-web webhook (reachable)"
+elif echo "$WEBHOOK_OUTPUT" | grep -qE "EAI_AGAIN|ENOTFOUND|getaddrinfo"; then
+  echo -e "${RED}[FAIL]${NC} evolution-api → botwave-web webhook (DNS FAILURE)"
+  FAILURES=$((FAILURES + 1))
 else
-  echo -e "${RED}[FAIL]${NC} evolution-api → botwave-web webhook (UNREACHABLE)"
+  echo -e "${RED}[FAIL]${NC} evolution-api → botwave-web webhook (UNREACHABLE: $WEBHOOK_OUTPUT)"
   FAILURES=$((FAILURES + 1))
 fi
 
@@ -72,6 +77,8 @@ echo "  Redis memory: $REDIS_MEMORY"
 echo ""
 echo "─── Proxy Spot-Check ───"
 PROXY_LIST=$(docker exec botwave_whatsapp printenv PROXY_LIST 2>/dev/null || echo "")
+# Proxies are tested from the VPS host (not inside Docker) to verify
+# end-to-end connectivity through the proxy to WhatsApp.
 if [ -n "$PROXY_LIST" ]; then
   PROXY_COUNT=$(echo "$PROXY_LIST" | tr ',' '\n' | wc -l)
   echo "  Total proxies in pool: $PROXY_COUNT"
