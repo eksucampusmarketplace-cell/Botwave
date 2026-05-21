@@ -2,7 +2,7 @@
 // REST client for Evolution API endpoints.
 
 import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
-import { getSessionById } from '../../database';
+import { getSessionById, recordSharedProxyAssignment, clearSharedProxyAssignment } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let HttpsProxyAgent: any;
@@ -398,6 +398,11 @@ export async function clearSessionProxy(sessionId: string, phoneNumber?: string)
   }
   sessionProxyMap.delete(sessionId);
   await redisClearSessionProxy(sessionId);
+  // Mirror the clear into the DB so the persisted shared-pool assignment
+  // doesn't drift out of sync with the in-flight (Redis) binding.
+  await clearSharedProxyAssignment(sessionId).catch(err =>
+    console.warn(`[PROXY] DB clear failed for ${sessionId.slice(0, 8)}: ${err?.message ?? err}`)
+  );
   console.log(`[PROXY] Cleared sticky proxy for session ${sessionId.slice(0, 8)} — will pick a fresh proxy on next assignment`);
 }
 
@@ -602,6 +607,12 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
     if (countryCode) {
       await redisAddProxyCountrySession(chosen.host, countryCode, sessionId);
     }
+    // Mirror to DB so the assignment survives Redis flushes and is visible
+    // in admin dashboards for proxy-related disconnect investigations.
+    // Best-effort: never fail the assignment if the DB write hiccups.
+    await recordSharedProxyAssignment(sessionId, chosen.host).catch(err =>
+      console.warn(`[PROXY] DB record failed for ${sessionId.slice(0, 8)}: ${err?.message ?? err}`)
+    );
     console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount})`);
   }
 

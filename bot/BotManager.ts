@@ -1190,7 +1190,11 @@ export class EvolutionBot {
                 const dbCode = await getSessionPairingCode(this.sessionId);
                 if (dbCode !== latestResult.pairingCode) {
                   console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" - updating DB`);
-                  await updateSessionPairingCode(this.sessionId, latestResult.pairingCode);
+                  // force: true because the row may still be in 'active' from a
+                  // brief WS state=open before the next close — without this, the
+                  // .neq('state','active') guard silently drops the update and the
+                  // dashboard keeps showing the stale code while Evolution rotates it.
+                  await updateSessionPairingCode(this.sessionId, latestResult.pairingCode, { force: true });
                 }
               }
             } catch (err) {
@@ -1221,7 +1225,9 @@ export class EvolutionBot {
                     if (freshResult.qrCode) {
                       await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                     }
-                    await updateSessionPairingCode(this.sessionId, freshResult.pairingCode);
+                    // force: true — retry path after proxy rotation; row may
+                    // still be `active` from a transient WS state=open.
+                    await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
                     this.pairingStartedAt = Date.now();
                     // Don't reset pairingWaitStart — the full timeout still applies from original start
                     console.log(`[EVO] Early proxy rotation succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
@@ -1287,7 +1293,8 @@ export class EvolutionBot {
                   if (freshResult.qrCode) {
                     await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                   }
-                  await updateSessionPairingCode(this.sessionId, freshResult.pairingCode);
+                  // force: true — auto-retry path; row may still be `active`.
+                  await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
                   this.pairingStartedAt = Date.now();
                   pairingWaitStart = Date.now();
                   console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
@@ -1473,7 +1480,8 @@ export class EvolutionBot {
                 if (freshResult2.qrCode) {
                   await updateSessionQR(this.sessionId, freshResult2.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                 }
-                await updateSessionPairingCode(this.sessionId, freshResult2.pairingCode);
+                // force: true — auto-retry path after close/refused.
+                await updateSessionPairingCode(this.sessionId, freshResult2.pairingCode, { force: true });
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
                 console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
@@ -1546,7 +1554,8 @@ export class EvolutionBot {
                 if (freshResult3.qrCode) {
                   await updateSessionQR(this.sessionId, freshResult3.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
                 }
-                await updateSessionPairingCode(this.sessionId, freshResult3.pairingCode);
+                // force: true — instance recreate path; row may still be `active`.
+                await updateSessionPairingCode(this.sessionId, freshResult3.pairingCode, { force: true });
                 this.isPairingSent = true;
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();

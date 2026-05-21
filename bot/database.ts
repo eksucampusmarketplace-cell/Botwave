@@ -241,11 +241,27 @@ export async function getSessionPairingCode(sessionId: string): Promise<string |
   return data.pairing_code || null;
 }
 
-export async function updateSessionPairingCode(sessionId: string, code: string) {
+/**
+ * Persist a fresh pairing code for a session.
+ *
+ * Default behavior protects `active` rows from being silently regressed to
+ * `pairing_sent` (a stale Evolution webhook can otherwise corrupt a working
+ * session). When the bot itself is intentionally re-pairing — e.g., after a
+ * WebSocket close + auto-retry — pass `force: true` so the protection is
+ * bypassed and the retry code actually persists. Without this, the DB row
+ * keeps reporting the OLD code while the bot keeps generating new ones, and
+ * the dashboard shows nothing.
+ */
+export async function updateSessionPairingCode(
+  sessionId: string,
+  code: string,
+  options: { force?: boolean } = {}
+) {
+  const { force = false } = options;
   const dbTimestamp = new Date().toISOString();
   const codeLength = code?.length || 0;
   const isEmptyCode = !code || code.trim() === '';
-  console.log(`[PAIRING-DB] === Saving pairing code ===> session=${sessionId} code="${code}" codeLen=${codeLength} isEmpty=${isEmptyCode} dbTimestamp=${dbTimestamp}`);
+  console.log(`[PAIRING-DB] === Saving pairing code ===> session=${sessionId} code="${code}" codeLen=${codeLength} isEmpty=${isEmptyCode} force=${force} dbTimestamp=${dbTimestamp}`);
 
   // Read current state BEFORE the update so we can log what happened
   const { data: preState, error: preErr } = await supabase
@@ -260,20 +276,31 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
     console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingCode=${preState?.pairing_code ? `"${preState.pairing_code}"` : 'null'} lastUpdated=${preState?.updated_at}`);
   }
 
-  const { error, count } = await supabase
+  // `count: 'exact'` makes `count` reflect the real number of rows affected.
+  // Without it Supabase returns `null` and we lose visibility into whether the
+  // update actually applied — the silent-fail bug that left Yousef's pairing
+  // code stuck at NULL during a re-pair storm.
+  let query = supabase
     .from('bot_sessions')
     .update({
       pairing_code: code,
       state: isEmptyCode ? 'qr_pending' : 'pairing_sent',
       updated_at: dbTimestamp
-    })
-    .eq('id', sessionId)
-    .neq('state', 'active');  // never overwrite an active session
+    }, { count: 'exact' })
+    .eq('id', sessionId);
+
+  if (!force) {
+    // Default guard: never silently overwrite an active session's state. The
+    // bot's intentional retry path passes force=true to bypass this.
+    query = query.neq('state', 'active');
+  }
+
+  const { error, count } = await query;
 
   if (error) {
     console.error(`[PAIRING-DB] ERROR saving pairing code for ${sessionId}: code=${error.code} message=${error.message} details=${error.details}`);
   } else if (count === 0) {
-    console.warn(`[PAIRING-DB] BLOCKED - no rows updated for ${sessionId}. Session is likely in 'active' state (protected). code="${code}"`);
+    console.warn(`[PAIRING-DB] BLOCKED - no rows updated for ${sessionId} (force=${force}). Session is likely in 'active' state (protected) or row missing. code="${code}"`);
   } else {
     console.log(`[PAIRING-DB] SUCCESS - pairing code saved for ${sessionId}: code="${code}" rowsUpdated=${count} at=${dbTimestamp}`);
   }
@@ -298,6 +325,10 @@ export async function updateSessionPairingCode(sessionId: string, code: string) 
   // Invalidate Redis caches after pairing code change
   await invalidateSessionCache(sessionId);
   await invalidateQRCache(sessionId);
+
+  // Surface success/failure so callers (e.g. the retry path in BotManager)
+  // can react instead of silently moving on.
+  return { applied: !error && (count ?? 0) > 0, count: count ?? 0 };
 }
 
 export async function updateSessionStatus(sessionId: string, status: string) {
@@ -419,6 +450,52 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     // Invalidate Redis caches after state change
     await invalidateSessionCache(sessionId);
     await invalidateQRCache(sessionId);
+  }
+}
+
+/**
+ * Persist the shared-pool proxy assignment for a session into the DB.
+ *
+ * Redis still owns the canonical sticky binding for hot-path lookups, but
+ * mirroring the proxy host + assignment timestamp into `bot_sessions.proxy_id`
+ * / `last_proxy_assigned` gives:
+ *   - Visibility in admin dashboards (which proxy is paired with which session)
+ *   - Recovery after a Redis flush (next assignment can prefer the last known
+ *     proxy host instead of picking blind)
+ *   - An audit trail for proxy-related disconnect investigations.
+ *
+ * Only applies to shared-pool ('shared') sessions; custom BYOP proxies already
+ * persist host/port via the proxy settings API and must not be overwritten.
+ */
+export async function recordSharedProxyAssignment(sessionId: string, proxyHost: string): Promise<void> {
+  if (!proxyHost) return;
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({
+      proxy_id: proxyHost,
+      last_proxy_assigned: new Date().toISOString(),
+    })
+    .eq('id', sessionId)
+    .eq('proxy_type', 'shared');
+  if (error) {
+    console.warn(`[PROXY-DB] Failed to record shared proxy assignment for ${sessionId}: ${error.message}`);
+  } else {
+    console.log(`[PROXY-DB] Recorded shared proxy ${proxyHost} for session ${sessionId.slice(0, 8)}`);
+  }
+}
+
+/**
+ * Clear the persisted shared-pool proxy assignment for a session. Called
+ * alongside the Redis sticky clear so the DB record stays in sync.
+ */
+export async function clearSharedProxyAssignment(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('bot_sessions')
+    .update({ proxy_id: null })
+    .eq('id', sessionId)
+    .eq('proxy_type', 'shared');
+  if (error) {
+    console.warn(`[PROXY-DB] Failed to clear shared proxy assignment for ${sessionId}: ${error.message}`);
   }
 }
 
