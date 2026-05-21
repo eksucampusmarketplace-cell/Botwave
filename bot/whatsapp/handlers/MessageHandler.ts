@@ -754,46 +754,156 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
 
 // ─── Chatbot Flow Execution ─────────────────────────────────────────────────
 
-const flowSessionState = new Map<string, { flowId: string; nodeIndex: number; expiry: number }>();
+interface FlowNode {
+  id: string;
+  type: 'message' | 'question' | 'condition' | 'delay';
+  content: string;
+  next?: string;
+  options?: { label: string; next: string }[];
+}
+
+interface FlowState {
+  flowId: string;
+  nodeId: string;
+  expiry: number;
+}
+
+const flowSessionState = new Map<string, FlowState>();
+const FLOW_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+function findNodeById(nodes: FlowNode[], id: string): FlowNode | undefined {
+  return nodes.find(n => n.id === id);
+}
+
+function getNextNodeId(nodes: FlowNode[], currentIndex: number): string | undefined {
+  return nodes[currentIndex + 1]?.id;
+}
+
+function getNodeText(node: FlowNode): string {
+  return node.content || '';
+}
+
+async function executeFlowNode(
+  node: FlowNode, nodes: FlowNode[], flow: { id: string },
+  stateKey: string, context: MessageContext, sock: any,
+): Promise<boolean> {
+  const text = getNodeText(node);
+  const currentIdx = nodes.findIndex(n => n.id === node.id);
+
+  if (node.type === 'message') {
+    if (text) {
+      await sendReply(context.chatJid, text, sock, context.rawMessage.key, context.queue);
+    }
+    // Auto-advance to next node
+    const nextId = node.next || getNextNodeId(nodes, currentIdx);
+    if (nextId) {
+      const nextNode = findNodeById(nodes, nextId);
+      if (nextNode) {
+        // If next is a delay, schedule it then continue
+        if (nextNode.type === 'delay') {
+          const delaySec = parseInt(nextNode.content, 10) || 3;
+          await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+          const afterDelayId = nextNode.next || getNextNodeId(nodes, nodes.findIndex(n => n.id === nextNode.id));
+          if (afterDelayId) {
+            const afterNode = findNodeById(nodes, afterDelayId);
+            if (afterNode) return executeFlowNode(afterNode, nodes, flow, stateKey, context, sock);
+          }
+          flowSessionState.delete(stateKey);
+          return true;
+        }
+        // If next is question or condition, wait for user input
+        if (nextNode.type === 'question' || nextNode.type === 'condition') {
+          const qText = getNodeText(nextNode);
+          if (qText) {
+            let optionsText = '';
+            if (nextNode.options && nextNode.options.length > 0) {
+              optionsText = '\n\n' + nextNode.options.map((o, i) => `${i + 1}. ${o.label}`).join('\n');
+            }
+            await sendReply(context.chatJid, qText + optionsText, sock, context.rawMessage.key, context.queue);
+          }
+          flowSessionState.set(stateKey, { flowId: flow.id, nodeId: nextNode.id, expiry: Date.now() + FLOW_EXPIRY_MS });
+          return true;
+        }
+        // If next is another message, auto-execute it
+        return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
+      }
+    }
+    flowSessionState.delete(stateKey);
+    return true;
+  }
+
+  if (node.type === 'question' || node.type === 'condition') {
+    if (text) {
+      let optionsText = '';
+      if (node.options && node.options.length > 0) {
+        optionsText = '\n\n' + node.options.map((o, i) => `${i + 1}. ${o.label}`).join('\n');
+      }
+      await sendReply(context.chatJid, text + optionsText, sock, context.rawMessage.key, context.queue);
+    }
+    // Wait for user input
+    flowSessionState.set(stateKey, { flowId: flow.id, nodeId: node.id, expiry: Date.now() + FLOW_EXPIRY_MS });
+    return true;
+  }
+
+  if (node.type === 'delay') {
+    const delaySec = parseInt(node.content, 10) || 3;
+    await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+    const nextId = node.next || getNextNodeId(nodes, currentIdx);
+    if (nextId) {
+      const nextNode = findNodeById(nodes, nextId);
+      if (nextNode) return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
+    }
+    flowSessionState.delete(stateKey);
+    return true;
+  }
+
+  return false;
+}
 
 async function processChatbotFlow(context: MessageContext, sock: any): Promise<boolean> {
   if (!context.userId) return false;
 
-  const stateKey = `${context.userId}:${context.chatJid}`;
+  const stateKey = `${context.userId}:${context.senderJid}`;
   const msgLower = context.message.toLowerCase().trim();
 
-  // Check if user is mid-flow
+  // Check if user is mid-flow (waiting for response to question/condition)
   const activeState = flowSessionState.get(stateKey);
   if (activeState && activeState.expiry > Date.now()) {
     try {
       const flows = await getChatbotFlows(context.userId);
-      const flow = flows.find((f: any) => f.id === activeState.flowId);
+      const flow = flows.find((f: { id: string }) => f.id === activeState.flowId);
       if (flow && Array.isArray(flow.nodes)) {
-        const currentNode = flow.nodes[activeState.nodeIndex];
-        if (currentNode) {
-          // Check if user input matches an option or advance to next node
-          let nextIndex = activeState.nodeIndex + 1;
-          if (currentNode.options && Array.isArray(currentNode.options)) {
-            const matchedOption = currentNode.options.find(
-              (opt: any) => msgLower === String(opt.value || opt.label || '').toLowerCase()
-            );
-            if (matchedOption && typeof matchedOption.next === 'number') {
-              nextIndex = matchedOption.next;
+        const nodes = flow.nodes as FlowNode[];
+        const currentNode = findNodeById(nodes, activeState.nodeId);
+        if (currentNode && (currentNode.type === 'question' || currentNode.type === 'condition')) {
+          let nextId: string | undefined;
+
+          // Try to match user input to an option
+          if (currentNode.options && currentNode.options.length > 0) {
+            // Match by number (1, 2, 3...) or label text
+            const numChoice = parseInt(msgLower, 10);
+            if (numChoice > 0 && numChoice <= currentNode.options.length) {
+              nextId = currentNode.options[numChoice - 1].next;
+            } else {
+              const matched = currentNode.options.find(
+                (opt) => msgLower === (opt.label || '').toLowerCase()
+              );
+              if (matched) nextId = matched.next;
             }
           }
 
-          if (nextIndex < flow.nodes.length) {
-            const nextNode = flow.nodes[nextIndex];
-            const responseText = nextNode.message || nextNode.text || '';
-            if (responseText) {
-              await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
-            }
-            if (nextIndex + 1 < flow.nodes.length && nextNode.options) {
-              flowSessionState.set(stateKey, { flowId: flow.id, nodeIndex: nextIndex, expiry: Date.now() + 5 * 60 * 1000 });
-            } else {
+          // If no option matched, use node's default next or advance sequentially
+          if (!nextId) {
+            const currentIdx = nodes.findIndex(n => n.id === currentNode.id);
+            nextId = currentNode.next || getNextNodeId(nodes, currentIdx);
+          }
+
+          if (nextId) {
+            const nextNode = findNodeById(nodes, nextId);
+            if (nextNode) {
               flowSessionState.delete(stateKey);
+              return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
             }
-            return true;
           }
         }
       }
@@ -801,6 +911,7 @@ async function processChatbotFlow(context: MessageContext, sock: any): Promise<b
     } catch {
       flowSessionState.delete(stateKey);
     }
+    return true; // Consumed the message even if flow ended
   }
 
   // Check if message matches any flow trigger
@@ -813,17 +924,9 @@ async function processChatbotFlow(context: MessageContext, sock: any): Promise<b
       if (!trigger) continue;
 
       if (msgLower === trigger || msgLower.includes(trigger)) {
-        const nodes = Array.isArray(flow.nodes) ? flow.nodes : [];
+        const nodes = Array.isArray(flow.nodes) ? (flow.nodes as FlowNode[]) : [];
         if (nodes.length > 0) {
-          const firstNode = nodes[0];
-          const responseText = firstNode.message || firstNode.text || '';
-          if (responseText) {
-            await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
-          }
-          if (nodes.length > 1 && firstNode.options) {
-            flowSessionState.set(stateKey, { flowId: flow.id, nodeIndex: 0, expiry: Date.now() + 5 * 60 * 1000 });
-          }
-          return true;
+          return executeFlowNode(nodes[0], nodes, flow, stateKey, context, sock);
         }
       }
     }
