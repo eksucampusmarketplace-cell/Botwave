@@ -34,14 +34,25 @@ export async function GET(request: NextRequest) {
 
     const limits = getPlanLimits(sub?.plan || 'free');
 
-    // Get user's sessions and their connection status
-    const { data: sessions } = await supabase
-      .from('sessions')
-      .select('id, name, status, updated_at')
+    // Get user's sessions and their connection status.
+    // The canonical table is `bot_sessions`; columns are `session_name` and
+    // `state` (not `name`/`status`). Querying the non-existent `sessions`
+    // table previously caused "relation public.sessions does not exist"
+    // errors in Postgres.
+    const { data: sessionRows } = await supabase
+      .from('bot_sessions')
+      .select('id, session_name, state, updated_at')
       .eq('user_id', user.id);
 
-    const disconnected = (sessions || []).filter(
-      (s: Record<string, string>) => s.status === 'disconnected' || s.status === 'close'
+    const sessions = (sessionRows || []).map((s: Record<string, string>) => ({
+      id: s.id,
+      name: s.session_name,
+      status: s.state,
+      updated_at: s.updated_at,
+    }));
+
+    const disconnected = sessions.filter(
+      (s) => s.status === 'disconnected' || s.status === 'close' || s.status === 'needs_reauth'
     );
 
     // Get alert preferences
