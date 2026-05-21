@@ -226,6 +226,11 @@ export class TelegramBotInstance {
         console.warn(`[TG-BOT] Failed to set menu button for ${this.sessionId.slice(0, 8)}:`, menuErr);
       }
 
+      // BotFather reminder: send once after first connection
+      this.sendBotFatherReminder().catch((err) => {
+        console.warn(`[TG-BOT] BotFather reminder failed for ${this.sessionId.slice(0, 8)}:`, err);
+      });
+
       // Night mode scheduler: check every 60 seconds
       this.nightModeHandle = setInterval(async () => {
         if (this.stopped || !this.isReady || !this.bot) return;
@@ -504,6 +509,55 @@ export class TelegramBotInstance {
         id: bot.botInfo?.id?.toString() || '',
       },
     };
+  }
+
+  private async sendBotFatherReminder(): Promise<void> {
+    // Check if already sent
+    const { data: session } = await supabase
+      .from('bot_sessions')
+      .select('botfather_reminder_sent')
+      .eq('id', this.sessionId)
+      .single();
+
+    if (session?.botfather_reminder_sent) return;
+
+    // Get owner's Telegram user ID
+    const tgConfig = await getTelegramConfig(this.sessionId);
+    const ownerId = tgConfig.owner_user_id;
+    if (!ownerId || !this.bot) return;
+
+    const reminder =
+      `⚙️ <b>BotFather Setup Reminder</b>\n\n` +
+      `To get the most out of your BotWave bot, make sure you've configured these settings in @BotFather:\n\n` +
+      `1️⃣ <b>Disable Privacy Mode</b>\n` +
+      `   → /mybots → your bot → Bot Settings → Group Privacy → Turn off\n` +
+      `   <i>Required for the bot to see all group messages (not just commands)</i>\n\n` +
+      `2️⃣ <b>Enable Inline Mode</b> (optional)\n` +
+      `   → /mybots → your bot → Bot Settings → Inline Mode → Turn on\n\n` +
+      `3️⃣ <b>Set Bot Commands</b>\n` +
+      `   → /mybots → your bot → Edit Bot → Edit Commands\n` +
+      `   Paste:\n` +
+      `<code>help - Show all commands\nping - Check bot status\nstart - Start the bot\nsettings - Bot settings\nrules - Group rules\nwarn - Warn a user\nban - Ban a user\nmute - Mute a user\nkick - Kick a user\npurge - Delete messages\nnotes - List saved notes\nfilters - List auto-reply filters\ntr - Translate text</code>\n\n` +
+      `4️⃣ <b>Set About & Description</b>\n` +
+      `   → /mybots → your bot → Edit Bot → Edit About / Edit Description\n\n` +
+      `🔗 <b>Manage your bot:</b> https://botwave.online/dashboard\n` +
+      `🆘 <b>Support:</b> https://t.me/botwavegrp\n\n` +
+      `<i>This message is sent only once.</i>`;
+
+    try {
+      await this.bot.api.sendMessage(Number(ownerId), reminder, { parse_mode: 'HTML' });
+
+      // Mark as sent
+      await supabase
+        .from('bot_sessions')
+        .update({ botfather_reminder_sent: true })
+        .eq('id', this.sessionId);
+
+      console.log(`[TG-BOT] BotFather reminder sent to owner ${ownerId} for session ${this.sessionId.slice(0, 8)}`);
+    } catch (err) {
+      // Owner may not have started the bot yet — that's fine
+      console.warn(`[TG-BOT] Could not send BotFather reminder to ${ownerId}:`, err);
+    }
   }
 
   private async markInactive(reason: string): Promise<void> {

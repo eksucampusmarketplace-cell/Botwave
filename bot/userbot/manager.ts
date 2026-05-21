@@ -24,9 +24,6 @@ import {
   updateSessionLastActive,
   saveSessionString,
   clearSessionString,
-  getIgnoredChats,
-  addIgnoredChat,
-  removeIgnoredChat,
 } from './utils/db';
 import {
   readDelay,
@@ -39,6 +36,24 @@ import { logProxyStatus } from './utils/proxy';
 
 // BotWave support group — userbot commands are completely blocked here
 const SUPPORT_GROUP_ID = '-1003986594255';
+
+// Per-user command cooldown (2 seconds between commands per user)
+const USER_COOLDOWNS = new Map<string, number>();
+const COOLDOWN_MS = 2_000;
+
+function checkUserCooldown(userId: string): boolean {
+  const now = Date.now();
+  const last = USER_COOLDOWNS.get(userId) || 0;
+  if (now - last < COOLDOWN_MS) return false; // still on cooldown
+  USER_COOLDOWNS.set(userId, now);
+  // Cleanup old entries periodically
+  if (USER_COOLDOWNS.size > 500) {
+    for (const [uid, ts] of USER_COOLDOWNS) {
+      if (now - ts > 60_000) USER_COOLDOWNS.delete(uid);
+    }
+  }
+  return true;
+}
 
 // Commands that require admin privileges in group chats
 const ADMIN_ONLY_COMMANDS = new Set([
@@ -477,9 +492,25 @@ export class UserbotManager {
 
     const chatId = msg.chatId?.toString() || '';
 
-    // Block ALL userbot commands in the BotWave support group
+    // In the BotWave support group, only allow admin userbots
     if (chatId === SUPPORT_GROUP_ID || chatId === SUPPORT_GROUP_ID.replace('-100', '')) {
-      return;
+      try {
+        const perms = await client.invoke(
+          new Api.channels.GetParticipant({
+            channel: msg.chatId as any,
+            participant: new Api.InputPeerSelf(),
+          }),
+        );
+        const participant = perms.participant;
+        const isAdmin =
+          participant instanceof Api.ChannelParticipantAdmin ||
+          participant instanceof Api.ChannelParticipantCreator;
+        if (!isAdmin) {
+          return; // Non-admin userbots are silently blocked
+        }
+      } catch {
+        return; // Can't check permissions — block by default
+      }
     }
 
     const config = await getUserbotConfig(sessionId);
@@ -495,39 +526,23 @@ export class UserbotManager {
 
     const command = text.slice(prefix.length).split(/\s+/)[0].toLowerCase();
 
-    // Handle .ignorechat / .unignorechat inline (before ignored-chat check)
-    if (command === 'ignorechat') {
+    // Handle .support inline
+    if (command === 'support') {
       await waitForRateLimit('message_send');
-      if (!chatId) { await msg.edit({ text: '\u274C Use this command in a group chat.' }); return; }
-      await addIgnoredChat(sessionId, chatId);
-      await msg.edit({ text: `\u2705 This chat is now ignored. Userbot commands will not run here.\nUse \`${prefix}unignorechat\` to reverse.` });
-      return;
-    }
-    if (command === 'unignorechat') {
-      await waitForRateLimit('message_send');
-      if (!chatId) { await msg.edit({ text: '\u274C Use this command in a group chat.' }); return; }
-      await removeIgnoredChat(sessionId, chatId);
-      await msg.edit({ text: '\u2705 This chat is no longer ignored.' });
-      return;
-    }
-    if (command === 'ignoredchats' || command === 'ignorelist') {
-      await waitForRateLimit('message_send');
-      const ignored = await getIgnoredChats(sessionId);
-      if (ignored.length === 0) {
-        await msg.edit({ text: '\u{1F4CB} No chats are ignored.' });
-      } else {
-        const list = ignored.map((id, i) => `${i + 1}. \`${id}\``).join('\n');
-        await msg.edit({ text: `\u{1F4CB} **Ignored Chats** (${ignored.length}):\n\n${list}` });
-      }
+      await msg.edit({
+        text: '🆘 **BotWave Support**\n\n' +
+          '• WhatsApp Group: https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf\n' +
+          '• Telegram Group: https://t.me/botwavegrp\n' +
+          '• Updates Channel: https://t.me/BotWaveUpdates\n' +
+          '• Dashboard: https://botwave.online/dashboard',
+      });
       return;
     }
 
-    // Block commands in user-ignored chats
-    if (chatId) {
-      const ignoredChats = await getIgnoredChats(sessionId);
-      if (ignoredChats.includes(chatId)) {
-        return;
-      }
+    // Per-user command cooldown (2s between commands)
+    const userId = msg.senderId?.toString() || sessionId;
+    if (!checkUserCooldown(userId)) {
+      return; // silently drop — user is sending commands too fast
     }
 
     // Check if command's module is disabled

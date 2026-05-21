@@ -67,6 +67,10 @@ import { registerFeedbackHandlers } from './handlers/feedback';
 import { registerExportConfigHandlers } from './handlers/exportconfig';
 import { registerFeatureRequestHandlers } from './handlers/featureRequest';
 import { registerTranslateHandlers } from './handlers/translate';
+import { registerSupportGuardHandlers } from './handlers/supportguard';
+import { registerIgnoreChatHandlers } from './handlers/ignorechat';
+import { registerGroupWelcomeHandlers } from './handlers/groupwelcome';
+import { isIgnoredChat } from './utils/db';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig } from './utils/db';
@@ -101,6 +105,15 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
           return; // Silently drop message during night mode
         }
       }
+    }
+    await next();
+  });
+
+  // Middleware: ignored chat check (skip all processing if chat is ignored)
+  bot.on('message', async (ctx, next) => {
+    if (ctx.chat && ctx.chat.type !== 'private') {
+      const ignored = await isIgnoredChat(sessionId, ctx.chat.id.toString());
+      if (ignored) return;
     }
     await next();
   });
@@ -215,6 +228,9 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   registerExportConfigHandlers(bot, sessionId);
   registerFeatureRequestHandlers(bot, sessionId);
   registerTranslateHandlers(bot, sessionId);
+  registerSupportGuardHandlers(bot, sessionId);
+  registerIgnoreChatHandlers(bot, sessionId);
+  registerGroupWelcomeHandlers(bot, sessionId);
 
   // Invalidate admin cache on chat_member updates
   bot.on('chat_member', async (ctx) => {
