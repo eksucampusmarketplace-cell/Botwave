@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message too long (max 4096 characters)' }, { status: 400 });
     }
 
+    // Validate delay bounds to prevent abuse or negative values
+    const safeDelayMin = Math.max(1, Math.min(60, Number(delayMin) || 3));
+    const safeDelayMax = Math.max(safeDelayMin, Math.min(120, Number(delayMax) || 8));
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify the session exists and is active
@@ -142,21 +146,26 @@ export async function POST(request: NextRequest) {
 
         broadcastJobs.set(jobId, { ...job });
 
-        const delay = (Math.random() * (delayMax - delayMin) + delayMin) * 1000;
+        const delay = (Math.random() * (safeDelayMax - safeDelayMin) + safeDelayMin) * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
       job.status = job.failedCount === job.totalRecipients ? 'failed' : 'completed';
       job.completedAt = new Date().toISOString();
       broadcastJobs.set(jobId, { ...job });
-    })();
+    })().catch((err) => {
+      console.error(`[BROADCAST] Background job ${jobId} crashed:`, err);
+      job.status = 'failed';
+      job.completedAt = new Date().toISOString();
+      broadcastJobs.set(jobId, { ...job });
+    });
 
     return NextResponse.json({
       success: true,
       data: {
         jobId,
         totalRecipients: uniqueJids.length,
-        message: `Broadcasting to ${uniqueJids.length} recipients with ${delayMin}-${delayMax}s delay`,
+        message: `Broadcasting to ${uniqueJids.length} recipients with ${safeDelayMin}-${safeDelayMax}s delay`,
       },
     });
   } catch (error) {

@@ -268,7 +268,12 @@ async function runEmailCampaign(
     job.completedAt = new Date().toISOString();
     emailJobs.set(jobId, { ...job });
     console.log(`[EMAIL-BROADCAST] Job ${jobId} (${trigger}) completed: ${job.sentCount} sent, ${job.failedCount} failed, ${job.skippedCount} skipped`);
-  })();
+  })().catch((err) => {
+    console.error(`[EMAIL-BROADCAST] Background job ${jobId} crashed:`, err);
+    job.status = 'failed';
+    job.completedAt = new Date().toISOString();
+    emailJobs.set(jobId, { ...job });
+  });
 
   return job;
 }

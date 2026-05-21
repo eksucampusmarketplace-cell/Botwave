@@ -57,7 +57,7 @@ import { cacheMessage, checkReactRules, expandAlias, getGhostDelay } from '../co
 import '../commands';
 
 const DEFAULT_COMMAND_PREFIX = '!';
-const RATE_LIMIT_WINDOW = 60000;
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
 
 // ─── JID Normalization ──────────────────────────────────────────────────────
 
@@ -66,20 +66,28 @@ function normalizeJid(jid: string): string {
   return jid.replace(/:\d+@/, '@').trim();
 }
 
-// ─── Rate Limiting ──────────────────────────────────────────────────────────
+// ─── Rate Limiting (configurable via env vars) ──────────────────────────────
+// Session: max outbound messages per minute (default 120, safe for WhatsApp anti-ban)
+// User: max command invocations per minute per JID (default 200)
+// Flood: rapid-fire threshold within short window (default 12 in 10s)
+// Command cooldown: minimum gap between commands from same user (default 2s)
 
 const userMessageTracker: Map<string, number[]> = new Map();
 const sessionMessageTracker: Map<string, number[]> = new Map();
 const spamTracker: Map<string, { count: number; lastTime: number; warned: boolean }> = new Map();
-const SPAM_THRESHOLD = 20;
-const SPAM_WINDOW = 10000;
+const commandCooldownTracker: Map<string, number> = new Map();
+const SESSION_RATE_LIMIT = parseInt(process.env.SESSION_RATE_LIMIT || '120', 10);
+const USER_RATE_LIMIT = parseInt(process.env.USER_RATE_LIMIT || '200', 10);
+const SPAM_THRESHOLD = parseInt(process.env.FLOOD_THRESHOLD || '12', 10);
+const SPAM_WINDOW = 10_000;
+const COMMAND_COOLDOWN_MS = parseInt(process.env.COMMAND_COOLDOWN_MS || '2000', 10);
 
 function isUserRateLimited(userId: string): boolean {
   const now = Date.now();
   const timestamps = userMessageTracker.get(userId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 200) {
+  if (recentTimestamps.length >= USER_RATE_LIMIT) {
     return true;
   }
 
@@ -93,7 +101,7 @@ function isSessionRateLimited(sessionId: string): boolean {
   const timestamps = sessionMessageTracker.get(sessionId) || [];
   const recentTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
 
-  if (recentTimestamps.length >= 120) {
+  if (recentTimestamps.length >= SESSION_RATE_LIMIT) {
     return true;
   }
 
@@ -132,6 +140,25 @@ function isSpamming(userId: string): boolean {
   return false;
 }
 
+// ─── Per-User Command Cooldown ──────────────────────────────────────────────
+
+function isCommandOnCooldown(userId: string): boolean {
+  const lastCommand = commandCooldownTracker.get(userId);
+  if (!lastCommand) return false;
+  return Date.now() - lastCommand < COMMAND_COOLDOWN_MS;
+}
+
+function markCommandUsed(userId: string): void {
+  commandCooldownTracker.set(userId, Date.now());
+  // Periodic cleanup — prevent unbounded growth
+  if (commandCooldownTracker.size > 2000) {
+    const cutoff = Date.now() - COMMAND_COOLDOWN_MS * 5;
+    for (const [k, t] of commandCooldownTracker) {
+      if (t < cutoff) commandCooldownTracker.delete(k);
+    }
+  }
+}
+
 // ─── Message Deduplication ──────────────────────────────────────────────────
 
 const processedMessages = new Set<string>();
@@ -157,7 +184,29 @@ function isDuplicateMessage(msgId: string): boolean {
 const afkReplyCooldown: Map<string, number> = new Map();
 const AFK_COOLDOWN_MS = 5 * 60 * 1000;
 
-
+// ─── Periodic Cleanup for Rate Limit Maps ───────────────────────────────────
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    // Clean up stale entries from rate tracking maps
+    for (const [key, timestamps] of userMessageTracker) {
+      const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
+      if (recent.length === 0) userMessageTracker.delete(key);
+      else userMessageTracker.set(key, recent);
+    }
+    for (const [key, timestamps] of sessionMessageTracker) {
+      const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
+      if (recent.length === 0) sessionMessageTracker.delete(key);
+      else sessionMessageTracker.set(key, recent);
+    }
+    for (const [key, tracker] of spamTracker) {
+      if (now - tracker.lastTime > SPAM_WINDOW * 3) spamTracker.delete(key);
+    }
+    for (const [key, t] of afkReplyCooldown) {
+      if (now - t > AFK_COOLDOWN_MS * 2) afkReplyCooldown.delete(key);
+    }
+  }, 120_000); // every 2 minutes
+}
 
 // ─── Main Message Handler ───────────────────────────────────────────────────
 
@@ -368,6 +417,10 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (isCommand && userId) {
+      // Per-user command cooldown to prevent spam without hurting games
+      if (isCommandOnCooldown(senderJid)) return;
+      markCommandUsed(senderJid);
+
       const quotaOk = await incrementQuotaUsage(userId);
       if (!quotaOk) {
         const sub = await getUserSubscription(userId);

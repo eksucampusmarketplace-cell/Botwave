@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         .eq('payment_id', payment.id)
         .order('attempt_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const attemptNumber = existingDunning ? existingDunning.attempt_number + 1 : 1;
       const retryDays = [0, 3, 7];
