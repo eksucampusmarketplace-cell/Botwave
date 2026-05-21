@@ -32,12 +32,13 @@ if (typeof setInterval !== 'undefined') {
 }
 
 /**
- * In-memory dedup fallback when Redis is unavailable.
- * LRU-style map with TTL to prevent unbounded growth.
+ * In-memory dedup cache (LRU-style with TTL). Populated alongside Redis so a
+ * sync-only fast path can short-circuit duplicate webhook events without any
+ * async work. The Redis SETNX still serves cross-worker dedup.
  */
 const inMemoryDedupCache = new Map<string, number>();
 const DEDUP_TTL_MS = 300_000; // 5 minutes, matches Redis TTL
-const DEDUP_MAX_SIZE = 5000;
+const DEDUP_MAX_SIZE = 10_000;
 
 function cleanupDedupCache(): void {
   if (inMemoryDedupCache.size <= DEDUP_MAX_SIZE) return;
@@ -45,26 +46,138 @@ function cleanupDedupCache(): void {
   for (const [k, t] of inMemoryDedupCache) {
     if (t < cutoff) inMemoryDedupCache.delete(k);
   }
+  // If still too big after TTL pass, drop the oldest 25% (Map preserves insertion order)
+  if (inMemoryDedupCache.size > DEDUP_MAX_SIZE) {
+    const toDrop = Math.floor(DEDUP_MAX_SIZE * 0.25);
+    let i = 0;
+    for (const k of inMemoryDedupCache.keys()) {
+      if (i++ >= toDrop) break;
+      inMemoryDedupCache.delete(k);
+    }
+  }
 }
 
 /**
- * Mark a message as seen. Uses Redis SETNX for cross-worker dedup.
- * Falls back to in-memory dedup cache when Redis is unavailable.
+ * Sync-only dedup check. Returns true if EVERY message in the batch is already
+ * known locally. Used at the top of POST to skip session lookup + DB work for
+ * pure ACK retransmits (DELIVERY_ACK / SERVER_ACK), which make up the bulk of
+ * webhook traffic during active WhatsApp use.
+ */
+interface WebhookMessagePeek {
+  key?: { id?: string };
+}
+
+function allMessagesAlreadySeen(sessionId: string, messages: readonly WebhookMessagePeek[]): boolean {
+  if (messages.length === 0) return false;
+  for (const m of messages) {
+    const msgId = m?.key?.id;
+    if (!msgId) return false; // unknown id → must process to avoid drop
+    if (!inMemoryDedupCache.has(`${sessionId}:${msgId}`)) return false;
+  }
+  return true;
+}
+
+/**
+ * Mark a message as seen. Uses Redis SETNX for cross-worker dedup and ALWAYS
+ * populates the in-memory cache so subsequent ACK retransmits of the same
+ * messageId short-circuit synchronously without touching Redis.
  * Returns true if first time seen, false if duplicate.
  */
 async function markSeen(sessionId: string, msgId: string): Promise<boolean> {
+  const key = `${sessionId}:${msgId}`;
+
+  // Sync fast-path: if we recently saw this id locally, it's definitely a dup.
+  if (inMemoryDedupCache.has(key)) return false;
+
   const redisResult = await redisMarkWebhookSeen(sessionId, msgId);
 
-  // If Redis handled it, trust that result
-  if (redisResult === false) return false; // duplicate in Redis
-  if (redisResult === true) return true;   // first time in Redis
-
-  // Redis unavailable — use in-memory fallback
-  const key = `${sessionId}:${msgId}`;
-  if (inMemoryDedupCache.has(key)) return false; // duplicate
+  // Always record locally so future ACKs of this message take the sync path.
   inMemoryDedupCache.set(key, Date.now());
   cleanupDedupCache();
-  return true;
+
+  if (redisResult === false) return false; // duplicate per Redis
+  return true; // first time (Redis says first OR Redis unavailable)
+}
+
+// ── Webhook traffic metrics ─────────────────────────────────────────────────
+// Logged once a minute so we can quantify the dedup win in production logs.
+let metricsReceived = 0;        // total webhooks received
+let metricsFastSkip = 0;        // all-duplicate batches short-circuited
+let metricsHandled = 0;         // batches that did real work
+let metricsMsgDuplicates = 0;   // duplicate message ids inside batches
+let metricsLastFlushMs = Date.now();
+const METRICS_FLUSH_INTERVAL_MS = 60_000;
+
+function maybeFlushMetrics(): void {
+  const now = Date.now();
+  const elapsed = now - metricsLastFlushMs;
+  if (elapsed < METRICS_FLUSH_INTERVAL_MS) return;
+  if (metricsReceived === 0) {
+    metricsLastFlushMs = now;
+    return;
+  }
+  const heapMB = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+  const perSec = (metricsReceived / (elapsed / 1000)).toFixed(1);
+  const skipPct = Math.round((metricsFastSkip / metricsReceived) * 100);
+  console.log(
+    `[EVO-WEBHOOK] metrics window=${Math.round(elapsed / 1000)}s ` +
+    `events=${metricsReceived} (${perSec}/s) ` +
+    `fast_skip=${metricsFastSkip} (${skipPct}%) ` +
+    `handled=${metricsHandled} dup_msgs=${metricsMsgDuplicates} ` +
+    `heap=${heapMB}MB dedup_cache=${inMemoryDedupCache.size}`
+  );
+  metricsReceived = 0;
+  metricsFastSkip = 0;
+  metricsHandled = 0;
+  metricsMsgDuplicates = 0;
+  metricsLastFlushMs = now;
+}
+
+// ── qrcode.updated rapid-fire throttle ──────────────────────────────────────
+// Evolution API fires qrcode.updated repeatedly per session (sometimes
+// multiple times per second during reconnect). The existing 2s throttle
+// inside the handler only applies when a pairingCode is present, so QR-only
+// retransmits still hit two Supabase queries each. Track the last in-memory
+// update so we can skip identical retransmits before any DB work.
+const lastQrEvent = new Map<string, { ts: number; qrPrefix?: string; pairingCode?: string }>();
+const QR_THROTTLE_MS = 1500;
+const QR_MAP_MAX_SIZE = 500;
+
+function shouldSkipQrEvent(
+  sessionId: string,
+  qrCode: string | undefined,
+  pairingCode: string | undefined,
+): boolean {
+  const prev = lastQrEvent.get(sessionId);
+  const now = Date.now();
+  if (!prev) return false;
+  if (now - prev.ts >= QR_THROTTLE_MS) return false;
+  // Same QR fingerprint OR same pairing code within window → drop.
+  const newQrPrefix = qrCode ? qrCode.slice(0, 32) : undefined;
+  if (newQrPrefix && newQrPrefix === prev.qrPrefix) return true;
+  if (pairingCode && pairingCode === prev.pairingCode) return true;
+  return false;
+}
+
+function recordQrEvent(
+  sessionId: string,
+  qrCode: string | undefined,
+  pairingCode: string | undefined,
+): void {
+  lastQrEvent.set(sessionId, {
+    ts: Date.now(),
+    qrPrefix: qrCode ? qrCode.slice(0, 32) : undefined,
+    pairingCode: pairingCode || undefined,
+  });
+  if (lastQrEvent.size > QR_MAP_MAX_SIZE) {
+    // Drop oldest ~25% on overflow (Map iteration is insertion order).
+    const toDrop = Math.floor(QR_MAP_MAX_SIZE * 0.25);
+    let i = 0;
+    for (const k of lastQrEvent.keys()) {
+      if (i++ >= toDrop) break;
+      lastQrEvent.delete(k);
+    }
+  }
 }
 
 function getServerSupabaseUrl(): string {
@@ -196,6 +309,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    metricsReceived++;
+
+    // --- Fast-path dedup for messages.upsert ---
+    // Evolution API retransmits each message as messages.upsert events with
+    // changing status (SERVER_ACK → DELIVERY_ACK → READ). After we've handled
+    // the first arrival, every retransmit carries the same message id, so we
+    // can short-circuit synchronously without a session lookup or any DB I/O.
+    // This is the single biggest CPU win during heavy traffic.
+    if (event === 'messages.upsert' && data) {
+      const peek = Array.isArray(data) ? data : [data];
+      if (peek.length > 0 && allMessagesAlreadySeen(sessionId, peek)) {
+        metricsFastSkip++;
+        metricsMsgDuplicates += peek.length;
+        maybeFlushMetrics();
+        return NextResponse.json({ ok: true });
+      }
+    }
+
+    // --- Fast-path throttle for qrcode.updated ---
+    // Evolution can fire this multiple times per second during reconnect; the
+    // existing 2 s throttle only catches pairingCode duplicates, so QR-only
+    // retransmits still hit two Supabase queries each. Drop identical bursts
+    // in-memory before any DB read.
+    if (event === 'qrcode.updated') {
+      const incomingPairing = data?.pairingCode || data?.pairing_code || data?.code;
+      const incomingQr = data?.code || data?.qrcode?.code;
+      if (shouldSkipQrEvent(sessionId, incomingQr, incomingPairing)) {
+        metricsFastSkip++;
+        maybeFlushMetrics();
+        return NextResponse.json({ ok: true });
+      }
+      recordQrEvent(sessionId, incomingQr, incomingPairing);
+    }
+
+    metricsHandled++;
     console.log(`[EVO-WEBHOOK] event=${event} session=${sessionId}`);
 
     const supabase = getSupabase();
@@ -636,7 +784,7 @@ export async function POST(request: NextRequest) {
         // Dedup: skip if we already processed this exact message ID for THIS session
         const msgId = msg.key?.id || '';
         if (msgId && !(await markSeen(sessionId, msgId))) {
-          console.log(`[EVO-WEBHOOK] SKIP duplicate msg ${msgId.slice(0, 12)} "${text.slice(0, 40)}"`);
+          metricsMsgDuplicates++;
           continue;
         }
 
@@ -768,6 +916,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      maybeFlushMetrics();
       return NextResponse.json({ ok: true });
     }
 
@@ -834,9 +983,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[EVO-WEBHOOK] Unhandled event=${event} for session=${sessionId} - ignoring`);
+    maybeFlushMetrics();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('[EVO-WEBHOOK] CRITICAL ERROR processing webhook:', error);
+    maybeFlushMetrics();
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
