@@ -37,9 +37,13 @@ const typeColors: Record<string, string> = {
   document: '#fb923c',
 };
 
+interface SessionInfo { id: string; name: string; phone: string }
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [selectedSession, setSelectedSession] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -50,8 +54,22 @@ export default function AnalyticsPage() {
         return;
       }
 
+      // Fetch user sessions for the selector
       try {
-        const res = await fetch('/api/bot/analytics');
+        const sessRes = await fetch('/api/user/sessions');
+        const sessJson = await sessRes.json();
+        if (sessJson.success && Array.isArray(sessJson.data)) {
+          setSessions(sessJson.data.map((s: Record<string, string>) => ({
+            id: s.id, name: s.name || s.session_name || '', phone: s.phone || '',
+          })));
+        }
+      } catch { /* ignore */ }
+
+      try {
+        const url = selectedSession
+          ? `/api/bot/analytics?sessionId=${selectedSession}`
+          : '/api/bot/analytics';
+        const res = await fetch(url);
         const json = await res.json();
         if (json.success) setData(json.data);
       } catch (err) {
@@ -61,7 +79,7 @@ export default function AnalyticsPage() {
       }
     };
     load();
-  }, []);
+  }, [selectedSession]);
 
   const maxDayCount = data ? Math.max(...data.messagesByDay.map(d => d.count), 1) : 1;
   const maxHourCount = data ? Math.max(...data.peakHours.map(h => h.count), 1) : 1;
@@ -84,6 +102,18 @@ export default function AnalyticsPage() {
           <p className="font-mono text-sm text-[#5a9a7a] mt-2">
             Last 30 days of bot activity
           </p>
+          {sessions.length > 1 && (
+            <select
+              value={selectedSession}
+              onChange={(e) => { setSelectedSession(e.target.value); setLoading(true); }}
+              className="mt-3 bg-dark border border-blue-500/20 text-white font-mono text-xs px-3 py-2 rounded"
+            >
+              <option value="">All Sessions</option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>{s.name || s.phone || s.id}</option>
+              ))}
+            </select>
+          )}
         </motion.div>
 
         {loading ? (

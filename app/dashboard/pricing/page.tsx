@@ -365,11 +365,11 @@ export default function PricingPage() {
 
                 <button
                   onClick={() => handleUpgrade(key)}
-                  disabled={isCurrent || key === 'free' || loading !== null}
+                  disabled={isCurrent || key === 'free' || (plan.price === 0 && key !== 'free') || loading !== null}
                   className={`w-full py-3 font-mono text-xs tracking-[2px] transition-all ${
                     isCurrent
                       ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 cursor-default'
-                      : key === 'free'
+                      : key === 'free' || (plan.price === 0 && key !== 'free')
                         ? 'bg-dark border border-blue-500/10 text-[#5a9a7a] cursor-default'
                         : 'bg-blue-500 text-dark font-bold hover:bg-blue-500/90 hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] active:scale-[0.98]'
                   } ${loading === key ? 'opacity-50' : ''}`}
@@ -378,9 +378,11 @@ export default function PricingPage() {
                     ? 'CURRENT PLAN'
                     : key === 'free'
                       ? 'FREE TIER'
-                      : loading === key
-                        ? 'PROCESSING...'
-                        : 'UPGRADE'}
+                      : plan.price === 0
+                        ? 'COMING SOON'
+                        : loading === key
+                          ? 'PROCESSING...'
+                          : 'UPGRADE'}
                 </button>
               </motion.div>
             );

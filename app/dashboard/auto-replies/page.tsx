@@ -267,7 +267,8 @@ export default function AutoRepliesPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Auto-Reply Templates</h1>
             <p className="text-gray-400 text-sm mt-1">
-              Set up automatic responses for AFK, business hours, or keyword triggers
+              Set up automatic responses for AFK, business hours, or keyword triggers.{' '}
+              <span className="text-blue-400">Tip: Use exact match for specific keywords, or contains for partial matches.</span>
             </p>
           </div>
           <button

@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -601,8 +601,16 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
       console.log(`Command !${commandName} completed in ${durationMs}ms`);
       trackCommandExecution(commandName, true, durationMs, context.sessionId);
     } else {
-      console.log(`Unknown command: !${commandName} - sending help hint`);
-      await sendUnknownCommand(context, sock, vars);
+      // Check user's custom commands before sending unknown command help
+      const customHandled = await processCustomCommand(context, sock, commandName, args, vars);
+      if (!customHandled) {
+        // Check e-commerce commands
+        const shopHandled = await processShopCommand(context, sock, commandName, args, vars);
+        if (!shopHandled) {
+          console.log(`Unknown command: !${commandName} - sending help hint`);
+          await sendUnknownCommand(context, sock, vars);
+        }
+      }
     }
   } catch (err: any) {
     const durationMs = Date.now() - Date.now(); // approximate
@@ -821,6 +829,186 @@ async function processChatbotFlow(context: MessageContext, sock: any): Promise<b
     }
   } catch {
     // non-critical
+  }
+  return false;
+}
+
+// ─── Custom Command Processing ──────────────────────────────────────────────
+
+const customCmdCooldowns = new Map<string, number>();
+
+async function processCustomCommand(
+  context: MessageContext, sock: any, commandName: string, args: string[], vars: TemplateVars,
+): Promise<boolean> {
+  if (!context.userId) return false;
+
+  try {
+    const commands = await getCustomCommands(context.userId);
+    if (!commands.length) return false;
+
+    const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
+    const fullCmd = `${prefix}${commandName}`;
+    const fullMessage = `${fullCmd} ${args.join(' ')}`.trim();
+
+    for (const cmd of commands) {
+      const trigger = (cmd.command || '').toLowerCase();
+      if (!trigger) continue;
+
+      const matchType = cmd.match_type || 'exact';
+      let matched = false;
+
+      if (matchType === 'exact') {
+        matched = fullCmd.toLowerCase() === trigger;
+      } else if (matchType === 'contains') {
+        matched = fullMessage.toLowerCase().includes(trigger.replace(/^!/, ''));
+      } else if (matchType === 'startsWith') {
+        matched = fullCmd.toLowerCase().startsWith(trigger);
+      } else {
+        matched = fullCmd.toLowerCase() === trigger;
+      }
+
+      if (!matched) continue;
+
+      // Cooldown enforcement
+      if (cmd.cooldown && cmd.cooldown > 0) {
+        const cooldownKey = `${cmd.id}:${context.senderJid}`;
+        const lastUsed = customCmdCooldowns.get(cooldownKey) || 0;
+        if (Date.now() - lastUsed < cmd.cooldown * 1000) {
+          const remaining = Math.ceil((cmd.cooldown * 1000 - (Date.now() - lastUsed)) / 1000);
+          await sendReply(
+            context.chatJid,
+            `⏳ This command is on cooldown. Try again in ${remaining}s.`,
+            sock, context.rawMessage.key, context.queue,
+          );
+          return true;
+        }
+        customCmdCooldowns.set(cooldownKey, Date.now());
+      }
+
+      // Pick response (supports random selection from multiple responses separated by |||)
+      let responseText = cmd.response || '';
+      if (responseText.includes('|||')) {
+        const responses = responseText.split('|||').map((r: string) => r.trim()).filter(Boolean);
+        responseText = responses[Math.floor(Math.random() * responses.length)] || responseText;
+      }
+
+      // Replace template variables
+      responseText = responseText
+        .replace(/\{name\}/g, vars.name || 'User')
+        .replace(/\{user\}/g, vars.name || 'User')
+        .replace(/\{time\}/g, vars.time || '')
+        .replace(/\{date\}/g, vars.date || '')
+        .replace(/\{group\}/g, vars.group || '')
+        .replace(/\{args\}/g, args.join(' '));
+
+      // Send image if image_url is set
+      if (cmd.image_url) {
+        try {
+          await sock.sendMessage(context.chatJid, {
+            image: { url: cmd.image_url },
+            caption: responseText,
+          });
+        } catch {
+          await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
+        }
+      } else {
+        await sendReply(context.chatJid, responseText, sock, context.rawMessage.key, context.queue);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.error('[CUSTOM-CMD] Processing error:', err);
+  }
+  return false;
+}
+
+// ─── E-Commerce Shop Commands ───────────────────────────────────────────────
+
+const shopCarts = new Map<string, { items: { productId: string; name: string; price: number; qty: number }[] }>();
+
+async function processShopCommand(
+  context: MessageContext, sock: any, commandName: string, args: string[], vars: TemplateVars,
+): Promise<boolean> {
+  if (!context.userId) return false;
+
+  const cmd = commandName.toLowerCase();
+  if (!['shop', 'buy', 'cart', 'checkout'].includes(cmd)) return false;
+
+  try {
+    const products = await getProducts(context.userId);
+    const cartKey = `${context.userId}:${context.senderJid}`;
+
+    if (cmd === 'shop') {
+      if (!products.length) {
+        await sendReply(context.chatJid, '🏪 Shop is empty. The owner hasn\'t added any products yet.', sock, context.rawMessage.key, context.queue);
+        return true;
+      }
+      let shopText = '🏪 *Shop Menu*\n\n';
+      products.forEach((p: any, i: number) => {
+        shopText += `${i + 1}. *${p.name}* — $${p.price}\n`;
+        if (p.description) shopText += `   _${p.description}_\n`;
+      });
+      shopText += `\nTo buy: !buy [item number] [quantity]`;
+      await sendReply(context.chatJid, shopText, sock, context.rawMessage.key, context.queue);
+      return true;
+    }
+
+    if (cmd === 'buy') {
+      const itemNum = parseInt(args[0]) - 1;
+      const qty = parseInt(args[1]) || 1;
+      if (isNaN(itemNum) || itemNum < 0 || itemNum >= products.length) {
+        await sendReply(context.chatJid, '❌ Invalid item number. Use !shop to see available items.', sock, context.rawMessage.key, context.queue);
+        return true;
+      }
+      const product = products[itemNum];
+      const cart = shopCarts.get(cartKey) || { items: [] };
+      const existing = cart.items.find(i => i.productId === product.id);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.items.push({ productId: product.id, name: product.name, price: product.price, qty });
+      }
+      shopCarts.set(cartKey, cart);
+      await sendReply(context.chatJid, `✅ Added ${qty}x *${product.name}* to your cart. Total items: ${cart.items.reduce((s, i) => s + i.qty, 0)}`, sock, context.rawMessage.key, context.queue);
+      return true;
+    }
+
+    if (cmd === 'cart') {
+      const cart = shopCarts.get(cartKey);
+      if (!cart || !cart.items.length) {
+        await sendReply(context.chatJid, '🛒 Your cart is empty. Use !shop to browse and !buy to add items.', sock, context.rawMessage.key, context.queue);
+        return true;
+      }
+      let cartText = '🛒 *Your Cart*\n\n';
+      let total = 0;
+      cart.items.forEach((item, i) => {
+        const subtotal = item.price * item.qty;
+        total += subtotal;
+        cartText += `${i + 1}. ${item.name} x${item.qty} — $${subtotal.toFixed(2)}\n`;
+      });
+      cartText += `\n*Total: $${total.toFixed(2)}*\n\nUse !checkout to complete your order.`;
+      await sendReply(context.chatJid, cartText, sock, context.rawMessage.key, context.queue);
+      return true;
+    }
+
+    if (cmd === 'checkout') {
+      const cart = shopCarts.get(cartKey);
+      if (!cart || !cart.items.length) {
+        await sendReply(context.chatJid, '🛒 Your cart is empty. Nothing to checkout.', sock, context.rawMessage.key, context.queue);
+        return true;
+      }
+      const total = cart.items.reduce((s, i) => s + i.price * i.qty, 0);
+      let orderText = '📦 *Order Confirmed!*\n\n';
+      cart.items.forEach(item => {
+        orderText += `• ${item.name} x${item.qty} — $${(item.price * item.qty).toFixed(2)}\n`;
+      });
+      orderText += `\n*Total: $${total.toFixed(2)}*\n\nThe shop owner will contact you to arrange payment and delivery. Thank you! 🙏`;
+      shopCarts.delete(cartKey);
+      await sendReply(context.chatJid, orderText, sock, context.rawMessage.key, context.queue);
+      return true;
+    }
+  } catch (err) {
+    console.error('[SHOP] Processing error:', err);
   }
   return false;
 }

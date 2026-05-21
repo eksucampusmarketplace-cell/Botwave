@@ -482,6 +482,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="card"><h3>Broadcast Message</h3><p>Send a message to all groups where the bot is active.</p></div>
     <div class="broadcast-box">
       <textarea id="broadcast-text" placeholder="Type your broadcast message here...\n\nSupports HTML: <b>bold</b>, <i>italic</i>, <code>code</code>"></textarea>
+      <div class="input-group" style="margin-top:8px"><label style="font-size:0.75rem;color:var(--hint)">Image URL (optional)</label><input type="text" id="broadcast-image" placeholder="https://example.com/image.jpg" style="width:100%;padding:8px 12px;background:var(--secondary-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:0.85rem;outline:none"></div>
     </div>
     <div class="card">
       <h3>Options</h3>
@@ -505,9 +506,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <!-- Group Messages Section (Owner + Admin) -->
   <div class="section" id="sec-groupmsgs">
-    <div class="card"><h3>Group Messages</h3><p>Customize group-specific messages. Use placeholders like {first_name}, {group_name}.</p></div>
-    <div class="card"><h3>Welcome Message</h3><div class="input-group"><textarea id="grp-welcome" rows="3" placeholder="Welcome {first_name} to {group_name}!"></textarea></div></div>
-    <div class="card"><h3>Goodbye Message</h3><div class="input-group"><textarea id="grp-goodbye" rows="3" placeholder="Goodbye {first_name}!"></textarea></div></div>
+    <div class="card"><h3>Group Messages</h3><p>Customize group-specific messages. Variables: {name}, {user}, {username}, {group}, {count}, {mention}</p></div>
+    <div class="card"><h3>Welcome Message</h3><div class="input-group"><textarea id="grp-welcome" rows="3" placeholder="Welcome {name} to {group}!"></textarea></div><div class="input-group" style="margin-top:8px"><label style="font-size:0.7rem;color:var(--hint)">Welcome Image URL (optional)</label><input type="text" id="grp-welcome-image" placeholder="https://example.com/welcome.jpg" style="width:100%;padding:8px;background:var(--secondary-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:0.8rem;outline:none"></div></div>
+    <div class="card"><h3>Goodbye Message</h3><div class="input-group"><textarea id="grp-goodbye" rows="3" placeholder="Goodbye {name}!"></textarea></div><div class="input-group" style="margin-top:8px"><label style="font-size:0.7rem;color:var(--hint)">Goodbye Image URL (optional)</label><input type="text" id="grp-goodbye-image" placeholder="https://example.com/goodbye.jpg" style="width:100%;padding:8px;background:var(--secondary-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:0.8rem;outline:none"></div></div>
     <div class="card"><h3>Rules Text</h3><div class="input-group"><textarea id="grp-rules" rows="4" placeholder="Group rules shown with /rules"></textarea></div></div>
     <button class="btn" id="save-groupmsgs">Save Group Messages</button>
   </div>
@@ -730,9 +731,23 @@ function loadFeatures() {
     document.getElementById('bot-info').textContent = 'No session — open via bot /panel command';
     return;
   }
-  apiCall('/api/telegram/config').then(function(res) {
-    if (res.success && res.data) {
-      cachedConfig = res.data;
+  // Load per-group config first, then overlay global config for missing fields
+  var configPromise = currentChatId
+    ? apiCall('/api/telegram/group-config')
+    : apiCall('/api/telegram/config');
+  var globalPromise = currentChatId
+    ? apiCall('/api/telegram/config')
+    : Promise.resolve(null);
+  Promise.all([configPromise, globalPromise]).then(function(results) {
+    var groupRes = results[0];
+    var globalRes = results[1];
+    // Merge: per-group config takes priority, fallback to global
+    var merged = {};
+    if (globalRes && globalRes.success && globalRes.data) Object.assign(merged, globalRes.data);
+    if (groupRes && groupRes.success && groupRes.data) Object.assign(merged, groupRes.data);
+    cachedConfig = merged;
+    var res = { success: true, data: merged };
+  if (res.success && res.data) {
       var c = res.data;
       document.getElementById('ft-antiflood').checked = c.antiflood_enabled || false;
       document.getElementById('ft-antilink').checked = c.antilink_enabled || false;
@@ -776,7 +791,7 @@ function loadFeatures() {
     }
   }).catch(function() {
     document.getElementById('bot-info').textContent = 'Error loading config';
-  });
+  }); // end Promise.all
 }
 
 document.getElementById('save-features').addEventListener('click', function() {
@@ -802,7 +817,11 @@ document.getElementById('save-features').addEventListener('click', function() {
     mediadownload_enabled: document.getElementById('ft-mediadownload').checked,
     infolookup_enabled: document.getElementById('ft-infolookup').checked,
   };
-  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
+  // Save to per-group config when chatId is present, otherwise global
+  var saveEndpoint = currentChatId ? '/api/telegram/group-config' : '/api/telegram/config';
+  var saveMethod = currentChatId ? 'POST' : 'PUT';
+  if (currentChatId) payload.chatId = currentChatId;
+  apiCall(saveEndpoint, { method: saveMethod, body: JSON.stringify(payload) })
     .then(function(res) { toast(res.success ? 'Features saved!' : 'Failed to save'); })
     .catch(function() { toast('Error saving features'); });
 });
@@ -852,17 +871,20 @@ document.getElementById('send-broadcast').addEventListener('click', function() {
   var statusText = document.getElementById('broadcast-status-text');
   statusEl.style.display = 'block';
   statusText.textContent = 'Sending broadcast...';
+  var broadcastPayload = {
+    sessionId: sessionId,
+    message: text,
+    pin: document.getElementById('broadcast-pin').checked,
+    silent: document.getElementById('broadcast-silent').checked,
+  };
+  var broadcastImg = document.getElementById('broadcast-image').value.trim();
+  if (broadcastImg) broadcastPayload.mediaUrl = broadcastImg;
   apiCall('/api/telegram/broadcast', {
     method: 'POST',
-    body: JSON.stringify({
-      sessionId: sessionId,
-      text: text,
-      pin: document.getElementById('broadcast-pin').checked,
-      silent: document.getElementById('broadcast-silent').checked,
-    }),
+    body: JSON.stringify(broadcastPayload),
   }).then(function(res) {
     if (res.success) {
-      statusText.textContent = 'Broadcast sent to ' + (res.sent || 0) + ' group(s)!';
+      statusText.textContent = 'Broadcast sent to ' + (res.data ? res.data.sent : 0) + ' group(s)!';
       document.getElementById('broadcast-text').value = '';
       toast('Broadcast sent!');
     } else {
@@ -880,19 +902,26 @@ function loadGroupMessages() {
       document.getElementById('grp-welcome').value = m.welcome_message || '';
       document.getElementById('grp-goodbye').value = m.goodbye_message || '';
       document.getElementById('grp-rules').value = m.rules_text || '';
+      document.getElementById('grp-welcome-image').value = m.welcome_image_url || '';
+      document.getElementById('grp-goodbye-image').value = m.goodbye_image_url || '';
     }
   }).catch(function() {});
 }
 
 document.getElementById('save-groupmsgs').addEventListener('click', function() {
+  var msgPayload = {
+    sessionId: sessionId,
+    welcome_message: document.getElementById('grp-welcome').value || null,
+    goodbye_message: document.getElementById('grp-goodbye').value || null,
+    rules_text: document.getElementById('grp-rules').value || null,
+    welcome_image_url: document.getElementById('grp-welcome-image').value || null,
+    goodbye_image_url: document.getElementById('grp-goodbye-image').value || null,
+  };
+  // Include chatId so messages are saved per-group
+  if (currentChatId) msgPayload.chatId = currentChatId;
   apiCall('/api/telegram/messages', {
     method: 'PUT',
-    body: JSON.stringify({
-      sessionId: sessionId,
-      welcome_message: document.getElementById('grp-welcome').value || null,
-      goodbye_message: document.getElementById('grp-goodbye').value || null,
-      rules_text: document.getElementById('grp-rules').value || null,
-    }),
+    body: JSON.stringify(msgPayload),
   }).then(function(res) { toast(res.success ? 'Group messages saved!' : 'Failed to save'); })
     .catch(function() { toast('Error saving group messages'); });
 });
@@ -1067,9 +1096,12 @@ var FEATURE_CONFIGS = {
     { key: 'night_mode_timezone', label: 'Timezone', type: 'select', options: ['UTC','Africa/Lagos','Europe/London','US/Eastern','Asia/Kolkata'], default: 'UTC' },
   ]},
   'ft-captcha': { title: '🔒 Captcha Settings', fields: [
-    { key: 'captcha_type', label: 'Captcha type', type: 'select', options: ['math','button','text'], default: 'math' },
-    { key: 'captcha_timeout', label: 'Timeout (seconds)', type: 'number', min: 10, max: 300, default: 60 },
-    { key: 'captcha_kick_on_fail', label: 'Kick on failure', type: 'select', options: ['yes','no'], default: 'yes' },
+    { key: 'captcha_mode', label: 'Captcha mode', type: 'select', options: ['button','math','text','text2'], default: 'button' },
+    { key: 'captcha_mute_time', label: 'Mute time (e.g. 60s, 5m)', type: 'text', default: '60s' },
+    { key: 'captcha_kick', label: 'Kick on failure', type: 'select', options: ['true','false'], default: 'true' },
+    { key: 'captcha_kick_time', label: 'Kick timeout (e.g. 5m)', type: 'text', default: '5m' },
+    { key: 'captcha_rules', label: 'Require accepting rules', type: 'select', options: ['true','false'], default: 'false' },
+    { key: 'captcha_button_text', label: 'Custom button text', type: 'text', default: '' },
   ]},
   'ft-xp': { title: '⭐ XP System Settings', fields: [
     { key: 'xp_per_message', label: 'XP per message', type: 'number', min: 1, max: 50, default: 5 },
@@ -1105,6 +1137,21 @@ var FEATURE_CONFIGS = {
   'ft-booster': { title: '📢 Booster Settings', fields: [
     { key: 'boost_goal', label: 'Invites needed for boost goal', type: 'number', min: 1, max: 100, default: 5 },
     { key: 'boost_reward_text', label: 'Reward message ({name}, {count})', type: 'textarea', default: '' },
+    { key: 'boost_invite_text', label: 'Invite prompt text', type: 'textarea', default: '' },
+    { key: 'boost_leaderboard_text', label: 'Leaderboard header text', type: 'textarea', default: '' },
+  ]},
+  'ft-channelforce': { title: '📢 Force Channel Join', fields: [
+    { key: 'force_channel', label: 'Channel username (e.g. @mychannel)', type: 'text', default: '' },
+    { key: 'force_channel_text', label: 'Custom message for non-members', type: 'textarea', default: '' },
+  ]},
+  'ft-blacklist': { title: '🚫 Blacklist / Prohibited Words', fields: [
+    { key: 'blacklist_words', label: 'Forbidden words (one per line)', type: 'textarea', default: '' },
+    { key: 'blacklist_action', label: 'Action', type: 'select', options: ['delete','warn','mute','ban'], default: 'delete' },
+    { key: 'necessary_words', label: 'Necessary words (messages must contain one, one per line)', type: 'textarea', default: '' },
+  ]},
+  'ft-welcome': { title: '👋 Welcome Settings', fields: [
+    { key: 'welcome_image_url', label: 'Welcome image URL', type: 'text', default: '' },
+    { key: 'goodbye_image_url', label: 'Goodbye image URL', type: 'text', default: '' },
   ]},
 };
 

@@ -196,6 +196,20 @@ export async function checkFlood(
         'Anti-flood triggered',
       );
 
+      // Clear flood messages if enabled
+      if (config.antiflood_clear_messages) {
+        try {
+          const msgId = ctx.message?.message_id;
+          if (msgId) {
+            const idsToDelete: number[] = [];
+            for (let i = 0; i < Math.min(timestamps.length, 20); i++) {
+              idsToDelete.push(msgId - i);
+            }
+            await ctx.api.deleteMessages(ctx.chat.id, idsToDelete).catch(() => {});
+          }
+        } catch { /* non-critical */ }
+      }
+
       await ctx.reply(
         `🌊 ${ctx.from.first_name} has been muted for 5 minutes (flood detected).`,
       );

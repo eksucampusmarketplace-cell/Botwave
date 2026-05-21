@@ -1062,6 +1062,7 @@ export interface Filter {
   keyword: string;
   response: string;
   is_regex: boolean;
+  image_url?: string;
 }
 
 export async function addFilter(
@@ -1521,6 +1522,7 @@ export interface ScheduledMessage {
   is_active: boolean;
   created_by: string;
   created_at: string;
+  media_url?: string;
 }
 
 export async function createScheduledMessage(
@@ -1531,19 +1533,22 @@ export async function createScheduledMessage(
   nextSendAt: Date,
   createdBy: string,
   timeOfDay?: string,
+  mediaUrl?: string,
 ): Promise<number> {
+  const insertData: Record<string, unknown> = {
+    session_id: sessionId,
+    chat_id: chatId,
+    content,
+    schedule_type: scheduleType,
+    next_send_at: nextSendAt.toISOString(),
+    time_of_day: timeOfDay || null,
+    is_active: true,
+    created_by: createdBy,
+  };
+  if (mediaUrl) insertData.media_url = mediaUrl;
   const { data, error } = await supabase
     .from('telegram_scheduled_messages')
-    .insert({
-      session_id: sessionId,
-      chat_id: chatId,
-      content,
-      schedule_type: scheduleType,
-      next_send_at: nextSendAt.toISOString(),
-      time_of_day: timeOfDay || null,
-      is_active: true,
-      created_by: createdBy,
-    })
+    .insert(insertData)
     .select('id')
     .single();
 
