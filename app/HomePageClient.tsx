@@ -234,7 +234,7 @@ export default function HomePage() {
                 <Link href="/signup" className="group px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-base">
                   Get Started Free <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </Link>
-                <Link href="#features" className="px-8 py-4 bg-[var(--bg-alt)] hover:bg-[var(--bg-subtle,var(--bg-alt))] text-[var(--text-primary)] font-semibold rounded-xl border border-[var(--border)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-0.5 text-base">
+                <Link href="/features" className="px-8 py-4 bg-[var(--bg-alt)] hover:bg-[var(--bg-subtle,var(--bg-alt))] text-[var(--text-primary)] font-semibold rounded-xl border border-[var(--border)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-0.5 text-base">
                   Explore Features
                 </Link>
               </div>
@@ -265,6 +265,55 @@ export default function HomePage() {
               <div className="text-base text-[var(--text-secondary)] font-medium">{stat.label}</div>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Support Groups & Community */}
+      <section className="py-16 px-6 bg-[var(--bg)]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-10">
+            <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Community</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">Join Our Support Groups</h2>
+            <p className="mt-3 text-base text-[var(--text-secondary)] max-w-xl mx-auto leading-relaxed">Get help, share tips, and stay updated with the BotWave community.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[
+              { icon: '\u{1F4AC}', title: 'WhatsApp Support Group', desc: 'Real-time help from the BotWave team and community.', link: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', cta: 'Join WhatsApp Group', color: 'green' },
+              { icon: '\u2708\uFE0F', title: 'Telegram Support Group', desc: 'Chat with other BotWave users. Setup help, commands, and tips.', link: 'https://t.me/botwavegrp', cta: 'Join Telegram Group', color: 'blue' },
+              { icon: '\u{1F4E2}', title: 'Telegram Updates', desc: 'Latest releases, new commands, and announcements.', link: 'https://t.me/BotWaveUpdates', cta: 'Follow Updates', color: 'violet' },
+            ].map((group, i) => (
+              <motion.a
+                key={i}
+                href={group.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className={`group glass-card rounded-2xl p-6 text-center hover:-translate-y-1 transition-all border ${
+                  group.color === 'green' ? 'border-green-400/30 hover:border-green-400' :
+                  group.color === 'blue' ? 'border-blue-400/30 hover:border-blue-400' :
+                  'border-violet-400/30 hover:border-violet-400'
+                }`}
+              >
+                <div className="text-3xl mb-3">{group.icon}</div>
+                <h3 className="font-bold text-[var(--text-primary)] text-base mb-2">{group.title}</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">{group.desc}</p>
+                <span className={`text-sm font-semibold ${
+                  group.color === 'green' ? 'text-green-500' :
+                  group.color === 'blue' ? 'text-blue-500' :
+                  'text-violet-500'
+                }`}>
+                  {group.cta} &rarr;
+                </span>
+              </motion.a>
+            ))}
+          </div>
+          <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }} viewport={{ once: true }} className="flex flex-wrap gap-4 justify-center">
+            <Link href="/guest-posts" className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-colors">Write a Guest Post</Link>
+            <Link href="/features" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">Explore All Features</Link>
+          </motion.div>
         </div>
       </section>
 

@@ -21,6 +21,7 @@ const footerLinks = {
     { href: '/changelog', label: 'Changelog' },
     { href: '/use-cases', label: 'Use Cases' },
     { href: '/case-studies', label: 'Case Studies' },
+    { href: '/guest-posts', label: 'Guest Posts' },
     { href: '/fix', label: 'Troubleshooting' },
   ],
   'WhatsApp Bot': [
@@ -109,7 +110,7 @@ export default function Footer() {
         </div>
 
         {/* Links grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-8 mb-12">
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
               <h3 className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider mb-4">
