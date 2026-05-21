@@ -766,12 +766,23 @@ export async function getGroupConfig(
 
   const globalConfig = await getTelegramConfig(sessionId);
 
-  const { data: groupData } = await supabase
-    .from('telegram_group_configs')
-    .select('*')
-    .eq('session_id', sessionId)
-    .eq('chat_id', chatId)
-    .single();
+  // `telegram_group_configs.chat_id` is BIGINT, so non-numeric sentinels like
+  // 'global' (which a few handlers pass to read the session-level defaults)
+  // can't be used as a query parameter — Postgres rejects them with
+  // "invalid input syntax for type bigint". Skip the per-group lookup and
+  // return the merged session-level defaults instead.
+  const numericChatId = Number(chatId);
+  const isGlobalLookup = chatId === 'global' || !Number.isFinite(numericChatId);
+
+  const groupQuery = isGlobalLookup
+    ? { data: null }
+    : await supabase
+        .from('telegram_group_configs')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('chat_id', chatId)
+        .single();
+  const groupData = groupQuery.data;
 
   // Merge: defaults < global config < group-specific config
   const merged = {
@@ -779,7 +790,7 @@ export async function getGroupConfig(
     ...globalConfig,
     ...(groupData || {}),
     session_id: sessionId,
-    chat_id: Number(chatId),
+    chat_id: isGlobalLookup ? 0 : numericChatId,
   } as GroupConfig;
 
   groupConfigCache.set(cacheKey, { data: merged, expiresAt: Date.now() + GROUP_CONFIG_TTL_MS });

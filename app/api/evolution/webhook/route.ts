@@ -145,7 +145,12 @@ function resolveSessionId(instance: unknown): string | null {
   if (instance && typeof instance === 'object' && 'instanceName' in instance) {
     return (instance as Record<string, string>).instanceName || null;
   }
-  console.warn('[EVO-WEBHOOK] Unrecognized instance format:', JSON.stringify(instance).slice(0, 100));
+  // Some Evolution API events (global error events, malformed payloads) carry
+  // no instance at all. `JSON.stringify(undefined)` returns `undefined`, so
+  // coerce to a string before slicing to avoid a TypeError that would crash
+  // the whole webhook handler.
+  const preview = String(JSON.stringify(instance));
+  console.warn('[EVO-WEBHOOK] Unrecognized instance format:', preview.slice(0, 100));
   return null;
 }
 
