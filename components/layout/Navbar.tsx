@@ -24,9 +24,10 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <ul className="hidden md:flex gap-6 list-none">
+        <ul className="hidden md:flex gap-4 list-none">
           {[
             { href: '/commands', label: 'Commands' },
+            { href: '/features', label: 'Features' },
             { href: '/docs', label: 'Docs' },
             { href: '/how-to', label: 'Guides' },
             { href: '/compare', label: 'Compare' },
@@ -34,6 +35,7 @@ export default function Navbar() {
             { href: '/blog', label: 'Blog' },
             { href: '/faq', label: 'FAQ' },
             { href: '/fix', label: 'Fix' },
+            { href: '/guest-posts', label: 'Guest Posts' },
           ].map((link) => (
             <li key={link.href}>
               <Link
@@ -121,14 +123,15 @@ export default function Navbar() {
             <div className="flex flex-col px-6 py-4 gap-1">
               {[
                 { href: '/commands', label: 'Commands' },
+                { href: '/features', label: 'Features' },
                 { href: '/docs', label: 'Docs' },
                 { href: '/how-to', label: 'Guides' },
                 { href: '/compare', label: 'Compare' },
                 { href: '/use-cases', label: 'Use Cases' },
                 { href: '/blog', label: 'Blog' },
+                { href: '/guest-posts', label: 'Guest Posts' },
                 { href: '/faq', label: 'FAQ' },
                 { href: '/fix', label: 'Troubleshooting' },
-                { href: '/features', label: 'Features' },
                 { href: '/integrations', label: 'Integrations' },
                 { href: '/templates', label: 'Templates' },
                 { href: '/changelog', label: 'Changelog' },
