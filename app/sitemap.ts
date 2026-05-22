@@ -8,6 +8,8 @@ import { howToPages } from '@/lib/howto/data';
 import { comparePages as compareData } from '@/lib/compare/data';
 import { mailboxPages } from '@/lib/mailbox/data';
 import { landingPages } from '@/lib/landing/data';
+import { searchEngines } from '@/lib/search-engines/data';
+import { PRICING_TIERS } from '@/lib/pricing/tiers';
 import {
   LANDING_CHUNK_SIZE,
   LANDING_CHUNK_ID_START,
@@ -73,10 +75,25 @@ function corePages(baseUrl: string): MetadataRoute.Sitemap {
     { url: `${baseUrl}/security`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/privacy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/terms`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/pricing`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
+    ...PRICING_TIERS.map((tier) => ({
+      url: `${baseUrl}/pricing/${tier.slug}`,
+      lastModified: BUILD_DATE,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
     { url: `${baseUrl}/community-commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/community`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/guest-posts`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/about`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/what-is-botwave`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/search-engines`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    ...searchEngines.map((engine) => ({
+      url: `${baseUrl}/search-engines/${engine.slug}`,
+      lastModified: BUILD_DATE,
+      changeFrequency: 'monthly' as const,
+      priority: 0.55,
+    })),
   ];
 }
 

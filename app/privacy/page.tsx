@@ -411,7 +411,7 @@ export default function PrivacyPage() {
               Privacy questions?
             </h2>
             <p className="text-[var(--text-secondary)] text-sm mb-3">
-              Email <a href="mailto:support@botwave.online?subject=Privacy" className="text-blue-500 hover:underline">support@botwave.online</a> with the subject "Privacy", or check the {" "}
+              Email <a href="mailto:support@botwave.online?subject=Privacy" className="text-blue-500 hover:underline">support@botwave.online</a> with the subject &ldquo;Privacy&rdquo;, or check the {" "}
               <Link href="/faq" className="text-blue-500 hover:underline">
                 FAQ
               </Link>{' '}
