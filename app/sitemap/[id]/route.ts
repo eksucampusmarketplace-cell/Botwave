@@ -55,10 +55,15 @@ export async function GET(
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       // 1h browser cache, 24h shared/edge cache, 7d stale-while-revalidate.
-      // SWR is the key bit — GSC always gets an instant cached response,
+      // SWR is the key bit, GSC always gets an instant cached response,
       // and the regen runs in the background even if it takes several
       // seconds, so no more "Couldn't fetch" entries in Search Console.
       'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+      // Override Next.js App Router's auto Vary header so external crawlers
+      // don't see Vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+      // on a static XML response. Bingbot in particular has flagged routes
+      // with router-internal Vary values as "Discovered but not crawled".
+      'Vary': 'Accept-Encoding',
     },
   });
 }

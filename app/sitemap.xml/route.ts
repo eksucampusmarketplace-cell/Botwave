@@ -31,9 +31,16 @@ ${sitemaps}
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       // stale-while-revalidate lets the CDN keep serving the previous
-      // index while a regen is in flight — GSC never sees a 5xx even if
-      // the upstream is slow.
+      // index while a regen is in flight, so GSC and Bing never see a 5xx
+      // even if the upstream is slow.
       'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
+      // Next.js auto-sets Vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+      // for App Router responses. Those are meaningless for static XML and
+      // can confuse external crawlers (Bingbot has been observed parking
+      // sitemaps as "Discovered but not crawled" when Vary advertises
+      // unknown request headers). Override with Accept-Encoding only.
+      'Vary': 'Accept-Encoding',
+      'Last-Modified': new Date(BUILD_LASTMOD).toUTCString(),
     },
   });
 }

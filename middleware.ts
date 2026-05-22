@@ -230,6 +230,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - sitemap.xml, robots.txt (SEO files served without auth)
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|robots\\.txt|llms\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|sitemap/|robots\\.txt|llms\\.txt|llms-full\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|xml|txt)$).*)',
   ],
 }
