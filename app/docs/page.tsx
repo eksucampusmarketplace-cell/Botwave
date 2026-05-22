@@ -2,12 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import DocSidebar from '@/components/docs/DocSidebar';
+import DocsSearch from '@/components/docs/DocsSearch';
 import { docPages, getAllDocCategories } from '@/lib/docs/data';
 
 export const metadata: Metadata = {
   title: 'Documentation - Guides and Tutorials | BotWave',
-  description: 'BotWave documentation. Setup guides, troubleshooting, feature tutorials for WhatsApp Bot, Telegram Bot, and Telegram Userbot.',
-  keywords: ['botwave docs', 'whatsapp bot guide', 'telegram bot tutorial', 'bot setup guide', 'whatsapp automation guide'],
+  description:
+    'BotWave documentation. Setup guides, troubleshooting, feature tutorials for WhatsApp Bot, Telegram Bot, and Telegram Userbot.',
+  keywords: [
+    'botwave docs',
+    'whatsapp bot guide',
+    'telegram bot tutorial',
+    'bot setup guide',
+    'whatsapp automation guide',
+  ],
   openGraph: {
     title: 'BotWave Documentation',
     description: 'Setup guides, tutorials, and troubleshooting for WhatsApp and Telegram bots.',
@@ -31,63 +40,163 @@ const platformLabels: Record<string, string> = {
   userbot: 'Userbot',
 };
 
+const categoryBlurbs: Record<string, string> = {
+  Setup: 'Get connected in minutes — WhatsApp QR, Telegram bot tokens, userbot pairing.',
+  Features: 'AI, welcome messages, group management, and the day-to-day power user toolkit.',
+  Security: 'How BotWave protects your account and how to use the anti-ban system properly.',
+  Troubleshooting: 'Fixes for QR errors, disconnections, missing features, and edge cases.',
+  Billing: 'Plans, payments, invoices, and what each tier includes.',
+  Advanced: 'API access, webhooks, custom commands, multi-session, and developer extensions.',
+};
+
 export default function DocsPage() {
   const categories = getAllDocCategories();
+  const popular = docPages
+    .filter((d) => ['getting-started', 'connect-whatsapp', 'connect-telegram', 'ai-commands'].includes(d.slug))
+    .slice(0, 4);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'BotWave Documentation',
+    description:
+      'Setup guides, tutorials, and troubleshooting for WhatsApp and Telegram bots.',
+    url: 'https://www.botwave.online/docs',
+    hasPart: docPages.map((d) => ({
+      '@type': 'TechArticle',
+      headline: d.title,
+      url: `https://www.botwave.online/docs/${d.slug}`,
+    })),
+  };
 
   return (
     <main className="min-h-screen bg-[var(--bg)]">
       <Navbar />
-      <div className="pt-32 pb-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--primary)]">Home</Link>
-            <span>/</span>
-            <span className="text-[var(--text-primary)]">Docs</span>
-          </nav>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-          <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Documentation</h1>
-          <p className="text-lg text-[var(--text-secondary)] max-w-2xl mb-12">
-            Everything you need to set up, configure, and get the most out of BotWave. Step-by-step guides for every platform.
-          </p>
+      <div className="pt-28 pb-20 px-4 sm:px-6">
+        <div className="mx-auto flex max-w-7xl gap-8">
+          <DocSidebar />
 
-          {categories.map(category => (
-            <section key={category} className="mb-12">
-              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
-                {category}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {docPages.filter(d => d.category === category).map(doc => (
-                  <Link
-                    key={doc.slug}
-                    href={`/docs/${doc.slug}`}
-                    className="group block p-6 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)] hover:border-blue-400 transition-all hover:-translate-y-0.5"
-                  >
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium border mb-3 ${platformColors[doc.platform]}`}>
-                      {platformLabels[doc.platform]}
-                    </span>
-                    <h3 className="font-bold text-[var(--text-primary)] mb-2 group-hover:text-blue-500 transition-colors">{doc.title}</h3>
-                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2">{doc.description}</p>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))}
+          <div className="min-w-0 flex-1">
+            <nav className="mb-6 flex items-center gap-2 text-sm text-[var(--text-muted)]">
+              <Link href="/" className="hover:text-blue-500">
+                Home
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)]">Docs</span>
+            </nav>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link href="/commands" className="p-6 bg-[var(--bg-alt)] border border-[var(--border)] rounded-xl hover:border-blue-400 transition-colors">
-              <h3 className="font-bold text-[var(--text-primary)] mb-1">Command Gallery</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Browse all commands across WhatsApp, Telegram Bot, and Userbot</p>
-            </Link>
-            <Link href="/blog" className="p-6 bg-[var(--bg-alt)] border border-[var(--border)] rounded-xl hover:border-blue-400 transition-colors">
-              <h3 className="font-bold text-[var(--text-primary)] mb-1">Blog</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Tutorials, comparisons, and guides for WhatsApp and Telegram automation</p>
-            </Link>
+            <h1 className="mb-3 text-4xl font-extrabold text-[var(--text-primary)] md:text-5xl">
+              Documentation
+            </h1>
+            <p className="mb-8 max-w-2xl text-lg text-[var(--text-secondary)]">
+              Everything you need to set up, configure, and get the most out of BotWave. Step-by-step
+              guides for every platform.
+            </p>
+
+            <DocsSearch
+              docs={docPages.map((d) => ({
+                slug: d.slug,
+                title: d.title,
+                description: d.description,
+                category: d.category,
+              }))}
+            />
+
+            {popular.length > 0 && (
+              <section className="mb-12">
+                <h2 className="mb-4 flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Start here
+                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {popular.map((doc) => (
+                    <Link
+                      key={doc.slug}
+                      href={`/docs/${doc.slug}`}
+                      className="group block rounded-xl border border-[var(--border)] bg-[var(--card-bg,var(--surface))] p-5 transition-all hover:-translate-y-0.5 hover:border-blue-400"
+                    >
+                      <span
+                        className={`mb-3 inline-block rounded border px-2 py-1 text-xs font-medium ${platformColors[doc.platform]}`}
+                      >
+                        {platformLabels[doc.platform]}
+                      </span>
+                      <h3 className="mb-1 font-bold text-[var(--text-primary)] group-hover:text-blue-500">
+                        {doc.title}
+                      </h3>
+                      <p className="line-clamp-2 text-sm text-[var(--text-secondary)]">
+                        {doc.description}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {categories.map((category) => (
+              <section key={category} className="mb-12">
+                <h2 className="mb-1 flex items-center gap-2 text-xl font-bold text-[var(--text-primary)]">
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  {category}
+                </h2>
+                {categoryBlurbs[category] && (
+                  <p className="mb-4 text-sm text-[var(--text-muted)]">{categoryBlurbs[category]}</p>
+                )}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {docPages
+                    .filter((d) => d.category === category)
+                    .map((doc) => (
+                      <Link
+                        key={doc.slug}
+                        href={`/docs/${doc.slug}`}
+                        className="group block rounded-xl border border-[var(--border)] bg-[var(--card-bg,var(--surface))] p-6 transition-all hover:-translate-y-0.5 hover:border-blue-400"
+                      >
+                        <span
+                          className={`mb-3 inline-block rounded border px-2 py-1 text-xs font-medium ${platformColors[doc.platform]}`}
+                        >
+                          {platformLabels[doc.platform]}
+                        </span>
+                        <h3 className="mb-2 font-bold text-[var(--text-primary)] transition-colors group-hover:text-blue-500">
+                          {doc.title}
+                        </h3>
+                        <p className="line-clamp-2 text-sm text-[var(--text-secondary)]">
+                          {doc.description}
+                        </p>
+                      </Link>
+                    ))}
+                </div>
+              </section>
+            ))}
+
+            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Link
+                href="/commands"
+                className="rounded-xl border border-[var(--border)] bg-[var(--bg-alt)] p-6 transition-colors hover:border-blue-400"
+              >
+                <h3 className="mb-1 font-bold text-[var(--text-primary)]">Command Gallery</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Browse all commands across WhatsApp, Telegram Bot, and Userbot
+                </p>
+              </Link>
+              <Link
+                href="/blog"
+                className="rounded-xl border border-[var(--border)] bg-[var(--bg-alt)] p-6 transition-colors hover:border-blue-400"
+              >
+                <h3 className="mb-1 font-bold text-[var(--text-primary)]">Blog</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Tutorials, comparisons, and guides for WhatsApp and Telegram automation
+                </p>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-        <Footer />
+      <Footer />
     </main>
   );
 }
