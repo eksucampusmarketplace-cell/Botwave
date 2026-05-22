@@ -2679,6 +2679,79 @@ export async function getChatbotFlows(userId: string): Promise<any[]> {
   });
 }
 
+// ─── Chatbot Flow Sessions (persistent, replaces in-memory Map) ────────────
+//
+// Used by bot/whatsapp/handlers/MessageHandler.ts::processChatbotFlow.
+// Backs the multi-step chatbot flow state on the `flow_sessions` table so
+// in-progress conversations survive bot restarts. The legacy in-memory
+// `flowSessionState: Map` was wiped on every deploy / crash, dropping any
+// user mid-flow.
+//
+// Keying:
+//   - sessionId  bot_sessions.id (FK on flow_sessions.session_id)
+//   - userJid    WhatsApp user JID (the column is text)
+//
+// `node_id` is the string id of the FlowNode the bot is waiting on a user
+// reply for. `expires_at` enforces a 5-minute TTL (matches legacy
+// in-memory behavior); reads ignore rows past expires_at and writes
+// always refresh expires_at.
+
+export interface FlowSessionState {
+  flowId: string;
+  nodeId: string;
+}
+
+export async function loadFlowSession(
+  sessionId: string,
+  userJid: string,
+): Promise<FlowSessionState | null> {
+  const { data } = await supabase
+    .from('flow_sessions')
+    .select('flow_id, node_id, expires_at')
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid)
+    .maybeSingle();
+
+  if (!data || !data.flow_id || !data.node_id) return null;
+  if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) return null;
+
+  return { flowId: data.flow_id, nodeId: data.node_id };
+}
+
+export async function saveFlowSession(
+  sessionId: string,
+  userJid: string,
+  flowId: string,
+  nodeId: string,
+  ttlMs: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from('flow_sessions')
+    .upsert({
+      session_id: sessionId,
+      user_jid: userJid,
+      flow_id: flowId,
+      node_id: nodeId,
+      step_index: 0,
+      answers: {},
+      expires_at: new Date(Date.now() + ttlMs).toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_jid,session_id' });
+  if (error) console.error('[FLOW-SESSION] saveFlowSession error:', error.message);
+}
+
+export async function deleteFlowSession(
+  sessionId: string,
+  userJid: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('flow_sessions')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('user_jid', userJid);
+  if (error) console.error('[FLOW-SESSION] deleteFlowSession error:', error.message);
+}
+
 // ─── Custom Commands (WhatsApp) ─────────────────────────────────────────────
 
 const customCmdCache = new Map<string, { data: any[]; expiry: number }>();

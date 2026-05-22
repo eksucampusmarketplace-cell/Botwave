@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts, loadFlowSession, saveFlowSession, deleteFlowSession } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -815,13 +815,10 @@ interface FlowNode {
   options?: { label: string; next: string }[];
 }
 
-interface FlowState {
-  flowId: string;
-  nodeId: string;
-  expiry: number;
-}
-
-const flowSessionState = new Map<string, FlowState>();
+// Flow state is persisted to the `flow_sessions` table via
+// loadFlowSession / saveFlowSession / deleteFlowSession in bot/database.ts.
+// Replaces the legacy in-memory `flowSessionState: Map` that was wiped on
+// every bot restart, dropping any user mid-flow. TTL matches legacy behavior.
 const FLOW_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
 function findNodeById(nodes: FlowNode[], id: string): FlowNode | undefined {
@@ -838,7 +835,8 @@ function getNodeText(node: FlowNode): string {
 
 async function executeFlowNode(
   node: FlowNode, nodes: FlowNode[], flow: { id: string },
-  stateKey: string, context: MessageContext, sock: any,
+  sessionId: string, senderJid: string,
+  context: MessageContext, sock: any,
 ): Promise<boolean> {
   const text = getNodeText(node);
   const currentIdx = nodes.findIndex(n => n.id === node.id);
@@ -859,9 +857,9 @@ async function executeFlowNode(
           const afterDelayId = nextNode.next || getNextNodeId(nodes, nodes.findIndex(n => n.id === nextNode.id));
           if (afterDelayId) {
             const afterNode = findNodeById(nodes, afterDelayId);
-            if (afterNode) return executeFlowNode(afterNode, nodes, flow, stateKey, context, sock);
+            if (afterNode) return executeFlowNode(afterNode, nodes, flow, sessionId, senderJid, context, sock);
           }
-          flowSessionState.delete(stateKey);
+          await deleteFlowSession(sessionId, senderJid);
           return true;
         }
         // If next is question or condition, wait for user input
@@ -874,14 +872,14 @@ async function executeFlowNode(
             }
             await sendReply(context.chatJid, qText + optionsText, sock, context.rawMessage.key, context.queue);
           }
-          flowSessionState.set(stateKey, { flowId: flow.id, nodeId: nextNode.id, expiry: Date.now() + FLOW_EXPIRY_MS });
+          await saveFlowSession(sessionId, senderJid, flow.id, nextNode.id, FLOW_EXPIRY_MS);
           return true;
         }
         // If next is another message, auto-execute it
-        return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
+        return executeFlowNode(nextNode, nodes, flow, sessionId, senderJid, context, sock);
       }
     }
-    flowSessionState.delete(stateKey);
+    await deleteFlowSession(sessionId, senderJid);
     return true;
   }
 
@@ -894,7 +892,7 @@ async function executeFlowNode(
       await sendReply(context.chatJid, text + optionsText, sock, context.rawMessage.key, context.queue);
     }
     // Wait for user input
-    flowSessionState.set(stateKey, { flowId: flow.id, nodeId: node.id, expiry: Date.now() + FLOW_EXPIRY_MS });
+    await saveFlowSession(sessionId, senderJid, flow.id, node.id, FLOW_EXPIRY_MS);
     return true;
   }
 
@@ -904,9 +902,9 @@ async function executeFlowNode(
     const nextId = node.next || getNextNodeId(nodes, currentIdx);
     if (nextId) {
       const nextNode = findNodeById(nodes, nextId);
-      if (nextNode) return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
+      if (nextNode) return executeFlowNode(nextNode, nodes, flow, sessionId, senderJid, context, sock);
     }
-    flowSessionState.delete(stateKey);
+    await deleteFlowSession(sessionId, senderJid);
     return true;
   }
 
@@ -914,14 +912,16 @@ async function executeFlowNode(
 }
 
 async function processChatbotFlow(context: MessageContext, sock: any): Promise<boolean> {
-  if (!context.userId) return false;
+  if (!context.userId || !context.sessionId) return false;
 
-  const stateKey = `${context.userId}:${context.senderJid}`;
+  const sessionId = context.sessionId;
+  const senderJid = context.senderJid;
   const msgLower = context.message.toLowerCase().trim();
 
-  // Check if user is mid-flow (waiting for response to question/condition)
-  const activeState = flowSessionState.get(stateKey);
-  if (activeState && activeState.expiry > Date.now()) {
+  // Check if user is mid-flow (waiting for response to question/condition).
+  // State is loaded from `flow_sessions` table — survives bot restarts.
+  const activeState = await loadFlowSession(sessionId, senderJid);
+  if (activeState) {
     try {
       const flows = await getChatbotFlows(context.userId);
       const flow = flows.find((f: { id: string }) => f.id === activeState.flowId);
@@ -954,15 +954,15 @@ async function processChatbotFlow(context: MessageContext, sock: any): Promise<b
           if (nextId) {
             const nextNode = findNodeById(nodes, nextId);
             if (nextNode) {
-              flowSessionState.delete(stateKey);
-              return executeFlowNode(nextNode, nodes, flow, stateKey, context, sock);
+              await deleteFlowSession(sessionId, senderJid);
+              return executeFlowNode(nextNode, nodes, flow, sessionId, senderJid, context, sock);
             }
           }
         }
       }
-      flowSessionState.delete(stateKey);
+      await deleteFlowSession(sessionId, senderJid);
     } catch {
-      flowSessionState.delete(stateKey);
+      await deleteFlowSession(sessionId, senderJid);
     }
     return true; // Consumed the message even if flow ended
   }
@@ -979,7 +979,7 @@ async function processChatbotFlow(context: MessageContext, sock: any): Promise<b
       if (msgLower === trigger || msgLower.includes(trigger)) {
         const nodes = Array.isArray(flow.nodes) ? (flow.nodes as FlowNode[]) : [];
         if (nodes.length > 0) {
-          return executeFlowNode(nodes[0], nodes, flow, stateKey, context, sock);
+          return executeFlowNode(nodes[0], nodes, flow, sessionId, senderJid, context, sock);
         }
       }
     }
