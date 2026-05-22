@@ -54,7 +54,7 @@ const navGroups: NavGroup[] = [
     links: [
       { href: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', label: 'WhatsApp Group' },
       { href: 'https://t.me/botwavegrp', label: 'Telegram Group' },
-      { href: '/dashboard/feature-requests', label: 'Feature Requests' },
+      { href: '/feature-suggestions', label: 'Suggest a Feature' },
     ],
   },
 ];
