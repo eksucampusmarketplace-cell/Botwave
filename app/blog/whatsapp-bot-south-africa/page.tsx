@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-south-africa' },
-  title: 'WhatsApp Bot for South Africa (2026) - Free Automation & Group Management',
+  title: 'WhatsApp Bot for South Africa (2026)',
   description: 'Free WhatsApp bot for South Africa - auto-replies, AI chat, anti-spam, stickers & group management. Works with Vodacom, MTN, Cell C. Set up in 2 minutes, no coding needed. Try it free →',
   keywords: ['whatsapp bot south africa', 'whatsapp automation south africa', 'free whatsapp bot sa', 'whatsapp business bot south africa', 'whatsapp group bot south africa', 'chatbot south africa'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for South Africa (2026) - Free Automation & Group Management
+# WhatsApp Bot for South Africa (2026)
 
 **Last updated: May 2026** | 6 min read
 

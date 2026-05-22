@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-anti-spam-bot' },
-  title: 'Free Telegram Anti-Spam Bot (2026) - Protect Your Groups | BotWave',
+  title: 'Free Telegram Anti-Spam Bot (2026)',
   description: 'Set up a free Telegram anti-spam bot in 2 minutes. Block spam, scam links, flood messages, and raid attacks. Works with Telegram Bot API and Userbot. No coding needed.',
   keywords: ['telegram anti-spam bot', 'telegram anti-spam bot free', 'telegram spam protection', 'telegram group protection', 'telegram antiflood', 'telegram anti raid bot', 'telegram group management bot', 'telegram moderation bot'],
   openGraph: {

@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/how-to-automate-whatsapp-messages-free' },
-  title: 'How to Automate WhatsApp Messages for Free (2026 Guide)',
+  title: 'How to Automate WhatsApp Messages Free (2026)',
   description: 'Automate WhatsApp messages without coding or monthly fees. Auto-replies, scheduled messages, AI responses - this step-by-step guide gets you live in 2 minutes. Try free →',
   keywords: ['automate whatsapp messages', 'whatsapp automation free', 'auto reply whatsapp', 'scheduled whatsapp messages', 'whatsapp auto message', 'bulk whatsapp messages', 'whatsapp message bot free'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# How to Automate WhatsApp Messages for Free (2026 Guide)
+# How to Automate WhatsApp Messages Free (2026)
 
 **Last updated: May 2026** | 6 min read
 
@@ -168,8 +168,8 @@ Automating your WhatsApp takes under 2 minutes with BotWave. No coding, no month
 `;
 
 const relatedPosts = [
-  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot (2026)' },
+  { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026)' },
   { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
 ];
 

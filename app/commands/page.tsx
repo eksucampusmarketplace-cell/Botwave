@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { allCommands, platformMeta, type Platform } from '@/lib/commands/data';
 
 export const metadata: Metadata = {
-  title: 'Bot Commands - WhatsApp, Telegram Bot & Userbot | BotWave',
+  title: 'Bot Commands, WhatsApp & Telegram',
   description: 'Browse 150+ bot commands across WhatsApp, Telegram Bot, and Telegram Userbot. Stickers, AI chat, moderation, games, media tools, group management. Free.',
   keywords: ['bot commands', 'whatsapp bot commands', 'telegram bot commands', 'telegram userbot commands', 'bot command list', 'whatsapp automation commands'],
   openGraph: {

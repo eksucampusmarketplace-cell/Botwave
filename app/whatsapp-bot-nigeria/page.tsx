@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for Nigeria (2026) - Free Automation for Nigerian Businesses & Groups',
+  title: 'WhatsApp Bot for Nigeria (2026), Free Automation',
   description: 'The #1 free WhatsApp bot built for Nigeria. Auto-replies, AI chat, stickers, anti-spam, group management, games - all in Naira pricing. 100+ commands. No coding. Set up in 2 minutes.',
   keywords: ['whatsapp bot nigeria', 'free whatsapp bot nigeria', 'whatsapp automation nigeria', 'whatsapp business bot nigeria', 'whatsapp group bot nigeria', 'nigerian whatsapp bot', 'botwave nigeria'],
   openGraph: {
@@ -107,7 +107,7 @@ export default function NigeriaLandingPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {[
               { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria (2026)' },
-              { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+              { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Free WhatsApp Bot for Nigerian Groups (2026)' },
               { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
               { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026' },
             ].map((post) => (

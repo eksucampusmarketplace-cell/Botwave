@@ -4,11 +4,11 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-telegram-group-management-bot' },
-  title: 'Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More',
+  title: 'Free Telegram Group Management Bot (2026)',
   description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools - all built in.',
   keywords: ['telegram group management bot', 'free telegram bot', 'telegram anti-spam bot', 'telegram group bot free', 'telegram moderation bot', 'botwave telegram', 'telegram group admin bot'],
   openGraph: {
-    title: 'Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More',
+    title: 'Free Telegram Group Management Bot (2026)',
     description: 'Manage your Telegram group like a pro with a free bot. Anti-spam, welcome messages, AI chat, trivia games, polls, and moderation tools.',
     url: 'https://www.botwave.online/blog/free-telegram-group-management-bot',
     type: 'article',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free Telegram Group Management Bot (2026) - Anti-Spam, Polls, Games & More
+# Free Telegram Group Management Bot (2026)
 
 **Last updated: May 2026** | 7 min read
 
@@ -130,7 +130,7 @@ Your Telegram group deserves better than manual moderation. Set up BotWave in 2 
 const relatedPosts = [
   { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria (2026)' },
   { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
-  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026) - Automate Your Real Account' },
+  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026)' },
 ];
 
 export default function Article() {

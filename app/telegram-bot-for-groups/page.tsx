@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Best Telegram Bot for Groups (2026), Free Moderation & Anti-Spam | BotWave',
+  title: 'Best Telegram Bot for Groups (2026), Free',
   description: 'Free Telegram group management bot with anti-spam, captcha verification, welcome messages, night mode, member boosting, and AI chat. Set up in under 2 minutes, no coding needed.',
   keywords: [
     'telegram bot for groups',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     'telegram admin bot',
   ],
   openGraph: {
-    title: 'Best Telegram Bot for Groups (2026), Free Moderation & Anti-Spam | BotWave',
+    title: 'Best Telegram Bot for Groups (2026), Free',
     description: 'Free Telegram group bot: anti-spam, captcha, welcome messages, night mode, member boosting, AI chat.',
     url: 'https://www.botwave.online/telegram-bot-for-groups',
     type: 'website',

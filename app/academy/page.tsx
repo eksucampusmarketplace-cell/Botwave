@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'BotWave Academy - Learn WhatsApp Automation and Community Growth',
+  title: 'BotWave Academy, Learn Automation',
   description: 'Free courses on WhatsApp automation, community management, AI chatbots, group moderation, and engagement tactics. Learn how to grow and manage WhatsApp and Telegram communities.',
   keywords: ['whatsapp automation course', 'community management course', 'whatsapp bot tutorial', 'telegram bot course', 'group management training', 'whatsapp marketing course'],
   openGraph: {

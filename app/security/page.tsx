@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Security - How BotWave Protects Your Account | BotWave',
+  title: 'Security, How BotWave Protects Your Account',
   description: 'BotWave security overview. Anti-Ban Engine, session isolation, rate limiting, and account protection. Your WhatsApp runs from your own device IP.',
   keywords: ['botwave security', 'whatsapp bot security', 'anti ban whatsapp', 'botwave anti ban', 'whatsapp bot safe'],
   openGraph: {

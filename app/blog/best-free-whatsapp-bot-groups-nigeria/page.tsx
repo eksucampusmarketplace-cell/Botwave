@@ -4,11 +4,11 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/best-free-whatsapp-bot-groups-nigeria' },
-  title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+  title: 'Free WhatsApp Bot for Nigerian Groups (2026)',
   description: 'The best WhatsApp group bot for Nigeria - anti-spam, polls, games, AI chat, stickers & 100+ commands. Free forever, no catch. See why Nigerian groups are switching →',
   keywords: ['best whatsapp bot nigeria', 'whatsapp bot for groups', 'free whatsapp bot nigeria', 'whatsapp group bot', 'whatsapp group management', 'whatsapp bot for class groups'],
   openGraph: {
-    title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)',
+    title: 'Free WhatsApp Bot for Nigerian Groups (2026)',
     description: 'The best WhatsApp group bot for Nigeria. Anti-spam, polls, games, AI chat - all free. No catch.',
     url: 'https://www.botwave.online/blog/best-free-whatsapp-bot-groups-nigeria',
     type: 'article',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Best Free WhatsApp Bot for Groups in Nigeria (2026)
+# Free WhatsApp Bot for Nigerian Groups (2026)
 
 **Last updated: May 2026** | 6 min read
 
@@ -119,9 +119,9 @@ If you're managing a WhatsApp group in Nigeria, BotWave is the best free option 
 `;
 
 const relatedPosts = [
-  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
-  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically' },
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026)' },
 ];
 
 export default function Article() {

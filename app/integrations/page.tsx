@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Integrations - Connect BotWave with Your Favourite Tools | BotWave',
+  title: 'Integrations, Connect Your Favourite Tools',
   description: 'BotWave integrates with OpenAI, Google Gemini, TikTok, YouTube, Instagram, and more. See all supported platforms and services.',
   keywords: ['botwave integrations', 'whatsapp bot integrations', 'whatsapp openai', 'whatsapp youtube bot', 'whatsapp tiktok bot', 'bot platform integrations'],
   openGraph: {

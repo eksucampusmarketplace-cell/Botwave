@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-bot-vs-whatsapp-bot' },
-  title: 'Telegram Bot vs WhatsApp Bot (2026) - Which is Better? Full Comparison',
+  title: 'Telegram Bot vs WhatsApp Bot (2026)',
   description: 'Telegram Bot vs WhatsApp Bot: ban risk, features, setup difficulty, group limits, API access, pricing compared. Which platform should you automate in 2026? BotWave supports both.',
   keywords: ['telegram bot vs whatsapp bot', 'whatsapp bot vs telegram bot', 'telegram or whatsapp bot', 'best bot platform 2026', 'telegram bot comparison', 'whatsapp bot ban risk', 'telegram vs whatsapp groups'],
   openGraph: {

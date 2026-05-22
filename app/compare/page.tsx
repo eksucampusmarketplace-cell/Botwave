@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { comparePages } from '@/lib/compare/data';
 
 export const metadata: Metadata = {
-  title: 'Compare - BotWave vs Alternatives | Bot Platform Comparisons',
+  title: 'Compare BotWave vs Alternatives',
   description: 'Compare BotWave with other bot platforms. Evolution API, Baileys, Telegram bots, WhatsApp Business API. Features, pricing, and ease of use.',
   keywords: ['botwave vs', 'whatsapp bot comparison', 'best whatsapp bot', 'bot platform comparison'],
   alternates: { canonical: '/compare' },

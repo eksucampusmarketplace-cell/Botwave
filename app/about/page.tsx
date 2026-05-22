@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'About BotWave - Free WhatsApp & Telegram Bot Platform | BotWave',
+  title: 'About BotWave, the Free WhatsApp Bot',
   description: 'BotWave is a free WhatsApp and Telegram bot automation platform. Learn about our mission, team, and what makes us different from other projects named BotWave.',
   keywords: ['about botwave', 'botwave online', 'whatsapp bot platform', 'telegram bot platform', 'botwave vs botwave'],
   openGraph: {

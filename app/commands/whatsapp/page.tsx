@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { whatsappCommands, getAllCategories } from '@/lib/commands/data';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot Commands - Full Command List (2026) | BotWave',
+  title: 'WhatsApp Bot Commands List (2026)',
   description: 'Complete list of WhatsApp bot commands. Stickers, AI chat, media downloads, games, moderation, group management. 80+ commands, all free.',
   keywords: ['whatsapp bot commands', 'whatsapp bot command list', 'whatsapp automation commands', 'free whatsapp bot'],
   openGraph: {

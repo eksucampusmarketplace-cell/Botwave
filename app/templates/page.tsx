@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Bot Templates - Ready-Made Setups for WhatsApp & Telegram | BotWave',
+  title: 'Bot Templates, WhatsApp & Telegram',
   description: 'Download prebuilt bot configurations for anti-spam, school moderation, business auto-reply, engagement games, and AI support. One-click setup for WhatsApp and Telegram groups.',
   keywords: ['bot templates', 'whatsapp bot templates', 'telegram bot setup template', 'anti-spam template', 'auto reply template', 'group moderation template'],
   openGraph: {

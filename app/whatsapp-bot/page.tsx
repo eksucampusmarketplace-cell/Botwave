@@ -4,11 +4,11 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot (2026) - Free Automation Platform | BotWave',
+  title: 'WhatsApp Bot (2026), Free Automation Platform',
   description: 'The most powerful free WhatsApp bot platform. 150+ commands, AI chat, sticker maker, anti-spam, auto-replies, group management, scheduled messages. No coding required. Set up in 2 minutes.',
   keywords: ['whatsapp bot', 'free whatsapp bot', 'whatsapp automation', 'whatsapp business bot', 'whatsapp group bot', 'whatsapp bot maker', 'botwave'],
   openGraph: {
-    title: 'WhatsApp Bot (2026) - Free Automation Platform | BotWave',
+    title: 'WhatsApp Bot (2026), Free Automation Platform',
     description: 'The most powerful free WhatsApp bot. 150+ commands, AI, anti-spam, stickers. No coding.',
     url: 'https://www.botwave.online/whatsapp-bot',
     type: 'website',

@@ -4,11 +4,11 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-userbot-automation' },
-  title: 'Telegram Userbot Automation (2026) - Automate Your Real Telegram Account',
+  title: 'Telegram Userbot Automation (2026)',
   description: 'Automate your real Telegram account with BotWave userbot mode. Auto-replies, AI chat, media tools - all running from your personal account. Free setup.',
   keywords: ['telegram userbot', 'telegram userbot automation', 'telegram account automation', 'telegram mtproto bot', 'automate telegram account', 'botwave userbot', 'telegram self-bot'],
   openGraph: {
-    title: 'Telegram Userbot Automation (2026) - Automate Your Real Telegram Account',
+    title: 'Telegram Userbot Automation (2026)',
     description: 'Automate your real Telegram account with BotWave userbot mode. Auto-replies, AI chat, media tools - running from your personal account.',
     url: 'https://www.botwave.online/blog/telegram-userbot-automation',
     type: 'article',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Telegram Userbot Automation (2026) - Automate Your Real Telegram Account
+# Telegram Userbot Automation (2026)
 
 **Last updated: May 2026** | 8 min read
 

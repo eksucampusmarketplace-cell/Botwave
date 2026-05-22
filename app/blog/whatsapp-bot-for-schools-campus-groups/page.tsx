@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-for-schools-campus-groups' },
-  title: 'WhatsApp Bot for Schools & Campus Groups (2026) - Study, Manage, Engage',
+  title: 'WhatsApp Bot for Schools & Campus Groups (2026)',
   description: 'Turn your campus WhatsApp group into a smart hub - study tools, AI homework help, anti-spam, polls & attendance. Used by Nigerian universities. Free setup in 2 minutes →',
   keywords: ['whatsapp bot for school', 'whatsapp bot campus', 'whatsapp class group bot', 'student whatsapp bot', 'university whatsapp bot', 'whatsapp bot education', 'nigerian campus whatsapp bot'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for Schools & Campus Groups (2026) - Study, Manage, Engage
+# WhatsApp Bot for Schools & Campus Groups (2026)
 
 **Last updated: May 2026** | 7 min read
 
@@ -157,8 +157,8 @@ Most campus groups stay within the free tier. If your group is very active, paid
 `;
 
 const relatedPosts = [
-  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Free WhatsApp Bot for Nigerian Groups (2026)' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026)' },
   { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
 ];
 

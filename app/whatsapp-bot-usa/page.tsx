@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for USA (2026) - Free Automation for American Businesses & Communities',
+  title: 'WhatsApp Bot for USA (2026), Free Automation',
   description: 'Free WhatsApp bot for US businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. 100+ commands. No coding. Works with any US number.',
   keywords: ['whatsapp bot usa', 'whatsapp bot united states', 'free whatsapp bot us', 'whatsapp automation usa', 'whatsapp business bot usa', 'botwave usa', 'whatsapp chatbot america'],
   openGraph: {

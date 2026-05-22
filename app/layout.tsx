@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'BotWave - Free WhatsApp & Telegram Bot Platform (2026) | Stop Paying for Bots',
+    default: 'BotWave: Free WhatsApp & Telegram Bot Platform (2026)',
     template: '%s | BotWave',
   },
   description: 'Everyone is paying $20/mo for bots that barely work. BotWave is 100% free with 150+ commands across WhatsApp & Telegram - stickers, AI chat, games, anti-spam, media downloads. WhatsApp Bot, Telegram Bot & Userbot. No coding. No catch. Works in Nigeria & worldwide.',
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     locale: 'en_NG',
     url: 'https://www.botwave.online',
     siteName: 'BotWave',
-    title: 'BotWave - Free WhatsApp & Telegram Bot Platform Everyone is Switching To',
+    title: 'BotWave: Free WhatsApp & Telegram Bot Platform (2026)',
     description: 'Why pay for bots when BotWave gives you 150+ commands across WhatsApp & Telegram for FREE? AI chat, stickers, games, anti-spam. WhatsApp Bot, Telegram Bot & Userbot. No coding. No catch.',
     images: [
       {
@@ -96,7 +96,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BotWave - Free WhatsApp & Telegram Bot Platform That Puts Paid Bots to Shame',
+    title: 'BotWave: Free WhatsApp & Telegram Bot Platform (2026)',
     description: 'BotWave gives you 150+ commands across WhatsApp & Telegram for FREE. AI chat, stickers, games, group management. WhatsApp Bot, Telegram Bot & Userbot. No coding needed.',
     images: ['/og-image.png'],
   },

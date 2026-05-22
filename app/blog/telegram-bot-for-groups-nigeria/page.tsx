@@ -4,11 +4,11 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-bot-for-groups-nigeria' },
-  title: 'Telegram Bot for Groups in Nigeria (2026) - Free Setup with BotWave',
+  title: 'Telegram Bot for Groups in Nigeria (2026)',
   description: 'Set up a free Telegram bot for your Nigerian group in under 2 minutes. AI chat, stickers, games, polls, anti-spam - all built in. No coding needed.',
   keywords: ['telegram bot nigeria', 'telegram group bot', 'telegram bot for groups', 'free telegram bot', 'botwave telegram', 'telegram bot africa', 'telegram automation nigeria'],
   openGraph: {
-    title: 'Telegram Bot for Groups in Nigeria (2026) - Free Setup with BotWave',
+    title: 'Telegram Bot for Groups in Nigeria (2026)',
     description: 'Set up a free Telegram bot for your Nigerian group in under 2 minutes. AI chat, stickers, games, polls, anti-spam - all built in.',
     url: 'https://www.botwave.online/blog/telegram-bot-for-groups-nigeria',
     type: 'article',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Telegram Bot for Groups in Nigeria (2026) - Free Setup with BotWave
+# Telegram Bot for Groups in Nigeria (2026)
 
 **Last updated: May 2026** | 6 min read
 
@@ -127,7 +127,7 @@ No coding. No monthly fees. No stress.
 const relatedPosts = [
   { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot: Which is Better for Africa?' },
   { slug: 'free-telegram-group-management-bot', title: 'Free Telegram Group Management Bot (2026)' },
-  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026) - Automate Your Real Account' },
+  { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation (2026)' },
 ];
 
 export default function Article() {

@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { howToPages } from '@/lib/howto/data';
 
 export const metadata: Metadata = {
-  title: 'How-To Guides - WhatsApp and Telegram Bot Tutorials | BotWave',
+  title: 'How-To Guides, WhatsApp & Telegram Bot',
   description: 'Step-by-step guides for WhatsApp and Telegram bot setup. Create bots, auto-reply, moderation, stickers, downloads, AI assistant, and more.',
   keywords: ['how to create whatsapp bot', 'whatsapp bot tutorial', 'telegram bot guide', 'bot setup guide'],
   alternates: { canonical: '/how-to' },

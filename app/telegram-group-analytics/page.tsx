@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Group Analytics (2026), Track Members, Messages & Growth | BotWave',
+  title: 'Telegram Group Analytics (2026), Members & Growth',
   description: 'Free Telegram group analytics dashboard. Track member growth, message activity, active users, command usage, and engagement trends. Visualize your community health in real time.',
   keywords: [
     'telegram group analytics',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'telegram group metrics',
   ],
   openGraph: {
-    title: 'Telegram Group Analytics (2026), Track Members, Messages & Growth | BotWave',
+    title: 'Telegram Group Analytics (2026), Members & Growth',
     description: 'Free Telegram analytics: member growth, message activity, active users, engagement trends.',
     url: 'https://www.botwave.online/telegram-group-analytics',
     type: 'website',

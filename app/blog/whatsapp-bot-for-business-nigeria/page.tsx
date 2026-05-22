@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-for-business-nigeria' },
-  title: 'WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support',
+  title: 'WhatsApp Bot for Business in Nigeria (2026)',
   description: 'Stop answering "How much?" 50 times a day. Nigerian businesses use BotWave to automate support, orders & promotions on WhatsApp. Free setup, Naira pricing. Start now →',
   keywords: ['whatsapp bot business nigeria', 'whatsapp automation nigeria', 'whatsapp business bot', 'automate whatsapp business', 'whatsapp customer support bot', 'nigerian business whatsapp bot', 'whatsapp bot for sales'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Bot for Business in Nigeria (2026) - Automate Sales & Support
+# WhatsApp Bot for Business in Nigeria (2026)
 
 **Last updated: May 2026** | 8 min read
 
@@ -158,8 +158,8 @@ Setting up a WhatsApp bot for your Nigerian business takes under 2 minutes with 
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026) - Free Automation & Group Management' },
-  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free (2026 Guide)' },
+  { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa (2026)' },
+  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages Free (2026)' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
 ];
 
