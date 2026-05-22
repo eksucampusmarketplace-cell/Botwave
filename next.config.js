@@ -35,6 +35,20 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      {
+        // Sitemap chunks are now generated on-demand (see app/sitemap.ts) so
+        // we explicitly cache them at the edge for 24h. stale-while-revalidate
+        // means GSC always gets an instant response — the regen happens in
+        // the background after the cached copy goes stale, so a slow render
+        // never turns into a "Couldn't fetch" in Search Console.
+        source: '/sitemap/:id*.xml',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
     ];
   },
   // Permanent redirects for legacy URLs that still show up in Google Search
