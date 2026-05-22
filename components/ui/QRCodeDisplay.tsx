@@ -11,14 +11,19 @@ interface QRCodeDisplayProps {
   pairingCode?: string;
   sessionState?: string;
   queuePosition?: number | null;
+  // Optional: async callback that asks the server to reset the session and
+  // generate a fresh pairing code / QR. Renders a "Regenerate code" button
+  // when the current code is expired or the session is stuck.
+  onRegenerate?: () => Promise<void> | void;
 }
 
-export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode, sessionState, queuePosition }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode, sessionState, queuePosition, onRegenerate }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(180);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'qr' | 'code'>(qrCode ? 'qr' : 'code');
   const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [showQrFallback, setShowQrFallback] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     if (qrCode && !pairingCode) setActiveTab('qr');
@@ -91,6 +96,27 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
   const isConnected = sessionState === 'active';
   const hasContent = pairingCode || qrCode;
   const isLoading = !hasContent && !isConnected;
+  // Show the regenerate button when the user is genuinely stuck — either the
+  // code on screen has expired, or the session has been marked needs_reauth /
+  // pairing_failed by the worker. Hidden while a fresh code is still valid.
+  const isStuck =
+    !isConnected &&
+    !!onRegenerate &&
+    (timeLeft === 0 ||
+      sessionState === 'needs_reauth' ||
+      sessionState === 'pairing_failed');
+
+  const handleRegenerate = useCallback(async () => {
+    if (!onRegenerate || regenerating) return;
+    setRegenerating(true);
+    try {
+      await onRegenerate();
+      setTimeLeft(180);
+      setShowQrFallback(false);
+    } finally {
+      setRegenerating(false);
+    }
+  }, [onRegenerate, regenerating]);
 
   return (
     <motion.div
@@ -338,9 +364,19 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
             </div>
           )}
 
-          {/* Cancel button */}
-          {!isConnected && hasContent && (
-            <div className="flex justify-center mb-3">
+          {/* Regenerate / Cancel buttons */}
+          {!isConnected && (hasContent || isStuck) && (
+            <div className="flex justify-center gap-2 mb-3">
+              {onRegenerate && (
+                <button
+                  onClick={handleRegenerate}
+                  disabled={regenerating || (!isStuck && timeLeft > 30)}
+                  title={!isStuck && timeLeft > 30 ? 'Available when the code expires or the session gets stuck' : 'Generate a fresh code'}
+                  className="text-sm font-medium px-5 py-2.5 border border-blue-300 dark:border-blue-400/30 text-blue-600 dark:text-blue-400 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {regenerating ? 'Regenerating…' : 'Regenerate code'}
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="text-sm font-medium px-6 py-2.5 border border-red-300 dark:border-red-400/30 text-red-500 dark:text-red-400/70 hover:border-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-400/5 rounded-xl transition-all"
