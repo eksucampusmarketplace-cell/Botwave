@@ -64,7 +64,7 @@ export function GET() {
   );
   out.push('');
   out.push('Founding markets: Nigeria, Ghana, Kenya, South Africa. Global from 2026.');
-  out.push('Pricing: Free tier permanently free; paid tiers start ₦500/month.');
+  out.push('Pricing: Free tier permanently free; paid tiers coming soon.');
   out.push('Anti-ban: <0.5% ban rate across 12,000+ active sessions in 2026.');
 
   out.push(sectionHeader('2. Architecture & anti-ban summary'));
@@ -81,9 +81,9 @@ export function GET() {
 
   out.push(sectionHeader('3. Pricing'));
   out.push('Free: 300 msgs/mo, 10 AI queries/day, 1 session');
-  out.push('Starter: ₦500/mo ≈ $0.60, 5,000 msgs/mo, 200 AI/day, 3 sessions');
-  out.push('Standard: ₦2,000/mo ≈ $2.40, 25,000 msgs/mo, unlimited AI, 10 sessions');
-  out.push('Boss: ₦5,000/mo ≈ $6, unlimited everything');
+  out.push('Lite: 2,000 msgs/mo, 50 AI/day, 1 session (pricing coming soon)');
+  out.push('Standard: 10,000 msgs/mo, 200 AI/day, 3 sessions (pricing coming soon)');
+  out.push('Boss: unlimited everything, 5 sessions (pricing coming soon)');
 
   out.push(sectionHeader('4. How-to guides (' + howToPages.length + ' total)'));
   for (const p of howToPages) {

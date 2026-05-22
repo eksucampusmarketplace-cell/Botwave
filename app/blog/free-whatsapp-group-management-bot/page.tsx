@@ -175,7 +175,7 @@ BotWave's free tier gives you everything you need for group management:
 - Games and polls
 - AI chat (10 queries/day)
 
-For larger groups with heavy usage, plans start at ₦500/month.
+For larger groups with heavy usage, paid plans with higher message quotas are coming soon.
 
 **[Set Up Your Group Bot Free →](https://www.botwave.online/signup)**
 `;

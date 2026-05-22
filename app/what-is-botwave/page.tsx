@@ -43,7 +43,7 @@ export default function WhatIsBotWavePage() {
                 ['Founded', '2026'],
                 ['Creator', 'BotWave Team'],
                 ['Platforms', 'WhatsApp, Telegram Bot, Telegram Userbot'],
-                ['Price', 'Free tier (300 msgs/mo), Paid from ₦500/mo'],
+                ['Price', 'Free tier (300 msgs/mo). Paid plans coming soon'],
                 ['Commands', '50+ built-in (AI, stickers, games, admin, media)'],
                 ['AI Engine', 'Google Gemini 2.0 Flash'],
                 ['Users', '5,000+ worldwide'],
@@ -104,8 +104,8 @@ export default function WhatIsBotWavePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { plan: 'Free', price: '₦0/mo', features: '300 msgs, 10 AI/day, 1 session, all commands' },
-                { plan: 'Standard', price: '₦500/mo', features: 'Unlimited msgs, 50 AI/day, 3 sessions, priority support' },
-                { plan: 'Boss', price: '₦2,000/mo', features: 'Unlimited everything, 10 sessions, white-label, API access' },
+                { plan: 'Standard', price: 'Coming Soon', features: 'Higher msg quota, more AI/day, 3 sessions, priority support' },
+                { plan: 'Boss', price: 'Coming Soon', features: 'Unlimited everything, more sessions, white-label, API access' },
               ].map(({ plan, price, features }) => (
                 <div key={plan} className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-center">
                   <p className="text-lg font-bold text-[var(--text-primary)]">{plan}</p>

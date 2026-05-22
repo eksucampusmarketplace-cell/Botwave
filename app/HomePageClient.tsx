@@ -360,9 +360,9 @@ export default function HomePage() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: 'Free', price: '₦0', period: '/forever', features: ['1 WhatsApp or Telegram session', '300 messages/month', '10 AI queries/day', 'All 150+ commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
-              { name: 'Standard', price: '₦2,000', period: '/month', features: ['3 sessions', '10,000 messages/month', '200 AI queries/day', 'Group analytics', 'Priority email support'], cta: 'Upgrade to Standard', highlight: true, comingSoon: false },
-              { name: 'Boss', price: '₦5,000', period: '/month', features: ['5 sessions', 'Unlimited messages', 'Unlimited AI queries', 'REST API + webhooks', 'Priority WhatsApp support'], cta: 'Upgrade to Boss', highlight: false, comingSoon: false },
+              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
+              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Notify Me', highlight: true, comingSoon: true },
+              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Notify Me', highlight: false, comingSoon: true },
             ].map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
@@ -382,7 +382,7 @@ export default function HomePage() {
                 {plan.comingSoon ? (
                   <NotifyMeButton highlight={plan.highlight} planName={plan.name} />
                 ) : (
-                  <Link href={plan.name === 'Free' ? '/signup' : '/pricing'} className={`block w-full py-3 rounded-xl font-semibold text-base text-center transition-all ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                  <Link href="/signup" className={`block w-full py-3 rounded-xl font-semibold text-base text-center transition-all bg-blue-600 text-white hover:bg-blue-700`}>
                     {plan.cta}
                   </Link>
                 )}
@@ -631,7 +631,7 @@ export default function HomePage() {
               <strong>Anti-ban protection:</strong> BotWave includes 7-day session warmup, human-like typing delays, 50-100 message variations, rate limiting (200 msgs/day cap), activity hours simulation, and media fingerprint jittering. Sessions run from your own device IP.
             </p>
             <p>
-              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans from ₦500/month (Lite) to ₦5,000/month (Boss) with unlimited messages, multiple sessions, group analytics, and API access.
+              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans coming soon with unlimited messages and multiple sessions.
             </p>
           </div>
         </div>

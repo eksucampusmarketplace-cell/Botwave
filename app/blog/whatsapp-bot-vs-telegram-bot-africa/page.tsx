@@ -81,7 +81,7 @@ If you've decided WhatsApp is the right platform (it is, for Africa), here's how
 - **Coding needed**: No
 - **Features**: 50+ built-in commands (stickers, AI, games, polls, anti-spam)
 - **Anti-ban**: Advanced (warmup, human-like delays, rate limiting, device IP)
-- **Price**: Free tier + paid plans from ₦500/mo
+- **Price**: Free tier today, paid plans coming soon
 - **Dashboard**: Yes (web-based)
 
 ### Evolution API

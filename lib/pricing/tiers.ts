@@ -97,9 +97,9 @@ export const PRICING_TIERS: PricingTier[] = [
       'Email support',
     ],
     bestFor: 'Small WhatsApp / Telegram groups, study groups, side projects.',
-    seoTitle: 'BotWave Lite Plan, ₦500/month, 2,000 messages, auto-reply',
+    seoTitle: 'BotWave Lite Plan, 2,000 messages, auto-reply (coming soon)',
     seoDescription:
-      'BotWave Lite at ₦500/month (~$0.60): 2,000 messages, 50 AI queries/day, auto-reply, business hours, 10 templates, 5 custom commands. Cancel anytime.',
+      'BotWave Lite: 2,000 messages, 50 AI queries/day, auto-reply, business hours, 10 templates, 5 custom commands. Pricing coming soon. Free tier available today.',
     keywords: [
       'botwave lite plan',
       'cheap whatsapp bot nigeria',
@@ -131,9 +131,9 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     bestFor: 'Active community admins, small business support, content creators.',
     recommended: true,
-    seoTitle: 'BotWave Standard Plan, ₦2,000/month, 10,000 msgs, analytics',
+    seoTitle: 'BotWave Standard Plan, 10,000 msgs, analytics (coming soon)',
     seoDescription:
-      'BotWave Standard at ₦2,000/month (~$2.40): 10k messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, priority support. Cancel anytime.',
+      'BotWave Standard: 10k messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, priority support. Pricing coming soon. Free tier available today.',
     keywords: [
       'botwave standard plan',
       'whatsapp bot for business nigeria',
@@ -165,9 +165,9 @@ export const PRICING_TIERS: PricingTier[] = [
       'All channel alerts (email + WhatsApp + Telegram)',
     ],
     bestFor: 'Agencies, communities >1k members, businesses needing API access.',
-    seoTitle: 'BotWave Boss Plan, ₦5,000/month, unlimited messages + API',
+    seoTitle: 'BotWave Boss Plan, unlimited messages + API (coming soon)',
     seoDescription:
-      'BotWave Boss at ₦5,000/month (~$6): unlimited messages, 5 sessions, unlimited AI, REST API, custom branding, priority support. For agencies + power users.',
+      'BotWave Boss: unlimited messages, 5 sessions, unlimited AI, REST API, custom branding, priority support. For agencies + power users. Pricing coming soon.',
     keywords: [
       'botwave boss plan',
       'whatsapp bot api access',
@@ -213,7 +213,9 @@ export function productOfferJsonLd(tier: PricingTier) {
       price: String(tier.priceNgn),
       priceCurrency: 'NGN',
       priceValidUntil: '2027-12-31',
-      availability: 'https://schema.org/InStock',
+      availability: tier.priceNgn === 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/PreOrder',
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',

@@ -9,22 +9,21 @@ import { PRICING_TIERS, productOfferJsonLd } from '@/lib/pricing/tiers';
 const LAST_UPDATED = '2026-05-22';
 
 export const metadata: Metadata = {
-  title: 'BotWave Pricing, Free, Lite ₦500, Standard ₦2,000, Boss ₦5,000',
+  title: 'BotWave Pricing, Free forever with paid plans coming soon',
   description:
-    'Transparent pricing for the BotWave WhatsApp + Telegram bot platform. Free forever (300 msgs/mo) or paid plans from ₦500/month (~$0.60). No credit card required to start.',
+    'BotWave is free forever (300 msgs/mo, 10 AI queries/day, all 150+ commands). Paid tiers with higher limits, group analytics, and API access are coming soon. No credit card required.',
   keywords: [
     'botwave pricing',
-    'whatsapp bot price nigeria',
+    'whatsapp bot pricing',
     'whatsapp bot subscription',
     'cheap whatsapp bot',
     'free whatsapp bot 2026',
-    'whatsapp bot naira',
     'telegram bot pricing',
   ],
   openGraph: {
-    title: 'BotWave pricing, free forever or from ₦500/month',
+    title: 'BotWave pricing, free forever',
     description:
-      'Honest plans, no hidden fees. Free 300 msgs/month plan or upgrade for higher limits, group analytics, API access.',
+      'Free forever. Paid tiers (higher limits, group analytics, API access) are coming soon.',
     url: 'https://www.botwave.online/pricing',
     type: 'website',
     images: [
@@ -83,7 +82,7 @@ const faqs = [
 
 function formatPrice(tier: (typeof PRICING_TIERS)[number]): string {
   if (tier.priceNgn === 0) return 'Free';
-  return `₦${tier.priceNgn.toLocaleString('en-NG')}`;
+  return 'Coming Soon';
 }
 
 export default function PricingPage() {
@@ -155,14 +154,9 @@ export default function PricingPage() {
                 </h2>
                 <p className="text-sm text-[var(--text-muted)] mb-4">{tier.tagline}</p>
                 <div className="mb-4">
-                  <div className="text-4xl font-extrabold text-[var(--text-primary)]">
+                  <div className={`font-extrabold text-[var(--text-primary)] ${tier.priceNgn === 0 ? 'text-4xl' : 'text-2xl'}`}>
                     {formatPrice(tier)}
                   </div>
-                  {tier.priceNgn > 0 && (
-                    <div className="text-xs text-[var(--text-muted)]">
-                      {tier.priceUsdEquivalent} / month
-                    </div>
-                  )}
                 </div>
                 <ul className="space-y-2 mb-6 list-none">
                   {tier.features.map((f, i) => (
@@ -182,16 +176,25 @@ export default function PricingPage() {
                   >
                     Plan details →
                   </Link>
-                  <Link
-                    href="/signup"
-                    className={`block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity ${
-                      tier.recommended
-                        ? 'bg-emerald-500 text-white hover:opacity-90'
-                        : 'bg-[var(--primary)] text-white hover:opacity-90'
-                    }`}
-                  >
-                    {tier.priceNgn === 0 ? 'Start free' : 'Choose plan'}
-                  </Link>
+                  {tier.priceNgn === 0 ? (
+                    <Link
+                      href="/signup"
+                      className={`block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity ${
+                        tier.recommended
+                          ? 'bg-emerald-500 text-white hover:opacity-90'
+                          : 'bg-[var(--primary)] text-white hover:opacity-90'
+                      }`}
+                    >
+                      Start free
+                    </Link>
+                  ) : (
+                    <span
+                      aria-disabled
+                      className="block w-full text-center px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--card-bg,var(--surface))] border border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-[var(--text-muted)] mt-3 leading-relaxed">
                   {tier.bestFor}
@@ -222,7 +225,7 @@ export default function PricingPage() {
                 </thead>
                 <tbody className="text-[var(--text-secondary)]">
                   <tr className="border-b border-[var(--border)]">
-                    <td className="p-3 font-medium text-[var(--text-primary)]">Price (NGN)</td>
+                    <td className="p-3 font-medium text-[var(--text-primary)]">Price</td>
                     {PRICING_TIERS.map((t) => (
                       <td key={t.slug} className="p-3">{formatPrice(t)}</td>
                     ))}

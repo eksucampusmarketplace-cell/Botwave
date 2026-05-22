@@ -182,7 +182,7 @@ export default function TelegramBotForGroupsPage() {
           </h2>
           <div className="space-y-6">
             {[
-              { q: 'Is the Telegram bot really free?', a: 'Yes. The core features, anti-spam, captcha, welcome messages, and moderation, are completely free forever. Paid plans (₦500/mo Lite, ₦2,000/mo Standard, ₦5,000/mo Boss) unlock advanced analytics, more sessions, REST API access, and priority support.' },
+              { q: 'Is the Telegram bot really free?', a: 'Yes. The core features, anti-spam, captcha, welcome messages, and moderation, are completely free. Premium plans with advanced analytics and priority support are coming soon.' },
               { q: 'Do I need to know how to code?', a: 'No. Everything is configured through a web dashboard. Just create a bot token from @BotFather, paste it into BotWave, and add the bot to your group.' },
               { q: 'Can I use the bot in multiple groups?', a: 'Yes. One bot token can be added to multiple Telegram groups. All groups are managed from the same dashboard.' },
               { q: 'How does anti-spam work?', a: 'The bot detects spam patterns including rapid message flooding, suspicious links, forwarded messages, and known spam phrases. You can configure the sensitivity and choose between mute, delete, or ban actions.' },

@@ -74,7 +74,7 @@ Yes. BotWave's free tier includes:
 - **1 WhatsApp session**
 - **All basic commands**
 
-If you need more, paid plans start at just ₦500/month (~$0.60). But for most personal use and small groups, the free tier is plenty.
+If you need more, paid plans with higher limits are coming soon. But for most personal use and small groups, the free tier is plenty.
 
 ## Will My WhatsApp Get Banned?
 

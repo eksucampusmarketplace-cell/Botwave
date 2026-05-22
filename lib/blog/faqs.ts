@@ -28,9 +28,9 @@ export const blogMeta: Record<string, BlogMeta> = {
     faqs: [
       { question: 'Do I need coding skills to create a WhatsApp bot in 2026?', answer: 'No. With BotWave you sign up, pair your number via QR or pairing code, and the bot is live with 100+ commands. No code, no server setup, no Node.js, the platform handles all of that.' },
       { question: 'Will WhatsApp ban my number for using a bot?', answer: 'WhatsApp\'s policy targets bulk unsolicited messaging, not automation per se. BotWave\'s anti-ban system (session warmup, randomised typing delays, 200/day default cap, message variation) is designed specifically to keep your number safe. We have seen <0.5% ban rates across 12,000+ active sessions in 2026.' },
-      { question: 'Is the free tier really free?', answer: 'Yes. Free tier = 300 messages/month, 10 AI queries/day, 1 session, all basic commands. No credit card required. Paid plans start at ₦500/month (~$0.60) for higher limits.' },
+      { question: 'Is the free tier really free?', answer: 'Yes. Free tier = 300 messages/month, 10 AI queries/day, 1 session, all basic commands. No credit card required. Paid plans for higher limits are coming soon.' },
       { question: 'Which is better, pairing code or QR code?', answer: 'Pairing code is more reliable on shared/public networks (no camera required) and is the default in BotWave\'s 2026 onboarding. QR is faster if you have your phone in hand.' },
-      { question: 'Can I run multiple WhatsApp numbers from one BotWave account?', answer: 'Free tier supports 1 session. Starter (₦500/mo) supports 3 sessions. Boss plan supports unlimited sessions, each independently paired.' },
+      { question: 'Can I run multiple WhatsApp numbers from one BotWave account?', answer: 'Free tier supports 1 session. Paid tiers (coming soon) will support 3+ sessions, each independently paired.' },
       { question: 'What happens if I unpair my device?', answer: 'The bot stops immediately. Your settings (welcome messages, AI context, scheduled posts) are preserved, re-pair and everything resumes.' },
     ],
   },
@@ -63,7 +63,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     keywords: ['whatsapp bot business nigeria', 'auto reply nigeria', 'whatsapp business automation', 'sme whatsapp bot'],
     faqs: [
       { question: 'Is it legal to run a WhatsApp bot for my Nigerian business?', answer: 'Yes, automation of opt-in customer comms is permitted. Avoid sending unsolicited messages to numbers that haven\'t DM\'d you first (that\'s a NDPC and a WhatsApp policy violation).' },
-      { question: 'How much money will I save vs hiring a customer service rep?', answer: 'A Lagos-based CS rep is ₦80k-150k/month. BotWave\'s Starter plan is ₦500/month and handles ~80% of FAQ-level questions. ROI typically within week 1.' },
+      { question: 'How much money will I save vs hiring a customer service rep?', answer: 'A Lagos-based CS rep is ₦80k-150k/month. BotWave\'s free tier already handles ~80% of FAQ-level questions, and paid tiers (coming soon) lift the per-month message limits. ROI typically within week 1.' },
       { question: 'Can the bot take payments?', answer: 'BotWave does not process payments directly. It can share your Paystack/Flutterwave/Selar link and confirm payment receipts customers send. Final payment happens in your existing provider.' },
       { question: 'Will my customers know it\'s a bot?', answer: 'Yes, BotWave is transparent. The !help command and the AI mode self-identify. Hiding bot status would damage trust and is against our T&Cs.' },
       { question: 'Can I customise the AI to use my business voice?', answer: 'Yes. Paste your tone-of-voice, common phrases, and FAQ in the AI context editor. The bot will respond accordingly.' },

@@ -134,9 +134,9 @@ Combined with custom auto-replies for common questions, the AI handles the edge 
 
 BotWave's free tier includes **10 AI queries per day**. This is enough for personal use and small groups. If you need more:
 
-- **Starter (₦500/mo)**: 50 AI queries/day
-- **Standard (₦2,000/mo)**: 200 AI queries/day
-- **Boss (₦5,000/mo)**: Unlimited AI queries
+- **Lite (coming soon)**: 50 AI queries/day
+- **Standard (coming soon)**: 200 AI queries/day
+- **Boss (coming soon)**: Unlimited AI queries
 
 ## Privacy & Safety
 

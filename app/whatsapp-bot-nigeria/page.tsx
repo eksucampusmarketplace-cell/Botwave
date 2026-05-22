@@ -64,7 +64,7 @@ export default function NigeriaLandingPage() {
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-8 text-center">Why Nigerian Users Love BotWave</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { title: 'Naira Pricing', desc: 'Plans start at ₦0/month. Paid plans from ₦500. No dollar conversion headaches.' },
+              { title: 'Naira Pricing', desc: 'Free forever (300 msgs/mo). Paid plans coming soon, billed in Naira when they launch. No dollar conversion headaches.' },
               { title: 'Works on Nigerian Networks', desc: 'Optimized for MTN, Glo, Airtel, and 9mobile data speeds. Low bandwidth friendly.' },
               { title: 'Business Ready', desc: 'Auto-replies for customer support, order updates, and promotions. Perfect for SMEs.' },
               { title: 'Campus Groups', desc: 'Class groups, departmental chats, study sessions - manage hundreds of members effortlessly.' },
@@ -86,9 +86,9 @@ export default function NigeriaLandingPage() {
           <div className="grid md:grid-cols-4 gap-4">
             {[
               { plan: 'Free', price: '₦0', msgs: '300 msgs/mo', sessions: '1 session' },
-              { plan: 'Starter', price: '₦500/mo', msgs: '3,000 msgs/mo', sessions: '1 session' },
-              { plan: 'Standard', price: '₦2,000/mo', msgs: 'Unlimited', sessions: '3 sessions' },
-              { plan: 'Boss', price: '₦5,000/mo', msgs: 'Unlimited', sessions: '10 sessions' },
+              { plan: 'Lite', price: 'Coming Soon', msgs: '2,000 msgs/mo', sessions: '1 session' },
+              { plan: 'Standard', price: 'Coming Soon', msgs: '10,000 msgs/mo', sessions: '3 sessions' },
+              { plan: 'Boss', price: 'Coming Soon', msgs: 'Unlimited', sessions: '5 sessions' },
             ].map((item) => (
               <div key={item.plan} className="glass-card rounded-xl p-6 text-center">
                 <h3 className="text-sm font-mono text-emerald-400 mb-2">{item.plan}</h3>

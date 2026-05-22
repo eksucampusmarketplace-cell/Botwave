@@ -74,11 +74,11 @@ Download videos and media from links with \`!download\`. No need for sketchy thi
 
 ## Payment in Naira
 
-Unlike most bot platforms that charge in dollars, BotWave accepts payment in Naira (₦) via bank transfer. Paid plans start at just ₦500/month. But the free tier is generous enough for most groups.
+Unlike most bot platforms that charge in dollars, BotWave is Naira-native and will accept bank-transfer payments once paid plans launch. Paid plans are coming soon, the free tier is generous enough for most groups today.
 
 ## Free Tier vs Paid Plans
 
-| Feature | Free | Standard (₦500/mo) | Boss (₦1500/mo) |
+| Feature | Free | Standard (coming soon) | Boss (coming soon) |
 |---------|------|---------------------|------------------|
 | Messages/month | 300 | 3,000 | Unlimited |
 | AI queries/day | 10 | 50 | Unlimited |

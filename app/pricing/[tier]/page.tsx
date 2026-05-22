@@ -35,9 +35,9 @@ export function generateMetadata({ params }: { params: { tier: string } }): Meta
   };
 }
 
-function formatPrice(priceNgn: number, usd: string): string {
+function formatPrice(priceNgn: number, _usd: string): string {
   if (priceNgn === 0) return 'Free';
-  return `₦${priceNgn.toLocaleString('en-NG')} / month (${usd})`;
+  return 'Coming Soon';
 }
 
 const tierFaqs: Record<string, { question: string; answer: string }[]> = {
@@ -62,7 +62,7 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'What is the cheapest BotWave paid plan?',
       answer:
-        'Lite at ₦500/month (~$0.60). It includes auto-reply, business hours, 10 templates, and 5 custom commands, designed for small groups and side projects.',
+        'Lite is the entry-level paid plan, designed for small groups and side projects. It includes auto-reply, business hours, 10 templates, and 5 custom commands. Pricing is coming soon, join the free tier today and we will email you when Lite goes live.',
     },
     {
       question: 'Can I do business automation on the Lite plan?',
@@ -72,14 +72,14 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Does Lite include group analytics?',
       answer:
-        'Not on Lite. Group analytics is a Standard-and-up feature. Lite focuses on auto-reply + custom commands at the lowest possible price.',
+        'Not on Lite. Group analytics is a Standard-and-up feature. Lite focuses on auto-reply + custom commands at the lowest entry-level cost.',
     },
   ],
   standard: [
     {
       question: 'Why is Standard "the most popular" plan?',
       answer:
-        'It hits the sweet spot for active community admins and small businesses, 10,000 messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, and priority support, all for ₦2,000 ($2.40) / month.',
+        'It hits the sweet spot for active community admins and small businesses: 10,000 messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, and priority support. Pricing is coming soon.',
     },
     {
       question: 'What does the chatbot flow builder do?',
@@ -124,10 +124,10 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
       tier.slug === 'free'
         ? 'entry point, 300 messages/month at zero cost, ideal for personal use.'
         : tier.slug === 'lite'
-        ? 'cheapest paid plan, ₦500/month for small groups and side projects.'
+        ? 'entry-level paid plan for small groups and side projects, pricing coming soon.'
         : tier.slug === 'standard'
-        ? 'most popular tier, ₦2,000/month with group analytics, chatbot flows, priority support.'
-        : 'top tier, ₦5,000/month with unlimited messages, API access, custom branding.'
+        ? 'most popular tier (group analytics, chatbot flows, priority support), pricing coming soon.'
+        : 'top tier (unlimited messages, API access, custom branding), pricing coming soon.'
     } See the full /pricing page for a side-by-side comparison.`,
   });
 
@@ -222,19 +222,19 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
           {/* CTA */}
           <section className="mb-10 p-8 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 text-center">
             <h2 className="text-2xl font-extrabold text-[var(--text-primary)] mb-2">
-              {tier.priceNgn === 0 ? 'Ready to try BotWave?' : `Ready to upgrade to ${tier.name}?`}
+              {tier.priceNgn === 0 ? 'Ready to try BotWave?' : `${tier.name} plan is coming soon`}
             </h2>
             <p className="text-[var(--text-secondary)] mb-5 max-w-xl mx-auto">
               {tier.priceNgn === 0
                 ? 'Create a free account, pair your number, run 150+ commands. No card required.'
-                : 'Sign in (or sign up) and click Upgrade in your dashboard, billing is monthly and you can cancel anytime.'}
+                : 'Paid plans are not available yet. Start on the free tier today, we will email you the moment paid plans go live.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
-                href={tier.priceNgn === 0 ? '/signup' : '/dashboard/pricing'}
+                href="/signup"
                 className="px-5 py-3 rounded-xl bg-emerald-500 hover:opacity-90 text-white text-sm font-semibold transition-opacity"
               >
-                {tier.priceNgn === 0 ? 'Create free account →' : `Upgrade to ${tier.name} →`}
+                {tier.priceNgn === 0 ? 'Create free account →' : 'Start free →'}
               </Link>
               <Link
                 href="/pricing"

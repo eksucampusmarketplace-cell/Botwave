@@ -105,20 +105,16 @@ async function showPlanMenu(
     `*FREE*${currentIndicator('free')}\n` +
     `₦0 • 300 msgs/mo • 1 session • 10 AI/day\n\n` +
     `*LITE*${currentIndicator('lite')}\n` +
-    `₦500/mo • 2,000 msgs • 1 session • 50 AI/day\n` +
+    `_Coming Soon_ • 2,000 msgs • 1 session • 50 AI/day\n` +
     `+ Auto reply, custom commands, templates\n\n` +
     `*STANDARD*${currentIndicator('standard')}\n` +
-    `₦1,000/mo • 10,000 msgs • 3 sessions • 200 AI/day\n` +
+    `_Coming Soon_ • 10,000 msgs • 3 sessions • 200 AI/day\n` +
     `+ Status viewer, analytics, flow builder\n\n` +
     `*BOSS*${currentIndicator('boss')}\n` +
-    `₦2,000/mo • Unlimited everything • 5 sessions\n` +
+    `_Coming Soon_ • Unlimited everything • 5 sessions\n` +
     `+ API access, custom branding, all features\n` +
     `━━━━━━━━━━━━━━━━━\n\n` +
-    `*To upgrade, send:*\n` +
-    `• !upgrade lite\n` +
-    `• !upgrade standard\n` +
-    `• !upgrade boss\n\n` +
-    `_Payment is instant via bank transfer. Plan activates immediately._`;
+    `_Paid plans are coming soon. The free tier remains free with 300 msgs/month, 10 AI queries/day, and all 150+ commands._`;
 
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
 }
