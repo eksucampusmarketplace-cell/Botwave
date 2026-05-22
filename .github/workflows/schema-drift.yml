@@ -1,0 +1,30 @@
+name: Schema drift check
+
+on:
+  pull_request:
+    branches: [BotWave]
+    paths:
+      - 'app/**/*.ts'
+      - 'app/**/*.tsx'
+      - 'bot/**/*.ts'
+      - 'lib/**/*.ts'
+      - 'supabase/migrations/**/*.sql'
+      - 'scripts/check-schema-drift.mjs'
+      - 'scripts/.schema-drift-allowlist'
+      - '.github/workflows/schema-drift.yml'
+  workflow_dispatch:
+
+jobs:
+  schema-drift:
+    name: Detect new .from('<table>') references without a CREATE TABLE
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run scripts/check-schema-drift.mjs
+        run: node scripts/check-schema-drift.mjs
