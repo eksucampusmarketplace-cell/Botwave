@@ -9,7 +9,7 @@ import { PRICING_TIERS, productOfferJsonLd } from '@/lib/pricing/tiers';
 const LAST_UPDATED = '2026-05-22';
 
 export const metadata: Metadata = {
-  title: 'BotWave Pricing — Free, Lite ₦500, Standard ₦2,000, Boss ₦5,000',
+  title: 'BotWave Pricing, Free, Lite ₦500, Standard ₦2,000, Boss ₦5,000',
   description:
     'Transparent pricing for the BotWave WhatsApp + Telegram bot platform. Free forever (300 msgs/mo) or paid plans from ₦500/month (~$0.60). No credit card required to start.',
   keywords: [
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     'telegram bot pricing',
   ],
   openGraph: {
-    title: 'BotWave pricing — free forever or from ₦500/month',
+    title: 'BotWave pricing, free forever or from ₦500/month',
     description:
       'Honest plans, no hidden fees. Free 300 msgs/month plan or upgrade for higher limits, group analytics, API access.',
     url: 'https://www.botwave.online/pricing',
@@ -42,22 +42,22 @@ const faqs = [
   {
     question: 'Is the BotWave free plan really free?',
     answer:
-      'Yes. The Free tier is permanently free — no card required, no trial expiry. You get 300 messages per month, 10 AI queries per day, 1 paired session, and access to all 150+ built-in commands. We only ask for payment if you outgrow the free limits.',
+      'Yes. The Free tier is permanently free, no card required, no trial expiry. You get 300 messages per month, 10 AI queries per day, 1 paired session, and access to all 150+ built-in commands. We only ask for payment if you outgrow the free limits.',
   },
   {
     question: 'How does monthly billing work?',
     answer:
-      'Paid plans renew every 30 days from the day you upgrade. We bill in Naira via Squad (Paystack for some accounts). Cancel anytime from your dashboard — there are no lock-in contracts and refunds are issued for the unused portion of the current cycle on request.',
+      'Paid plans renew every 30 days from the day you upgrade. We bill in Naira via Squad (Paystack for some accounts). Cancel anytime from your dashboard, there are no lock-in contracts and refunds are issued for the unused portion of the current cycle on request.',
   },
   {
     question: 'Can I switch plans up or down?',
     answer:
-      'Yes. Switching plans is instant — limits are recalculated immediately, and we prorate the price difference. Downgrading mid-cycle moves you to the lower plan at the start of the next billing period so you do not lose paid value.',
+      'Yes. Switching plans is instant, limits are recalculated immediately, and we prorate the price difference. Downgrading mid-cycle moves you to the lower plan at the start of the next billing period so you do not lose paid value.',
   },
   {
     question: 'Do I need a credit card to start?',
     answer:
-      'No. Sign up with email + WhatsApp number — you can run the entire Free tier without ever entering payment info. A payment method is only required when you click Upgrade.',
+      'No. Sign up with email + WhatsApp number, you can run the entire Free tier without ever entering payment info. A payment method is only required when you click Upgrade.',
   },
   {
     question: 'Which payment methods are supported?',
@@ -67,17 +67,17 @@ const faqs = [
   {
     question: 'What counts as "1 message"?',
     answer:
-      'One outbound message from the bot — replies, AI responses, group welcomes, scheduled posts, broadcasts. Incoming messages to the bot are NOT counted. Internal status pings (heartbeats) are not counted either.',
+      'One outbound message from the bot, replies, AI responses, group welcomes, scheduled posts, broadcasts. Incoming messages to the bot are NOT counted. Internal status pings (heartbeats) are not counted either.',
   },
   {
     question: 'Is there a discount for annual billing or NGOs?',
     answer:
-      'Yes. Annual billing gives 2 months free (pay for 10, get 12). Verified NGOs, student clubs, and educational institutions get the Standard plan free for the first year — email support@botwave.online with proof of status.',
+      'Yes. Annual billing gives 2 months free (pay for 10, get 12). Verified NGOs, student clubs, and educational institutions get the Standard plan free for the first year, email support@botwave.online with proof of status.',
   },
   {
     question: 'What happens if I exceed my message quota?',
     answer:
-      'The bot keeps replying — we never silently drop messages — but the dashboard surfaces a banner suggesting an upgrade and we email you a soft reminder. You only get hard-blocked if you exceed 2× your quota for two cycles in a row.',
+      'The bot keeps replying, we never silently drop messages, but the dashboard surfaces a banner suggesting an upgrade and we email you a soft reminder. You only get hard-blocked if you exceed 2× your quota for two cycles in a row.',
   },
 ];
 
@@ -128,7 +128,7 @@ export default function PricingPage() {
             </h1>
             <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
               Start free, upgrade when you outgrow it. Naira-native billing, monthly cycles, cancel anytime.
-              All plans include every BotWave command — paid tiers just lift the limits.
+              All plans include every BotWave command, paid tiers just lift the limits.
             </p>
             <p className="text-xs text-[var(--text-muted)] mt-3">
               Last reviewed: {new Date(LAST_UPDATED).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -200,7 +200,7 @@ export default function PricingPage() {
             ))}
           </div>
 
-          {/* Comparison table — every plan side-by-side. */}
+          {/* Comparison table, every plan side-by-side. */}
           <section className="mb-16">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
               Plans at a glance
@@ -273,13 +273,13 @@ export default function PricingPage() {
             <div className="p-6 rounded-2xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
               <h3 className="font-bold text-[var(--text-primary)] mb-2">Naira-native billing</h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                We price in NGN and bill via Squad / Paystack — zero FX fees for Nigerian customers. International cards work too via the Squad global gateway.
+                We price in NGN and bill via Squad / Paystack, zero FX fees for Nigerian customers. International cards work too via the Squad global gateway.
               </p>
             </div>
             <div className="p-6 rounded-2xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
               <h3 className="font-bold text-[var(--text-primary)] mb-2">Cancel anytime</h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                One-click cancel from the dashboard. We prorate refunds for the unused portion of the current cycle on request — no chargebacks needed.
+                One-click cancel from the dashboard. We prorate refunds for the unused portion of the current cycle on request, no chargebacks needed.
               </p>
             </div>
           </section>
@@ -326,7 +326,7 @@ export default function PricingPage() {
             </div>
           </section>
 
-          {/* Related links — internal-link mesh for SEO */}
+          {/* Related links, internal-link mesh for SEO */}
           <section className="mt-10 text-sm text-[var(--text-muted)] text-center">
             See also:{' '}
             <Link href="/compare" className="text-blue-500 hover:underline">

@@ -60,7 +60,7 @@ export default function AboutPage() {
             <p className="text-lg md:text-xl text-base-content/70 max-w-3xl mx-auto leading-relaxed">
               BotWave is a free WhatsApp and Telegram bot automation platform built for communities
               who need powerful tools without the enterprise price tag. 150+ commands, AI-powered
-              chat, games, moderation, media tools — all free.
+              chat, games, moderation, media tools, all free.
             </p>
           </div>
         </section>
@@ -86,7 +86,7 @@ export default function AboutPage() {
             <div className="bg-base-200 rounded-2xl p-6 md:p-8 space-y-4">
               <p className="text-base-content/80 leading-relaxed">
                 If you searched for &quot;BotWave&quot; and found us, you might have also seen other
-                projects using a similar name — including a Raspberry Pi internet radio project on
+                projects using a similar name, including a Raspberry Pi internet radio project on
                 GitHub, and a Chinese enterprise AI company at botwave.com.
               </p>
               <p className="text-base-content/80 leading-relaxed">
@@ -98,7 +98,7 @@ export default function AboutPage() {
               </p>
               <p className="text-base-content/80 leading-relaxed">
                 To avoid confusion: our official website is always{' '}
-                <strong className="text-primary">www.botwave.online</strong> — that&apos;s the only
+                <strong className="text-primary">www.botwave.online</strong>, that&apos;s the only
                 domain we operate.
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function AboutPage() {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-6">Three Platforms, One Dashboard</h2>
             <p className="text-base-content/70 mb-8">
-              BotWave supports WhatsApp Bot, Telegram Bot, and Telegram Userbot — all managed from
+              BotWave supports WhatsApp Bot, Telegram Bot, and Telegram Userbot, all managed from
               a single web dashboard. No coding required.
             </p>
             <div className="grid md:grid-cols-3 gap-4">

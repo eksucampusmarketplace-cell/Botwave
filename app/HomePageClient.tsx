@@ -224,7 +224,7 @@ export default function HomePage() {
               </h1>
 
               <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-4 leading-relaxed">
-                <strong>BotWave is a free bot automation platform for WhatsApp and Telegram.</strong> Connect via QR scan, Bot token, or Userbot credentials — all from one dashboard.
+                <strong>BotWave is a free bot automation platform for WhatsApp and Telegram.</strong> Connect via QR scan, Bot token, or Userbot credentials, all from one dashboard.
               </p>
               <p className="text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
                 150+ built-in commands: AI chat, stickers, games, anti-spam, media downloads, and group management. No coding, no credit card, no catch.
@@ -360,9 +360,9 @@ export default function HomePage() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
-              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Notify Me', highlight: true, comingSoon: true },
-              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Notify Me', highlight: false, comingSoon: true },
+              { name: 'Free', price: '₦0', period: '/forever', features: ['1 WhatsApp or Telegram session', '300 messages/month', '10 AI queries/day', 'All 150+ commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
+              { name: 'Standard', price: '₦2,000', period: '/month', features: ['3 sessions', '10,000 messages/month', '200 AI queries/day', 'Group analytics', 'Priority email support'], cta: 'Upgrade to Standard', highlight: true, comingSoon: false },
+              { name: 'Boss', price: '₦5,000', period: '/month', features: ['5 sessions', 'Unlimited messages', 'Unlimited AI queries', 'REST API + webhooks', 'Priority WhatsApp support'], cta: 'Upgrade to Boss', highlight: false, comingSoon: false },
             ].map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
@@ -382,7 +382,7 @@ export default function HomePage() {
                 {plan.comingSoon ? (
                   <NotifyMeButton highlight={plan.highlight} planName={plan.name} />
                 ) : (
-                  <Link href="/signup" className={`block w-full py-3 rounded-xl font-semibold text-base text-center transition-all bg-blue-600 text-white hover:bg-blue-700`}>
+                  <Link href={plan.name === 'Free' ? '/signup' : '/pricing'} className={`block w-full py-3 rounded-xl font-semibold text-base text-center transition-all ${plan.highlight ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
                     {plan.cta}
                   </Link>
                 )}
@@ -433,7 +433,7 @@ export default function HomePage() {
             {[
               { title: 'Your Device, Your IP', desc: 'Sessions run from your own device via QR code. Your real IP is used, not a shared server IP. This drastically reduces ban risk.' },
               { title: 'Zero Message Storage', desc: 'Messages are never read, stored, or logged. All processing happens in memory and is discarded immediately after response.' },
-              { title: 'Advanced Anti-Ban System', desc: '7-day session warmup. Human-like typing delays. 50–100 message variations. Rate limiting. Activity hours simulation. Media fingerprint jittering.' },
+              { title: 'Advanced Anti-Ban System', desc: '7-day session warmup. Human-like typing delays. 50-100 message variations. Rate limiting. Activity hours simulation. Media fingerprint jittering.' },
               { title: 'Smart Rate Limiting', desc: '200 messages/day hard cap. 10 msgs/min per session. 20 msgs/min per user. Flood detection warns after 5 messages in 10 seconds.' },
               { title: 'Human-Like Behavior', desc: 'Quiet at night. Random response delays. 15% read-but-skip in groups. Presence toggling by time of day. Distracted delays up to 2 minutes.' },
               { title: 'Secure Infrastructure', desc: 'Supabase with row-level security. Encrypted API communication. No plain-text secrets. Your credentials are protected at every layer.' },
@@ -491,9 +491,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Guides & Tutorials — full blog index linked from the highest-authority
+      {/* Guides & Tutorials, full blog index linked from the highest-authority
           page so every post has at least one inbound link from the homepage.
-          Without these links, individual blog posts stay "Discovered – not
+          Without these links, individual blog posts stay "Discovered - not
           indexed" in Google Search Console regardless of content quality. */}
       <section className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
         <div className="max-w-6xl mx-auto">
@@ -628,16 +628,16 @@ export default function HomePage() {
               <strong>Key features:</strong> 150+ built-in commands including AI chat (Google Gemini), sticker creation, media downloads, trivia games, polls, anti-spam protection, auto-reply, and group management.
             </p>
             <p>
-              <strong>Anti-ban protection:</strong> BotWave includes 7-day session warmup, human-like typing delays, 50–100 message variations, rate limiting (200 msgs/day cap), activity hours simulation, and media fingerprint jittering. Sessions run from your own device IP.
+              <strong>Anti-ban protection:</strong> BotWave includes 7-day session warmup, human-like typing delays, 50-100 message variations, rate limiting (200 msgs/day cap), activity hours simulation, and media fingerprint jittering. Sessions run from your own device IP.
             </p>
             <p>
-              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans coming soon with unlimited messages and multiple sessions.
+              <strong>Pricing:</strong> Free forever tier with 300 messages/month and 10 AI queries/day. Paid plans from ₦500/month (Lite) to ₦5,000/month (Boss) with unlimited messages, multiple sessions, group analytics, and API access.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Internal link hub — crawl + discoverability */}
+      {/* Internal link hub, crawl + discoverability */}
       <section className="py-16 px-6 bg-[var(--bg)] border-t border-[var(--border)]">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-3 text-center">Explore the docs</h2>
@@ -671,7 +671,7 @@ export default function HomePage() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="/fix/whatsapp-bot-disconnected" className="text-[var(--text-secondary)] hover:text-blue-400">Bot disconnected</Link></li>
                 <li><Link href="/fix/whatsapp-qr-not-scanning" className="text-[var(--text-secondary)] hover:text-blue-400">QR code not scanning</Link></li>
-                <li><Link href="/fix/whatsapp-bot-banned" className="text-[var(--text-secondary)] hover:text-blue-400">Bot got banned — recover</Link></li>
+                <li><Link href="/fix/whatsapp-bot-banned" className="text-[var(--text-secondary)] hover:text-blue-400">Bot got banned, recover</Link></li>
                 <li><Link href="/fix/whatsapp-auto-reply-not-working" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply not working</Link></li>
                 <li><Link href="/fix/whatsapp-ai-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">AI not responding</Link></li>
                 <li><Link href="/fix/telegram-bot-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot silent</Link></li>
@@ -728,7 +728,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-center text-xs text-[var(--text-muted)] mt-8">
-            See <Link href="/search-engines" className="text-blue-400 hover:underline">how BotWave appears on every search engine in 2026</Link> — Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com.
+            See <Link href="/search-engines" className="text-blue-400 hover:underline">how BotWave appears on every search engine in 2026</Link>, Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com.
           </p>
         </div>
       </section>

@@ -153,7 +153,7 @@ export default function CommunityCommandsPage() {
             </h1>
             <p className="text-lg text-base-content/70 max-w-2xl mx-auto mb-8">
               Discover creative bot automations built by the BotWave community. From study timers
-              to vendor catalogs — see how others are using BotWave and share your own setups.
+              to vendor catalogs, see how others are using BotWave and share your own setups.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a

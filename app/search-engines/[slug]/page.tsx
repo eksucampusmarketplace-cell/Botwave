@@ -19,7 +19,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const engine = getEngineBySlug(params.slug);
   if (!engine) return {};
   return {
-    title: `BotWave on ${engine.name} — how we appear + how to verify`,
+    title: `BotWave on ${engine.name}, how we appear + how to verify`,
     description: engine.oneLiner,
     keywords: [
       `botwave ${engine.name.toLowerCase()}`,
@@ -47,13 +47,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 
 const umbrellaCopy: Record<string, string> = {
   google:
-    'Part of the Google umbrella — optimising for Googlebot covers this engine.',
+    'Part of the Google umbrella, optimising for Googlebot covers this engine.',
   bing:
-    'Part of the Bing umbrella — one IndexNow ping covers Bing, Yahoo, DuckDuckGo, Ecosia, Swisscows, AOL, and Yandex.',
+    'Part of the Bing umbrella, one IndexNow ping covers Bing, Yahoo, DuckDuckGo, Ecosia, Swisscows, AOL, and Yandex.',
   ai:
-    'AI answer engine — synthesises live web data into conversational answers with citations. No webmaster console exists; coverage is automatic via robots.txt allow-listing and structured data.',
+    'AI answer engine, synthesises live web data into conversational answers with citations. No webmaster console exists; coverage is automatic via robots.txt allow-listing and structured data.',
   independent:
-    'Independent index — crawls BotWave directly using its own user agent. Coverage is automatic.',
+    'Independent index, crawls BotWave directly using its own user agent. Coverage is automatic.',
 };
 
 export default function SearchEngineDetailPage({ params }: { params: { slug: string } }) {
@@ -164,7 +164,7 @@ export default function SearchEngineDetailPage({ params }: { params: { slug: str
                     IndexNow support
                   </td>
                   <td className="py-2 text-[var(--text-secondary)]">
-                    {engine.supportsIndexNow ? 'Yes — covered by api.indexnow.org' : 'No'}
+                    {engine.supportsIndexNow ? 'Yes, covered by api.indexnow.org' : 'No'}
                   </td>
                 </tr>
                 <tr className="border-b border-[var(--border)]">
@@ -249,7 +249,7 @@ export default function SearchEngineDetailPage({ params }: { params: { slug: str
           {engine.faqs.length > 0 && (
             <section className="mb-10">
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">
-                {engine.name} — FAQ
+                {engine.name}, FAQ
               </h2>
               <div className="space-y-5">
                 {engine.faqs.map((f, i) => (
@@ -271,7 +271,7 @@ export default function SearchEngineDetailPage({ params }: { params: { slug: str
               Try BotWave for free
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              While you&apos;re here — BotWave is a free WhatsApp + Telegram bot platform with 150+ commands.
+              While you&apos;re here, BotWave is a free WhatsApp + Telegram bot platform with 150+ commands.
               Pair your number, run AI chat, stickers, games, group moderation, and more.
             </p>
             <div className="flex flex-wrap gap-3">

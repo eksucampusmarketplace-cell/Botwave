@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { mailboxPages, mailboxCategories } from '@/lib/mailbox/data';
 
 export const metadata: Metadata = {
-  title: 'BotWave Mailbox — Free Email Inbox at @mail.botwave.online',
+  title: 'BotWave Mailbox, Free Email Inbox at @mail.botwave.online',
   description:
     'Every BotWave account gets a free, persistent email inbox at @mail.botwave.online. Receive verification mail, newsletters and signups in one mobile-friendly dashboard. Multiple aliases, real send/receive, no phone number.',
   keywords: [
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     'free email without phone',
   ],
   openGraph: {
-    title: 'BotWave Mailbox — Free Email Inbox',
+    title: 'BotWave Mailbox, Free Email Inbox',
     description:
       'Free persistent email inbox at @mail.botwave.online. Receive signups, verifications and newsletters. Multiple aliases, mobile-first.',
     url: 'https://www.botwave.online/mailbox',
@@ -66,7 +66,7 @@ export default function MailboxLandingPage() {
               A real email inbox at <span className="text-blue-500 break-all">@mail.botwave.online</span>
             </h1>
             <p className="text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl">
-              Every BotWave user gets a free, persistent email address — with a full inbox right inside the
+              Every BotWave user gets a free, persistent email address, with a full inbox right inside the
               dashboard. Use it for signups, newsletters, support, side projects, or a clean alias for sites you
               do not fully trust.
             </p>

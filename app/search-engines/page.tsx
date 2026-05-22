@@ -10,7 +10,7 @@ import { searchEngines } from '@/lib/search-engines/data';
 const LAST_UPDATED = '2026-05-22';
 
 export const metadata: Metadata = {
-  title: 'BotWave on Search Engines — Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com',
+  title: 'BotWave on Search Engines, Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com',
   description:
     'How BotWave appears across the modern search landscape: Google + the Bing umbrella (Yahoo, DuckDuckGo, Ecosia, AOL) + AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com, Claude).',
   keywords: [
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'BotWave on search engines (Google, Bing, AI engines)',
     description:
-      'Where to find BotWave across traditional and AI search — including how AI engines like Perplexity and ChatGPT Search cite our content.',
+      'Where to find BotWave across traditional and AI search, including how AI engines like Perplexity and ChatGPT Search cite our content.',
     url: 'https://www.botwave.online/search-engines',
     type: 'website',
   },
@@ -67,12 +67,12 @@ const faqs = [
   {
     question: 'Why does BotWave list AI search engines separately from Google?',
     answer:
-      "AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com) synthesise live web data into direct conversational answers. They use different crawlers, weigh different signals, and surface content in a fundamentally different format than the traditional 10-blue-links page. We optimise for both — see /llms.txt and /llms-full.txt for the AI-engine-specific signals.",
+      "AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com) synthesise live web data into direct conversational answers. They use different crawlers, weigh different signals, and surface content in a fundamentally different format than the traditional 10-blue-links page. We optimise for both, see /llms.txt and /llms-full.txt for the AI-engine-specific signals.",
   },
   {
     question: 'How do I find BotWave on Bing?',
     answer:
-      'Search "BotWave whatsapp bot" on Bing (bing.com), Yahoo, DuckDuckGo, Ecosia, Swisscows, or AOL — they all use the Microsoft index. Optimising for Bingbot gives us coverage on all six engines at once.',
+      'Search "BotWave whatsapp bot" on Bing (bing.com), Yahoo, DuckDuckGo, Ecosia, Swisscows, or AOL, they all use the Microsoft index. Optimising for Bingbot gives us coverage on all six engines at once.',
   },
   {
     question: 'How do I get Perplexity / ChatGPT Search to cite BotWave?',
@@ -82,7 +82,7 @@ const faqs = [
   {
     question: 'Are AI bot crawlers allowed on BotWave?',
     answer:
-      'Yes — all major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, YouBot, Bytespider, Google-Extended, Meta-ExternalAgent, Amazonbot, and 10+ others) are explicitly allowed in our robots.txt. We want to be in their training and live search indexes.',
+      'Yes, all major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, YouBot, Bytespider, Google-Extended, Meta-ExternalAgent, Amazonbot, and 10+ others) are explicitly allowed in our robots.txt. We want to be in their training and live search indexes.',
   },
   {
     question: 'Where can I see the canonical sitemap?',
@@ -125,7 +125,7 @@ export default function SearchEnginesPage() {
             BotWave on every search engine that matters in 2026
           </h1>
           <p className="text-lg text-[var(--text-secondary)] mb-10">
-            Three umbrellas: <strong>Google</strong>, <strong>Bing</strong>, and the new <strong>AI answer engines</strong>. We optimise for all of them — and this page explains exactly how, so you (or any crawler reading) can verify the coverage.
+            Three umbrellas: <strong>Google</strong>, <strong>Bing</strong>, and the new <strong>AI answer engines</strong>. We optimise for all of them, and this page explains exactly how, so you (or any crawler reading) can verify the coverage.
           </p>
 
           {/* Google umbrella */}
@@ -227,17 +227,17 @@ export default function SearchEnginesPage() {
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Sitemap chunking</strong>: 20,000+ landing pages chunked at 2,000 URLs per sitemap so Google / Bing can ingest the catalog efficiently.</span></li>
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Per-slug content</strong>: every /how-to, /fix, /compare, /use-cases page has unique body content (no thin programmatic pages).</span></li>
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>FAQPage + HowTo + BreadcrumbList + Article JSON-LD</strong> across the site so AI engines can extract structured facts.</span></li>
-              <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong><Link href="/llms.txt" className="text-blue-400 hover:underline">/llms.txt</Link></strong> + <strong><Link href="/llms-full.txt" className="text-blue-400 hover:underline">/llms-full.txt</Link></strong> — AI-engine-friendly content dumps.</span></li>
+              <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong><Link href="/llms.txt" className="text-blue-400 hover:underline">/llms.txt</Link></strong> + <strong><Link href="/llms-full.txt" className="text-blue-400 hover:underline">/llms-full.txt</Link></strong>, AI-engine-friendly content dumps.</span></li>
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Allow-listed crawlers</strong>: 30+ named bots explicitly permitted in <Link href="/robots.txt" className="text-blue-400 hover:underline">/robots.txt</Link>, including all AI engines.</span></li>
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Internal cross-linking</strong> between how-to / fix / compare / use-cases so crawlers discover sibling pages.</span></li>
             </ul>
           </section>
 
-          {/* Deep dives — per-engine pages */}
+          {/* Deep dives, per-engine pages */}
           <section className="mb-10">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">Per-engine deep dives</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Want the full story on a single engine — how BotWave appears on it, what crawler it uses, how to verify coverage? Each page below is a dedicated reference card.
+              Want the full story on a single engine, how BotWave appears on it, what crawler it uses, how to verify coverage? Each page below is a dedicated reference card.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {searchEngines.map((e) => (
@@ -265,7 +265,7 @@ export default function SearchEnginesPage() {
               Want the full SEO playbook?
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              We&apos;ve published the entire 9-step playbook BotWave uses to stay discoverable across Google, the Bing umbrella, and every AI answer engine — IndexNow, structured data, sitemap chunking, robots.txt, fixing &quot;Discovered – currently not indexed&quot;, the lot.
+              We&apos;ve published the entire 9-step playbook BotWave uses to stay discoverable across Google, the Bing umbrella, and every AI answer engine, IndexNow, structured data, sitemap chunking, robots.txt, fixing &quot;Discovered - currently not indexed&quot;, the lot.
             </p>
             <Link
               href="/docs/search-engine-optimization-guide-2026"

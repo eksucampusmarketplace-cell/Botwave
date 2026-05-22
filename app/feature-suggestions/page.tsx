@@ -57,7 +57,7 @@ export default function FeatureSuggestionsPage() {
             Help Shape BotWave
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-xl mx-auto mb-4">
-            Have an idea for a new feature? Tell us what you need — our AI analyzes every suggestion
+            Have an idea for a new feature? Tell us what you need, our AI analyzes every suggestion
             and the team reviews the best ones for implementation.
           </p>
           <p className="text-sm text-[var(--text-muted)]">
@@ -79,13 +79,13 @@ export default function FeatureSuggestionsPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full border rounded-xl p-4 text-sm min-h-[150px] resize-y outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 style={{ background: 'var(--bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
-                placeholder="Example: I want a command that lets me schedule WhatsApp messages to be sent at a specific time, like !schedule 2pm Hello everyone — meeting starts now."
+                placeholder="Example: I want a command that lets me schedule WhatsApp messages to be sent at a specific time, like !schedule 2pm Hello everyone, meeting starts now."
                 maxLength={2000}
                 disabled={submitting}
               />
               <div className="flex justify-between mt-1">
                 <p className="text-xs text-[var(--text-muted)]">
-                  Be specific — describe the problem you are trying to solve, not just the feature name.
+                  Be specific, describe the problem you are trying to solve, not just the feature name.
                 </p>
                 <span className="text-xs text-[var(--text-muted)]">{description.length}/2000</span>
               </div>
@@ -116,7 +116,7 @@ export default function FeatureSuggestionsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '1', title: 'You Describe It', desc: 'Tell us what you want — a new command, a UI improvement, a bot behavior change, anything.' },
+              { step: '1', title: 'You Describe It', desc: 'Tell us what you want, a new command, a UI improvement, a bot behavior change, anything.' },
               { step: '2', title: 'AI Analyzes It', desc: 'Our AI reviews feasibility, estimates effort, and suggests a priority level. No human bottleneck.' },
               { step: '3', title: 'We Build It', desc: 'Top suggestions are added to our roadmap and implemented. You get notified when it ships.' },
             ].map(s => (

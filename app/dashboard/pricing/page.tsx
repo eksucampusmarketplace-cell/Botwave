@@ -40,7 +40,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   lite: {
     name: 'Lite',
-    price: 0,
+    price: 500,
     quotaLimit: 2000,
     sessionLimit: 1,
     aiDailyLimit: 50,
@@ -58,7 +58,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   standard: {
     name: 'Standard',
-    price: 0,
+    price: 2000,
     quotaLimit: 10000,
     sessionLimit: 3,
     aiDailyLimit: 200,
@@ -80,7 +80,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   boss: {
     name: 'Boss',
-    price: 0,
+    price: 5000,
     quotaLimit: -1,
     sessionLimit: 5,
     aiDailyLimit: -1,
@@ -347,10 +347,10 @@ export default function PricingPage() {
 
                 <div className="mb-6">
                   <span className="font-display text-3xl font-black text-blue-600 dark:text-blue-400">
-                    {plan.price === 0 && key === 'free' ? 'FREE' : 'Coming Soon'}
+                    {plan.price === 0 ? 'FREE' : `₦${plan.price.toLocaleString('en-NG')}`}
                   </span>
-                  {key !== 'free' && (
-                    <span className="font-mono text-xs text-[#5a9a7a] ml-1"></span>
+                  {plan.price > 0 && (
+                    <span className="font-mono text-xs text-[#5a9a7a] ml-1">/MO</span>
                   )}
                 </div>
 
@@ -365,11 +365,11 @@ export default function PricingPage() {
 
                 <button
                   onClick={() => handleUpgrade(key)}
-                  disabled={isCurrent || key === 'free' || (plan.price === 0 && key !== 'free') || loading !== null}
+                  disabled={isCurrent || key === 'free' || loading !== null}
                   className={`w-full py-3 font-mono text-xs tracking-[2px] transition-all ${
                     isCurrent
                       ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 cursor-default'
-                      : key === 'free' || (plan.price === 0 && key !== 'free')
+                      : key === 'free'
                         ? 'bg-dark border border-blue-500/10 text-[#5a9a7a] cursor-default'
                         : 'bg-blue-500 text-dark font-bold hover:bg-blue-500/90 hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] active:scale-[0.98]'
                   } ${loading === key ? 'opacity-50' : ''}`}
@@ -378,11 +378,9 @@ export default function PricingPage() {
                     ? 'CURRENT PLAN'
                     : key === 'free'
                       ? 'FREE TIER'
-                      : plan.price === 0
-                        ? 'COMING SOON'
-                        : loading === key
-                          ? 'PROCESSING...'
-                          : 'UPGRADE'}
+                      : loading === key
+                        ? 'PROCESSING...'
+                        : 'UPGRADE'}
                 </button>
               </motion.div>
             );

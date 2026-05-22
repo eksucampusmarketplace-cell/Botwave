@@ -11,7 +11,7 @@ const LAST_UPDATED = '2026-05-22';
 export const metadata: Metadata = {
   title: 'Terms of Service - BotWave',
   description:
-    'BotWave Terms of Service. Rules for using the WhatsApp and Telegram bot automation platform — acceptable use, account responsibilities, intellectual property, liability, and termination. Updated May 2026.',
+    'BotWave Terms of Service. Rules for using the WhatsApp and Telegram bot automation platform, acceptable use, account responsibilities, intellectual property, liability, and termination. Updated May 2026.',
   keywords: [
     'botwave terms',
     'botwave tos',
@@ -51,7 +51,7 @@ const sections: Section[] = [
     id: 'service-description',
     title: '2. Service description',
     paragraphs: [
-      'BotWave is a self-service automation platform for WhatsApp and Telegram. You connect your own messaging account (via WhatsApp pairing code or Telegram bot token / userbot session) and the Service runs configurable bots — group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features described on the Features pages.',
+      'BotWave is a self-service automation platform for WhatsApp and Telegram. You connect your own messaging account (via WhatsApp pairing code or Telegram bot token / userbot session) and the Service runs configurable bots, group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features described on the Features pages.',
       'BotWave is a software platform. We do not provide WhatsApp or Telegram themselves, we do not endorse or guarantee any specific outcome, and we do not act as a messaging service of record. Your WhatsApp session runs from your own device IP via Baileys; your Telegram bot uses the official Telegram Bot API; your Telegram userbot uses the official MTProto session you authenticate yourself.',
     ],
   },
@@ -70,11 +70,11 @@ const sections: Section[] = [
     id: 'acceptable-use',
     title: '4. Acceptable use',
     intro:
-      'You agree that you will NOT use BotWave to do any of the following. This list is illustrative, not exhaustive — anything that materially harms users, the Service, or third parties is prohibited.',
+      'You agree that you will NOT use BotWave to do any of the following. This list is illustrative, not exhaustive, anything that materially harms users, the Service, or third parties is prohibited.',
     items: [
       'Send spam, unsolicited bulk messages, or unsolicited marketing.',
       'Engage in harassment, hate speech, threats, doxxing, or any form of abusive behaviour.',
-      'Distribute illegal content — CSAM, terrorism content, malware, fraudulent schemes, intellectual property infringement.',
+      'Distribute illegal content, CSAM, terrorism content, malware, fraudulent schemes, intellectual property infringement.',
       'Attempt to reverse-engineer, decompile, disassemble, or otherwise extract source code from the Service, except where such restriction is prohibited by law.',
       'Circumvent rate limits, anti-abuse mechanisms, anti-ban protections, or any technical limitation of the Service.',
       'Use the Service to violate WhatsApp\'s, Telegram\'s, or any other platform\'s Terms of Service.',
@@ -91,7 +91,7 @@ const sections: Section[] = [
     id: 'bot-ownership',
     title: '5. Bot ownership, content, and responsibility',
     paragraphs: [
-      'When you connect a WhatsApp number or Telegram account to BotWave, the bot runs under your identity — to anyone receiving its messages, it is your number / your bot account. You are therefore solely responsible for the bot\'s behaviour and for every message it sends.',
+      'When you connect a WhatsApp number or Telegram account to BotWave, the bot runs under your identity, to anyone receiving its messages, it is your number / your bot account. You are therefore solely responsible for the bot\'s behaviour and for every message it sends.',
       'BotWave provides the platform; you provide the configuration, custom commands, welcome messages, AI prompts, and decisions about which features to enable. We do not pre-moderate user-generated configuration, but we reserve the right to suspend any account whose bot is found to violate these terms, applicable law, or another platform\'s rules.',
       'You retain all intellectual property rights in custom commands, message templates, and other configuration content you create. You grant BotWave a limited, non-exclusive licence to host, process, and execute that content solely to operate the Service for you.',
     ],
@@ -101,7 +101,7 @@ const sections: Section[] = [
     title: '6. WhatsApp and Telegram platform compliance',
     paragraphs: [
       'BotWave is not affiliated with, endorsed by, or sponsored by WhatsApp, Meta, Telegram FZ-LLC, or any of their subsidiaries. The names "WhatsApp" and "Telegram" are trademarks of their respective owners and are used here only for descriptive purposes.',
-      'You are responsible for complying with WhatsApp\'s Terms of Service and Telegram\'s Terms of Service when using BotWave. While BotWave includes anti-ban protections — session warmup, message variation, rate limiting, presence simulation — no system is 100% ban-proof. Bans, restrictions, or content removals imposed by WhatsApp or Telegram are outside BotWave\'s control, and BotWave is not liable for resulting losses.',
+      'You are responsible for complying with WhatsApp\'s Terms of Service and Telegram\'s Terms of Service when using BotWave. While BotWave includes anti-ban protections, session warmup, message variation, rate limiting, presence simulation, no system is 100% ban-proof. Bans, restrictions, or content removals imposed by WhatsApp or Telegram are outside BotWave\'s control, and BotWave is not liable for resulting losses.',
       'If you operate a regulated business (financial services, healthcare, alcohol, gambling, political messaging in jurisdictions where it is regulated), it is your responsibility to ensure your bot\'s messaging complies with applicable local laws.',
     ],
   },
@@ -139,7 +139,7 @@ const sections: Section[] = [
     id: 'limitation-of-liability',
     title: '10. Limitation of liability',
     paragraphs: [
-      'The Service is provided "as is" and "as available", without warranties of any kind — express, implied, or statutory — including but not limited to warranties of merchantability, fitness for a particular purpose, non-infringement, and accuracy.',
+      'The Service is provided "as is" and "as available", without warranties of any kind, express, implied, or statutory, including but not limited to warranties of merchantability, fitness for a particular purpose, non-infringement, and accuracy.',
       'To the maximum extent permitted by applicable law, BotWave will not be liable for any indirect, incidental, consequential, special, punitive, or exemplary damages, including but not limited to loss of profits, loss of revenue, loss of business opportunity, loss of WhatsApp / Telegram account, account bans, reputational harm, or data loss.',
       'BotWave\'s total cumulative liability arising out of or relating to these Terms or the Service shall not exceed the greater of (a) the amount you paid BotWave in the 12 months preceding the event giving rise to the claim, or (b) NGN 10,000.',
       'Some jurisdictions do not allow exclusion of certain warranties or limitation of certain damages. In those jurisdictions, the above exclusions and limitations apply only to the extent permitted by law.',
@@ -157,9 +157,9 @@ const sections: Section[] = [
     title: '12. Termination',
     items: [
       'You may delete your account at any time from Dashboard → Settings → Delete account. All sessions will be disconnected, your configuration will be wiped, and personal data will be deleted within 30 days (see Privacy Policy for full retention windows).',
-      'BotWave may suspend or terminate your account immediately, without prior notice, for material breach of these Terms — particularly violations of Acceptable Use that risk user safety, platform compliance, or system integrity.',
+      'BotWave may suspend or terminate your account immediately, without prior notice, for material breach of these Terms, particularly violations of Acceptable Use that risk user safety, platform compliance, or system integrity.',
       'BotWave may also terminate your account with 30 days\' notice for any reason or no reason, in which case any unused paid balance will be refunded pro-rata.',
-      'Termination does not affect rights and obligations that by their nature should survive — including Sections 10 (Limitation of Liability), 11 (Indemnification), 13 (Intellectual Property), and 16 (Governing Law).',
+      'Termination does not affect rights and obligations that by their nature should survive, including Sections 10 (Limitation of Liability), 11 (Indemnification), 13 (Intellectual Property), and 16 (Governing Law).',
     ],
   },
   {
@@ -169,7 +169,7 @@ const sections: Section[] = [
       'BotWave and its original content, features, functionality, design, source code, and "BotWave" branding are owned by BotWave Team and protected by international copyright, trademark, trade-secret, and other intellectual property laws.',
       'Open-source components used in the Service (Baileys, grammY, Next.js, Supabase libraries, etc.) are governed by their own licences; nothing in these Terms limits your rights under those licences.',
       'User-generated content (custom commands, message templates, configuration) remains your property. You grant BotWave a worldwide, non-exclusive, royalty-free licence to host, store, and process that content solely to operate the Service for you.',
-      'Trademarks of third parties — WhatsApp, Telegram, Meta, etc. — are the property of their respective owners and are used here only for descriptive purposes.',
+      'Trademarks of third parties, WhatsApp, Telegram, Meta, etc., are the property of their respective owners and are used here only for descriptive purposes.',
     ],
   },
   {
@@ -184,7 +184,7 @@ const sections: Section[] = [
     id: 'third-party',
     title: '15. Third-party services and links',
     paragraphs: [
-      'BotWave integrates with — or links to — third-party services including but not limited to WhatsApp, Telegram, Supabase, Groq, Google Gemini, Resend, Cloudflare, GitHub, Contabo, and various payment processors. BotWave is not responsible for the practices, content, or availability of those third-party services.',
+      'BotWave integrates with, or links to, third-party services including but not limited to WhatsApp, Telegram, Supabase, Groq, Google Gemini, Resend, Cloudflare, GitHub, Contabo, and various payment processors. BotWave is not responsible for the practices, content, or availability of those third-party services.',
       'Your interactions with those third parties are governed by their own terms and privacy policies.',
     ],
   },
@@ -192,7 +192,7 @@ const sections: Section[] = [
     id: 'governing-law',
     title: '16. Governing law and disputes',
     paragraphs: [
-      'These Terms are governed by the laws of the Federal Republic of Nigeria, without regard to conflict-of-laws principles. Disputes arising out of or relating to these Terms will be resolved exclusively in the competent courts of Lagos, Nigeria — except where mandatory consumer protection laws in your jurisdiction grant you the right to bring proceedings locally.',
+      'These Terms are governed by the laws of the Federal Republic of Nigeria, without regard to conflict-of-laws principles. Disputes arising out of or relating to these Terms will be resolved exclusively in the competent courts of Lagos, Nigeria, except where mandatory consumer protection laws in your jurisdiction grant you the right to bring proceedings locally.',
       'Before initiating formal legal action, you agree to first attempt to resolve any dispute in good faith with BotWave by sending a written notice to support@botwave.online. We will respond within 30 days.',
     ],
   },
@@ -200,12 +200,12 @@ const sections: Section[] = [
     id: 'miscellaneous',
     title: '17. Miscellaneous',
     items: [
-      'Severability — if any provision of these Terms is held invalid or unenforceable, the remaining provisions remain in full force.',
-      'No waiver — failure to enforce any provision is not a waiver of the right to enforce it later.',
-      'Assignment — you may not assign these Terms; we may assign them to a successor entity (e.g. in a corporate restructure) on notice to you.',
-      'Entire agreement — these Terms, together with the Privacy Policy and any other policies referenced here, constitute the entire agreement between you and BotWave.',
-      'Headings — section headings are for convenience only and have no substantive effect.',
-      'Language — these Terms are written in English. Any translation is provided for convenience only; the English text controls.',
+      'Severability, if any provision of these Terms is held invalid or unenforceable, the remaining provisions remain in full force.',
+      'No waiver, failure to enforce any provision is not a waiver of the right to enforce it later.',
+      'Assignment, you may not assign these Terms; we may assign them to a successor entity (e.g. in a corporate restructure) on notice to you.',
+      'Entire agreement, these Terms, together with the Privacy Policy and any other policies referenced here, constitute the entire agreement between you and BotWave.',
+      'Headings, section headings are for convenience only and have no substantive effect.',
+      'Language, these Terms are written in English. Any translation is provided for convenience only; the English text controls.',
     ],
   },
   {
@@ -241,7 +241,7 @@ const faqs = [
   {
     question: 'Can I get a refund?',
     answer:
-      'Refunds are available within the first 7 days of a new paid subscription, no questions asked. After 7 days, partial refunds are case-by-case. Auto-renewal charges that you did not intend to renew can be refunded within 7 days of the renewal — email support@botwave.online.',
+      'Refunds are available within the first 7 days of a new paid subscription, no questions asked. After 7 days, partial refunds are case-by-case. Auto-renewal charges that you did not intend to renew can be refunded within 7 days of the renewal, email support@botwave.online.',
   },
   {
     question: 'What counts as a violation of acceptable use?',
@@ -285,7 +285,7 @@ export default function TermsPage() {
             Last reviewed: {new Date(LAST_UPDATED).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
           <p className="text-[var(--text-secondary)] mb-10 leading-relaxed">
-            These Terms govern your use of BotWave — the no-code WhatsApp and Telegram bot automation platform at www.botwave.online. Please read them carefully. By creating an account or using the Service you confirm you agree to these Terms and to the accompanying <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>.
+            These Terms govern your use of BotWave, the no-code WhatsApp and Telegram bot automation platform at www.botwave.online. Please read them carefully. By creating an account or using the Service you confirm you agree to these Terms and to the accompanying <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>.
           </p>
 
           <nav

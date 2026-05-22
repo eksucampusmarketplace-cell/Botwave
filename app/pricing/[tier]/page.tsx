@@ -45,7 +45,7 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'How long does the Free plan last?',
       answer:
-        'Forever. There is no time limit on the Free plan — it is not a trial. You get 300 messages every month for as long as you keep your account.',
+        'Forever. There is no time limit on the Free plan, it is not a trial. You get 300 messages every month for as long as you keep your account.',
     },
     {
       question: 'What happens if I send my 301st message in a month?',
@@ -55,14 +55,14 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Does the Free plan include AI?',
       answer:
-        'Yes — 10 !ai queries per day. That is enough for casual personal use. For a busy group, the Standard plan\'s 200 AI/day is a better fit.',
+        'Yes, 10 !ai queries per day. That is enough for casual personal use. For a busy group, the Standard plan\'s 200 AI/day is a better fit.',
     },
   ],
   lite: [
     {
       question: 'What is the cheapest BotWave paid plan?',
       answer:
-        'Lite at ₦500/month (~$0.60). It includes auto-reply, business hours, 10 templates, and 5 custom commands — designed for small groups and side projects.',
+        'Lite at ₦500/month (~$0.60). It includes auto-reply, business hours, 10 templates, and 5 custom commands, designed for small groups and side projects.',
     },
     {
       question: 'Can I do business automation on the Lite plan?',
@@ -79,7 +79,7 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Why is Standard "the most popular" plan?',
       answer:
-        'It hits the sweet spot for active community admins and small businesses — 10,000 messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, and priority support — all for ₦2,000 ($2.40) / month.',
+        'It hits the sweet spot for active community admins and small businesses, 10,000 messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, and priority support, all for ₦2,000 ($2.40) / month.',
     },
     {
       question: 'What does the chatbot flow builder do?',
@@ -89,7 +89,7 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Can I run a Telegram bot on the Standard plan?',
       answer:
-        'Yes. The 3 paired sessions can be any mix of WhatsApp + Telegram — e.g. 2 WhatsApp groups and 1 Telegram group, or all 3 on Telegram.',
+        'Yes. The 3 paired sessions can be any mix of WhatsApp + Telegram, e.g. 2 WhatsApp groups and 1 Telegram group, or all 3 on Telegram.',
     },
   ],
   boss: [
@@ -101,7 +101,7 @@ const tierFaqs: Record<string, { question: string; answer: string }[]> = {
     {
       question: 'Is Boss suitable for agencies running bots for multiple clients?',
       answer:
-        'Yes — 5 sessions cover up to 5 client communities, and the API + custom branding combo lets agencies whitelabel BotWave inside their own dashboards. For >5 clients, contact us about an Enterprise tier with per-client tenancy.',
+        'Yes, 5 sessions cover up to 5 client communities, and the API + custom branding combo lets agencies whitelabel BotWave inside their own dashboards. For >5 clients, contact us about an Enterprise tier with per-client tenancy.',
     },
     {
       question: 'Does Boss include any enterprise SLA?',
@@ -120,14 +120,14 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
   // generic Q (helpful for AI-engine ingestion).
   faqs.push({
     question: `How does the ${tier.name} plan compare to other BotWave plans?`,
-    answer: `BotWave has four tiers — Free, Lite, Standard, and Boss. ${tier.name} is the ${
+    answer: `BotWave has four tiers, Free, Lite, Standard, and Boss. ${tier.name} is the ${
       tier.slug === 'free'
-        ? 'entry point — 300 messages/month at zero cost, ideal for personal use.'
+        ? 'entry point, 300 messages/month at zero cost, ideal for personal use.'
         : tier.slug === 'lite'
-        ? 'cheapest paid plan — ₦500/month for small groups and side projects.'
+        ? 'cheapest paid plan, ₦500/month for small groups and side projects.'
         : tier.slug === 'standard'
-        ? 'most popular tier — ₦2,000/month with group analytics, chatbot flows, priority support.'
-        : 'top tier — ₦5,000/month with unlimited messages, API access, custom branding.'
+        ? 'most popular tier, ₦2,000/month with group analytics, chatbot flows, priority support.'
+        : 'top tier, ₦5,000/month with unlimited messages, API access, custom branding.'
     } See the full /pricing page for a side-by-side comparison.`,
   });
 
@@ -227,7 +227,7 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
             <p className="text-[var(--text-secondary)] mb-5 max-w-xl mx-auto">
               {tier.priceNgn === 0
                 ? 'Create a free account, pair your number, run 150+ commands. No card required.'
-                : 'Sign in (or sign up) and click Upgrade in your dashboard — billing is monthly and you can cancel anytime.'}
+                : 'Sign in (or sign up) and click Upgrade in your dashboard, billing is monthly and you can cancel anytime.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -248,7 +248,7 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
           {/* FAQ */}
           <section className="mb-10">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">
-              {tier.name} plan — FAQ
+              {tier.name} plan, FAQ
             </h2>
             <div className="space-y-5">
               {faqs.map((f, i) => (
@@ -263,7 +263,7 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
             </div>
           </section>
 
-          {/* Other tiers — internal-link mesh */}
+          {/* Other tiers, internal-link mesh */}
           <section className="text-sm text-[var(--text-secondary)]">
             <h2 className="text-lg font-bold text-[var(--text-primary)] mb-3">Other BotWave plans</h2>
             <ul className="space-y-1 list-none">
@@ -273,7 +273,7 @@ export default function PricingTierPage({ params }: { params: { tier: string } }
                     href={`/pricing/${other.slug}`}
                     className="text-blue-500 hover:underline"
                   >
-                    {other.name} — {formatPrice(other.priceNgn, other.priceUsdEquivalent)}
+                    {other.name}, {formatPrice(other.priceNgn, other.priceUsdEquivalent)}
                   </Link>
                   <span className="text-[var(--text-muted)]"> · {other.bestFor}</span>
                 </li>

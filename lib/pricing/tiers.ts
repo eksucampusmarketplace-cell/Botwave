@@ -3,11 +3,11 @@
  *
  * Used by:
  *   - /pricing (public marketing page, server-rendered for SEO)
- *   - /pricing/[tier] (per-tier landing pages — Product + Offer JSON-LD)
+ *   - /pricing/[tier] (per-tier landing pages, Product + Offer JSON-LD)
  *   - /dashboard/pricing (authenticated upgrade UI; reads `plan` key)
  *
  * Keep the `slug` values aligned with the database plan keys
- * (`free`, `lite`, `standard`, `boss`) — these are referenced by the
+ * (`free`, `lite`, `standard`, `boss`), these are referenced by the
  * payment initiation route + the subscription table.
  *
  * Note on prices: the source values here are the official "list"
@@ -65,7 +65,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Community support',
     ],
     bestFor: 'Personal use, casual group bots, testing the platform.',
-    seoTitle: 'BotWave Free Plan — 300 messages/month, no card required',
+    seoTitle: 'BotWave Free Plan, 300 messages/month, no card required',
     seoDescription:
       'BotWave\'s free plan covers personal use and small groups: 300 messages/month, 10 AI queries/day, 1 session, 150+ commands. Forever free, no credit card needed.',
     keywords: [
@@ -97,7 +97,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Email support',
     ],
     bestFor: 'Small WhatsApp / Telegram groups, study groups, side projects.',
-    seoTitle: 'BotWave Lite Plan — ₦500/month, 2,000 messages, auto-reply',
+    seoTitle: 'BotWave Lite Plan, ₦500/month, 2,000 messages, auto-reply',
     seoDescription:
       'BotWave Lite at ₦500/month (~$0.60): 2,000 messages, 50 AI queries/day, auto-reply, business hours, 10 templates, 5 custom commands. Cancel anytime.',
     keywords: [
@@ -131,7 +131,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     bestFor: 'Active community admins, small business support, content creators.',
     recommended: true,
-    seoTitle: 'BotWave Standard Plan — ₦2,000/month, 10,000 msgs, analytics',
+    seoTitle: 'BotWave Standard Plan, ₦2,000/month, 10,000 msgs, analytics',
     seoDescription:
       'BotWave Standard at ₦2,000/month (~$2.40): 10k messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, priority support. Cancel anytime.',
     keywords: [
@@ -165,7 +165,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'All channel alerts (email + WhatsApp + Telegram)',
     ],
     bestFor: 'Agencies, communities >1k members, businesses needing API access.',
-    seoTitle: 'BotWave Boss Plan — ₦5,000/month, unlimited messages + API',
+    seoTitle: 'BotWave Boss Plan, ₦5,000/month, unlimited messages + API',
     seoDescription:
       'BotWave Boss at ₦5,000/month (~$6): unlimited messages, 5 sessions, unlimited AI, REST API, custom branding, priority support. For agencies + power users.',
     keywords: [

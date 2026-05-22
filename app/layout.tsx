@@ -201,7 +201,7 @@ export default function RootLayout({
               name: 'BotWave',
               url: 'https://www.botwave.online',
               logo: 'https://www.botwave.online/icons/icon-512x512.png',
-              description: 'BotWave is the free bot automation platform for WhatsApp and Telegram communities in Africa. 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot — no coding needed.',
+              description: 'BotWave is the free bot automation platform for WhatsApp and Telegram communities in Africa. 150+ commands across WhatsApp, Telegram Bot, and Telegram Userbot, no coding needed.',
               foundingDate: '2026',
               founder: { '@type': 'Organization', name: 'BotWave Team' },
               brand: {

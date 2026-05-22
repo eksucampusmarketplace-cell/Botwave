@@ -70,7 +70,7 @@ export const PLANS: Record<string, PlanConfig> = {
   },
   standard: {
     name: 'Standard',
-    price: 1000,
+    price: 2000,
     quotaLimit: 10000,
     sessionLimit: 3,
     aiDailyLimit: 200,
@@ -92,7 +92,7 @@ export const PLANS: Record<string, PlanConfig> = {
   },
   boss: {
     name: 'Boss',
-    price: 2000,
+    price: 5000,
     quotaLimit: -1,
     sessionLimit: 5,
     aiDailyLimit: -1,
