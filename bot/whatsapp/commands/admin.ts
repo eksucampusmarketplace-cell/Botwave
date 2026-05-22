@@ -16,6 +16,62 @@ function normalizeJid(jid: string): string {
   return jid.replace(/:\d+@/, '@').trim();
 }
 
+// ─── Bot participant lookup ────────────────────────────────────────────────
+//
+// `metadata.participants.find(p => p.id === sock.user.id)` is broken on
+// modern WhatsApp builds. Two reasons:
+//
+//   1. `sock.user.id` is the device-identified JID like
+//      "2348164143260:1@s.whatsapp.net". `p.id` in the group metadata is
+//      typically the bare JID "2348164143260@s.whatsapp.net" (no ":N"
+//      device suffix), so a strict `===` never matches.
+//
+//   2. Newer WhatsApp groups store participants in LID format —
+//      e.g. "94270639878349@lid" — and the bot's PN never matches the
+//      LID even after normalization. Baileys exposes `sock.user.lid`
+//      for exactly this comparison.
+//
+// Result: the bot's own participant was never found, so `botParticipant`
+// was always `undefined`, and `!undefined?.admin` was always true — so
+// admin commands (.kick, .promote, .demote) emitted "Bot must be a
+// group admin" even when the bot's account WAS a group admin (e.g. when
+// the user paired their own admin number).
+//
+// This helper compares the normalized bot JID *and* LID against each
+// participant's `id` and `participantPn` (the phone-number alias the
+// metadata returns alongside the LID). If a match is found, returns the
+// participant. Otherwise returns null and logs the diagnostic info so the
+// failure is debuggable in production logs.
+function findBotParticipant(metadata: any, sock: any): any | null {
+  const participants = metadata?.participants || [];
+  if (!participants.length) return null;
+
+  const botJidRaw = (sock as any).user?.id as string | undefined;
+  const botLidRaw = (sock as any).user?.lid as string | undefined;
+  const botJid = botJidRaw ? normalizeJid(botJidRaw) : null;
+  const botLid = botLidRaw ? normalizeJid(botLidRaw) : null;
+
+  const match = participants.find((p: any) => {
+    const pid = normalizeJid(p?.id || '');
+    const ppn = normalizeJid(p?.participantPn || p?.phoneNumber || '');
+    if (botJid && (pid === botJid || ppn === botJid)) return true;
+    if (botLid && (pid === botLid || ppn === botLid)) return true;
+    return false;
+  });
+
+  if (!match) {
+    console.warn(
+      `[ADMIN-LOOKUP] Bot participant not found in group ${metadata?.id || 'unknown'}. ` +
+      `bot.id=${botJidRaw || 'null'} (normalized=${botJid || 'null'}), ` +
+      `bot.lid=${botLidRaw || 'null'} (normalized=${botLid || 'null'}). ` +
+      `participants count=${participants.length}, ` +
+      `sample participant ids=${participants.slice(0, 3).map((p: any) => p?.id).join(',')}`,
+    );
+  }
+
+  return match || null;
+}
+
 // ─── Chat-level admin-command idempotency ───────────────────────────────────
 //
 // The per-user command cooldown in MessageHandler.ts is keyed on the SENDER,
@@ -403,8 +459,7 @@ async function handleKick(context: MessageContext, args: string[], sock: any): P
 
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
-    const botJid = (sock as any).user?.id;
-    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    const botParticipant = findBotParticipant(metadata, sock);
     if (!botParticipant?.admin) {
       await sendReply(context.chatJid, 'Bot must be a group admin to kick members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
@@ -447,8 +502,7 @@ async function handlePromote(context: MessageContext, args: string[], sock: any)
 
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
-    const botJid = (sock as any).user?.id;
-    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    const botParticipant = findBotParticipant(metadata, sock);
     if (!botParticipant?.admin) {
       await sendReply(context.chatJid, 'Bot must be a group admin to promote members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
@@ -490,8 +544,7 @@ async function handleDemote(context: MessageContext, args: string[], sock: any):
 
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
-    const botJid = (sock as any).user?.id;
-    const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
+    const botParticipant = findBotParticipant(metadata, sock);
     if (!botParticipant?.admin) {
       await sendReply(context.chatJid, 'Bot must be a group admin to demote members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
