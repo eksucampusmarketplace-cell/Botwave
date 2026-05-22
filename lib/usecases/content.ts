@@ -14,14 +14,14 @@
 export interface UseCaseStorySection {
   /** Section heading (h3). */
   heading: string;
-  /** 1–3 paragraphs. */
+  /** 1-3 paragraphs. */
   paragraphs: string[];
 }
 
 export interface UseCaseContent {
-  /** Verbose, unique intro for this vertical (3–5 sentences). */
+  /** Verbose, unique intro for this vertical (3-5 sentences). */
   intro: string;
-  /** Concrete real-world examples — names blurred but scenarios real. */
+  /** Concrete real-world examples, names blurred but scenarios real. */
   story?: UseCaseStorySection[];
   /** Specific commands or features especially valuable for this vertical. */
   featuredCommands?: { command: string; why: string }[];
@@ -38,13 +38,13 @@ export interface UseCaseContent {
 export const useCaseContent: Record<string, UseCaseContent> = {
   schools: {
     intro:
-      'Schools and universities live and breathe on WhatsApp — class groups, departmental groups, faculty groups, parent groups. Without automation those groups become a mix of academic content, memes, side-chats, and announcements no one sees. BotWave gives the lecturer or class rep the moderation power of a Discord server inside WhatsApp, without making anyone install new software.',
+      'Schools and universities live and breathe on WhatsApp, class groups, departmental groups, faculty groups, parent groups. Without automation those groups become a mix of academic content, memes, side-chats, and announcements no one sees. BotWave gives the lecturer or class rep the moderation power of a Discord server inside WhatsApp, without making anyone install new software.',
     story: [
       {
         heading: 'A real Nigerian university class group',
         paragraphs: [
           'A 300-level Computer Science group at a Nigerian university had 220 members and ~600 messages a day. The class rep was spending 90 minutes daily deleting off-topic messages and answering "Sir please when is the assignment due?" 12 times in a row.',
-          'After setting up BotWave: anti-spam catches 5+ rapid-fire messages, !welcome posts the group rules + lecturer office hours to every new member, !ai handles repeated questions ("the assignment is due Friday 5pm — confirmed by your class rep"), and !trivia runs revision sessions before exams.',
+          'After setting up BotWave: anti-spam catches 5+ rapid-fire messages, !welcome posts the group rules + lecturer office hours to every new member, !ai handles repeated questions ("the assignment is due Friday 5pm, confirmed by your class rep"), and !trivia runs revision sessions before exams.',
           'Time spent on moderation dropped from 90 mins/day to under 10 mins.',
         ],
       },
@@ -58,7 +58,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       { command: '!translate', why: 'Mixed-language groups (English/French/Yoruba/Igbo) understand each other.' },
     ],
     gettingStarted: [
-      'Sign up at /signup with the class rep\'s phone number — free tier is fine for one class group.',
+      'Sign up at /signup with the class rep\'s phone number, free tier is fine for one class group.',
       'Pair the session via QR or pairing code from the dashboard.',
       'Add the bot to your class group as a participant; promote to admin so it can delete and remove members.',
       'Set the welcome message to your group rules + first-week timetable.',
@@ -68,7 +68,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     faqs: [
       { question: 'Is BotWave free for schools?', answer: 'The free tier is enough for a single class group (200 messages/day cap). For multiple class groups or large department groups, the Starter tier is recommended.' },
       { question: 'Can BotWave do attendance?', answer: 'There is no automatic attendance feature, but the class rep can use !tagall to roll-call and the bot will log responses for export.' },
-      { question: 'Will students see the bot reading their messages?', answer: 'The bot appears as a Linked Device in the group. It only acts on commands and configured triggers — it does NOT log private content.' },
+      { question: 'Will students see the bot reading their messages?', answer: 'The bot appears as a Linked Device in the group. It only acts on commands and configured triggers, it does NOT log private content.' },
       { question: 'What about WAEC/JAMB/cybercrime laws?', answer: 'BotWave operates within Nigerian law. Educational use of automation is permitted. Avoid sharing copyrighted exam material or impersonating examination bodies.' },
     ],
     relatedUseCase: ['study-groups', 'whatsapp-bot-for-school-groups', 'telegram-bot-for-school-groups', 'telegram-bot-for-education'],
@@ -77,12 +77,12 @@ export const useCaseContent: Record<string, UseCaseContent> = {
 
   businesses: {
     intro:
-      'Nigerian SMBs run customer service on personal WhatsApp numbers and waste 3–5 hours daily answering the same questions: "How much?", "Is it available?", "Where are you located?", "Can I order today?". BotWave turns those FAQs into automated, branded replies that work 24/7 — and quietly tags genuinely new questions for the owner to handle personally.',
+      'Nigerian SMBs run customer service on personal WhatsApp numbers and waste 3-5 hours daily answering the same questions: "How much?", "Is it available?", "Where are you located?", "Can I order today?". BotWave turns those FAQs into automated, branded replies that work 24/7, and quietly tags genuinely new questions for the owner to handle personally.',
     story: [
       {
         heading: 'Lagos fashion vendor saves 4 hours/day',
         paragraphs: [
-          'A Lagos-based fashion vendor with 1,800 WhatsApp contacts and 12 active groups was answering ~300 questions a day. After BotWave: AI auto-reply handles price/availability/location questions, AFK mode kicks in 10pm–7am with a friendly "I will reply first thing morning" message, and !tagall sends new-arrival announcements to all groups simultaneously.',
+          'A Lagos-based fashion vendor with 1,800 WhatsApp contacts and 12 active groups was answering ~300 questions a day. After BotWave: AI auto-reply handles price/availability/location questions, AFK mode kicks in 10pm-7am with a friendly "I will reply first thing morning" message, and !tagall sends new-arrival announcements to all groups simultaneously.',
           'Result: 4 hours/day reclaimed, customer satisfaction up (questions answered in seconds, not hours), and zero unanswered messages overnight.',
         ],
       },
@@ -102,10 +102,10 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       'Enable broadcast (!tagall) for new product announcements.',
     ],
     faqs: [
-      { question: 'Will customers know they\'re talking to a bot?', answer: 'Yes — the bot is transparent. It reveals itself in !help and the AI mode signs off as your business assistant. Hiding bot status would damage trust.' },
+      { question: 'Will customers know they\'re talking to a bot?', answer: 'Yes, the bot is transparent. It reveals itself in !help and the AI mode signs off as your business assistant. Hiding bot status would damage trust.' },
       { question: 'Can the bot take payments?', answer: 'No payment processing inside the bot. It can extract details from receipts customers send and confirm the amount/reference, but actual payment happens via your existing payment provider.' },
       { question: 'What about WhatsApp banning my number for being a bot?', answer: 'BotWave\'s anti-ban (warmup, randomised delays, daily caps) is designed specifically for SMB use. Stay within the 200/day default and use opted-in customer audiences only.' },
-      { question: 'Can I import my contacts?', answer: 'No bulk import — sending unsolicited bulk messages is the #1 ban trigger. Customers must DM you first to opt in.' },
+      { question: 'Can I import my contacts?', answer: 'No bulk import, sending unsolicited bulk messages is the #1 ban trigger. Customers must DM you first to opt in.' },
     ],
     relatedUseCase: ['customer-support', 'vendors', 'whatsapp-bot-for-online-stores', 'whatsapp-bot-for-restaurants', 'whatsapp-bot-for-real-estate'],
     relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-auto-reply', 'whatsapp-broadcast-messages'],
@@ -132,7 +132,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       { command: '!sticker', why: 'Turn fan moments into branded stickers.' },
     ],
     gettingStarted: [
-      'Sign up — the Starter tier is recommended for 1,000+ member groups.',
+      'Sign up, the Starter tier is recommended for 1,000+ member groups.',
       'In the AI setup, paste your bio, current single, tour dates, merch links.',
       'Enable !antilink to auto-remove unauthorised promotional links.',
       'Set welcome with your latest release, key dates, and the community rules.',
@@ -140,7 +140,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     faqs: [
       { question: 'Can I sell access to my fan group via BotWave?', answer: 'BotWave does not handle paid access directly. Pair it with a payment link (Selar, Paystack) and use !welcome to deliver the group invite link only to verified payments.' },
-      { question: 'Group privacy — can fans see my number?', answer: 'You can configure the bot to use a dedicated number for the group, separating your personal WhatsApp from the fan-facing one.' },
+      { question: 'Group privacy, can fans see my number?', answer: 'You can configure the bot to use a dedicated number for the group, separating your personal WhatsApp from the fan-facing one.' },
       { question: 'What if I have multiple fan groups?', answer: 'Multiple groups are supported on one session at no extra cost. Each can have its own welcome, rules, and moderation settings.' },
     ],
     relatedUseCase: ['gaming-groups', 'whatsapp-bot-for-fitness', 'telegram-bot-for-creators', 'whatsapp-bot-for-online-stores'],
@@ -174,9 +174,9 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       'Add the parish AI context (service times, location, leadership names, departments).',
     ],
     faqs: [
-      { question: 'Can BotWave help with prayer chains?', answer: 'Yes — !prayer collects requests anonymously and posts them on a schedule (e.g. 5am daily for the intercessor team). It also tracks how many people prayed for each request.' },
+      { question: 'Can BotWave help with prayer chains?', answer: 'Yes, !prayer collects requests anonymously and posts them on a schedule (e.g. 5am daily for the intercessor team). It also tracks how many people prayed for each request.' },
       { question: 'What about giving/offerings?', answer: 'BotWave does not handle payments. Use !post to share your church\'s giving link on a schedule, but money flows through your existing payment provider.' },
-      { question: 'Is the AI doctrinally safe?', answer: 'The AI uses the church context you provide. It does NOT generate sermons or doctrinal positions on its own — only answers logistical questions (when, where, who).' },
+      { question: 'Is the AI doctrinally safe?', answer: 'The AI uses the church context you provide. It does NOT generate sermons or doctrinal positions on its own, only answers logistical questions (when, where, who).' },
     ],
     relatedUseCase: ['whatsapp-bot-for-church-groups', 'whatsapp-bot-for-mosque-groups'],
     relatedHowTo: ['whatsapp-broadcast-messages', 'whatsapp-scheduled-messages'],
@@ -209,9 +209,9 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       'Paste tokenomics + roadmap into AI context.',
     ],
     faqs: [
-      { question: 'Can BotWave price-feed?', answer: 'Yes — !price [ticker] returns CoinGecko data. !chart pulls a quick chart.' },
+      { question: 'Can BotWave price-feed?', answer: 'Yes, !price [ticker] returns CoinGecko data. !chart pulls a quick chart.' },
       { question: 'How do you handle false positives on impersonator detection?', answer: 'The detection only flags accounts with similar handle + similar profile picture. Admins review the queue and approve/ban with one tap.' },
-      { question: 'Telegram or WhatsApp for crypto?', answer: 'Both — Telegram for public/big group, WhatsApp for closer-knit OG community. BotWave supports both from one dashboard.' },
+      { question: 'Telegram or WhatsApp for crypto?', answer: 'Both, Telegram for public/big group, WhatsApp for closer-knit OG community. BotWave supports both from one dashboard.' },
     ],
     relatedUseCase: ['whatsapp-bot-for-crypto', 'gaming-groups', 'telegram-bot-for-communities'],
     relatedHowTo: ['whatsapp-anti-spam', 'whatsapp-bot-permissions', 'telegram-bot-setup'],
@@ -235,7 +235,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       { command: '!tagall', why: 'New drop announcements.' },
       { command: '!shipping', why: 'Return delivery rates per state.' },
     ],
-    gettingStarted: ['Setup AI with current drop\'s pricing.', 'Configure shipping rates per state.', 'AFK for off-hours.', 'Use !tagall sparingly — only major drops.'],
+    gettingStarted: ['Setup AI with current drop\'s pricing.', 'Configure shipping rates per state.', 'AFK for off-hours.', 'Use !tagall sparingly, only major drops.'],
     faqs: [
       { question: 'How often to update pricing?', answer: 'Per drop. Takes 30s in the dashboard AI context editor.' },
       { question: 'TikTok/Instagram integration?', answer: 'No native integration; bot lives on WhatsApp. Cross-platform link in your bio.' },
@@ -246,7 +246,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
 
   'customer-support': {
     intro:
-      'Solo founders and small teams running customer support on WhatsApp can\'t afford Zendesk/Intercom. BotWave provides 80% of help-desk functionality (auto-FAQ, after-hours, escalation) for a fraction of the cost — without requiring customers to install anything new.',
+      'Solo founders and small teams running customer support on WhatsApp can\'t afford Zendesk/Intercom. BotWave provides 80% of help-desk functionality (auto-FAQ, after-hours, escalation) for a fraction of the cost, without requiring customers to install anything new.',
     featuredCommands: [
       { command: '!ai', why: 'FAQ answers from a knowledge base you maintain.' },
       { command: '!afk', why: 'After-hours response with expected reply time.' },
@@ -261,7 +261,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     faqs: [
       { question: 'Compared to a full help-desk?', answer: 'BotWave handles the front line (FAQ + triage). Use a real help-desk if you need agent inboxes, SLAs, and multi-channel.' },
-      { question: 'Can multiple agents share a session?', answer: 'No — BotWave is single-operator. For agent-inbox needs see Wati or Respond.io.' },
+      { question: 'Can multiple agents share a session?', answer: 'No, BotWave is single-operator. For agent-inbox needs see Wati or Respond.io.' },
     ],
     relatedUseCase: ['businesses', 'bot-for-customer-support', 'vendors', 'whatsapp-bot-for-online-stores'],
     relatedHowTo: ['whatsapp-ai-auto-reply', 'auto-reply-whatsapp'],
@@ -295,7 +295,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     gettingStarted: ['Enable strict anti-spam during scheduled study hours.', 'Configure AI tutor with your syllabus.', 'Schedule daily quiz at agreed time.'],
     faqs: [
-      { question: 'Can the AI solve maths?', answer: 'Yes — and shows the steps. Caveat: always verify final answers.' },
+      { question: 'Can the AI solve maths?', answer: 'Yes, and shows the steps. Caveat: always verify final answers.' },
       { question: 'PDF upload?', answer: 'Send a PDF to the bot, it summarises and quizzes you on it.' },
     ],
     relatedUseCase: ['schools', 'telegram-bot-for-education', 'whatsapp-bot-for-school-groups'],
@@ -312,7 +312,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     gettingStarted: ['Build customer FAQ context (rates, areas, hours).', 'Add bot to rider groups; set up shift polls.', 'Configure anti-spam in rider groups.'],
     faqs: [
-      { question: 'Can riders accept orders via bot?', answer: 'No — actual order acceptance happens in your dispatch system. Bot is for comms.' },
+      { question: 'Can riders accept orders via bot?', answer: 'No, actual order acceptance happens in your dispatch system. Bot is for comms.' },
       { question: 'ETAs?', answer: 'Bot can echo ETAs from your dispatch via webhook, not generate them.' },
     ],
     relatedUseCase: ['bot-for-delivery-services', 'businesses', 'customer-support'],
@@ -338,9 +338,9 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       'Enable AI with course outline + lecturer contact.',
     ],
     faqs: [
-      { question: 'Can lecturers also use it?', answer: 'Yes — lecturer can be a co-admin and see the dashboard.' },
+      { question: 'Can lecturers also use it?', answer: 'Yes, lecturer can be a co-admin and see the dashboard.' },
       { question: 'Free?', answer: 'Free tier sufficient for a single class group.' },
-      { question: 'Privacy of students?', answer: 'Bot doesn\'t store message bodies — only commands and triggers.' },
+      { question: 'Privacy of students?', answer: 'Bot doesn\'t store message bodies, only commands and triggers.' },
     ],
     relatedUseCase: ['schools', 'study-groups', 'telegram-bot-for-school-groups', 'telegram-bot-for-education'],
     relatedHowTo: ['whatsapp-group-bot', 'whatsapp-moderation-setup'],
@@ -362,7 +362,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
       'Enable !prayer for the intercession team.',
     ],
     faqs: [
-      { question: 'Can different departments have different settings?', answer: 'Yes — each group has its own moderation profile.' },
+      { question: 'Can different departments have different settings?', answer: 'Yes, each group has its own moderation profile.' },
       { question: 'Pastor approval?', answer: 'Admin role can be reserved for the pastor; co-admins approve content before broadcast.' },
       { question: 'Privacy of prayer requests?', answer: 'Prayer requests are stored anonymised; only the intercession team admin sees identifiable info, and only with member opt-in.' },
     ],
@@ -387,7 +387,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     faqs: [
       { question: 'Prayer-time accuracy?', answer: 'Uses Aladhan API; configurable calculation method (MWL, ISNA, Egyptian, Karachi, Tehran, Jafari).' },
-      { question: 'Hijri calendar?', answer: 'Yes — !hijri returns current Hijri date.' },
+      { question: 'Hijri calendar?', answer: 'Yes, !hijri returns current Hijri date.' },
       { question: 'Mixed-language community?', answer: 'AI supports Arabic, English, French, Hausa, Yoruba, Urdu.' },
     ],
     relatedUseCase: ['churches', 'whatsapp-bot-for-church-groups'],
@@ -406,7 +406,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     gettingStarted: ['Upload catalog (CSV) to AI context.', 'Configure shipping rates per state.', 'Set up restock keyword listener.'],
     faqs: [
       { question: 'How big a catalog?', answer: 'Up to ~500 SKUs cleanly; larger needs custom integration.' },
-      { question: 'Can it process orders?', answer: 'Collects details and confirms — final processing in your existing system.' },
+      { question: 'Can it process orders?', answer: 'Collects details and confirms, final processing in your existing system.' },
       { question: 'Payment?', answer: 'Send payment link only; never collect card numbers in WhatsApp.' },
     ],
     relatedUseCase: ['vendors', 'businesses', 'whatsapp-bot-for-real-estate'],
@@ -461,7 +461,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
 
   'whatsapp-bot-for-healthcare': {
     intro:
-      'Clinics and small healthcare providers use WhatsApp for appointment reminders and follow-ups. BotWave handles the logistics — strictly within compliance boundaries.',
+      'Clinics and small healthcare providers use WhatsApp for appointment reminders and follow-ups. BotWave handles the logistics, strictly within compliance boundaries.',
     featuredCommands: [
       { command: '!remind', why: 'Appointment reminders 24h and 1h before.' },
       { command: '!ai', why: 'General hours/location/services FAQs only.' },
@@ -514,7 +514,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     ],
     gettingStarted: ['Enable XP rewards.', 'Schedule weekly matches.', 'Configure anti-toxic AI moderation.'],
     faqs: [
-      { question: 'Tournament brackets?', answer: 'Yes — !tournament builds a bracket.' },
+      { question: 'Tournament brackets?', answer: 'Yes, !tournament builds a bracket.' },
       { question: 'Discord migration?', answer: 'BotWave keeps it on WhatsApp/Telegram; no migration needed.' },
     ],
     relatedUseCase: ['gaming-groups', 'creators'],
@@ -564,7 +564,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     gettingStarted: ['BotFather → new bot → paste token.', 'Configure AI context.', 'Add to business channel/group.'],
     faqs: [
       { question: 'Why two platforms?', answer: 'WhatsApp for personal, Telegram for tech audience or international.' },
-      { question: 'Same dashboard?', answer: 'Yes — both sessions in one place.' },
+      { question: 'Same dashboard?', answer: 'Yes, both sessions in one place.' },
     ],
     relatedUseCase: ['businesses', 'customer-support', 'telegram-bot-for-communities'],
     relatedHowTo: ['telegram-bot-setup'],
@@ -572,7 +572,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
 
   'telegram-bot-for-communities': {
     intro:
-      'Online communities of all kinds — crypto, gaming, dev, fan — run on Telegram. BotWave delivers welcome, moderation, AI assistance, and engagement tools.',
+      'Online communities of all kinds, crypto, gaming, dev, fan, run on Telegram. BotWave delivers welcome, moderation, AI assistance, and engagement tools.',
     featuredCommands: [{ command: '/welcome', why: 'Rules + intro.' }, { command: '/ai', why: 'On-demand assistant.' }, { command: '/trivia', why: 'Engagement.' }, { command: '/warn', why: 'Mod.' }],
     gettingStarted: ['Set bot up via BotFather.', 'Configure welcome + rules.', 'Enable anti-spam.'],
     faqs: [
@@ -601,7 +601,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     featuredCommands: [{ command: '/welcome', why: 'Cohort onboarding.' }, { command: '/schedule', why: 'Lesson reminders.' }, { command: '/ai', why: 'Tutor.' }, { command: '/quiz', why: 'Assessment.' }],
     gettingStarted: ['Set up cohort channel.', 'Configure lesson schedule.', 'Paste course outline in AI context.'],
     faqs: [
-      { question: 'Course completion tracking?', answer: 'Yes — quiz scores and progress logged per learner.' },
+      { question: 'Course completion tracking?', answer: 'Yes, quiz scores and progress logged per learner.' },
       { question: 'Multi-cohort?', answer: 'One session can run multiple cohorts simultaneously.' },
     ],
     relatedUseCase: ['schools', 'study-groups', 'whatsapp-bot-for-school-groups'],
@@ -610,12 +610,12 @@ export const useCaseContent: Record<string, UseCaseContent> = {
 
   'bot-for-customer-support': {
     intro:
-      'A general-purpose customer-support bot for WhatsApp/Telegram — same engine, more flexibility than the dedicated vertical pages.',
+      'A general-purpose customer-support bot for WhatsApp/Telegram, same engine, more flexibility than the dedicated vertical pages.',
     featuredCommands: [{ command: '!ai', why: 'FAQ.' }, { command: '!escalate', why: 'Hand-off.' }, { command: '!ticket', why: 'Track.' }],
     gettingStarted: ['Build FAQ KB.', 'Configure escalation routing.', 'Train team on triage policy.'],
     faqs: [
-      { question: 'Live agent inbox?', answer: 'No — pair with Wati/Respond.io for multi-agent.' },
-      { question: 'Webhooks?', answer: 'Yes — escalate hands off to your tools.' },
+      { question: 'Live agent inbox?', answer: 'No, pair with Wati/Respond.io for multi-agent.' },
+      { question: 'Webhooks?', answer: 'Yes, escalate hands off to your tools.' },
     ],
     relatedUseCase: ['customer-support', 'businesses', 'vendors'],
     relatedHowTo: ['whatsapp-ai-auto-reply', 'auto-reply-whatsapp'],
@@ -639,7 +639,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     gettingStarted: ['Configure RSVP capture.', 'Schedule reminders 7d/1d/1h.', 'Paste event details in AI context.'],
     faqs: [
       { question: 'Capacity tracking?', answer: 'RSVP count, with waitlist if cap reached.' },
-      { question: 'Recurring events?', answer: 'Yes — weekly/monthly recurrence.' },
+      { question: 'Recurring events?', answer: 'Yes, weekly/monthly recurrence.' },
     ],
     relatedUseCase: ['businesses', 'creators', 'bot-for-political-campaigns'],
     relatedHowTo: ['whatsapp-broadcast-messages', 'whatsapp-scheduled-messages'],
@@ -664,7 +664,7 @@ export const useCaseContent: Record<string, UseCaseContent> = {
     gettingStarted: ['Configure rider groups.', 'Set up customer rate FAQ.', 'Schedule shift reminders.'],
     faqs: [
       { question: 'Dispatch integration?', answer: 'Webhook hand-off to your dispatch.' },
-      { question: 'GPS tracking?', answer: 'Out of scope — pair with a tracking provider.' },
+      { question: 'GPS tracking?', answer: 'Out of scope, pair with a tracking provider.' },
     ],
     relatedUseCase: ['delivery-services', 'businesses', 'customer-support'],
     relatedHowTo: ['whatsapp-broadcast-messages', 'auto-reply-whatsapp'],

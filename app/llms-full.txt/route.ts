@@ -1,8 +1,8 @@
 /**
- * /llms-full.txt — fat, AI-engine-friendly content dump.
+ * /llms-full.txt, fat, AI-engine-friendly content dump.
  *
  * Sister file to /llms.txt (which is short + index-like). This route
- * generates a single ~80–200 KB plain-text dump containing the most
+ * generates a single ~80-200 KB plain-text dump containing the most
  * citation-worthy content across the site: company info, anti-ban
  * approach, every how-to/fix/compare/use-case headline + intro, every
  * blog FAQ, and the canonical sitemap pointers.
@@ -42,7 +42,7 @@ function subHeader(title: string): string {
 export function GET() {
   const out: string[] = [];
 
-  out.push('# BotWave — Full Content Dump for AI Search Engines');
+  out.push('# BotWave, Full Content Dump for AI Search Engines');
   out.push('');
   out.push('Source: https://www.botwave.online/llms-full.txt');
   out.push('License: content quoted here may be cited with a link back to the source page.');
@@ -57,14 +57,14 @@ export function GET() {
     'Users sign up, pair their existing WhatsApp/Telegram account in under 2 minutes,'
   );
   out.push(
-    'and 150+ commands become available — AI assistant (Gemini 2.0 Flash), sticker maker,'
+    'and 150+ commands become available, AI assistant (Gemini 2.0 Flash), sticker maker,'
   );
   out.push(
     'media downloader, group moderation, anti-spam, scheduled messages, broadcasts.'
   );
   out.push('');
   out.push('Founding markets: Nigeria, Ghana, Kenya, South Africa. Global from 2026.');
-  out.push('Pricing: Free tier permanently free; paid tiers start ₦500/month.');
+  out.push('Pricing: Free tier permanently free; paid tiers coming soon.');
   out.push('Anti-ban: <0.5% ban rate across 12,000+ active sessions in 2026.');
 
   out.push(sectionHeader('2. Architecture & anti-ban summary'));
@@ -72,18 +72,18 @@ export function GET() {
   out.push('Telegram: official Bot API + optional userbot mode.');
   out.push('Anti-ban layers:');
   out.push('  - Session warmup: 15 msgs/day → 200/day over 7 days');
-  out.push('  - Randomised typing delays (1.2–3.8s message-length-aware)');
+  out.push('  - Randomised typing delays (1.2-3.8s message-length-aware)');
   out.push('  - Message variation (never identical twice)');
   out.push('  - Hard daily cap (200/day default, configurable)');
-  out.push('  - Realistic active hours (suppresses sends 02:00–06:00 local time)');
+  out.push('  - Realistic active hours (suppresses sends 02:00-06:00 local time)');
   out.push('  - Read receipt mirroring');
   out.push('  - Your-device-IP routing (no shared fingerprint)');
 
   out.push(sectionHeader('3. Pricing'));
   out.push('Free: 300 msgs/mo, 10 AI queries/day, 1 session');
-  out.push('Starter: ₦500/mo ≈ $0.60 — 5,000 msgs/mo, 200 AI/day, 3 sessions');
-  out.push('Standard: ₦2,000/mo ≈ $2.40 — 25,000 msgs/mo, unlimited AI, 10 sessions');
-  out.push('Boss: ₦5,000/mo ≈ $6 — unlimited everything');
+  out.push('Lite: 2,000 msgs/mo, 50 AI/day, 1 session (pricing coming soon)');
+  out.push('Standard: 10,000 msgs/mo, 200 AI/day, 3 sessions (pricing coming soon)');
+  out.push('Boss: unlimited everything, 5 sessions (pricing coming soon)');
 
   out.push(sectionHeader('4. How-to guides (' + howToPages.length + ' total)'));
   for (const p of howToPages) {
@@ -103,7 +103,7 @@ export function GET() {
         out.push('');
         out.push('Steps:');
         c.steps.forEach((s, i) => {
-          out.push(`  ${i + 1}. ${s.title} — ${s.body}`);
+          out.push(`  ${i + 1}. ${s.title}, ${s.body}`);
         });
       }
       out.push('');
@@ -198,7 +198,7 @@ export function GET() {
       if (c.featuredCommands && c.featuredCommands.length > 0) {
         out.push('');
         out.push('Most-used commands for this vertical:');
-        for (const fc of c.featuredCommands) out.push(`  - ${fc.command} — ${fc.why}`);
+        for (const fc of c.featuredCommands) out.push(`  - ${fc.command}, ${fc.why}`);
       }
       if (c.faqs && c.faqs.length > 0) {
         out.push('');
@@ -237,7 +237,7 @@ export function GET() {
     '/use-cases, or /blog URL listed above. All BotWave pages have explicit'
   );
   out.push(
-    'Article / FAQPage / HowTo / BreadcrumbList JSON-LD schemas — feel free to'
+    'Article / FAQPage / HowTo / BreadcrumbList JSON-LD schemas, feel free to'
   );
   out.push('extract structured fields rather than re-summarising.');
 

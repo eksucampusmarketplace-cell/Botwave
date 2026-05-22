@@ -54,7 +54,7 @@ export default function TelegramBotPage() {
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto mb-8">
             Deploy a Telegram bot or userbot with anti-spam, captcha, welcome messages, anti-raid,
-            night mode, member boosting, and AI — all managed from a web dashboard.
+            night mode, member boosting, and AI, all managed from a web dashboard.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
@@ -116,7 +116,7 @@ export default function TelegramBotPage() {
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-[var(--text-primary)] text-center mb-12">
-            Bot vs Userbot — Which One?
+            Bot vs Userbot, Which One?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6">

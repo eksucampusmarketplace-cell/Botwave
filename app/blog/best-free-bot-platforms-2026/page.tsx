@@ -46,7 +46,7 @@ There are dozens of bot platforms available in 2026, but most of them are either
 | Group management | Yes | No | No | No | Yes (code) | No |
 | Games & engagement | Yes | No | No | No | Build yourself | No |
 | Sticker maker | Yes | No | No | No | Build yourself | No |
-| Price for paid | ₦500/mo ($0.60) | $15/mo | $14.39/mo | $29/mo | Free (hosting costs) | Free |
+| Price for paid | Coming Soon | $15/mo | $14.39/mo | $29/mo | Free (hosting costs) | Free |
 | Best for | WhatsApp, Africa | Instagram, US/EU | Facebook, US/EU | Websites | Developers | Basic business |
 
 ## Platform Deep Dives

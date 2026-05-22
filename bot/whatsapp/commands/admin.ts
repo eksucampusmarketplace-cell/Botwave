@@ -349,7 +349,7 @@ async function handlePlan(context: MessageContext, sock: any): Promise<void> {
   }
 
   const sub = await getUserSubscription(userId);
-  const planNames: Record<string, string> = { free: 'Free', lite: 'Lite (₦500/mo)', standard: 'Standard (₦1,000/mo)', boss: 'Boss (₦2,000/mo)' };
+  const planNames: Record<string, string> = { free: 'Free', lite: 'Lite (coming soon)', standard: 'Standard (coming soon)', boss: 'Boss (coming soon)' };
   const quotaDisplay = sub.quotaLimit === -1 ? 'Unlimited' : `${sub.quotaUsed}/${sub.quotaLimit}`;
   const aiDisplay = sub.aiDailyLimit === -1 ? 'Unlimited' : `${sub.aiDailyLimit}/day`;
 

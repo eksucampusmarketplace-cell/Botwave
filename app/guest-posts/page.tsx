@@ -301,7 +301,7 @@ export default function GuestPostsPage() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Auto-Translated', desc: 'Write in any language — BotWave AI translates your post for every reader.' },
+              { title: 'Auto-Translated', desc: 'Write in any language, BotWave AI translates your post for every reader.' },
               { title: 'Community-Driven', desc: 'Real stories from real bot builders. Tips, guides, and automation workflows.' },
               { title: 'SEO-Boosted', desc: 'Your post gets indexed in multiple languages, reaching a global audience.' },
             ].map(item => (

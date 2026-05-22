@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Auto-Reply Bot (2026) — Keyword Triggers & Smart Responses | BotWave',
+  title: 'Telegram Auto-Reply Bot (2026), Keyword Triggers & Smart Responses | BotWave',
   description: 'Set up automatic replies in Telegram groups and DMs. Keyword-based triggers, regex matching, AI-powered responses, and scheduled messages. Free, no coding required.',
   keywords: [
     'telegram auto reply',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'telegram group auto reply',
   ],
   openGraph: {
-    title: 'Telegram Auto-Reply Bot (2026) — Keyword Triggers & Smart Responses | BotWave',
+    title: 'Telegram Auto-Reply Bot (2026), Keyword Triggers & Smart Responses | BotWave',
     description: 'Automatic replies for Telegram: keyword triggers, regex, AI responses, scheduled messages.',
     url: 'https://www.botwave.online/telegram-auto-reply',
     type: 'website',
@@ -80,7 +80,7 @@ export default function TelegramAutoReplyPage() {
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto mb-8">
             Set keyword triggers, regex patterns, or AI-powered responses for your Telegram group.
-            Reply to common questions instantly — 24/7, even while you sleep.
+            Reply to common questions instantly, 24/7, even while you sleep.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link

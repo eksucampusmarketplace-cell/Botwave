@@ -256,9 +256,9 @@ async function getActiveSessionForUser(userId: string): Promise<{ id: string; ph
 // ─── Message Templates ──────────────────────────────────────────────────────
 
 const PLAN_NAMES: Record<string, string> = {
-  lite: 'Lite (₦500/mo)',
-  standard: 'Standard (₦1,000/mo)',
-  boss: 'Boss (₦2,000/mo)',
+  lite: 'Lite (coming soon)',
+  standard: 'Standard (coming soon)',
+  boss: 'Boss (coming soon)',
 };
 
 function getTrialExpiryMessage(type: NotificationType, daysLeft: number, plan: string): string {

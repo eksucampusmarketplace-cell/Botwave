@@ -7,7 +7,7 @@ export interface DocPage {
   content: string;
   seoKeywords: string[];
   relatedDocs: string[];
-  /** ISO 8601 date string (YYYY-MM-DD) — when the doc content was last meaningfully revised. */
+  /** ISO 8601 date string (YYYY-MM-DD), when the doc content was last meaningfully revised. */
   lastUpdated?: string;
 }
 
@@ -1027,21 +1027,21 @@ Your configured AI provider rejected the request. Common causes: invalid key, ex
     lastUpdated: '2026-05-22',
     content: `## Search Engine Optimization Guide for Bot Platforms (2026)
 
-This is the **complete** SEO playbook BotWave uses to stay discoverable across the modern search landscape — traditional engines, the Bing umbrella, and the new AI answer engines. Everything below is what we actually run in production; nothing is theoretical.
+This is the **complete** SEO playbook BotWave uses to stay discoverable across the modern search landscape, traditional engines, the Bing umbrella, and the new AI answer engines. Everything below is what we actually run in production; nothing is theoretical.
 
 If you are scaling a bot platform (WhatsApp, Telegram, or any high-volume programmatic site), follow these steps in order. The earlier steps unblock the later ones.
 
-### The 2026 search landscape — what you actually need to cover
+### The 2026 search landscape, what you actually need to cover
 
 There are three umbrellas. Cover one engine in each and you cover ~98% of search traffic in the English-speaking web:
 
-1. **The Google umbrella** — Google Search, Google Discover, Startpage. Optimise once for Googlebot.
-2. **The Bing umbrella** — Bing, Yahoo, DuckDuckGo, Ecosia, Swisscows, AOL. All draw from the Microsoft index. One IndexNow ping covers all of them.
-3. **AI answer engines** — Perplexity, ChatGPT Search, Brave Leo, You.com, Claude, Meta AI. No webmaster console; coverage is automatic via \`robots.txt\` allow-listing + structured data.
+1. **The Google umbrella**, Google Search, Google Discover, Startpage. Optimise once for Googlebot.
+2. **The Bing umbrella**, Bing, Yahoo, DuckDuckGo, Ecosia, Swisscows, AOL. All draw from the Microsoft index. One IndexNow ping covers all of them.
+3. **AI answer engines**, Perplexity, ChatGPT Search, Brave Leo, You.com, Claude, Meta AI. No webmaster console; coverage is automatic via \`robots.txt\` allow-listing + structured data.
 
 > See our per-engine pages at [/search-engines](/search-engines) for individual reference cards.
 
-### Step 1 — Verify Google Search Console (and only Google Search Console)
+### Step 1, Verify Google Search Console (and only Google Search Console)
 
 The only engine that *requires* a manual sign-in is Google. Everything else is automatic via the protocols below.
 
@@ -1049,12 +1049,12 @@ The only engine that *requires* a manual sign-in is Google. Everything else is a
 2. Verify ownership via DNS TXT (more durable than HTML file).
 3. Submit \`https://www.botwave.online/sitemap.xml\` once. GSC auto-discovers chunks.
 4. Open the Coverage report weekly. The most common issues:
-   - **"Discovered – currently not indexed"** — Google found the URL in your sitemap but won't crawl it. Fix: stronger internal-link mesh + unique per-slug content.
-   - **"Duplicate without user-selected canonical"** — Two pages have the same content. Fix: explicit \`alternates.canonical\` on each route.
-   - **"Page with redirect"** — Not an error if intended (e.g. \`http://\` → \`https://\`).
-   - **"Not found (404)"** — Legacy URL. Fix: add a 301 in \`next.config.js\` \`async redirects\`.
+   - **"Discovered - currently not indexed"**, Google found the URL in your sitemap but won't crawl it. Fix: stronger internal-link mesh + unique per-slug content.
+   - **"Duplicate without user-selected canonical"**, Two pages have the same content. Fix: explicit \`alternates.canonical\` on each route.
+   - **"Page with redirect"**, Not an error if intended (e.g. \`http://\` → \`https://\`).
+   - **"Not found (404)"**, Legacy URL. Fix: add a 301 in \`next.config.js\` \`async redirects\`.
 
-### Step 2 — Implement IndexNow (covers Bing + Yandex + DDG + Yahoo + Ecosia + AOL)
+### Step 2, Implement IndexNow (covers Bing + Yandex + DDG + Yahoo + Ecosia + AOL)
 
 [IndexNow](https://www.indexnow.org/) is a free, no-login protocol Microsoft and Yandex co-developed. One HTTP POST notifies every participating engine.
 
@@ -1070,7 +1070,7 @@ How BotWave wires it:
 
 Limits: 10,000 URLs per request. We chunk at 500 to be conservative.
 
-### Step 3 — Allow-list every crawler you want to be visible to
+### Step 3, Allow-list every crawler you want to be visible to
 
 Your \`robots.txt\` is the single most leveraged file for AI engines. They check it before deciding whether to ingest your pages.
 
@@ -1105,17 +1105,17 @@ Allow: /
 
 Engines we allow-list at BotWave: Googlebot, Googlebot-Image, Googlebot-News, Bingbot, Slurp, DuckDuckBot, Baiduspider, YandexBot, Applebot, GPTBot, OAI-SearchBot, ChatGPT-User, Google-Extended, ClaudeBot, Claude-Web, anthropic-ai, PerplexityBot, Perplexity-User, CCBot, Bytespider, Amazonbot, cohere-ai, Diffbot, FacebookBot, Meta-ExternalAgent, ImagesiftBot, Omgilibot, YouBot.
 
-### Step 4 — Chunk your sitemap (essential when you have 20k+ URLs)
+### Step 4, Chunk your sitemap (essential when you have 20k+ URLs)
 
 The sitemap protocol caps at 50,000 URLs / 50MB per chunk. We use **2,000 URLs per chunk** because:
 
 - Smaller chunks fetch faster (helps every engine, not just Google).
-- GSC indexes each chunk independently — one slow chunk doesn't block the rest.
+- GSC indexes each chunk independently, one slow chunk doesn't block the rest.
 - Append-only URL ordering keeps chunk membership stable across deploys.
 
 Implementation: \`generateSitemaps()\` in \`app/sitemap.ts\` returns \`[{ id: 0 }, { id: 1 }, ...]\` and the default export reads the chunk ID and slices the master URL list. The \`landingPages\` array is treated as **append-only** so URLs never move chunks.
 
-### Step 5 — Emit structured data (JSON-LD) everywhere
+### Step 5, Emit structured data (JSON-LD) everywhere
 
 AI engines especially weigh structured data heavily. Per page-type:
 
@@ -1132,43 +1132,43 @@ AI engines especially weigh structured data heavily. Per page-type:
 
 Run every page through [Schema.org validator](https://validator.schema.org/) and Google's [Rich Results Test](https://search.google.com/test/rich-results) before shipping.
 
-### Step 6 — Defeat "Discovered – currently not indexed"
+### Step 6, Defeat "Discovered - currently not indexed"
 
 If GSC says it found your URLs but won't crawl them, the issue is almost always one of:
 
-1. **Thin content** — programmatic pages with templated bodies. Fix: emit unique per-slug content (we did this for /how-to, /fix, /compare, /use-cases — see commit history of \`lib/howto/content.ts\`).
-2. **No inbound links** — the URL only appears in the sitemap, not in any other page's HTML. Fix: link to it from your homepage, footer, or a "related content" section.
-3. **Slow page load** — failing Core Web Vitals. Fix: server-render, drop unused JS, optimise images.
+1. **Thin content**, programmatic pages with templated bodies. Fix: emit unique per-slug content (we did this for /how-to, /fix, /compare, /use-cases, see commit history of \`lib/howto/content.ts\`).
+2. **No inbound links**, the URL only appears in the sitemap, not in any other page's HTML. Fix: link to it from your homepage, footer, or a "related content" section.
+3. **Slow page load**, failing Core Web Vitals. Fix: server-render, drop unused JS, optimise images.
 
 For BotWave's 98 unindexed blog URLs in GSC, the fixes were: (a) home-page \`Guides & Tutorials\` section linking to every post, (b) per-post \`FAQPage\` schema with substantive Q&A, (c) cross-linking between blog/how-to/compare on shared keywords.
 
-### Step 7 — Optimise for AI answer engines
+### Step 7, Optimise for AI answer engines
 
 The new wave of search is conversational. AI engines (Perplexity, ChatGPT Search, Brave Leo, You.com, Claude, Meta AI) synthesise live web data into direct answers with citations. To be cited:
 
 - **Allow the UAs** (step 3 above).
 - **Emit FAQPage + Article schema** so the engine can extract Q&A pairs.
-- **Provide \`llms.txt\` and \`llms-full.txt\`** — AI-engine-friendly content dumps at the root of your site. See [/llms.txt](/llms.txt) and [/llms-full.txt](/llms-full.txt) for BotWave's implementations.
-- **Write content that answers questions** — AI engines preferentially cite pages with clean Q&A structure or step-by-step content. Marketing pages rarely get cited.
-- **Keep canonical signals clean** — duplicate-canonical warnings tell AI engines you don't know which version is authoritative.
+- **Provide \`llms.txt\` and \`llms-full.txt\`**, AI-engine-friendly content dumps at the root of your site. See [/llms.txt](/llms.txt) and [/llms-full.txt](/llms-full.txt) for BotWave's implementations.
+- **Write content that answers questions**, AI engines preferentially cite pages with clean Q&A structure or step-by-step content. Marketing pages rarely get cited.
+- **Keep canonical signals clean**, duplicate-canonical warnings tell AI engines you don't know which version is authoritative.
 
-### Step 8 — Cover Apple's ecosystem (Spotlight, Siri, Safari)
+### Step 8, Cover Apple's ecosystem (Spotlight, Siri, Safari)
 
-Applebot powers Spotlight, Siri Suggestions, and Safari smart search. It crawls automatically — your only job is:
+Applebot powers Spotlight, Siri Suggestions, and Safari smart search. It crawls automatically, your only job is:
 
 1. Allow \`Applebot\` and \`Applebot-Extended\` in \`robots.txt\`.
-2. Use clean semantic HTML (\`<article>\`, \`<h1>\`–\`<h3>\`).
+2. Use clean semantic HTML (\`<article>\`, \`<h1>\`-\`<h3>\`).
 3. Provide complete OpenGraph metadata on every page.
 
 There is no Apple webmaster console, so robots.txt is the only signal you control.
 
-### Step 9 — Set up monitoring (it's not "done" after launch)
+### Step 9, Set up monitoring (it's not "done" after launch)
 
-- **GSC Coverage** — weekly check for new "Discovered – not indexed" entries.
-- **GSC Sitemaps** — confirm all chunks return 200 and are listed.
-- **Bing Webmaster Tools** — sign in once, submit sitemap, check Site Explorer monthly.
-- **IndexNow status** — log the response code of every batch. 200/202 = accepted; 403 = key mismatch (re-check \`/<KEY>.txt\` is reachable); 422 = invalid URL list.
-- **Manual spot checks** — search \`site:botwave.online\` on Google, Bing, DDG, Brave Search, Yandex, Ecosia weekly. Indexed count should track sitemap URL count within ~15%.
+- **GSC Coverage**, weekly check for new "Discovered - not indexed" entries.
+- **GSC Sitemaps**, confirm all chunks return 200 and are listed.
+- **Bing Webmaster Tools**, sign in once, submit sitemap, check Site Explorer monthly.
+- **IndexNow status**, log the response code of every batch. 200/202 = accepted; 403 = key mismatch (re-check \`/<KEY>.txt\` is reachable); 422 = invalid URL list.
+- **Manual spot checks**, search \`site:botwave.online\` on Google, Bing, DDG, Brave Search, Yandex, Ecosia weekly. Indexed count should track sitemap URL count within ~15%.
 
 ### Practical schedule we follow at BotWave
 

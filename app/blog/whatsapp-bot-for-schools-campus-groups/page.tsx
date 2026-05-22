@@ -151,7 +151,7 @@ BotWave's free tier is perfect for campus groups:
 - Anti-spam protection
 - 1 WhatsApp session
 
-Most campus groups stay within the free tier. If your group is very active, the ₦500/month Starter plan covers 3,000 messages.
+Most campus groups stay within the free tier. If your group is very active, paid plans with higher message quotas are coming soon.
 
 **[Set Up Your Campus Bot Free →](https://www.botwave.online/signup)**
 `;

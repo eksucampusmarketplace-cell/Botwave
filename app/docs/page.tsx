@@ -41,7 +41,7 @@ const platformLabels: Record<string, string> = {
 };
 
 const categoryBlurbs: Record<string, string> = {
-  Setup: 'Get connected in minutes — WhatsApp QR, Telegram bot tokens, userbot pairing.',
+  Setup: 'Get connected in minutes, WhatsApp QR, Telegram bot tokens, userbot pairing.',
   Features: 'AI, welcome messages, group management, and the day-to-day power user toolkit.',
   Security: 'How BotWave protects your account and how to use the anti-ban system properly.',
   Troubleshooting: 'Fixes for QR errors, disconnections, missing features, and edge cases.',

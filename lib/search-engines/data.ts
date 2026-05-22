@@ -14,7 +14,7 @@
  *   ingest. Each page emits Article + FAQPage + Breadcrumb JSON-LD so
  *   the per-engine answer is machine-readable.
  *
- * SLUG IS STABLE — once an entry ships, its slug is part of the
+ * SLUG IS STABLE, once an entry ships, its slug is part of the
  * sitemap. Treat this list as append-only the same way `landingPages`
  * is treated (see `lib/sitemap-config.ts`).
  */
@@ -26,7 +26,7 @@ export interface SearchEngineEntry {
   name: string;
   umbrella: EngineUmbrella;
   audience: string;
-  /** Short one-liner — used in the index table + meta description fallback. */
+  /** Short one-liner, used in the index table + meta description fallback. */
   oneLiner: string;
   /** Where this engine's results come from (index source). */
   indexSource: string;
@@ -34,7 +34,7 @@ export interface SearchEngineEntry {
   userAgents: string;
   /** Direct search-this-query URL (used for "try it" links). */
   searchUrl: string;
-  /** How BotWave optimises for this engine, 3–5 bullets. */
+  /** How BotWave optimises for this engine, 3-5 bullets. */
   optimization: string[];
   /** What the user can do to confirm BotWave shows up here. */
   howToVerify: string[];
@@ -46,7 +46,7 @@ export interface SearchEngineEntry {
   hasConsole: boolean;
   /** Console URL if applicable. */
   consoleUrl?: string;
-  /** Approx global market share (informational only — not a precise figure). */
+  /** Approx global market share (informational only, not a precise figure). */
   marketShare?: string;
 }
 
@@ -56,7 +56,7 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'google',
     name: 'Google Search',
     umbrella: 'google',
-    audience: 'Everyone — students, businesses, researchers, casual searchers',
+    audience: 'Everyone, students, businesses, researchers, casual searchers',
     oneLiner:
       'The default search engine for ~90% of the planet. Optimised for Googlebot, Google Discover, and Google AI Overviews.',
     indexSource: "Google's own index, crawled by Googlebot (desktop + mobile).",
@@ -65,14 +65,14 @@ export const searchEngines: SearchEngineEntry[] = [
     optimization: [
       'Every public page emits Article / SoftwareApplication / FAQPage / HowTo / BreadcrumbList JSON-LD so Google can extract structured facts.',
       'Sitemap is chunked at 2,000 URLs per /sitemap/<id>.xml so crawl budget is spent evenly across the 20k+ landing pages.',
-      'Canonical metadata is set explicitly on every slug-based template (/how-to, /fix, /compare, /use-cases) — no duplicate-canonical warnings.',
+      'Canonical metadata is set explicitly on every slug-based template (/how-to, /fix, /compare, /use-cases), no duplicate-canonical warnings.',
       'Internal-link mesh: every how-to links to the matching /fix and /compare pages; the homepage links to all blog posts.',
-      'Core Web Vitals optimised — most pages are server-rendered with no client-side JS for the critical render path.',
+      'Core Web Vitals optimised, most pages are server-rendered with no client-side JS for the critical render path.',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on google.com — the homepage should appear in the top 5.',
+      'Search "BotWave whatsapp bot" on google.com, the homepage should appear in the top 5.',
       'In Google Search Console (Coverage report), the indexed page count for botwave.online should match the URLs listed in this site\'s sitemap.xml.',
-      'Add &as_qdr=h to your Google query to filter to the last hour — confirms freshness signals are reaching Googlebot.',
+      'Add &as_qdr=h to your Google query to filter to the last hour, confirms freshness signals are reaching Googlebot.',
     ],
     faqs: [
       {
@@ -81,9 +81,9 @@ export const searchEngines: SearchEngineEntry[] = [
           'Yes. The botwave.online + www.botwave.online properties are both verified, sitemaps are submitted, and Coverage / Performance reports are reviewed weekly.',
       },
       {
-        question: 'Why does Google show "Discovered – currently not indexed" for some BotWave URLs?',
+        question: 'Why does Google show "Discovered - currently not indexed" for some BotWave URLs?',
         answer:
-          "This typically means Google has discovered the URL but hasn't yet decided to crawl it (crawl-budget triage). The fixes we apply: stronger internal linking from high-authority pages, unique per-slug content (no thin programmatic pages), and BreadcrumbList + Article JSON-LD on every URL. After those, GSC usually re-classifies discovered URLs as Indexed within 14–28 days.",
+          "This typically means Google has discovered the URL but hasn't yet decided to crawl it (crawl-budget triage). The fixes we apply: stronger internal linking from high-authority pages, unique per-slug content (no thin programmatic pages), and BreadcrumbList + Article JSON-LD on every URL. After those, GSC usually re-classifies discovered URLs as Indexed within 14-28 days.",
       },
       {
         question: 'How is BotWave optimised for Google Discover (mobile feed)?',
@@ -100,7 +100,7 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'google-discover',
     name: 'Google Discover',
     umbrella: 'google',
-    audience: 'Mobile users on Android / Chrome iOS — passive content feed',
+    audience: 'Mobile users on Android / Chrome iOS, passive content feed',
     oneLiner:
       'A personalised, no-query content feed on mobile. Drives huge mobile traffic if your articles match a user\'s interests.',
     indexSource: "Google's main index, re-ranked by per-user interest + freshness.",
@@ -109,23 +109,23 @@ export const searchEngines: SearchEngineEntry[] = [
     optimization: [
       'High-quality OpenGraph image (1200×630) on every article.',
       'Article JSON-LD with datePublished + dateModified so Discover sees fresh updates.',
-      'Mobile-first responsive design — Discover never surfaces pages that fail Mobile Usability.',
+      'Mobile-first responsive design, Discover never surfaces pages that fail Mobile Usability.',
       'No interstitials / intrusive popups (Discover penalises layout shift).',
     ],
     howToVerify: [
-      'On an Android phone signed into a Google account, swipe right from the home screen to open Discover. Search interests for "WhatsApp bot" or "Telegram automation" — BotWave articles should surface within a few days of publishing.',
+      'On an Android phone signed into a Google account, swipe right from the home screen to open Discover. Search interests for "WhatsApp bot" or "Telegram automation", BotWave articles should surface within a few days of publishing.',
       'In Google Search Console, the Discover performance report (left sidebar → Performance → Discover) shows impressions / clicks from this surface.',
     ],
     faqs: [
       {
         question: 'How do I get BotWave articles into Google Discover?',
         answer:
-          'Discover surfaces high-quality, fresh content matching a user\'s interests — not search queries. We optimise by publishing on a regular cadence (weekly+), using strong OpenGraph imagery, and emitting Article JSON-LD with timezone-aware datePublished and dateModified.',
+          'Discover surfaces high-quality, fresh content matching a user\'s interests, not search queries. We optimise by publishing on a regular cadence (weekly+), using strong OpenGraph imagery, and emitting Article JSON-LD with timezone-aware datePublished and dateModified.',
       },
       {
         question: 'Is Discover the same as Google News?',
         answer:
-          'No. Google News pulls from registered publishers and weighs news-y signals (authorship, beat). Discover is broader — it surfaces evergreen content too, as long as it matches a user\'s interest graph.',
+          'No. Google News pulls from registered publishers and weighs news-y signals (authorship, beat). Discover is broader, it surfaces evergreen content too, as long as it matches a user\'s interest graph.',
       },
     ],
     supportsIndexNow: false,
@@ -138,7 +138,7 @@ export const searchEngines: SearchEngineEntry[] = [
     umbrella: 'google',
     audience: 'Privacy-conscious users who want Google quality without Google tracking',
     oneLiner:
-      'A privacy-respecting proxy in front of Google\'s index — same results, no tracking. Indexes us automatically via Google.',
+      'A privacy-respecting proxy in front of Google\'s index, same results, no tracking. Indexes us automatically via Google.',
     indexSource: "Google's index, proxied. Startpage does not crawl independently.",
     userAgents: '(uses Google\'s index, no independent UA)',
     searchUrl: 'https://www.startpage.com/do/search?q=BotWave',
@@ -147,7 +147,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'Whatever ranks on Google ranks on Startpage with very high correlation.',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on startpage.com — results should mirror Google within a few hours of any Google-index update.',
+      'Search "BotWave whatsapp bot" on startpage.com, results should mirror Google within a few hours of any Google-index update.',
     ],
     faqs: [
       {
@@ -167,15 +167,15 @@ export const searchEngines: SearchEngineEntry[] = [
     umbrella: 'bing',
     audience: 'Microsoft ecosystem (Edge, Windows search, Outlook), ChatGPT search backend',
     oneLiner:
-      'The second-largest English-language index. Powers Yahoo, DuckDuckGo, Ecosia, AOL — and is the live-web layer behind ChatGPT Search.',
+      'The second-largest English-language index. Powers Yahoo, DuckDuckGo, Ecosia, AOL, and is the live-web layer behind ChatGPT Search.',
     indexSource: 'Microsoft\'s own index, crawled by Bingbot. Updated near-real-time via IndexNow.',
     userAgents: 'Bingbot, adidxbot',
     searchUrl: 'https://www.bing.com/search?q=BotWave+whatsapp+bot',
     optimization: [
       'IndexNow integration: every published / updated URL is POSTed to api.indexnow.org in real time. Bing receives the ping in seconds.',
       'Bing Webmaster Tools account is verified; sitemap.xml is submitted.',
-      'Same canonical / schema posture as Google — Bingbot reads the same JSON-LD that Googlebot does.',
-      'Bing weighs social signals slightly more — every blog post has explicit OG twitter:card / og:type meta tags.',
+      'Same canonical / schema posture as Google, Bingbot reads the same JSON-LD that Googlebot does.',
+      'Bing weighs social signals slightly more, every blog post has explicit OG twitter:card / og:type meta tags.',
     ],
     howToVerify: [
       'Search "site:botwave.online" on bing.com to see every Bing-indexed URL.',
@@ -196,7 +196,7 @@ export const searchEngines: SearchEngineEntry[] = [
     supportsIndexNow: true,
     hasConsole: true,
     consoleUrl: 'https://www.bing.com/webmasters',
-    marketShare: '~3–7% globally, higher in US enterprise',
+    marketShare: '~3-7% globally, higher in US enterprise',
   },
   {
     slug: 'duckduckgo',
@@ -204,29 +204,29 @@ export const searchEngines: SearchEngineEntry[] = [
     umbrella: 'bing',
     audience: 'Privacy-first users who want zero tracking, anonymous results',
     oneLiner:
-      'Privacy-by-default search engine. Uses Bing\'s index as its primary source — Bing IndexNow ping = automatic DDG coverage.',
+      'Privacy-by-default search engine. Uses Bing\'s index as its primary source, Bing IndexNow ping = automatic DDG coverage.',
     indexSource: 'Microsoft\'s index (Bingbot) + DuckDuckBot for some edge crawling.',
     userAgents: 'DuckDuckBot',
     searchUrl: 'https://duckduckgo.com/?q=BotWave',
     optimization: [
-      'Bing IndexNow ping covers DuckDuckGo automatically — no separate submission needed.',
+      'Bing IndexNow ping covers DuckDuckGo automatically, no separate submission needed.',
       'robots.txt explicitly allows DuckDuckBot as a positive signal.',
       'No special tags required; DDG re-ranks Bing\'s results with privacy-first heuristics (zero personalisation, no ad-targeted re-ranking).',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on duckduckgo.com — top results should match Bing.',
+      'Search "BotWave whatsapp bot" on duckduckgo.com, top results should match Bing.',
       'Search "site:botwave.online" on duckduckgo.com to count indexed URLs (mirrors Bing\'s site: operator).',
     ],
     faqs: [
       {
         question: 'Why doesn\'t DuckDuckGo have a webmaster console?',
         answer:
-          'DDG\'s philosophy is anonymity-first — they don\'t want to be tied to per-site accounts. Coverage comes for free via Bing. Optimise for Bing and DDG follows.',
+          'DDG\'s philosophy is anonymity-first, they don\'t want to be tied to per-site accounts. Coverage comes for free via Bing. Optimise for Bing and DDG follows.',
       },
       {
         question: 'Does DuckDuckGo use AI for results?',
         answer:
-          'DDG has rolled out an "Assist" / "AI chat" feature that synthesises answers across multiple LLMs. It pulls citations from the same Bing-backed index — so optimising for Bing also feeds DDG\'s AI features.',
+          'DDG has rolled out an "Assist" / "AI chat" feature that synthesises answers across multiple LLMs. It pulls citations from the same Bing-backed index, so optimising for Bing also feeds DDG\'s AI features.',
       },
     ],
     supportsIndexNow: false, // (covered via Bing)
@@ -239,20 +239,20 @@ export const searchEngines: SearchEngineEntry[] = [
     audience: 'Legacy users, Yahoo Mail readers, older demographics',
     oneLiner: 'Yahoo\'s search results are powered entirely by Bing. Bing coverage = Yahoo coverage.',
     indexSource: 'Microsoft Bing index (since 2010 Bing/Yahoo partnership).',
-    userAgents: 'Slurp (legacy UA — Yahoo no longer crawls independently)',
+    userAgents: 'Slurp (legacy UA, Yahoo no longer crawls independently)',
     searchUrl: 'https://search.yahoo.com/search?p=BotWave',
     optimization: [
-      'No Yahoo-specific work needed — Bing IndexNow ping covers Yahoo.',
+      'No Yahoo-specific work needed, Bing IndexNow ping covers Yahoo.',
       'robots.txt still allows Slurp as a courtesy for any residual Yahoo-branded crawler activity.',
     ],
     howToVerify: [
-      'Search "BotWave" on search.yahoo.com — results should mirror Bing.',
+      'Search "BotWave" on search.yahoo.com, results should mirror Bing.',
     ],
     faqs: [
       {
         question: 'Is Yahoo Search still relevant in 2026?',
         answer:
-          'Yahoo Search is the default for Yahoo Mail users + legacy Verizon / AT&T home-page users in the US. Still ~1–2% of US search traffic. Optimising for Bing covers it for free.',
+          'Yahoo Search is the default for Yahoo Mail users + legacy Verizon / AT&T home-page users in the US. Still ~1-2% of US search traffic. Optimising for Bing covers it for free.',
       },
     ],
     supportsIndexNow: false,
@@ -262,17 +262,17 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'ecosia',
     name: 'Ecosia',
     umbrella: 'bing',
-    audience: 'Climate-conscious users — Ecosia plants trees with ad revenue',
+    audience: 'Climate-conscious users, Ecosia plants trees with ad revenue',
     oneLiner: 'Trees-for-search engine. Uses Bing\'s index. Bing coverage = Ecosia coverage.',
     indexSource: 'Microsoft Bing index.',
     userAgents: 'Bingbot (Ecosia does not crawl independently)',
     searchUrl: 'https://www.ecosia.org/search?q=BotWave',
     optimization: [
-      'No Ecosia-specific work — Bing IndexNow ping covers Ecosia.',
-      'Ecosia\'s ad layer is separate from organic — organic results are pure Bing.',
+      'No Ecosia-specific work, Bing IndexNow ping covers Ecosia.',
+      'Ecosia\'s ad layer is separate from organic, organic results are pure Bing.',
     ],
     howToVerify: [
-      'Search "BotWave" on ecosia.org — results should match Bing\'s organic ranking.',
+      'Search "BotWave" on ecosia.org, results should match Bing\'s organic ranking.',
     ],
     faqs: [
       {
@@ -297,10 +297,10 @@ export const searchEngines: SearchEngineEntry[] = [
     optimization: [
       'IndexNow integration: same /api/indexnow/submit-all endpoint covers Yandex (the IndexNow API automatically forwards to all participating engines).',
       'robots.txt explicitly allows YandexBot.',
-      'Yandex\'s ranking weighs internal-link mesh + freshness — both of which we already optimise for.',
+      'Yandex\'s ranking weighs internal-link mesh + freshness, both of which we already optimise for.',
     ],
     howToVerify: [
-      'Search "BotWave" on yandex.com — site should appear in international results.',
+      'Search "BotWave" on yandex.com, site should appear in international results.',
       'Yandex Webmaster (webmaster.yandex.com) shows crawl + indexed page count.',
     ],
     faqs: [
@@ -319,13 +319,13 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'swisscows',
     name: 'Swisscows',
     umbrella: 'bing',
-    audience: 'Families, schools — fully PG-rated, no profanity, Swiss-data-protection',
+    audience: 'Families, schools, fully PG-rated, no profanity, Swiss-data-protection',
     oneLiner: 'Family-friendly metasearch on top of Bing. Bing IndexNow covers it.',
     indexSource: 'Microsoft Bing index + semantic re-ranking.',
     userAgents: '(uses Bing index)',
     searchUrl: 'https://swisscows.com/web?query=BotWave',
     optimization: [
-      'No Swisscows-specific work — Bing IndexNow ping covers it.',
+      'No Swisscows-specific work, Bing IndexNow ping covers it.',
       'Keep content language clean (we do this for every page anyway).',
     ],
     howToVerify: ['Search "BotWave" on swisscows.com.'],
@@ -333,7 +333,7 @@ export const searchEngines: SearchEngineEntry[] = [
       {
         question: 'Will Swisscows ever filter BotWave for "adult content"?',
         answer:
-          'No — BotWave\'s content is fully PG. Swisscows filters at the engine level, not the indexing level, so a clean site is always allowed.',
+          'No, BotWave\'s content is fully PG. Swisscows filters at the engine level, not the indexing level, so a clean site is always allowed.',
       },
     ],
     supportsIndexNow: false,
@@ -347,19 +347,19 @@ export const searchEngines: SearchEngineEntry[] = [
     umbrella: 'ai',
     audience: 'Researchers, tech professionals, power users',
     oneLiner:
-      'Conversational search with inline source citations. Skims the live web on every query — does not rely on a cached index.',
+      'Conversational search with inline source citations. Skims the live web on every query, does not rely on a cached index.',
     indexSource: 'Live web crawl + multiple LLM-driven ranking signals. Citations are real URLs you can click.',
     userAgents: 'PerplexityBot (training), Perplexity-User (live browsing)',
     searchUrl: 'https://www.perplexity.ai/search?q=BotWave+whatsapp+bot',
     optimization: [
       'robots.txt explicitly allows PerplexityBot + Perplexity-User.',
-      'FAQPage + HowTo JSON-LD on every long-form page — Perplexity\'s answer synthesiser preferentially cites pages with clean Q&A structure.',
+      'FAQPage + HowTo JSON-LD on every long-form page, Perplexity\'s answer synthesiser preferentially cites pages with clean Q&A structure.',
       '/llms.txt + /llms-full.txt provide AI-engine-friendly dumps of our most cite-worthy content.',
       'Content depth: per-slug content (not generic templates) is what gets cited. Perplexity actively penalises near-duplicates.',
     ],
     howToVerify: [
-      'On perplexity.ai, ask "What is BotWave and how does it work?" — BotWave URLs should appear in the citation footnotes.',
-      'Try "best free WhatsApp bot 2026" — BotWave should rank in the cited list.',
+      'On perplexity.ai, ask "What is BotWave and how does it work?", BotWave URLs should appear in the citation footnotes.',
+      'Try "best free WhatsApp bot 2026", BotWave should rank in the cited list.',
     ],
     faqs: [
       {
@@ -390,17 +390,17 @@ export const searchEngines: SearchEngineEntry[] = [
       'robots.txt allows GPTBot, OAI-SearchBot, ChatGPT-User.',
       'Bing IndexNow ping warms ChatGPT Search\'s backend index in real time.',
       '/llms-full.txt provides a pre-summarised dump of our top content (BotWave\'s key facts, features, pricing) that ChatGPT can ingest without re-crawling 20k+ pages.',
-      'OpenGraph metadata is complete on every page — ChatGPT Search uses og:image + og:description for the answer card.',
+      'OpenGraph metadata is complete on every page, ChatGPT Search uses og:image + og:description for the answer card.',
     ],
     howToVerify: [
-      'In ChatGPT (with Search enabled), ask "best free WhatsApp bot for groups in Nigeria" — BotWave should appear in the citations.',
+      'In ChatGPT (with Search enabled), ask "best free WhatsApp bot for groups in Nigeria", BotWave should appear in the citations.',
       'Ask "how to make a WhatsApp bot without coding" and watch the citation footer for botwave.online URLs.',
     ],
     faqs: [
       {
         question: 'Does ChatGPT Search use Google or Bing?',
         answer:
-          'Bing — OpenAI\'s public statements confirm Microsoft Bing is the search-backend partner. Optimising for Bing (which we do via IndexNow) is the most leveraged thing you can do for ChatGPT Search visibility.',
+          'Bing, OpenAI\'s public statements confirm Microsoft Bing is the search-backend partner. Optimising for Bing (which we do via IndexNow) is the most leveraged thing you can do for ChatGPT Search visibility.',
       },
       {
         question: 'What\'s the difference between GPTBot and OAI-SearchBot?',
@@ -423,11 +423,11 @@ export const searchEngines: SearchEngineEntry[] = [
     searchUrl: 'https://search.brave.com/search?q=BotWave',
     optimization: [
       'robots.txt explicitly allows Brave\'s crawler.',
-      'Brave\'s index favours pages that load fast without trackers — BotWave has zero third-party trackers (no GA, no Facebook Pixel).',
+      'Brave\'s index favours pages that load fast without trackers, BotWave has zero third-party trackers (no GA, no Facebook Pixel).',
       'Brave Leo AI ingests structured data (FAQPage + Article schema) the same way Perplexity does.',
     ],
     howToVerify: [
-      'In Brave Browser, click the Leo AI sidebar and ask "what is BotWave" — answers should cite botwave.online.',
+      'In Brave Browser, click the Leo AI sidebar and ask "what is BotWave", answers should cite botwave.online.',
       'Search "BotWave whatsapp bot" on search.brave.com.',
     ],
     faqs: [
@@ -439,7 +439,7 @@ export const searchEngines: SearchEngineEntry[] = [
       {
         question: 'Does Leo AI cite BotWave?',
         answer:
-          'Yes — Leo AI surfaces inline citations from Brave\'s index. Whenever Brave\'s crawler has fetched a BotWave page, Leo can quote and cite it.',
+          'Yes, Leo AI surfaces inline citations from Brave\'s index. Whenever Brave\'s crawler has fetched a BotWave page, Leo can quote and cite it.',
       },
     ],
     supportsIndexNow: false,
@@ -449,7 +449,7 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'you-com',
     name: 'You.com',
     umbrella: 'ai',
-    audience: 'Developers, creators, AI power users — file parsing, multi-agent assistance',
+    audience: 'Developers, creators, AI power users, file parsing, multi-agent assistance',
     oneLiner:
       'AI-first search with customisable apps, code execution, and document parsing. Used heavily by developers.',
     indexSource: 'Hybrid: Bing partnership for general results + YouBot for deeper crawl + LLM synthesis.',
@@ -457,17 +457,17 @@ export const searchEngines: SearchEngineEntry[] = [
     searchUrl: 'https://you.com/search?q=BotWave',
     optimization: [
       'robots.txt allows YouBot.',
-      'Code blocks in our docs use proper <pre><code> markup — You.com surfaces code snippets prominently for developer queries.',
+      'Code blocks in our docs use proper <pre><code> markup, You.com surfaces code snippets prominently for developer queries.',
       '/api/llms-full.txt provides a developer-friendly summary of all bot commands + API endpoints.',
     ],
     howToVerify: [
-      'On you.com, ask "how to use BotWave API to send WhatsApp messages" — code-rich citations should appear.',
+      'On you.com, ask "how to use BotWave API to send WhatsApp messages", code-rich citations should appear.',
     ],
     faqs: [
       {
         question: 'Does You.com differ from ChatGPT Search?',
         answer:
-          'You.com is more customisable — you can install per-domain "apps" that customise how a domain\'s content is surfaced. They also have a richer code-execution sandbox for developer queries.',
+          'You.com is more customisable, you can install per-domain "apps" that customise how a domain\'s content is surfaced. They also have a richer code-execution sandbox for developer queries.',
       },
     ],
     supportsIndexNow: false,
@@ -485,17 +485,17 @@ export const searchEngines: SearchEngineEntry[] = [
     searchUrl: 'https://claude.ai/',
     optimization: [
       'robots.txt allows ClaudeBot, Claude-Web, anthropic-ai.',
-      'Claude weighs structured data — FAQPage + Article + HowTo schema directly improves the quality of cited answers.',
+      'Claude weighs structured data, FAQPage + Article + HowTo schema directly improves the quality of cited answers.',
       'Long-form, depth-heavy pages (1500+ words) are preferred over short marketing pages.',
     ],
     howToVerify: [
-      'Ask Claude (claude.ai) with web-browsing enabled: "Summarise BotWave\'s privacy policy" — Claude should fetch /privacy and quote from it.',
+      'Ask Claude (claude.ai) with web-browsing enabled: "Summarise BotWave\'s privacy policy", Claude should fetch /privacy and quote from it.',
     ],
     faqs: [
       {
         question: 'How is Claude different from ChatGPT for citations?',
         answer:
-          'Claude\'s web-browse tool is less aggressive than ChatGPT Search — it only browses when explicitly asked. When it does, it tends to cite fewer, higher-quality sources rather than 5+ inline citations.',
+          'Claude\'s web-browse tool is less aggressive than ChatGPT Search, it only browses when explicitly asked. When it does, it tends to cite fewer, higher-quality sources rather than 5+ inline citations.',
       },
     ],
     supportsIndexNow: false,
@@ -513,12 +513,12 @@ export const searchEngines: SearchEngineEntry[] = [
     searchUrl: 'https://www.meta.ai/',
     optimization: [
       'robots.txt allows Meta-ExternalAgent + FacebookBot.',
-      'Meta surfaces Facebook + Instagram links for queries — BotWave maintains active socials on both.',
+      'Meta surfaces Facebook + Instagram links for queries, BotWave maintains active socials on both.',
       'OpenGraph meta tags are critical (Meta\'s graph reader is the most-used in the world).',
     ],
     howToVerify: [
-      'In WhatsApp on a 2026-and-later release, type "@Meta AI what is BotWave" in any chat — Meta AI should respond with a summary.',
-      'On meta.ai (web), ask "best WhatsApp bot in Nigeria" — BotWave should appear.',
+      'In WhatsApp on a 2026-and-later release, type "@Meta AI what is BotWave" in any chat, Meta AI should respond with a summary.',
+      'On meta.ai (web), ask "best WhatsApp bot in Nigeria", BotWave should appear.',
     ],
     faqs: [
       {
@@ -534,7 +534,7 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'applebot',
     name: 'Apple Search (Spotlight + Siri)',
     umbrella: 'independent',
-    audience: 'iPhone, iPad, Mac users — Spotlight, Siri Suggestions, Safari smart search',
+    audience: 'iPhone, iPad, Mac users, Spotlight, Siri Suggestions, Safari smart search',
     oneLiner:
       'Apple\'s independent crawler powers Spotlight, Siri Suggestions, and Safari smart search.',
     indexSource: 'Apple\'s independent index (Applebot).',
@@ -542,7 +542,7 @@ export const searchEngines: SearchEngineEntry[] = [
     searchUrl: 'https://duckduckgo.com/?q=BotWave', // (closest user-facing search on iOS)
     optimization: [
       'robots.txt allows Applebot + Applebot-Extended.',
-      'Safari Reader Mode requires clean semantic HTML — BotWave uses <article>, <h1-3>, and proper meta tags.',
+      'Safari Reader Mode requires clean semantic HTML, BotWave uses <article>, <h1-3>, and proper meta tags.',
       'Spotlight prefers pages with rich metadata (title, description, image).',
     ],
     howToVerify: [
@@ -552,7 +552,7 @@ export const searchEngines: SearchEngineEntry[] = [
       {
         question: 'Is there an "Apple Search Console"?',
         answer:
-          'No — Apple has no webmaster console. Coverage is automatic via Applebot; the only signal you control is robots.txt + on-page schema.',
+          'No, Apple has no webmaster console. Coverage is automatic via Applebot; the only signal you control is robots.txt + on-page schema.',
       },
     ],
     supportsIndexNow: false,

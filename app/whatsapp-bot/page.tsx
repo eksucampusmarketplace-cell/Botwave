@@ -33,7 +33,7 @@ const features = [
   { icon: '🛡️', title: 'Anti-Spam', desc: 'Auto-detect and remove spam, floods, and malicious links.' },
   { icon: '👋', title: 'Welcome Bot', desc: 'Custom welcome messages for new group members.' },
   { icon: '💬', title: 'Auto-Reply', desc: 'Set keyword-based auto-replies for when you are busy.' },
-  { icon: '📊', title: 'Polls & Games', desc: 'Trivia, hangman, polls, leaderboard — engage your group.' },
+  { icon: '📊', title: 'Polls & Games', desc: 'Trivia, hangman, polls, leaderboard, engage your group.' },
   { icon: '📅', title: 'Scheduled Messages', desc: 'Schedule messages to be sent at specific times.' },
 ];
 

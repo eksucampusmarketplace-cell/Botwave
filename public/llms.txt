@@ -38,12 +38,12 @@ Sign up free: https://www.botwave.online/signup
 
 ## Pricing
 
-- Free: 300 msgs/mo, 10 AI queries/day, 1 session — no credit card
-- Starter (₦500/mo ≈ $0.60): 5,000 msgs/mo, 200 AI/day, 3 sessions
-- Standard (₦2,000/mo ≈ $2.40): 25,000 msgs/mo, unlimited AI, 10 sessions
-- Boss (₦5,000/mo ≈ $6): unlimited everything
+- Free: 300 msgs/mo, 10 AI queries/day, 1 session, no credit card
+- Lite: 2,000 msgs/mo, 50 AI/day, 1 session (pricing coming soon)
+- Standard: 10,000 msgs/mo, 200 AI/day, 3 sessions (pricing coming soon)
+- Boss: unlimited everything, 5 sessions (pricing coming soon)
 
-All amounts in Naira native; international users charged at live FX via card.
+Paid plans will be billed in Naira (Naira-native); international users charged at live FX via card.
 
 ## Anti-ban approach (why we exist)
 

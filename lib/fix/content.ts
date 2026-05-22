@@ -6,14 +6,14 @@
  * /fix/[slug] template reads from this map.
  *
  * Each entry has unique symptoms, root causes, and resolution steps for the
- * specific error / scenario its slug describes — fixing the "thin content"
+ * specific error / scenario its slug describes, fixing the "thin content"
  * problem that was preventing /fix/* URLs from being indexed.
  */
 
 export interface FixCause {
   /** Short label for the root cause. */
   label: string;
-  /** 1–3 sentence explanation. */
+  /** 1-3 sentence explanation. */
   detail: string;
   /** Optional concrete fix steps. */
   fix?: string[];
@@ -45,7 +45,7 @@ export interface FixContent {
 export const fixContent: Record<string, FixContent> = {
   'whatsapp-bot-disconnected': {
     intro:
-      'A BotWave session showing "Disconnected" in the dashboard usually self-recovers within a minute — but if it stays disconnected for more than a few minutes, one of four root causes is almost always responsible. This page walks through how to diagnose which one and what to do.',
+      'A BotWave session showing "Disconnected" in the dashboard usually self-recovers within a minute, but if it stays disconnected for more than a few minutes, one of four root causes is almost always responsible. This page walks through how to diagnose which one and what to do.',
     symptoms: [
       'Dashboard → Sessions shows a red "Disconnected" badge.',
       '!help in WhatsApp gets no response.',
@@ -61,7 +61,7 @@ export const fixContent: Record<string, FixContent> = {
       {
         label: 'Phone offline / WhatsApp closed for too long',
         detail:
-          'BotWave is a Linked Device — it depends on your phone\'s WhatsApp being awake periodically. If your phone is offline overnight or WhatsApp is force-closed, the linked device disconnects.',
+          'BotWave is a Linked Device, it depends on your phone\'s WhatsApp being awake periodically. If your phone is offline overnight or WhatsApp is force-closed, the linked device disconnects.',
         fix: [
           'Re-open WhatsApp on the phone.',
           'Wait up to 60 seconds for auto-reconnect.',
@@ -77,7 +77,7 @@ export const fixContent: Record<string, FixContent> = {
       {
         label: 'Linked-device cap (4 device limit)',
         detail:
-          'WhatsApp allows 4 linked devices simultaneously. If you pair a 5th, WhatsApp silently kicks the oldest — which can include your BotWave session.',
+          'WhatsApp allows 4 linked devices simultaneously. If you pair a 5th, WhatsApp silently kicks the oldest, which can include your BotWave session.',
         fix: [
           'In WhatsApp Settings → Linked Devices, remove old/unused entries.',
           'Re-pair BotWave.',
@@ -87,7 +87,7 @@ export const fixContent: Record<string, FixContent> = {
         label: 'Server-side maintenance or deploy',
         detail:
           'During a BotWave deploy the session containers briefly restart. Reconnect usually happens automatically within 30s.',
-        fix: ['Wait 1–2 minutes; the session reconnects automatically.'],
+        fix: ['Wait 1-2 minutes; the session reconnects automatically.'],
       },
     ],
     resolutionSteps: [
@@ -107,14 +107,14 @@ export const fixContent: Record<string, FixContent> = {
     relatedHowTo: ['whatsapp-session-recovery', 'create-whatsapp-bot', 'whatsapp-pairing-code'],
     faqs: [
       { question: 'Will my custom commands and group settings be lost?', answer: 'No. Session-level config (commands, group rules, warnings, analytics) is stored against your BotWave account, not against the WhatsApp session credentials. Re-pairing keeps everything.' },
-      { question: 'Why does the session disconnect every night?', answer: 'Phone going offline overnight is the most common cause. If this is consistent, leave the phone charging and WhatsApp open — or upgrade to a sessions-on-server plan (Boss) where the dependency on your phone is reduced.' },
+      { question: 'Why does the session disconnect every night?', answer: 'Phone going offline overnight is the most common cause. If this is consistent, leave the phone charging and WhatsApp open, or upgrade to a sessions-on-server plan (Boss) where the dependency on your phone is reduced.' },
       { question: 'How long can a session stay disconnected before something bad happens?', answer: 'Up to ~14 days. Beyond that, WhatsApp\'s Linked Device entry expires server-side and you must re-pair.' },
     ],
   },
 
   'whatsapp-bot-banned': {
     intro:
-      'Seeing "Banned" status on a BotWave session means WhatsApp has blocked the underlying account at the server level — not a BotWave problem to fix, but there are concrete things to do next and very specific habits to avoid on the replacement session.',
+      'Seeing "Banned" status on a BotWave session means WhatsApp has blocked the underlying account at the server level, not a BotWave problem to fix, but there are concrete things to do next and very specific habits to avoid on the replacement session.',
     symptoms: [
       'Dashboard shows "Banned" status with timestamp.',
       'WhatsApp on the phone shows "Your phone number is banned from using WhatsApp" or similar.',
@@ -122,7 +122,7 @@ export const fixContent: Record<string, FixContent> = {
       'Trying to log into WhatsApp Web fails immediately.',
     ],
     quickFix: [
-      'Do NOT pair the same number from a new device — WhatsApp will recognise the ban.',
+      'Do NOT pair the same number from a new device, WhatsApp will recognise the ban.',
       'Submit a ban appeal via WhatsApp → "Help" or by emailing support@whatsapp.com from the email tied to the account.',
       'Switch BotWave to a different number for now.',
     ],
@@ -139,10 +139,10 @@ export const fixContent: Record<string, FixContent> = {
       { title: 'Switch BotWave to a different number', body: 'If the appeal will take days/weeks, pair a different number to keep operations running.' },
       { title: 'Tighten anti-ban settings on the new session', body: 'Default warmup ON, daily cap at 200, opt-in-only for bulk messages, no AI auto-reply on cold numbers.' },
     ],
-    expectedResult: 'Either WhatsApp un-bans the original number (sometimes happens within 24–72h for legitimate cases) or you continue on a fresh number with safer practices.',
+    expectedResult: 'Either WhatsApp un-bans the original number (sometimes happens within 24-72h for legitimate cases) or you continue on a fresh number with safer practices.',
     prevention: [
       'Never disable session warmup on a new number.',
-      'Avoid sending unsolicited messages — broadcast only to opted-in audiences.',
+      'Avoid sending unsolicited messages, broadcast only to opted-in audiences.',
       'Keep daily volume below 200 messages on the free tier.',
       'Use randomised reply delays (default ON).',
       'Don\'t enable AI auto-reply on a brand-new number.',
@@ -151,7 +151,7 @@ export const fixContent: Record<string, FixContent> = {
     relatedHowTo: ['whatsapp-anti-ban-tips', 'whatsapp-anti-ban-setup', 'create-whatsapp-bot'],
     faqs: [
       { question: 'Will BotWave refund me if my number gets banned?', answer: 'Bans are imposed by WhatsApp and outside BotWave\'s control. We do not refund for bans, but we will help you re-set up on a new number quickly. The Terms of Service has the formal policy.' },
-      { question: 'How long do bans last?', answer: 'Temporary bans usually 24h–7 days; permanent bans never (unless successfully appealed).' },
+      { question: 'How long do bans last?', answer: 'Temporary bans usually 24h-7 days; permanent bans never (unless successfully appealed).' },
       { question: 'Can I use a virtual number?', answer: 'WhatsApp can detect and ban many virtual-number ranges (Google Voice, common VoIP providers). Use a real SIM where possible.' },
     ],
   },
@@ -160,8 +160,8 @@ export const fixContent: Record<string, FixContent> = {
     intro: 'The pairing QR refuses to be recognised by WhatsApp. Almost always one of: code already expired, camera focus issue, WhatsApp Web logged out everywhere recently, or a screen-zoom problem distorting the QR. Walk through this in order.',
     symptoms: ['Phone camera shows the QR but does not register it.', 'Phone shows "QR code expired" within seconds.', 'WhatsApp says "Cannot scan code" or hangs after scan.'],
     quickFix: [
-      'In BotWave, click "Regenerate QR" — old codes expire after 20 seconds.',
-      'Hold the phone steady 15–25 cm from the screen.',
+      'In BotWave, click "Regenerate QR", old codes expire after 20 seconds.',
+      'Hold the phone steady 15-25 cm from the screen.',
       'If using a dual monitor, move the QR window to your primary display.',
     ],
     causes: [
@@ -178,7 +178,7 @@ export const fixContent: Record<string, FixContent> = {
       { title: 'If repeated failure, switch to pairing code', body: 'Click "Pair with phone number instead" in BotWave.' },
     ],
     expectedResult: 'Phone vibrates and connects within 5 seconds; BotWave flips to "Connected".',
-    prevention: ['Use pairing-code mode by default — no camera required.'],
+    prevention: ['Use pairing-code mode by default, no camera required.'],
     relatedFix: ['whatsapp-pairing-code-expired'],
     relatedHowTo: ['connect-whatsapp-bot-qr', 'whatsapp-pairing-code', 'create-whatsapp-bot'],
     faqs: [
@@ -190,7 +190,7 @@ export const fixContent: Record<string, FixContent> = {
     intro: 'Auto-reply is enabled in the dashboard but the bot is not responding. Five common reasons, in rough frequency order.',
     symptoms: ['Sent a test message; no reply.', 'Auto-reply log in dashboard shows no recent activity.', '!afk doesn\'t echo back a confirmation.'],
     quickFix: [
-      'Send !back then !afk again — fresh state often clears stuck flags.',
+      'Send !back then !afk again, fresh state often clears stuck flags.',
       'Check that the session is "Connected", not "Disconnected".',
       'Make sure you are testing from a different account/chat (the bot ignores its own messages).',
     ],
@@ -208,7 +208,7 @@ export const fixContent: Record<string, FixContent> = {
       { title: 'Test from a different account', body: 'Self-tests don\'t trigger AFK.' },
       { title: 'Check the auto-reply log', body: 'Dashboard → Logs → Auto-reply. Find your test message; the log shows why a reply was/wasn\'t sent.' },
     ],
-    expectedResult: 'Test message gets the configured reply within 1–3s.',
+    expectedResult: 'Test message gets the configured reply within 1-3s.',
     relatedFix: ['whatsapp-ai-not-responding', 'whatsapp-bot-not-responding', 'whatsapp-bot-not-reading-messages'],
     relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-auto-reply', 'whatsapp-auto-responses'],
     faqs: [
@@ -217,31 +217,31 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-slow-response': {
-    intro: 'Replies that take 10s+ when they used to take 1–2s. The bot is fine; somewhere between the bot and WhatsApp\'s servers is causing the delay.',
-    symptoms: ['Replies arrive but slowly (5–30s).', 'Other commands fast, but !ai always slow.', 'Slow only in one specific group.'],
-    quickFix: ['Check Dashboard → Status — see if any subsystem is degraded.', 'Test !sticker (no LLM) vs !ai (LLM) to isolate.'],
+    intro: 'Replies that take 10s+ when they used to take 1-2s. The bot is fine; somewhere between the bot and WhatsApp\'s servers is causing the delay.',
+    symptoms: ['Replies arrive but slowly (5-30s).', 'Other commands fast, but !ai always slow.', 'Slow only in one specific group.'],
+    quickFix: ['Check Dashboard → Status, see if any subsystem is degraded.', 'Test !sticker (no LLM) vs !ai (LLM) to isolate.'],
     causes: [
       { label: 'AI provider rate limit', detail: 'If many users on the shared pool are calling !ai, individual requests get queued.', fix: ['Wait, or upgrade to BYOK to use your own quota.'] },
-      { label: 'Anti-ban randomised delay (intentional)', detail: 'Default 1.5–4.5s delay on each reply to simulate human typing.', fix: ['This is by design and important for ban prevention. Do not disable unless on Boss plan.'] },
-      { label: 'WhatsApp server slowness in your region', detail: 'Periodic regional slowdowns affect all WhatsApp-based services.', fix: ['Check WhatsApp itself — if regular WhatsApp messages are slow, it is upstream.'] },
+      { label: 'Anti-ban randomised delay (intentional)', detail: 'Default 1.5-4.5s delay on each reply to simulate human typing.', fix: ['This is by design and important for ban prevention. Do not disable unless on Boss plan.'] },
+      { label: 'WhatsApp server slowness in your region', detail: 'Periodic regional slowdowns affect all WhatsApp-based services.', fix: ['Check WhatsApp itself, if regular WhatsApp messages are slow, it is upstream.'] },
       { label: 'Bot container under high load', detail: 'Free-tier containers shared across many users can saturate occasionally.', fix: ['Upgrade for dedicated containers.'] },
     ],
     resolutionSteps: [
       { title: 'Run !ping in the chat', body: 'Returns the bot\'s latency to WhatsApp servers.', code: '!ping' },
       { title: 'Compare across commands', body: 'If !sticker is fast and !ai is slow, the issue is AI not the bot.' },
-      { title: 'Check anti-ban delay setting', body: 'Dashboard → Anti-ban → Reply delay. Default 1.5–4.5s.' },
+      { title: 'Check anti-ban delay setting', body: 'Dashboard → Anti-ban → Reply delay. Default 1.5-4.5s.' },
       { title: 'If only one group is slow, check group size', body: 'Very large groups (>500 members) have inherent processing overhead.' },
     ],
     expectedResult: 'Identify the source of the slowness; mitigate where possible.',
     relatedFix: ['whatsapp-bot-slow', 'whatsapp-ai-not-responding'],
     relatedHowTo: ['whatsapp-anti-ban-setup', 'api-key-setup'],
     faqs: [
-      { question: 'Why does BotWave intentionally delay replies?', answer: 'Bot-fast replies are a top WhatsApp ban signal. The 1.5–4.5s delay simulates human typing speed.' },
+      { question: 'Why does BotWave intentionally delay replies?', answer: 'Bot-fast replies are a top WhatsApp ban signal. The 1.5-4.5s delay simulates human typing speed.' },
     ],
   },
 
   'whatsapp-bot-not-reading-messages': {
-    intro: 'The bot is connected but seems oblivious — does not react to commands, does not delete spam. Almost always a permissions / privacy / scope issue.',
+    intro: 'The bot is connected but seems oblivious, does not react to commands, does not delete spam. Almost always a permissions / privacy / scope issue.',
     symptoms: ['!help in group → no response.', '!help in DM → works.', 'Other group members get replies, you do not.'],
     quickFix: [
       'Ensure the bot is added to the group, not just a contact.',
@@ -264,7 +264,7 @@ export const fixContent: Record<string, FixContent> = {
     relatedFix: ['telegram-bot-not-responding', 'whatsapp-bot-not-responding', 'whatsapp-group-bot-not-admin'],
     relatedHowTo: ['whatsapp-group-bot', 'telegram-bot-group', 'whatsapp-bot-permissions'],
     faqs: [
-      { question: 'Telegram privacy mode — why is it on by default?', answer: 'Telegram\'s default is to protect group privacy from bots that don\'t need to see all messages. Most bots that moderate or analyse groups need it disabled.' },
+      { question: 'Telegram privacy mode, why is it on by default?', answer: 'Telegram\'s default is to protect group privacy from bots that don\'t need to see all messages. Most bots that moderate or analyse groups need it disabled.' },
     ],
   },
 
@@ -284,7 +284,7 @@ export const fixContent: Record<string, FixContent> = {
       { title: 'For animated: trim to ≤6s before sending', body: 'Use any video editor.' },
       { title: 'Try !sticker --square as a fallback', body: 'Simpler encoding path.' },
     ],
-    expectedResult: 'Sticker arrives within 1–2s.',
+    expectedResult: 'Sticker arrives within 1-2s.',
     relatedFix: ['whatsapp-sticker-not-working', 'whatsapp-media-not-sending'],
     relatedHowTo: ['whatsapp-sticker-maker', 'create-whatsapp-stickers-bot'],
     faqs: [
@@ -312,7 +312,7 @@ export const fixContent: Record<string, FixContent> = {
     relatedFix: ['whatsapp-bot-not-responding', 'telegram-bot-no-permissions'],
     relatedHowTo: ['telegram-bot-setup', 'telegram-bot-group'],
     faqs: [
-      { question: 'Token rotated — what now?', answer: 'Paste new token in Dashboard → Sessions → Edit.' },
+      { question: 'Token rotated, what now?', answer: 'Paste new token in Dashboard → Sessions → Edit.' },
     ],
   },
 
@@ -352,7 +352,7 @@ export const fixContent: Record<string, FixContent> = {
       { label: 'Source platform outage', detail: 'TikTok occasionally rate-limits BotWave\'s server region.', fix: ['Wait and retry.'] },
     ],
     resolutionSteps: [
-      { title: 'Test with a known-working URL', body: 'Try a popular YouTube short — eliminates URL-specific issues.' },
+      { title: 'Test with a known-working URL', body: 'Try a popular YouTube short, eliminates URL-specific issues.' },
       { title: 'Try --audio', body: 'Audio path is more forgiving than video.' },
       { title: 'Wait an hour and retry', body: 'Many issues self-heal as upstream platforms rotate.' },
       { title: 'If persistent, message support', body: 'support@botwave.online with the failing URL.' },
@@ -361,14 +361,14 @@ export const fixContent: Record<string, FixContent> = {
     relatedFix: ['whatsapp-download-failed', 'whatsapp-media-not-sending'],
     relatedHowTo: ['download-tiktok-whatsapp', 'download-youtube-whatsapp', 'whatsapp-music-download'],
     faqs: [
-      { question: 'Does BotWave cache downloaded videos?', answer: 'No — streamed through and discarded.' },
+      { question: 'Does BotWave cache downloaded videos?', answer: 'No, streamed through and discarded.' },
     ],
   },
 
   'whatsapp-bot-not-joining-group': {
     intro: 'You added the bot contact but it does not appear in the group. Almost always a contact-list or invite-link issue.',
     symptoms: ['Add Participant search does not find the bot.', 'Bot is added but immediately leaves.', 'Add fails with "Could not add" error.'],
-    quickFix: ['Save the bot number as a contact first.', 'Verify the session is Connected before adding.', 'Check group privacy settings — invite-only groups must invite, not add.'],
+    quickFix: ['Save the bot number as a contact first.', 'Verify the session is Connected before adding.', 'Check group privacy settings, invite-only groups must invite, not add.'],
     causes: [
       { label: 'Bot number not in contacts', detail: 'WhatsApp can only "Add Participant" from your contacts.', fix: ['Save the number as a contact first.'] },
       { label: 'Group set to invite-only', detail: 'Some groups require invite links instead of direct add.', fix: ['Use the group invite link.'] },
@@ -436,8 +436,8 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-slow': {
-    intro: 'Generic slowness — see whatsapp-bot-slow-response for a more detailed breakdown.',
-    symptoms: ['Replies arrive in 10s+ when they used to be 1–2s.'],
+    intro: 'Generic slowness, see whatsapp-bot-slow-response for a more detailed breakdown.',
+    symptoms: ['Replies arrive in 10s+ when they used to be 1-2s.'],
     quickFix: ['!ping to measure latency.', 'Check Dashboard → Status.'],
     causes: [{ label: 'See whatsapp-bot-slow-response', detail: 'Same causes, this is a duplicate slug for SEO.', fix: ['See related.'] }],
     resolutionSteps: [{ title: 'See whatsapp-bot-slow-response', body: 'Detailed breakdown.' }],
@@ -491,7 +491,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-401-error': {
-    intro: '401 = unauthorised — your stored session credentials no longer authenticate against WhatsApp. Always solvable by re-pairing.',
+    intro: '401 = unauthorised, your stored session credentials no longer authenticate against WhatsApp. Always solvable by re-pairing.',
     symptoms: ['Dashboard log shows "401 Unauthorized".', 'Bot disconnects right after.'],
     quickFix: ['Re-pair with pairing-code flow.'],
     causes: [
@@ -508,7 +508,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-428-error': {
-    intro: '428 = precondition required — Baileys couldn\'t complete a handshake step, usually a connection/network blip. Almost always self-recovers within a minute.',
+    intro: '428 = precondition required, Baileys couldn\'t complete a handshake step, usually a connection/network blip. Almost always self-recovers within a minute.',
     symptoms: ['Single 428 entry then back to normal.', 'Repeated 428s under network instability.'],
     quickFix: ['Wait 60s for auto-reconnect.'],
     causes: [
@@ -526,7 +526,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-515-error': {
-    intro: '515 = WhatsApp expected a fresh stream after auth — Baileys handles this automatically by re-establishing.',
+    intro: '515 = WhatsApp expected a fresh stream after auth, Baileys handles this automatically by re-establishing.',
     symptoms: ['515 in log.', 'Brief disconnect then reconnect.'],
     quickFix: ['Wait; Baileys auto-recovers.'],
     causes: [{ label: 'Normal post-auth handshake quirk', detail: 'Baileys library handles this.', fix: ['Self-resolves.'] }],
@@ -564,7 +564,7 @@ export const fixContent: Record<string, FixContent> = {
     expectedResult: 'BotWave reclaims a slot and reconnects.',
     relatedFix: ['whatsapp-multi-device-issue', 'whatsapp-bot-disconnected'],
     relatedHowTo: ['whatsapp-pairing-code', 'create-whatsapp-bot'],
-    faqs: [{ question: 'Will WhatsApp tell me which device was kicked?', answer: 'No — silent. Use the dashboard\'s connection log.' }],
+    faqs: [{ question: 'Will WhatsApp tell me which device was kicked?', answer: 'No, silent. Use the dashboard\'s connection log.' }],
   },
 
   'whatsapp-multi-device-issue': {
@@ -576,11 +576,11 @@ export const fixContent: Record<string, FixContent> = {
     expectedResult: 'BotWave stable.',
     relatedFix: ['whatsapp-session-conflict', 'whatsapp-bot-disconnected'],
     relatedHowTo: ['whatsapp-session-recovery'],
-    faqs: [{ question: 'Can BotWave use 2 slots?', answer: 'No — one Linked Device entry per session.' }],
+    faqs: [{ question: 'Can BotWave use 2 slots?', answer: 'No, one Linked Device entry per session.' }],
   },
 
   'whatsapp-group-bot-not-admin': {
-    intro: 'Bot is in the group but cannot delete spam / kick members / change settings — almost always because it is not a group admin.',
+    intro: 'Bot is in the group but cannot delete spam / kick members / change settings, almost always because it is not a group admin.',
     symptoms: ['Anti-spam warns but doesn\'t delete.', '!kick says "not authorised".', 'Welcome works but moderation doesn\'t.'],
     quickFix: ['Promote bot to admin: Group info → tap bot → Make group admin.'],
     causes: [{ label: 'Not admin', detail: 'WhatsApp permission model.', fix: ['Promote.'] }],
@@ -647,7 +647,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'telegram-bot-kicked': {
-    intro: 'Telegram bot was in the group, now isn\'t — usually an admin kicked it or it was demoted then removed.',
+    intro: 'Telegram bot was in the group, now isn\'t, usually an admin kicked it or it was demoted then removed.',
     symptoms: ['Bot no longer in member list.', 'Dashboard logs show "kicked from group".'],
     quickFix: ['Re-add the bot. If the kick was you, undo. If it was another admin, ask why.'],
     causes: [
@@ -658,7 +658,7 @@ export const fixContent: Record<string, FixContent> = {
     expectedResult: 'Bot back, config retained.',
     relatedFix: ['telegram-bot-no-permissions', 'telegram-bot-not-responding'],
     relatedHowTo: ['telegram-bot-group'],
-    faqs: [{ question: 'Did I lose group config?', answer: 'No — config is by Telegram chat ID + BotWave account; re-add restores everything.' }],
+    faqs: [{ question: 'Did I lose group config?', answer: 'No, config is by Telegram chat ID + BotWave account; re-add restores everything.' }],
   },
 
   'telegram-bot-no-permissions': {
@@ -677,8 +677,8 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'telegram-bot-flood-wait': {
-    intro: 'Telegram throttles bots that send too many messages in a short window — returns FLOOD_WAIT_X errors. BotWave handles these automatically by backing off.',
-    symptoms: ['Dashboard log shows FLOOD_WAIT entries.', 'Bot pauses 30s–10min then resumes.'],
+    intro: 'Telegram throttles bots that send too many messages in a short window, returns FLOOD_WAIT_X errors. BotWave handles these automatically by backing off.',
+    symptoms: ['Dashboard log shows FLOOD_WAIT entries.', 'Bot pauses 30s-10min then resumes.'],
     quickFix: ['No action needed; auto-handled. If frequent, slow down command bursts.'],
     causes: [{ label: 'Burst messaging', detail: 'Telegram\'s anti-abuse.', fix: ['Slow burst rate.'] }],
     resolutionSteps: [{ title: 'Wait it out', body: 'BotWave resumes after the wait period.' }],
@@ -686,7 +686,7 @@ export const fixContent: Record<string, FixContent> = {
     prevention: ['Cap commands like /tagall to once per hour.', 'For broadcasts, use the staggered Broadcast tool, not raw sends.'],
     relatedFix: ['telegram-bot-not-responding'],
     relatedHowTo: ['telegram-moderation'],
-    faqs: [{ question: 'Can I disable rate-limiting?', answer: 'No — Telegram enforces server-side.' }],
+    faqs: [{ question: 'Can I disable rate-limiting?', answer: 'No, Telegram enforces server-side.' }],
   },
 
   'telegram-userbot-2fa-error': {
@@ -705,7 +705,7 @@ export const fixContent: Record<string, FixContent> = {
     expectedResult: 'Authentication completes.',
     relatedFix: ['telegram-userbot-session-expired', 'telegram-userbot-disconnected'],
     relatedHowTo: ['setup-telegram-userbot', 'telegram-userbot-setup'],
-    faqs: [{ question: 'Will I lose chats if I reset 2FA?', answer: 'No — 2FA reset doesn\'t affect message data.' }],
+    faqs: [{ question: 'Will I lose chats if I reset 2FA?', answer: 'No, 2FA reset doesn\'t affect message data.' }],
   },
 
   'telegram-userbot-disconnected': {
@@ -775,7 +775,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'whatsapp-bot-logged-out': {
-    intro: '"Bot logged out" status means the WhatsApp Linked Device entry for the session has been removed — either by you or by WhatsApp itself.',
+    intro: '"Bot logged out" status means the WhatsApp Linked Device entry for the session has been removed, either by you or by WhatsApp itself.',
     symptoms: ['Status "Logged out".', 'WhatsApp → Linked Devices no longer shows BotWave.'],
     quickFix: ['Re-pair.'],
     causes: [

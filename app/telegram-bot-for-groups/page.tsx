@@ -4,8 +4,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Best Telegram Bot for Groups (2026) — Free Moderation & Anti-Spam | BotWave',
-  description: 'Free Telegram group management bot with anti-spam, captcha verification, welcome messages, night mode, member boosting, and AI chat. Set up in under 2 minutes — no coding needed.',
+  title: 'Best Telegram Bot for Groups (2026), Free Moderation & Anti-Spam | BotWave',
+  description: 'Free Telegram group management bot with anti-spam, captcha verification, welcome messages, night mode, member boosting, and AI chat. Set up in under 2 minutes, no coding needed.',
   keywords: [
     'telegram bot for groups',
     'telegram group management bot',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     'telegram admin bot',
   ],
   openGraph: {
-    title: 'Best Telegram Bot for Groups (2026) — Free Moderation & Anti-Spam | BotWave',
+    title: 'Best Telegram Bot for Groups (2026), Free Moderation & Anti-Spam | BotWave',
     description: 'Free Telegram group bot: anti-spam, captcha, welcome messages, night mode, member boosting, AI chat.',
     url: 'https://www.botwave.online/telegram-bot-for-groups',
     type: 'website',
@@ -39,7 +39,7 @@ const moderationFeatures = [
 const engagementFeatures = [
   { icon: '👋', title: 'Welcome Messages', desc: 'Greet new members with custom messages. Include group rules, links, and personalized greetings with {name} variables.' },
   { icon: '📢', title: 'Force Channel Join', desc: 'Require members to join your channel before they can chat. Great for cross-promoting channels and groups.' },
-  { icon: '🌙', title: 'Night Mode', desc: 'Lock the group during specific hours. Only admins can post during quiet hours — perfect for study groups or work channels.' },
+  { icon: '🌙', title: 'Night Mode', desc: 'Lock the group during specific hours. Only admins can post during quiet hours, perfect for study groups or work channels.' },
   { icon: '📈', title: 'Member Boosting', desc: 'Run automated member growth campaigns with referral tracking and reward systems.' },
 ];
 
@@ -47,7 +47,7 @@ const advancedFeatures = [
   { icon: '🤖', title: 'AI Chat (Gemini)', desc: 'Members tag the bot and get intelligent AI-powered answers. Powered by Google Gemini 2.0 Flash.' },
   { icon: '📅', title: 'Scheduled Messages', desc: 'Schedule one-time or recurring messages to your groups. Great for daily reminders, announcements, or content drips.' },
   { icon: '📊', title: 'Group Analytics', desc: 'Track member activity, message volume, and growth trends from a web dashboard.' },
-  { icon: '⚙️', title: 'Web Dashboard', desc: 'Configure everything from your browser. No Telegram commands needed — just toggle switches and fill forms.' },
+  { icon: '⚙️', title: 'Web Dashboard', desc: 'Configure everything from your browser. No Telegram commands needed, just toggle switches and fill forms.' },
 ];
 
 const steps = [
@@ -98,7 +98,7 @@ export default function TelegramBotForGroupsPage() {
             Moderation &amp; Security
           </h2>
           <p className="text-center text-[var(--text-secondary)] mb-12">
-            Protect your group from spam, raids, and unwanted members — automatically.
+            Protect your group from spam, raids, and unwanted members, automatically.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {moderationFeatures.map(f => (
@@ -182,7 +182,7 @@ export default function TelegramBotForGroupsPage() {
           </h2>
           <div className="space-y-6">
             {[
-              { q: 'Is the Telegram bot really free?', a: 'Yes. The core features — anti-spam, captcha, welcome messages, and moderation — are completely free. Premium plans with advanced analytics and priority support are coming soon.' },
+              { q: 'Is the Telegram bot really free?', a: 'Yes. The core features, anti-spam, captcha, welcome messages, and moderation, are completely free. Premium plans with advanced analytics and priority support are coming soon.' },
               { q: 'Do I need to know how to code?', a: 'No. Everything is configured through a web dashboard. Just create a bot token from @BotFather, paste it into BotWave, and add the bot to your group.' },
               { q: 'Can I use the bot in multiple groups?', a: 'Yes. One bot token can be added to multiple Telegram groups. All groups are managed from the same dashboard.' },
               { q: 'How does anti-spam work?', a: 'The bot detects spam patterns including rapid message flooding, suspicious links, forwarded messages, and known spam phrases. You can configure the sensitivity and choose between mute, delete, or ban actions.' },

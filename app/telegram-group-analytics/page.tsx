@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Group Analytics (2026) — Track Members, Messages & Growth | BotWave',
+  title: 'Telegram Group Analytics (2026), Track Members, Messages & Growth | BotWave',
   description: 'Free Telegram group analytics dashboard. Track member growth, message activity, active users, command usage, and engagement trends. Visualize your community health in real time.',
   keywords: [
     'telegram group analytics',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'telegram group metrics',
   ],
   openGraph: {
-    title: 'Telegram Group Analytics (2026) — Track Members, Messages & Growth | BotWave',
+    title: 'Telegram Group Analytics (2026), Track Members, Messages & Growth | BotWave',
     description: 'Free Telegram analytics: member growth, message activity, active users, engagement trends.',
     url: 'https://www.botwave.online/telegram-group-analytics',
     type: 'website',
@@ -39,7 +39,7 @@ const metrics = [
 
 const dashboardFeatures = [
   { title: 'Real-Time Dashboard', desc: 'All metrics update in real time. No need to manually export data or wait for reports.' },
-  { title: 'Historical Trends', desc: 'View data over custom date ranges — last 7 days, 30 days, or all time. Spot long-term patterns.' },
+  { title: 'Historical Trends', desc: 'View data over custom date ranges, last 7 days, 30 days, or all time. Spot long-term patterns.' },
   { title: 'Per-Group Breakdown', desc: 'If you manage multiple groups, see analytics for each group separately or combined.' },
   { title: 'Leaderboard', desc: 'Built-in leaderboard ranks members by messages, commands used, and overall activity score.' },
   { title: 'Export Data', desc: 'Export analytics data as CSV or JSON for external analysis or reporting.' },

@@ -43,20 +43,20 @@ interface Section {
 const sections: Section[] = [
   {
     id: 'overview',
-    title: 'TL;DR — what BotWave does and does not do with your data',
+    title: 'TL;DR, what BotWave does and does not do with your data',
     paragraphs: [
       'BotWave is a no-code platform for running WhatsApp and Telegram bots. We do not store message content, we do not read your private DMs, we do not sell your data to advertisers, and we do not embed third-party trackers or ad networks. Your WhatsApp session runs from your own device IP via the Baileys library, which significantly reduces ban risk.',
-      'We only store the minimum data needed to keep your bot connected and your account secure: your email, hashed session credentials, plan/billing info, and aggregate usage counts (e.g. messages sent this month). Everything else — including the content of group messages your bot sees — is processed in memory and discarded after the command is handled.',
+      'We only store the minimum data needed to keep your bot connected and your account secure: your email, hashed session credentials, plan/billing info, and aggregate usage counts (e.g. messages sent this month). Everything else, including the content of group messages your bot sees, is processed in memory and discarded after the command is handled.',
     ],
   },
   {
     id: 'what-botwave-can-access',
     title: 'What BotWave can access',
     items: [
-      'Messages in groups where the bot is active — needed to detect commands and apply moderation rules you configured.',
-      'Your WhatsApp / Telegram session token — needed to maintain the connection from your device.',
-      'Your email address and authentication info — for login, password reset, and billing.',
-      'Your dashboard configuration — bot settings, welcome messages, anti-spam rules, custom commands.',
+      'Messages in groups where the bot is active, needed to detect commands and apply moderation rules you configured.',
+      'Your WhatsApp / Telegram session token, needed to maintain the connection from your device.',
+      'Your email address and authentication info, for login, password reset, and billing.',
+      'Your dashboard configuration, bot settings, welcome messages, anti-spam rules, custom commands.',
     ],
   },
   {
@@ -82,7 +82,7 @@ const sections: Section[] = [
       '2. The bot checks whether it starts with a configured command prefix (! for WhatsApp, / for Telegram bots, . for userbots).',
       '3. If it is not a command, the bot ignores it. No content is logged, stored, or analysed.',
       '4. If it is a command, the bot executes it (e.g. converts an image to a sticker) and replies.',
-      '5. After replying, the message data is dropped from memory. Only an aggregate counter — "you used 1 command" — is incremented in Supabase.',
+      '5. After replying, the message data is dropped from memory. Only an aggregate counter, "you used 1 command", is incremented in Supabase.',
     ],
   },
   {
@@ -105,10 +105,10 @@ const sections: Section[] = [
     id: 'session-security',
     title: 'Session security',
     items: [
-      'Session credentials are stored in Supabase with Postgres row-level security (RLS) — only your authenticated account can read your session row.',
+      'Session credentials are stored in Supabase with Postgres row-level security (RLS), only your authenticated account can read your session row.',
       'All API and websocket traffic uses TLS encryption.',
       'No plain-text secrets are stored; tokens are encrypted at rest using AES-256 with keys rotated per deployment.',
-      'Your QR / pairing session runs from your own device IP — not from BotWave servers — which reduces both ban risk and exposure.',
+      'Your QR / pairing session runs from your own device IP, not from BotWave servers, which reduces both ban risk and exposure.',
       'Bot containers are isolated per platform (WhatsApp vs Telegram) so a compromise of one cannot affect the other.',
       'Admin access to the platform is protected by 2FA and IP allowlists.',
     ],
@@ -118,7 +118,7 @@ const sections: Section[] = [
     title: 'What we store about you',
     items: [
       'Your email address (used for login, password reset, and account notices).',
-      'A hashed password (bcrypt) — we never store plaintext passwords.',
+      'A hashed password (bcrypt), we never store plaintext passwords.',
       'Your plan and billing info (handled by our payment processor; we only store the subscription state and last-4 of the payment method).',
       'Session connection status (active / disconnected / banned) and the timestamp of the last successful connection.',
       'Bot configuration (welcome messages, anti-spam thresholds, custom commands, command toggles).',
@@ -144,10 +144,10 @@ const sections: Section[] = [
     intro:
       'We use only the cookies strictly required to run the service. There are no advertising cookies, no third-party trackers, and no cross-site tracking pixels.',
     items: [
-      'Auth cookies (sb-*-auth-token, set by Supabase) — keep you logged in. Strictly necessary.',
-      'Theme preference (botwave-theme) — remembers dark/light mode. First-party only.',
-      'Language preference (botwave-lang) — remembers your selected language. First-party only.',
-      'CSRF tokens — short-lived, used to prevent cross-site request forgery on dashboard actions.',
+      'Auth cookies (sb-*-auth-token, set by Supabase), keep you logged in. Strictly necessary.',
+      'Theme preference (botwave-theme), remembers dark/light mode. First-party only.',
+      'Language preference (botwave-lang), remembers your selected language. First-party only.',
+      'CSRF tokens, short-lived, used to prevent cross-site request forgery on dashboard actions.',
       'No Google Analytics, no Facebook Pixel, no Hotjar, no third-party advertising network.',
     ],
   },
@@ -157,20 +157,20 @@ const sections: Section[] = [
     intro:
       'BotWave is built on a small set of infrastructure providers. Each has its own privacy policy; we only share with them the data strictly required for them to do their job.',
     items: [
-      'Supabase (database + auth) — stores your account, session credentials, and bot config.',
-      'Groq (default AI provider for !ai) — receives AI prompts only when you explicitly invoke an AI command.',
-      'Google Gemini (fallback AI provider, opt-in) — same as above, only on explicit !ai invocation.',
-      'Resend / Nodemailer (transactional email) — sends password resets and billing notices to your email.',
-      'Cloudflare (CDN, DDoS protection) — sits in front of www.botwave.online; sees request headers but no payloads.',
-      'Contabo (VPS hosting) — physical infrastructure for the application servers and bot containers.',
-      'GitHub Container Registry (Docker image hosting) — we publish build images here for deployment.',
+      'Supabase (database + auth), stores your account, session credentials, and bot config.',
+      'Groq (default AI provider for !ai), receives AI prompts only when you explicitly invoke an AI command.',
+      'Google Gemini (fallback AI provider, opt-in), same as above, only on explicit !ai invocation.',
+      'Resend / Nodemailer (transactional email), sends password resets and billing notices to your email.',
+      'Cloudflare (CDN, DDoS protection), sits in front of www.botwave.online; sees request headers but no payloads.',
+      'Contabo (VPS hosting), physical infrastructure for the application servers and bot containers.',
+      'GitHub Container Registry (Docker image hosting), we publish build images here for deployment.',
     ],
   },
   {
     id: 'ai-providers',
     title: 'AI providers and your prompts',
     paragraphs: [
-      'When you use the !ai command, your prompt is sent to a third-party AI provider (Groq by default, Google Gemini as opt-in fallback). BotWave does not retain a copy of the prompt or response — but the AI provider may retain prompts for short periods to detect abuse, per their own policies.',
+      'When you use the !ai command, your prompt is sent to a third-party AI provider (Groq by default, Google Gemini as opt-in fallback). BotWave does not retain a copy of the prompt or response, but the AI provider may retain prompts for short periods to detect abuse, per their own policies.',
       'If you do not want any data sent to AI providers, you can disable the !ai command for your sessions from the dashboard.',
     ],
   },
@@ -180,13 +180,13 @@ const sections: Section[] = [
     intro:
       'Regardless of where you live, you have the following rights over your BotWave data:',
     items: [
-      'Right to access — request a copy of all personal data we hold about you.',
-      'Right to rectification — correct any inaccurate personal data.',
-      'Right to erasure — delete your account and all associated personal data. Trigger this yourself from Dashboard → Settings → Delete account, or email support.',
-      'Right to data portability — export your bot configuration and account metadata in machine-readable JSON.',
-      'Right to object — opt out of any specific processing activity.',
-      'Right to restrict processing — temporarily pause processing while a dispute is resolved.',
-      'Right to withdraw consent — revoke previously granted consents.',
+      'Right to access, request a copy of all personal data we hold about you.',
+      'Right to rectification, correct any inaccurate personal data.',
+      'Right to erasure, delete your account and all associated personal data. Trigger this yourself from Dashboard → Settings → Delete account, or email support.',
+      'Right to data portability, export your bot configuration and account metadata in machine-readable JSON.',
+      'Right to object, opt out of any specific processing activity.',
+      'Right to restrict processing, temporarily pause processing while a dispute is resolved.',
+      'Right to withdraw consent, revoke previously granted consents.',
       'Right to lodge a complaint with a supervisory authority (e.g. your country\'s data protection regulator).',
     ],
   },
@@ -215,7 +215,7 @@ const sections: Section[] = [
     id: 'changes',
     title: 'Changes to this policy',
     paragraphs: [
-      'We may update this policy from time to time as the service evolves. When we make material changes — e.g. adding a new third-party processor, changing how AI prompts are handled, or changing retention windows — we will update the "Last reviewed" date at the top of this page and, where the change materially affects you, notify you by email or in-dashboard banner before the change takes effect.',
+      'We may update this policy from time to time as the service evolves. When we make material changes, e.g. adding a new third-party processor, changing how AI prompts are handled, or changing retention windows, we will update the "Last reviewed" date at the top of this page and, where the change materially affects you, notify you by email or in-dashboard banner before the change takes effect.',
     ],
   },
   {
@@ -241,7 +241,7 @@ const faqs = [
   {
     question: 'Is BotWave GDPR-compliant?',
     answer:
-      'Yes. We respect every GDPR right — access, rectification, erasure, portability, restriction, objection, and withdrawal of consent. You can trigger account deletion yourself from the dashboard, and we will delete all associated personal data within 30 days. Aggregate usage counts are anonymised after deletion.',
+      'Yes. We respect every GDPR right, access, rectification, erasure, portability, restriction, objection, and withdrawal of consent. You can trigger account deletion yourself from the dashboard, and we will delete all associated personal data within 30 days. Aggregate usage counts are anonymised after deletion.',
   },
   {
     question: 'Where is my data physically stored?',
@@ -300,7 +300,7 @@ export default function PrivacyPage() {
             Last reviewed: {new Date(LAST_UPDATED).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
           <p className="text-[var(--text-secondary)] mb-10 leading-relaxed">
-            BotWave is built for WhatsApp and Telegram communities in Nigeria, Africa, and worldwide. Trust is everything, and trust starts with knowing exactly what we do — and what we never do — with your data. This page explains in plain English what we access, what we store, how long we keep it, and the rights you have over it.
+            BotWave is built for WhatsApp and Telegram communities in Nigeria, Africa, and worldwide. Trust is everything, and trust starts with knowing exactly what we do, and what we never do, with your data. This page explains in plain English what we access, what we store, how long we keep it, and the rights you have over it.
           </p>
 
           <nav

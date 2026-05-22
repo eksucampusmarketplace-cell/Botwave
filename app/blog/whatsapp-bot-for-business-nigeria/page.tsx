@@ -123,11 +123,11 @@ BotWave is designed to be affordable for Nigerian businesses:
 | Plan | Price | Messages/Month | Sessions | Best For |
 |------|-------|----------------|----------|----------|
 | Free | ₦0 | 300 | 1 | Testing & small businesses |
-| Starter | ₦500/mo | 3,000 | 1 | Growing businesses |
-| Standard | ₦2,000/mo | Unlimited | 3 | Active businesses |
-| Boss | ₦5,000/mo | Unlimited | 10 | Large operations |
+| Lite | Coming Soon | 2,000 | 1 | Growing businesses |
+| Standard | Coming Soon | 10,000 | 3 | Active businesses |
+| Boss | Coming Soon | Unlimited | 5 | Large operations |
 
-Compare this to international bot platforms charging $20-50/month (₦30,000-75,000). BotWave is built for the Nigerian market with Naira pricing and bank transfer payments.
+Paid plans are coming soon. Compared to international bot platforms charging $20-50/month (₦30,000-75,000), BotWave is built for the Nigerian market with Naira-native billing and bank-transfer payments when paid tiers launch.
 
 ## WhatsApp Bot vs Hiring a Virtual Assistant
 

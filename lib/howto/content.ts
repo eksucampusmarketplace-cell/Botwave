@@ -7,12 +7,12 @@
  * present here.
  *
  * Why each how-to needs its own unique body:
- *   Google was logging /how-to/* URLs as "Discovered – currently not
+ *   Google was logging /how-to/* URLs as "Discovered - currently not
  *   indexed" because every page rendered the same generic 4-step body
  *   regardless of slug. AI engines (Perplexity, ChatGPT Search) also
  *   refuse to ingest near-duplicate programmatic pages. The unique
- *   content below — intro + prerequisites + ordered steps + tips +
- *   pitfalls + expected result + slug-specific FAQs — moves each page
+ *   content below, intro + prerequisites + ordered steps + tips +
+ *   pitfalls + expected result + slug-specific FAQs, moves each page
  *   well past the "thin content" classifier.
  */
 
@@ -29,7 +29,7 @@ export interface HowToFAQ {
 }
 
 export interface HowToContent {
-  /** 1–2 paragraph intro unique to this slug. */
+  /** 1-2 paragraph intro unique to this slug. */
   intro: string;
   /** What the reader needs before starting. */
   prerequisites: string[];
@@ -60,14 +60,14 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: [
       'A working WhatsApp account (regular or Business) installed on your phone.',
       'A free BotWave account at botwave.online/signup.',
-      'About 2 minutes of uninterrupted time — pairing codes expire after 60 seconds.',
+      'About 2 minutes of uninterrupted time, pairing codes expire after 60 seconds.',
       'WhatsApp version 2.23 or newer (older versions do not support the Link a Device flow with pairing codes).',
     ],
     steps: [
       {
         title: 'Sign up at botwave.online/signup',
         body: 'Create a free account using your email. You will need to confirm the address via a link before you can connect a session.',
-        tip: 'Use a different email from the one tied to the WhatsApp account you plan to connect — it keeps your recovery flows cleanly separated.',
+        tip: 'Use a different email from the one tied to the WhatsApp account you plan to connect, it keeps your recovery flows cleanly separated.',
       },
       {
         title: 'Open the Sessions tab in the dashboard',
@@ -80,7 +80,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Enter the 8-character pairing code',
-        body: 'Type the code displayed in the BotWave dashboard. WhatsApp will pair the device and the dashboard will flip to "Connected" within 5–10 seconds.',
+        body: 'Type the code displayed in the BotWave dashboard. WhatsApp will pair the device and the dashboard will flip to "Connected" within 5-10 seconds.',
       },
       {
         title: 'Send your first command',
@@ -95,15 +95,15 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult:
       'The Sessions tab in your dashboard shows a green "Connected" badge, and !help replies with a list of 50+ commands in any chat the bot is in.',
     tips: [
-      'The session is tied to your phone — if you log out of WhatsApp Web everywhere, you lose the BotWave session too.',
+      'The session is tied to your phone, if you log out of WhatsApp Web everywhere, you lose the BotWave session too.',
       'Free tier ships with all 150+ commands enabled, but caps you at 300 messages/month. Upgrade is needed only if you cross that limit.',
       'You can disable individual commands per session from Dashboard → Settings → Commands.',
       'For best anti-ban behaviour, leave the default session warmup on for the first 7 days (15 → 200 msgs/day ramp).',
     ],
     pitfalls: [
-      'Do not connect the same WhatsApp number from two different BotWave sessions — WhatsApp only allows one Linked Device entry per session and the older one will be silently killed.',
+      'Do not connect the same WhatsApp number from two different BotWave sessions, WhatsApp only allows one Linked Device entry per session and the older one will be silently killed.',
       'Pairing codes expire after 60 seconds; if you miss the window, click "Regenerate code" instead of typing the old one.',
-      'Avoid pairing on a number that is brand-new (<24 hours old) — WhatsApp aggressively rate-limits new accounts and the session may get banned within minutes.',
+      'Avoid pairing on a number that is brand-new (<24 hours old), WhatsApp aggressively rate-limits new accounts and the session may get banned within minutes.',
     ],
     relatedHowTo: ['whatsapp-pairing-code', 'connect-whatsapp-bot-qr', 'whatsapp-anti-ban-setup', 'set-up-bot-dashboard'],
     relatedFix: ['whatsapp-qr-not-scanning', 'whatsapp-pairing-code-expired', 'whatsapp-bot-disconnected'],
@@ -113,17 +113,17 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Do I need to be a developer to create a WhatsApp bot with BotWave?',
         answer:
-          'No. BotWave is no-code from end to end — you sign up, paste a pairing code, and start using commands. There is no JavaScript, Python, or webhook configuration required. Developers who want webhooks and a REST API can opt into them from the Boss plan.',
+          'No. BotWave is no-code from end to end, you sign up, paste a pairing code, and start using commands. There is no JavaScript, Python, or webhook configuration required. Developers who want webhooks and a REST API can opt into them from the Boss plan.',
       },
       {
         question: 'Is BotWave the same as a WhatsApp Business API account?',
         answer:
-          'No. BotWave runs on a regular WhatsApp (or WhatsApp Business app) account via the Baileys library — it is a Linked Device, the same way WhatsApp Web is a Linked Device. The official WhatsApp Business API (Cloud API) requires a Meta-approved business account, a phone number not used in the consumer app, and is billed per conversation. BotWave is faster to set up and free to start; the Business API is the right choice if you need broadcast-template messaging at scale.',
+          'No. BotWave runs on a regular WhatsApp (or WhatsApp Business app) account via the Baileys library, it is a Linked Device, the same way WhatsApp Web is a Linked Device. The official WhatsApp Business API (Cloud API) requires a Meta-approved business account, a phone number not used in the consumer app, and is billed per conversation. BotWave is faster to set up and free to start; the Business API is the right choice if you need broadcast-template messaging at scale.',
       },
       {
         question: 'Will my WhatsApp number get banned for using BotWave?',
         answer:
-          'WhatsApp can ban any automation, but BotWave applies a multi-layer anti-ban system specifically designed to look human: session warmup (15→200 msgs/day over 7 days), randomised typing and read receipts, message variation, presence simulation, and quiet-hours throttling. Following the on-boarding warmup period and avoiding bulk outbound to non-opted-in numbers keeps risk low — most BotWave users go years without a ban.',
+          'WhatsApp can ban any automation, but BotWave applies a multi-layer anti-ban system specifically designed to look human: session warmup (15→200 msgs/day over 7 days), randomised typing and read receipts, message variation, presence simulation, and quiet-hours throttling. Following the on-boarding warmup period and avoiding bulk outbound to non-opted-in numbers keeps risk low, most BotWave users go years without a ban.',
       },
       {
         question: 'How long does the initial setup take?',
@@ -133,7 +133,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Can I use BotWave with WhatsApp Business?',
         answer:
-          'Yes. The WhatsApp Business consumer app uses the same protocol as regular WhatsApp for Linked Devices, so pairing works identically. Note that this is the Business *app* (free, mobile-only) — not the Business *API* (paid, Meta-approved).',
+          'Yes. The WhatsApp Business consumer app uses the same protocol as regular WhatsApp for Linked Devices, so pairing works identically. Note that this is the Business *app* (free, mobile-only), not the Business *API* (paid, Meta-approved).',
       },
     ],
   },
@@ -143,7 +143,7 @@ export const howToContent: Record<string, HowToContent> = {
       'WhatsApp auto-reply turns your bot into a 24/7 receptionist that answers customer questions, sends business hours, or politely defers off-topic chatter while you sleep. BotWave\'s !afk and AI auto-reply modes cover both the "I am away" use case and the "AI answers anything" use case in a single dashboard toggle.',
     prerequisites: [
       'An active BotWave WhatsApp session (see Create a WhatsApp Bot if you have not connected one yet).',
-      'A clear answer to the question "what should the bot say automatically?". Even a one-sentence reply works — you can iterate.',
+      'A clear answer to the question "what should the bot say automatically?". Even a one-sentence reply works, you can iterate.',
       'Optionally, an idea of which chats should auto-reply (e.g. only DMs, or only one specific group).',
     ],
     steps: [
@@ -162,7 +162,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Test it',
-        body: 'Ask a friend to message you, or send a message from a different WhatsApp account. The bot should reply within 1–3 seconds with the AFK text.',
+        body: 'Ask a friend to message you, or send a message from a different WhatsApp account. The bot should reply within 1-3 seconds with the AFK text.',
       },
       {
         title: 'Turn it off when you are back',
@@ -174,12 +174,12 @@ export const howToContent: Record<string, HowToContent> = {
       'Incoming WhatsApp messages get an automatic, personalised reply within ~2 seconds, with no input from you. The reply respects your scope and cooldown settings so contacts do not get bombarded.',
     tips: [
       'Combine AFK + AI: set AFK as the default and let AI take over for messages that mention specific keywords (e.g. "price", "menu", "hours").',
-      'Use the {name} placeholder in your AFK text — it pulls the contact\'s push name so the reply feels personal.',
+      'Use the {name} placeholder in your AFK text, it pulls the contact\'s push name so the reply feels personal.',
       'For commerce use cases, include your business hours and an alternate contact in the AFK message so customers self-serve.',
-      'Schedule recurring AFK windows (e.g. every weekday 11pm–6am) from Dashboard → Auto-reply → Schedule.',
+      'Schedule recurring AFK windows (e.g. every weekday 11pm-6am) from Dashboard → Auto-reply → Schedule.',
     ],
     pitfalls: [
-      'Do not set AFK to fire in every chat by default — WhatsApp can flag accounts that auto-reply to *every* message as automation. Scope it.',
+      'Do not set AFK to fire in every chat by default, WhatsApp can flag accounts that auto-reply to *every* message as automation. Scope it.',
       'AI mode counts against your daily AI query limit (10/day on free tier). If you run a busy customer-support flow, upgrade or restrict AI to specific groups.',
     ],
     relatedHowTo: ['whatsapp-ai-auto-reply', 'whatsapp-afk-status', 'whatsapp-auto-responses', 'whatsapp-business-automation'],
@@ -204,14 +204,14 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Is AI auto-reply truly automatic, or do I have to approve each reply?',
         answer:
-          'Fully automatic by default. If you prefer approve-before-send, enable "Suggest mode" — the AI drafts a reply and posts it to your dashboard for one-click approval instead of sending it directly.',
+          'Fully automatic by default. If you prefer approve-before-send, enable "Suggest mode", the AI drafts a reply and posts it to your dashboard for one-click approval instead of sending it directly.',
       },
     ],
   },
 
   'whatsapp-group-bot': {
     intro:
-      'Adding a bot to a WhatsApp group unlocks anti-spam, welcome messages, AI Q&A, polls, games, and moderation tools that would otherwise eat hours of your time as an admin. BotWave is a regular WhatsApp Linked Device, so adding it to a group is exactly the same as adding any contact — there is no special "bot account" type.',
+      'Adding a bot to a WhatsApp group unlocks anti-spam, welcome messages, AI Q&A, polls, games, and moderation tools that would otherwise eat hours of your time as an admin. BotWave is a regular WhatsApp Linked Device, so adding it to a group is exactly the same as adding any contact, there is no special "bot account" type.',
     prerequisites: [
       'You are an admin of the group (you can add and remove members).',
       'A connected BotWave session whose phone number you can save as a contact.',
@@ -233,7 +233,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Promote the bot to admin (recommended)',
-        body: 'Tap the bot in the member list and choose "Make group admin". Without admin rights the bot cannot delete spam messages, kick rule-breakers, or change group settings — moderation features will be limited.',
+        body: 'Tap the bot in the member list and choose "Make group admin". Without admin rights the bot cannot delete spam messages, kick rule-breakers, or change group settings, moderation features will be limited.',
         tip: 'Some groups prefer to leave the bot as a regular member to avoid giving automation full admin rights. That is fine, but expect fewer features to work.',
       },
       {
@@ -247,14 +247,14 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'The bot greets new members, deletes spam, runs games, answers AI questions, and runs polls — all inside a single WhatsApp group, with per-group settings you control from the dashboard.',
+      'The bot greets new members, deletes spam, runs games, answers AI questions, and runs polls, all inside a single WhatsApp group, with per-group settings you control from the dashboard.',
     tips: [
       'Run !rules in the group to publish the rules anytime; new members can pull them up with !rules whenever they join.',
-      'Use !tagall (admin-only) sparingly — Mass-tagging too often is the #1 way admins lose group members to "too noisy" frustration.',
-      'Enable "Read-but-skip" mode in the dashboard so the bot does not feel like it is listening to every message — it only reacts to commands.',
+      'Use !tagall (admin-only) sparingly, Mass-tagging too often is the #1 way admins lose group members to "too noisy" frustration.',
+      'Enable "Read-but-skip" mode in the dashboard so the bot does not feel like it is listening to every message, it only reacts to commands.',
     ],
     pitfalls: [
-      'Without admin permissions, the bot cannot delete messages or kick users — most "moderation does nothing" support tickets are actually missing-admin tickets.',
+      'Without admin permissions, the bot cannot delete messages or kick users, most "moderation does nothing" support tickets are actually missing-admin tickets.',
       'Adding the bot to more than ~50 groups at once on a brand-new session is a fast way to a WhatsApp ban. Stagger group adds over a few days, especially during the warmup period.',
     ],
     relatedHowTo: ['whatsapp-welcome-message', 'whatsapp-moderation-setup', 'whatsapp-anti-spam', 'whatsapp-custom-commands'],
@@ -274,7 +274,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Does adding the bot count as adding a "participant" for WhatsApp\'s 1024-member limit?',
         answer:
-          'Yes — the bot occupies one member slot like any other participant. In groups close to the limit, plan accordingly.',
+          'Yes, the bot occupies one member slot like any other participant. In groups close to the limit, plan accordingly.',
       },
       {
         question: 'What happens if I remove the bot from the group?',
@@ -286,7 +286,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-ai-assistant': {
     intro:
-      'BotWave\'s !ai command turns your WhatsApp into a Groq-powered (with optional Gemini fallback) AI assistant. It answers questions, drafts messages, summarises long threads, translates text, and even helps with homework — all inside the chat. No copy-pasting to ChatGPT, no separate app to open.',
+      'BotWave\'s !ai command turns your WhatsApp into a Groq-powered (with optional Gemini fallback) AI assistant. It answers questions, drafts messages, summarises long threads, translates text, and even helps with homework, all inside the chat. No copy-pasting to ChatGPT, no separate app to open.',
     prerequisites: [
       'An active BotWave WhatsApp session.',
       'The !ai command enabled for that session (it is on by default on free tier with a 10-queries-per-day cap).',
@@ -295,7 +295,7 @@ export const howToContent: Record<string, HowToContent> = {
     steps: [
       {
         title: 'Send !ai followed by your question',
-        body: 'In any chat where the bot is active, type !ai then your question. The bot will reply with an AI-generated answer in 1–3 seconds.',
+        body: 'In any chat where the bot is active, type !ai then your question. The bot will reply with an AI-generated answer in 1-3 seconds.',
         code: '!ai explain the difference between WhatsApp Business app and WhatsApp Business API',
       },
       {
@@ -326,7 +326,7 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     pitfalls: [
       'Do not feed the AI personally identifiable information you would not want logged by an upstream AI provider for short-term abuse monitoring.',
-      'The free-tier 10/day cap is shared across all chats — if you have 20 chats using AI, plan for the cap to hit fast.',
+      'The free-tier 10/day cap is shared across all chats, if you have 20 chats using AI, plan for the cap to hit fast.',
     ],
     relatedHowTo: ['whatsapp-ai-auto-reply', 'whatsapp-translate-messages', 'api-key-setup'],
     relatedFix: ['whatsapp-ai-not-responding'],
@@ -336,12 +336,12 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Which AI model powers !ai?',
         answer:
-          'Groq\'s llama-3.3-70b-versatile is the default — it is fast, capable, and free to use within BotWave\'s included quota. Google Gemini 2.0 Flash is available as an opt-in fallback for cases where Groq is unavailable.',
+          'Groq\'s llama-3.3-70b-versatile is the default, it is fast, capable, and free to use within BotWave\'s included quota. Google Gemini 2.0 Flash is available as an opt-in fallback for cases where Groq is unavailable.',
       },
       {
         question: 'Are my !ai prompts private?',
         answer:
-          'BotWave never persists !ai prompts or responses. Prompts pass through Groq/Gemini briefly during the request — those providers may retain prompts short-term for abuse monitoring per their privacy policies. See our Privacy Policy for details.',
+          'BotWave never persists !ai prompts or responses. Prompts pass through Groq/Gemini briefly during the request, those providers may retain prompts short-term for abuse monitoring per their privacy policies. See our Privacy Policy for details.',
       },
       {
         question: 'Can I bring my own AI key (BYOK)?',
@@ -351,7 +351,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Why does the AI refuse some questions?',
         answer:
-          'The model is configured to decline requests that would generate disallowed content (hate, illegal advice, instructions for harm). It will also decline impersonation requests — e.g. it will not pretend to be a different brand or company.',
+          'The model is configured to decline requests that would generate disallowed content (hate, illegal advice, instructions for harm). It will also decline impersonation requests, e.g. it will not pretend to be a different brand or company.',
       },
     ],
   },
@@ -361,7 +361,7 @@ export const howToContent: Record<string, HowToContent> = {
       'BotWave\'s !sticker command turns any image into a WhatsApp-compliant sticker in under a second. It supports JPGs, PNGs, WebPs (transparent), short videos (auto-trimmed to 6 seconds for animated stickers), and even text with a built-in caption generator. Stickers cost nothing extra against your message quota.',
     prerequisites: [
       'Active WhatsApp session connected to BotWave.',
-      'An image to convert — sent to any chat where the bot is active.',
+      'An image to convert, sent to any chat where the bot is active.',
       'Optional: a sticker pack name if you want the bot to push the sticker into a named pack.',
     ],
     steps: [
@@ -371,7 +371,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Reply to the image with !sticker',
-        body: 'Tap-and-hold the image, tap Reply, then send !sticker. The bot processes the image and posts back a sticker within 1–2 seconds.',
+        body: 'Tap-and-hold the image, tap Reply, then send !sticker. The bot processes the image and posts back a sticker within 1-2 seconds.',
         code: '!sticker',
       },
       {
@@ -392,13 +392,13 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult:
       'The bot posts a WhatsApp-compliant sticker back to the chat within a couple of seconds. Tapping the sticker shows the pack name (if you set one) and lets the recipient save it to their library.',
     tips: [
-      'For best results, send a square or near-square image — heavily landscape images get letterboxed.',
+      'For best results, send a square or near-square image, heavily landscape images get letterboxed.',
       'The bot is anti-fingerprint by default: each sticker has microscopic random byte jitter so WhatsApp does not flag repeated sticker creation as automation.',
       'Use !sticker text=...your text... to overlay text on the image (great for memes).',
       'Animated stickers count the same against your message quota as static stickers.',
     ],
     pitfalls: [
-      'Videos longer than 6 seconds will be silently trimmed — start with the most important visual moment.',
+      'Videos longer than 6 seconds will be silently trimmed, start with the most important visual moment.',
       'PNG transparency is preserved only on regular !sticker; the --circle crop draws a solid background for the masked corners.',
     ],
     relatedHowTo: ['create-whatsapp-stickers-bot', 'whatsapp-logo-maker'],
@@ -413,7 +413,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Can I save the stickers BotWave makes to a permanent pack?',
         answer:
-          'Yes. Tap the sticker in WhatsApp, then "Add to favourites". For full custom packs, use !sticker pack=PackName when creating — others in the chat can then save the whole pack.',
+          'Yes. Tap the sticker in WhatsApp, then "Add to favourites". For full custom packs, use !sticker pack=PackName when creating, others in the chat can then save the whole pack.',
       },
       {
         question: 'Does !sticker work on iPhone too?',
@@ -425,7 +425,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-moderation-setup': {
     intro:
-      'Group moderation on WhatsApp is normally a manual nightmare — admins delete messages by hand, warn people in DMs, and chase rule-breakers across multiple chats. BotWave automates the whole loop: anti-spam, anti-link, anti-flood, warning ladders, auto-kick, profanity filter, and a publicly visible mod log so the rest of the group can see fairness in action.',
+      'Group moderation on WhatsApp is normally a manual nightmare, admins delete messages by hand, warn people in DMs, and chase rule-breakers across multiple chats. BotWave automates the whole loop: anti-spam, anti-link, anti-flood, warning ladders, auto-kick, profanity filter, and a publicly visible mod log so the rest of the group can see fairness in action.',
     prerequisites: [
       'BotWave session connected and added to the group as admin.',
       'A clear sense of the rules you want enforced (e.g. no links from non-admins, max 5 messages per 10s, no profanity).',
@@ -448,7 +448,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Set up the profanity filter (optional)',
-        body: 'From Dashboard → Moderation → Profanity, pick a built-in word list (mild / strict / strict + slurs) or paste your own custom list. The filter is localised — Nigerian Pidgin and Yoruba slang variants are supported in addition to English.',
+        body: 'From Dashboard → Moderation → Profanity, pick a built-in word list (mild / strict / strict + slurs) or paste your own custom list. The filter is localised, Nigerian Pidgin and Yoruba slang variants are supported in addition to English.',
       },
       {
         title: 'Publish the rules',
@@ -464,12 +464,12 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult:
       'Spam messages disappear within seconds, repeat offenders escalate through warnings to auto-kick automatically, and the mod log gives the group a transparent record of every moderation action.',
     tips: [
-      'Combine anti-link with a "first-time poster" delay — new members get their first message held for review for 1 hour before posting freely.',
+      'Combine anti-link with a "first-time poster" delay, new members get their first message held for review for 1 hour before posting freely.',
       'Customise the warning message per group: a school group might want "Hi {name}, please respect class rules"; a crypto group might want a stricter tone.',
       'Use !whitelist @user to exempt a specific member from spam/link rules (great for co-admins who post a lot of legitimate links).',
     ],
     pitfalls: [
-      'Profanity filter false-positives are common in multilingual groups — start with the "mild" list and add words yourself rather than starting on "strict".',
+      'Profanity filter false-positives are common in multilingual groups, start with the "mild" list and add words yourself rather than starting on "strict".',
       'If the bot is not an admin, anti-spam can detect spam but cannot delete it.',
     ],
     relatedHowTo: ['whatsapp-anti-spam', 'whatsapp-anti-link', 'whatsapp-welcome-message', 'set-up-auto-moderation'],
@@ -499,7 +499,7 @@ export const howToContent: Record<string, HowToContent> = {
       'Sharing a TikTok in WhatsApp normally means a watermarked, cropped, lossy preview. BotWave\'s !download command pulls the original watermark-free MP4 from TikTok and posts it back into the chat in the highest quality TikTok serves. Same flow works for Instagram Reels, YouTube Shorts, Twitter videos, and Facebook Reels.',
     prerequisites: [
       'Active BotWave WhatsApp session.',
-      'A TikTok URL — either the full https://www.tiktok.com/@user/video/123... or the shortened vm.tiktok.com link.',
+      'A TikTok URL, either the full https://www.tiktok.com/@user/video/123... or the shortened vm.tiktok.com link.',
       'The !download command enabled (on by default).',
     ],
     steps: [
@@ -522,20 +522,20 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Forward the video like any other WhatsApp media',
-        body: 'Once the bot posts the video, it behaves like any other WhatsApp media — forward, save to gallery, react, or quote it.',
+        body: 'Once the bot posts the video, it behaves like any other WhatsApp media, forward, save to gallery, react, or quote it.',
       },
     ],
     expectedResult:
       'The watermark-free MP4 lands in the chat within a few seconds, ready to forward or save.',
     tips: [
       'For carousels (multi-image TikTok posts) the bot returns each image as a separate media message and the soundtrack as audio.',
-      'Bulk download: paste up to 10 URLs in a single message and reply with !download — the bot processes them in series so the chat stays in order.',
+      'Bulk download: paste up to 10 URLs in a single message and reply with !download, the bot processes them in series so the chat stays in order.',
       'YouTube downloads respect age-gates: age-restricted videos require the BotWave operator to have configured cookies (see API key setup guide).',
     ],
     pitfalls: [
       'Private TikTok accounts and friends-only posts cannot be downloaded.',
       'Some videos are geo-blocked from BotWave\'s server region; in that case the bot returns a clear error instead of a silent failure.',
-      'Downloading copyrighted content for redistribution may violate the original platform\'s ToS or copyright law — you are responsible for usage.',
+      'Downloading copyrighted content for redistribution may violate the original platform\'s ToS or copyright law, you are responsible for usage.',
     ],
     relatedHowTo: ['download-youtube-whatsapp', 'whatsapp-music-download'],
     relatedFix: ['whatsapp-download-not-working', 'whatsapp-download-failed', 'whatsapp-media-not-sending'],
@@ -578,7 +578,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Copy the bot token',
-        body: 'BotFather replies with an HTTP API token that looks like 123456789:AAH8gXk... Treat this token like a password — anyone with it can fully control your bot.',
+        body: 'BotFather replies with an HTTP API token that looks like 123456789:AAH8gXk... Treat this token like a password, anyone with it can fully control your bot.',
         tip: 'You can rotate the token later via /token in BotFather if it ever leaks.',
       },
       {
@@ -609,7 +609,7 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     pitfalls: [
       'If /setprivacy is left ENABLED (the default), the bot only sees messages where it is @-mentioned. Anti-spam and welcome messages will not fire. Disable it for group moderation use cases.',
-      'Bot tokens leaked publicly will be scraped within hours — never commit one to a public repo or paste it into a screenshot.',
+      'Bot tokens leaked publicly will be scraped within hours, never commit one to a public repo or paste it into a screenshot.',
     ],
     relatedHowTo: ['create-telegram-bot', 'telegram-bot-group', 'telegram-anti-spam', 'telegram-welcome-bot', 'setup-telegram-userbot'],
     relatedFix: ['telegram-bot-not-responding', 'telegram-bot-no-permissions', 'telegram-bot-flood-wait'],
@@ -618,7 +618,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'What is the difference between a Telegram bot and a Telegram userbot?',
         answer:
-          'A bot uses the Bot API and acts as a separate "@yourbot" account. It cannot start conversations with users who have not /start-ed it and has restricted permissions in groups by design. A userbot uses the regular MTProto API and acts as a real user account — full freedom, but you must use your own (or a burner) phone number to authenticate. BotWave supports both.',
+          'A bot uses the Bot API and acts as a separate "@yourbot" account. It cannot start conversations with users who have not /start-ed it and has restricted permissions in groups by design. A userbot uses the regular MTProto API and acts as a real user account, full freedom, but you must use your own (or a burner) phone number to authenticate. BotWave supports both.',
       },
       {
         question: 'Why does my bot not see messages in groups?',
@@ -635,12 +635,12 @@ export const howToContent: Record<string, HowToContent> = {
 
   'telegram-userbot-setup': {
     intro:
-      'A Telegram userbot is fundamentally different from a Telegram bot: it logs in as a real user account (using your phone number, or a burner), giving it the same permissions any user has — initiating chats, joining channels, reading message history. BotWave\'s userbot module is built on the GramJS MTProto client and is designed for power-user automation like global ban lists, message purging, and sticker kanging.',
+      'A Telegram userbot is fundamentally different from a Telegram bot: it logs in as a real user account (using your phone number, or a burner), giving it the same permissions any user has, initiating chats, joining channels, reading message history. BotWave\'s userbot module is built on the GramJS MTProto client and is designed for power-user automation like global ban lists, message purging, and sticker kanging.',
     prerequisites: [
       'A Telegram account with a phone number you can receive SMS codes on.',
       'A Telegram API ID and API hash from https://my.telegram.org/apps (free, takes 2 minutes to create).',
       'BotWave Boss plan (userbots are a Boss-tier feature because they require MTProto session storage).',
-      'Important: read our Acceptable Use rules — userbots are powerful and easy to misuse.',
+      'Important: read our Acceptable Use rules, userbots are powerful and easy to misuse.',
     ],
     steps: [
       {
@@ -650,7 +650,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         title: 'Open Sessions → New Telegram Userbot',
         body: 'In BotWave, choose New Telegram Userbot. Enter your API ID, API hash, and the phone number you want the userbot to log in as.',
-        tip: 'Use a dedicated phone number for the userbot — do not run it on your main account if you can avoid it. A cheap secondary SIM or eSIM works perfectly.',
+        tip: 'Use a dedicated phone number for the userbot, do not run it on your main account if you can avoid it. A cheap secondary SIM or eSIM works perfectly.',
       },
       {
         title: 'Authenticate with the SMS code',
@@ -671,14 +671,14 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'Your userbot is logged in as a real Telegram user, listens for `.` prefixed commands, and can do things regular bots cannot — join channels, read history, send to anyone, sticker-kang, global-ban.',
+      'Your userbot is logged in as a real Telegram user, listens for `.` prefixed commands, and can do things regular bots cannot, join channels, read history, send to anyone, sticker-kang, global-ban.',
     tips: [
-      'Userbots are powerful — keep the command prefix non-obvious (e.g. `.bw`) so others in your chats do not stumble on it.',
+      'Userbots are powerful, keep the command prefix non-obvious (e.g. `.bw`) so others in your chats do not stumble on it.',
       'For privacy, restrict userbot commands to "self only" by default so other users cannot invoke them in your chats.',
       'Set up the userbot in a quiet account first to learn the commands before deploying on your main account.',
     ],
     pitfalls: [
-      'Userbots are against Telegram\'s spirit but not strictly against the Terms of Service — abusive usage (spam, mass-DM, harassment) is, and Telegram bans userbots that misbehave aggressively.',
+      'Userbots are against Telegram\'s spirit but not strictly against the Terms of Service, abusive usage (spam, mass-DM, harassment) is, and Telegram bans userbots that misbehave aggressively.',
       'Logging into the same Telegram account from too many places at once (>3 active sessions) can trigger an SMS-code-required reauth loop.',
     ],
     relatedHowTo: ['setup-telegram-userbot', 'userbot-pm-guard', 'userbot-gban', 'userbot-antiflood', 'userbot-purge-messages'],
@@ -693,12 +693,12 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Do I need a burner phone number?',
         answer:
-          'Not strictly, but strongly recommended. If your userbot triggers a ban, the entire associated Telegram account is affected — using a dedicated number isolates the risk from your main account.',
+          'Not strictly, but strongly recommended. If your userbot triggers a ban, the entire associated Telegram account is affected, using a dedicated number isolates the risk from your main account.',
       },
       {
         question: 'Can my userbot reply to messages on my behalf in my main chats?',
         answer:
-          'Yes — that is one of the main use cases. PM Guard, AFK auto-reply, and translation can all run silently on your account, replying in chats where you are slow to respond.',
+          'Yes, that is one of the main use cases. PM Guard, AFK auto-reply, and translation can all run silently on your account, replying in chats where you are slow to respond.',
       },
     ],
   },
@@ -710,7 +710,7 @@ export const howToContent: Record<string, HowToContent> = {
       'Welcoming new members manually scales for the first few people and breaks down at the tenth. BotWave\'s welcome bot fires a customised greeting the instant a new member joins, with placeholders for {name}, {group}, and {memberCount}, plus a button to read pinned rules.',
     prerequisites: [
       'BotWave bot added to the group as a member (admin recommended for full features).',
-      'Your welcome text drafted — keep it under 3 short paragraphs for readability.',
+      'Your welcome text drafted, keep it under 3 short paragraphs for readability.',
     ],
     steps: [
       { title: 'Open Dashboard → Groups → click your group → Welcome', body: 'Find the Welcome tab. The default text is a generic "Hi {name}, welcome to {group}".' },
@@ -729,17 +729,17 @@ export const howToContent: Record<string, HowToContent> = {
     relatedUseCase: ['schools', 'churches', 'businesses'],
     faqs: [
       { question: 'Can I have different welcome messages for different groups?', answer: 'Yes. Each group has its own welcome configuration in Dashboard → Groups → click the group → Welcome.' },
-      { question: 'Does it work if the bot is not admin?', answer: 'Yes — welcome messages need only member status, not admin. Admin is required for moderation actions like kicking.' },
+      { question: 'Does it work if the bot is not admin?', answer: 'Yes, welcome messages need only member status, not admin. Admin is required for moderation actions like kicking.' },
       { question: 'Can the welcome trigger include the user\'s WhatsApp display name?', answer: 'Yes via {name}. If the user has not set a public name, it falls back to their phone number.' },
     ],
   },
 
   'whatsapp-anti-spam': {
     intro:
-      'WhatsApp groups attract spam — link drops, copy-paste broadcasts, repeated emoji walls. BotWave\'s anti-spam is configurable per-group, tracks every offender via a warning ladder, and pairs with anti-flood (catches identical-message repetition) and anti-link (catches URL drops). Together they handle 90% of community spam without admin attention.',
+      'WhatsApp groups attract spam, link drops, copy-paste broadcasts, repeated emoji walls. BotWave\'s anti-spam is configurable per-group, tracks every offender via a warning ladder, and pairs with anti-flood (catches identical-message repetition) and anti-link (catches URL drops). Together they handle 90% of community spam without admin attention.',
     prerequisites: [
       'BotWave bot in the group as admin (admin is required to delete spam).',
-      'A clear definition of "spam" for your community — high-bar communities can be strict, casual hangouts should be lenient.',
+      'A clear definition of "spam" for your community, high-bar communities can be strict, casual hangouts should be lenient.',
     ],
     steps: [
       { title: 'Enable anti-spam', body: 'Run `!antispam on` in the group, or toggle Dashboard → Groups → Moderation → Anti-spam → ON.', code: '!antispam on' },
@@ -748,7 +748,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Configure the warning ladder', body: 'Dashboard → Moderation → Warnings. Pick threshold (3 warnings default → kick) and warning expiry (30 days default).' },
       { title: 'Whitelist legitimate noisy members', body: 'For co-admins and known power-users, run `!whitelist @user` so the bot ignores their burst behaviour.', code: '!whitelist @user' },
     ],
-    expectedResult: 'Bursts of 5+ messages in 10s, identical reposts, and repeat offenders all get auto-handled — warned, then deleted, then escalated to kick.',
+    expectedResult: 'Bursts of 5+ messages in 10s, identical reposts, and repeat offenders all get auto-handled, warned, then deleted, then escalated to kick.',
     tips: [
       'Pair with anti-link so spam-with-a-link gets caught either way.',
       'Run !modlog weekly to see what the bot has been doing; tune thresholds based on real activity.',
@@ -758,14 +758,14 @@ export const howToContent: Record<string, HowToContent> = {
     relatedFix: ['whatsapp-bot-not-reading-messages'],
     relatedUseCase: ['schools', 'businesses'],
     faqs: [
-      { question: 'Does anti-spam delete in real time?', answer: 'Yes. The bot reacts within 1–2 seconds of the offending message appearing.' },
+      { question: 'Does anti-spam delete in real time?', answer: 'Yes. The bot reacts within 1-2 seconds of the offending message appearing.' },
       { question: 'Can members appeal warnings?', answer: 'Yes. By default the bot DMs the user when warned, with a "reply !appeal" prompt. Admins review appeals in the dashboard.' },
     ],
   },
 
   'whatsapp-poll-creation': {
     intro:
-      'Native WhatsApp polls are limited to one image, no anonymity, and no ability to schedule. BotWave\'s !poll wraps richer polls — anonymous voting, scheduled close, results pinning, leaderboard integration — and works as both a one-liner and a multi-line "form" syntax.',
+      'Native WhatsApp polls are limited to one image, no anonymity, and no ability to schedule. BotWave\'s !poll wraps richer polls, anonymous voting, scheduled close, results pinning, leaderboard integration, and works as both a one-liner and a multi-line "form" syntax.',
     prerequisites: ['BotWave bot in the group.', 'A question and at least two options ready.'],
     steps: [
       { title: 'Single-line syntax', body: 'Send: `!poll Best food in Nigeria? | Jollof | Egusi | Eba`. The bot posts a styled poll with vote buttons.', code: '!poll Best food in Nigeria? | Jollof | Egusi | Eba' },
@@ -774,7 +774,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Schedule the close', body: 'Add `--close=24h` (or 2h, 7d, etc.). The poll auto-closes and posts results at that time.', code: '!poll --close=24h Today\'s mood? | Great | Tired | Stressed' },
       { title: 'Pin the results', body: 'Reply to the closed poll with `!pin`. The bot pins the results message so latecomers can see.' },
     ],
-    expectedResult: 'A styled poll, optional anonymity, optional scheduled close, and a clear results summary — all without leaving WhatsApp.',
+    expectedResult: 'A styled poll, optional anonymity, optional scheduled close, and a clear results summary, all without leaving WhatsApp.',
     tips: [
       'Use !vote <number> from any chat to vote programmatically (useful when polls are running across multiple groups).',
       'Polls count once against your message quota when created, then zero per vote.',
@@ -799,7 +799,7 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Members can spin up games on demand, daily auto-games trigger engagement, and the leaderboard tracks who is winning.',
     tips: [
-      'Set up weekly leaderboard reset for fairness — new joiners stand a chance.',
+      'Set up weekly leaderboard reset for fairness, new joiners stand a chance.',
       'Pair games with XP-based command unlocks (e.g. unlock !customcommand at 100 XP).',
     ],
     relatedHowTo: ['whatsapp-trivia-games', 'whatsapp-leaderboard', 'whatsapp-xp-system'],
@@ -819,16 +819,16 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Send !download --audio', body: 'In the chat: `!download --audio <url>`. The bot fetches, transcodes to MP3, posts as audio.', code: '!download --audio https://youtu.be/...' },
       { title: 'Pick a bitrate (optional)', body: 'Add `--bitrate=320` for 320kbps, `--bitrate=192` for default 192kbps.' },
       { title: 'Trim the start/end (optional)', body: '`!download --audio --trim=10s:60s` extracts only the segment between 10s and 1min.' },
-      { title: 'Forward or save', body: 'The audio behaves like any WhatsApp audio file — forward, save, react.' },
+      { title: 'Forward or save', body: 'The audio behaves like any WhatsApp audio file, forward, save, react.' },
     ],
     expectedResult: 'A clean MP3 file in the chat within a few seconds, ready to forward or save.',
     tips: ['Spotify-share links are resolved to the canonical track and audio is pulled from a public source where allowed.'],
-    pitfalls: ['DRM-protected sources (e.g. Apple Music subscription tracks) cannot be downloaded — only public/share-link content.'],
+    pitfalls: ['DRM-protected sources (e.g. Apple Music subscription tracks) cannot be downloaded, only public/share-link content.'],
     relatedHowTo: ['download-tiktok-whatsapp', 'download-youtube-whatsapp'],
     relatedFix: ['whatsapp-download-failed', 'whatsapp-download-not-working'],
     faqs: [
       { question: 'Is downloading music from YouTube legal?', answer: 'Depends on the source license and your jurisdiction. For your own non-commercial use of public videos, most jurisdictions consider it personal use; redistribution is a different matter and is your responsibility.' },
-      { question: 'What audio formats are supported?', answer: 'MP3 (default), M4A, OGG, WAV — pick via --format=mp3 / m4a / ogg / wav.' },
+      { question: 'What audio formats are supported?', answer: 'MP3 (default), M4A, OGG, WAV, pick via --format=mp3 / m4a / ogg / wav.' },
     ],
   },
 
@@ -842,19 +842,19 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Auto-translate a whole chat', body: 'Dashboard → Translation → Auto-translate per group: pick source and target languages. Every message in the source language is auto-translated and posted as a reply.' },
       { title: 'Translate outgoing too', body: '`!translate yo your message here` translates *your* message before sending. Great for replying in a language you do not type fluently.' },
     ],
-    expectedResult: 'Multilingual groups feel mono-lingual to every member — no copy-paste, no app-switching.',
+    expectedResult: 'Multilingual groups feel mono-lingual to every member, no copy-paste, no app-switching.',
     tips: ['Combine with !ai for cross-language Q&A: !ai --translate yo "What time is the meeting?".'],
     pitfalls: ['Slang and abbreviations translate poorly; tweak after if accuracy matters.'],
     relatedHowTo: ['whatsapp-ai-assistant', 'whatsapp-auto-responses'],
     faqs: [
       { question: 'How many languages are supported?', answer: 'Over 100, including Yoruba, Hausa, Igbo, Pidgin English, Swahili, Arabic, French, Spanish, Portuguese, Hindi, Mandarin.' },
-      { question: 'Is it real-time?', answer: 'Yes, responses come back in 1–2 seconds for short messages, 3–4 seconds for paragraphs.' },
+      { question: 'Is it real-time?', answer: 'Yes, responses come back in 1-2 seconds for short messages, 3-4 seconds for paragraphs.' },
     ],
   },
 
   'whatsapp-logo-maker': {
     intro:
-      'BotWave\'s !logo command generates a quick brand-mark image from a single text prompt — useful for small businesses, community groups, and side-hustle vendors who need a placeholder logo in a hurry. The output is a 1080×1080 PNG ready to set as the group icon or business profile picture.',
+      'BotWave\'s !logo command generates a quick brand-mark image from a single text prompt, useful for small businesses, community groups, and side-hustle vendors who need a placeholder logo in a hurry. The output is a 1080×1080 PNG ready to set as the group icon or business profile picture.',
     prerequisites: ['Active BotWave session.', 'A name or short phrase for the logo.'],
     steps: [
       { title: 'Run !logo with your text', body: '`!logo CampusBites`. The bot generates a logo and replies with the image.', code: '!logo CampusBites' },
@@ -866,8 +866,8 @@ export const howToContent: Record<string, HowToContent> = {
     tips: ['Run !logo with a colour: !logo --color=emerald NewCafe.'],
     relatedHowTo: ['whatsapp-sticker-maker', 'whatsapp-ai-assistant'],
     faqs: [
-      { question: 'Can I get the SVG?', answer: 'On Boss plan, yes — append --format=svg.' },
-      { question: 'Is the generated logo copyrightable?', answer: 'You own the output for commercial use. Two different prompts may sometimes produce visually similar outputs — pick a result that\'s clearly your own brand.' },
+      { question: 'Can I get the SVG?', answer: 'On Boss plan, yes, append --format=svg.' },
+      { question: 'Is the generated logo copyrightable?', answer: 'You own the output for commercial use. Two different prompts may sometimes produce visually similar outputs, pick a result that\'s clearly your own brand.' },
     ],
   },
 
@@ -876,20 +876,20 @@ export const howToContent: Record<string, HowToContent> = {
       'WhatsApp aggressively bans accounts that look automated. BotWave bakes in a multi-layer anti-ban system, but a few admin-side habits make the difference between "never banned" and "weekly reconnects". This guide is a checklist of every habit that lowers ban risk.',
     prerequisites: ['Working BotWave session.', 'An honest look at how your bot is currently being used.'],
     steps: [
-      { title: 'Leave session warmup on for the first 7 days', body: 'New sessions are capped at 15 msgs/day on day 1 and ramp to 200 by day 7. This is the single biggest ban-risk reducer — do not override it.' },
+      { title: 'Leave session warmup on for the first 7 days', body: 'New sessions are capped at 15 msgs/day on day 1 and ramp to 200 by day 7. This is the single biggest ban-risk reducer, do not override it.' },
       { title: 'Keep daily volume below 200 messages on free tier', body: 'BotWave enforces a 200 msg/day cap by default. Going higher is paid-plan territory and requires a "warmed" session (>30 days old).' },
-      { title: 'Use randomised reply delays', body: 'Default ON. Each reply has a randomised 1.5–4.5s delay so the bot does not look robotic. Do not disable this unless you know what you are doing.' },
+      { title: 'Use randomised reply delays', body: 'Default ON. Each reply has a randomised 1.5-4.5s delay so the bot does not look robotic. Do not disable this unless you know what you are doing.' },
       { title: 'Avoid bulk outbound to non-opted-in numbers', body: 'WhatsApp\'s primary ban signal is unsolicited bulk messaging. Only send to users who have explicitly opted in (group members count as opt-in; cold lists do not).' },
       { title: 'Rotate AI personas', body: 'Identical responses across many groups raise fingerprinting risk. BotWave already rotates responses; do not paste static templates that defeat that.' },
-      { title: 'Respect quiet hours', body: 'Default 12am–6am is quiet (slower replies, shorter messages). Keeping it on simulates human sleep patterns.' },
+      { title: 'Respect quiet hours', body: 'Default 12am-6am is quiet (slower replies, shorter messages). Keeping it on simulates human sleep patterns.' },
     ],
-    expectedResult: 'Sessions that survive months/years without bans — verified by BotWave\'s own internal tracking on long-lived sessions.',
-    tips: ['If a session does get banned, do not pair the same number again immediately. Wait 24–48h.'],
+    expectedResult: 'Sessions that survive months/years without bans, verified by BotWave\'s own internal tracking on long-lived sessions.',
+    tips: ['If a session does get banned, do not pair the same number again immediately. Wait 24-48h.'],
     pitfalls: ['Disabling anti-ban "to make replies faster" is the most common self-inflicted ban cause.'],
     relatedHowTo: ['whatsapp-anti-ban-setup', 'create-whatsapp-bot', 'whatsapp-session-recovery'],
     relatedFix: ['whatsapp-bot-banned', 'whatsapp-bot-disconnected'],
     faqs: [
-      { question: 'Will I ever get banned if I follow this guide?', answer: 'Risk drops dramatically but never to zero — WhatsApp\'s ban algorithm is opaque and changes. Plan for the rare ban (have a backup number) rather than betting on "never".' },
+      { question: 'Will I ever get banned if I follow this guide?', answer: 'Risk drops dramatically but never to zero, WhatsApp\'s ban algorithm is opaque and changes. Plan for the rare ban (have a backup number) rather than betting on "never".' },
       { question: 'Does using BotWave automatically ban my number?', answer: 'No. BotWave is one of the most ban-conservative automation platforms; thousands of sessions run for months without incident. The risk comes from how the bot is used, not from the platform itself.' },
     ],
   },
@@ -899,14 +899,14 @@ export const howToContent: Record<string, HowToContent> = {
       'Automating a WhatsApp Business account with BotWave gives you 24/7 customer answers, instant catalog pulls, auto-replies to common questions ("price?", "location?", "hours?"), and a clean handoff to a human when needed. All without paying for WhatsApp Cloud API.',
     prerequisites: ['A WhatsApp Business app account (free).', 'BotWave connected to it as a Linked Device.', 'A short FAQ list of the questions you get most.'],
     steps: [
-      { title: 'Build the FAQ playbook', body: 'Dashboard → Business → FAQ. Add 10–20 of your most common customer questions and the canned answers you want the bot to use.' },
+      { title: 'Build the FAQ playbook', body: 'Dashboard → Business → FAQ. Add 10-20 of your most common customer questions and the canned answers you want the bot to use.' },
       { title: 'Set business hours and AFK', body: 'Dashboard → Business → Hours. Configure your open hours; outside hours, the bot auto-replies "We are closed, will reply when we open at X". Inside hours, the bot defers to FAQ and AI.' },
       { title: 'Connect AI for fallback', body: 'When the FAQ does not match, hand off to !ai with a system prompt that has your business info. Dashboard → AI → System prompt.' },
       { title: 'Track conversion', body: 'Dashboard → Analytics → conversion: how many auto-replies led to an actual order. Tune the FAQ based on what is converting and what is not.' },
       { title: 'Add a "talk to human" escalation', body: 'When a user types "human" or "agent", the bot pings you in DM. Configure the trigger in Dashboard → Business → Escalation.' },
     ],
     expectedResult: 'Customers get instant answers to 80%+ of common questions, you get pinged only for the genuinely tricky cases, and conversion data tells you what to improve.',
-    tips: ['Build the FAQ from your last 200 customer DMs — those are your real questions, not the ones you assume.'],
+    tips: ['Build the FAQ from your last 200 customer DMs, those are your real questions, not the ones you assume.'],
     pitfalls: ['Bulk outbound to non-opted-in numbers is the fastest way to a WhatsApp Business ban. Always opt-in.'],
     relatedHowTo: ['automate-customer-support', 'bot-for-online-business', 'whatsapp-broadcast-bot'],
     relatedUseCase: ['businesses', 'vendors', 'customer-support'],
@@ -918,7 +918,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   'set-up-whatsapp-moderation': {
     intro:
-      'WhatsApp moderation at scale = anti-spam + anti-link + anti-flood + warning ladder + auto-kick + transparent mod log. This is the all-in-one walkthrough — different from /whatsapp-moderation-setup in that it is the dashboard-first variant for admins who prefer GUI configuration.',
+      'WhatsApp moderation at scale = anti-spam + anti-link + anti-flood + warning ladder + auto-kick + transparent mod log. This is the all-in-one walkthrough, different from /whatsapp-moderation-setup in that it is the dashboard-first variant for admins who prefer GUI configuration.',
     prerequisites: ['Bot is admin in target group.', 'Defined rules.'],
     steps: [
       { title: 'Dashboard → Groups → click group → Moderation', body: 'You will see toggles for Anti-spam, Anti-link, Anti-flood, Profanity filter, Warning ladder.' },
@@ -931,7 +931,7 @@ export const howToContent: Record<string, HowToContent> = {
     tips: ['Start permissive; tighten only if data shows offenders slipping through.'],
     relatedHowTo: ['whatsapp-moderation-setup', 'whatsapp-anti-spam', 'whatsapp-anti-link', 'set-up-auto-moderation'],
     faqs: [
-      { question: 'Bot or dashboard?', answer: 'Both — they edit the same config. Dashboard is friendlier for first-time setup; in-chat commands are faster for tweaks.' },
+      { question: 'Bot or dashboard?', answer: 'Both, they edit the same config. Dashboard is friendlier for first-time setup; in-chat commands are faster for tweaks.' },
     ],
   },
 
@@ -940,7 +940,7 @@ export const howToContent: Record<string, HowToContent> = {
       'Building a dedicated WhatsApp sticker bot used to mean spinning up Baileys, writing media handlers, and dealing with WebP encoding. BotWave gives you a sticker bot in 2 minutes with full sticker-pack support, animated stickers, and customisation.',
     prerequisites: ['BotWave session connected.', '!sticker command enabled (default).'],
     steps: [
-      { title: 'Pair a session — see "Create a WhatsApp Bot"', body: 'No special config needed for sticker mode; it ships ready.' },
+      { title: 'Pair a session, see "Create a WhatsApp Bot"', body: 'No special config needed for sticker mode; it ships ready.' },
       { title: 'Configure default sticker pack', body: 'Dashboard → Stickers → Default pack name. Every !sticker reply will be tagged with this pack so recipients can save the whole set.' },
       { title: 'Enable animated stickers', body: 'Dashboard → Stickers → Animated → ON. The bot will accept short videos and return animated WebP.' },
       { title: 'Pin sticker tutorials in your groups', body: 'A pinned message explaining !sticker, !sticker --circle, !sticker --animated drives adoption.' },
@@ -961,18 +961,18 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: ['Active BotWave session.', '!ai command enabled.', 'A short system prompt with your business/group info.'],
     steps: [
       { title: 'Dashboard → AI → Auto-reply → ON', body: 'Pick the scope (DM only, specific groups, or everywhere).' },
-      { title: 'Write a 1–2 paragraph system prompt', body: 'Example: "You are the assistant for CampusBites, a Lagos student delivery service. Hours: 10am–10pm. Min order: ₦1500. If asked about delivery fee, say it depends on distance and offer to calculate."' },
+      { title: 'Write a 1-2 paragraph system prompt', body: 'Example: "You are the assistant for CampusBites, a Lagos student delivery service. Hours: 10am-10pm. Min order: ₦1500. If asked about delivery fee, say it depends on distance and offer to calculate."' },
       { title: 'Set the daily query cap', body: 'Default 10/day on free tier; raise on paid tiers. Per-user caps prevent abuse.' },
       { title: 'Test with a friend', body: 'Have them DM the bot a typical customer question. Tune the system prompt based on the result.' },
     ],
-    expectedResult: 'DMs and configured groups get LLM-generated, context-aware replies within 1–3 seconds.',
-    tips: ['Include "escalate to human if uncertain" in the system prompt — the bot will defer rather than hallucinate.'],
+    expectedResult: 'DMs and configured groups get LLM-generated, context-aware replies within 1-3 seconds.',
+    tips: ['Include "escalate to human if uncertain" in the system prompt, the bot will defer rather than hallucinate.'],
     pitfalls: ['AI auto-reply will sometimes get a question wrong. Use the conversation log to spot patterns and improve the prompt.'],
     relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-assistant', 'api-key-setup'],
     relatedFix: ['whatsapp-ai-not-responding'],
     relatedUseCase: ['businesses', 'customer-support'],
     faqs: [
-      { question: 'Can I review and approve AI replies before they send?', answer: 'Yes — enable Suggest mode in Dashboard → AI → Auto-reply.' },
+      { question: 'Can I review and approve AI replies before they send?', answer: 'Yes, enable Suggest mode in Dashboard → AI → Auto-reply.' },
     ],
   },
 
@@ -996,16 +996,16 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-scheduled-messages': {
     intro:
-      'Schedule a message for any future time and BotWave fires it from your session at the exact second — works for daily standups, birthday greetings, weekly digests, sales-launch announcements, prayer-time reminders. No standalone scheduler app needed.',
+      'Schedule a message for any future time and BotWave fires it from your session at the exact second, works for daily standups, birthday greetings, weekly digests, sales-launch announcements, prayer-time reminders. No standalone scheduler app needed.',
     prerequisites: ['Active BotWave session.', 'Knowing what time you want the message to fire.'],
     steps: [
       { title: '!schedule in the target chat', body: 'Syntax: `!schedule "Hi team, standup in 5 mins" 9:00am`. Times in your account timezone by default; override with `tz=Africa/Lagos`.', code: '!schedule "Standup" 9:00am' },
       { title: 'Schedule recurring messages', body: '`!schedule --daily "Standup" 9:00am`, --weekly, --monthly. Or a cron string: `--cron="0 9 * * 1-5"` for weekday-only 9am.' },
       { title: 'List scheduled messages', body: 'Run !schedule list. Cancel any with !schedule cancel <id>.', code: '!schedule list' },
-      { title: 'Bulk-schedule from CSV', body: 'Dashboard → Scheduler → Import. Upload a CSV with date, time, chat, and message — useful for sales campaigns.' },
+      { title: 'Bulk-schedule from CSV', body: 'Dashboard → Scheduler → Import. Upload a CSV with date, time, chat, and message, useful for sales campaigns.' },
     ],
     expectedResult: 'Messages fire automatically at the scheduled time, with success/failure tracked in the dashboard.',
-    tips: ['Schedule "behind the scenes" reminders to yourself in your own DM — a great hack to replace separate reminder apps.'],
+    tips: ['Schedule "behind the scenes" reminders to yourself in your own DM, a great hack to replace separate reminder apps.'],
     relatedHowTo: ['whatsapp-broadcast-bot', 'whatsapp-custom-commands'],
     faqs: [
       { question: 'What if my session is disconnected when the message is due?', answer: 'The message is queued and fires when the session reconnects, with a "delivered late by Xm" note. To skip late messages, add --skip-if-offline.' },
@@ -1022,11 +1022,11 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Exempt members', body: '`!whitelist @user` lets that user post any link without triggering anti-link.' },
       { title: 'Set the action on detection', body: 'Default: delete + warn. Optionally: delete only / warn only / delete + kick.' },
     ],
-    expectedResult: 'Off-topic link drops vanish within 1–2 seconds; legitimate links pass.',
+    expectedResult: 'Off-topic link drops vanish within 1-2 seconds; legitimate links pass.',
     pitfalls: ['Without bot-admin, anti-link warns but cannot delete.'],
     relatedHowTo: ['whatsapp-anti-spam', 'whatsapp-moderation-setup'],
     faqs: [
-      { question: 'Does it block t.me / chat.whatsapp.com invites?', answer: 'Yes by default — those are common spam vectors. Allowlist them if you trust the source.' },
+      { question: 'Does it block t.me / chat.whatsapp.com invites?', answer: 'Yes by default, those are common spam vectors. Allowlist them if you trust the source.' },
     ],
   },
 
@@ -1060,7 +1060,7 @@ export const howToContent: Record<string, HowToContent> = {
     tips: ['Cap the daily auto-trivia at 5 questions so it does not flood.'],
     relatedHowTo: ['whatsapp-games-setup', 'whatsapp-leaderboard', 'whatsapp-xp-system'],
     faqs: [
-      { question: 'Can I import 100 trivia questions at once?', answer: 'Yes — CSV import on Standard plan and up.' },
+      { question: 'Can I import 100 trivia questions at once?', answer: 'Yes, CSV import on Standard plan and up.' },
     ],
   },
 
@@ -1075,7 +1075,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Audio only', body: '`!download --audio` for MP3.' },
     ],
     expectedResult: 'Watermark-free, high-quality YouTube video posted to the chat.',
-    pitfalls: ['Age-gated videos require cookies — see API key setup guide.'],
+    pitfalls: ['Age-gated videos require cookies, see API key setup guide.'],
     relatedHowTo: ['download-tiktok-whatsapp', 'whatsapp-music-download'],
     relatedFix: ['whatsapp-download-failed'],
     faqs: [
@@ -1085,12 +1085,12 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-custom-commands': {
     intro:
-      'Custom commands let you create your own bot triggers without writing code. !menu for your restaurant menu, !price for current pricing, !rules for group rules — all editable from the dashboard.',
+      'Custom commands let you create your own bot triggers without writing code. !menu for your restaurant menu, !price for current pricing, !rules for group rules, all editable from the dashboard.',
     prerequisites: ['Active session.', 'A list of commands you want to add.'],
     steps: [
       { title: 'Dashboard → Custom commands → New', body: 'Pick a trigger (e.g. !menu) and a response. Response can be text, image, or a multi-step reply.' },
       { title: 'Use placeholders', body: '{name}, {time}, {date}, {group}. The reply is personalised at send time.' },
-      { title: 'Multi-step replies', body: 'For tutorials: step 1 (text), step 2 (image), step 3 (text) — sent as a sequence with 1s delays.' },
+      { title: 'Multi-step replies', body: 'For tutorials: step 1 (text), step 2 (image), step 3 (text), sent as a sequence with 1s delays.' },
       { title: 'Scope to specific chats', body: 'Restrict a custom command to certain groups so it does not fire everywhere.' },
     ],
     expectedResult: 'Your group has its own command vocabulary, all without code.',
@@ -1103,14 +1103,14 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-broadcast-bot': {
     intro:
-      'Send the same message to many chats at once — only to your contacts/groups, not random numbers. Used for product launches, prayer reminders, weekly digests, and emergency alerts.',
+      'Send the same message to many chats at once, only to your contacts/groups, not random numbers. Used for product launches, prayer reminders, weekly digests, and emergency alerts.',
     prerequisites: ['Active session.', 'List of chats you want to broadcast to.'],
     steps: [
       { title: 'Dashboard → Broadcast → New', body: 'Pick the chats from a checklist, draft the message, schedule or send now.' },
-      { title: 'Stagger sends', body: 'BotWave staggers sends with 1–3s gaps so the bot does not fingerprint as a "burst sender". Cannot be disabled.' },
+      { title: 'Stagger sends', body: 'BotWave staggers sends with 1-3s gaps so the bot does not fingerprint as a "burst sender". Cannot be disabled.' },
       { title: 'Track delivery', body: 'The dashboard shows per-chat status: sent, delivered, failed, read.' },
     ],
-    expectedResult: 'A consistent message reaches every listed chat over a 1–5 minute window depending on count.',
+    expectedResult: 'A consistent message reaches every listed chat over a 1-5 minute window depending on count.',
     pitfalls: ['Broadcasting to non-opted-in numbers is a top ban trigger. Only broadcast to chats you legitimately own/admin.'],
     relatedHowTo: ['whatsapp-business-automation', 'whatsapp-scheduled-messages'],
     relatedUseCase: ['businesses', 'churches', 'creators'],
@@ -1129,7 +1129,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Re-engage', body: 'Optional: send a polite ping in DM or in-group via custom command.' },
     ],
     expectedResult: 'A current census of your group with engagement signals per member.',
-    pitfalls: ['Do not weaponise the data — pinging lurkers too hard creates resentment.'],
+    pitfalls: ['Do not weaponise the data, pinging lurkers too hard creates resentment.'],
     relatedHowTo: ['whatsapp-group-analytics'],
     faqs: [
       { question: 'Do you store phone numbers?', answer: 'JIDs (which include the number), yes, for bot operation. Numbers are never shared and are deleted on session deletion.' },
@@ -1150,7 +1150,7 @@ export const howToContent: Record<string, HowToContent> = {
     tips: ['Pair with !ai auto-reply for hybrid coverage.'],
     relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-auto-reply'],
     faqs: [
-      { question: 'Will it spam someone if they message me many times?', answer: 'No — there is a per-user cooldown (default 30min) so the same user only gets the AFK reply once per session.' },
+      { question: 'Will it spam someone if they message me many times?', answer: 'No, there is a per-user cooldown (default 30min) so the same user only gets the AFK reply once per session.' },
     ],
   },
 
@@ -1164,10 +1164,10 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Whitelist sensitive content', body: 'Configure media types or keywords that should never be reposted (e.g. accidental photo shares).' },
     ],
     expectedResult: '"Deleted for everyone" doesn\'t hide behaviour from admins.',
-    pitfalls: ['Tell your group the policy is on — using anti-delete covertly is a fast way to lose member trust.'],
+    pitfalls: ['Tell your group the policy is on, using anti-delete covertly is a fast way to lose member trust.'],
     relatedHowTo: ['whatsapp-moderation-setup'],
     faqs: [
-      { question: 'Is this against WhatsApp policy?', answer: 'No — the bot is just a regular Linked Device that received the message before it was deleted. It is the same as any user who saw it before deletion.' },
+      { question: 'Is this against WhatsApp policy?', answer: 'No, the bot is just a regular Linked Device that received the message before it was deleted. It is the same as any user who saw it before deletion.' },
     ],
   },
 
@@ -1177,7 +1177,7 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: ['Bot in groups; games enabled.'],
     steps: [
       { title: '!leaderboard', body: 'Default: current group, this week.', code: '!leaderboard' },
-      { title: 'Global', body: '!leaderboard global — across all your groups.' },
+      { title: 'Global', body: '!leaderboard global, across all your groups.' },
       { title: 'All-time', body: '!leaderboard all-time.' },
       { title: 'Reset', body: 'Dashboard → Games → Reset weekly leaderboard. (Auto-resets Sunday by default.)' },
     ],
@@ -1201,7 +1201,7 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'A gamified progression system that rewards active members.',
     relatedHowTo: ['whatsapp-leaderboard', 'whatsapp-games-setup'],
     faqs: [
-      { question: 'Does XP transfer between groups?', answer: 'No by default — each group has its own XP economy. Toggle global XP in Dashboard → Games if you want shared XP.' },
+      { question: 'Does XP transfer between groups?', answer: 'No by default, each group has its own XP economy. Toggle global XP in Dashboard → Games if you want shared XP.' },
     ],
   },
 
@@ -1212,10 +1212,10 @@ export const howToContent: Record<string, HowToContent> = {
     steps: [
       { title: 'Dashboard → Sessions → New', body: 'Pick "Connect via QR" instead of pairing code.' },
       { title: 'Open WhatsApp → Linked Devices → Link a Device', body: 'Hold the phone\'s camera up to the QR code on the dashboard.' },
-      { title: 'Wait for handshake', body: '5–10 seconds. The session flips to Connected.' },
+      { title: 'Wait for handshake', body: '5-10 seconds. The session flips to Connected.' },
     ],
     expectedResult: 'Linked Device entry appears in WhatsApp; BotWave session is live.',
-    pitfalls: ['QR refreshes every 20s — if it expires, click Regenerate.'],
+    pitfalls: ['QR refreshes every 20s, if it expires, click Regenerate.'],
     relatedHowTo: ['whatsapp-pairing-code', 'create-whatsapp-bot'],
     relatedFix: ['whatsapp-qr-not-scanning'],
     faqs: [
@@ -1225,19 +1225,19 @@ export const howToContent: Record<string, HowToContent> = {
 
   'whatsapp-pairing-code': {
     intro:
-      'The pairing code flow generates an 8-character code that you enter into WhatsApp\'s Linked Devices screen — no camera, no QR scanning. Recommended for desktop-only setups or shared screens where showing a QR is awkward.',
+      'The pairing code flow generates an 8-character code that you enter into WhatsApp\'s Linked Devices screen, no camera, no QR scanning. Recommended for desktop-only setups or shared screens where showing a QR is awkward.',
     prerequisites: ['WhatsApp 2.23+ (older versions don\'t support pairing codes).'],
     steps: [
       { title: 'Open BotWave Sessions → "Connect via pairing code"', body: 'Wait for the 8-char code to appear with a 60s countdown.' },
       { title: 'In WhatsApp → Linked Devices → Link a Device → "Link with phone number"', body: 'Enter the 8-char code.' },
-      { title: 'Wait for handshake', body: 'Connection completes in 5–10 seconds.' },
+      { title: 'Wait for handshake', body: 'Connection completes in 5-10 seconds.' },
     ],
-    expectedResult: 'Same outcome as QR pairing — a Linked Device entry in WhatsApp.',
-    pitfalls: ['60s window — regenerate if you miss it.'],
+    expectedResult: 'Same outcome as QR pairing, a Linked Device entry in WhatsApp.',
+    pitfalls: ['60s window, regenerate if you miss it.'],
     relatedHowTo: ['create-whatsapp-bot', 'connect-whatsapp-bot-qr'],
     relatedFix: ['whatsapp-pairing-code-expired'],
     faqs: [
-      { question: 'Does the pairing code reuse?', answer: 'No — single-use, expires after 60s.' },
+      { question: 'Does the pairing code reuse?', answer: 'No, single-use, expires after 60s.' },
     ],
   },
 
@@ -1247,9 +1247,9 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: ['Active session.'],
     steps: [
       { title: 'Dashboard → Sessions → click session → Anti-ban', body: 'See current settings.' },
-      { title: 'Confirm warmup is ON', body: 'Days 1–7: 15 → 200 msg/day ramp.' },
+      { title: 'Confirm warmup is ON', body: 'Days 1-7: 15 → 200 msg/day ramp.' },
       { title: 'Set daily cap', body: 'Default 200 once warmup completes; raise on paid plans up to 5000/day with caveats.' },
-      { title: 'Enable quiet hours', body: 'Default 12am–6am — slower replies, shorter messages, lower presence.' },
+      { title: 'Enable quiet hours', body: 'Default 12am-6am, slower replies, shorter messages, lower presence.' },
       { title: 'Enable presence simulation', body: 'Bot toggles online/offline based on time-of-day to simulate human behaviour.' },
     ],
     expectedResult: 'Session is maximally protected against fingerprinting.',
@@ -1271,11 +1271,11 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'If reconnect fails → pair fresh', body: 'Use pairing code or QR on the same number. Configuration and groups are preserved.' },
     ],
     expectedResult: 'Session restored without losing custom commands, warnings, or analytics history.',
-    pitfalls: ['If WhatsApp shows "Device logged out", reconnect won\'t help — you must re-pair from scratch.'],
+    pitfalls: ['If WhatsApp shows "Device logged out", reconnect won\'t help, you must re-pair from scratch.'],
     relatedHowTo: ['create-whatsapp-bot', 'whatsapp-pairing-code'],
     relatedFix: ['whatsapp-bot-disconnected', 'whatsapp-bot-logged-out', 'bot-session-needs-reauth'],
     faqs: [
-      { question: 'Will I lose group memberships if I re-pair?', answer: 'No — re-pairing is just authenticating again. Group memberships are at the WhatsApp account level, not the session level.' },
+      { question: 'Will I lose group memberships if I re-pair?', answer: 'No, re-pairing is just authenticating again. Group memberships are at the WhatsApp account level, not the session level.' },
     ],
   },
 
@@ -1287,12 +1287,12 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Dashboard → Groups → click group → Permissions', body: 'Default: all commands available to all members.' },
       { title: 'Lock commands to admins', body: 'Toggle !kick, !warn, !ban, !setrules to "admin only".' },
       { title: 'Lock commands to specific roles', body: 'Define roles (e.g. "Co-admin") and assign commands.' },
-      { title: 'Test', body: 'Try the command as a non-admin — bot will silently ignore or post a permission-denied message.' },
+      { title: 'Test', body: 'Try the command as a non-admin, bot will silently ignore or post a permission-denied message.' },
     ],
     expectedResult: 'Granular control over who can do what.',
     relatedHowTo: ['whatsapp-moderation-setup', 'set-up-bot-dashboard'],
     faqs: [
-      { question: 'Can users see which commands they have access to?', answer: 'Yes — !help shows only commands the calling user can invoke.' },
+      { question: 'Can users see which commands they have access to?', answer: 'Yes, !help shows only commands the calling user can invoke.' },
     ],
   },
 
@@ -1347,7 +1347,7 @@ export const howToContent: Record<string, HowToContent> = {
     relatedHowTo: ['telegram-bot-setup', 'telegram-moderation', 'telegram-welcome-bot'],
     relatedFix: ['telegram-bot-no-permissions'],
     faqs: [
-      { question: 'Privacy mode left ON — what breaks?', answer: 'Anti-spam, welcome messages, analytics, auto-reply — all of which need to see every message.' },
+      { question: 'Privacy mode left ON, what breaks?', answer: 'Anti-spam, welcome messages, analytics, auto-reply, all of which need to see every message.' },
     ],
   },
 
@@ -1364,12 +1364,12 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'Spam handled at Telegram\'s native speed (~200ms).',
     relatedHowTo: ['whatsapp-anti-spam', 'telegram-moderation'],
     faqs: [
-      { question: 'Channels too?', answer: 'Not yet — anti-spam is group-only. Channels rarely have spam since only admins post.' },
+      { question: 'Channels too?', answer: 'Not yet, anti-spam is group-only. Channels rarely have spam since only admins post.' },
     ],
   },
 
   'telegram-welcome-bot': {
-    intro: 'Telegram\'s native welcome bot tools are limited — BotWave adds placeholders, scheduled welcome, captcha, and DM-only mode.',
+    intro: 'Telegram\'s native welcome bot tools are limited, BotWave adds placeholders, scheduled welcome, captcha, and DM-only mode.',
     prerequisites: ['Telegram bot in the group, privacy mode off.'],
     steps: [
       { title: 'Dashboard → Groups → click group → Welcome', body: '' },
@@ -1396,7 +1396,7 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'Richer poll UX than native.',
     relatedHowTo: ['whatsapp-poll-creation', 'whatsapp-polls-bot'],
     faqs: [
-      { question: 'Native Telegram poll or /poll?', answer: 'Both available — native is good for quick polls; /poll adds anonymity, scheduling, pinning.' },
+      { question: 'Native Telegram poll or /poll?', answer: 'Both available, native is good for quick polls; /poll adds anonymity, scheduling, pinning.' },
     ],
   },
 
@@ -1442,7 +1442,7 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'Rule-based, deterministic auto-replies.',
     relatedHowTo: ['whatsapp-auto-responses', 'whatsapp-ai-auto-reply'],
     faqs: [
-      { question: 'Can I have AI fallback?', answer: 'Yes — set rule-based response with fallback to !ai for unmatched messages.' },
+      { question: 'Can I have AI fallback?', answer: 'Yes, set rule-based response with fallback to !ai for unmatched messages.' },
     ],
   },
 
@@ -1473,12 +1473,12 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'Members posting blocked media types get the message rejected.',
     relatedHowTo: ['telegram-moderation'],
     faqs: [
-      { question: 'Can I lock URLs?', answer: 'Use /antilink — /locks is for media types only.' },
+      { question: 'Can I lock URLs?', answer: 'Use /antilink, /locks is for media types only.' },
     ],
   },
 
   'telegram-notes': {
-    intro: 'Notes are short saved snippets — !welcome content, !rules content, !pricing for vendors — that any member can summon with #notename.',
+    intro: 'Notes are short saved snippets, !welcome content, !rules content, !pricing for vendors, that any member can summon with #notename.',
     prerequisites: ['Telegram bot in chat.'],
     steps: [
       { title: '/save notename content', body: 'Saves the content as a note. Reply to a message + /save name to save a forwarded message.', code: '/save rules No spam. No off-topic. Be kind.' },
@@ -1514,7 +1514,7 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: ['Bot in chat.'],
     steps: [
       { title: 'Dashboard → Groups → click group → Night mode', body: '' },
-      { title: 'Set the window', body: 'Default 12am–6am local time.' },
+      { title: 'Set the window', body: 'Default 12am-6am local time.' },
       { title: 'Pick what gets muted', body: 'Welcome messages, auto-replies, AI responses, game prompts. Moderation (anti-spam) stays active.' },
     ],
     expectedResult: 'Bot stays quiet during off-hours; resumes automatically.',
@@ -1555,7 +1555,7 @@ export const howToContent: Record<string, HowToContent> = {
     relatedHowTo: ['telegram-userbot-setup', 'userbot-pm-guard', 'userbot-antiflood'],
     relatedFix: ['telegram-userbot-2fa-error', 'telegram-userbot-session-expired'],
     faqs: [
-      { question: 'Boss plan required?', answer: 'Yes — userbots need MTProto session storage which is Boss-tier infra.' },
+      { question: 'Boss plan required?', answer: 'Yes, userbots need MTProto session storage which is Boss-tier infra.' },
     ],
   },
 
@@ -1565,18 +1565,18 @@ export const howToContent: Record<string, HowToContent> = {
     steps: [
       { title: 'Enable: .pmguard on', body: '', code: '.pmguard on' },
       { title: 'Customise the greeting', body: '.pmguard greeting "Hi! I don\'t know you yet. To send me messages, please verify by replying YES."' },
-      { title: 'Auto-block repeat senders', body: '.pmguard autoblock 3 — after 3 unverified messages, the sender is blocked.' },
+      { title: 'Auto-block repeat senders', body: '.pmguard autoblock 3, after 3 unverified messages, the sender is blocked.' },
       { title: 'Whitelist contacts', body: 'Contacts in your contact list bypass PM Guard.' },
     ],
     expectedResult: 'Stranger DMs are handled politely without your input.',
     relatedHowTo: ['setup-telegram-userbot', 'telegram-userbot-setup'],
     faqs: [
-      { question: 'Will it block real friends?', answer: 'No — anyone in your contacts is auto-whitelisted.' },
+      { question: 'Will it block real friends?', answer: 'No, anyone in your contacts is auto-whitelisted.' },
     ],
   },
 
   'userbot-gban': {
-    intro: 'Global ban: ban a user from every group your userbot is in, simultaneously. Use carefully — this is a heavy-handed tool.',
+    intro: 'Global ban: ban a user from every group your userbot is in, simultaneously. Use carefully, this is a heavy-handed tool.',
     prerequisites: ['Userbot session in target groups, admin in each.'],
     steps: [
       { title: '.gban @user reason', body: 'Ban + push reason to mod log.', code: '.gban @user repeated spam' },
@@ -1584,7 +1584,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: '.gbanlist', body: 'See all currently gbanned users.' },
     ],
     expectedResult: 'A coordinated multi-group ban with a single command.',
-    pitfalls: ['No appeals system by default — make sure you really want this. Enable per-user appeals via Dashboard.'],
+    pitfalls: ['No appeals system by default, make sure you really want this. Enable per-user appeals via Dashboard.'],
     relatedHowTo: ['userbot-antiflood', 'userbot-purge-messages'],
     faqs: [
       { question: 'Cross-account gban?', answer: 'Each userbot has its own gban list. Cross-account requires manual coordination.' },
@@ -1615,10 +1615,10 @@ export const howToContent: Record<string, HowToContent> = {
       { title: '.purge --from=@user', body: 'Delete all messages from a specific user in the visible range.' },
     ],
     expectedResult: 'Clean chat history in a single command.',
-    pitfalls: ['Telegram caps deletes at 100/request — use --batch=100 for larger purges and the bot will paginate.'],
+    pitfalls: ['Telegram caps deletes at 100/request, use --batch=100 for larger purges and the bot will paginate.'],
     relatedHowTo: ['userbot-gban', 'userbot-sticker-kang'],
     faqs: [
-      { question: 'Are deletes recoverable?', answer: 'No — Telegram deletes are permanent. Be sure before purging.' },
+      { question: 'Are deletes recoverable?', answer: 'No, Telegram deletes are permanent. Be sure before purging.' },
     ],
   },
 
@@ -1631,10 +1631,10 @@ export const howToContent: Record<string, HowToContent> = {
       { title: '.unkang', body: 'Remove the most recent kang.', code: '.unkang' },
     ],
     expectedResult: 'Your own evolving sticker pack drawn from any sticker you reply to.',
-    pitfalls: ['Respect the original sticker creator — kanging copyrighted stickers for redistribution may breach copyright.'],
+    pitfalls: ['Respect the original sticker creator, kanging copyrighted stickers for redistribution may breach copyright.'],
     relatedHowTo: ['whatsapp-sticker-maker', 'create-whatsapp-stickers-bot'],
     faqs: [
-      { question: 'Animated stickers?', answer: 'Yes — kang preserves animation.' },
+      { question: 'Animated stickers?', answer: 'Yes, kang preserves animation.' },
     ],
   },
 
@@ -1645,11 +1645,11 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Set up the Telegram bot/group first', body: 'Use the Telegram Bot Setup guide.' },
       { title: 'Pin a cross-link in the WhatsApp group', body: 'Use !pin with the Telegram invite link.' },
       { title: 'Schedule announcements via BotWave', body: 'Multi-day countdown, posted in both groups simultaneously via Dashboard → Broadcast.' },
-      { title: 'Replicate moderation settings', body: 'Dashboard → Groups → click WhatsApp group → "Copy settings to Telegram group". Anti-spam, welcome, rules — all replicated.' },
+      { title: 'Replicate moderation settings', body: 'Dashboard → Groups → click WhatsApp group → "Copy settings to Telegram group". Anti-spam, welcome, rules, all replicated.' },
       { title: 'After migration, ramp down WhatsApp bot', body: 'Set a forwarding auto-reply pointing at the Telegram group.' },
     ],
     expectedResult: 'Most of your active members make the move without friction.',
-    tips: ['Migrations work best with a 2-week dual-running window — do not cut WhatsApp off cold.'],
+    tips: ['Migrations work best with a 2-week dual-running window, do not cut WhatsApp off cold.'],
     relatedHowTo: ['run-bot-on-multiple-platforms', 'grow-community-with-bots'],
     relatedCompare: ['whatsapp-bot-vs-telegram-bot'],
     faqs: [
@@ -1669,7 +1669,7 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'A unified community ops surface across all platforms.',
     relatedHowTo: ['migrate-whatsapp-to-telegram', 'grow-community-with-bots', 'set-up-bot-dashboard'],
     faqs: [
-      { question: 'Can the same number be on both?', answer: 'WhatsApp uses your number, Telegram uses an API token tied to a Telegram account — different identifiers. So yes, but they are technically separate identities.' },
+      { question: 'Can the same number be on both?', answer: 'WhatsApp uses your number, Telegram uses an API token tied to a Telegram account, different identifiers. So yes, but they are technically separate identities.' },
     ],
   },
 
@@ -1687,7 +1687,7 @@ export const howToContent: Record<string, HowToContent> = {
     relatedHowTo: ['whatsapp-business-automation', 'whatsapp-ai-auto-reply', 'whatsapp-custom-commands'],
     relatedUseCase: ['businesses', 'customer-support'],
     faqs: [
-      { question: 'Does this work for vendors?', answer: 'Yes — order tracking, price lookups, location, hours — all common patterns built in.' },
+      { question: 'Does this work for vendors?', answer: 'Yes, order tracking, price lookups, location, hours, all common patterns built in.' },
     ],
   },
 
@@ -1734,12 +1734,12 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Pick "Recommended"', body: 'Default tuned for general communities.' },
       { title: 'Or pick "Strict" for high-bar groups', body: 'Tighter thresholds, profanity filter on strict.' },
       { title: 'Or pick "Lenient" for casual hangouts', body: 'Looser thresholds, profanity off.' },
-      { title: 'Tweak from there', body: 'Profiles are starting points — adjust individual settings as you learn.' },
+      { title: 'Tweak from there', body: 'Profiles are starting points, adjust individual settings as you learn.' },
     ],
     expectedResult: 'Sane moderation in 30 seconds.',
     relatedHowTo: ['whatsapp-moderation-setup', 'whatsapp-anti-spam', 'telegram-moderation'],
     faqs: [
-      { question: 'Are profiles editable?', answer: 'Yes — pick one, then tweak.' },
+      { question: 'Are profiles editable?', answer: 'Yes, pick one, then tweak.' },
     ],
   },
 
@@ -1776,7 +1776,7 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'You know where everything lives without searching.',
     relatedHowTo: ['create-whatsapp-bot', 'set-up-auto-moderation', 'whatsapp-group-analytics'],
     faqs: [
-      { question: 'Dashboard on mobile?', answer: 'Fully responsive — same functionality, optimised layout.' },
+      { question: 'Dashboard on mobile?', answer: 'Fully responsive, same functionality, optimised layout.' },
     ],
   },
 
@@ -1788,7 +1788,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Generate a Gemini API key', body: 'aistudio.google.com/app/apikey → Create. Copy the key.' },
       { title: 'Paste into BotWave', body: 'Dashboard → AI → BYOK → paste each key. BotWave validates immediately.' },
       { title: 'Pick the default provider', body: 'Default Groq, fallback Gemini. Or invert for cheaper experimentation.' },
-      { title: 'Set per-session model override (optional)', body: 'A specific session can pin a specific model — useful for testing.' },
+      { title: 'Set per-session model override (optional)', body: 'A specific session can pin a specific model, useful for testing.' },
     ],
     expectedResult: 'Your AI usage uses your own provider quota and billing; BotWave\'s daily cap is removed.',
     relatedHowTo: ['whatsapp-ai-assistant', 'whatsapp-ai-auto-reply'],
