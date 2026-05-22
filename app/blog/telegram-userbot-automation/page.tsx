@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
+import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-userbot-automation' },
@@ -165,5 +166,5 @@ const relatedPosts = [
 ];
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 16, 2026" readTime="8 min read" slug="telegram-userbot-automation" relatedPosts={relatedPosts} />;
+  return <BlogArticle content={content} date="May 16, 2026" readTime="8 min read" slug="telegram-userbot-automation" relatedPosts={relatedPosts} {...(blogMeta['telegram-userbot-automation'] ?? { faqs: [], description: '', keywords: [] })} />;
 }

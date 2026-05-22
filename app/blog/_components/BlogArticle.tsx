@@ -10,12 +10,27 @@ interface RelatedPost {
   title: string;
 }
 
+interface BlogFAQ {
+  question: string;
+  answer: string;
+}
+
 interface BlogArticleProps {
   content: string;
   date: string;
   readTime: string;
   slug: string;
   relatedPosts?: RelatedPost[];
+  /** Plain summary used in JSON-LD description. Falls back to first paragraph. */
+  description?: string;
+  /** Keywords for JSON-LD. */
+  keywords?: string[];
+  /** Modified date (ISO). Defaults to `date`. */
+  dateModified?: string;
+  /** Hero image absolute URL. Defaults to /api/og. */
+  image?: string;
+  /** FAQs to render at the end + emit FAQPage schema. */
+  faqs?: BlogFAQ[];
 }
 
 function renderMarkdown(md: string) {
@@ -238,27 +253,85 @@ function ShareButtons({ slug }: { slug: string }) {
   );
 }
 
-export default function BlogArticle({ content, date, readTime, slug, relatedPosts }: BlogArticleProps) {
+export default function BlogArticle({
+  content,
+  date,
+  readTime,
+  slug,
+  relatedPosts,
+  description,
+  keywords,
+  dateModified,
+  image,
+  faqs,
+}: BlogArticleProps) {
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1] : '';
   const wordCount = content.split(/\s+/).length;
+  const url = `https://www.botwave.online/blog/${slug}`;
+
+  // Extract first non-heading paragraph as fallback description.
+  const fallbackDesc = (() => {
+    const lines = content.split('\n');
+    for (const l of lines) {
+      const t = l.trim();
+      if (!t || t.startsWith('#') || t.startsWith('**Last') || t.startsWith('[')) continue;
+      return t.replace(/[*_`]/g, '').slice(0, 200);
+    }
+    return title;
+  })();
+
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: title,
+    description: description ?? fallbackDesc,
+    image: image
+      ? [image]
+      : [`https://www.botwave.online/api/og?title=${encodeURIComponent(title)}`],
     datePublished: date,
-    dateModified: date,
+    dateModified: dateModified ?? date,
     author: { '@type': 'Organization', name: 'BotWave', url: 'https://www.botwave.online' },
-    publisher: { '@type': 'Organization', name: 'BotWave', url: 'https://www.botwave.online' },
-    url: `https://www.botwave.online/blog/${slug}`,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.botwave.online/blog/${slug}` },
+    publisher: {
+      '@type': 'Organization',
+      name: 'BotWave',
+      url: 'https://www.botwave.online',
+      logo: { '@type': 'ImageObject', url: 'https://www.botwave.online/icon-512.png' },
+    },
+    url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     wordCount,
+    ...(keywords && keywords.length ? { keywords: keywords.join(', ') } : {}),
     inLanguage: 'en',
   };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.botwave.online/' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://www.botwave.online/blog' },
+      { '@type': 'ListItem', position: 3, name: title, item: url },
+    ],
+  };
+
+  const faqJsonLd = faqs && faqs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  } : null;
 
   return (
     <main className="min-h-screen bg-[var(--bg)]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      {faqJsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      )}
       <Navbar />
 
       <article className="pt-32 pb-24 px-6">
@@ -283,6 +356,20 @@ export default function BlogArticle({ content, date, readTime, slug, relatedPost
             <div className="prose-custom">
               {renderMarkdown(content)}
             </div>
+
+            {faqs && faqs.length > 0 && (
+              <section className="mt-12 mb-12">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">Frequently asked questions</h2>
+                <div className="space-y-6">
+                  {faqs.map((f, i) => (
+                    <div key={i} className="glass-card rounded-xl p-5">
+                      <h3 className="font-semibold text-[var(--text-primary)] mb-2">{f.question}</h3>
+                      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{f.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <hr className="border-[var(--border)] my-12" />
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
+import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-south-africa' },
@@ -173,5 +174,5 @@ const relatedPosts = [
 ];
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 15, 2026" readTime="6 min read" slug="whatsapp-bot-south-africa" relatedPosts={relatedPosts} />;
+  return <BlogArticle content={content} date="May 15, 2026" readTime="6 min read" slug="whatsapp-bot-south-africa" relatedPosts={relatedPosts} {...(blogMeta['whatsapp-bot-south-africa'] ?? { faqs: [], description: '', keywords: [] })} />;
 }

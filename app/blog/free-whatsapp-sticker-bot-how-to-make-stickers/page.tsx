@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
+import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-whatsapp-sticker-bot-how-to-make-stickers' },
@@ -130,5 +131,5 @@ const relatedPosts = [
 ];
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 7, 2026" readTime="4 min read" slug="free-whatsapp-sticker-bot-how-to-make-stickers" relatedPosts={relatedPosts} />;
+  return <BlogArticle content={content} date="May 7, 2026" readTime="4 min read" slug="free-whatsapp-sticker-bot-how-to-make-stickers" relatedPosts={relatedPosts} {...(blogMeta['free-whatsapp-sticker-bot-how-to-make-stickers'] ?? { faqs: [], description: '', keywords: [] })} />;
 }
