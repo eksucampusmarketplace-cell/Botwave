@@ -35,20 +35,18 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
-      {
-        // Sitemap chunks are now generated on-demand (see app/sitemap.ts) so
-        // we explicitly cache them at the edge for 24h. stale-while-revalidate
-        // means GSC always gets an instant response — the regen happens in
-        // the background after the cached copy goes stale, so a slow render
-        // never turns into a "Couldn't fetch" in Search Console.
-        source: '/sitemap/:id*.xml',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
-          },
-        ],
-      },
+    ];
+  },
+  // Strip the `.xml` suffix when routing /sitemap/<id>.xml so the request
+  // matches the `app/sitemap/[id]/route.ts` handler (which can accept the
+  // raw `.xml` segment too — the rewrite is belt-and-braces). Critically
+  // this keeps the externally-visible URL stable for Google Search Console
+  // (chunks are still at /sitemap/<id>.xml) while letting the handler set
+  // its own Cache-Control header, which `headers()` rules can't reliably
+  // override for metadata sitemap routes.
+  async rewrites() {
+    return [
+      { source: '/sitemap/:id(\\d+).xml', destination: '/sitemap/:id' },
     ];
   },
   // Permanent redirects for legacy URLs that still show up in Google Search
