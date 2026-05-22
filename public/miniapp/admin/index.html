@@ -88,6 +88,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .stat-card { background: var(--card-bg); border-radius: 14px; padding: 16px; text-align: center; }
 .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--btn); }
 .stat-card .stat-label { font-size: 0.75rem; color: var(--hint); margin-top: 4px; }
+.scope-pill { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; background: rgba(94,174,255,0.12); color: var(--link); text-transform: none; letter-spacing: 0; vertical-align: middle; }
+.sparkline .spark-row { display: flex; align-items: flex-end; gap: 2px; height: 80px; padding: 4px 0; }
+.sparkline .spark-bar { flex: 1; background: var(--btn); border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.85; transition: opacity 0.15s; }
+.sparkline .spark-bar:hover { opacity: 1; }
+.sparkline .spark-footer { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--hint); margin-top: 6px; }
 .broadcast-box { background: var(--card-bg); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
 .broadcast-box textarea { width: 100%; min-height: 100px; padding: 10px 12px; background: var(--secondary-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.9rem; resize: vertical; outline: none; }
 .group-selector { margin-bottom: 12px; }
@@ -119,7 +124,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="tab" data-tab="stats" data-roles="owner">Stats</button>
     <button class="tab" data-tab="broadcast" data-roles="owner">Broadcast</button>
     <button class="tab" data-tab="groupmsgs" data-roles="owner,admin">Group Msgs</button>
-    <button class="tab" data-tab="messages" data-roles="owner">Bot Msgs</button>
+    <button class="tab" data-tab="messages" data-roles="owner">Bot Replies</button>
     <button class="tab" data-tab="notes" data-roles="owner,admin">Notes</button>
     <button class="tab" data-tab="filters" data-roles="owner,admin">Filters</button>
     <button class="tab" data-tab="modlog" data-roles="owner,admin,user">Mod Log</button>
@@ -489,28 +494,59 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <!-- Stats Section (Owner only) -->
   <div class="section" id="sec-stats">
-    <div class="card"><h3>Bot Analytics</h3><p>Overview of your bot's activity and engagement.</p></div>
+    <div class="card">
+      <h3>Bot Analytics <span class="scope-pill">Scope: this bot session</span></h3>
+      <p>Overview across every chat this bot is in. For one specific group, run <code>/stats</code> from inside it.</p>
+    </div>
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-value" id="stat-groups">-</div>
         <div class="stat-label">Groups</div>
       </div>
       <div class="stat-card">
+        <div class="stat-value" id="stat-dms">-</div>
+        <div class="stat-label">DMs</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-value" id="stat-members">-</div>
-        <div class="stat-label">Total Members</div>
+        <div class="stat-label">Users Seen</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-messages-7d">-</div>
         <div class="stat-label">Messages (7d)</div>
       </div>
       <div class="stat-card">
+        <div class="stat-value" id="stat-messages-30d">-</div>
+        <div class="stat-label">Messages (30d)</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-value" id="stat-active-users">-</div>
         <div class="stat-label">Active Users (7d)</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-active-users-30d">-</div>
+        <div class="stat-label">Active Users (30d)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-mod-30d">-</div>
+        <div class="stat-label">Mod Actions (30d)</div>
+      </div>
     </div>
     <div class="card">
-      <h3>Top Active Users (7 days)</h3>
+      <h3>Messages — last 30 days</h3>
+      <div id="stats-sparkline" class="sparkline"><div class="empty">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Top Chats (30 days)</h3>
+      <div id="stats-top-chats"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Top Users (30 days)</h3>
       <div id="stats-top-users"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h3>Top Message Types (30 days)</h3>
+      <div id="stats-top-commands"><div class="loading">Loading...</div></div>
     </div>
     <div class="card">
       <h3>Moderation Summary</h3>
@@ -521,7 +557,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <!-- Broadcast Section (Owner only) -->
   <div class="section" id="sec-broadcast">
-    <div class="card"><h3>Broadcast Message</h3><p>Send a message to all groups where the bot is active.</p></div>
+    <div class="card"><h3>Broadcast Message <span class="scope-pill">Scope: this bot session</span></h3><p>Send a message to every group this bot session is in. Other bot sessions you own are not affected.</p></div>
     <div class="broadcast-box">
       <textarea id="broadcast-text" placeholder="Type your broadcast message here...\n\nSupports HTML: <b>bold</b>, <i>italic</i>, <code>code</code>"></textarea>
       <div class="input-group" style="margin-top:8px"><label style="font-size:0.75rem;color:var(--hint)">Image URL (optional)</label><input type="text" id="broadcast-image" placeholder="https://example.com/image.jpg" style="width:100%;padding:8px 12px;background:var(--secondary-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:0.85rem;outline:none"></div>
@@ -557,7 +593,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
   <!-- Bot Messages Section (Owner only) -->
   <div class="section" id="sec-messages">
-    <div class="card"><h3>Bot Messages (Owner Only)</h3><p>These messages are global for your bot. Only the bot owner can edit them.</p></div>
+    <div class="card"><h3>Global Bot Replies (/start, /help, …) <span class="scope-pill">Scope: this bot session</span></h3><p>These are the bot's default replies for built-in commands. Group-specific welcome / goodbye / rules messages live under Group Msgs.</p></div>
     <div class="card"><h3>Start Message (Private DM)</h3><div class="input-group"><textarea id="msg-start-text" rows="5" placeholder="Leave empty for default"></textarea></div></div>
     <div class="card"><h3>Start Message (Group DM)</h3><div class="input-group"><textarea id="msg-start-group-dm" rows="5" placeholder="Sent when bot is added to a group"></textarea></div></div>
     <div class="card"><h3>Help Text</h3><div class="input-group"><textarea id="msg-help-text" rows="5" placeholder="Sent when user types /help"></textarea></div></div>
@@ -884,32 +920,76 @@ document.getElementById('save-features').addEventListener('click', function() {
 });
 
 
+function fmtNum(n) {
+  if (n === undefined || n === null) return '-';
+  if (n < 1000) return String(n);
+  if (n < 1000000) return (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'k';
+  return (n / 1000000).toFixed(1) + 'M';
+}
+
+function renderSparkline(series) {
+  var el = document.getElementById('stats-sparkline');
+  if (!series || !series.length) { el.innerHTML = '<div class="empty">No messages tracked yet.</div>'; return; }
+  var max = 1;
+  for (var i = 0; i < series.length; i++) { if (series[i].count > max) max = series[i].count; }
+  var bars = series.map(function(d) {
+    var pct = Math.max(2, Math.round((d.count / max) * 100));
+    return '<div class="spark-bar" style="height:' + pct + '%" title="' + d.date + ': ' + d.count + ' messages"></div>';
+  }).join('');
+  var total = series.reduce(function(a, b) { return a + b.count; }, 0);
+  el.innerHTML = '<div class="spark-row">' + bars + '</div><div class="spark-footer"><span>' + series[0].date + '</span><span>' + total + ' total</span><span>' + series[series.length - 1].date + '</span></div>';
+}
+
 function loadStats() {
-  apiCall('/api/telegram/groups?sessionId=' + sessionId).then(function(res) {
-    var groupCount = (res.success && res.data) ? res.data.length : 0;
-    document.getElementById('stat-groups').textContent = groupCount;
-  }).catch(function() {});
-  apiCall('/api/telegram/analytics/summary').then(function(res) {
-    if (res.success && res.data) {
-      document.getElementById('stat-members').textContent = res.data.total_members || '-';
-      document.getElementById('stat-messages-7d').textContent = res.data.messages_7d || '-';
-      document.getElementById('stat-active-users').textContent = res.data.active_users_7d || '-';
-      var topEl = document.getElementById('stats-top-users');
-      if (res.data.top_users && res.data.top_users.length) {
-        var medals = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
-        topEl.innerHTML = res.data.top_users.map(function(u, i) {
-          return '<div class="list-item"><div><div class="name">' + (i < 3 ? medals[i] : (i+1) + '.') + ' User ' + u.user_id + '</div><div class="meta">' + u.message_count + ' messages</div></div></div>';
-        }).join('');
-      } else { topEl.innerHTML = '<div class="empty">No activity data yet.</div>'; }
-      var modEl = document.getElementById('stats-mod-summary');
-      if (res.data.mod_actions) {
-        modEl.innerHTML = '<div class="list-item"><div><div class="name">Bans: ' + (res.data.mod_actions.bans || 0) + '</div><div class="meta">Mutes: ' + (res.data.mod_actions.mutes || 0) + ' \u2022 Warns: ' + (res.data.mod_actions.warns || 0) + ' \u2022 Kicks: ' + (res.data.mod_actions.kicks || 0) + '</div></div></div>';
-      } else { modEl.innerHTML = '<div class="empty">No moderation data yet.</div>'; }
+  apiCall('/api/telegram/analytics/summary?sessionId=' + sessionId).then(function(res) {
+    if (!res.success || !res.data) {
+      document.getElementById('stats-top-users').innerHTML = '<div class="empty">Failed to load stats.</div>';
+      return;
     }
+    var d = res.data;
+    var setText = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = fmtNum(val); };
+    setText('stat-groups', d.groups || 0);
+    setText('stat-dms', d.dms || 0);
+    setText('stat-members', d.total_members || 0);
+    setText('stat-messages-7d', d.messages_7d || 0);
+    setText('stat-messages-30d', d.messages_30d || 0);
+    setText('stat-active-users', d.active_users_7d || 0);
+    setText('stat-active-users-30d', d.active_users_30d || 0);
+    setText('stat-mod-30d', d.mod_actions_30d || 0);
+
+    renderSparkline(d.messages_per_day || []);
+
+    var medals = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+    var topChatsEl = document.getElementById('stats-top-chats');
+    var topChats = d.top_chats || [];
+    if (topChats.length) {
+      topChatsEl.innerHTML = topChats.map(function(c, i) {
+        var label = c.chat_title ? c.chat_title : ('Chat ' + c.chat_id);
+        return '<div class="list-item"><div><div class="name">' + (i < 3 ? medals[i] : (i+1) + '.') + ' ' + label + '</div><div class="meta">' + c.chat_id + ' \u2022 ' + fmtNum(c.messages) + ' msgs</div></div></div>';
+      }).join('');
+    } else { topChatsEl.innerHTML = '<div class="empty">No chat activity in last 30 days.</div>'; }
+
+    var topUsersEl = document.getElementById('stats-top-users');
+    var topUsers = d.top_users_by_messages || [];
+    if (topUsers.length) {
+      topUsersEl.innerHTML = topUsers.map(function(u, i) {
+        return '<div class="list-item"><div><div class="name">' + (i < 3 ? medals[i] : (i+1) + '.') + ' User ' + u.user_id + '</div><div class="meta">' + fmtNum(u.messages) + ' messages</div></div></div>';
+      }).join('');
+    } else { topUsersEl.innerHTML = '<div class="empty">No user activity in last 30 days.</div>'; }
+
+    var topCmdEl = document.getElementById('stats-top-commands');
+    var topCmds = d.top_commands || [];
+    if (topCmds.length) {
+      topCmdEl.innerHTML = topCmds.map(function(c, i) {
+        return '<div class="list-item"><div><div class="name">' + (i+1) + '. ' + (c.message_type || 'unknown') + '</div><div class="meta">' + fmtNum(c.count) + '</div></div></div>';
+      }).join('');
+    } else { topCmdEl.innerHTML = '<div class="empty">No data.</div>'; }
+
+    var modEl = document.getElementById('stats-mod-summary');
+    if (d.mod_actions_30d || d.mod_actions_7d) {
+      modEl.innerHTML = '<div class="list-item"><div><div class="name">Last 7 days: ' + fmtNum(d.mod_actions_7d || 0) + '</div><div class="meta">Last 30 days: ' + fmtNum(d.mod_actions_30d || 0) + '</div></div></div>';
+    } else { modEl.innerHTML = '<div class="empty">No moderation actions recorded.</div>'; }
   }).catch(function() {
-    document.getElementById('stat-members').textContent = '-';
-    document.getElementById('stat-messages-7d').textContent = '-';
-    document.getElementById('stat-active-users').textContent = '-';
     document.getElementById('stats-top-users').innerHTML = '<div class="empty">Failed to load stats.</div>';
     document.getElementById('stats-mod-summary').innerHTML = '<div class="empty">Failed to load stats.</div>';
   });
