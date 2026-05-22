@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import LatestPostsCompact from '@/components/blog/LatestPostsCompact';
 
 export const metadata: Metadata = {
   title: 'What is BotWave? Free Multi-Platform Bot (2026)',
@@ -126,6 +127,8 @@ export default function WhatIsBotWavePage() {
           </div>
         </div>
       </article>
+
+      <LatestPostsCompact limit={4} />
 
         <Footer />
     </main>

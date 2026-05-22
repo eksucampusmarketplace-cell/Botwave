@@ -31,12 +31,22 @@ import { landingPages } from '@/lib/landing/data';
 import { searchEngines } from '@/lib/search-engines/data';
 import { PRICING_TIERS } from '@/lib/pricing/tiers';
 import { LANDING_CHUNK_SIZE, LANDING_CHUNK_ID_START } from '@/lib/sitemap-config';
+import { currentReviewDate } from '@/lib/content/reviewed';
 
 export type SitemapEntry = MetadataRoute.Sitemap[number];
 
-// Module-load timestamp doubles as <lastmod> for pages that change with each
-// deploy. Re-derived on every cold start, then cached by revalidate / edge.
+// Module-load timestamp. Used as <lastmod> for the small set of pages whose
+// rendered HTML legitimately changes on every deploy (status page, changelog,
+// pricing display logic, the homepage hero counter, etc.). Re-derived on
+// every cold start, then cached by revalidate / edge.
 const BUILD_DATE = new Date();
+
+// Monthly review date for evergreen content. Both the sitemap <lastmod> AND
+// the user-visible "Last reviewed: <Month YYYY>" rendered on these pages
+// reference the same constant in lib/content/reviewed.ts, so bumping the
+// review month flips both signals together and Google/Bing see honest
+// freshness (HTML hash actually changes when the date label updates).
+const REVIEW_DATE = currentReviewDate();
 
 const BASE_URL = 'https://www.botwave.online';
 
@@ -64,40 +74,44 @@ export function getChunkUrls(id: number): SitemapEntry[] {
 function corePages(baseUrl: string): SitemapEntry[] {
   return [
     { url: baseUrl, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 1 },
-    { url: `${baseUrl}/signup`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${baseUrl}/login`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/features`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${baseUrl}/features/ai`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/features/moderation`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/features/media`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/whatsapp-bot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${baseUrl}/telegram-bot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${baseUrl}/telegram-group-analytics`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    // Evergreen marketing pages: lastmod tied to the monthly review date
+    // (not BUILD_DATE) so freshness signal matches the rendered "Last
+    // reviewed: <Month YYYY>" line on each page.
+    { url: `${baseUrl}/signup`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/login`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/features`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/features/ai`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/features/moderation`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/features/media`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/whatsapp-bot`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/telegram-bot`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/telegram-group-analytics`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    // Pages whose rendered HTML legitimately differs each deploy: keep BUILD_DATE.
     { url: `${baseUrl}/status`, lastModified: BUILD_DATE, changeFrequency: 'daily', priority: 0.5 },
     { url: `${baseUrl}/changelog`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${baseUrl}/templates`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/integrations`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/academy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/case-studies`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/security`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/privacy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/terms`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/templates`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/integrations`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/academy`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/case-studies`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/security`, lastModified: REVIEW_DATE, changeFrequency: 'yearly', priority: 0.5 },
+    { url: `${baseUrl}/privacy`, lastModified: REVIEW_DATE, changeFrequency: 'yearly', priority: 0.5 },
+    { url: `${baseUrl}/terms`, lastModified: REVIEW_DATE, changeFrequency: 'yearly', priority: 0.5 },
     { url: `${baseUrl}/pricing`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
     ...PRICING_TIERS.map((tier) => ({
       url: `${baseUrl}/pricing/${tier.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
     { url: `${baseUrl}/community-commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/community`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${baseUrl}/guest-posts`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/about`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/what-is-botwave`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/search-engines`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/guest-posts`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/about`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/what-is-botwave`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/search-engines`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.6 },
     ...searchEngines.map((engine) => ({
       url: `${baseUrl}/search-engines/${engine.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.55,
     })),
@@ -110,23 +124,27 @@ function commandPages(baseUrl: string): SitemapEntry[] {
     { url: `${baseUrl}/commands/whatsapp`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/userbot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
+    // Per-command reference pages are evergreen — command syntax barely
+    // changes month-to-month. Tie lastmod to REVIEW_DATE so the freshness
+    // signal matches the rendered "Last reviewed" line, and bumping the
+    // review date refreshes the whole command catalogue at once.
     ...whatsappCommands.map((cmd) => ({
       url: `${baseUrl}/commands/whatsapp/${cmd.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     ...telegramCommands.map((cmd) => ({
       url: `${baseUrl}/commands/telegram/${cmd.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     ...userbotCommands.map((cmd) => ({
       url: `${baseUrl}/commands/userbot/${cmd.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.5,
+      priority: 0.4,
     })),
   ];
 }
@@ -134,53 +152,57 @@ function commandPages(baseUrl: string): SitemapEntry[] {
 function contentPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/docs`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
+    // Per-doc/faq/use-case/compare/fix/how-to/mailbox pages are evergreen
+    // reference material. lastmod follows REVIEW_DATE so it matches the
+    // rendered "Last reviewed" line on each page. Index pages keep
+    // BUILD_DATE because they legitimately gain new items per deploy.
     ...docPages.map((doc) => ({
       url: `${baseUrl}/docs/${doc.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.7,
+      priority: 0.6,
     })),
     { url: `${baseUrl}/faq`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     ...faqItems.map((faq) => ({
       url: `${baseUrl}/faq/${faq.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.5,
+      priority: 0.4,
     })),
     { url: `${baseUrl}/use-cases`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.8 },
     ...useCases.map((uc) => ({
       url: `${baseUrl}/use-cases/${uc.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     { url: `${baseUrl}/compare`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
     ...compareData.map((page) => ({
       url: `${baseUrl}/compare/${page.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     { url: `${baseUrl}/fix`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     ...fixPages.map((page) => ({
       url: `${baseUrl}/fix/${page.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     { url: `${baseUrl}/how-to`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     ...howToPages.map((page) => ({
       url: `${baseUrl}/how-to/${page.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
     { url: `${baseUrl}/mailbox`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     ...mailboxPages.map((page) => ({
       url: `${baseUrl}/mailbox/${page.slug}`,
-      lastModified: BUILD_DATE,
+      lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
-      priority: 0.6,
+      priority: 0.5,
     })),
   ];
 }
@@ -214,11 +236,28 @@ function landingChunk(baseUrl: string, chunkIndex: number): SitemapEntry[] {
   const end = Math.min(start + LANDING_CHUNK_SIZE, landingPages.length);
   const chunk = landingPages.slice(start, end);
 
+  // Tiered priority + lastmod policy for the long tail of landing pages.
+  //
+  // Why this matters for impressions: when a sitemap of 20k+ near-identical
+  // pages all claim priority 0.5+ with a <lastmod> that advances every
+  // deploy, crawlers (Google + Bing) waste crawl budget re-fetching every
+  // page and finding the HTML unchanged. They then deprioritise the whole
+  // catalogue and impressions sag. The fix:
+  //   * 'country' pages get priority 0.5 — these are the highest-intent
+  //     terms, deserve dedicated crawl budget.
+  //   * everything else gets 0.3, signaling "don't waste budget here".
+  //   * `changeFrequency: 'yearly'` is the most honest hint we can give
+  //     about this kind of evergreen programmatic page.
+  //   * <lastmod> is the monthly REVIEW_DATE, NOT the build timestamp.
+  //     The page literally renders "Last reviewed: <Month YYYY>" pulled
+  //     from the same constant, so when REVIEW_DATE advances the rendered
+  //     HTML byte-changes too. Crawlers verify, see real change, trust
+  //     the freshness signal.
   return chunk.map((page) => ({
     url: `${baseUrl}/${page.slug}`,
-    lastModified: BUILD_DATE,
-    changeFrequency: 'monthly' as const,
-    priority: page.category === 'country' ? 0.6 : 0.5,
+    lastModified: REVIEW_DATE,
+    changeFrequency: 'yearly' as const,
+    priority: page.category === 'country' ? 0.5 : 0.3,
   }));
 }
 
