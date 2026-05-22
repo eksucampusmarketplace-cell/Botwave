@@ -54,7 +54,12 @@ userbot_pm_permit
 # telegram_bot_configs.admin_only_mode and telegram_moderation_log.
 
 # --- WhatsApp + misc tables (PR follow-up batch 3) ---
-schedule_templates       # bot/whatsapp/commands/productivity.ts
-email_bounces            # app/api/email/bounce/route.ts + lib/email/bounce.ts (declared in legacy migrations/004 but never folded into supabase/migrations/)
-bank_cashout_requests    # bot/whatsapp/commands/admin.ts cashout flow
-uploads                  # upload-tracking telemetry
+# Resolved in PR #531 / migration 063: schedule_templates, email_bounces,
+# and bank_cashout_requests now have declaring migrations. `uploads` was
+# a false positive (Supabase Storage bucket, not a table); the schema-drift
+# regex now skips `.storage.from(...)` calls.
+#
+# Goal achieved: zero real drift remaining. The allowlist now contains
+# only out-of-band-created tables that exist on prod but are not in
+# supabase/migrations/. Folding those into migrations is a separate
+# cleanup task (lower priority — they work, they're just not declared).
