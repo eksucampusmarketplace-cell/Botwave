@@ -2427,10 +2427,10 @@ export async function isIgnoredChat(
 
 export async function getAdminOnlyMode(sessionId: string): Promise<boolean> {
   const { data } = await supabase
-    .from('telegram_config')
+    .from('telegram_bot_configs')
     .select('admin_only_mode')
     .eq('session_id', sessionId)
-    .single();
+    .maybeSingle();
   return !!(data as Record<string, unknown> | null)?.admin_only_mode;
 }
 
@@ -2439,8 +2439,7 @@ export async function setAdminOnlyMode(
   enabled: boolean,
 ): Promise<void> {
   const { error } = await supabase
-    .from('telegram_config')
-    .update({ admin_only_mode: enabled })
-    .eq('session_id', sessionId);
+    .from('telegram_bot_configs')
+    .upsert({ session_id: sessionId, admin_only_mode: enabled }, { onConflict: 'session_id' });
   if (error) console.error('[TG-DB] setAdminOnlyMode error:', error.message);
 }

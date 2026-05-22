@@ -132,12 +132,12 @@ export async function GET(request: NextRequest) {
 
     const [{ count: modActions7d }, { count: modActions30d }] = await Promise.all([
       supabase
-        .from('telegram_mod_log')
+        .from('telegram_moderation_log')
         .select('*', { count: 'exact', head: true })
         .eq('session_id', sessionId)
         .gte('created_at', sevenIso),
       supabase
-        .from('telegram_mod_log')
+        .from('telegram_moderation_log')
         .select('*', { count: 'exact', head: true })
         .eq('session_id', sessionId)
         .gte('created_at', thirtyIso),
