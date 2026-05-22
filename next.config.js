@@ -37,6 +37,20 @@ const nextConfig = {
       },
     ];
   },
+  // Permanent redirects for legacy URLs that still show up in Google Search
+  // Console as 404s (left over from a pre-Next.js setup on this domain). All
+  // redirect to a still-indexed canonical so accumulated link equity isn't
+  // lost.
+  async redirects() {
+    return [
+      { source: '/index.php', destination: '/', permanent: true },
+      { source: '/index.html', destination: '/', permanent: true },
+      { source: '/home.php', destination: '/', permanent: true },
+      { source: '/home.html', destination: '/', permanent: true },
+      { source: '/wp-admin', destination: '/', permanent: true },
+      { source: '/wp-login.php', destination: '/login', permanent: true },
+    ];
+  },
 };
 
 module.exports = nextConfig;

@@ -491,6 +491,64 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Guides & Tutorials — full blog index linked from the highest-authority
+          page so every post has at least one inbound link from the homepage.
+          Without these links, individual blog posts stay "Discovered – not
+          indexed" in Google Search Console regardless of content quality. */}
+      <section className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-12">
+            <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Guides &amp; Tutorials</span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Learn How to Build Your Bot</h2>
+            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">Step-by-step guides, comparisons, and country-specific setup tutorials for WhatsApp and Telegram automation.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026', tag: 'Tutorial' },
+              { slug: 'whatsapp-bot-commands-list-2026', title: '100+ WhatsApp Bot Commands Reference', tag: 'Reference' },
+              { slug: 'whatsapp-ai-chatbot-free', title: 'Free ChatGPT-Like AI on WhatsApp', tag: 'AI' },
+              { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria', tag: 'Nigeria' },
+              { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools &amp; Campus Groups', tag: 'Education' },
+              { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot', tag: 'Groups' },
+              { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups', tag: 'Security' },
+              { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot Tutorial', tag: 'Stickers' },
+              { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages Free', tag: 'Automation' },
+              { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Nigerian Groups', tag: 'Nigeria' },
+              { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot in Africa', tag: 'Comparison' },
+              { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa', tag: 'South Africa' },
+              { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria', tag: 'Telegram' },
+              { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation Guide', tag: 'Userbot' },
+              { slug: 'free-telegram-group-management-bot', title: 'Free Telegram Group Management Bot', tag: 'Telegram' },
+              { slug: 'telegram-bot-vs-whatsapp-bot', title: 'Telegram Bot vs WhatsApp Bot Comparison', tag: 'Comparison' },
+              { slug: 'telegram-anti-spam-bot', title: 'Free Telegram Anti-Spam Bot', tag: 'Security' },
+              { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms of 2026', tag: 'Roundup' },
+            ].map((post, i) => (
+              <motion.div
+                key={post.slug}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: (i % 3) * 0.05 }}
+                viewport={{ once: true }}
+              >
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="block h-full p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:border-blue-500/40 hover:shadow-lg transition-all"
+                >
+                  <span className="inline-block px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded mb-3">{post.tag}</span>
+                  <h3 className="text-base font-semibold text-[var(--text-primary)] leading-snug">{post.title}</h3>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link href="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-white text-sm font-semibold rounded-xl transition-opacity">
+              Browse all guides
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Comparison Table */}
       <section className="py-24 px-6 bg-[var(--bg-alt)] border-y border-[var(--border)]">
         <div className="max-w-4xl mx-auto">
