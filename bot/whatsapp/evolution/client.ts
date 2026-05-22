@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions, redisMarkProxyEverUsed, redisIsProxyEverUsed } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions, redisMarkProxyEverUsed, redisIsProxyEverUsed, redisGetEverUsedProxies, redisRemoveProxyEverUsed } from '../../infrastructure/redis';
 import { getSessionById, recordSharedProxyAssignment, clearSharedProxyAssignment } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -1183,8 +1183,9 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   noProxy: number;
   rotated: number;
   rotateFailed: number;
+  everUsedGcRemoved: number;
 }> {
-  const summary = { scanned: 0, skippedBYOP: 0, inPool: 0, noProxy: 0, rotated: 0, rotateFailed: 0 };
+  const summary = { scanned: 0, skippedBYOP: 0, inPool: 0, noProxy: 0, rotated: 0, rotateFailed: 0, everUsedGcRemoved: 0 };
 
   if (!BASE) {
     console.log('[PROXY-AUDIT] No EVOLUTION_API_URL configured — skipping startup proxy rotation');
@@ -1199,14 +1200,44 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   // intentionally ignored: if the IP is still in the pool the assignment
   // remains valid even if the password was rotated independently.
   const livePool = new Set<string>();
+  const liveHostSet = new Set<string>();
   for (const entry of PROXY_LIST) {
     const parts = entry.split(':');
     if (parts.length >= 2 && parts[0] && parts[1]) {
       livePool.add(`${parts[0]}:${parts[1]}`);
+      liveHostSet.add(parts[0]);
     }
   }
 
   console.log(`[PROXY-AUDIT] Startup rotation pass starting — live pool has ${livePool.size} IP(s)`);
+
+  // GC pass: drop ever-used markers whose host is no longer in the live
+  // PROXY_LIST. Each Webshare plan swap leaves the previous IPs marked
+  // ever-used in Redis, which permanently shrinks the assignable pool.
+  // The IPs themselves are unreachable anyway, so removing them is safe
+  // and frees up assignment slots for stuck sessions. If an IP ever
+  // rejoins the live pool later, fresh assignment is the intended path
+  // (a re-introduced IP behaves the same as a brand-new one). We never
+  // remove markers for IPs still in `liveHostSet` — those still need the
+  // one-IP-per-pairing exclusion.
+  try {
+    const everUsed = await redisGetEverUsedProxies();
+    const staleEverUsed = everUsed.filter(h => !liveHostSet.has(h));
+    for (const staleHost of staleEverUsed) {
+      await redisRemoveProxyEverUsed(staleHost);
+    }
+    summary.everUsedGcRemoved = staleEverUsed.length;
+    if (staleEverUsed.length > 0) {
+      console.warn(
+        `[PROXY-AUDIT] ever-used GC: removed ${staleEverUsed.length} stale marker(s) ` +
+        `(IPs no longer in live PROXY_LIST). ${everUsed.length - staleEverUsed.length} marker(s) retained.`
+      );
+    } else {
+      console.log(`[PROXY-AUDIT] ever-used GC: 0 stale markers (${everUsed.length} markers all match live pool)`);
+    }
+  } catch (err) {
+    console.warn('[PROXY-AUDIT] ever-used GC failed (continuing rotation):', err);
+  }
 
   const instanceNames = await fetchAllEvolutionInstances();
   summary.scanned = instanceNames.size;
@@ -1277,7 +1308,8 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
       summary.rotateFailed++;
       console.error(
         `[PROXY-AUDIT] ROTATION FAILED for ${instanceName.slice(0, 8)} — could not assign a fresh proxy. ` +
-        `Sticky binding was cleared; next reconnect cycle will retry from the pool.`
+        `Sticky binding was cleared; next reconnect cycle will retry from the pool. ` +
+        `If this persists, the live pool may be smaller than the active session count — add proxies to PROXY_LIST.`
       );
     }
   }
@@ -1285,7 +1317,8 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   console.warn(
     `[PROXY-AUDIT] Startup rotation pass complete: scanned=${summary.scanned} ` +
     `rotated=${summary.rotated} inPool=${summary.inPool} noProxy=${summary.noProxy} ` +
-    `byop=${summary.skippedBYOP} rotateFailed=${summary.rotateFailed}`
+    `byop=${summary.skippedBYOP} rotateFailed=${summary.rotateFailed} ` +
+    `everUsedGcRemoved=${summary.everUsedGcRemoved}`
   );
 
   return summary;
