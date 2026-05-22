@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for India (2026) - Free Automation for Indian Businesses & Groups',
+  title: 'WhatsApp Bot for India (2026), Free Automation',
   description: 'Free WhatsApp bot for Indian businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. Works with Jio, Airtel, Vi numbers. 100+ commands. No coding.',
   keywords: ['whatsapp bot india', 'free whatsapp bot india', 'whatsapp automation india', 'whatsapp business bot india', 'whatsapp group bot india', 'botwave india', 'whatsapp chatbot india'],
   openGraph: {

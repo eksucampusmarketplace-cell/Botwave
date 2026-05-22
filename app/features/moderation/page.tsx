@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Moderation Features - Community Shield Anti-Spam & Protection | BotWave',
+  title: 'Moderation Features, Anti-Spam Shield',
   description: 'BotWave moderation: anti-delete recovery, flood detection, admin controls, CAPTCHA, anti-raid, link blocking. Protect WhatsApp and Telegram groups automatically.',
   keywords: ['whatsapp anti spam bot', 'whatsapp group moderation', 'telegram anti spam', 'group moderation bot', 'whatsapp admin bot', 'recover deleted messages whatsapp'],
   openGraph: {

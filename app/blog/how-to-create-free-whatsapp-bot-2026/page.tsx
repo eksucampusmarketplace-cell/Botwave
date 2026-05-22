@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/how-to-create-free-whatsapp-bot-2026' },
-  title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)',
+  title: 'How to Create a Free WhatsApp Bot (2026)',
   description: 'Your own WhatsApp bot - live in under 2 minutes. Free. No coding. Stickers, AI chat, games, polls & 100+ commands. Follow this step-by-step guide to get started now →',
   keywords: ['how to create whatsapp bot', 'free whatsapp bot', 'whatsapp bot tutorial', 'make whatsapp bot 2026', 'whatsapp bot no coding', 'botwave tutorial'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)
+# How to Create a Free WhatsApp Bot (2026)
 
 **Last updated: May 2026** | 5 min read
 
@@ -117,8 +117,8 @@ Creating a WhatsApp bot in 2026 doesn't require any coding, any money, or any te
 
 const relatedPosts = [
   { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
-  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages for Free (2026 Guide)' },
-  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly' },
+  { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages Free (2026)' },
+  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot (2026)' },
 ];
 
 export default function Article() {

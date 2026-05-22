@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-anti-spam-bot-for-groups' },
-  title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically',
+  title: 'WhatsApp Anti-Spam Bot for Groups (2026)',
   description: 'Tired of spam in your WhatsApp groups? This free bot blocks scam links, betting ads, chain messages & offensive content automatically. Set up in 2 minutes →',
   keywords: ['whatsapp anti spam bot', 'whatsapp spam blocker', 'whatsapp group spam', 'stop whatsapp spam', 'whatsapp group protection', 'block spam whatsapp group', 'whatsapp spam filter'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically
+# WhatsApp Anti-Spam Bot for Groups (2026)
 
 **Last updated: May 2026** | 5 min read
 
@@ -140,8 +140,8 @@ You shouldn't have to spend 30 minutes every morning cleaning up your WhatsApp g
 `;
 
 const relatedPosts = [
-  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games' },
-  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+  { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot (2026)' },
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Free WhatsApp Bot for Nigerian Groups (2026)' },
   { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
 ];
 

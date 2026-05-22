@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { useCases } from '@/lib/usecases/data';
 
 export const metadata: Metadata = {
-  title: 'Use Cases - WhatsApp Automation for Every Community | BotWave',
+  title: 'Use Cases, WhatsApp Automation',
   description: 'See how schools, businesses, creators, churches, crypto communities, and vendors use BotWave to automate WhatsApp and Telegram groups.',
   keywords: ['botwave use cases', 'whatsapp bot use cases', 'whatsapp automation examples', 'group management use cases'],
   openGraph: {

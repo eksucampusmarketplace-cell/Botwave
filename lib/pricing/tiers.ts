@@ -97,7 +97,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Email support',
     ],
     bestFor: 'Small WhatsApp / Telegram groups, study groups, side projects.',
-    seoTitle: 'BotWave Lite Plan, 2,000 messages, auto-reply (coming soon)',
+    seoTitle: 'BotWave Lite Plan, 2,000 msgs, auto-reply (coming soon)',
     seoDescription:
       'BotWave Lite: 2,000 messages, 50 AI queries/day, auto-reply, business hours, 10 templates, 5 custom commands. Pricing coming soon. Free tier available today.',
     keywords: [

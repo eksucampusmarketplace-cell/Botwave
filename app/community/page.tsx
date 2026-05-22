@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Community - Support Groups & Guest Posts | BotWave',
+  title: 'Community, Support Groups & Guest Posts',
   description: 'Join the BotWave community. WhatsApp and Telegram support groups, guest posts, updates channel, and more. Get help, share tips, and connect with other users.',
   keywords: ['botwave community', 'whatsapp bot support group', 'telegram bot community', 'botwave help', 'botwave guest posts'],
   openGraph: {

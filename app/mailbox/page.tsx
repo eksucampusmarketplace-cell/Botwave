@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { mailboxPages, mailboxCategories } from '@/lib/mailbox/data';
 
 export const metadata: Metadata = {
-  title: 'BotWave Mailbox, Free Email Inbox at @mail.botwave.online',
+  title: 'BotWave Mailbox, Free Inbox @mail.botwave.online',
   description:
     'Every BotWave account gets a free, persistent email inbox at @mail.botwave.online. Receive verification mail, newsletters and signups in one mobile-friendly dashboard. Multiple aliases, real send/receive, no phone number.',
   keywords: [

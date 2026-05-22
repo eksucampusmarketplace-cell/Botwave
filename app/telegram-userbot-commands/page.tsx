@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Userbot Commands List (2026) - 100+ Commands | BotWave',
+  title: 'Telegram Userbot Commands List (2026)',
   description: 'Complete list of 100+ Telegram userbot commands. Admin (.ban, .mute, .kick), moderation (.purge, .gban), stickers (.kang), AI (.ai), translate (.tr), notes, filters, PM permit, and more. Free with BotWave.',
   keywords: ['telegram userbot commands', 'telegram userbot commands list', 'telegram userbot', 'userbot commands 2026', 'telegram userbot automation', 'gramjs userbot', 'telegram admin commands', 'telegram purge command', 'telegram gban'],
   openGraph: {

@@ -4,11 +4,11 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Bot for Nigeria (2026) - Free Group Management & AI Chat',
+  title: 'Telegram Bot for Nigeria (2026)',
   description: 'The best free Telegram bot for Nigeria. AI chat, stickers, anti-spam, group management, polls, games, media downloads - all from one dashboard. Set up in 2 minutes, no coding.',
   keywords: ['telegram bot nigeria', 'free telegram bot nigeria', 'telegram group bot nigeria', 'telegram automation nigeria', 'telegram bot africa', 'nigerian telegram bot', 'telegram bot free 2026', 'telegram userbot nigeria'],
   openGraph: {
-    title: 'Telegram Bot for Nigeria (2026) - Free Group Management & AI Chat',
+    title: 'Telegram Bot for Nigeria (2026)',
     description: 'The best free Telegram bot for Nigeria. AI chat, anti-spam, group management - set up in 2 minutes.',
     url: 'https://www.botwave.online/telegram-bot-nigeria',
     type: 'website',

@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-ai-chatbot-free' },
-  title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp',
+  title: 'Free WhatsApp AI Chatbot (2026)',
   description: 'Get ChatGPT-like AI on your WhatsApp for free. Ask anything, get homework help, translate 100+ languages, write messages - powered by Google Gemini. No app needed. Try it now →',
   keywords: ['whatsapp ai chatbot', 'whatsapp ai bot free', 'chatgpt whatsapp', 'ai on whatsapp', 'whatsapp chatbot free', 'google gemini whatsapp', 'ai assistant whatsapp', 'free whatsapp ai'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp
+# Free WhatsApp AI Chatbot (2026)
 
 **Last updated: May 2026** | 6 min read
 
@@ -154,7 +154,7 @@ Stop switching between apps to ask AI questions. Get it right inside WhatsApp wh
 
 const relatedPosts = [
   { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
-  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot (2026)' },
   { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms in 2026 Compared' },
 ];
 

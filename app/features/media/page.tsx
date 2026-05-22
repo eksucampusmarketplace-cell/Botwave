@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Media Features - Sticker Maker, Video Download, Logo Generator | BotWave',
+  title: 'Media Features, Sticker Maker & Downloader',
   description: 'BotWave media tools: sticker maker, TikTok/YouTube/Instagram downloader, logo generator, background remover, OCR, text to speech, QR codes. All free inside WhatsApp.',
   keywords: ['whatsapp sticker maker bot', 'tiktok download whatsapp', 'youtube download whatsapp', 'whatsapp media bot', 'instagram download bot', 'whatsapp logo maker'],
   openGraph: {

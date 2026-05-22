@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Case Studies - Real Results with BotWave | BotWave',
+  title: 'Case Studies, Real Results with BotWave',
   description: 'See how schools, businesses, and creators use BotWave to manage WhatsApp groups. Real scenarios, real results.',
   keywords: ['botwave case studies', 'whatsapp bot results', 'whatsapp automation examples', 'whatsapp group management results'],
   openGraph: {

@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-whatsapp-sticker-bot-how-to-make-stickers' },
-  title: 'Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly (2026)',
+  title: 'Free WhatsApp Sticker Bot (2026)',
   description: 'Ditch sticker maker apps. Reply to any image with !sticker and get a custom WhatsApp sticker instantly - no downloads, no cropping, no hassle. Works in groups too. Try free →',
   keywords: ['whatsapp sticker bot', 'make whatsapp stickers', 'whatsapp sticker maker', 'custom whatsapp stickers', 'free sticker bot', 'whatsapp sticker creator', 'how to make whatsapp stickers'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly
+# Free WhatsApp Sticker Bot (2026)
 
 **Last updated: May 2026** | 4 min read
 
@@ -126,8 +126,8 @@ Stop downloading sticker maker apps that take up space on your phone. BotWave do
 
 const relatedPosts = [
   { slug: 'whatsapp-bot-commands-list-2026', title: 'Complete WhatsApp Bot Commands List (2026) - 100+ Commands' },
-  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot (2026)' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026)' },
 ];
 
 export default function Article() {

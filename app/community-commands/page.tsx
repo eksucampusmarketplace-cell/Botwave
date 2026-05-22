@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Community Commands - User-Shared Bot Automations | BotWave',
+  title: 'Community Commands, User-Shared Automations',
   description: 'Discover bot automations shared by the BotWave community. Custom command workflows, auto-reply setups, group management configs, and creative bot uses. Submit your own!',
   keywords: ['botwave community', 'whatsapp bot commands', 'custom bot commands', 'shared automations', 'bot command library', 'community automations'],
   openGraph: {

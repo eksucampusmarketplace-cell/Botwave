@@ -4,11 +4,11 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Telegram Bot & Userbot (2026) - Free Group Management | BotWave',
+  title: 'Telegram Bot & Userbot (2026), Free',
   description: 'Free Telegram bot and userbot platform. Group management, anti-spam, captcha, welcome messages, anti-raid, member boosting, scheduled messages, and AI chat. No coding required.',
   keywords: ['telegram bot', 'telegram group bot', 'telegram userbot', 'telegram anti-spam bot', 'telegram captcha bot', 'telegram welcome bot', 'botwave telegram'],
   openGraph: {
-    title: 'Telegram Bot & Userbot (2026) - Free Group Management | BotWave',
+    title: 'Telegram Bot & Userbot (2026), Free',
     description: 'Free Telegram bot platform. Anti-spam, captcha, welcome messages, member boosting, AI chat.',
     url: 'https://www.botwave.online/telegram-bot',
     type: 'website',

@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/whatsapp-bot-commands-list-2026' },
-  title: 'Complete WhatsApp Bot Commands List (2026) - 100+ BotWave Commands',
+  title: 'WhatsApp Bot Commands List (2026)',
   description: 'The ultimate reference: all 100+ BotWave commands with examples. Stickers, AI chat, games, music, logos, study tools, media downloads & more. Bookmark this guide →',
   keywords: ['whatsapp bot commands', 'whatsapp bot commands list', 'botwave commands', 'whatsapp bot help', 'whatsapp bot features', 'all whatsapp bot commands 2026', 'whatsapp sticker bot', 'whatsapp ai bot', 'whatsapp game bot', 'whatsapp group bot', 'whatsapp download bot', 'whatsapp music bot', 'whatsapp logo maker bot'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Complete WhatsApp Bot Commands List (2026) - 100+ BotWave Commands
+# WhatsApp Bot Commands List (2026)
 
 **Last updated: May 2026** | 45 min read
 
@@ -1860,9 +1860,9 @@ All basic commands are included in BotWave's free tier. Sign up, connect your Wh
 `;
 
 const relatedPosts = [
-  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026 (No Coding Needed)' },
-  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot - How to Make Custom Stickers Instantly' },
-  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026) - ChatGPT-Like AI on WhatsApp' },
+  { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot (2026)' },
+  { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot (2026)' },
+  { slug: 'whatsapp-ai-chatbot-free', title: 'Free WhatsApp AI Chatbot (2026)' },
 ];
 
 export default function Article() {

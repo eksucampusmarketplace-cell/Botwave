@@ -4,7 +4,7 @@ import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/free-whatsapp-group-management-bot' },
-  title: 'Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games',
+  title: 'Free WhatsApp Group Management Bot (2026)',
   description: 'Your WhatsApp groups deserve better. Get free anti-spam, welcome messages, polls, trivia games & moderation - all automatic. 10,000+ groups already use BotWave →',
   keywords: ['whatsapp group management bot', 'whatsapp group bot free', 'whatsapp anti spam bot', 'whatsapp group admin bot', 'whatsapp group moderation', 'manage whatsapp group', 'whatsapp group tools'],
   openGraph: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const content = `
-# Free WhatsApp Group Management Bot (2026) - Anti-Spam, Polls, Games
+# Free WhatsApp Group Management Bot (2026)
 
 **Last updated: May 2026** | 7 min read
 
@@ -181,8 +181,8 @@ For larger groups with heavy usage, paid plans with higher message quotas are co
 `;
 
 const relatedPosts = [
-  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026) - Stop Spam Automatically' },
-  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Groups in Nigeria (2026)' },
+  { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups (2026)' },
+  { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Free WhatsApp Bot for Nigerian Groups (2026)' },
   { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools & Campus Groups (2026)' },
 ];
 

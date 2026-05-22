@@ -9,7 +9,7 @@ import { PRICING_TIERS, productOfferJsonLd } from '@/lib/pricing/tiers';
 const LAST_UPDATED = '2026-05-22';
 
 export const metadata: Metadata = {
-  title: 'BotWave Pricing, Free forever with paid plans coming soon',
+  title: 'BotWave Pricing, Free with Paid Plans Soon',
   description:
     'BotWave is free forever (300 msgs/mo, 10 AI queries/day, all 150+ commands). Paid tiers with higher limits, group analytics, and API access are coming soon. No credit card required.',
   keywords: [

@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'AI Features - WaveAI Chat, Digest, Translation, OCR | BotWave',
+  title: 'AI Features, WaveAI Chat & Translation',
   description: 'BotWave AI features: intelligent chat (WaveAI), group digest summaries, document scanning, OCR text extraction, translation. All free, powered by Google Gemini.',
   keywords: ['whatsapp ai bot', 'whatsapp ai chatbot', 'ai auto reply whatsapp', 'whatsapp ai assistant', 'gemini whatsapp bot', 'ai customer support whatsapp'],
   openGraph: {

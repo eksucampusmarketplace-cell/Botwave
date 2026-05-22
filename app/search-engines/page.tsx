@@ -10,7 +10,7 @@ import { searchEngines } from '@/lib/search-engines/data';
 const LAST_UPDATED = '2026-05-22';
 
 export const metadata: Metadata = {
-  title: 'BotWave on Search Engines, Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com',
+  title: 'On Google, Bing, Perplexity & ChatGPT Search',
   description:
     'How BotWave appears across the modern search landscape: Google + the Bing umbrella (Yahoo, DuckDuckGo, Ecosia, AOL) + AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com, Claude).',
   keywords: [

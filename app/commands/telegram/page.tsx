@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { telegramCommands, getAllCategories } from '@/lib/commands/data';
 
 export const metadata: Metadata = {
-  title: 'Telegram Bot Commands - Full Command List (2026) | BotWave',
+  title: 'Telegram Bot Commands List (2026)',
   description: 'Complete list of Telegram bot commands. Anti-spam, moderation, AI chat, games, XP system, notes, federations. 50+ commands, zero ban risk.',
   keywords: ['telegram bot commands', 'telegram group bot commands', 'telegram moderation bot', 'telegram bot command list'],
   openGraph: {

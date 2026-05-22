@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Bot for South Africa (2026) - Free Automation for SA Businesses & Communities',
+  title: 'WhatsApp Bot for South Africa (2026)',
   description: 'Free WhatsApp bot for South African businesses and communities. Auto-replies, AI chat, stickers, anti-spam, group management. Works with any SA number. No coding needed.',
   keywords: ['whatsapp bot south africa', 'free whatsapp bot sa', 'whatsapp automation south africa', 'whatsapp business bot sa', 'chatbot south africa', 'botwave south africa'],
   openGraph: {
