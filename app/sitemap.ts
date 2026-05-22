@@ -16,11 +16,22 @@ import {
   landingChunkCount,
 } from '@/lib/sitemap-config';
 
-// Force-static so Next builds every sitemap chunk at deploy time and serves
-// the result as a static file. This removes the dependency on Node CPU at
-// request time — once built, sitemap chunks are immune to event-loop pressure
-// from other parts of the app.
-export const dynamic = 'force-static';
+// Historical note: this used `force-static` so Next pre-rendered every chunk
+// at build time. That sounded great in theory ("no Node CPU at request time")
+// but in practice some chunks went missing after a deploy — Google Search
+// Console kept reporting "Couldn't fetch" for specific middle-range landing
+// chunks (e.g. /sitemap/11.xml + /sitemap/12.xml) while the chunks on either
+// side worked fine. The root cause was Next.js silently skipping some chunks
+// during the build pass when `generateSitemaps` returns a large list and the
+// build step is under memory pressure.
+//
+// Switching to dynamic rendering with `revalidate = 86400` keeps the same
+// effective behavior — every chunk is cached for 24h after first fetch — but
+// guarantees that any chunk Google asks for is generated on demand, even if
+// the previous deploy didn't produce a static file for it. Each chunk is
+// ~2000 entries (~370KB XML, <50ms render time), so the CPU cost per chunk
+// is negligible compared to the reliability win.
+export const dynamic = 'force-dynamic';
 export const revalidate = 86400;
 
 // Use build time as a dynamic lastModified for pages that change with deploys
@@ -43,12 +54,21 @@ export async function generateSitemaps() {
 export default function sitemap({ id }: { id: number }): MetadataRoute.Sitemap {
   const baseUrl = 'https://www.botwave.online';
 
-  if (id === 0) return corePages(baseUrl);
-  if (id === 1) return commandPages(baseUrl);
-  if (id === 2) return contentPages(baseUrl);
-  if (id === 3) return blogPages(baseUrl);
-  if (id >= LANDING_CHUNK_ID_START) {
-    return landingChunk(baseUrl, id - LANDING_CHUNK_ID_START);
+  // Per-chunk try/catch so one bad chunk can never take down the whole index.
+  // A failed chunk returns an empty sitemap (which GSC reads as "this chunk
+  // has no URLs right now"), not a 500 — that prevents the chunk from getting
+  // stuck in GSC's "Couldn't fetch" state and lets the next crawl retry.
+  try {
+    if (id === 0) return corePages(baseUrl);
+    if (id === 1) return commandPages(baseUrl);
+    if (id === 2) return contentPages(baseUrl);
+    if (id === 3) return blogPages(baseUrl);
+    if (id >= LANDING_CHUNK_ID_START) {
+      return landingChunk(baseUrl, id - LANDING_CHUNK_ID_START);
+    }
+  } catch (err) {
+    console.error(`[sitemap] chunk ${id} render failed:`, err);
+    return [];
   }
 
   return [];

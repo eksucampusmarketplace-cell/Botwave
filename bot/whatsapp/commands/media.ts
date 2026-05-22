@@ -8,10 +8,43 @@ import sharp from 'sharp';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { writeFile, unlink, access } from 'fs/promises';
+import { mkdirSync } from 'fs';
 import path from 'path';
 import os from 'os';
 
 const execFileAsync = promisify(execFile);
+
+// Max bytes accepted for a single !download.
+//
+// History: was 50MB to match WhatsApp's old media cap. WhatsApp now accepts up
+// to 100MB for media and up to 2GB for documents on modern clients, and yt-dlp
+// can fetch big videos in one shot — so the 50MB ceiling was the bottleneck,
+// not WhatsApp. Raised to 200MB to cover full-length videos and large podcast
+// audio. Anything bigger is still rejected client-side with a friendly note.
+//
+// Configurable via env so we can tune without a redeploy if WhatsApp's policy
+// shifts or the VPS runs short on disk.
+const MAX_DOWNLOAD_BYTES = (() => {
+  const fromEnv = Number(process.env.BOT_DOWNLOAD_MAX_MB);
+  const mb = Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 200;
+  return mb * 1024 * 1024;
+})();
+const MAX_DOWNLOAD_MB_LABEL = Math.round(MAX_DOWNLOAD_BYTES / (1024 * 1024));
+
+// Persistent staging dir for download intermediates. Docker default tmpfs in
+// some setups is small (~64MB) and gets aggressively reaped, which truncated
+// larger yt-dlp downloads mid-stream. /var/tmp survives more cleanup passes
+// and is plain disk-backed in our container — safer for 200MB intermediates.
+// Falls back to os.tmpdir() if /var/tmp isn't writable for any reason.
+const DOWNLOAD_STAGING_DIR = (() => {
+  const candidate = '/var/tmp/botwave-downloads';
+  try {
+    mkdirSync(candidate, { recursive: true });
+    return candidate;
+  } catch {
+    return os.tmpdir();
+  }
+})();
 
 let _ffmpegAvailable: boolean | null = null;
 async function isFFmpegAvailable(): Promise<boolean> {
@@ -117,7 +150,7 @@ async function downloadTwitterMedia(url: string): Promise<{ buffer: Buffer; type
         const mediaResp = await axios.get(videoUrl, {
           responseType: 'arraybuffer',
           timeout: 30000,
-          maxContentLength: 50 * 1024 * 1024,
+          maxContentLength: MAX_DOWNLOAD_BYTES,
         });
         return { buffer: Buffer.from(mediaResp.data), type: 'video' };
       }
@@ -131,7 +164,7 @@ async function downloadTwitterMedia(url: string): Promise<{ buffer: Buffer; type
         const mediaResp = await axios.get(imageUrl, {
           responseType: 'arraybuffer',
           timeout: 30000,
-          maxContentLength: 50 * 1024 * 1024,
+          maxContentLength: MAX_DOWNLOAD_BYTES,
         });
         return { buffer: Buffer.from(mediaResp.data), type: 'image' };
       }
@@ -147,7 +180,7 @@ async function downloadTwitterMedia(url: string): Promise<{ buffer: Buffer; type
             const mediaResp = await axios.get(vUrl, {
               responseType: 'arraybuffer',
               timeout: 30000,
-              maxContentLength: 50 * 1024 * 1024,
+              maxContentLength: MAX_DOWNLOAD_BYTES,
             });
             return { buffer: Buffer.from(mediaResp.data), type: 'video' };
           }
@@ -185,7 +218,7 @@ async function downloadInstagramMedia(url: string): Promise<{ buffer: Buffer; ty
         const mediaResp = await axios.get(videoUrl, {
           responseType: 'arraybuffer',
           timeout: 30000,
-          maxContentLength: 50 * 1024 * 1024,
+          maxContentLength: MAX_DOWNLOAD_BYTES,
         });
         return { buffer: Buffer.from(mediaResp.data), type: 'video' };
       }
@@ -195,7 +228,7 @@ async function downloadInstagramMedia(url: string): Promise<{ buffer: Buffer; ty
         const mediaResp = await axios.get(imageUrl, {
           responseType: 'arraybuffer',
           timeout: 30000,
-          maxContentLength: 50 * 1024 * 1024,
+          maxContentLength: MAX_DOWNLOAD_BYTES,
         });
         return { buffer: Buffer.from(mediaResp.data), type: 'image' };
       }
@@ -216,7 +249,7 @@ async function downloadInstagramMedia(url: string): Promise<{ buffer: Buffer; ty
       const mediaResp = await axios.get(thumbUrl, {
         responseType: 'arraybuffer',
         timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
+        maxContentLength: MAX_DOWNLOAD_BYTES,
       });
       return { buffer: Buffer.from(mediaResp.data), type: 'image' };
     }
@@ -250,7 +283,7 @@ async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type:
       const mediaResp = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
         timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
+        maxContentLength: MAX_DOWNLOAD_BYTES,
       });
       return { buffer: Buffer.from(mediaResp.data), type: 'image' };
     }
@@ -261,7 +294,7 @@ async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type:
       const mediaResp = await axios.get(videoUrl, {
         responseType: 'arraybuffer',
         timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
+        maxContentLength: MAX_DOWNLOAD_BYTES,
       });
       return { buffer: Buffer.from(mediaResp.data), type: 'video' };
     }
@@ -274,7 +307,7 @@ async function downloadTikTokMedia(url: string): Promise<{ buffer: Buffer; type:
     const resp = await axios.get(`https://tikcdn.io/ssstik/${encodeURIComponent(url)}`, {
       timeout: 15000,
       responseType: 'arraybuffer',
-      maxContentLength: 50 * 1024 * 1024,
+      maxContentLength: MAX_DOWNLOAD_BYTES,
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
     });
     const ct = String(resp.headers['content-type'] || '');
@@ -429,13 +462,13 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
     // Try yt-dlp binary first (supports 1000+ sites)
     let downloaded = false;
     try {
-      const tmpFile = path.join(os.tmpdir(), `botwave_dl_${Date.now()}`);
+      const tmpFile = path.join(DOWNLOAD_STAGING_DIR, `botwave_dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
       const ytdlpBin = await findYtDlp();
       const ytdlpArgs = [
-        '-f', 'best[ext=mp4][filesize<50M]/best[ext=mp4]/best[filesize<50M]/best',
+        '-f', `best[ext=mp4][filesize<${MAX_DOWNLOAD_MB_LABEL}M]/best[ext=mp4]/best[filesize<${MAX_DOWNLOAD_MB_LABEL}M]/best`,
         '--merge-output-format', 'mp4',
         '--no-playlist',
-        '--max-filesize', '50M',
+        '--max-filesize', `${MAX_DOWNLOAD_MB_LABEL}M`,
         '-o', tmpFile + '.%(ext)s',
         '--no-warnings',
       ];
@@ -447,7 +480,10 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
         }
       }
       ytdlpArgs.push(url);
-      await execFileAsync(ytdlpBin, ytdlpArgs, { timeout: 90000 });
+      // 90s was enough for 50MB clips; 200MB clips on slower CDNs (TikTok,
+      // Instagram) routinely needed 2+ minutes. 5min ceiling matches the
+      // sendReply queue timeout so we never wait longer than we'd ship.
+      await execFileAsync(ytdlpBin, ytdlpArgs, { timeout: 300000 });
 
       // Find the output file
       const { stdout: files } = await execFileAsync('sh', ['-c', `ls ${tmpFile}.* 2>/dev/null | head -1`]);
@@ -455,8 +491,8 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       if (outFile) {
         const { readFile, stat } = await import('fs/promises');
         const fileStat = await stat(outFile);
-        if (fileStat.size > 50 * 1024 * 1024) {
-          await sendReply(context.chatJid, 'File too large (>50MB). WhatsApp can\'t send it.', sock, context.rawMessage.key, context.queue);
+        if (fileStat.size > MAX_DOWNLOAD_BYTES) {
+          await sendReply(context.chatJid, `File too large (>${MAX_DOWNLOAD_MB_LABEL}MB). WhatsApp can\'t send it. Try a shorter clip or use the source link.`, sock, context.rawMessage.key, context.queue);
           await unlink(outFile).catch(() => {});
           return;
         }
@@ -478,12 +514,16 @@ async function handleDownload(context: MessageContext, args: string[], sock: any
       console.error('[DOWNLOAD] yt-dlp failed:', dlErr?.message || dlErr);
     }
 
-    // Fallback: direct HTTP download (works for direct media links only)
+    // Fallback: direct HTTP download (works for direct media links only).
+    // Timeout scales with MAX_DOWNLOAD_BYTES — at the 200MB ceiling and a
+    // pessimistic 2Mbps connection we need ~14min, but in practice any direct
+    // link that hasn't responded by 3min is dead. 3min ceiling is the sweet
+    // spot before the user assumes "broken" and re-tries.
     if (!downloaded) {
       const mediaResponse = await axios.get(url, {
         responseType: 'arraybuffer',
-        timeout: 30000,
-        maxContentLength: 50 * 1024 * 1024,
+        timeout: 180000,
+        maxContentLength: MAX_DOWNLOAD_BYTES,
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       });
       const buffer = Buffer.from(mediaResponse.data);
