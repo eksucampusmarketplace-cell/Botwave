@@ -637,6 +637,102 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Internal link hub — crawl + discoverability */}
+      <section className="py-16 px-6 bg-[var(--bg)] border-t border-[var(--border)]">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-3 text-center">Explore the docs</h2>
+          <p className="text-base text-[var(--text-secondary)] mb-10 text-center max-w-2xl mx-auto">
+            Hundreds of step-by-step guides, troubleshooting articles, head-to-head comparisons, and vertical-specific deployment playbooks.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* How-to */}
+            <div className="p-5 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-[var(--text-primary)]">How-to guides</h3>
+                <Link href="/how-to" className="text-xs text-blue-400 hover:underline">All 69 →</Link>
+              </div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/how-to/create-whatsapp-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Create a WhatsApp bot</Link></li>
+                <li><Link href="/how-to/auto-reply-whatsapp" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply on WhatsApp</Link></li>
+                <li><Link href="/how-to/whatsapp-group-bot" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp group bot</Link></li>
+                <li><Link href="/how-to/whatsapp-ai-assistant" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp AI assistant</Link></li>
+                <li><Link href="/how-to/telegram-bot-setup" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot setup</Link></li>
+                <li><Link href="/how-to/whatsapp-sticker-maker" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp sticker maker</Link></li>
+              </ul>
+            </div>
+
+            {/* Fixes */}
+            <div className="p-5 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-[var(--text-primary)]">Troubleshooting</h3>
+                <Link href="/fix" className="text-xs text-blue-400 hover:underline">All 37 →</Link>
+              </div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/fix/whatsapp-bot-disconnected" className="text-[var(--text-secondary)] hover:text-blue-400">Bot disconnected</Link></li>
+                <li><Link href="/fix/whatsapp-qr-not-scanning" className="text-[var(--text-secondary)] hover:text-blue-400">QR code not scanning</Link></li>
+                <li><Link href="/fix/whatsapp-bot-banned" className="text-[var(--text-secondary)] hover:text-blue-400">Bot got banned — recover</Link></li>
+                <li><Link href="/fix/whatsapp-auto-reply-not-working" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply not working</Link></li>
+                <li><Link href="/fix/whatsapp-ai-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">AI not responding</Link></li>
+                <li><Link href="/fix/telegram-bot-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot silent</Link></li>
+              </ul>
+            </div>
+
+            {/* Compare */}
+            <div className="p-5 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-[var(--text-primary)]">Comparisons</h3>
+                <Link href="/compare" className="text-xs text-blue-400 hover:underline">All 58 →</Link>
+              </div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/compare/botwave-vs-evolution-api" className="text-[var(--text-secondary)] hover:text-blue-400">vs Evolution API</Link></li>
+                <li><Link href="/compare/botwave-vs-baileys" className="text-[var(--text-secondary)] hover:text-blue-400">vs Baileys</Link></li>
+                <li><Link href="/compare/botwave-vs-twilio" className="text-[var(--text-secondary)] hover:text-blue-400">vs Twilio</Link></li>
+                <li><Link href="/compare/botwave-vs-wati" className="text-[var(--text-secondary)] hover:text-blue-400">vs WATI</Link></li>
+                <li><Link href="/compare/best-whatsapp-bots-2026" className="text-[var(--text-secondary)] hover:text-blue-400">Best WhatsApp bots 2026</Link></li>
+                <li><Link href="/compare/best-telegram-bots-2026" className="text-[var(--text-secondary)] hover:text-blue-400">Best Telegram bots 2026</Link></li>
+              </ul>
+            </div>
+
+            {/* Use cases */}
+            <div className="p-5 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-[var(--text-primary)]">Use cases</h3>
+                <Link href="/use-cases" className="text-xs text-blue-400 hover:underline">All 30 →</Link>
+              </div>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/use-cases/schools" className="text-[var(--text-secondary)] hover:text-blue-400">Schools</Link></li>
+                <li><Link href="/use-cases/businesses" className="text-[var(--text-secondary)] hover:text-blue-400">SMB customer support</Link></li>
+                <li><Link href="/use-cases/creators" className="text-[var(--text-secondary)] hover:text-blue-400">Creators &amp; influencers</Link></li>
+                <li><Link href="/use-cases/whatsapp-bot-for-online-stores" className="text-[var(--text-secondary)] hover:text-blue-400">Online stores</Link></li>
+                <li><Link href="/use-cases/whatsapp-bot-for-real-estate" className="text-[var(--text-secondary)] hover:text-blue-400">Real estate</Link></li>
+                <li><Link href="/use-cases/crypto" className="text-[var(--text-secondary)] hover:text-blue-400">Crypto / Web3</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Blog highlights */}
+          <div className="mt-8 p-5 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-[var(--text-primary)]">Latest from the blog</h3>
+              <Link href="/blog" className="text-xs text-blue-400 hover:underline">All posts →</Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <Link href="/blog/how-to-create-free-whatsapp-bot-2026" className="text-[var(--text-secondary)] hover:text-blue-400">How to create a free WhatsApp bot in 2026</Link>
+              <Link href="/blog/best-free-whatsapp-bot-groups-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">Best free WhatsApp bot for Nigerian groups</Link>
+              <Link href="/blog/whatsapp-bot-vs-telegram-bot-africa" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp bot vs Telegram bot in Africa</Link>
+              <Link href="/blog/whatsapp-bot-for-business-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp bot for Nigerian businesses</Link>
+              <Link href="/blog/whatsapp-ai-chatbot-free" className="text-[var(--text-secondary)] hover:text-blue-400">Free WhatsApp AI chatbot</Link>
+              <Link href="/blog/telegram-anti-spam-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram anti-spam bot</Link>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-[var(--text-muted)] mt-8">
+            See <Link href="/search-engines" className="text-blue-400 hover:underline">how BotWave appears on every search engine in 2026</Link> — Google, Bing, Perplexity, ChatGPT Search, Brave Leo, You.com.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-violet-600 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

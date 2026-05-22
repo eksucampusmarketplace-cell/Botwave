@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
+import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/telegram-anti-spam-bot' },
@@ -130,5 +131,5 @@ const relatedPosts = [
 ];
 
 export default function TelegramAntiSpamBot() {
-  return <BlogArticle content={content} date="May 18, 2026" readTime="5 min read" slug="telegram-anti-spam-bot" relatedPosts={relatedPosts} />;
+  return <BlogArticle content={content} date="May 18, 2026" readTime="5 min read" slug="telegram-anti-spam-bot" relatedPosts={relatedPosts} {...(blogMeta['telegram-anti-spam-bot'] ?? { faqs: [], description: '', keywords: [] })} />;
 }

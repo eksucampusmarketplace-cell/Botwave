@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import BlogArticle from '../_components/BlogArticle';
+import { blogMeta } from '@/lib/blog/faqs';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/blog/best-free-whatsapp-bot-groups-nigeria' },
@@ -124,5 +125,5 @@ const relatedPosts = [
 ];
 
 export default function Article() {
-  return <BlogArticle content={content} date="May 3, 2026" readTime="6 min read" slug="best-free-whatsapp-bot-groups-nigeria" relatedPosts={relatedPosts} />;
+  return <BlogArticle content={content} date="May 3, 2026" readTime="6 min read" slug="best-free-whatsapp-bot-groups-nigeria" relatedPosts={relatedPosts} {...(blogMeta['best-free-whatsapp-bot-groups-nigeria'] ?? { faqs: [], description: '', keywords: [] })} />;
 }

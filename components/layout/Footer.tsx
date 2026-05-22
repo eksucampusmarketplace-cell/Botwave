@@ -62,6 +62,7 @@ const footerLinks = {
   Company: [
     { href: '/what-is-botwave', label: 'What is BotWave?' },
     { href: '/privacy', label: 'Privacy Policy' },
+    { href: '/terms', label: 'Terms of Service' },
     { href: '/security', label: 'Security' },
     { href: '/integrations', label: 'Integrations' },
     { href: '/signup', label: 'Get Started Free' },
@@ -148,8 +149,9 @@ export default function Footer() {
           <p className="text-xs text-[var(--text-muted)]">
             &copy; {new Date().getFullYear()} BotWave &middot; Built by BotWave Team &middot; Free WhatsApp &amp; Telegram Bot Platform
           </p>
-          <div className="flex gap-4 text-xs text-[var(--text-muted)]">
+          <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
             <Link href="/privacy" className="hover:text-[var(--primary)] transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-[var(--primary)] transition-colors">Terms</Link>
             <Link href="/security" className="hover:text-[var(--primary)] transition-colors">Security</Link>
             <Link href="/faq" className="hover:text-[var(--primary)] transition-colors">FAQ</Link>
             <Link href="/status" className="hover:text-[var(--primary)] transition-colors">Status</Link>
