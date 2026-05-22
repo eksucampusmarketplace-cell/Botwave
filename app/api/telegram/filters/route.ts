@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
       .upsert({
         session_id: sessionId,
         chat_id: chat_id || '0',
-        keyword,
+        keyword: String(keyword).toLowerCase(),
         response,
         media_type: media_type || null,
         media_file_id: media_file_id || null,
-        created_by: telegramUserId || ownerUserId,
+        created_by: telegramUserId || ownerUserId || null,
       }, { onConflict: 'session_id,chat_id,keyword' })
       .select()
       .single();
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest) {
       .from('telegram_filters')
       .delete()
       .eq('session_id', sessionId)
-      .eq('keyword', keyword);
+      .eq('keyword', keyword.toLowerCase());
 
     return NextResponse.json({ success: true });
   } catch (error) {
