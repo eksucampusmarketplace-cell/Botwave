@@ -72,6 +72,26 @@ const createSessionSchema = z.object({
   proxyPort: z.string().optional(),
   proxyUsername: z.string().optional(),
   proxyPassword: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // BYOP requires host + port. Without them we'd persist proxy_type='custom'
+  // with NULL proxy_host, which is the misconfig state that historically
+  // left sessions connecting from the bare VPS IP.
+  if (data.proxyType === 'custom') {
+    if (!data.proxyHost || !data.proxyHost.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['proxyHost'],
+        message: 'Proxy host is required when bringing your own proxy.',
+      });
+    }
+    if (!data.proxyPort || !data.proxyPort.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['proxyPort'],
+        message: 'Proxy port is required when bringing your own proxy.',
+      });
+    }
+  }
 });
 
 export async function GET() {
@@ -96,7 +116,7 @@ export async function GET() {
 
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
-      .select('id, user_id, session_name, phone_number, platform, state, pairing_code, qr_code, qr_expires_at, qr_generated_at, worker_url, locked_by, locked_at, heartbeat_at, created_at, updated_at')
+      .select('id, user_id, session_name, phone_number, platform, state, pairing_code, qr_code, qr_expires_at, qr_generated_at, worker_url, locked_by, locked_at, heartbeat_at, created_at, updated_at, proxy_type, proxy_host, proxy_port, proxy_username')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -185,6 +205,13 @@ export async function POST(request: NextRequest) {
 
     const initialState = platform === 'whatsapp' ? 'qr_pending' : 'active';
 
+    // Defensive: if proxyType is 'custom' but creds didn't make it through
+    // (shouldn't happen post-superRefine but old clients / scripted callers
+    // might still hit this), downgrade to shared rather than persist a
+    // half-configured BYOP row.
+    const effectiveProxyType =
+      proxyType === 'custom' && proxyHost && proxyPort ? 'custom' : 'shared';
+
     const insertData: Record<string, unknown> = {
       user_id: user.id,
       phone_number: phoneNumber || '',
@@ -192,10 +219,10 @@ export async function POST(request: NextRequest) {
       state: initialState,
       platform,
       worker_url: workerUrl,
-      proxy_type: proxyType,
+      proxy_type: effectiveProxyType,
     };
 
-    if (proxyType === 'custom' && proxyHost && proxyPort) {
+    if (effectiveProxyType === 'custom') {
       insertData.proxy_host = proxyHost;
       insertData.proxy_port = proxyPort;
       if (proxyUsername) insertData.proxy_username = proxyUsername;

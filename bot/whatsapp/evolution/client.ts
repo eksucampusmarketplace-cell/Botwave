@@ -1212,21 +1212,34 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
     // tolerated — the audit still rotates based on the host:port check.
     let phoneNumber: string | undefined;
     let proxyType: string | undefined;
+    let byopHost: string | undefined;
+    let byopPort: string | undefined;
     try {
       const session: any = await getSessionById(sessionId);
       if (session) {
         phoneNumber = session.phone_number || undefined;
         proxyType = session.proxy_type;
+        byopHost = session.proxy_host || undefined;
+        byopPort = session.proxy_port || undefined;
       }
     } catch (err) {
       console.warn(`[PROXY-AUDIT] Failed to load session ${sessionId.slice(0, 8)} from DB (continuing):`, err);
     }
 
     // BYOP sessions point at the user's own proxy and must never be touched
-    // by the shared-pool audit.
+    // by the shared-pool audit — but only if BYOP is actually configured.
+    // A row with proxy_type='custom' but no host/port is a misconfig (UI bug
+    // or stale row from before the validation guards landed); treat it as a
+    // shared-pool session so the audit can give it a real proxy.
     if (proxyType === 'custom') {
-      summary.skippedBYOP++;
-      continue;
+      if (byopHost && byopPort) {
+        summary.skippedBYOP++;
+        continue;
+      }
+      console.warn(
+        `[PROXY-AUDIT] Session ${sessionId.slice(0, 8)} has proxy_type='custom' but ` +
+        `empty host/port — falling through to shared-pool rotation.`,
+      );
     }
 
     const current = await findInstanceProxy(instanceName);

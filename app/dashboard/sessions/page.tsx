@@ -783,7 +783,8 @@ export default function SessionsPage() {
                       <button
                         type="submit"
                         className="flex-1 bg-blue-600 text-white p-3 text-sm font-semibold rounded-xl hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isCreating}
+                        disabled={isCreating || (proxyType === 'custom' && (!customProxy.host.trim() || !customProxy.port.trim()))}
+                        title={proxyType === 'custom' && (!customProxy.host.trim() || !customProxy.port.trim()) ? 'Fill in proxy host and port, or switch to shared pool.' : undefined}
                       >
                         Continue
                       </button>
