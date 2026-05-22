@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,14 +22,13 @@ const CAPTCHA_FIELDS = [
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     const chatId = searchParams.get('chatId');
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     // Try per-group config first
     if (chatId) {
@@ -61,13 +60,16 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const body = await request.json();
-    const { sessionId, chatId, ...fields } = body;
+    const { sessionId, chatId, initData, ...fields } = body;
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
-    }
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const updates: Record<string, unknown> = {};
     for (const key of CAPTCHA_FIELDS) {

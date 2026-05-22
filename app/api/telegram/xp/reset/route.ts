@@ -4,27 +4,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { sessionId, chatId, initData } = await request.json();
 
-    const { sessionId, chatId } = await request.json();
-    if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
-
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     let query = supabase
       .from('telegram_xp')

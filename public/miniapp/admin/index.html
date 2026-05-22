@@ -655,15 +655,30 @@ function apiCall(path, opts) {
   var sep = path.indexOf('?') !== -1 ? '&' : '?';
   var url = API_BASE + path + sep + 'sessionId=' + sessionId;
   if (currentChatId) url += '&chatId=' + encodeURIComponent(currentChatId);
-  return fetch(url, Object.assign({}, opts, {
-    headers: Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {}),
-  })).then(function(res) { return res.json(); });
+  // Always forward Telegram initData so the server can authorize WebView requests
+  // even though dashboard auth cookies are not present in this browser context.
+  if (tgInitData) url += '&initData=' + encodeURIComponent(tgInitData);
+  var headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (tgInitData) headers['X-Telegram-Init-Data'] = tgInitData;
+  // For body-carrying methods, also inject initData into the JSON payload so
+  // routes that consume the body before calling authorize() still see it.
+  var fetchOpts = Object.assign({}, opts, { headers: headers });
+  if (tgInitData && opts.body && typeof opts.body === 'string') {
+    try {
+      var parsed = JSON.parse(opts.body);
+      if (parsed && typeof parsed === 'object' && parsed.initData === undefined) {
+        parsed.initData = tgInitData;
+        fetchOpts.body = JSON.stringify(parsed);
+      }
+    } catch (e) { /* leave body as-is */ }
+  }
+  return fetch(url, fetchOpts).then(function(res) { return res.json(); });
 }
 
 function loadGroups() {
   if (!sessionId) return Promise.resolve();
-  return fetch(API_BASE + '/api/telegram/groups?sessionId=' + sessionId)
-    .then(function(res) { return res.json(); })
+  // Use apiCall so initData is forwarded for WebView auth.
+  return apiCall('/api/telegram/groups')
     .then(function(res) {
       if (res.success && res.data && res.data.length) {
         groups = res.data;

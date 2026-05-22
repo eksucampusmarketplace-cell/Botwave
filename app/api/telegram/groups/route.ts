@@ -6,22 +6,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 },
-      );
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'user' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const { data, error } = await supabase
       .from('telegram_groups')

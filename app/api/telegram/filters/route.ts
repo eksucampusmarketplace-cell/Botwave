@@ -6,32 +6,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
-async function verifySession(supabase: any, sessionId: string, userId: string) {
-  const { data } = await supabase
-    .from('bot_sessions')
-    .select('id')
-    .eq('id', sessionId)
-    .eq('user_id', userId)
-    .single();
-  return data;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const sessionId = new URL(request.url).searchParams.get('sessionId');
-    if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const { data: filters } = await supabase
       .from('telegram_filters')
@@ -48,18 +33,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { sessionId, chat_id, keyword, response, media_type, media_file_id } = await request.json();
-    if (!sessionId || !keyword || !response) {
-      return NextResponse.json({ error: 'sessionId, keyword, response required' }, { status: 400 });
+    const { sessionId, chat_id, keyword, response, media_type, media_file_id, initData } = await request.json();
+    if (!keyword || !response) {
+      return NextResponse.json({ error: 'keyword and response required' }, { status: 400 });
     }
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase, telegramUserId, ownerUserId } = auth;
 
     const { data, error } = await supabase
       .from('telegram_filters')
@@ -70,7 +55,7 @@ export async function POST(request: NextRequest) {
         response,
         media_type: media_type || null,
         media_file_id: media_file_id || null,
-        created_by: user.id,
+        created_by: telegramUserId || ownerUserId,
       }, { onConflict: 'session_id,chat_id,keyword' })
       .select()
       .single();
@@ -85,20 +70,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const params = new URL(request.url).searchParams;
     const sessionId = params.get('sessionId');
     const keyword = params.get('keyword');
-    if (!sessionId || !keyword) {
-      return NextResponse.json({ error: 'sessionId and keyword required' }, { status: 400 });
+    if (!keyword) {
+      return NextResponse.json({ error: 'keyword required' }, { status: 400 });
     }
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     await supabase
       .from('telegram_filters')

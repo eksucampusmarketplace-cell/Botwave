@@ -12,31 +12,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const params = new URL(request.url).searchParams;
     const sessionId = params.get('sessionId');
     const configType = params.get('type') || 'bot';
     const chatId = params.get('chatId');
 
-    if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
-
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     let query = supabase
       .from('telegram_config_history')
@@ -61,23 +50,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { sessionId, type, chatId, snapshot, changeSummary } = await request.json();
-    if (!sessionId || !snapshot) {
-      return NextResponse.json({ error: 'sessionId and snapshot required' }, { status: 400 });
+    const { sessionId, type, chatId, snapshot, changeSummary, initData } = await request.json();
+    if (!snapshot) {
+      return NextResponse.json({ error: 'snapshot required' }, { status: 400 });
     }
 
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase, telegramUserId, ownerUserId } = auth;
 
     const { data, error } = await supabase
       .from('telegram_config_history')
@@ -86,7 +70,7 @@ export async function POST(request: NextRequest) {
         config_type: type || 'bot',
         chat_id: chatId || null,
         config_snapshot: snapshot,
-        changed_by: user.id,
+        changed_by: telegramUserId || ownerUserId,
         change_summary: changeSummary || null,
       })
       .select('id, created_at')
@@ -103,23 +87,18 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { sessionId, snapshotId } = await request.json();
-    if (!sessionId || !snapshotId) {
-      return NextResponse.json({ error: 'sessionId and snapshotId required' }, { status: 400 });
+    const { sessionId, snapshotId, initData } = await request.json();
+    if (!snapshotId) {
+      return NextResponse.json({ error: 'snapshotId required' }, { status: 400 });
     }
 
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     // Load snapshot
     const { data: snapshot } = await supabase

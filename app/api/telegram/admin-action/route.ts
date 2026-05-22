@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +17,7 @@ const VALID_ACTIONS = new Set(['ban', 'unban', 'mute', 'unmute', 'warn', 'clearw
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { sessionId, chatId, targetUserId, action, reason, duration } = await request.json();
+    const { sessionId, chatId, targetUserId, action, reason, duration, initData } = await request.json();
 
     if (!sessionId || !chatId || !targetUserId || !action) {
       return NextResponse.json(
@@ -37,17 +33,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify session
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id, bot_token')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase, botToken: sessionBotToken, telegramUserId } = auth;
 
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-
-    const botToken = session.bot_token;
+    const botToken = sessionBotToken;
     if (!botToken) {
       return NextResponse.json({ error: 'Bot token not configured' }, { status: 400 });
     }
@@ -118,7 +112,7 @@ export async function POST(request: NextRequest) {
             session_id: sessionId,
             chat_id: chatId.toString(),
             user_id: targetUserId.toString(),
-            warned_by: user.id,
+            warned_by: telegramUserId || auth.ownerUserId,
             reason: reason || 'Admin action from dashboard',
           });
         result = `User ${targetUserId} warned`;
@@ -160,8 +154,8 @@ export async function POST(request: NextRequest) {
         chat_id: chatId.toString(),
         action,
         target_id: targetUserId.toString(),
-        admin_id: user.id,
-        admin_name: 'Dashboard',
+        admin_id: telegramUserId || auth.ownerUserId,
+        admin_name: auth.source === 'initData' ? 'Mini App' : 'Dashboard',
         reason: reason || `${action} via dashboard`,
       })
       .then(() => {});
