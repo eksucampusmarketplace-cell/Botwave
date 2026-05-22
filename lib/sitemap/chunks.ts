@@ -1,4 +1,24 @@
+// Shared sitemap-chunk data layer.
+//
+// History: this logic used to live inside the Next.js `app/sitemap.ts`
+// metadata route, which (with `generateSitemaps`) produced URLs at
+// `/sitemap/<id>.xml`. That approach worked but had two pain points:
+//   1. Next 14's metadata sitemap route ignores custom Cache-Control set in
+//      `next.config.js#headers()` — responses came back as
+//      `max-age=0, must-revalidate`, so the edge (Caddy) revalidated every
+//      single GSC fetch and slower middle-range chunks (e.g. /sitemap/11.xml,
+//      /sitemap/12.xml) occasionally hit GSC's per-URL fetch timeout and got
+//      parked in "Couldn't fetch" state.
+//   2. `force-static` mode silently skipped chunks under build memory
+//      pressure, so some chunk files simply did not exist on disk.
+//
+// Moving the data into this module lets a plain route handler at
+// `app/sitemap/[id]/route.ts` own the response with full control over the
+// Cache-Control header (24h s-maxage + 7d stale-while-revalidate) — solving
+// both problems above without touching the URL structure or chunk ordering
+// GSC already trusts.
 import type { MetadataRoute } from 'next';
+
 import { whatsappCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
@@ -10,71 +30,38 @@ import { mailboxPages } from '@/lib/mailbox/data';
 import { landingPages } from '@/lib/landing/data';
 import { searchEngines } from '@/lib/search-engines/data';
 import { PRICING_TIERS } from '@/lib/pricing/tiers';
-import {
-  LANDING_CHUNK_SIZE,
-  LANDING_CHUNK_ID_START,
-  landingChunkCount,
-} from '@/lib/sitemap-config';
+import { LANDING_CHUNK_SIZE, LANDING_CHUNK_ID_START } from '@/lib/sitemap-config';
 
-// Historical note: this used `force-static` so Next pre-rendered every chunk
-// at build time. That sounded great in theory ("no Node CPU at request time")
-// but in practice some chunks went missing after a deploy — Google Search
-// Console kept reporting "Couldn't fetch" for specific middle-range landing
-// chunks (e.g. /sitemap/11.xml + /sitemap/12.xml) while the chunks on either
-// side worked fine. The root cause was Next.js silently skipping some chunks
-// during the build pass when `generateSitemaps` returns a large list and the
-// build step is under memory pressure.
-//
-// Switching to dynamic rendering with `revalidate = 86400` keeps the same
-// effective behavior — every chunk is cached for 24h after first fetch — but
-// guarantees that any chunk Google asks for is generated on demand, even if
-// the previous deploy didn't produce a static file for it. Each chunk is
-// ~2000 entries (~370KB XML, <50ms render time), so the CPU cost per chunk
-// is negligible compared to the reliability win.
-export const dynamic = 'force-dynamic';
-export const revalidate = 86400;
+export type SitemapEntry = MetadataRoute.Sitemap[number];
 
-// Use build time as a dynamic lastModified for pages that change with deploys
+// Module-load timestamp doubles as <lastmod> for pages that change with each
+// deploy. Re-derived on every cold start, then cached by revalidate / edge.
 const BUILD_DATE = new Date();
 
-export async function generateSitemaps() {
-  const landingChunks = landingChunkCount();
-  const ids = [
-    { id: 0 },  // core pages
-    { id: 1 },  // commands
-    { id: 2 },  // docs, faq, use-cases, compare, fix, how-to, mailbox
-    { id: 3 },  // blog posts
-  ];
-  for (let i = 0; i < landingChunks; i++) {
-    ids.push({ id: LANDING_CHUNK_ID_START + i });
-  }
-  return ids;
-}
+const BASE_URL = 'https://www.botwave.online';
 
-export default function sitemap({ id }: { id: number }): MetadataRoute.Sitemap {
-  const baseUrl = 'https://www.botwave.online';
-
-  // Per-chunk try/catch so one bad chunk can never take down the whole index.
-  // A failed chunk returns an empty sitemap (which GSC reads as "this chunk
-  // has no URLs right now"), not a 500 — that prevents the chunk from getting
-  // stuck in GSC's "Couldn't fetch" state and lets the next crawl retry.
+export function getChunkUrls(id: number): SitemapEntry[] {
+  // Per-chunk try/catch so one failing dataset can never take down a whole
+  // chunk URL. Returning an empty <urlset> on render error lets GSC retry
+  // on the next crawl instead of permanently parking the chunk in
+  // "Couldn't fetch" state — empty is interpreted as "no URLs right now",
+  // not as a server error.
   try {
-    if (id === 0) return corePages(baseUrl);
-    if (id === 1) return commandPages(baseUrl);
-    if (id === 2) return contentPages(baseUrl);
-    if (id === 3) return blogPages(baseUrl);
+    if (id === 0) return corePages(BASE_URL);
+    if (id === 1) return commandPages(BASE_URL);
+    if (id === 2) return contentPages(BASE_URL);
+    if (id === 3) return blogPages(BASE_URL);
     if (id >= LANDING_CHUNK_ID_START) {
-      return landingChunk(baseUrl, id - LANDING_CHUNK_ID_START);
+      return landingChunk(BASE_URL, id - LANDING_CHUNK_ID_START);
     }
   } catch (err) {
     console.error(`[sitemap] chunk ${id} render failed:`, err);
     return [];
   }
-
   return [];
 }
 
-function corePages(baseUrl: string): MetadataRoute.Sitemap {
+function corePages(baseUrl: string): SitemapEntry[] {
   return [
     { url: baseUrl, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 1 },
     { url: `${baseUrl}/signup`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.9 },
@@ -117,25 +104,25 @@ function corePages(baseUrl: string): MetadataRoute.Sitemap {
   ];
 }
 
-function commandPages(baseUrl: string): MetadataRoute.Sitemap {
+function commandPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${baseUrl}/commands/whatsapp`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/userbot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
-    ...whatsappCommands.map(cmd => ({
+    ...whatsappCommands.map((cmd) => ({
       url: `${baseUrl}/commands/whatsapp/${cmd.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
-    ...telegramCommands.map(cmd => ({
+    ...telegramCommands.map((cmd) => ({
       url: `${baseUrl}/commands/telegram/${cmd.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
-    ...userbotCommands.map(cmd => ({
+    ...userbotCommands.map((cmd) => ({
       url: `${baseUrl}/commands/userbot/${cmd.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
@@ -144,52 +131,52 @@ function commandPages(baseUrl: string): MetadataRoute.Sitemap {
   ];
 }
 
-function contentPages(baseUrl: string): MetadataRoute.Sitemap {
+function contentPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/docs`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
-    ...docPages.map(doc => ({
+    ...docPages.map((doc) => ({
       url: `${baseUrl}/docs/${doc.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),
     { url: `${baseUrl}/faq`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
-    ...faqItems.map(faq => ({
+    ...faqItems.map((faq) => ({
       url: `${baseUrl}/faq/${faq.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
     { url: `${baseUrl}/use-cases`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.8 },
-    ...useCases.map(uc => ({
+    ...useCases.map((uc) => ({
       url: `${baseUrl}/use-cases/${uc.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     { url: `${baseUrl}/compare`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    ...compareData.map(page => ({
+    ...compareData.map((page) => ({
       url: `${baseUrl}/compare/${page.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     { url: `${baseUrl}/fix`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
-    ...fixPages.map(page => ({
+    ...fixPages.map((page) => ({
       url: `${baseUrl}/fix/${page.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     { url: `${baseUrl}/how-to`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
-    ...howToPages.map(page => ({
+    ...howToPages.map((page) => ({
       url: `${baseUrl}/how-to/${page.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
     { url: `${baseUrl}/mailbox`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
-    ...mailboxPages.map(page => ({
+    ...mailboxPages.map((page) => ({
       url: `${baseUrl}/mailbox/${page.slug}`,
       lastModified: BUILD_DATE,
       changeFrequency: 'monthly' as const,
@@ -198,7 +185,7 @@ function contentPages(baseUrl: string): MetadataRoute.Sitemap {
   ];
 }
 
-function blogPages(baseUrl: string): MetadataRoute.Sitemap {
+function blogPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/blog`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/blog/how-to-create-free-whatsapp-bot-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.9 },
@@ -222,7 +209,7 @@ function blogPages(baseUrl: string): MetadataRoute.Sitemap {
   ];
 }
 
-function landingChunk(baseUrl: string, chunkIndex: number): MetadataRoute.Sitemap {
+function landingChunk(baseUrl: string, chunkIndex: number): SitemapEntry[] {
   const start = chunkIndex * LANDING_CHUNK_SIZE;
   const end = Math.min(start + LANDING_CHUNK_SIZE, landingPages.length);
   const chunk = landingPages.slice(start, end);
@@ -233,4 +220,44 @@ function landingChunk(baseUrl: string, chunkIndex: number): MetadataRoute.Sitema
     changeFrequency: 'monthly' as const,
     priority: page.category === 'country' ? 0.6 : 0.5,
   }));
+}
+
+// Serialize entries to the XML urlset format that GSC expects. Matches the
+// shape Next.js's metadata sitemap renderer produces so this is a drop-in
+// replacement that GSC won't notice.
+export function renderSitemapXml(entries: SitemapEntry[]): string {
+  const urls = entries
+    .map((entry) => {
+      const loc = escapeXml(typeof entry.url === 'string' ? entry.url : '');
+      const lastmod = entry.lastModified
+        ? toIso(entry.lastModified)
+        : undefined;
+      const parts = [`    <loc>${loc}</loc>`];
+      if (lastmod) parts.push(`    <lastmod>${lastmod}</lastmod>`);
+      if (entry.changeFrequency) parts.push(`    <changefreq>${entry.changeFrequency}</changefreq>`);
+      if (typeof entry.priority === 'number') {
+        parts.push(`    <priority>${entry.priority.toFixed(1)}</priority>`);
+      }
+      return `  <url>\n${parts.join('\n')}\n  </url>`;
+    })
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>`;
+}
+
+function toIso(value: Date | string | number): string {
+  if (value instanceof Date) return value.toISOString();
+  return new Date(value).toISOString();
+}
+
+function escapeXml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
