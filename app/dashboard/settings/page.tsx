@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import { createClient } from '@/lib/supabase/client';
 import type { Platform } from '@/lib/types';
+import ProxySettingsSection from './ProxySettingsSection';
 
 interface ApiKeyData {
   id: string;
@@ -507,6 +508,8 @@ export default function SettingsPage() {
                 </div>
               )}
             </div>
+
+            {activePlatforms.has('whatsapp') && <ProxySettingsSection />}
 
             <div className="border-t border-red-400/20 pt-8">
               <h3 className="font-display text-sm tracking-[3px] text-red-400 mb-4">DANGER ZONE</h3>

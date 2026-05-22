@@ -12,6 +12,24 @@ const updateProxySchema = z.object({
   proxyPort: z.string().optional(),
   proxyUsername: z.string().optional(),
   proxyPassword: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Same guard as POST /api/bot/sessions: BYOP requires host + port.
+  if (data.proxyType === 'custom') {
+    if (!data.proxyHost || !data.proxyHost.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['proxyHost'],
+        message: 'Proxy host is required when switching to a custom proxy.',
+      });
+    }
+    if (!data.proxyPort || !data.proxyPort.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['proxyPort'],
+        message: 'Proxy port is required when switching to a custom proxy.',
+      });
+    }
+  }
 });
 
 /**
@@ -51,12 +69,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
+    // Defensive: downgrade to shared if creds didn't make it through. Belt
+    // and suspenders against the schema's superRefine.
+    const effectiveProxyType =
+      proxyType === 'custom' && proxyHost && proxyPort ? 'custom' : 'shared';
+
     const updateData: Record<string, unknown> = {
-      proxy_type: proxyType,
+      proxy_type: effectiveProxyType,
       updated_at: new Date().toISOString(),
     };
 
-    if (proxyType === 'custom' && proxyHost && proxyPort) {
+    if (effectiveProxyType === 'custom') {
       updateData.proxy_host = proxyHost;
       updateData.proxy_port = proxyPort;
       updateData.proxy_username = proxyUsername || null;
@@ -83,7 +106,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: session,
-      message: proxyType === 'custom'
+      message: effectiveProxyType === 'custom'
         ? 'Custom proxy configured. It will be used on next reconnect.'
         : 'Switched to shared proxy pool.',
     });
