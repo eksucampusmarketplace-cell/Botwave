@@ -8,6 +8,7 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { getGroupConfig, updateTelegramConfig, getActiveGroups } from '../utils/db';
 import { requireAdmin } from '../utils/permissions';
+import { buildPanelUrl, buildPanelDeepLink } from '../utils/panel';
 
 const POWERED_BY = '\n\n⚡ <b>Powered by Botwave</b>';
 
@@ -269,7 +270,7 @@ async function handleDeepLink(
 
   // /start settings - open settings panel
   if (payload === 'settings' && miniappUrl) {
-    const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
+    const settingsUrl = buildPanelUrl(miniappUrl, sessionId, ctx.chat!.id);
     const kb = new IK2().webApp('Open Settings', settingsUrl);
     await ctx.reply(`Open the settings panel for <b>${botName}</b>:`, {
       parse_mode: 'HTML',
@@ -307,7 +308,7 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
       const keyboard = new InlineKeyboard();
 
       if (miniappUrl) {
-        const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
+        const panelUrl = buildPanelUrl(miniappUrl, sessionId, ctx.chat!.id);
         keyboard.webApp('📱 Open Panel', panelUrl).row();
       }
 
@@ -367,8 +368,15 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
 
       const dmKeyboard = new InlineKeyboard();
       if (miniappUrl) {
-        const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat!.id}`;
-        dmKeyboard.webApp('⚡ Open Settings', settingsUrl).row();
+        // DM-flow: the user has just been told about a group, so the panel
+        // should default to managing that group. Pass the group chatId via
+        // a direct-link Mini App so start_param can carry it.
+        const settingsUrl = buildPanelDeepLink(
+          ctx.me.username,
+          sessionId,
+          ctx.chat!.id,
+        );
+        dmKeyboard.url('⚡ Open Settings', settingsUrl).row();
       }
       dmKeyboard.text('❓ Commands', 'help_main').text('📖 Categories', 'help_categories');
 
@@ -410,10 +418,19 @@ export function registerStartHandlers(bot: Bot, sessionId: string): void {
     }
 
     const chatId = ctx.chat!.id;
-    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${chatId}`;
-    const directLink = `https://t.me/Botwave_telegrambot/panel?startapp=session_${sessionId}`;
+    const isGroup = ctx.chat!.type !== 'private';
+    // In groups, encode the chatId into the direct-link start_param so the
+    // WebApp knows which group the caller wants to manage. Without this the
+    // role check has no chatId and falls back to checking every registered
+    // group, returning 'user' and showing only the Mod Log + XP tabs.
+    const panelUrl = buildPanelUrl(miniappUrl, sessionId, chatId);
+    const directLink = buildPanelDeepLink(
+      ctx.me.username,
+      sessionId,
+      isGroup ? chatId : undefined,
+    );
     const keyboard = new InlineKeyboard();
-    if (ctx.chat!.type === 'private') {
+    if (!isGroup) {
       keyboard.webApp('⚡ Open Settings Panel', panelUrl);
     } else {
       keyboard.url('⚡ Open Settings Panel', directLink);
@@ -732,9 +749,14 @@ async function sendHelpMessage(
   const keyboard = new InlineKeyboard();
 
   if (miniappUrl) {
-    const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}&chatId=${ctx.chat.id}`;
-    const directLink = `https://t.me/Botwave_telegrambot/panel?startapp=session_${sessionId}`;
-    if (ctx.chat.type === 'private') {
+    const isGroup = ctx.chat.type !== 'private';
+    const panelUrl = buildPanelUrl(miniappUrl, sessionId, ctx.chat.id);
+    const directLink = buildPanelDeepLink(
+      ctx.me.username,
+      sessionId,
+      isGroup ? ctx.chat.id : undefined,
+    );
+    if (!isGroup) {
       keyboard.webApp('📱 Open Mini App', panelUrl).row();
     } else {
       keyboard.url('📱 Open Mini App', directLink).row();

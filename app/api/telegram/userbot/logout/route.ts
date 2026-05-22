@@ -40,15 +40,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Clear session string and set state to disconnected
-    await admin
+    // Clear session string and set state to disconnected.
+    // The column is `telegram_session_string` on the `bot_sessions` table —
+    // an earlier version used `session_string` which doesn't exist and made
+    // logout a silent no-op (PostgREST rejected the update, but the response
+    // wasn't checked, so the client still saw `success: true`).
+    const { error: updateErr } = await admin
       .from('bot_sessions')
       .update({
-        session_string: null,
+        telegram_session_string: null,
         state: 'disconnected',
         updated_at: new Date().toISOString(),
       })
       .eq('id', sessionId);
+    if (updateErr) {
+      console.error('[USERBOT-LOGOUT] Failed to clear session:', updateErr);
+      return NextResponse.json({ error: 'Failed to clear session' }, { status: 500 });
+    }
 
     // Clear userbot config's session-specific data
     await admin
