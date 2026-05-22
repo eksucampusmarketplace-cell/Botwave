@@ -16,6 +16,37 @@ function normalizeJid(jid: string): string {
   return jid.replace(/:\d+@/, '@').trim();
 }
 
+// ─── Chat-level admin-command idempotency ───────────────────────────────────
+//
+// The per-user command cooldown in MessageHandler.ts is keyed on the SENDER,
+// not on the chat. If WhatsApp/Evolution redelivers the same message with a
+// different msgId (which can happen on retry or webhook duplication), the
+// dedup map in MessageHandler.ts misses it, and the kick/promote/demote
+// handler runs twice — sending two identical replies. Users have reported
+// this as the "bot replied twice to my .kick" bug.
+//
+// This map prevents that by tracking the last execution timestamp of each
+// admin command per chat (independent of who sent it or which msgId). If
+// the same command fires in the same chat within ADMIN_CHAT_COOLDOWN_MS, the
+// second invocation is suppressed.
+const adminChatCooldown = new Map<string, number>();
+const ADMIN_CHAT_COOLDOWN_MS = 5_000;
+
+function isAdminCommandOnChatCooldown(chatJid: string, commandName: string): boolean {
+  const key = `${chatJid}:${commandName}`;
+  const last = adminChatCooldown.get(key);
+  if (last && Date.now() - last < ADMIN_CHAT_COOLDOWN_MS) return true;
+  adminChatCooldown.set(key, Date.now());
+  // Bound the map size — cleanup oldest entries when we exceed 2000.
+  if (adminChatCooldown.size > 2000) {
+    const cutoff = Date.now() - ADMIN_CHAT_COOLDOWN_MS * 4;
+    for (const [k, t] of adminChatCooldown) {
+      if (t < cutoff) adminChatCooldown.delete(k);
+    }
+  }
+  return false;
+}
+
 async function handleAfk(
   context: MessageContext,
   args: string[],
@@ -365,12 +396,17 @@ async function handleKick(context: MessageContext, args: string[], sock: any): P
     return;
   }
 
+  if (isAdminCommandOnChatCooldown(context.chatJid, 'kick')) {
+    console.log(`[KICK] Suppressed duplicate invocation in ${context.chatJid} within ${ADMIN_CHAT_COOLDOWN_MS}ms`);
+    return;
+  }
+
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
     const botJid = (sock as any).user?.id;
     const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
     if (!botParticipant?.admin) {
-      await sendReply(context.chatJid, 'Bot must be a group admin to kick members.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'Bot must be a group admin to kick members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -404,12 +440,17 @@ async function handlePromote(context: MessageContext, args: string[], sock: any)
     return;
   }
 
+  if (isAdminCommandOnChatCooldown(context.chatJid, 'promote')) {
+    console.log(`[PROMOTE] Suppressed duplicate invocation in ${context.chatJid} within ${ADMIN_CHAT_COOLDOWN_MS}ms`);
+    return;
+  }
+
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
     const botJid = (sock as any).user?.id;
     const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
     if (!botParticipant?.admin) {
-      await sendReply(context.chatJid, 'Bot must be a group admin to promote members.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'Bot must be a group admin to promote members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
@@ -442,12 +483,17 @@ async function handleDemote(context: MessageContext, args: string[], sock: any):
     return;
   }
 
+  if (isAdminCommandOnChatCooldown(context.chatJid, 'demote')) {
+    console.log(`[DEMOTE] Suppressed duplicate invocation in ${context.chatJid} within ${ADMIN_CHAT_COOLDOWN_MS}ms`);
+    return;
+  }
+
   try {
     const metadata = await sock.groupMetadata(context.chatJid);
     const botJid = (sock as any).user?.id;
     const botParticipant = metadata.participants?.find((p: any) => p.id === botJid);
     if (!botParticipant?.admin) {
-      await sendReply(context.chatJid, 'Bot must be a group admin to demote members.', sock, context.rawMessage.key, context.queue);
+      await sendReply(context.chatJid, 'Bot must be a group admin to demote members. Promote the bot in the group settings, then try again.', sock, context.rawMessage.key, context.queue);
       return;
     }
 
