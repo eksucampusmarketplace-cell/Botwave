@@ -397,6 +397,23 @@ export async function redisGetEverUsedProxies(): Promise<string[]> {
   }
 }
 
+/**
+ * Remove a proxy host from the ever-used set. Used by the startup audit to
+ * garbage-collect markers left behind by Webshare swaps — once an IP is no
+ * longer in the live PROXY_LIST it can never be selected anyway, and if it
+ * ever rejoins the pool we want a fresh assignment.
+ *
+ * NEVER call this for IPs that are still in the live pool — that would let
+ * an IP be reassigned to multiple sessions, which violates the "one fresh IP
+ * per pairing" anti-ban policy.
+ */
+export async function redisRemoveProxyEverUsed(proxyHost: string): Promise<void> {
+  if (!isRedisAvailable() || !proxyHost) return;
+  try {
+    await redis!.srem(PROXY_EVER_USED_KEY, proxyHost);
+  } catch { /* ignore */ }
+}
+
 // ─── Country-Proxy Grouping ──────────────────────────────────────────────────
 
 /**
