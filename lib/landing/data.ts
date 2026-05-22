@@ -9,6 +9,27 @@ export interface LandingPage {
   category: 'country' | 'audience' | 'feature' | 'platform';
 }
 
+/**
+ * SITEMAP-CRITICAL ORDERING
+ *
+ * This array is append-only for the purposes of sitemap chunking. Each entry's
+ * position determines which /sitemap/<id>.xml chunk it lives in (see
+ * lib/sitemap-config.ts, currently 2000 URLs per chunk).
+ *
+ * Reordering or deleting entries causes every URL after the change to shift to
+ * a different chunk. Google Search Console treats that as "all the chunks I
+ * used to have just vanished" and re-discovers every URL from scratch — losing
+ * accumulated indexing signal.
+ *
+ * Safe edits:
+ *   - append new entries to the end
+ *   - edit metadata fields of an existing entry (title, heading, ...) as long
+ *     as the `slug` stays the same
+ * Unsafe edits (do not do unless you genuinely want a full re-index):
+ *   - reorder entries
+ *   - delete entries from the middle
+ *   - change an entry's slug
+ */
 export const landingPages: LandingPage[] = [
   // Country pages - WhatsApp
   { slug: 'whatsapp-bot-nigeria', title: 'WhatsApp Bot Nigeria', heading: 'Best WhatsApp Bot for Nigeria', description: 'Free WhatsApp bot for Nigerian groups and businesses. Naira pricing, local payment, community-focused features.', seoTitle: 'Best Free WhatsApp Bot in Nigeria (2026)', seoDescription: 'Free WhatsApp bot for Nigeria. Group management, AI replies, stickers, games. Naira pricing starting at N500/month.', keywords: ['whatsapp bot nigeria', 'free whatsapp bot nigeria', 'best whatsapp bot naija'], category: 'country' },

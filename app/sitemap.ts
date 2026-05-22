@@ -8,12 +8,11 @@ import { howToPages } from '@/lib/howto/data';
 import { comparePages as compareData } from '@/lib/compare/data';
 import { mailboxPages } from '@/lib/mailbox/data';
 import { landingPages } from '@/lib/landing/data';
-
-// Smaller chunks (2000 instead of 5000) so each sitemap chunk is faster to
-// render and serve. Lots of small chunks is preferred over a few huge ones —
-// Google Search Console treats each chunk independently, so a single timeout
-// no longer blocks 5000 URLs from being indexed.
-const LANDING_CHUNK_SIZE = 2000;
+import {
+  LANDING_CHUNK_SIZE,
+  LANDING_CHUNK_ID_START,
+  landingChunkCount,
+} from '@/lib/sitemap-config';
 
 // Force-static so Next builds every sitemap chunk at deploy time and serves
 // the result as a static file. This removes the dependency on Node CPU at
@@ -26,7 +25,7 @@ export const revalidate = 86400;
 const BUILD_DATE = new Date();
 
 export async function generateSitemaps() {
-  const landingChunks = Math.ceil(landingPages.length / LANDING_CHUNK_SIZE);
+  const landingChunks = landingChunkCount();
   const ids = [
     { id: 0 },  // core pages
     { id: 1 },  // commands
@@ -34,7 +33,7 @@ export async function generateSitemaps() {
     { id: 3 },  // blog posts
   ];
   for (let i = 0; i < landingChunks; i++) {
-    ids.push({ id: 10 + i }); // landing pages chunks start at id=10
+    ids.push({ id: LANDING_CHUNK_ID_START + i });
   }
   return ids;
 }
@@ -46,7 +45,9 @@ export default function sitemap({ id }: { id: number }): MetadataRoute.Sitemap {
   if (id === 1) return commandPages(baseUrl);
   if (id === 2) return contentPages(baseUrl);
   if (id === 3) return blogPages(baseUrl);
-  if (id >= 10) return landingChunk(baseUrl, id - 10);
+  if (id >= LANDING_CHUNK_ID_START) {
+    return landingChunk(baseUrl, id - LANDING_CHUNK_ID_START);
+  }
 
   return [];
 }

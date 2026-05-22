@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "validate:sitemap": "node scripts/validate-sitemap.mjs",
     "build:bot": "tsc -p tsconfig.bot.json",
     "start:bot": "node dist/bot/bot/index.js",
     "start:bot:telegram": "BOT_PLATFORM=telegram node dist/bot/bot/telegram-entrypoint.js",

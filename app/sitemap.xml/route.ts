@@ -1,28 +1,24 @@
 import { NextResponse } from 'next/server';
-import { landingPages } from '@/lib/landing/data';
-
-// Must match LANDING_CHUNK_SIZE in app/sitemap.ts — both files reference the
-// same chunk count. Keep them in sync.
-const LANDING_CHUNK_SIZE = 2000;
+import { allSitemapChunkIds } from '@/lib/sitemap-config';
 
 // Sitemap index is cheap to render and changes only on deploy. Force-static
 // so it is served from a built file without touching Node CPU.
 export const dynamic = 'force-static';
 export const revalidate = 86400;
 
+// Build timestamp used as the index's <lastmod>. Deploys regenerate it; in
+// between deploys the static file is reused, so GSC always sees a consistent
+// freshness signal that matches the chunks themselves.
+const BUILD_LASTMOD = new Date().toISOString();
+
 export async function GET() {
   const baseUrl = 'https://www.botwave.online';
-  const landingChunks = Math.ceil(landingPages.length / LANDING_CHUNK_SIZE);
-
-  const ids = [0, 1, 2, 3];
-  for (let i = 0; i < landingChunks; i++) {
-    ids.push(10 + i);
-  }
+  const ids = allSitemapChunkIds();
 
   const sitemaps = ids
     .map(
       (id) =>
-        `  <sitemap>\n    <loc>${baseUrl}/sitemap/${id}.xml</loc>\n  </sitemap>`,
+        `  <sitemap>\n    <loc>${baseUrl}/sitemap/${id}.xml</loc>\n    <lastmod>${BUILD_LASTMOD}</lastmod>\n  </sitemap>`,
     )
     .join('\n');
 
@@ -33,8 +29,11 @@ ${sitemaps}
 
   return new NextResponse(xml, {
     headers: {
-      'Content-Type': 'application/xml',
-      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+      'Content-Type': 'application/xml; charset=utf-8',
+      // stale-while-revalidate lets the CDN keep serving the previous
+      // index while a regen is in flight — GSC never sees a 5xx even if
+      // the upstream is slow.
+      'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
     },
   });
 }
