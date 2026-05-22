@@ -61,6 +61,7 @@ const footerLinks = {
   ],
   Company: [
     { href: '/what-is-botwave', label: 'What is BotWave?' },
+    { href: '/pricing', label: 'Pricing' },
     { href: '/privacy', label: 'Privacy Policy' },
     { href: '/terms', label: 'Terms of Service' },
     { href: '/security', label: 'Security' },
@@ -68,6 +69,8 @@ const footerLinks = {
     { href: '/signup', label: 'Get Started Free' },
     { href: '/login', label: 'Login' },
     { href: '/status', label: 'System Status' },
+    { href: '/search-engines', label: 'Search Engines' },
+    { href: '/docs/search-engine-optimization-guide-2026', label: '2026 SEO Guide' },
   ],
 };
 

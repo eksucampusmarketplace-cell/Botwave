@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema';
 import WebPageSchema from '@/components/seo/WebPageSchema';
 import FAQSchema from '@/components/seo/FAQSchema';
+import { searchEngines } from '@/lib/search-engines/data';
 
 const LAST_UPDATED = '2026-05-22';
 
@@ -131,7 +132,7 @@ export default function SearchEnginesPage() {
           <section className="mb-10">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-3">1. The Google umbrella</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Optimised for Googlebot. Coverage on Google Search, Google Discover, and any third-party engine that proxies Google's index.
+              Optimised for Googlebot. Coverage on Google Search, Google Discover, and any third-party engine that proxies Google&apos;s index.
             </p>
             <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
               <table className="w-full text-sm">
@@ -191,7 +192,7 @@ export default function SearchEnginesPage() {
           <section className="mb-10">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-3">3. AI answer engines (the new wave)</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              These engines synthesise live web data into conversational answers with citations. They're rapidly replacing traditional search for research-style queries.
+              These engines synthesise live web data into conversational answers with citations. They&apos;re rapidly replacing traditional search for research-style queries.
             </p>
             <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
               <table className="w-full text-sm">
@@ -230,6 +231,48 @@ export default function SearchEnginesPage() {
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Allow-listed crawlers</strong>: 30+ named bots explicitly permitted in <Link href="/robots.txt" className="text-blue-400 hover:underline">/robots.txt</Link>, including all AI engines.</span></li>
               <li className="flex gap-3"><span className="flex-shrink-0 mt-1 w-1.5 h-1.5 rounded-full bg-blue-500" /><span><strong>Internal cross-linking</strong> between how-to / fix / compare / use-cases so crawlers discover sibling pages.</span></li>
             </ul>
+          </section>
+
+          {/* Deep dives — per-engine pages */}
+          <section className="mb-10">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">Per-engine deep dives</h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              Want the full story on a single engine — how BotWave appears on it, what crawler it uses, how to verify coverage? Each page below is a dedicated reference card.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {searchEngines.map((e) => (
+                <Link
+                  key={e.slug}
+                  href={`/search-engines/${e.slug}`}
+                  className="block p-4 rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)] hover:border-blue-500/40 hover:shadow-md transition-all"
+                >
+                  <h3 className="font-semibold text-[var(--text-primary)] text-sm mb-1">{e.name}</h3>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    {e.umbrella === 'google' && 'Google umbrella'}
+                    {e.umbrella === 'bing' && 'Bing umbrella'}
+                    {e.umbrella === 'ai' && 'AI answer engine'}
+                    {e.umbrella === 'independent' && 'Independent index'}
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-3">{e.oneLiner}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* SEO guide pointer */}
+          <section className="mb-10 p-6 rounded-2xl bg-gradient-to-r from-blue-500/10 to-emerald-500/10 border border-blue-500/30">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+              Want the full SEO playbook?
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              We&apos;ve published the entire 9-step playbook BotWave uses to stay discoverable across Google, the Bing umbrella, and every AI answer engine — IndexNow, structured data, sitemap chunking, robots.txt, fixing &quot;Discovered – currently not indexed&quot;, the lot.
+            </p>
+            <Link
+              href="/docs/search-engine-optimization-guide-2026"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--primary)] hover:opacity-90 text-white text-sm font-semibold transition-opacity"
+            >
+              Read the 2026 SEO guide →
+            </Link>
           </section>
 
           {/* FAQ */}
