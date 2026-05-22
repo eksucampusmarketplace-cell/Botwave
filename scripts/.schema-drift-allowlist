@@ -47,12 +47,7 @@ userbot_pm_permit
 # ─────────────────────────────────────────────────────────────────────────
 
 # --- Telegram feature tables (PR follow-up batch 1) ---
-telegram_analytics       # bot/telegram/handlers/analytics.ts — Mini-App Stats tab depends on this
-telegram_karma           # bot/telegram/handlers/karma.ts — /upvote /downvote /karma /topkarma
-telegram_rules           # bot/telegram/handlers/rules.ts via start.ts + exportconfig.ts
-telegram_feedback        # bot/telegram/handlers/feedback.ts
-telegram_name_history    # bot/telegram/handlers/namehistory.ts — /lastnames
-telegram_welcome_messages # historical welcome message log (current code uses welcome_messages too)
+# Migrated by 061_telegram_feature_tables.sql — entries removed from list.
 
 # --- Telegram code-vs-DB rename drift (PR follow-up batch 2) ---
 # These tables don't need to be CREATEd — the code should be pointed at
