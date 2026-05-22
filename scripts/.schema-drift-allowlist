@@ -50,13 +50,8 @@ userbot_pm_permit
 # Migrated by 061_telegram_feature_tables.sql — entries removed from list.
 
 # --- Telegram code-vs-DB rename drift (PR follow-up batch 2) ---
-# These tables don't need to be CREATEd — the code should be pointed at
-# the existing tables instead. Removing from the allowlist will require
-# fixing the call-sites in bot/telegram/utils/db.ts and the modlog
-# handlers, not adding a migration.
-telegram_config          # should be telegram_bot_configs.admin_only_mode
-telegram_mod_log         # should be telegram_moderation_log (read side correct, write side drift)
-telegram_modlog          # same
+# Resolved in PR #530 / migration 062: code now points at
+# telegram_bot_configs.admin_only_mode and telegram_moderation_log.
 
 # --- WhatsApp + misc tables (PR follow-up batch 3) ---
 schedule_templates       # bot/whatsapp/commands/productivity.ts

@@ -50,12 +50,15 @@ export async function GET(request: NextRequest) {
 
     const { data: warnings } = await warnQuery;
 
-    // Fetch recent mod actions involving this user
+    // Fetch recent mod actions involving this user. Real table is
+    // `telegram_moderation_log` with target_user_id / moderator_user_id
+    // (not target_id / admin_id). `admin_name` is no longer a column —
+    // it lives in `details` jsonb when set.
     let modlogQuery = supabase
-      .from('telegram_modlog')
-      .select('action, reason, admin_id, admin_name, created_at')
+      .from('telegram_moderation_log')
+      .select('action, reason, moderator_user_id, details, created_at')
       .eq('session_id', sessionId)
-      .eq('target_id', userId)
+      .eq('target_user_id', userId)
       .order('created_at', { ascending: false })
       .limit(10);
 

@@ -146,17 +146,25 @@ export async function POST(request: NextRequest) {
         result = 'Unknown action';
     }
 
-    // Log moderation action
+    // Log moderation action. Column names match the actual schema of
+    // telegram_moderation_log (target_user_id / moderator_user_id, with
+    // free-form metadata in `details`). Earlier code referenced a
+    // nonexistent `telegram_modlog` table with `target_id` / `admin_id`
+    // columns, so every dashboard-initiated mod action was silently
+    // failing to log.
     await supabase
-      .from('telegram_modlog')
+      .from('telegram_moderation_log')
       .insert({
         session_id: sessionId,
         chat_id: chatId.toString(),
         action,
-        target_id: targetUserId.toString(),
-        admin_id: telegramUserId || auth.ownerUserId,
-        admin_name: auth.source === 'initData' ? 'Mini App' : 'Dashboard',
+        target_user_id: targetUserId.toString(),
+        moderator_user_id: telegramUserId || auth.ownerUserId,
         reason: reason || `${action} via dashboard`,
+        details: {
+          admin_name: auth.source === 'initData' ? 'Mini App' : 'Dashboard',
+          source: auth.source,
+        },
       })
       .then(() => {});
 
