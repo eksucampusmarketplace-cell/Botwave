@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 import {
   TELEGRAM_BOT_CONFIG_COLUMNS,
   USERBOT_CONFIG_COLUMNS,
@@ -21,29 +21,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     const type = searchParams.get('type') || 'bot';
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
-    }
-
-    // Verify session belongs to user
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const table = type === 'userbot' ? 'telegram_userbot_configs' : 'telegram_bot_configs';
     const { data: config } = await supabase
@@ -66,28 +50,16 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const body = await request.json();
-    const { sessionId, type, ...configFields } = body;
+    const { sessionId, type, initData, ...configFields } = body;
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
-    }
-
-    // Verify session belongs to user
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const table = type === 'userbot' ? 'telegram_userbot_configs' : 'telegram_bot_configs';
     const validColumns = type === 'userbot' ? USERBOT_CONFIG_COLUMNS : TELEGRAM_BOT_CONFIG_COLUMNS;

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -9,17 +9,11 @@ const broadcastSchema = z.object({
   text: z.string().min(1).max(4096),
   pin: z.boolean().optional().default(false),
   silent: z.boolean().optional().default(false),
+  initData: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const validation = broadcastSchema.safeParse(body);
 
@@ -30,21 +24,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { sessionId, text, pin, silent } = validation.data;
+    const { sessionId, text, pin, silent, initData } = validation.data;
 
-    // Verify session ownership and get bot token
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id, bot_token')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase, botToken } = auth;
 
-    if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    const botToken = session.bot_token;
     if (!botToken) {
       return NextResponse.json({ error: 'Bot token not configured' }, { status: 400 });
     }

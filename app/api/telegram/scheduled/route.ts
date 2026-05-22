@@ -6,32 +6,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
-async function verifySession(supabase: any, sessionId: string, userId: string) {
-  const { data } = await supabase
-    .from('bot_sessions')
-    .select('id')
-    .eq('id', sessionId)
-    .eq('user_id', userId)
-    .single();
-  return data;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const sessionId = new URL(request.url).searchParams.get('sessionId');
-    if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const { data: messages } = await supabase
       .from('telegram_scheduled_messages')
@@ -48,18 +33,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const { sessionId, chat_id, message, scheduled_at, repeat_cron } = await request.json();
-    if (!sessionId || !chat_id || !message || !scheduled_at) {
-      return NextResponse.json({ error: 'sessionId, chat_id, message, scheduled_at required' }, { status: 400 });
+    const { sessionId, chat_id, message, scheduled_at, repeat_cron, initData } = await request.json();
+    if (!chat_id || !message || !scheduled_at) {
+      return NextResponse.json({ error: 'chat_id, message, scheduled_at required' }, { status: 400 });
     }
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(
+      request,
+      { sessionId, requireRole: 'admin' },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const { data, error } = await supabase
       .from('telegram_scheduled_messages')
@@ -84,20 +69,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const params = new URL(request.url).searchParams;
     const sessionId = params.get('sessionId');
     const id = params.get('id');
-    if (!sessionId || !id) {
-      return NextResponse.json({ error: 'sessionId and id required' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
 
-    if (!(await verifySession(supabase, sessionId, user.id))) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     await supabase
       .from('telegram_scheduled_messages')
