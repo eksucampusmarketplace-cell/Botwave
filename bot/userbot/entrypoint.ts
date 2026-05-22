@@ -144,7 +144,11 @@ async function main(): Promise<void> {
   console.log('╔════════════════════════════════════════════╗');
   console.log('║    BotWave Telegram Userbot Service        ║');
   console.log('╚════════════════════════════════════════════╝');
-  console.log(`[USERBOT] Starting with API_ID: ${DEFAULT_API_ID ? 'configured' : 'NOT SET'}`);
+  console.log(
+    `[USERBOT] Global API_ID fallback: ${
+      DEFAULT_API_ID ? 'configured' : 'unset (OK — SaaS mode reads per-session api_id from DB)'
+    }`,
+  );
   console.log(`[USERBOT] Supabase: ${SUPABASE_URL}`);
 
   // Start health server
