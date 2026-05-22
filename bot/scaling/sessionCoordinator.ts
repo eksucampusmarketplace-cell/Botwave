@@ -525,6 +525,42 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
   }
 
   if (error) {
+    // PostgREST returns 42703 ("column ... does not exist") when its schema
+    // cache is stale — typically right after a migration adds a column but
+    // before PostgREST has been told to reload. Treat this as soft-fail:
+    // retry the cleanup without the platform filter so we still release
+    // OUR instance's stale locks, and warn loudly so the cache can be
+    // refreshed out-of-band (e.g. `NOTIFY pgrst, 'reload schema'`).
+    const pgCode = (error as { code?: string }).code;
+    const pgMsg = (error as { message?: string }).message ?? '';
+    const isStaleCache =
+      pgCode === '42703' ||
+      pgMsg.includes('does not exist') ||
+      pgMsg.includes('schema cache');
+
+    if (isStaleCache) {
+      console.warn(
+        `[COORD] Startup cleanup: PostgREST schema cache looks stale (${pgCode || 'no code'}: ${pgMsg}). ` +
+          `Falling back to unfiltered cleanup for instance ${INSTANCE_ID}.`,
+      );
+      const { data: fallbackData, error: fallbackErr } = await supabase
+        .from('bot_sessions')
+        .update({ locked_by: null, locked_at: null })
+        .eq('locked_by', INSTANCE_ID)
+        .select('id, state');
+
+      if (fallbackErr) {
+        console.error('[COORD] Fallback cleanup also failed:', fallbackErr);
+        return;
+      }
+      if (fallbackData && fallbackData.length > 0) {
+        console.log(
+          `[COORD] (fallback) Released ${fallbackData.length} stale lock(s) for instance ${INSTANCE_ID}: ${fallbackData.map(s => `${s.id.slice(0, 8)}(${s.state})`).join(', ')}`,
+        );
+      }
+      return;
+    }
+
     console.error('[COORD] Startup cleanup failed:', error);
     return;
   }

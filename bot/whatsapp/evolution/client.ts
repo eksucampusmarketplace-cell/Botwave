@@ -24,9 +24,11 @@ const KEEPALIVE_INTERVAL = 60 * 1000;
 
 // Proxy pool for distributing WebSocket connections across different IPs.
 // Each proxy string is "host:port:user:pass".
+// `replace(/\s+/g, '')` strips ALL whitespace (incl. mid-string \r from Windows
+// proxy lists) so SOCKS5 auth doesn't fail on a polluted password field.
 const PROXY_LIST = (process.env.PROXY_LIST || '')
   .split(',')
-  .map(p => p.trim())
+  .map(p => p.replace(/\s+/g, ''))
   .filter(Boolean);
 let proxyCounter = 0;
 
