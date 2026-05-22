@@ -8,7 +8,7 @@ interface TelegramSession {
   id: string;
   session_name: string;
   bot_username: string;
-  platform: string;
+  platform: 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
   state: string;
   created_at: string;
 }
@@ -24,8 +24,12 @@ export default function TelegramSessionPicker() {
         const res = await fetch('/api/user/sessions');
         const data = await res.json();
         if (data.success) {
+          // Match the canonical platform values used everywhere else (lib/types.ts
+          // defines Platform as 'whatsapp' | 'telegram_bot' | 'telegram_userbot').
+          // Filtering on the legacy literal 'telegram' silently produced an empty
+          // list even when Telegram sessions existed.
           const telegramSessions = (data.data || []).filter(
-            (s: TelegramSession) => s.platform === 'telegram' || s.platform === 'telegram_userbot'
+            (s: TelegramSession) => s.platform === 'telegram_bot' || s.platform === 'telegram_userbot'
           );
           setSessions(telegramSessions);
 
