@@ -1,0 +1,70 @@
+# scripts/.schema-drift-allowlist
+#
+# Tables that ARE referenced by code AND do exist on the production database
+# but are NOT declared by any file under supabase/migrations/. They were
+# created out-of-band (manual psql, deleted/older migration runs, etc.).
+#
+# Goal: shrink this list to empty.
+#
+# Each entry should ideally have a follow-up PR that writes a back-fill
+# migration mirroring the column definitions of the live table on prod
+# (use `pg_dump --schema-only -t <table>` on the VPS to get the truth).
+#
+# Audited 2026-05-22 against the Contabo VPS (`SELECT tablename FROM
+# pg_tables WHERE schemaname='public'`).
+#
+# Tables in code with NO declaring migration AND NOT present in prod DB
+# are deliberately NOT in this list — those are real drift and the
+# schema-drift CI check must fail until a migration is added.
+
+# --- Telegram bot subsystem (live on prod, missing from migrations dir) ---
+telegram_afk
+telegram_antiraid_joins
+telegram_antiraid_sessions
+telegram_blacklist_settings
+telegram_federation_admins
+telegram_federation_bans
+telegram_federation_members
+telegram_federations
+telegram_ticket_messages
+telegram_tickets
+
+# --- Userbot subsystem (live on prod, missing from migrations dir) ---
+userbot_filters
+userbot_gbans
+userbot_notes
+userbot_pm_permit
+
+# ─────────────────────────────────────────────────────────────────────────
+# REAL DRIFT — needs a backfill migration. These tables ARE referenced by
+# code but are NOT in the prod DB *and* not declared in supabase/migrations/.
+# Calls to these tables silently no-op in production (Supabase client
+# returns { data: null, error: 'relation does not exist' } and most
+# call-sites don't check `error`). Tracked for follow-up PRs.
+#
+# Each entry should be removed from this list when its declaring
+# migration lands. Goal: this section empty.
+# ─────────────────────────────────────────────────────────────────────────
+
+# --- Telegram feature tables (PR follow-up batch 1) ---
+telegram_analytics       # bot/telegram/handlers/analytics.ts — Mini-App Stats tab depends on this
+telegram_karma           # bot/telegram/handlers/karma.ts — /upvote /downvote /karma /topkarma
+telegram_rules           # bot/telegram/handlers/rules.ts via start.ts + exportconfig.ts
+telegram_feedback        # bot/telegram/handlers/feedback.ts
+telegram_name_history    # bot/telegram/handlers/namehistory.ts — /lastnames
+telegram_welcome_messages # historical welcome message log (current code uses welcome_messages too)
+
+# --- Telegram code-vs-DB rename drift (PR follow-up batch 2) ---
+# These tables don't need to be CREATEd — the code should be pointed at
+# the existing tables instead. Removing from the allowlist will require
+# fixing the call-sites in bot/telegram/utils/db.ts and the modlog
+# handlers, not adding a migration.
+telegram_config          # should be telegram_bot_configs.admin_only_mode
+telegram_mod_log         # should be telegram_moderation_log (read side correct, write side drift)
+telegram_modlog          # same
+
+# --- WhatsApp + misc tables (PR follow-up batch 3) ---
+schedule_templates       # bot/whatsapp/commands/productivity.ts
+email_bounces            # app/api/email/bounce/route.ts + lib/email/bounce.ts (declared in legacy migrations/004 but never folded into supabase/migrations/)
+bank_cashout_requests    # bot/whatsapp/commands/admin.ts cashout flow
+uploads                  # upload-tracking telemetry
