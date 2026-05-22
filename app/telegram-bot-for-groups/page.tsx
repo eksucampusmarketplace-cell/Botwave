@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import LatestPostsCompact from '@/components/blog/LatestPostsCompact';
 
 export const metadata: Metadata = {
   title: 'Best Telegram Bot for Groups (2026), Free',
@@ -215,6 +216,7 @@ export default function TelegramBotForGroupsPage() {
         </div>
       </section>
 
+      <LatestPostsCompact limit={4} />
       <Footer />
     </main>
   );

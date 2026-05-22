@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema';
+import LatestPostsCompact from '@/components/blog/LatestPostsCompact';
 import { landingPages } from '@/lib/landing/data';
 
 export function generateStaticParams() {
@@ -136,8 +137,10 @@ export default function LandingPage({ params }: { params: { slug: string } }) {
         </div>
       </section>
 
+      <LatestPostsCompact limit={4} />
+
       {relatedPages.length > 0 && (
-        <section className="pb-20 px-6">
+        <section className="pb-12 px-6">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">Related Pages</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

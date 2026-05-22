@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import LastReviewed from '@/components/seo/LastReviewed';
 
 const footerLinks = {
   Platform: [
@@ -149,9 +150,12 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-[var(--border)] pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[var(--text-muted)]">
-            &copy; {new Date().getFullYear()} BotWave &middot; Built by BotWave Team &middot; Free WhatsApp &amp; Telegram Bot Platform
-          </p>
+          <div className="flex flex-col gap-1 items-center sm:items-start">
+            <p className="text-xs text-[var(--text-muted)]">
+              &copy; {new Date().getFullYear()} BotWave &middot; Built by BotWave Team &middot; Free WhatsApp &amp; Telegram Bot Platform
+            </p>
+            <LastReviewed />
+          </div>
           <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
             <Link href="/privacy" className="hover:text-[var(--primary)] transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-[var(--primary)] transition-colors">Terms</Link>

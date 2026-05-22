@@ -1,3 +1,5 @@
+'use client';
+
 import { currentReviewDate, formatReviewDate } from '@/lib/content/reviewed';
 
 /**

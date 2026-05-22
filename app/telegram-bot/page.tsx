@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import LatestPostsCompact from '@/components/blog/LatestPostsCompact';
 
 export const metadata: Metadata = {
   title: 'Telegram Bot & Userbot (2026), Free',
@@ -166,6 +167,7 @@ export default function TelegramBotPage() {
         </div>
       </section>
 
+      <LatestPostsCompact limit={4} />
       <Footer />
     </main>
   );
