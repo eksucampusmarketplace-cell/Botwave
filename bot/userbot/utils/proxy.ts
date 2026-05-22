@@ -14,9 +14,13 @@ export interface ProxyEntry {
   socksType: 5;
 }
 
+// Strip ALL whitespace (incl. \r, \n, tabs) from each entry. `.trim()` would
+// only handle leading/trailing — but proxy lists exported from Windows tools
+// can contain stray CR bytes mid-string, which silently corrupts the password
+// field and makes SOCKS5 auth fail.
 const USERBOT_PROXY_LIST: ProxyEntry[] = (process.env.USERBOT_PROXY_LIST || '')
   .split(',')
-  .map(p => p.trim())
+  .map(p => p.replace(/\s+/g, ''))
   .filter(Boolean)
   .map(entry => {
     const parts = entry.split(':');
