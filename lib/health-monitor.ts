@@ -11,7 +11,9 @@ import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions, cleanupGhost
 
 const CHECK_INTERVAL_MS = 60_000; // 60 seconds
 const GHOST_CLEANUP_INTERVAL_MS = 60 * 60_000; // once per hour
+const REENGAGEMENT_TICK_INTERVAL_MS = 60 * 60_000; // hit the cron endpoint hourly; it decides if real work is due
 let lastGhostCleanupAt = 0;
+let lastReengagementTickAt = 0;
 const CONSECUTIVE_FAILURES_THRESHOLD = 3;
 
 let monitorInterval: ReturnType<typeof setInterval> | null = null;
@@ -196,6 +198,38 @@ export function startHealthMonitor(): void {
       }
     } catch (err) {
       console.error('[HEALTH-MONITOR] Session cleanup error:', err);
+    }
+
+    // Re-engagement sweep — hit the internal cron endpoint hourly. The
+    // endpoint reads system_config.email_auto_send to decide if a sweep
+    // is actually due, so calling it more often than needed is a no-op.
+    try {
+      const nowR = Date.now();
+      if (nowR - lastReengagementTickAt >= REENGAGEMENT_TICK_INTERVAL_MS) {
+        lastReengagementTickAt = nowR;
+        const secret = process.env.INTERNAL_CRON_SECRET;
+        const baseUrl = process.env.SELF_URL || process.env.NEXT_PUBLIC_APP_URL;
+        if (secret && baseUrl) {
+          const tickUrl = `${baseUrl.replace(/\/$/, '')}/api/internal/cron/reengagement-tick?secret=${encodeURIComponent(secret)}`;
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 30_000);
+          fetch(tickUrl, { method: 'POST', signal: ctrl.signal })
+            .then(async (res) => {
+              clearTimeout(t);
+              if (!res.ok) {
+                console.warn(`[HEALTH-MONITOR] Re-engagement tick HTTP ${res.status}`);
+                return;
+              }
+              const body = await res.json().catch(() => ({}));
+              if (body && (body.sent || body.eligible)) {
+                console.log(`[HEALTH-MONITOR] Re-engagement tick: ${JSON.stringify(body)}`);
+              }
+            })
+            .catch(() => { clearTimeout(t); /* network blip — ignore */ });
+        }
+      }
+    } catch (err) {
+      console.error('[HEALTH-MONITOR] Re-engagement tick error:', err);
     }
   }, CHECK_INTERVAL_MS);
 }
