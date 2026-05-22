@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions, redisMarkProxyEverUsed, redisIsProxyEverUsed, redisGetEverUsedProxies, redisRemoveProxyEverUsed } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
 import { getSessionById, recordSharedProxyAssignment, clearSharedProxyAssignment } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -528,7 +528,6 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   const scores: ProxyScore[] = [];
 
   let burntCount = 0;
-  let everUsedCount = 0;
   for (let i = 0; i < PROXY_LIST.length; i++) {
     const candidate = PROXY_LIST[i];
     const candidateHost = candidate.split(':')[0];
@@ -540,16 +539,7 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
       continue;
     }
 
-    // 2. "Ever used" — one fresh IP per pairing. Already-assigned proxies are
-    // permanently excluded from the auto-pool. BYOP proxies bypass this whole
-    // function so users can reuse their own IPs freely.
-    if (await redisIsProxyEverUsed(candidateHost)) {
-      everUsedCount++;
-      scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
-      continue;
-    }
-
-    // 3. Short-term failure blacklist (TTL-based, recovers automatically).
+    // 2. Short-term failure blacklist (TTL-based, recovers automatically).
     const blacklisted = await redisIsProxyBlacklisted(candidateHost);
     if (blacklisted) {
       scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
@@ -570,8 +560,7 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
     console.warn(
       `[PROXY] Pool exhausted for session ${sessionId?.slice(0, 8) || '?'}: ` +
       `${PROXY_LIST.length} proxies configured, ${burntCount} permanently burnt, ` +
-      `${everUsedCount} already used by another session, ` +
-      `${PROXY_LIST.length - burntCount - everUsedCount} short-term blacklisted. ` +
+      `${PROXY_LIST.length - burntCount} short-term blacklisted. ` +
       `Recommend BYOP (custom proxy) or add fresh IPs to PROXY_LIST.`
     );
     return null;
@@ -654,24 +643,21 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   const proxyStr = PROXY_LIST[chosen.idx];
   proxyCounter = chosen.idx + 1;
 
-  // Persist sticky assignment, country grouping, and ever-used marker.
+  // Persist sticky assignment + country grouping so reconnects reuse the same
+  // IP and the per-country cap is enforced across sessions.
   if (sessionId) {
     await redisSetSessionProxy(sessionId, proxyStr);
     sessionProxyMap.set(sessionId, chosen.idx);
     if (countryCode) {
       await redisAddProxyCountrySession(chosen.host, countryCode, sessionId);
     }
-    // Permanently mark this IP as "ever used" so the shared pool never
-    // reassigns it to another session. BYOP proxies are unaffected (they
-    // take an early-return path above this block).
-    await redisMarkProxyEverUsed(chosen.host);
     // Mirror to DB so the assignment survives Redis flushes and is visible
     // in admin dashboards for proxy-related disconnect investigations.
     // Best-effort: never fail the assignment if the DB write hiccups.
     await recordSharedProxyAssignment(sessionId, chosen.host).catch(err =>
       console.warn(`[PROXY] DB record failed for ${sessionId.slice(0, 8)}: ${err?.message ?? err}`)
     );
-    console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount}, marked ever-used)`);
+    console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount})`);
   }
 
   return parseProxy(proxyStr);
@@ -1183,9 +1169,8 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   noProxy: number;
   rotated: number;
   rotateFailed: number;
-  everUsedGcRemoved: number;
 }> {
-  const summary = { scanned: 0, skippedBYOP: 0, inPool: 0, noProxy: 0, rotated: 0, rotateFailed: 0, everUsedGcRemoved: 0 };
+  const summary = { scanned: 0, skippedBYOP: 0, inPool: 0, noProxy: 0, rotated: 0, rotateFailed: 0 };
 
   if (!BASE) {
     console.log('[PROXY-AUDIT] No EVOLUTION_API_URL configured — skipping startup proxy rotation');
@@ -1200,44 +1185,14 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   // intentionally ignored: if the IP is still in the pool the assignment
   // remains valid even if the password was rotated independently.
   const livePool = new Set<string>();
-  const liveHostSet = new Set<string>();
   for (const entry of PROXY_LIST) {
     const parts = entry.split(':');
     if (parts.length >= 2 && parts[0] && parts[1]) {
       livePool.add(`${parts[0]}:${parts[1]}`);
-      liveHostSet.add(parts[0]);
     }
   }
 
   console.log(`[PROXY-AUDIT] Startup rotation pass starting — live pool has ${livePool.size} IP(s)`);
-
-  // GC pass: drop ever-used markers whose host is no longer in the live
-  // PROXY_LIST. Each Webshare plan swap leaves the previous IPs marked
-  // ever-used in Redis, which permanently shrinks the assignable pool.
-  // The IPs themselves are unreachable anyway, so removing them is safe
-  // and frees up assignment slots for stuck sessions. If an IP ever
-  // rejoins the live pool later, fresh assignment is the intended path
-  // (a re-introduced IP behaves the same as a brand-new one). We never
-  // remove markers for IPs still in `liveHostSet` — those still need the
-  // one-IP-per-pairing exclusion.
-  try {
-    const everUsed = await redisGetEverUsedProxies();
-    const staleEverUsed = everUsed.filter(h => !liveHostSet.has(h));
-    for (const staleHost of staleEverUsed) {
-      await redisRemoveProxyEverUsed(staleHost);
-    }
-    summary.everUsedGcRemoved = staleEverUsed.length;
-    if (staleEverUsed.length > 0) {
-      console.warn(
-        `[PROXY-AUDIT] ever-used GC: removed ${staleEverUsed.length} stale marker(s) ` +
-        `(IPs no longer in live PROXY_LIST). ${everUsed.length - staleEverUsed.length} marker(s) retained.`
-      );
-    } else {
-      console.log(`[PROXY-AUDIT] ever-used GC: 0 stale markers (${everUsed.length} markers all match live pool)`);
-    }
-  } catch (err) {
-    console.warn('[PROXY-AUDIT] ever-used GC failed (continuing rotation):', err);
-  }
 
   const instanceNames = await fetchAllEvolutionInstances();
   summary.scanned = instanceNames.size;
@@ -1317,8 +1272,7 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
   console.warn(
     `[PROXY-AUDIT] Startup rotation pass complete: scanned=${summary.scanned} ` +
     `rotated=${summary.rotated} inPool=${summary.inPool} noProxy=${summary.noProxy} ` +
-    `byop=${summary.skippedBYOP} rotateFailed=${summary.rotateFailed} ` +
-    `everUsedGcRemoved=${summary.everUsedGcRemoved}`
+    `byop=${summary.skippedBYOP} rotateFailed=${summary.rotateFailed}`
   );
 
   return summary;
