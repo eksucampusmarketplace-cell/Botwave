@@ -1201,41 +1201,61 @@ export class EvolutionBot {
               // Non-fatal - just means we couldn't check for updated code
             }
 
-            // Early proxy rotation: if stuck in 'connecting' for 60s, the proxy
-            // is likely slow or blocked. Rotate proxy immediately instead of
-            // waiting the full 180s pairing timeout. This gets users a QR faster.
+            // Early proxy rotation: if stuck in 'connecting' for 60s AND no
+            // pairing code has been delivered yet, the proxy is likely slow or
+            // blocked. Rotate proxy immediately instead of waiting the full
+            // 180s pairing timeout. This gets users a QR faster.
+            //
+            // CRITICAL: skip rotation if a pairing code is already in the DB.
+            // During pairing, the Baileys WebSocket only completes the
+            // handshake AFTER the user enters the code on their phone. Being
+            // in 'connecting' for 60s with a code already on screen is the
+            // EXPECTED state (user reaction time + entering 8 chars). Rotating
+            // the proxy here regenerates the code, invalidating the user's
+            // in-progress entry attempt. The 180s PAIRING_TIMEOUT_MS watchdog
+            // below still handles truly dead proxies after the code expires.
             if (!proxyRotatedEarly && Date.now() - pairingWaitStart > PROXY_CONNECT_TIMEOUT_MS) {
-              const currentProxy = await redisGetSessionProxy(this.sessionId);
-              if (currentProxy) {
+              const codeShownToUser = await getSessionPairingCode(this.sessionId);
+              if (codeShownToUser) {
+                // Suppress the watchdog for the remainder of the pairing window.
+                // The proxy provably works (Evolution returned a code through
+                // it). Mark as "rotated" so we don't re-check every 5s — the
+                // 180s outer timeout will catch this if pairing truly stalls.
                 proxyRotatedEarly = true;
-                const proxyHost = currentProxy.split(':')[0];
-                console.warn(`[EVO] Proxy ${proxyHost} stuck for ${PROXY_CONNECT_TIMEOUT_MS / 1000}s during pairing for ${this.sessionId} — rotating early`);
-                recordProxyFailure(this.sessionId, proxyHost, `no connection after ${PROXY_CONNECT_TIMEOUT_MS / 1000}s`);
-                await clearSessionProxy(this.sessionId, this.phoneNumber);
-                isRecreating = true;
-                try {
-                  await deleteInstanceAndVerify(this.sessionId);
-                  if (this.stopped) { isRecreating = false; return; }
-                  await createInstance(this.sessionId, this.phoneNumber);
-                  if (this.stopped) { isRecreating = false; return; }
-                  const freshResult = await getPairingCode(this.sessionId, this.phoneNumber);
-                  if (this.stopped) { isRecreating = false; return; }
-                  if (freshResult) {
-                    markPairingCodeGenerated(this.sessionId);
-                    if (freshResult.qrCode) {
-                      await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                console.log(`[EVO] Pairing code already delivered for ${this.sessionId} (code on user's screen) — suppressing 60s proxy rotation watchdog. Proxy is working; user is entering the code.`);
+              } else {
+                const currentProxy = await redisGetSessionProxy(this.sessionId);
+                if (currentProxy) {
+                  proxyRotatedEarly = true;
+                  const proxyHost = currentProxy.split(':')[0];
+                  console.warn(`[EVO] Proxy ${proxyHost} stuck for ${PROXY_CONNECT_TIMEOUT_MS / 1000}s during pairing for ${this.sessionId} (no code delivered yet) — rotating early`);
+                  recordProxyFailure(this.sessionId, proxyHost, `no connection after ${PROXY_CONNECT_TIMEOUT_MS / 1000}s`);
+                  await clearSessionProxy(this.sessionId, this.phoneNumber);
+                  isRecreating = true;
+                  try {
+                    await deleteInstanceAndVerify(this.sessionId);
+                    if (this.stopped) { isRecreating = false; return; }
+                    await createInstance(this.sessionId, this.phoneNumber);
+                    if (this.stopped) { isRecreating = false; return; }
+                    const freshResult = await getPairingCode(this.sessionId, this.phoneNumber);
+                    if (this.stopped) { isRecreating = false; return; }
+                    if (freshResult) {
+                      markPairingCodeGenerated(this.sessionId);
+                      if (freshResult.qrCode) {
+                        await updateSessionQR(this.sessionId, freshResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                      }
+                      // force: true — retry path after proxy rotation; row may
+                      // still be `active` from a transient WS state=open.
+                      await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
+                      this.pairingStartedAt = Date.now();
+                      // Don't reset pairingWaitStart — the full timeout still applies from original start
+                      console.log(`[EVO] Early proxy rotation succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
                     }
-                    // force: true — retry path after proxy rotation; row may
-                    // still be `active` from a transient WS state=open.
-                    await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
-                    this.pairingStartedAt = Date.now();
-                    // Don't reset pairingWaitStart — the full timeout still applies from original start
-                    console.log(`[EVO] Early proxy rotation succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
+                  } catch (earlyRotateErr) {
+                    console.error(`[EVO] Early proxy rotation failed for ${this.sessionId}:`, earlyRotateErr);
                   }
-                } catch (earlyRotateErr) {
-                  console.error(`[EVO] Early proxy rotation failed for ${this.sessionId}:`, earlyRotateErr);
+                  isRecreating = false;
                 }
-                isRecreating = false;
               }
             }
 
