@@ -89,6 +89,19 @@ export class UserbotClient {
       const me = await this.client.getMe() as Api.User;
       console.log(`[USERBOT-CLIENT] Connected as ${me.firstName} (@${me.username || 'no_username'}) ID: ${me.id}`);
 
+      // Subscribe to the update stream. Without this, gramJS receives only
+      // UpdateConnectionState push events and Telegram never delivers
+      // UpdateNewMessage / UpdateShort, so addEventHandler callbacks never
+      // fire for incoming or outgoing messages. gramJS's internal _updateLoop
+      // sends updates.GetState every 30 min as a keep-alive — we just kick it
+      // off once on connect so messages flow immediately.
+      try {
+        await this.client.invoke(new Api.updates.GetState());
+        console.log(`[USERBOT-CLIENT] ${this.sessionId.slice(0, 8)} subscribed to update stream`);
+      } catch (subErr) {
+        console.warn(`[USERBOT-CLIENT] ${this.sessionId.slice(0, 8)} updates.GetState failed (non-fatal):`, subErr);
+      }
+
       return true;
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);

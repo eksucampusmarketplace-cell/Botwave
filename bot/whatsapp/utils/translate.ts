@@ -1,19 +1,44 @@
 import axios from 'axios';
 
 // ─── Smart Email Rotation ────────────────────────────────────────────────────
-// Each email gives 50,000 words/day on MyMemory's free tier.
+// MyMemory gives 50,000 words/day per email on the free tier.
 // Rotating across multiple emails = multiplied daily quota.
-const API_EMAILS = [
+//
+// Set MYMEMORY_EMAILS in the environment to a comma-separated list of
+// emails. Falls back to the built-in defaults if unset.
+const DEFAULT_API_EMAILS = [
   'eksucampusmarketplace@gmail.com',
   'edwardblake0900@gmail.com',
   'botwave.translate1@gmail.com',
   'botwave.translate2@gmail.com',
   'botwave.translate3@gmail.com',
 ];
+
+let cachedEmails: string[] | null = null;
+
+function loadEmails(): string[] {
+  if (cachedEmails) return cachedEmails;
+  const raw = (process.env.MYMEMORY_EMAILS || process.env.MYMEMORY_API_EMAILS || '').trim();
+  if (raw) {
+    const parsed = raw
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0 && e.includes('@'));
+    if (parsed.length > 0) {
+      cachedEmails = parsed;
+      console.log(`[TRANSLATE] Loaded ${parsed.length} MyMemory email(s) from MYMEMORY_EMAILS env`);
+      return parsed;
+    }
+  }
+  cachedEmails = DEFAULT_API_EMAILS;
+  return cachedEmails;
+}
+
 let emailIndex = 0;
 
 function getNextEmail(): string {
-  const email = API_EMAILS[emailIndex % API_EMAILS.length];
+  const emails = loadEmails();
+  const email = emails[emailIndex % emails.length];
   emailIndex++;
   return email;
 }
@@ -96,6 +121,30 @@ export async function translateText(text: string, targetLang: string): Promise<s
   } catch {
     return text;
   }
+}
+
+/**
+ * Low-level translate using MyMemory with email rotation. Returns the raw
+ * response fields needed for the !translate command (translation, detected
+ * source language, response status code).
+ */
+export async function translateRaw(
+  text: string,
+  sourceLang: string,
+  targetLang: string,
+): Promise<{ translated: string; detectedLanguage?: string; status?: number }> {
+  const langCode = targetLang === 'pcm' ? 'en' : targetLang;
+  const langpair = `${sourceLang}|${langCode}`;
+  const email = getNextEmail();
+  const response = await axios.get(
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}&de=${email}`,
+    { timeout: 10000 },
+  );
+  return {
+    translated: response.data?.responseData?.translatedText || '',
+    detectedLanguage: response.data?.responseData?.detectedLanguage,
+    status: response.data?.responseStatus,
+  };
 }
 
 /**

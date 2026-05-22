@@ -1,6 +1,7 @@
 import { registerCommand, type MessageContext, type TemplateVars } from './registry';
 import { sendReply, pickResponse, getHelpHint, getQuotedMessage, axios } from './helpers';
 import { shouldShowPromo, getPromoMessage } from '../utils/promo';
+import { translateRaw } from '../utils/translate';
 import { callAI, AIQuotaExhaustedError, AIRateLimitError } from '../../../lib/ai-provider';
 import { searchKnowledgeBase, getBotwaveSystemPrompt } from '../../../lib/botwave-knowledge';
 import {
@@ -102,7 +103,7 @@ export async function handleAIReply(
     console.error('AI reply error:', error);
     let msg = 'AI service temporarily unavailable. Please try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted - the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+      msg = 'AI quota exhausted on every key. Contact the bot admin to rotate keys.';
     } else if (error instanceof AIRateLimitError) {
       const secs = Math.ceil(error.retryAfterMs / 1000);
       msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
@@ -161,7 +162,7 @@ async function handleAICommand(
     console.error('AI error:', error);
     let msg = 'AI service temporarily unavailable. Please try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted - the Gemini API key needs billing enabled on its Google Cloud project. Contact the bot admin.';
+      msg = 'AI quota exhausted on every key. Contact the bot admin to rotate keys.';
     } else if (error instanceof AIRateLimitError) {
       const secs = Math.ceil(error.retryAfterMs / 1000);
       msg = `AI is rate-limited. Please try again in ~${secs} seconds.`;
@@ -368,15 +369,9 @@ async function handleTranslate(
   }
 
   try {
-    const langpair = `${sourceLang}|${targetLang}`;
-    const response = await axios.get(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`,
-      { timeout: 10000 },
-    );
-
-    const translated = response.data?.responseData?.translatedText;
-    const detectedLang = response.data?.responseData?.detectedLanguage;
-    if (!translated || response.data?.responseStatus === 403) {
+    const result = await translateRaw(text, sourceLang, targetLang);
+    const { translated, detectedLanguage: detectedLang, status: respStatus } = result;
+    if (!translated || respStatus === 403) {
       await sendReply(context.chatJid, 'Translation failed. Check language codes and try again.', sock, context.rawMessage.key, context.queue);
       return;
     }

@@ -93,7 +93,7 @@ Format it neatly for WhatsApp. Use *bold* for headers. If something isn't visibl
     console.error('[SCAN] Error:', err.message);
     let msg = 'Receipt scanning failed. Try a clearer photo or try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted - the Gemini API key needs billing enabled. Contact the bot admin.';
+      msg = 'AI quota exhausted on every key. Contact the bot admin to rotate keys.';
     } else if (error instanceof AIRateLimitError) {
       msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
     }
@@ -364,7 +364,7 @@ async function handleDigest(
     console.error('[DIGEST] Error:', error?.message || error);
     let msg = 'Digest generation failed. Try again later.';
     if (error instanceof AIQuotaExhaustedError) {
-      msg = 'AI quota exhausted - the Gemini API key needs billing enabled. Contact the bot admin.';
+      msg = 'AI quota exhausted on every key. Contact the bot admin to rotate keys.';
     } else if (error instanceof AIRateLimitError) {
       msg = `AI is rate-limited. Please try again in ~${Math.ceil(error.retryAfterMs / 1000)} seconds.`;
     }

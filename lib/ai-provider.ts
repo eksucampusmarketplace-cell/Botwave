@@ -1,14 +1,21 @@
 /**
- * AI Provider - Multi-provider with Groq (primary) and Gemini (fallback).
+ * AI Provider - Groq is the primary (and by default, the only) AI backend.
  *
- * Provider priority: Groq → Gemini
+ * Groq with key rotation is preferred for `.ai` and all bot AI features.
+ * Gemini fallback is OFF by default and only re-enabled if the operator
+ * explicitly sets AI_ALLOW_GEMINI_FALLBACK=true in the environment.
  *
- * GROQ_API_KEY - free, no billing needed, 30 req/min.
- * GEMINI_API_KEY - supports comma-separated keys for rotation.
+ * GROQ_API_KEY - free, no billing needed, 30 req/min. Comma-separated for rotation.
+ * GEMINI_API_KEY - comma-separated keys (only used if fallback is enabled).
  *
  * When a key hits a rate limit (429), it is cooldown-locked and the next
- * provider/key is tried automatically.
+ * key is tried automatically.
  */
+
+function isGeminiFallbackEnabled(): boolean {
+  const v = (process.env.AI_ALLOW_GEMINI_FALLBACK || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
 
 export class AIQuotaExhaustedError extends Error {
   constructor(message: string) {
@@ -304,7 +311,8 @@ export interface AIVisionOptions {
 }
 
 /**
- * Call AI - tries Groq first, then Gemini with key rotation.
+ * Call AI - Groq with key rotation. Gemini fallback is OFF by default;
+ * set AI_ALLOW_GEMINI_FALLBACK=true to re-enable.
  */
 export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, systemPrompt, history }: AICallOptions): Promise<string> {
   const errors: Error[] = [];
@@ -323,15 +331,17 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
         console.warn(`[AI] Groq key rotated (rate limited), trying next...`);
         continue;
       }
-      console.warn(`[AI] Groq failed: ${error.message}, falling back to Gemini...`);
+      console.warn(`[AI] Groq failed: ${error.message}`);
       errors.push(error);
       break;
     }
   }
 
-  // Fallback to Gemini with key rotation
-  const keys = loadGeminiKeys();
-  if (keys.length > 0) {
+  // Gemini fallback is OFF by default (Groq-only). Re-enable with
+  // AI_ALLOW_GEMINI_FALLBACK=true if Groq is unavailable.
+  const geminiAllowed = isGeminiFallbackEnabled();
+  const keys = geminiAllowed ? loadGeminiKeys() : [];
+  if (geminiAllowed && keys.length > 0) {
     for (let attempt = 0; attempt < keys.length; attempt++) {
       const geminiKey = getNextAvailableKey();
       if (!geminiKey) break;
@@ -356,8 +366,8 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
   }
 
   // No provider worked
-  if (allGroqKeys.length === 0 && keys.length === 0) {
-    throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
+  if (allGroqKeys.length === 0 && (!geminiAllowed || keys.length === 0)) {
+    throw new Error('No AI provider available. Set GROQ_API_KEY in environment variables (Gemini fallback is disabled).');
   }
 
   const lastErr = errors[errors.length - 1];
@@ -367,8 +377,9 @@ export async function callAI({ prompt, maxTokens = 8000, temperature = 0.3, syst
 }
 
 /**
- * Call AI Vision - tries Groq (Llama vision) first, then Gemini Vision.
+ * Call AI Vision - Groq (Llama vision) with key rotation.
  * Note: Groq vision uses llama-4-scout-17b-16e-instruct for image analysis.
+ * Gemini Vision fallback is OFF by default; set AI_ALLOW_GEMINI_FALLBACK=true to re-enable.
  */
 export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg', maxTokens = 1000 }: AIVisionOptions): Promise<string> {
   const errors: Error[] = [];
@@ -421,15 +432,16 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
         markGroqKeyCooldown(gk, error.cooldownMs || 60_000);
         continue;
       }
-      console.warn(`[AI] Groq Vision failed: ${error.message}, falling back to Gemini Vision...`);
+      console.warn(`[AI] Groq Vision failed: ${error.message}`);
       errors.push(error);
       break;
     }
   }
 
-  // Fallback to Gemini Vision
-  const keys = loadGeminiKeys();
-  if (keys.length > 0) {
+  // Gemini Vision fallback is OFF by default. Re-enable with AI_ALLOW_GEMINI_FALLBACK=true.
+  const visionGeminiAllowed = isGeminiFallbackEnabled();
+  const keys = visionGeminiAllowed ? loadGeminiKeys() : [];
+  if (visionGeminiAllowed && keys.length > 0) {
     for (let attempt = 0; attempt < keys.length; attempt++) {
       const geminiKey = getNextAvailableKey();
       if (!geminiKey) break;
@@ -453,8 +465,8 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
     }
   }
 
-  if (allGroqKeysVision.length === 0 && keys.length === 0) {
-    throw new Error('No AI provider available. Set GROQ_API_KEY or GEMINI_API_KEY in environment variables.');
+  if (allGroqKeysVision.length === 0 && (!visionGeminiAllowed || keys.length === 0)) {
+    throw new Error('No AI provider available. Set GROQ_API_KEY in environment variables (Gemini fallback is disabled).');
   }
 
   const lastErr = errors[errors.length - 1];
@@ -466,8 +478,13 @@ export async function callAIVision({ prompt, imageBase64, mimeType = 'image/jpeg
 /**
  * Check which AI providers are configured.
  */
-export function getAIProviderStatus(): { groq: boolean; groqKeys: number; geminiKeys: number } {
+export function getAIProviderStatus(): { groq: boolean; groqKeys: number; geminiKeys: number; geminiFallbackEnabled: boolean } {
   const gKeys = loadGroqKeys();
   const keys = loadGeminiKeys();
-  return { groq: gKeys.length > 0, groqKeys: gKeys.length, geminiKeys: keys.length };
+  return {
+    groq: gKeys.length > 0,
+    groqKeys: gKeys.length,
+    geminiKeys: keys.length,
+    geminiFallbackEnabled: isGeminiFallbackEnabled(),
+  };
 }

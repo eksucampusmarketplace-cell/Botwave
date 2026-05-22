@@ -17,10 +17,50 @@ import {
 
 type HandlerFn = (client: TelegramClient, event: NewMessageEvent) => Promise<void>;
 
+// ─── MyMemory Email Rotation ──────────────────────────────────────────────
+// MyMemory's free tier gives 50,000 words/day per email (de= param).
+// Without it, anonymous IPs are capped at ~5,000 chars/day and start returning
+// 403 / "QUERY LENGTH LIMIT EXCEEDED" once you cross it.
+// Set MYMEMORY_EMAILS in the env to a comma-separated list to rotate.
+const DEFAULT_API_EMAILS = [
+  'eksucampusmarketplace@gmail.com',
+  'edwardblake0900@gmail.com',
+  'botwave.translate1@gmail.com',
+  'botwave.translate2@gmail.com',
+  'botwave.translate3@gmail.com',
+];
+
+let cachedEmails: string[] | null = null;
+function loadEmails(): string[] {
+  if (cachedEmails) return cachedEmails;
+  const raw = (process.env.MYMEMORY_EMAILS || process.env.MYMEMORY_API_EMAILS || '').trim();
+  if (raw) {
+    const parsed = raw
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0 && e.includes('@'));
+    if (parsed.length > 0) {
+      cachedEmails = parsed;
+      return parsed;
+    }
+  }
+  cachedEmails = DEFAULT_API_EMAILS;
+  return cachedEmails;
+}
+
+let emailIndex = 0;
+function getNextEmail(): string {
+  const emails = loadEmails();
+  const email = emails[emailIndex % emails.length];
+  emailIndex++;
+  return email;
+}
+
 async function translateText(text: string, targetLang: string): Promise<string> {
   const https = await import('https');
   const encoded = encodeURIComponent(text);
-  const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|${targetLang}`;
+  const email = getNextEmail();
+  const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=auto|${targetLang}&de=${encodeURIComponent(email)}`;
 
   const data = await new Promise<string>((resolve, reject) => {
     https.get(url, (res) => {
@@ -32,6 +72,9 @@ async function translateText(text: string, targetLang: string): Promise<string> 
   });
 
   const result = JSON.parse(data);
+  if (result.responseStatus === 403 || result.responseData?.translatedText?.toUpperCase?.().includes('QUERY LENGTH LIMIT')) {
+    throw new Error(`MyMemory quota exhausted for ${email}`);
+  }
   if (result.responseData?.translatedText) {
     return result.responseData.translatedText;
   }

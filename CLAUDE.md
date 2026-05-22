@@ -9,7 +9,7 @@ BotWave is a WhatsApp bot automation platform built as a SaaS. Users connect the
 - **Frontend + API**: Next.js 14 + TypeScript + Tailwind CSS + Framer Motion
 - **Bot Engine**: Baileys (Node.js) WebSocket-based WhatsApp bot
 - **Database + Auth**: Supabase (PostgreSQL)
-- **AI Integration**: Google Gemini 2.0 Flash (server-side, smart key rotation)
+- **AI Integration**: Groq (llama-3.3-70b-versatile) with multi-key rotation. Gemini 2.0 Flash fallback is OFF by default; set `AI_ALLOW_GEMINI_FALLBACK=true` to re-enable.
 - **Deployment**: Render (two services: botwave-web + botwave-bot)
 
 ## Key Directories
@@ -36,7 +36,7 @@ npm run lint         # Run ESLint
 - `!help` - Show all commands
 - `!ping` - Check bot status
 - `!sticker` - Create sticker from image
-- `!ai [message]` - AI chat (powered by Gemini)
+- `!ai [message]` - AI chat (powered by Groq, llama-3.3-70b-versatile)
 - `!weather [city]` - Get weather info
 - `!joke` - Random joke
 - `!quote` - Inspirational quote
