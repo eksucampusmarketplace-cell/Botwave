@@ -61,6 +61,9 @@ function corePages(baseUrl: string): MetadataRoute.Sitemap {
     { url: `${baseUrl}/features/ai`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/features/moderation`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/features/media`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/whatsapp-bot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/telegram-bot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/telegram-group-analytics`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/status`, lastModified: BUILD_DATE, changeFrequency: 'daily', priority: 0.5 },
     { url: `${baseUrl}/changelog`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${baseUrl}/templates`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.7 },
@@ -69,7 +72,10 @@ function corePages(baseUrl: string): MetadataRoute.Sitemap {
     { url: `${baseUrl}/case-studies`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/security`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/privacy`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/terms`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/community-commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/community`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${baseUrl}/guest-posts`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/about`, lastModified: BUILD_DATE, changeFrequency: 'monthly', priority: 0.6 },
   ];
 }
