@@ -16,11 +16,15 @@ export async function GET(request: NextRequest) {
     const supabase = await createAdminClient();
 
     let totalUsers = 0;
+    let pairedUsers = 0;
     let activeSessions = 0;
     let totalSessions = 0;
     let totalMessages = 0;
     let totalCommands = 0;
     let needsReauthSessions = 0;
+    let ghostSessions = 0;
+    let pairRate = 0;
+    let activeRate = 0;
 
     try {
       const { count: userCount } = await supabase
@@ -30,10 +34,27 @@ export async function GET(request: NextRequest) {
 
       const { data: allSessions } = await supabase
         .from('bot_sessions')
-        .select('state');
+        .select('state, last_active, user_id');
       totalSessions = allSessions?.length || 0;
       activeSessions = allSessions?.filter(s => s.state === 'active').length || 0;
       needsReauthSessions = allSessions?.filter(s => s.state === 'needs_reauth').length || 0;
+      // Ghost sessions: rows that were created but never connected (no last_active)
+      // and are stuck in a non-recoverable terminal-ish state. The auto-recovery
+      // loop deliberately skips these, so they sit in the dashboard forever.
+      ghostSessions = (allSessions || []).filter(
+        s => (s.state === 'needs_reauth' || s.state === 'pairing_failed') && !s.last_active,
+      ).length;
+
+      // Funnel metrics — signup → pair, and pair → active. Far more useful
+      // for spotting onboarding drop-off than the raw counts.
+      const distinctPairedUserIds = new Set(
+        (allSessions || [])
+          .map((s: { user_id: string | null }) => s.user_id)
+          .filter((v): v is string => !!v),
+      );
+      pairedUsers = distinctPairedUserIds.size;
+      pairRate = totalUsers > 0 ? Math.round((pairedUsers / totalUsers) * 1000) / 10 : 0;
+      activeRate = totalSessions > 0 ? Math.round((activeSessions / totalSessions) * 1000) / 10 : 0;
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { count: msgCount } = await supabase
@@ -78,9 +99,13 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         totalUsers,
+        pairedUsers,
         activeSessions,
         totalSessions,
         needsReauthSessions,
+        ghostSessions,
+        pairRate,
+        activeRate,
         totalMessages,
         totalCommands,
         systemStatus,

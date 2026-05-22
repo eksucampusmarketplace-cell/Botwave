@@ -7,9 +7,13 @@ import Link from 'next/link';
 
 interface Stats {
   totalUsers: number;
+  pairedUsers: number;
   activeSessions: number;
   totalSessions: number;
   needsReauthSessions: number;
+  ghostSessions: number;
+  pairRate: number;
+  activeRate: number;
   totalMessages: number;
   totalCommands: number;
   systemStatus: string;
@@ -30,11 +34,13 @@ interface Session {
 export default function AdminOverviewPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>({
-    totalUsers: 0, activeSessions: 0, totalSessions: 0, needsReauthSessions: 0,
+    totalUsers: 0, pairedUsers: 0, activeSessions: 0, totalSessions: 0,
+    needsReauthSessions: 0, ghostSessions: 0, pairRate: 0, activeRate: 0,
     totalMessages: 0, totalCommands: 0, systemStatus: 'Loading', evolutionStatus: 'Unknown',
   });
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cleanupBusy, setCleanupBusy] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -74,6 +80,26 @@ export default function AdminOverviewPage() {
     } catch { /* ignore */ }
   };
 
+  const handleCleanupGhosts = async () => {
+    if (stats.ghostSessions === 0) return;
+    if (!confirm(`Delete ${stats.ghostSessions} ghost session(s) (needs_reauth/pairing_failed with last_active=null, older than 24h)?`)) return;
+    setCleanupBusy(true);
+    try {
+      const res = await fetch('/api/admin/sessions/cleanup-ghosts', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await fetchData();
+        alert(`Deleted ${data.deleted} ghost session(s).`);
+      } else {
+        alert(`Cleanup failed: ${data.error || 'unknown error'}`);
+      }
+    } catch (err) {
+      alert(`Cleanup failed: ${(err as Error).message}`);
+    } finally {
+      setCleanupBusy(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -82,11 +108,21 @@ export default function AdminOverviewPage() {
     );
   }
 
+  // Pair / active rates are the most useful funnel signals — they make it
+  // obvious when most of the 'TOTAL USERS' never even attempted to pair,
+  // or when pair attempts mostly fail.
+  const pairRateColor = stats.pairRate >= 50 ? 'text-green-400' : stats.pairRate >= 25 ? 'text-yellow-400' : 'text-red-400';
+  const pairRateBg = stats.pairRate >= 50 ? 'bg-green-500/10' : stats.pairRate >= 25 ? 'bg-yellow-500/10' : 'bg-red-500/10';
+  const activeRateColor = stats.activeRate >= 70 ? 'text-green-400' : stats.activeRate >= 40 ? 'text-yellow-400' : 'text-red-400';
+  const activeRateBg = stats.activeRate >= 70 ? 'bg-green-500/10' : stats.activeRate >= 40 ? 'bg-yellow-500/10' : 'bg-red-500/10';
+
   const statCards = [
     { label: 'TOTAL USERS', value: stats.totalUsers, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'ACTIVE BOTS', value: stats.activeSessions, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { label: 'PAIRED USERS', value: `${stats.pairedUsers} (${stats.pairRate}%)`, color: pairRateColor, bg: pairRateBg },
+    { label: 'ACTIVE BOTS', value: `${stats.activeSessions} (${stats.activeRate}%)`, color: activeRateColor, bg: activeRateBg },
     { label: 'TOTAL SESSIONS', value: stats.totalSessions, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
     { label: 'NEEDS REAUTH', value: stats.needsReauthSessions, color: stats.needsReauthSessions > 0 ? 'text-yellow-400' : 'text-gray-500', bg: stats.needsReauthSessions > 0 ? 'bg-yellow-500/10' : 'bg-white/5' },
+    { label: 'GHOST SESSIONS', value: stats.ghostSessions, color: stats.ghostSessions > 0 ? 'text-orange-400' : 'text-gray-500', bg: stats.ghostSessions > 0 ? 'bg-orange-500/10' : 'bg-white/5' },
     { label: 'MESSAGES', value: stats.totalMessages.toLocaleString(), color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { label: 'COMMANDS', value: stats.totalCommands.toLocaleString(), color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
     { label: 'SYSTEM', value: stats.systemStatus, color: stats.systemStatus === 'Healthy' ? 'text-green-400' : 'text-yellow-400', bg: stats.systemStatus === 'Healthy' ? 'bg-green-500/10' : 'bg-yellow-500/10' },
@@ -160,6 +196,27 @@ export default function AdminOverviewPage() {
           );
         })()}
       </div>
+
+      {/* Ghost Sessions Cleanup */}
+      {stats.ghostSessions > 0 && (
+        <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-4 mb-6 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-white font-semibold text-sm">
+              {stats.ghostSessions} ghost session{stats.ghostSessions === 1 ? '' : 's'}
+            </h2>
+            <p className="text-gray-400 text-xs mt-1 font-mono">
+              needs_reauth / pairing_failed with no successful connection ever &middot; auto-recovery skips these &middot; safe to delete
+            </p>
+          </div>
+          <button
+            onClick={handleCleanupGhosts}
+            disabled={cleanupBusy}
+            className="px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-300 text-sm font-semibold hover:bg-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            {cleanupBusy ? 'Cleaning…' : 'Clean up'}
+          </button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
