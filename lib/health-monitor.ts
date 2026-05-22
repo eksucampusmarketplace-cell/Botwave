@@ -220,7 +220,7 @@ export function startHealthMonitor(): void {
                 console.warn(`[HEALTH-MONITOR] Re-engagement tick HTTP ${res.status}`);
                 return;
               }
-              const body = await res.json().catch(() => ({}));
+              const body = (await res.json().catch(() => ({}))) as { sent?: number; eligible?: number };
               if (body && (body.sent || body.eligible)) {
                 console.log(`[HEALTH-MONITOR] Re-engagement tick: ${JSON.stringify(body)}`);
               }
