@@ -556,6 +556,29 @@ export default function SessionsPage() {
                     {/* Proxy Selection */}
                     <div className="space-y-3">
                       <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Connection Proxy</label>
+
+                      {/* BYOP educational banner — explains downtime trade-off + "change anytime" */}
+                      <div
+                        className="rounded-xl p-3 border text-xs leading-relaxed"
+                        style={{
+                          background: 'rgba(59,130,246,0.06)',
+                          borderColor: 'rgba(59,130,246,0.25)',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                          About proxies & uptime
+                        </p>
+                        <p>
+                          WhatsApp&apos;s anti-abuse system can disconnect bots running on shared datacenter IPs within minutes — your bot stops responding and you have to re-pair.
+                          Using <strong>your own proxy</strong> (residential or mobile) gives a dedicated IP and far better uptime.
+                          The shared pool is fine for testing or low-volume use.
+                        </p>
+                        <p className="mt-1">
+                          You can switch between shared and your own proxy <strong>anytime</strong> from this session&apos;s settings — no need to re-pair.
+                        </p>
+                      </div>
+
                       <div className="space-y-2">
                         <label
                           className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${proxyType === 'shared' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/5' : 'hover:border-blue-300 dark:hover:border-blue-500/30'}`}

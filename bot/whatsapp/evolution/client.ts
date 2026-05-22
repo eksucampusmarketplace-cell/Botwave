@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions, redisMarkProxyEverUsed, redisIsProxyEverUsed } from '../../infrastructure/redis';
 import { getSessionById, recordSharedProxyAssignment, clearSharedProxyAssignment } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -417,6 +417,26 @@ function parseProxy(proxyStr: string): { host: string; port: string; protocol: s
 // Keeps WhatsApp traffic on each proxy looking like a single geographic region.
 const MAX_SESSIONS_PER_PROXY_COUNTRY = 5;
 
+// Permanently burnt proxy IPs that must never be reassigned.
+// These have been observed triggering WhatsApp anti-abuse `device_removed`
+// 401s within minutes of pairing, across multiple sessions. Adding them here
+// guarantees the auto-pool never hands them out again, regardless of what
+// PROXY_LIST env contains. Update by appending host:port entries.
+const PERMANENTLY_BURNT_PROXIES: ReadonlySet<string> = new Set([
+  '45.61.125.249:6260',
+  '172.245.158.66:6019',
+]);
+
+/**
+ * Check whether a proxy string from PROXY_LIST matches the hardcoded
+ * permanent denylist. Matches on `host:port` regardless of credentials.
+ */
+function isProxyPermanentlyBurnt(proxyStr: string): boolean {
+  const parts = proxyStr.split(':');
+  if (parts.length < 2) return false;
+  return PERMANENTLY_BURNT_PROXIES.has(`${parts[0]}:${parts[1]}`);
+}
+
 /**
  * Extract the country dial code from a phone number (e.g. "+62895..." → "62").
  * Returns the first 1-3 digits after stripping non-digits and leading '+'.
@@ -481,11 +501,17 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
     if (stickyProxyStr) {
       const stickyHost = stickyProxyStr.split(':')[0];
       const blacklisted = await redisIsProxyBlacklisted(stickyHost);
-      if (!blacklisted) {
+      const permanentlyBurnt = isProxyPermanentlyBurnt(stickyProxyStr);
+      if (!blacklisted && !permanentlyBurnt) {
         const parsed = parseProxy(stickyProxyStr);
         if (parsed) return parsed;
       }
-      console.log(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is blacklisted — rotating`);
+      if (permanentlyBurnt) {
+        console.warn(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is PERMANENTLY BURNT — clearing and rotating`);
+        await redisClearSessionProxy(sessionId);
+      } else {
+        console.log(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is blacklisted — rotating`);
+      }
     }
   }
 
@@ -499,9 +525,29 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   };
   const scores: ProxyScore[] = [];
 
+  let burntCount = 0;
+  let everUsedCount = 0;
   for (let i = 0; i < PROXY_LIST.length; i++) {
     const candidate = PROXY_LIST[i];
     const candidateHost = candidate.split(':')[0];
+
+    // 1. Hardcoded permanent denylist — never assign these, even on cold start.
+    if (isProxyPermanentlyBurnt(candidate)) {
+      burntCount++;
+      scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
+      continue;
+    }
+
+    // 2. "Ever used" — one fresh IP per pairing. Already-assigned proxies are
+    // permanently excluded from the auto-pool. BYOP proxies bypass this whole
+    // function so users can reuse their own IPs freely.
+    if (await redisIsProxyEverUsed(candidateHost)) {
+      everUsedCount++;
+      scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
+      continue;
+    }
+
+    // 3. Short-term failure blacklist (TTL-based, recovers automatically).
     const blacklisted = await redisIsProxyBlacklisted(candidateHost);
     if (blacklisted) {
       scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
@@ -519,7 +565,13 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
 
   const healthy = scores.filter(s => !s.blacklisted);
   if (healthy.length === 0) {
-    console.warn(`[PROXY] All ${PROXY_LIST.length} proxies are blacklisted — no proxy available`);
+    console.warn(
+      `[PROXY] Pool exhausted for session ${sessionId?.slice(0, 8) || '?'}: ` +
+      `${PROXY_LIST.length} proxies configured, ${burntCount} permanently burnt, ` +
+      `${everUsedCount} already used by another session, ` +
+      `${PROXY_LIST.length - burntCount - everUsedCount} short-term blacklisted. ` +
+      `Recommend BYOP (custom proxy) or add fresh IPs to PROXY_LIST.`
+    );
     return null;
   }
 
@@ -600,20 +652,24 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   const proxyStr = PROXY_LIST[chosen.idx];
   proxyCounter = chosen.idx + 1;
 
-  // Persist sticky assignment and country grouping
+  // Persist sticky assignment, country grouping, and ever-used marker.
   if (sessionId) {
     await redisSetSessionProxy(sessionId, proxyStr);
     sessionProxyMap.set(sessionId, chosen.idx);
     if (countryCode) {
       await redisAddProxyCountrySession(chosen.host, countryCode, sessionId);
     }
+    // Permanently mark this IP as "ever used" so the shared pool never
+    // reassigns it to another session. BYOP proxies are unaffected (they
+    // take an early-return path above this block).
+    await redisMarkProxyEverUsed(chosen.host);
     // Mirror to DB so the assignment survives Redis flushes and is visible
     // in admin dashboards for proxy-related disconnect investigations.
     // Best-effort: never fail the assignment if the DB write hiccups.
     await recordSharedProxyAssignment(sessionId, chosen.host).catch(err =>
       console.warn(`[PROXY] DB record failed for ${sessionId.slice(0, 8)}: ${err?.message ?? err}`)
     );
-    console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount})`);
+    console.log(`[PROXY] Assigned proxy ${chosen.host} to session ${sessionId.slice(0, 8)} (country=+${countryCode}, sameCountry=${chosen.sameCountryCount}/${MAX_SESSIONS_PER_PROXY_COUNTRY}, total=${chosen.totalCount}, marked ever-used)`);
   }
 
   return parseProxy(proxyStr);

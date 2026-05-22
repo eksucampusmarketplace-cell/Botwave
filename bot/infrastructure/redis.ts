@@ -353,6 +353,50 @@ export async function redisClearSessionProxy(sessionId: string): Promise<void> {
   } catch { /* ignore */ }
 }
 
+// ─── Proxy "Ever Used" Tracking ──────────────────────────────────────────────
+// One IP per WhatsApp pairing — once a proxy IP has ever been assigned to a
+// session, it is marked here and the shared pool will never reuse it again.
+// Members survive forever (no TTL). User-provided (BYOP) proxies are not
+// added to this set so users can reuse their own IPs freely.
+
+const PROXY_EVER_USED_KEY = 'proxies:ever_used';
+
+/**
+ * Mark a proxy host as having been assigned to at least one session.
+ * Subsequent shared-pool selection will exclude this host permanently.
+ */
+export async function redisMarkProxyEverUsed(proxyHost: string): Promise<void> {
+  if (!isRedisAvailable() || !proxyHost) return;
+  try {
+    await redis!.sadd(PROXY_EVER_USED_KEY, proxyHost);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Check whether a proxy host has ever been assigned by the shared pool.
+ */
+export async function redisIsProxyEverUsed(proxyHost: string): Promise<boolean> {
+  if (!isRedisAvailable() || !proxyHost) return false;
+  try {
+    return (await redis!.sismember(PROXY_EVER_USED_KEY, proxyHost)) === 1;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Return the full set of ever-used proxy hosts. Used for diagnostics and
+ * for the one-time seeding script that backfills from `session:proxy:*`.
+ */
+export async function redisGetEverUsedProxies(): Promise<string[]> {
+  if (!isRedisAvailable()) return [];
+  try {
+    return await redis!.smembers(PROXY_EVER_USED_KEY);
+  } catch {
+    return [];
+  }
+}
+
 // ─── Country-Proxy Grouping ──────────────────────────────────────────────────
 
 /**
