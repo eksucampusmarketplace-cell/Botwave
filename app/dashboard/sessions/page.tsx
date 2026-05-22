@@ -26,9 +26,29 @@ export default function SessionsPage() {
   const [customProxy, setCustomProxy] = useState({ host: '', port: '', username: '', password: '' });
   const [proxyTesting, setProxyTesting] = useState(false);
   const [proxyTestResult, setProxyTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isOnboarding, setIsOnboarding] = useState(false);
 
   const supabase = useRef(createClient()).current;
   const activeSessionRef = useRef<BotSession | null>(null);
+
+  // Detect ?onboarding=1 from the welcome redirect on /dashboard.
+  // When set, auto-open the create-session modal and show a welcome banner
+  // so first-time users land directly on the pair flow.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('onboarding') === '1') {
+      setIsOnboarding(true);
+      setShowAddModal(true);
+    }
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('botwave_welcome_dismissed', '1');
+    }
+    setIsOnboarding(false);
+  }, []);
 
   const fetchSessions = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -487,7 +507,32 @@ export default function SessionsPage() {
             className="border rounded-2xl shadow-xl p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
           >
-            <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>New Session</h2>
+            {isOnboarding && !selectedPlatform && (
+              <div className="mb-5 p-4 rounded-xl border bg-blue-50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20">
+                <h3 className="text-base font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Welcome to BotWave 👋
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Let&apos;s connect your first bot. Pick a platform below — WhatsApp, a Telegram bot via @BotFather, or a Telegram userbot via MTProto. You can switch between the BotWave shared proxy pool and your own proxy at any time.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dismissOnboarding();
+                    setShowAddModal(false);
+                    window.location.href = '/dashboard';
+                  }}
+                  className="mt-3 text-xs underline hover:opacity-80"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Skip for now
+                </button>
+              </div>
+            )}
+
+            <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+              {isOnboarding ? 'Connect your first bot' : 'New Session'}
+            </h2>
 
             {error && (
               <div className="bg-red-50 dark:bg-red-400/10 border border-red-200 dark:border-red-400/50 p-3 mb-4 rounded-xl">
@@ -804,16 +849,32 @@ export default function SessionsPage() {
       )}
 
       {showQR && activeSession?.platform !== 'telegram_bot' && activeSession?.platform !== 'telegram_userbot' && (
-        <QRCodeDisplay 
+        <QRCodeDisplay
           onClose={() => {
             setShowQR(false);
             fetchSessions();
-          }} 
+          }}
           qrCode={activeSession?.qr_code}
           qrGeneratedAt={activeSession?.qr_generated_at}
           pairingCode={activeSession?.pairing_code}
           sessionState={activeSession?.state}
           queuePosition={activeSession?.queue_position}
+          onRegenerate={activeSession ? async () => {
+            try {
+              const r = await fetch('/api/bot/sessions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: activeSession.id }),
+              });
+              const d = await r.json();
+              if (d.success && d.data) {
+                setActiveSession(d.data);
+              }
+              await fetchSessions();
+            } catch (err) {
+              console.error('Regenerate failed:', err);
+            }
+          } : undefined}
         />
       )}
     </main>

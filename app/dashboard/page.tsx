@@ -207,6 +207,17 @@ export default function DashboardPage() {
     checkUser();
   }, [fetchDashboardData]);
 
+  // Force-pair onboarding: users with zero sessions get redirected to the
+  // add-session flow on first dashboard visit so they actually connect a bot
+  // instead of bouncing off an empty dashboard. Dismissable via localStorage.
+  useEffect(() => {
+    if (loading) return;
+    if (sessions.length > 0) return;
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem('botwave_welcome_dismissed')) return;
+    window.location.href = '/dashboard/sessions?onboarding=1';
+  }, [loading, sessions.length]);
+
   useEffect(() => {
     activeSessionRef.current = activeSession;
   }, [activeSession]);
@@ -1094,15 +1105,31 @@ export default function DashboardPage() {
       )}
 
       {showQR && activeSession?.platform !== 'telegram_bot' && activeSession?.platform !== 'telegram_userbot' && (
-        <QRCodeDisplay 
+        <QRCodeDisplay
           onClose={() => {
             setShowQR(false);
             fetchDashboardData();
-          }} 
+          }}
           qrCode={activeSession?.qr_code}
           qrGeneratedAt={activeSession?.qr_generated_at}
           pairingCode={activeSession?.pairing_code}
           sessionState={activeSession?.state}
+          onRegenerate={activeSession ? async () => {
+            try {
+              const r = await fetch('/api/bot/sessions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: activeSession.id }),
+              });
+              const d = await r.json();
+              if (d.success && d.data) {
+                setActiveSession(d.data);
+              }
+              await fetchDashboardData(true);
+            } catch (err) {
+              console.error('Regenerate failed:', err);
+            }
+          } : undefined}
         />
       )}
 
