@@ -656,10 +656,22 @@ var urlParams = new URLSearchParams(window.location.search);
 sessionId = urlParams.get('sessionId') || '';
 currentChatId = urlParams.get('chatId') || '';
 
+// Parse start_param shaped like `session_<uuid>` or
+// `session_<uuid>_c_<chatId>` (chatId with leading `-` re-encoded as `n`).
+// This is how the bot carries the originating chatId into the Mini App
+// when opening from a group (direct-link Mini Apps lose query params, so
+// chatId can only travel via start_param).
 try {
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     var startParam = tg.initDataUnsafe.start_param;
-    if (!sessionId && startParam.indexOf('session_') === 0) {
+    var match = startParam.match(/^session_([0-9a-fA-F-]{36})(?:_c_(n?\d+))?$/);
+    if (match) {
+      if (!sessionId) sessionId = match[1];
+      if (!currentChatId && match[2]) {
+        currentChatId = match[2].replace(/^n/, '-');
+      }
+    } else if (!sessionId && startParam.indexOf('session_') === 0) {
+      // Backward compat: legacy `session_<uuid>` with no chatId.
       sessionId = startParam.replace('session_', '');
     }
   }

@@ -20,6 +20,7 @@ import { Bot, InlineKeyboard } from 'grammy';
 import { getGroupConfig, registerGroup, unregisterGroup } from '../utils/db';
 import { isOwner } from '../utils/permissions';
 import { notifyAdmin } from '../services/adminNotifier';
+import { buildPanelUrl, buildPanelDeepLink } from '../utils/panel';
 
 const POWERED_BY = '\n\n<b>Powered by Botwave</b>';
 
@@ -108,7 +109,8 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
 
     const dmKeyboard = new InlineKeyboard();
     if (miniappUrl) {
-      const settingsUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
+      // Default the panel to managing the group the bot was just added to.
+      const settingsUrl = buildPanelUrl(miniappUrl, sessionId, chat.id);
       dmKeyboard.webApp('⚡ Open Settings', settingsUrl).row();
     }
     dmKeyboard
@@ -138,8 +140,11 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
         .text('📖 Categories', 'help_categories');
 
       if (miniappUrl) {
-        const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${sessionId}`;
-        groupKeyboard.row().webApp('📱 Open Panel', panelUrl);
+        // Telegram doesn't allow `web_app` buttons inside group chats —
+        // they silently fail. Use a direct-link Mini App URL instead and
+        // carry the originating chatId via start_param.
+        const directLink = buildPanelDeepLink(ctx.me.username, sessionId, chat.id);
+        groupKeyboard.row().url('📱 Open Panel', directLink);
       }
 
       await ctx.api.sendMessage(chat.id, groupMsg, {

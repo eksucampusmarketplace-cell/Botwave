@@ -14,6 +14,7 @@ import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementL
 import { refreshHeartbeat } from '../scaling/sessionCoordinator';
 import { registerAllHandlers } from './factory';
 import { getTelegramConfig, getDueScheduledMessages, markScheduledMessageSent } from './utils/db';
+import { buildPanelUrl } from './utils/panel';
 import { checkNightMode } from './handlers/nightmode';
 import { checkDailySummaries } from './services/dailySummary';
 
@@ -212,7 +213,7 @@ export class TelegramBotInstance {
         const tgConfig = await getTelegramConfig(this.sessionId);
         const miniappUrl = tgConfig.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || 'https://www.botwave.online';
         if (miniappUrl) {
-          const panelUrl = `${miniappUrl}/miniapp/admin/index.html?sessionId=${this.sessionId}`;
+          const panelUrl = buildPanelUrl(miniappUrl, this.sessionId);
           await this.bot.api.setChatMenuButton({
             menu_button: {
               type: 'web_app',
