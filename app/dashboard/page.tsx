@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import DashboardNav from '@/components/layout/DashboardNav';
@@ -79,6 +80,7 @@ const defaultFeatures: FeatureDefWithPlatform[] = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<BotSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -968,7 +970,23 @@ export default function DashboardPage() {
             {/* Step 1: Platform Selection */}
             {!selectedPlatform && (
               <div className="space-y-4">
-                <PlatformSelector selected={selectedPlatform} onSelect={(p) => { setSelectedPlatform(p); setError(null); }} />
+                <PlatformSelector
+                  selected={selectedPlatform}
+                  onSelect={(p) => {
+                    // WhatsApp pairing needs the BYOP / shared-pool proxy
+                    // chooser — which only lives on /dashboard/sessions today.
+                    // Send the user there so they can pick a working proxy
+                    // instead of failing silently on the dead shared pool.
+                    if (p === 'whatsapp') {
+                      setShowAddModal(false);
+                      setError(null);
+                      router.push('/dashboard/sessions?onboarding=1');
+                      return;
+                    }
+                    setSelectedPlatform(p);
+                    setError(null);
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => { setShowAddModal(false); setError(null); }}

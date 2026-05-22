@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import DashboardNav from '@/components/layout/DashboardNav';
 
 interface FeatureRequest {
   id: string;
@@ -95,7 +94,6 @@ export default function FeatureRequestsPage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      <DashboardNav />
       <div className="max-w-6xl mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
