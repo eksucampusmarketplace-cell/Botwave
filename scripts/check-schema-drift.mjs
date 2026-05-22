@@ -63,7 +63,18 @@ function extractFromTables(file) {
   const tables = new Set();
   // Match `.from('foo')` or `.from("foo")` — single string literal only.
   // Variable args like `.from(tableName)` are skipped on purpose.
-  const re = /\.from\(\s*['"]([a-zA-Z_][\w]*)['"]\s*\)/g;
+  //
+  // Variable-width lookbehind on `.storage` (with optional whitespace
+  // between it and `.from(`) so we don't false-positive on
+  // `supabase.storage.from('bucket-name')` — storage buckets are not
+  // Postgres tables. The whitespace tolerance handles the common
+  // formatter break:
+  //
+  //   await supabase.storage
+  //     .from('uploads')
+  //     .upload(...);
+  //
+  const re = /(?<!\.storage\s{0,200})\.from\(\s*['"]([a-zA-Z_][\w]*)['"]\s*\)/g;
   for (const m of src.matchAll(re)) {
     tables.add(m[1].toLowerCase());
   }
