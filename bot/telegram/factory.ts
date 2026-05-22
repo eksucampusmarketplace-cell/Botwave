@@ -75,7 +75,7 @@ import { registerChannelHandlers } from './handlers/channels';
 import { isIgnoredChat } from './utils/db';
 import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
-import { ensureConfig, getAdminOnlyMode } from './utils/db';
+import { ensureConfig, getAdminOnlyMode, isGroupAllowed, isUserAllowed } from './utils/db';
 import { checkCooldown, setCooldown } from './utils/cooldown';
 
 /**
@@ -121,6 +121,21 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
           if (!elevated) return;
         }
       } catch { /* non-critical */ }
+    }
+    await next();
+  });
+
+  // Middleware: access control (silent ignore disallowed groups/users)
+  // Runs before any heavier check so blocklisted / non-allowlisted chats
+  // and users are dropped cheaply and invisibly.
+  bot.on('message', async (ctx, next) => {
+    if (ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup')) {
+      const groupOk = await isGroupAllowed(sessionId, ctx.chat.id);
+      if (!groupOk) return;
+    }
+    if (ctx.from) {
+      const userOk = await isUserAllowed(sessionId, ctx.from.id);
+      if (!userOk) return;
     }
     await next();
   });

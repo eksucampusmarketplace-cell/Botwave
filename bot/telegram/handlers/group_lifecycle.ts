@@ -17,7 +17,13 @@
  */
 
 import { Bot, InlineKeyboard } from 'grammy';
-import { getGroupConfig, registerGroup, unregisterGroup } from '../utils/db';
+import {
+  getAccessConfig,
+  getGroupConfig,
+  isGroupAllowed,
+  registerGroup,
+  unregisterGroup,
+} from '../utils/db';
 import { isOwner } from '../utils/permissions';
 import { notifyAdmin } from '../services/adminNotifier';
 import { buildPanelUrl, buildPanelDeepLink } from '../utils/panel';
@@ -86,6 +92,42 @@ export function registerGroupLifecycleHandlers(bot: Bot, sessionId: string): voi
     if (!isBotAdd(newMember.status, oldMember.status)) return;
 
     console.log(`[TG-LIFECYCLE] Added to "${chatTitle}" (${chatId}) by user ${actor.id}`);
+
+    // Access control: bail out if this group isn't allowed.
+    // - Blocklist always wins.
+    // - In `private` mode, only allowlisted groups are permitted.
+    const allowed = await isGroupAllowed(sessionId, chatId);
+    if (!allowed) {
+      const access = await getAccessConfig(sessionId);
+      const reason = access.groupBlocklist.includes(chatId)
+        ? 'this group is on the bot owner\'s blocklist'
+        : 'this bot is in private mode and this group is not on the allowlist';
+      console.log(
+        `[TG-LIFECYCLE] Refusing "${chatTitle}" (${chatId}) — ${reason}`,
+      );
+
+      // Try to DM the actor explaining why the bot is leaving.
+      try {
+        await ctx.api.sendMessage(
+          actor.id,
+          `🚫 <b>Couldn't join ${chatTitle}</b>\n\n` +
+            `${reason.charAt(0).toUpperCase()}${reason.slice(1)}.\n\n` +
+            `Ask the bot owner to add this group to the allowlist (or remove it from the blocklist) ` +
+            `from the dashboard → Access Control tab.` +
+            POWERED_BY,
+          { parse_mode: 'HTML' },
+        );
+      } catch {
+        // Actor hasn't started the bot — skip the DM silently.
+      }
+
+      try {
+        await ctx.api.leaveChat(chat.id);
+      } catch (err) {
+        console.warn(`[TG-LIFECYCLE] leaveChat ${chatId} failed:`, err);
+      }
+      return;
+    }
 
     // Register group in DB
     await registerGroup(sessionId, chatId, chatTitle, chatType, actor.id.toString());

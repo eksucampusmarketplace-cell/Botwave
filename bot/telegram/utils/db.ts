@@ -59,6 +59,8 @@ export interface TelegramConfig {
   mediadownload_enabled: boolean;
   funextras_enabled: boolean;
   infolookup_enabled: boolean;
+  // Access control
+  access_mode: 'public' | 'private';
   // General settings
   timezone: string;
   welcome_enabled: boolean;
@@ -259,6 +261,8 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   mediadownload_enabled: true,
   funextras_enabled: true,
   infolookup_enabled: true,
+  // Access control
+  access_mode: 'public',
   // General settings
   timezone: 'UTC',
   welcome_enabled: true,
@@ -2442,4 +2446,290 @@ export async function setAdminOnlyMode(
     .from('telegram_bot_configs')
     .upsert({ session_id: sessionId, admin_only_mode: enabled }, { onConflict: 'session_id' });
   if (error) console.error('[TG-DB] setAdminOnlyMode error:', error.message);
+}
+
+// ─── Access Control (public/private mode + allowlists/blocklists) ─────────
+//
+// `access_mode` is stored on telegram_bot_configs:
+//   - 'public'  : anyone can add the bot to any group, anyone can DM it.
+//                 Blocklist is still enforced.
+//   - 'private' : bot only operates in groups on `telegram_group_allowlist`
+//                 and only responds to users on `telegram_user_allowlist`
+//                 (if at least one user-allowlist row exists).
+//
+// All four reads are short-cached so middleware can call them on every
+// incoming message without hammering Supabase.
+
+export type AccessMode = 'public' | 'private';
+
+interface AccessConfig {
+  mode: AccessMode;
+  groupAllowlist: Set<string>;
+  groupBlocklist: Set<string>;
+  userAllowlist: Set<string>;
+}
+
+const accessConfigCache = new Map<string, { data: AccessConfig; expiresAt: number }>();
+const ACCESS_CONFIG_TTL_MS = 30_000;
+
+export function invalidateAccessConfigCache(sessionId: string): void {
+  accessConfigCache.delete(sessionId);
+}
+
+export async function getAccessMode(sessionId: string): Promise<AccessMode> {
+  const { data } = await supabase
+    .from('telegram_bot_configs')
+    .select('access_mode')
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  const raw = (data as Record<string, unknown> | null)?.access_mode;
+  return raw === 'private' ? 'private' : 'public';
+}
+
+export async function setAccessMode(
+  sessionId: string,
+  mode: AccessMode,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_bot_configs')
+    .upsert(
+      { session_id: sessionId, access_mode: mode },
+      { onConflict: 'session_id' },
+    );
+  if (error) console.error('[TG-DB] setAccessMode error:', error.message);
+  invalidateAccessConfigCache(sessionId);
+}
+
+async function loadAccessConfig(sessionId: string): Promise<AccessConfig> {
+  const [modeRow, allowGroups, blockGroups, allowUsers] = await Promise.all([
+    supabase
+      .from('telegram_bot_configs')
+      .select('access_mode')
+      .eq('session_id', sessionId)
+      .maybeSingle(),
+    supabase
+      .from('telegram_group_allowlist')
+      .select('chat_id')
+      .eq('session_id', sessionId),
+    supabase
+      .from('telegram_group_blocklist')
+      .select('chat_id')
+      .eq('session_id', sessionId),
+    supabase
+      .from('telegram_user_allowlist')
+      .select('user_id')
+      .eq('session_id', sessionId),
+  ]);
+
+  const rawMode = (modeRow.data as Record<string, unknown> | null)?.access_mode;
+  return {
+    mode: rawMode === 'private' ? 'private' : 'public',
+    groupAllowlist: new Set(
+      (allowGroups.data || []).map((r: { chat_id: string }) => String(r.chat_id)),
+    ),
+    groupBlocklist: new Set(
+      (blockGroups.data || []).map((r: { chat_id: string }) => String(r.chat_id)),
+    ),
+    userAllowlist: new Set(
+      (allowUsers.data || []).map((r: { user_id: string }) => String(r.user_id)),
+    ),
+  };
+}
+
+async function getAccessConfigCached(sessionId: string): Promise<AccessConfig> {
+  const cached = accessConfigCache.get(sessionId);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  const data = await loadAccessConfig(sessionId);
+  accessConfigCache.set(sessionId, { data, expiresAt: Date.now() + ACCESS_CONFIG_TTL_MS });
+  return data;
+}
+
+/**
+ * Should the bot operate in this chat at all?
+ *
+ *   - Blocklist always wins → returns false.
+ *   - In private mode, only chats on the allowlist return true.
+ *   - In public mode (default), any chat not on the blocklist returns true.
+ */
+export async function isGroupAllowed(
+  sessionId: string,
+  chatId: string | number,
+): Promise<boolean> {
+  const cfg = await getAccessConfigCached(sessionId);
+  const id = String(chatId);
+  if (cfg.groupBlocklist.has(id)) return false;
+  if (cfg.mode === 'private') return cfg.groupAllowlist.has(id);
+  return true;
+}
+
+/**
+ * Should the bot respond to messages from this user?
+ *
+ *   - In public mode, always true.
+ *   - In private mode with an empty user allowlist, true (group gating only).
+ *   - In private mode with a non-empty user allowlist, only listed users.
+ */
+export async function isUserAllowed(
+  sessionId: string,
+  userId: string | number,
+): Promise<boolean> {
+  const cfg = await getAccessConfigCached(sessionId);
+  if (cfg.mode === 'public') return true;
+  if (cfg.userAllowlist.size === 0) return true;
+  return cfg.userAllowlist.has(String(userId));
+}
+
+/**
+ * Get a snapshot of the access config for dashboard / API use.
+ */
+export async function getAccessConfig(sessionId: string): Promise<{
+  mode: AccessMode;
+  groupAllowlist: string[];
+  groupBlocklist: string[];
+  userAllowlist: string[];
+}> {
+  const cfg = await getAccessConfigCached(sessionId);
+  return {
+    mode: cfg.mode,
+    groupAllowlist: Array.from(cfg.groupAllowlist),
+    groupBlocklist: Array.from(cfg.groupBlocklist),
+    userAllowlist: Array.from(cfg.userAllowlist),
+  };
+}
+
+// ── Allowlist/Blocklist CRUD ──────────────────────────────────────────────
+
+async function _accessListAdd(
+  table: 'telegram_group_allowlist' | 'telegram_group_blocklist',
+  sessionId: string,
+  chatId: string,
+  chatTitle?: string,
+  addedBy?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from(table)
+    .upsert(
+      {
+        session_id: sessionId,
+        chat_id: String(chatId),
+        chat_title: chatTitle || null,
+        added_by: addedBy || null,
+      },
+      { onConflict: 'session_id,chat_id' },
+    );
+  if (error) console.error(`[TG-DB] ${table} add error:`, error.message);
+  invalidateAccessConfigCache(sessionId);
+}
+
+async function _accessListRemove(
+  table: 'telegram_group_allowlist' | 'telegram_group_blocklist',
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('chat_id', String(chatId));
+  if (error) console.error(`[TG-DB] ${table} remove error:`, error.message);
+  invalidateAccessConfigCache(sessionId);
+}
+
+export function addGroupAllowlistEntry(
+  sessionId: string,
+  chatId: string,
+  chatTitle?: string,
+  addedBy?: string,
+): Promise<void> {
+  return _accessListAdd('telegram_group_allowlist', sessionId, chatId, chatTitle, addedBy);
+}
+
+export function removeGroupAllowlistEntry(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  return _accessListRemove('telegram_group_allowlist', sessionId, chatId);
+}
+
+export function addGroupBlocklistEntry(
+  sessionId: string,
+  chatId: string,
+  chatTitle?: string,
+  addedBy?: string,
+): Promise<void> {
+  return _accessListAdd('telegram_group_blocklist', sessionId, chatId, chatTitle, addedBy);
+}
+
+export function removeGroupBlocklistEntry(
+  sessionId: string,
+  chatId: string,
+): Promise<void> {
+  return _accessListRemove('telegram_group_blocklist', sessionId, chatId);
+}
+
+export async function addUserAllowlistEntry(
+  sessionId: string,
+  userId: string,
+  userLabel?: string,
+  addedBy?: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_user_allowlist')
+    .upsert(
+      {
+        session_id: sessionId,
+        user_id: String(userId),
+        user_label: userLabel || null,
+        added_by: addedBy || null,
+      },
+      { onConflict: 'session_id,user_id' },
+    );
+  if (error) console.error('[TG-DB] telegram_user_allowlist add error:', error.message);
+  invalidateAccessConfigCache(sessionId);
+}
+
+export async function removeUserAllowlistEntry(
+  sessionId: string,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('telegram_user_allowlist')
+    .delete()
+    .eq('session_id', sessionId)
+    .eq('user_id', String(userId));
+  if (error) console.error('[TG-DB] telegram_user_allowlist remove error:', error.message);
+  invalidateAccessConfigCache(sessionId);
+}
+
+export async function listGroupAllowlist(
+  sessionId: string,
+): Promise<Array<{ chat_id: string; chat_title: string | null; added_by: string | null; created_at: string }>> {
+  const { data } = await supabase
+    .from('telegram_group_allowlist')
+    .select('chat_id, chat_title, added_by, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false });
+  return (data || []) as Array<{ chat_id: string; chat_title: string | null; added_by: string | null; created_at: string }>;
+}
+
+export async function listGroupBlocklist(
+  sessionId: string,
+): Promise<Array<{ chat_id: string; chat_title: string | null; added_by: string | null; created_at: string }>> {
+  const { data } = await supabase
+    .from('telegram_group_blocklist')
+    .select('chat_id, chat_title, added_by, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false });
+  return (data || []) as Array<{ chat_id: string; chat_title: string | null; added_by: string | null; created_at: string }>;
+}
+
+export async function listUserAllowlist(
+  sessionId: string,
+): Promise<Array<{ user_id: string; user_label: string | null; added_by: string | null; created_at: string }>> {
+  const { data } = await supabase
+    .from('telegram_user_allowlist')
+    .select('user_id, user_label, added_by, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false });
+  return (data || []) as Array<{ user_id: string; user_label: string | null; added_by: string | null; created_at: string }>;
 }

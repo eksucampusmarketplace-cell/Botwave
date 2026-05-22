@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import DashboardNav from '@/components/layout/DashboardNav';
 import TelegramUserbotDashboard from '@/components/ui/TelegramUserbotDashboard';
 
-type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats' | 'ignored' | 'adminmode';
+type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' | 'silence' | 'memberships' | 'memberbooster' | 'texts' | 'notes' | 'filters' | 'modlog' | 'xp' | 'scheduled' | 'stats' | 'ignored' | 'adminmode' | 'access';
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
@@ -49,6 +49,7 @@ const TAB_FEATURE_MAP: Record<Tab, string[]> = {
   stats: ['stats'],
   ignored: [],
   adminmode: [],
+  access: [], // always visible — bot creator must always be able to lock down their bot
 };
 
 interface GroupInfo {
@@ -168,6 +169,19 @@ export default function TelegramConfigPage() {
   const [ignoredChats, setIgnoredChats] = useState<Array<{ id: string; chat_id: string; chat_title: string | null; created_at: string }>>([]);
   const [newIgnoreChatId, setNewIgnoreChatId] = useState('');
   const [newIgnoreChatTitle, setNewIgnoreChatTitle] = useState('');
+
+  // Access control state
+  const [accessMode, setAccessMode] = useState<'public' | 'private'>('public');
+  const [groupAllowlist, setGroupAllowlist] = useState<Array<{ chat_id: string; chat_title: string | null }>>([]);
+  const [groupBlocklist, setGroupBlocklist] = useState<Array<{ chat_id: string; chat_title: string | null }>>([]);
+  const [userAllowlist, setUserAllowlist] = useState<Array<{ user_id: string; user_label: string | null }>>([]);
+  const [accessSaving, setAccessSaving] = useState(false);
+  const [newAllowGroupId, setNewAllowGroupId] = useState('');
+  const [newAllowGroupTitle, setNewAllowGroupTitle] = useState('');
+  const [newBlockGroupId, setNewBlockGroupId] = useState('');
+  const [newBlockGroupTitle, setNewBlockGroupTitle] = useState('');
+  const [newAllowUserId, setNewAllowUserId] = useState('');
+  const [newAllowUserLabel, setNewAllowUserLabel] = useState('');
 
   // eslint-disable-next-line
   const [config, setConfig] = useState<Record<string, any>>({
@@ -513,6 +527,76 @@ export default function TelegramConfigPage() {
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
+  const fetchAccessControl = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/telegram/bot/access-control?sessionId=${sessionId}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setAccessMode(data.data.mode === 'private' ? 'private' : 'public');
+        setGroupAllowlist(data.data.groupAllowlist || []);
+        setGroupBlocklist(data.data.groupBlocklist || []);
+        setUserAllowlist(data.data.userAllowlist || []);
+      }
+    } catch {}
+  }, [sessionId]);
+
+  const setAccessModeRemote = async (mode: 'public' | 'private') => {
+    setAccessSaving(true);
+    try {
+      const res = await fetch('/api/telegram/bot/access-control', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, mode }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAccessMode(mode);
+        setSuccess(`Bot is now ${mode}.`);
+        setTimeout(() => setSuccess(''), 2000);
+      } else {
+        setError(data.error || 'Failed to update mode');
+      }
+    } catch { setError('Failed to update mode'); }
+    setAccessSaving(false);
+  };
+
+  const addAccessEntry = async (
+    list: 'groupAllowlist' | 'groupBlocklist' | 'userAllowlist',
+    entryId: string,
+    label?: string,
+  ) => {
+    if (!entryId.trim()) return;
+    try {
+      const res = await fetch('/api/telegram/bot/access-control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, list, entryId: entryId.trim(), label: label?.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchAccessControl();
+        setSuccess('Entry added.');
+        setTimeout(() => setSuccess(''), 1500);
+      } else {
+        setError(data.error || 'Failed to add entry');
+      }
+    } catch { setError('Failed to add entry'); }
+  };
+
+  const removeAccessEntry = async (
+    list: 'groupAllowlist' | 'groupBlocklist' | 'userAllowlist',
+    entryId: string,
+  ) => {
+    try {
+      await fetch('/api/telegram/bot/access-control', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, list, entryId }),
+      });
+      fetchAccessControl();
+    } catch {}
+  };
+
   useEffect(() => {
     switch (activeTab) {
       case 'notes': fetchNotes(); break;
@@ -521,8 +605,9 @@ export default function TelegramConfigPage() {
       case 'xp': fetchXP(); break;
       case 'scheduled': fetchScheduled(); break;
       case 'ignored': fetchIgnoredChats(); break;
+      case 'access': fetchAccessControl(); break;
     }
-  }, [activeTab, fetchNotes, fetchFilters, fetchModlog, fetchXP, fetchScheduled, fetchIgnoredChats]);
+  }, [activeTab, fetchNotes, fetchFilters, fetchModlog, fetchXP, fetchScheduled, fetchIgnoredChats, fetchAccessControl]);
 
   const saveConfig = async () => {
     setSaving(true); setError(''); setSuccess('');
@@ -620,6 +705,7 @@ export default function TelegramConfigPage() {
     { id: 'stats', label: 'Statistics', icon: '\ud83d\udcca' },
     { id: 'ignored', label: 'Ignored Chats', icon: '\ud83d\udeab' },
     { id: 'adminmode', label: 'Admin Mode', icon: '\ud83d\udd12' },
+    { id: 'access', label: 'Access Control', icon: '\ud83d\udd10' },
   ];
 
   // Filter tabs: hide tabs where ALL required features are disabled by the bot owner
@@ -1410,6 +1496,156 @@ export default function TelegramConfigPage() {
               <Toggle config={config} updateConfig={updateConfig} configKey="prohibit_userbots" label="Block Userbot Commands" desc="Auto-delete userbot-style commands from non-admins in this group." />
             </SectionCard>
             <SaveButton onClick={saveConfig} saving={saving} />
+          </div>
+        )}
+
+        {activeTab === 'access' && (
+          <div className="space-y-6">
+            <SectionCard title="Bot Mode">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                <b>Public</b> — anyone can add your bot to any group and DM it. This is the default.<br />
+                <b>Private</b> — your bot only operates in groups on the allowlist below, and (if you populate the user allowlist) only responds to specific users. The blocklist applies in both modes.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setAccessModeRemote('public')}
+                  disabled={accessSaving}
+                  className={`flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
+                    accessMode === 'public' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'
+                  }`}
+                >
+                  Public
+                </button>
+                <button
+                  onClick={() => setAccessModeRemote('private')}
+                  disabled={accessSaving}
+                  className={`flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
+                    accessMode === 'private' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'
+                  }`}
+                >
+                  Private
+                </button>
+              </div>
+              <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>
+                Current mode: <b>{accessMode}</b>. Changes apply within ~30 seconds (the bot caches access config for that long).
+              </p>
+            </SectionCard>
+
+            <SectionCard title="Group Allowlist">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                In private mode, only these groups can use the bot. If the bot is added to any other group, it will auto-leave and DM the inviter.
+                Group IDs look like <code>-1001234567890</code>; you can grab one by forwarding a message from the group to <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="underline">@userinfobot</a>.
+              </p>
+              <div className="space-y-3 mb-4">
+                <input type="text" value={newAllowGroupId} onChange={e => setNewAllowGroupId(e.target.value)}
+                  placeholder="Group ID (e.g. -1001234567890)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <input type="text" value={newAllowGroupTitle} onChange={e => setNewAllowGroupTitle(e.target.value)}
+                  placeholder="Group name (optional, for your reference)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <button
+                  onClick={async () => {
+                    await addAccessEntry('groupAllowlist', newAllowGroupId, newAllowGroupTitle);
+                    setNewAllowGroupId(''); setNewAllowGroupTitle('');
+                  }}
+                  className="w-full p-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-colors">
+                  Add to Allowlist
+                </button>
+              </div>
+              {groupAllowlist.length === 0 ? (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No groups on the allowlist yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {groupAllowlist.map(g => (
+                    <div key={g.chat_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{g.chat_title || 'Unknown Group'}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>ID: {g.chat_id}</div>
+                      </div>
+                      <button onClick={() => removeAccessEntry('groupAllowlist', g.chat_id)}
+                        className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Group Blocklist">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                The bot will refuse to join (or auto-leave) any group on this list, regardless of public/private mode. Use this to permanently block specific groups.
+              </p>
+              <div className="space-y-3 mb-4">
+                <input type="text" value={newBlockGroupId} onChange={e => setNewBlockGroupId(e.target.value)}
+                  placeholder="Group ID (e.g. -1001234567890)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <input type="text" value={newBlockGroupTitle} onChange={e => setNewBlockGroupTitle(e.target.value)}
+                  placeholder="Group name (optional)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <button
+                  onClick={async () => {
+                    await addAccessEntry('groupBlocklist', newBlockGroupId, newBlockGroupTitle);
+                    setNewBlockGroupId(''); setNewBlockGroupTitle('');
+                  }}
+                  className="w-full p-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors">
+                  Add to Blocklist
+                </button>
+              </div>
+              {groupBlocklist.length === 0 ? (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No groups on the blocklist.</p>
+              ) : (
+                <div className="space-y-2">
+                  {groupBlocklist.map(g => (
+                    <div key={g.chat_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{g.chat_title || 'Unknown Group'}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>ID: {g.chat_id}</div>
+                      </div>
+                      <button onClick={() => removeAccessEntry('groupBlocklist', g.chat_id)}
+                        className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard title="User Allowlist (Private Mode Only)">
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                Optional. In private mode with at least one user here, ONLY these users can trigger the bot anywhere. Leave empty to allow any user in allowlisted groups. Has no effect in public mode.
+                User IDs look like <code>123456789</code>; you can grab one from <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="underline">@userinfobot</a>.
+              </p>
+              <div className="space-y-3 mb-4">
+                <input type="text" value={newAllowUserId} onChange={e => setNewAllowUserId(e.target.value)}
+                  placeholder="User ID (e.g. 123456789)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <input type="text" value={newAllowUserLabel} onChange={e => setNewAllowUserLabel(e.target.value)}
+                  placeholder="User name (optional)" className="w-full p-2 rounded-xl text-sm" style={INPUT_STYLE} />
+                <button
+                  onClick={async () => {
+                    await addAccessEntry('userAllowlist', newAllowUserId, newAllowUserLabel);
+                    setNewAllowUserId(''); setNewAllowUserLabel('');
+                  }}
+                  className="w-full p-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-colors">
+                  Add User
+                </button>
+              </div>
+              {userAllowlist.length === 0 ? (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No users on the allowlist. {accessMode === 'private' ? 'In private mode, all users in allowlisted groups can use the bot.' : ''}</p>
+              ) : (
+                <div className="space-y-2">
+                  {userAllowlist.map(u => (
+                    <div key={u.user_id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{u.user_label || 'Unknown User'}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>ID: {u.user_id}</div>
+                      </div>
+                      <button onClick={() => removeAccessEntry('userAllowlist', u.user_id)}
+                        className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors">
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
           </div>
         )}
       </div>
