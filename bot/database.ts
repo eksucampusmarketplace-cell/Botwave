@@ -816,6 +816,75 @@ export async function expireStuckPairingSessions(): Promise<number> {
 }
 
 /**
+ * Auto-delete "ghost" sessions — rows that never successfully connected.
+ *
+ * A ghost is a bot_sessions row that:
+ *   - is in needs_reauth or pairing_failed state
+ *   - has last_active = NULL (never opened a working WhatsApp socket)
+ *   - is older than minAgeHours (default 24h, matches the admin GC button)
+ *
+ * Auto-recovery deliberately skips sessions with last_active=NULL
+ * (see sessionCoordinator), so without this GC they accumulate forever
+ * and inflate the needs_reauth count on the admin dashboard, hiding the
+ * genuine reconnect failures that actually need attention.
+ *
+ * Best-effort deletes the matching Evolution API instance so it stops
+ * retrying in the background. Returns the number of bot_sessions rows
+ * deleted (Evolution deletes are not counted because they're best-effort).
+ */
+export async function cleanupGhostSessions(minAgeHours: number = 24): Promise<number> {
+  const cutoff = new Date(Date.now() - minAgeHours * 60 * 60 * 1000).toISOString();
+
+  const { data: ghosts, error } = await supabase
+    .from('bot_sessions')
+    .select('id, session_name, phone_number, state, created_at')
+    .in('state', ['needs_reauth', 'pairing_failed'])
+    .is('last_active', null)
+    .lt('created_at', cutoff);
+
+  if (error) {
+    console.error('[CLEANUP] Ghost-session fetch failed:', error);
+    return 0;
+  }
+  if (!ghosts || ghosts.length === 0) return 0;
+
+  console.log(`[CLEANUP] Found ${ghosts.length} ghost session(s) (last_active=NULL, age >= ${minAgeHours}h)`);
+
+  // Best-effort Evolution cleanup so abandoned instances don't keep retrying.
+  const evoUrl = process.env.EVOLUTION_API_URL;
+  const evoKey = process.env.EVOLUTION_API_KEY;
+  if (evoUrl && evoKey) {
+    await Promise.all(
+      ghosts.map(async (g) => {
+        try {
+          await fetch(`${evoUrl}/instance/delete/${g.id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', apikey: evoKey },
+            signal: AbortSignal.timeout(5000),
+          });
+        } catch {
+          // Non-fatal — bot_sessions delete below is the source of truth.
+        }
+      }),
+    );
+  }
+
+  const ids = ghosts.map((g) => g.id);
+  const { error: deleteErr } = await supabase
+    .from('bot_sessions')
+    .delete()
+    .in('id', ids);
+
+  if (deleteErr) {
+    console.error('[CLEANUP] Ghost-session delete failed:', deleteErr);
+    return 0;
+  }
+
+  console.log(`[CLEANUP] Deleted ${ghosts.length} ghost session(s)`);
+  return ghosts.length;
+}
+
+/**
  * Auto-delete needs_reauth sessions older than 7 days.
  * These sessions are dead - the user needs to create a new session.
  */

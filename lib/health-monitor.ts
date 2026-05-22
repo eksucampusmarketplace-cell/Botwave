@@ -7,9 +7,11 @@
 
 import { sendAlertEmail, buildAlertHtml, isEmailConfigured } from './email-service';
 import { onErrorSpike } from './error-tracker';
-import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions } from '../bot/database';
+import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions, cleanupGhostSessions } from '../bot/database';
 
 const CHECK_INTERVAL_MS = 60_000; // 60 seconds
+const GHOST_CLEANUP_INTERVAL_MS = 60 * 60_000; // once per hour
+let lastGhostCleanupAt = 0;
 const CONSECUTIVE_FAILURES_THRESHOLD = 3;
 
 let monitorInterval: ReturnType<typeof setInterval> | null = null;
@@ -181,8 +183,16 @@ export function startHealthMonitor(): void {
     try {
       const expired = await expireStuckPairingSessions();
       const cleaned = await cleanupOldNeedsReauthSessions();
-      if (expired > 0 || cleaned > 0) {
-        console.log(`[HEALTH-MONITOR] Cleanup: ${expired} stuck pairing expired, ${cleaned} old needs_reauth deleted`);
+      // Ghost cleanup is cheap but the rows churn slowly — once per hour
+      // is plenty and keeps Supabase load minimal.
+      const now = Date.now();
+      let ghostsDeleted = 0;
+      if (now - lastGhostCleanupAt >= GHOST_CLEANUP_INTERVAL_MS) {
+        lastGhostCleanupAt = now;
+        ghostsDeleted = await cleanupGhostSessions(24);
+      }
+      if (expired > 0 || cleaned > 0 || ghostsDeleted > 0) {
+        console.log(`[HEALTH-MONITOR] Cleanup: ${expired} stuck pairing expired, ${cleaned} old needs_reauth deleted, ${ghostsDeleted} ghosts deleted`);
       }
     } catch (err) {
       console.error('[HEALTH-MONITOR] Session cleanup error:', err);
