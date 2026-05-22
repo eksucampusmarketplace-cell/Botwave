@@ -1073,11 +1073,15 @@ export async function createInstance(instanceName: string, phoneNumber: string) 
  * Enable proxy on an existing instance after successful pairing.
  * Called after linking succeeds so the ongoing connection uses a proxy.
  * Tries up to PROXY_LIST.length proxies before giving up.
+ *
+ * Pass `phoneNumber` to enable country-aware proxy selection (the auto-pool
+ * groups sessions by dial code per proxy IP). Safe to omit — selection falls
+ * back to least-loaded otherwise.
  */
-export async function enableInstanceProxy(instanceName: string): Promise<boolean> {
+export async function enableInstanceProxy(instanceName: string, phoneNumber?: string): Promise<boolean> {
   const maxAttempts = PROXY_LIST.length || 1;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const proxy = await getNextProxyAsync(instanceName);
+    const proxy = await getNextProxyAsync(instanceName, phoneNumber);
     if (!proxy) {
       console.log(`[PROXY] enableInstanceProxy: no healthy proxy available for ${instanceName}`);
       return false;
@@ -1117,6 +1121,174 @@ export async function enableInstanceProxy(instanceName: string): Promise<boolean
   }
   console.error(`[PROXY] enableInstanceProxy ${instanceName}: all ${maxAttempts} proxies failed`);
   return false;
+}
+
+/**
+ * Read the proxy currently attached to an Evolution instance via
+ * GET /proxy/find/{instanceName}. Returns null if the instance has no proxy
+ * record, the API call fails, or the response is malformed. Used by the
+ * startup audit to detect proxy assignments that point at IPs no longer in
+ * the live PROXY_LIST env.
+ */
+export async function findInstanceProxy(instanceName: string): Promise<{
+  enabled: boolean;
+  host: string;
+  port: string;
+  protocol: string;
+  username: string;
+  password: string;
+} | null> {
+  if (!BASE) return null;
+  try {
+    const res = await apiFetch(`${BASE}/proxy/find/${instanceName}`, {
+      method: 'GET',
+      headers,
+      skipHealthCount: true,
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    if (!data || typeof data !== 'object') return null;
+    if (typeof data.host !== 'string' || !data.host) return null;
+    return {
+      enabled: data.enabled !== false,
+      host: data.host,
+      port: String(data.port ?? ''),
+      protocol: typeof data.protocol === 'string' ? data.protocol : 'http',
+      username: typeof data.username === 'string' ? data.username : '',
+      password: typeof data.password === 'string' ? data.password : '',
+    };
+  } catch (err) {
+    console.warn(`[PROXY] findInstanceProxy ${instanceName} failed:`, err);
+    return null;
+  }
+}
+
+/**
+ * Startup self-heal: scan every Evolution instance's currently-attached proxy
+ * and, if the proxy IP is no longer in the live PROXY_LIST env (i.e. the
+ * Webshare plan was swapped, an IP was retired, or it landed on the permanent
+ * burnt list), clear the sticky binding in Redis/DB and push a fresh proxy
+ * via POST /proxy/set/{instance}.
+ *
+ * Without this, sessions paired to a now-dead proxy stay stuck on the dead
+ * IP until someone manually curls /proxy/set or recreates the instance.
+ *
+ * Only the main process runs this (`!IS_WORKER` gate in the caller) so a
+ * scaled deploy doesn't fan the audit out across N replicas.
+ */
+export async function rotateStaleProxiesOnStartup(): Promise<{
+  scanned: number;
+  skippedBYOP: number;
+  inPool: number;
+  noProxy: number;
+  rotated: number;
+  rotateFailed: number;
+}> {
+  const summary = { scanned: 0, skippedBYOP: 0, inPool: 0, noProxy: 0, rotated: 0, rotateFailed: 0 };
+
+  if (!BASE) {
+    console.log('[PROXY-AUDIT] No EVOLUTION_API_URL configured — skipping startup proxy rotation');
+    return summary;
+  }
+  if (PROXY_LIST.length === 0) {
+    console.log('[PROXY-AUDIT] PROXY_LIST is empty — skipping (no shared pool to enforce)');
+    return summary;
+  }
+
+  // Build a host:port set from the live PROXY_LIST env. Credentials are
+  // intentionally ignored: if the IP is still in the pool the assignment
+  // remains valid even if the password was rotated independently.
+  const livePool = new Set<string>();
+  for (const entry of PROXY_LIST) {
+    const parts = entry.split(':');
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      livePool.add(`${parts[0]}:${parts[1]}`);
+    }
+  }
+
+  console.log(`[PROXY-AUDIT] Startup rotation pass starting — live pool has ${livePool.size} IP(s)`);
+
+  const instanceNames = await fetchAllEvolutionInstances();
+  summary.scanned = instanceNames.size;
+  if (instanceNames.size === 0) {
+    console.log('[PROXY-AUDIT] No Evolution instances to scan');
+    return summary;
+  }
+
+  for (const instanceName of instanceNames) {
+    // Convention across BotWave: instanceName === sessionId. createInstance is
+    // always called with the session UUID, so any instance Evolution knows
+    // about maps 1:1 to a row in bot_sessions.
+    const sessionId = instanceName;
+
+    // Resolve session metadata. We need phone_number for country-aware proxy
+    // selection and proxy_type to skip BYOP sessions. Missing rows are
+    // tolerated — the audit still rotates based on the host:port check.
+    let phoneNumber: string | undefined;
+    let proxyType: string | undefined;
+    try {
+      const session: any = await getSessionById(sessionId);
+      if (session) {
+        phoneNumber = session.phone_number || undefined;
+        proxyType = session.proxy_type;
+      }
+    } catch (err) {
+      console.warn(`[PROXY-AUDIT] Failed to load session ${sessionId.slice(0, 8)} from DB (continuing):`, err);
+    }
+
+    // BYOP sessions point at the user's own proxy and must never be touched
+    // by the shared-pool audit.
+    if (proxyType === 'custom') {
+      summary.skippedBYOP++;
+      continue;
+    }
+
+    const current = await findInstanceProxy(instanceName);
+    if (!current || !current.enabled) {
+      summary.noProxy++;
+      continue;
+    }
+
+    const hostPort = `${current.host}:${current.port}`;
+    const inPool = livePool.has(hostPort);
+    const burnt = isProxyPermanentlyBurnt(hostPort);
+
+    if (inPool && !burnt) {
+      summary.inPool++;
+      continue;
+    }
+
+    console.warn(
+      `[PROXY-AUDIT] STALE proxy detected: instance=${instanceName.slice(0, 8)} ` +
+      `attached=${hostPort} inPool=${inPool} burnt=${burnt} — rotating`
+    );
+
+    try {
+      await clearSessionProxy(sessionId, phoneNumber);
+    } catch (err) {
+      console.warn(`[PROXY-AUDIT] clearSessionProxy failed for ${sessionId.slice(0, 8)} (continuing rotation):`, err);
+    }
+
+    const ok = await enableInstanceProxy(instanceName, phoneNumber);
+    if (ok) {
+      summary.rotated++;
+      console.warn(`[PROXY-AUDIT] ROTATED instance=${instanceName.slice(0, 8)}: ${hostPort} → fresh proxy from pool`);
+    } else {
+      summary.rotateFailed++;
+      console.error(
+        `[PROXY-AUDIT] ROTATION FAILED for ${instanceName.slice(0, 8)} — could not assign a fresh proxy. ` +
+        `Sticky binding was cleared; next reconnect cycle will retry from the pool.`
+      );
+    }
+  }
+
+  console.warn(
+    `[PROXY-AUDIT] Startup rotation pass complete: scanned=${summary.scanned} ` +
+    `rotated=${summary.rotated} inPool=${summary.inPool} noProxy=${summary.noProxy} ` +
+    `byop=${summary.skippedBYOP} rotateFailed=${summary.rotateFailed}`
+  );
+
+  return summary;
 }
 
 /**

@@ -24,7 +24,7 @@ import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } 
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
-import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence } from './whatsapp/evolution/client';
+import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence, rotateStaleProxiesOnStartup } from './whatsapp/evolution/client';
 import { disconnectRedis } from './infrastructure/redis';
 import { isCircuitOpen } from './infrastructure/circuitBreaker';
 import { installShutdownHandlers, registerInterval, onShutdown, isShutdown } from './infrastructure/gracefulShutdown';
@@ -86,6 +86,19 @@ async function start() {
       }
     } else {
       console.warn('[WHATSAPP] Evolution API did not become ready - sessions will retry during sync loop');
+    }
+  }
+
+  // Self-heal stale proxy assignments. Compares each Evolution instance's
+  // currently-attached proxy IP against the live PROXY_LIST env and rotates
+  // any session whose proxy is no longer in the pool (e.g. after a Webshare
+  // plan swap). Main-only so a scaled deploy doesn't fan the audit across
+  // every replica. Non-fatal: failures here must not block the startup path.
+  if (USE_EVOLUTION && !IS_WORKER) {
+    try {
+      await rotateStaleProxiesOnStartup();
+    } catch (err) {
+      console.error('[WHATSAPP] Stale proxy rotation failed (non-fatal):', err);
     }
   }
 
