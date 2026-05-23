@@ -4,6 +4,7 @@ import { authorizeTycoonRequest } from '@/lib/tycoon/auth';
 import { clonePlayer, pendingBusinessCoins } from '@/lib/tycoon/actions';
 import { loadAndTickPlayerInMemory, persistTickedPlayer } from '@/lib/tycoon/state';
 import { snapshotPlayer } from '@/lib/tycoon/snapshot';
+import { addQuestProgress } from '@/lib/tycoon/quests';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
         kind: 'business_collect',
         payload: { business_id: businessId, coins: collected },
       });
+      await addQuestProgress(supabase, player.id, 'coins_collected', collected);
       return NextResponse.json({ collected, ...snapshotPlayer(player) }, { status: 200 });
     } catch (e) {
       if (e instanceof Error && e.message.includes('save_version_conflict') && attempt === 0) {

@@ -5,6 +5,7 @@ import { clonePlayer, nextDirtyUntil } from '@/lib/tycoon/actions';
 import { UNIT_DEFS } from '@/lib/tycoon/power';
 import { loadAndTickPlayerInMemory, persistTickedPlayer } from '@/lib/tycoon/state';
 import { snapshotPlayer } from '@/lib/tycoon/snapshot';
+import { addQuestProgress } from '@/lib/tycoon/quests';
 import type { UnitKey } from '@/lib/tycoon/types';
 
 export const dynamic = 'force-dynamic';
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
     kind: 'training_started',
     payload: { unit, quantity, cost, ends_at: endsAt },
   });
+  await addQuestProgress(supabase, player.id, 'troops_trained', quantity);
 
   return NextResponse.json({ queued: { unit, quantity, cost, ends_at: endsAt }, ...snapshotPlayer(player) });
 }
