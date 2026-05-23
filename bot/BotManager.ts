@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, getPairingCodeFreshness, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings, PAIRING_CODE_FREEZE_MS } from './database';
 import { useSupabaseAuthState } from './whatsapp/SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './whatsapp/handlers/MessageHandler';
 // Autoview removed entirely
@@ -359,7 +359,7 @@ export class BotWaveBot {
               this.isPairingSent = true;
               this.pairingStartedAt = Date.now();
               pairingCodeRequested = true;
-              console.log(`[PAIRING] === COMPLETE === session=${this.sessionId} code="${code}" totalFlow=${Date.now() - queueStartTime}ms isPairingSent=${this.isPairingSent} pairingStartedAt=${new Date(this.pairingStartedAt).toISOString()}`);
+              console.log(`[PAIRING] === COMPLETE === session=${this.sessionId} codeLen=${code.length} totalFlow=${Date.now() - queueStartTime}ms isPairingSent=${this.isPairingSent} pairingStartedAt=${new Date(this.pairingStartedAt).toISOString()}`);
               logPairingEvent(this.sessionId, 'code_generated', this.workerUrl).catch(() => {});
             } catch (err: any) {
               console.error(`[PAIRING] <<< requestPairingCode FAILED for session=${this.sessionId}:`);
@@ -1021,6 +1021,47 @@ export class EvolutionBot {
         return;
       }
 
+      // PRE-START FREEZE GUARD: If the DB still shows a fresh pairing code for
+      // this session (state=pairing_sent within PAIRING_CODE_FREEZE_MS), the
+      // user is mid-handshake. Destroying the Evolution instance now would
+      // generate a brand-new pairing code, invalidating the one on the user's
+      // screen and producing the "couldn't link device" failure even though
+      // the proxy/connection are healthy.
+      //
+      // Behaviour depends on the Evolution-side state:
+      //   * connecting/close — instance still exists, give the user time to
+      //     finish entering the code; resume passive polling.
+      //   * gone/unknown   — the matching Evolution instance is missing, so
+      //     the stale DB code cannot succeed regardless. Surface this as
+      //     needs_reauth so the dashboard prompts a clean re-pair instead of
+      //     silently rotating to a code the user never sees.
+      if (this.previousDbState === 'pairing_sent') {
+        const freshness = await getPairingCodeFreshness(this.sessionId);
+        if (freshness.fresh) {
+          if (preStartState === 'connecting' || preStartState === 'close' || preStartState === 'refused') {
+            const ageS = Math.round(freshness.ageMs / 1000);
+            console.warn(`[EVO] PRE-START FREEZE GUARD: session ${this.sessionId} has a fresh pairing code (${ageS}s old, freeze window ${PAIRING_CODE_FREEZE_MS / 1000}s) and Evolution instance state=${preStartState}. Refusing fresh re-pair; resuming passive poll loop so the in-flight code can complete.`);
+            this.isPairingSent = true;
+            this.pairingStartedAt = Date.now() - freshness.ageMs;
+            this.isReconnecting = false;
+            markPairingCodeGenerated(this.sessionId);
+            trackInstance(this.sessionId);
+            if (this.phoneNumber) setInstanceOwner(this.sessionId, `${this.phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`);
+            await setWebhook(this.sessionId);
+            this.startPollLoop();
+            return;
+          }
+          if (preStartState === 'gone' || preStartState === 'unknown') {
+            console.warn(`[EVO] PRE-START FREEZE GUARD: session ${this.sessionId} still shows a fresh pairing code but the Evolution instance is ${preStartState}. The code on the user's screen can no longer succeed — marking needs_reauth so the dashboard prompts a clean re-pair instead of silently rotating the code.`);
+            await updateSessionStatus(this.sessionId, 'needs_reauth', {
+              lastPairingError: 'Pairing aborted: server lost the WhatsApp instance while the code was still on screen. Tap "Connect" to start a fresh pairing.',
+            });
+            this.isReconnecting = false;
+            return;
+          }
+        }
+      }
+
       // Clean up any stale instance and verify it is fully removed before
       // creating a new one. Evolution API's delete is async (event-driven);
       // without verification, createInstance races against the cleanup and
@@ -1080,7 +1121,7 @@ export class EvolutionBot {
       if (pairingResult) {
         markPairingCodeGenerated(this.sessionId);
         const code = pairingResult.pairingCode;
-        console.log(`[PAIRING-EVO] Code received: "${code}" len=${code.length} hasQR=${!!pairingResult.qrCode} duration=${evoPairingDuration}ms session=${this.sessionId}`);
+        console.log(`[PAIRING-EVO] Code received: len=${code.length} hasQR=${!!pairingResult.qrCode} duration=${evoPairingDuration}ms session=${this.sessionId}`);
         console.log(`[PAIRING-EVO] Saving to DB...`);
         const dbStart = Date.now();
         // Save QR FIRST (before state becomes pairing_sent)
@@ -1093,7 +1134,7 @@ export class EvolutionBot {
         this.isPairingSent = true;
         this.pairingStartedAt = Date.now();
         this.isReconnecting = false;
-        console.log(`[PAIRING-EVO] === COMPLETE === session=${this.sessionId} code="${code}" totalFlow=${Date.now() - evoPairingStart}ms`);
+        console.log(`[PAIRING-EVO] === COMPLETE === session=${this.sessionId} codeLen=${code.length} totalFlow=${Date.now() - evoPairingStart}ms`);
       } else {
         console.error(`[PAIRING-EVO] NO CODE returned after ${evoPairingDuration}ms for session=${this.sessionId}. Setting inactive.`);
         await updateSessionStatus(this.sessionId, 'inactive');
@@ -1243,7 +1284,7 @@ export class EvolutionBot {
                       await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
                       this.pairingStartedAt = Date.now();
                       // Don't reset pairingWaitStart — the full timeout still applies from original start
-                      console.log(`[EVO] Early proxy rotation succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode}`);
+                      console.log(`[EVO] Early proxy rotation succeeded for ${this.sessionId} (codeLen=${freshResult.pairingCode?.length || 0})`);
                     }
                   } catch (earlyRotateErr) {
                     console.error(`[EVO] Early proxy rotation failed for ${this.sessionId}:`, earlyRotateErr);
@@ -1314,7 +1355,7 @@ export class EvolutionBot {
                   await updateSessionPairingCode(this.sessionId, freshResult.pairingCode, { force: true });
                   this.pairingStartedAt = Date.now();
                   pairingWaitStart = Date.now();
-                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId}, new code: ${freshResult.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
+                  console.log(`[EVO] Auto-retry (connecting) succeeded for ${this.sessionId} (codeLen=${freshResult.pairingCode?.length || 0}, attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
                 } else {
                   console.log(`[EVO] Auto-retry (connecting) failed for ${this.sessionId} - setting needs_reauth`);
                   await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1504,7 +1545,7 @@ export class EvolutionBot {
                 await updateSessionPairingCode(this.sessionId, freshResult2.pairingCode, { force: true });
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
-                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId}, new code: ${freshResult2.pairingCode} (attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
+                console.log(`[EVO] Auto-retry succeeded for ${this.sessionId} (codeLen=${freshResult2.pairingCode?.length || 0}, attempt ${pairingRetryCount}/${MAX_PAIRING_RETRIES})`);
               } else {
                 console.log(`[EVO] Auto-retry failed (no code) for ${this.sessionId} - setting needs_reauth`);
                 await updateSessionStatus(this.sessionId, 'needs_reauth');
@@ -1558,6 +1599,22 @@ export class EvolutionBot {
             // to tolerate short network hiccups to the Evolution API endpoint
             console.log(`[EVO] Skipping recreate for ${this.sessionId} - pairing code is in user's hand (${unknownStateCount} unknown polls)`);
           } else if (unknownStateCount >= MAX_UNKNOWN_BEFORE_RECREATE) {
+            // FREEZE GUARD: if the user is still inside the pairing window
+            // with a fresh code, recreating the Evolution instance would
+            // generate a new code and invalidate the one on their screen
+            // (the exact failure mode the live test hit). Surface a clean
+            // needs_reauth instead of silently rotating.
+            const freshness = await getPairingCodeFreshness(this.sessionId);
+            if (freshness.fresh) {
+              console.warn(`[EVO] Instance gone for ${this.sessionId} but pairing code on user's screen is still fresh (${Math.round(freshness.ageMs / 1000)}s) — marking needs_reauth instead of rotating the code.`);
+              await updateSessionStatus(this.sessionId, 'needs_reauth', {
+                lastPairingError: 'Pairing aborted: server lost the WhatsApp instance while the code was still on screen. Tap "Connect" to start a fresh pairing.',
+              });
+              this.isPairingSent = false;
+              if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
+              return;
+            }
+
             console.log(`[EVO] Instance gone for ${this.sessionId} (${unknownStateCount} unknown polls). Recreating...`);
             isRecreating = true;
             unknownStateCount = 0;
@@ -1579,7 +1636,7 @@ export class EvolutionBot {
                 this.isPairingSent = true;
                 this.pairingStartedAt = Date.now();
                 pairingWaitStart = Date.now();
-                console.log(`[EVO] Instance recreated for ${this.sessionId}, new code: ${freshResult3.pairingCode}`);
+                console.log(`[EVO] Instance recreated for ${this.sessionId} (codeLen=${freshResult3.pairingCode?.length || 0})`);
               } else {
                 console.warn(`[EVO] Instance recreated but no pairing code for ${this.sessionId}`);
                 await updateSessionStatus(this.sessionId, 'qr_pending');
