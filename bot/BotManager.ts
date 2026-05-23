@@ -18,7 +18,7 @@ import { SELF_URL, getNextWorker } from './scaling/workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
 import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
 import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, reconnectInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
-import { redisGetSessionProxy } from './infrastructure/redis';
+import { redisGetSessionProxy, redisRecordProxyFailure } from './infrastructure/redis';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
 import { TelegramUserbotInstance } from './userbot/instance';
@@ -1230,6 +1230,7 @@ export class EvolutionBot {
                   const proxyHost = currentProxy.split(':')[0];
                   console.warn(`[EVO] Proxy ${proxyHost} stuck for ${PROXY_CONNECT_TIMEOUT_MS / 1000}s during pairing for ${this.sessionId} (no code delivered yet) — rotating early`);
                   recordProxyFailure(this.sessionId, proxyHost, `no connection after ${PROXY_CONNECT_TIMEOUT_MS / 1000}s`);
+                  await redisRecordProxyFailure(proxyHost);
                   await clearSessionProxy(this.sessionId, this.phoneNumber);
                   isRecreating = true;
                   try {
@@ -1299,6 +1300,7 @@ export class EvolutionBot {
                 if (currentProxy) {
                   const proxyHost = currentProxy.split(':')[0];
                   recordProxyFailure(this.sessionId, proxyHost, `pairing stuck in connecting for ${PAIRING_TIMEOUT_MS / 1000}s`);
+                  await redisRecordProxyFailure(proxyHost);
                 }
                 await clearSessionProxy(this.sessionId, this.phoneNumber);
 
@@ -1486,6 +1488,7 @@ export class EvolutionBot {
               if (currentProxy2) {
                 const proxyHost2 = currentProxy2.split(':')[0];
                 recordProxyFailure(this.sessionId, proxyHost2, `pairing closed/refused after ${Math.round((Date.now() - pairingWaitStart) / 1000)}s`);
+                await redisRecordProxyFailure(proxyHost2);
               }
               await clearSessionProxy(this.sessionId, this.phoneNumber);
 
