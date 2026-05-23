@@ -121,7 +121,7 @@ function tickProducedChanges(ticked: TickResult): boolean {
   const e = ticked.effects;
   return (
     e.energy_regenerated > 0 ||
-    e.coins_accrued > 0 ||
+    Object.keys(e.troops_healed).length > 0 ||
     Object.keys(e.troops_completed).length > 0 ||
     e.buildings_completed.length > 0
   );

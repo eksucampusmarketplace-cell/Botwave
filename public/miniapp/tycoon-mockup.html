@@ -439,6 +439,18 @@ input { font: inherit; color: inherit; }
   flex-shrink: 0;
 }
 .target-action:disabled { background: #3a3540; color: var(--faint); cursor: not-allowed; }
+.mini-action {
+  background: rgba(212,175,55,0.14);
+  color: var(--gold);
+  border: 1px solid rgba(212,175,55,0.26);
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.mini-action:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------- Empty states ---------------------------------- */
 
@@ -1203,7 +1215,7 @@ input { font: inherit; color: inherit; }
   // V1 NPC raid targets exposed by the server (`/api/tycoon/raid` accepts
   // these `target_npc_kind` strings). Kept short and street-named on the
   // client; the server is the truth for combat resolution.
-  const NPC_TARGETS = [
+  const FALLBACK_NPC_TARGETS = [
     {
       kind: 'npc_petty_1',
       name: 'Skinny Joe',
@@ -1319,6 +1331,38 @@ input { font: inherit; color: inherit; }
         troops_sent,
       });
     },
+
+    collect(business_id) {
+      return this.post('/api/tycoon/business/collect', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        business_id,
+      });
+    },
+
+    train(unit, quantity) {
+      return this.post('/api/tycoon/train', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        unit,
+        quantity,
+      });
+    },
+
+    upgrade(building_key) {
+      return this.post('/api/tycoon/upgrade', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        building_key,
+      });
+    },
+
+    targets() {
+      return this.post('/api/tycoon/targets', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+      });
+    },
   };
 
   /* ============================================================
@@ -1330,6 +1374,7 @@ input { font: inherit; color: inherit; }
     serverNow: null,       // server-side seconds at snapshot time
     clientAt: null,        // performance.now()-equivalent client ms at snapshot time
     pollTimer: null,
+    targets: FALLBACK_NPC_TARGETS,
   };
 
   function nowSeconds() {
@@ -1449,7 +1494,7 @@ input { font: inherit; color: inherit; }
       const accruedPerSec = (b.rate || 0) / 3600;
       const pending = Math.min(b.cap || 0, Math.floor(elapsed * accruedPerSec));
       const pct = b.cap > 0 ? Math.min(100, (pending / b.cap) * 100) : 0;
-      const ready = b.cap > 0 && pending >= b.cap * 0.95;
+      const ready = b.cap > 0 && pending > 0;
 
       if (locked) {
         return `
@@ -1483,6 +1528,7 @@ input { font: inherit; color: inherit; }
         if (left > 0) sub.push(`+${t.training_count} in ${fmtTimeRemaining(left)}`);
       }
       sub.push(def.role);
+      const busy = !!t.training_ends_at;
       return `
         <div class="unit">
           <div class="unit-icon">${def.icon}</div>
@@ -1491,6 +1537,7 @@ input { font: inherit; color: inherit; }
             <div class="unit-sub">${sub.join(' · ')}</div>
           </div>
           <div class="unit-count">${fmtNum(t.count || 0)}</div>
+          <button class="mini-action" data-train="${escapeAttr(k)}" ${busy ? 'disabled' : ''}>TRAIN 5</button>
         </div>`;
     }).join('');
     el.innerHTML = rows;
@@ -1511,6 +1558,7 @@ input { font: inherit; color: inherit; }
       } else if (locked && bld.unlock_at) {
         sub = `Unlocks at HQ ${bld.unlock_at}`;
       }
+      const busy = !!bld.upgrading_ends_at;
       return `
         <div class="bldg ${locked ? 'locked' : ''}">
           <div class="bldg-icon">${BLDG_ICON[k] || '🏗'}</div>
@@ -1519,6 +1567,7 @@ input { font: inherit; color: inherit; }
             ${sub ? `<div class="bldg-sub">${sub}</div>` : ''}
           </div>
           <div class="bldg-lvl">${locked ? '—' : 'LV ' + bld.level}</div>
+          <button class="mini-action" data-upgrade="${escapeAttr(k)}" ${busy ? 'disabled' : ''}>UP</button>
         </div>`;
     }).join('');
   }
@@ -1529,7 +1578,7 @@ input { font: inherit; color: inherit; }
     const myTroops = G.snapshot.state.troops || {};
     const bruisers = (myTroops.bruiser && myTroops.bruiser.count) || 0;
 
-    list.innerHTML = NPC_TARGETS.map(t => {
+    list.innerHTML = (G.targets || FALLBACK_NPC_TARGETS).map(t => {
       const tooStrong = t.min_level > player.level;
       const disabled = tooStrong || bruisers === 0;
       const sub = tooStrong
@@ -1594,21 +1643,64 @@ input { font: inherit; color: inherit; }
   $('#help-fab').addEventListener('click', () => openModal('help-modal'));
 
   /* ============================================================
-     Business collect (V1: client-side only — coins land on next
-     server tick via /api/tycoon/state; the visual ack is local).
-     Real per-business "collect" endpoint will replace this when
-     the server route ships.
+     Business collect
      ============================================================ */
 
-  $('#biz-grid').addEventListener('click', e => {
+  $('#biz-grid').addEventListener('click', async e => {
     const card = e.target.closest('.biz.ready');
     if (!card) return;
     const bizId = card.dataset.biz;
     if (!bizId) return;
-    // Mark visually collected, then re-pull authoritative state.
     card.classList.remove('ready');
-    showToast('Collected — server is settling…', 'win');
-    refresh().catch(() => {});
+    if (!HAS_TG) {
+      showToast('Preview mode is read-only.', 'lose');
+      return;
+    }
+    try {
+      const out = await API.collect(bizId);
+      applySnapshot(out);
+      showToast(`Collected +${fmtNum(out.collected || 0)} coins.`, 'win');
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch (err) {
+      showToast(humanError(err), 'lose');
+      refresh().catch(() => {});
+    }
+  });
+
+  $('#crew-list').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-train]');
+    if (!btn || btn.disabled) return;
+    if (!HAS_TG) {
+      showToast('Preview mode is read-only.', 'lose');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const out = await API.train(btn.dataset.train, 5);
+      applySnapshot(out);
+      showToast('Training started.', 'win');
+    } catch (err) {
+      showToast(humanError(err), 'lose');
+      btn.disabled = false;
+    }
+  });
+
+  $('#bldg-list').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-upgrade]');
+    if (!btn || btn.disabled) return;
+    if (!HAS_TG) {
+      showToast('Preview mode is read-only.', 'lose');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const out = await API.upgrade(btn.dataset.upgrade);
+      applySnapshot(out);
+      showToast('Upgrade started.', 'win');
+    } catch (err) {
+      showToast(humanError(err), 'lose');
+      btn.disabled = false;
+    }
   });
 
   /* ============================================================
@@ -1624,7 +1716,7 @@ input { font: inherit; color: inherit; }
   });
 
   function openRaid(kind) {
-    const def = NPC_TARGETS.find(t => t.kind === kind);
+    const def = (G.targets || FALLBACK_NPC_TARGETS).find(t => t.kind === kind);
     if (!def) return;
     currentTargetKind = kind;
 
@@ -1817,6 +1909,12 @@ input { font: inherit; color: inherit; }
     if (r === 'invalid_initdata' || r === 'initdata_missing') return 'Open from Telegram to play.';
     if (r === 'defender_shielded') return 'That target is shielded.';
     if (r === 'insufficient_troops') return 'Not enough crew for that.';
+    if (r === 'insufficient_energy') return 'Not enough energy.';
+    if (r === 'insufficient_coins') return 'Not enough coins.';
+    if (r === 'training_busy') return 'That unit is already training.';
+    if (r === 'upgrade_busy') return 'That building is already upgrading.';
+    if (r === 'unit_locked' || r === 'building_locked') return 'Locked until your HQ grows.';
+    if (r === 'raid_rate_limited') return 'Lay low for a minute.';
     if (r === 'empty_squad') return 'You sent no one.';
     if (r === 'save_conflict') return 'Try again in a sec.';
     return 'Something went wrong.';
@@ -1832,7 +1930,9 @@ input { font: inherit; color: inherit; }
     if (!HAS_TG) return; // preview mode never hits the server
     try {
       const snap = await API.state();
+      if (snap && snap.exists === false) return;
       applySnapshot(snap);
+      refreshTargets().catch(() => {});
     } catch (err) {
       // Don't spam errors on every poll; only when the first call fails.
       if (err.status === 404 || err.status === 401) {
@@ -1848,6 +1948,15 @@ input { font: inherit; color: inherit; }
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') refresh();
     });
+  }
+
+  async function refreshTargets() {
+    if (!HAS_TG) return;
+    const data = await API.targets();
+    if (data && Array.isArray(data.targets)) {
+      G.targets = data.targets;
+      if (G.snapshot) renderTargets(G.snapshot.player);
+    }
   }
 
   // Re-render scrolling progress (timers) once per second without

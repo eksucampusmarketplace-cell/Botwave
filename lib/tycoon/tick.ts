@@ -33,6 +33,7 @@
 
 import type { PlayerRecord, PlayerStateBlob } from './types';
 import { computePower } from './power';
+import { clinicHealCapacityPerTick, pendingBusinessCoins } from './actions';
 
 export type TickResult = {
   /** The mutated player record (new object — reducer does not mutate in place). */
@@ -41,6 +42,7 @@ export type TickResult = {
   effects: {
     energy_regenerated: number;
     coins_accrued: number;
+    troops_healed: Partial<Record<string, number>>;
     troops_completed: Partial<Record<string, number>>;
     buildings_completed: string[];
   };
@@ -54,6 +56,7 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
   // Always copy — never mutate in place.
   const state: PlayerStateBlob = JSON.parse(JSON.stringify(player.state));
   let coinsAccrued = 0;
+  const troopsHealed: Record<string, number> = {};
   const troopsCompleted: Record<string, number> = {};
   const buildingsCompleted: string[] = [];
 
@@ -72,19 +75,31 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
   }
 
   // ---------- 2. Idle business accrual ----------------------------------
+  // Income stays in each business bucket until collected. The collect route
+  // pays it out and resets last_collected_at.
   for (const biz of state.businesses) {
-    if (biz.level <= 0 || biz.rate <= 0) continue;
-    const lastMs = new Date(biz.last_collected_at).getTime();
-    const elapsedHr = Math.max(0, (nowMs - lastMs) / 3_600_000);
-    const gross = elapsedHr * biz.rate;
-    const accrued = Math.min(gross, biz.cap);
-    if (accrued > 0) {
-      coinsAccrued += Math.floor(accrued);
-      biz.last_collected_at = new Date(nowMs).toISOString();
+    const accrued = pendingBusinessCoins(biz, nowMs);
+    if (accrued > 0) coinsAccrued += accrued;
+  }
+
+  // ---------- 3. Wounded healing ----------------------------------------
+  if (elapsedSec > 0) {
+    const clinicLevel = state.buildings.clinic?.level ?? 0;
+    const healPerHour = clinicHealCapacityPerTick(clinicLevel);
+    let remainingHeal = Math.floor((elapsedSec / 3600) * healPerHour);
+    if (remainingHeal > 0) {
+      for (const [unit, troop] of Object.entries(state.troops)) {
+        if (remainingHeal <= 0) break;
+        if (!troop.wounded) continue;
+        const healed = Math.min(troop.wounded, remainingHeal);
+        troop.wounded -= healed;
+        remainingHeal -= healed;
+        troopsHealed[unit] = healed;
+      }
     }
   }
 
-  // ---------- 3. Training completion ------------------------------------
+  // ---------- 4. Training completion ------------------------------------
   for (const [unit, troop] of Object.entries(state.troops)) {
     if (!troop.training_ends_at) continue;
     const endsMs = new Date(troop.training_ends_at).getTime();
@@ -95,7 +110,7 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
     troop.training_count = 0;
   }
 
-  // ---------- 4. Building upgrade completion ----------------------------
+  // ---------- 5. Building upgrade completion ----------------------------
   let hqLevel = player.hq_level;
   for (const [key, b] of Object.entries(state.buildings)) {
     if (!b.upgrading_ends_at) continue;
@@ -107,21 +122,19 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
     if (key === 'hq') hqLevel = b.level;
   }
 
-  // ---------- 5. Recompute power -----------------------------------------
+  // ---------- 6. Recompute power -----------------------------------------
   const breakdown = computePower(state);
   state.power_breakdown = breakdown;
 
-  // ---------- 6. Recompute state_dirty_until ----------------------------
+  // ---------- 7. Recompute state_dirty_until ----------------------------
   const nextTimerMs = nextTimerForState(state);
   const stateDirtyUntil = nextTimerMs != null ? new Date(nextTimerMs).toISOString() : null;
-
-  const newCoins = Math.max(0, player.coins + coinsAccrued);
 
   return {
     player: {
       ...player,
       energy,
-      coins: newCoins,
+      coins: player.coins,
       hq_level: hqLevel,
       power: breakdown.total,
       state,
@@ -131,6 +144,7 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
     effects: {
       energy_regenerated: energyRegenerated,
       coins_accrued: coinsAccrued,
+      troops_healed: troopsHealed,
       troops_completed: troopsCompleted,
       buildings_completed: buildingsCompleted,
     },

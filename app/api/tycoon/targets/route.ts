@@ -1,23 +1,8 @@
-/**
- * POST /api/tycoon/state
- *
- * Returns the player's current state, applying any pending tick first.
- * The mockup client polls this on cold open and after server-mutating
- * actions to refresh its in-memory mirror.
- *
- * Body: { initData: string, session_id?: string }
- * Returns: TycoonStateResponse
- *
- * NOTE: this is POST (not GET) because Telegram `initData` is a sensitive
- * verifiable token that we don't want sitting in URLs / browser history /
- * proxy logs. The body shape matches /api/tycoon/auth deliberately.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeTycoonRequest } from '@/lib/tycoon/auth';
+import { NPC_TARGETS } from '@/lib/tycoon/catalog';
 import { loadAndTickPlayer } from '@/lib/tycoon/state';
-import { snapshotPlayer } from '@/lib/tycoon/snapshot';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,13 +30,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
   }
 
-  const hostBot =
-    auth.source.kind === 'session' ? auth.source.session_id : null;
-
+  const hostBot = auth.source.kind === 'session' ? auth.source.session_id : null;
   const player = await loadAndTickPlayer(supabase, auth.user.telegram_user_id, hostBot);
   if (!player) {
-    return NextResponse.json({ exists: false }, { status: 200 });
+    return NextResponse.json({ error: 'player_not_found', exists: false }, { status: 404 });
   }
 
-  return NextResponse.json({ exists: true, ...snapshotPlayer(player) }, { status: 200 });
+  return NextResponse.json({
+    targets: NPC_TARGETS.map((target) => ({
+      ...target,
+      locked: target.min_level > player.level,
+    })),
+  });
 }
