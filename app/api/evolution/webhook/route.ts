@@ -10,6 +10,7 @@ import { getCachedSession, cacheSession, invalidateSessionCache } from '@/bot/in
 import { invalidateSessions } from '@/lib/redisApiCache';
 import { recordMessageActivity, trigger428Cooldown } from '@/bot/whatsapp/evolution/client';
 import { redisMarkWebhookSeen } from '@/bot/infrastructure/redis';
+import { PAIRING_CODE_FREEZE_MS } from '@/bot/database';
 import crypto from 'crypto';
 
 const SELF_URL = process.env.SELF_URL || '';
@@ -142,7 +143,6 @@ function maybeFlushMetrics(): void {
 const lastQrEvent = new Map<string, { ts: number; qrPrefix?: string; pairingCode?: string }>();
 const QR_THROTTLE_MS = 1500;
 const QR_MAP_MAX_SIZE = 500;
-const PAIRING_CODE_FREEZE_MS = 180_000;
 
 function shouldSkipQrEvent(
   sessionId: string,
@@ -597,7 +597,8 @@ export async function POST(request: NextRequest) {
       const qrCode = data?.code || data?.qrcode?.code;
 
       console.log(`[PAIRING-WEBHOOK] ======= qrcode.updated received ======= session=${sessionId} at=${webhookReceivedAt}`);
-      console.log(`[PAIRING-WEBHOOK] Data: hasPairingCode=${!!pairingCode} pairingCode="${pairingCode || 'none'}" hasQR=${!!qrCode}`);
+      const incomingTail = pairingCode ? `***${pairingCode.slice(-2)}` : 'none';
+      console.log(`[PAIRING-WEBHOOK] Data: hasPairingCode=${!!pairingCode} codeTail=${incomingTail} codeLen=${pairingCode?.length || 0} hasQR=${!!qrCode}`);
 
       const { data: current, error: stateErr } = await supabase
         .from('bot_sessions')
@@ -608,12 +609,13 @@ export async function POST(request: NextRequest) {
       if (stateErr) {
         console.error(`[PAIRING-WEBHOOK] Failed to read current state for ${sessionId}: ${stateErr.message}`);
       } else {
-        console.log(`[PAIRING-WEBHOOK] Current DB state: state=${current?.state} existingCode="${current?.pairing_code || 'null'}" lastUpdated=${current?.updated_at}`);
+        const existingTail = current?.pairing_code ? `***${current.pairing_code.slice(-2)}` : 'null';
+        console.log(`[PAIRING-WEBHOOK] Current DB state: state=${current?.state} existingTail=${existingTail} lastUpdated=${current?.updated_at}`);
       }
 
       // Never regress an active session back to pairing_sent.
       if (current?.state === 'active') {
-        console.log(`[PAIRING-WEBHOOK] BLOCKED - session ${sessionId} is already active. Ignoring stale qrcode.updated (code="${pairingCode || 'none'}")`);
+        console.log(`[PAIRING-WEBHOOK] BLOCKED - session ${sessionId} is already active. Ignoring stale qrcode.updated (incomingTail=${incomingTail})`);
         return NextResponse.json({ ok: true });
       }
 
@@ -637,7 +639,7 @@ export async function POST(request: NextRequest) {
       // code, do not replace the QR with one tied to a different frozen code.
       if (qrCode) {
         if (incomingCodeIsFrozen) {
-          console.log(`[PAIRING-WEBHOOK] QR update skipped for ${sessionId}; incoming QR belongs to rotating code "${pairingCode}".`);
+          console.log(`[PAIRING-WEBHOOK] QR update skipped for ${sessionId}; incoming QR belongs to a rotating code (freeze guard active).`);
         } else {
           const { error: qrErr } = await supabase.from('bot_sessions').update({
             qr_code: qrCode,
@@ -660,13 +662,13 @@ export async function POST(request: NextRequest) {
 
       // Skip exact duplicate pairing code deliveries (QR already updated above)
       if (pairingCode && current?.pairing_code === pairingCode) {
-        console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code "${pairingCode}" - QR already updated above. Done.`);
+        console.log(`[PAIRING-WEBHOOK] DUPLICATE pairing code (codeLen=${pairingCode.length}) - QR already updated above. Done.`);
         return NextResponse.json({ ok: true });
       }
 
       if (pairingCode && current?.pairing_code && current.pairing_code !== pairingCode) {
         if (incomingCodeIsFrozen) {
-          console.log(`[PAIRING-WEBHOOK] FROZEN - keeping existing code "${current.pairing_code}" for ${sessionId}; ignored rotating code "${pairingCode}" at ${Math.round(codeAgeMs / 1000)}s.`);
+          console.log(`[PAIRING-WEBHOOK] FROZEN - keeping existing code for ${sessionId}; ignored rotating code at ${Math.round(codeAgeMs / 1000)}s (within ${PAIRING_CODE_FREEZE_MS / 1000}s freeze).`);
           return NextResponse.json({ ok: true });
         }
       }
@@ -675,24 +677,32 @@ export async function POST(request: NextRequest) {
       if (pairingCode && current?.updated_at) {
         const sinceLastUpdate = Date.now() - new Date(current.updated_at).getTime();
         if (sinceLastUpdate < 2000) {
-          console.log(`[PAIRING-WEBHOOK] THROTTLED - code "${pairingCode}" arrived ${sinceLastUpdate}ms after last update. Ignoring rapid-fire event.`);
+          console.log(`[PAIRING-WEBHOOK] THROTTLED - code arrived ${sinceLastUpdate}ms after last update. Ignoring rapid-fire event.`);
           return NextResponse.json({ ok: true });
         }
       }
 
       if (pairingCode) {
         if (current?.pairing_code && current.pairing_code !== pairingCode) {
-          console.log(`[PAIRING-WEBHOOK] Pairing code CHANGED for ${sessionId}: "${current.pairing_code}" → "${pairingCode}" (reconnect invalidated old code)`);
+          console.log(`[PAIRING-WEBHOOK] Pairing code CHANGED for ${sessionId} (freeze window expired — old code was ${Math.round(codeAgeMs / 1000)}s old, reconnect invalidated it)`);
         }
-        const { error: pairingErr } = await supabase.from('bot_sessions').update({
+        // Reset qr_generated_at on a legitimate code change so the dashboard
+        // countdown anchors to the NEW code's lifetime instead of carrying
+        // over the previous code's elapsed time.
+        const codeChanged = !!(current?.pairing_code && current.pairing_code !== pairingCode);
+        const update: Record<string, unknown> = {
           pairing_code: pairingCode,
           state: 'pairing_sent',
           updated_at: webhookReceivedAt,
-        }).eq('id', sessionId);
+        };
+        if (codeChanged || !current?.qr_generated_at) {
+          update.qr_generated_at = webhookReceivedAt;
+        }
+        const { error: pairingErr } = await supabase.from('bot_sessions').update(update).eq('id', sessionId);
         if (pairingErr) {
           console.error(`[PAIRING-WEBHOOK] Pairing code update FAILED for ${sessionId}: ${pairingErr.message}`);
         } else {
-          console.log(`[PAIRING-WEBHOOK] Pairing code saved for ${sessionId}: "${pairingCode}"`);
+          console.log(`[PAIRING-WEBHOOK] Pairing code saved for ${sessionId} (codeLen=${pairingCode.length}, codeChanged=${codeChanged})`);
         }
       }
 

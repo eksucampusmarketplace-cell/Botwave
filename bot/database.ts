@@ -232,6 +232,57 @@ export async function updateSessionQR(sessionId: string, qr: string, expiresAt: 
   }
 }
 
+/**
+ * How long a delivered pairing code must remain stable on the dashboard /
+ * in the DB after the user first sees it. WhatsApp invalidates a pairing
+ * code after roughly 3 minutes; for the entire window the SAME 8 characters
+ * must be visible to the user, the WhatsApp server, and the Baileys client
+ * driving the instance. Rotating the code mid-flight is what makes the
+ * pairing flow fail with "couldn't link device" even though the proxy and
+ * the QR fallback continue to work.
+ *
+ * Keep this in sync with the same constant in app/api/evolution/webhook.
+ */
+export const PAIRING_CODE_FREEZE_MS = 180_000;
+
+export interface PairingCodeFreshness {
+  /** True when there is a non-empty pairing code that is still within the freeze window. */
+  fresh: boolean;
+  code: string | null;
+  state: string | null;
+  ageMs: number;
+  updatedAt: string | null;
+}
+
+/**
+ * Read the current pairing code freshness for a session. Used by the bot's
+ * recovery paths to decide whether destroying the Evolution instance would
+ * invalidate a code the user is still actively entering.
+ */
+export async function getPairingCodeFreshness(sessionId: string): Promise<PairingCodeFreshness> {
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .select('pairing_code, state, updated_at, qr_generated_at')
+    .eq('id', sessionId)
+    .single();
+  if (error || !data) {
+    return { fresh: false, code: null, state: null, ageMs: Infinity, updatedAt: null };
+  }
+  const code = data.pairing_code || null;
+  const state = data.state || null;
+  // Prefer qr_generated_at (set when the code was first delivered) over
+  // updated_at — updated_at gets bumped by unrelated writes and would
+  // otherwise reset the freeze clock.
+  const anchor: string | null = data.qr_generated_at || data.updated_at || null;
+  const ageMs = anchor ? Date.now() - new Date(anchor).getTime() : Infinity;
+  const fresh = !!code
+    && code.trim() !== ''
+    && (state === 'pairing_sent' || state === 'qr_pending')
+    && ageMs >= 0
+    && ageMs < PAIRING_CODE_FREEZE_MS;
+  return { fresh, code, state, ageMs, updatedAt: anchor };
+}
+
 export async function getSessionPairingCode(sessionId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('bot_sessions')
@@ -245,36 +296,78 @@ export async function getSessionPairingCode(sessionId: string): Promise<string |
 /**
  * Persist a fresh pairing code for a session.
  *
- * Default behavior protects `active` rows from being silently regressed to
- * `pairing_sent` (a stale Evolution webhook can otherwise corrupt a working
- * session). When the bot itself is intentionally re-pairing — e.g., after a
- * WebSocket close + auto-retry — pass `force: true` so the protection is
- * bypassed and the retry code actually persists. Without this, the DB row
- * keeps reporting the OLD code while the bot keeps generating new ones, and
- * the dashboard shows nothing.
+ * Two independent guards protect the row:
+ *
+ *   1. `state='active'` guard (default ON, bypassed with `force: true`):
+ *      prevents a stale Evolution webhook from regressing a working session
+ *      back to `pairing_sent`. The bot's intentional retry paths pass
+ *      `force: true` to write through this guard.
+ *
+ *   2. Freeze-window guard (default ON, bypassed with `bypassFreezeWindow:
+ *      true`): refuses to overwrite a pairing code that is still on the
+ *      user's screen within PAIRING_CODE_FREEZE_MS. Rotating the code
+ *      mid-handshake is what made the live test fail with "couldn't link
+ *      device" — the bot, WhatsApp server, and user must all agree on the
+ *      same 8 chars for the full code lifetime. The freeze is bypassed only
+ *      for an explicit user-initiated regenerate.
  */
+export interface UpdatePairingCodeOptions {
+  force?: boolean;
+  bypassFreezeWindow?: boolean;
+}
+
+export interface UpdatePairingCodeResult {
+  applied: boolean;
+  count: number;
+  /** True when the freeze-window guard refused the overwrite. */
+  frozen?: boolean;
+}
+
 export async function updateSessionPairingCode(
   sessionId: string,
   code: string,
-  options: { force?: boolean } = {}
-) {
-  const { force = false } = options;
+  options: UpdatePairingCodeOptions = {}
+): Promise<UpdatePairingCodeResult> {
+  const { force = false, bypassFreezeWindow = false } = options;
   const dbTimestamp = new Date().toISOString();
   const codeLength = code?.length || 0;
   const isEmptyCode = !code || code.trim() === '';
-  console.log(`[PAIRING-DB] === Saving pairing code ===> session=${sessionId} code="${code}" codeLen=${codeLength} isEmpty=${isEmptyCode} force=${force} dbTimestamp=${dbTimestamp}`);
+  // Do not log the raw code value — it is a short-lived secret that the user
+  // is about to type into WhatsApp. Length + masked suffix is enough for
+  // debugging without leaking the full code into Loki / grafana / docker logs.
+  const maskedNewCode = isEmptyCode ? '<empty>' : `***${code.slice(-2)}`;
+  console.log(`[PAIRING-DB] === Saving pairing code ===> session=${sessionId} codeLen=${codeLength} codeTail=${maskedNewCode} isEmpty=${isEmptyCode} force=${force} bypassFreeze=${bypassFreezeWindow} dbTimestamp=${dbTimestamp}`);
 
   // Read current state BEFORE the update so we can log what happened
   const { data: preState, error: preErr } = await supabase
     .from('bot_sessions')
-    .select('state, pairing_code, updated_at')
+    .select('state, pairing_code, updated_at, qr_generated_at')
     .eq('id', sessionId)
     .single();
 
   if (preErr) {
     console.error(`[PAIRING-DB] Pre-read FAILED for ${sessionId}:`, preErr.message, preErr.code);
   } else {
-    console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingCode=${preState?.pairing_code ? `"${preState.pairing_code}"` : 'null'} lastUpdated=${preState?.updated_at}`);
+    const existingTail = preState?.pairing_code ? `***${preState.pairing_code.slice(-2)}` : 'null';
+    console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingTail=${existingTail} lastUpdated=${preState?.updated_at}`);
+  }
+
+  // FREEZE-WINDOW GUARD: refuse to overwrite a code that is still on the
+  // user's screen. Bypassed explicitly when the user clicked "regenerate
+  // code" or when an admin endpoint clears the row (empty-code writes).
+  if (
+    !bypassFreezeWindow
+    && !isEmptyCode
+    && preState?.pairing_code
+    && preState.pairing_code !== code
+    && (preState.state === 'pairing_sent' || preState.state === 'qr_pending')
+  ) {
+    const anchor: string | null = preState.qr_generated_at || preState.updated_at || null;
+    const codeAgeMs = anchor ? Date.now() - new Date(anchor).getTime() : Infinity;
+    if (codeAgeMs >= 0 && codeAgeMs < PAIRING_CODE_FREEZE_MS) {
+      console.warn(`[PAIRING-DB] FREEZE BLOCKED - existing code is ${Math.round(codeAgeMs / 1000)}s old (within ${PAIRING_CODE_FREEZE_MS / 1000}s freeze window) for ${sessionId}. Refusing to overwrite with a different code while the user is still entering it. force=${force}.`);
+      return { applied: false, count: 0, frozen: true };
+    }
   }
 
   // `count: 'exact'` makes `count` reflect the real number of rows affected.
@@ -301,9 +394,9 @@ export async function updateSessionPairingCode(
   if (error) {
     console.error(`[PAIRING-DB] ERROR saving pairing code for ${sessionId}: code=${error.code} message=${error.message} details=${error.details}`);
   } else if (count === 0) {
-    console.warn(`[PAIRING-DB] BLOCKED - no rows updated for ${sessionId} (force=${force}). Session is likely in 'active' state (protected) or row missing. code="${code}"`);
+    console.warn(`[PAIRING-DB] BLOCKED - no rows updated for ${sessionId} (force=${force}). Session is likely in 'active' state (protected) or row missing.`);
   } else {
-    console.log(`[PAIRING-DB] SUCCESS - pairing code saved for ${sessionId}: code="${code}" rowsUpdated=${count} at=${dbTimestamp}`);
+    console.log(`[PAIRING-DB] SUCCESS - pairing code saved for ${sessionId}: codeLen=${codeLength} codeTail=${maskedNewCode} rowsUpdated=${count} at=${dbTimestamp}`);
   }
 
   // Post-update verification: confirm the code actually persisted
@@ -317,9 +410,10 @@ export async function updateSessionPairingCode(
     console.error(`[PAIRING-DB] Post-read FAILED for ${sessionId}:`, postErr.message);
   } else {
     const codeMatch = postState?.pairing_code === code;
-    console.log(`[PAIRING-DB] VERIFY - session=${sessionId} state=${postState?.state} dbCode="${postState?.pairing_code}" expected="${code}" match=${codeMatch} updatedAt=${postState?.updated_at}`);
+    const postTail = postState?.pairing_code ? `***${postState.pairing_code.slice(-2)}` : 'null';
+    console.log(`[PAIRING-DB] VERIFY - session=${sessionId} state=${postState?.state} dbCodeTail=${postTail} match=${codeMatch} updatedAt=${postState?.updated_at}`);
     if (!codeMatch && !isEmptyCode) {
-      console.error(`[PAIRING-DB] CODE MISMATCH! Saved "${code}" but DB has "${postState?.pairing_code}". Possible race condition or filter blocked the update.`);
+      console.error(`[PAIRING-DB] CODE MISMATCH! Possible race condition or filter blocked the update.`);
     }
   }
 
