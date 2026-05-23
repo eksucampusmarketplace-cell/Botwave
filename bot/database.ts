@@ -2435,6 +2435,11 @@ export async function incrementQuotaUsage(userId: string): Promise<boolean> {
     .eq('user_id', userId);
 
   invalidateCache(userId);
+  // Without this, the bot-side Redis cache (`bw:sub:${userId}`) stays stale
+  // for SUBSCRIPTION_TTL (5 min) and quota_used appears frozen. Worse, parallel
+  // commands can read the same stale value and each write `value + 1`, losing
+  // increments. Mirrors the fix in `setFeatureEnabled`.
+  await invalidateRedisKey(`sub:${userId}`);
   return true;
 }
 
@@ -2446,6 +2451,12 @@ export async function resetMonthlyQuotas(): Promise<void> {
     .from('subscriptions')
     .update({ quota_used: 0, updated_at: new Date().toISOString() })
     .neq('plan', ''); // update all
+  // Mass DB update without invalidation leaves every user's `bw:sub:*` Redis
+  // entry stale for up to SUBSCRIPTION_TTL after the monthly reset — users see
+  // a quota_used > 0 even though the DB row is 0, and the bot enforces the
+  // stale value. Pattern delete is broad but correct: nothing else writes to
+  // `bw:sub:*` and entries naturally rebuild on the next read.
+  await invalidateRedisPattern(`sub:*`);
 }
 
 // ─── Monetization: Rewards ───────────────────────────────────────────────────

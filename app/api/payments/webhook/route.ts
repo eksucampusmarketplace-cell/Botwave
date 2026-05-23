@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateWebhookSignature, PLANS } from '@/lib/squad';
 import { invalidateSubscription, invalidatePaymentHistory, invalidateRewards } from '@/lib/redisApiCache';
+import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 import { sendPaymentConfirmationEmail, sendSubscriptionEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
@@ -111,8 +112,12 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
+        // Two Redis namespaces, two invalidations: `api:sub:*` for the dashboard,
+        // `bw:sub:*` for the bot. Without the bot-side delete the bot enforces
+        // the old (free) plan quota for up to 5 min after a paid upgrade.
         await invalidateSubscription(payment.user_id);
         await invalidatePaymentHistory(payment.user_id);
+        await invalidateBotRedisKey(`sub:${payment.user_id}`);
 
         // Send payment confirmation + subscription emails
         try {
@@ -228,6 +233,7 @@ export async function POST(request: NextRequest) {
 
       await invalidateSubscription(payment.user_id);
       await invalidatePaymentHistory(payment.user_id);
+      await invalidateBotRedisKey(`sub:${payment.user_id}`);
       console.log(`[SQUAD-WEBHOOK] Payment failed + dunning started: ref=${transactionRef} user=${payment.user_id} attempt=${attemptNumber}`);
     }
 

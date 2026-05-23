@@ -15,6 +15,8 @@ import { createClient } from '@supabase/supabase-js';
 import { getActiveBotSocket } from '../../BotManager';
 import { delay } from '../../../lib/utils';
 import { PLANS } from '../../../lib/squad';
+import { invalidateRedisKey } from '../../infrastructure/redisSessionCache';
+import { invalidateSubscription as invalidateApiSubscription } from '../../../lib/redisApiCache';
 import {
   getDueRetryNotifications,
   getUsersToDowngrade,
@@ -299,6 +301,12 @@ async function downgradeExpiredPlans(): Promise<number> {
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', sub.user_id);
+
+      // Invalidate both Redis namespaces or the bot enforces the OLD (paid)
+      // plan limits for up to SUBSCRIPTION_TTL (5 min) after expiry, and the
+      // dashboard keeps showing the old plan badge.
+      await invalidateRedisKey(`sub:${sub.user_id}`);
+      await invalidateApiSubscription(sub.user_id);
 
       console.log(`[MONETIZATION] Expired plan downgraded: user=${sub.user_id.slice(0, 8)} plan=${sub.plan} -> free`);
     }
