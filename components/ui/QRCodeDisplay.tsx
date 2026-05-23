@@ -11,19 +11,25 @@ interface QRCodeDisplayProps {
   pairingCode?: string;
   sessionState?: string;
   queuePosition?: number | null;
+  /** Last error string from the bot — surfaces inside the failure prompt. */
+  lastPairingError?: string | null;
   // Optional: async callback that asks the server to reset the session and
   // generate a fresh pairing code / QR. Renders a "Regenerate code" button
   // when the current code is expired or the session is stuck.
   onRegenerate?: () => Promise<void> | void;
 }
 
-export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode, sessionState, queuePosition, onRegenerate }: QRCodeDisplayProps) {
+export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingCode, sessionState, queuePosition, lastPairingError, onRegenerate }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState(180);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'qr' | 'code'>(qrCode ? 'qr' : 'code');
   const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [showQrFallback, setShowQrFallback] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  // Tracks whether the user already dismissed / acted on the failure prompt
+  // for this needs_reauth / pairing_failed event, so we don't re-show it on
+  // every poll once they've made a choice.
+  const [failurePromptDismissed, setFailurePromptDismissed] = useState(false);
 
   useEffect(() => {
     if (qrCode && !pairingCode) setActiveTab('qr');
@@ -117,6 +123,37 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
       setRegenerating(false);
     }
   }, [onRegenerate, regenerating]);
+
+  // Failure-recovery prompt: when the worker has marked the session
+  // needs_reauth / pairing_failed, the in-flight pairing code can no longer
+  // succeed. Surface a single, prominent overlay that lets the user pick
+  // "Try QR code" (the typical fix when pairing code is rejected by
+  // WhatsApp / the network) or retry with a fresh pairing code, rather
+  // than leaving them staring at the stale code on screen.
+  const showFailurePrompt =
+    !isConnected
+    && !failurePromptDismissed
+    && (sessionState === 'needs_reauth' || sessionState === 'pairing_failed');
+
+  // Reset the dismissed flag if the user re-enters a fresh pairing cycle so
+  // a subsequent failure still surfaces the prompt.
+  useEffect(() => {
+    if (sessionState === 'pairing_sent' || sessionState === 'qr_pending' || sessionState === 'active') {
+      setFailurePromptDismissed(false);
+    }
+  }, [sessionState]);
+
+  const handleSwitchToQr = useCallback(async () => {
+    setActiveTab('qr');
+    setFailurePromptDismissed(true);
+    await handleRegenerate();
+  }, [handleRegenerate]);
+
+  const handleRetryPairingCode = useCallback(async () => {
+    setActiveTab('code');
+    setFailurePromptDismissed(true);
+    await handleRegenerate();
+  }, [handleRegenerate]);
 
   return (
     <motion.div
@@ -438,6 +475,68 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
             </span>
           </div>
         </div>
+
+        {/* Failure recovery prompt — overlays the modal when the worker
+            marks the session needs_reauth / pairing_failed. Asks the user
+            to switch to QR code (the typical successful fallback when
+            pairing code is rejected by WhatsApp / the proxy). */}
+        {showFailurePrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--card-bg,var(--surface))]/95 backdrop-blur-sm p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 6 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-[var(--bg)] border border-yellow-300 dark:border-yellow-500/40 rounded-2xl shadow-lg max-w-sm w-full p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">!</span>
+                <span className="text-sm font-bold text-[var(--text-primary)]">
+                  Couldn&apos;t link your device
+                </span>
+              </div>
+
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-2">
+                The pairing code didn&apos;t work. This usually means WhatsApp
+                rejected it or the network timed out before your phone could
+                hand it back. <span className="font-semibold">Scanning the QR code instead</span> almost
+                always works in this situation.
+              </p>
+
+              {lastPairingError && (
+                <p className="text-[10px] text-[var(--text-muted)] italic mb-3 break-words">
+                  {lastPairingError}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-2 mt-4">
+                <button
+                  onClick={handleSwitchToQr}
+                  disabled={regenerating}
+                  className="w-full text-sm font-semibold px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {regenerating ? 'Generating new code\u2026' : 'Use QR code instead'}
+                </button>
+                <button
+                  onClick={handleRetryPairingCode}
+                  disabled={regenerating}
+                  className="w-full text-sm font-medium px-5 py-2.5 border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-alt)] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Try a fresh pairing code
+                </button>
+                <button
+                  onClick={() => setFailurePromptDismissed(true)}
+                  className="w-full text-xs font-medium px-5 py-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   );

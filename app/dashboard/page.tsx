@@ -1132,6 +1132,7 @@ export default function DashboardPage() {
           qrGeneratedAt={activeSession?.qr_generated_at}
           pairingCode={activeSession?.pairing_code}
           sessionState={activeSession?.state}
+          lastPairingError={activeSession?.last_pairing_error}
           onRegenerate={activeSession ? async () => {
             try {
               const r = await fetch('/api/bot/sessions', {
