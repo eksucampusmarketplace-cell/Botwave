@@ -81,7 +81,14 @@ const MINI_APPS: MiniApp[] = [
   },
 ];
 
-function getAppUrl(baseUrl: string, app: MiniApp): string {
+function getAppUrl(baseUrl: string, app: MiniApp, sessionId?: string): string {
+  // Tycoon needs to know the Botwave bot session it was launched from so
+  // /api/tycoon/* can verify initData against the right bot token. Other
+  // games are stateless WebApps and don't need the parameter.
+  if (app.id === 'tycoon' && sessionId) {
+    const sep = app.path.includes('?') ? '&' : '?';
+    return `${baseUrl}${app.path}${sep}session=${encodeURIComponent(sessionId)}`;
+  }
   return `${baseUrl}${app.path}`;
 }
 
@@ -100,9 +107,9 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
       const app1 = MINI_APPS[i];
       const app2 = MINI_APPS[i + 1];
 
-      keyboard.webApp(`${app1.emoji} ${app1.name}`, getAppUrl(baseUrl, app1));
+      keyboard.webApp(`${app1.emoji} ${app1.name}`, getAppUrl(baseUrl, app1, sessionId));
       if (app2) {
-        keyboard.webApp(`${app2.emoji} ${app2.name}`, getAppUrl(baseUrl, app2));
+        keyboard.webApp(`${app2.emoji} ${app2.name}`, getAppUrl(baseUrl, app2, sessionId));
       }
       keyboard.row();
     }
@@ -139,7 +146,7 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
     }
 
     const keyboard = new InlineKeyboard()
-      .webApp(`${app.emoji} Play ${app.name}`, getAppUrl(baseUrl, app));
+      .webApp(`${app.emoji} Play ${app.name}`, getAppUrl(baseUrl, app, sessionId));
 
     await ctx.reply(
       `${app.emoji} <b>${app.name}</b>\n${app.description}`,
@@ -183,7 +190,7 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
 
     const keyboard = new InlineKeyboard().webApp(
       `🎩 Open Cosa Nostra Tycoon`,
-      getAppUrl(baseUrl, tycoon),
+      getAppUrl(baseUrl, tycoon, sessionId),
     );
 
     await ctx.reply(
