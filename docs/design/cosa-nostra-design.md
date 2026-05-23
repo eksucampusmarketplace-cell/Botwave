@@ -1,6 +1,6 @@
 # Cosa Nostra Tycoon — Master Design Document
 
-> **Status:** Living design spec, v0.3
+> **Status:** Living design spec, v0.4
 > **Owner:** @eksucampusmarketplace
 > **Scope:** Telegram Mini App tycoon/mob game built on top of Botwave's
 > multi-bot platform. Player ↔ Family (TG group) ↔ City ↔ World hierarchy,
@@ -48,8 +48,10 @@
 29. [Backend architecture](#29-backend-architecture)
 30. [Where to improve from the current mockup](#30-where-to-improve-from-the-current-mockup)
 31. [Roadmap](#31-roadmap)
-32. [Open design questions](#32-open-design-questions)
-33. [Glossary](#33-glossary)
+32. [Project assessment & risk audit](#32-project-assessment--risk-audit)
+33. [Distribution & launch playbook](#33-distribution--launch-playbook)
+34. [Open design questions](#34-open-design-questions)
+35. [Glossary](#35-glossary)
 
 ---
 
@@ -2072,7 +2074,523 @@ Missing (TODO from this doc):
 
 ---
 
-## 32. Open design questions
+## 32. Project assessment & risk audit
+
+This section is the honest take. The rest of this doc is what we *want*
+to build; this section is what is actually likely to ship and where the
+project can die before it gets there. Read it before committing
+engineering hours.
+
+### 32.1 Verdict in one paragraph
+
+The project is **worth building** — but only if we cut V1 scope to ~30 %
+of this doc, validate distribution **before** writing the backend, and
+gate every post-launch feature on a retention number. The structural
+advantages (Botwave's existing user base, TG group ↔ family identity,
+zero-install Mini App, Stars-native monetization) are real and rare.
+The structural risks (scope creep, PvP-first cold start, theme reach,
+solo founder is a SaaS founder not a game studio) will kill the project
+faster than the advantages can save it if we don't acknowledge them.
+
+### 32.2 Structural advantages (the things working in our favor)
+
+| Advantage | Why it matters | Translates to |
+|---|---|---|
+| **Botwave user base** | Owned distribution we already have. Cold-launch problem is mostly solved if even 5–10 % of existing bot DAU taps in. | Day-1 install funnel; cheap validation; first 1k DAU on day of launch. |
+| **TG group ↔ family identity (§5, §18)** | Mafia City spent millions building alliance chat that nobody uses. We use the chat people already check 30× a day. | Highest possible D7/D30 retention lever — players don't leave the family because they don't leave the group. |
+| **Zero-install Mini App (§28)** | 2-second open from any chat. No store, no APK, no review. | 5–10× conversion vs native game install funnel. |
+| **Stars-native monetization (§24)** | 1-tap purchase, no card flow, payout to Telegram balance. | ARPPU lift vs USD card IAP because friction is gone. |
+| **Cross-bot tournaments (§21)** | Multiple bots running the same game means shared liquidity for KvK events. | Each new partner bot is a marginal-cost distribution channel. |
+| **Mockup already exists** | Real-data combat, casualties, clinic, raid flow already playable. | De-risks the "is this fun" question before backend spend. |
+
+### 32.3 Real risks (the things that can kill this)
+
+These are listed in rough order of how likely they are to actually
+matter. Each has an explicit mitigation that drives a roadmap or scope
+decision elsewhere in this doc.
+
+#### 32.3.1 Scope risk — the design doc is the aspirational scope
+
+The doc as written is the **V3 game**, not V1. Sections 11 (Street
+Forces), 17 (Mayor Election), 20 (City vs City wars), 21 (Cross-bot
+tournaments), 22 (Story Mode), and 26 (Battle Pass) are V2+ features.
+Trying to ship all of them as launch scope is the single most likely
+failure mode.
+
+- **Symptom:** Engineering takes 6–9 months instead of 8–10 weeks,
+  burn rate eats the runway, no live product to iterate against, no
+  retention data to fundraise on.
+- **Mitigation:** Aggressive V1 scope cut, owned by a single named
+  scope-owner. See §33.1 for the V1 / V2 / V3 split.
+- **Heuristic:** If a feature is not on the **5-minute hook (§4)**
+  critical path or is not load-bearing for D7 retention, it is V2 or
+  later. No exceptions for "but it'd be cool."
+
+#### 32.3.2 PvP-first cold start
+
+The current design assumes real PvP from session 1 (§4, §15). That is
+correct for a **live** game with thousands of players, but lethal for a
+**cold** city with 12. First users open the app, see an empty city,
+get raided once by the only other player online, and quit.
+
+- **Symptom:** D1 retention craters at launch. First-100-user cohort
+  posts in TG support: "no one to play with" / "got farmed."
+- **Mitigation:** 7–14 day solo runway before PvP unlocks. NPC raid
+  targets (server-generated families with believable names and weak
+  defenses) seeded into every new city until population > N (e.g. 100
+  active players). Mafia City itself lets you play ~24 h solo before
+  forcing PvP; we should give ourselves a longer ramp because our
+  cold cohort is smaller.
+- **Doc impact:** §15 (The City) and §4 (5-minute hook) need an
+  explicit "shielded onboarding window" subsection. Tracked as an open
+  design question in §34.
+
+#### 32.3.3 Theme reach — Mafia branding has a ceiling
+
+"Cosa Nostra / Mafia" branding takes a 20–30 % reach hit in some
+markets (notably MENA, some EU jurisdictions, app-store-adjacent
+audiences sensitive to crime themes). Mafia City itself shipped
+re-skins for these regions.
+
+- **Symptom:** Some bot operators refuse to embed the game; some
+  markets have lower CTR on the launch landing page; ad networks
+  reject the creative.
+- **Mitigation:** Treat the theme as a skin, not as architecture. Run
+  an A/B between **Cosa Nostra Tycoon** and a less-loaded variant
+  (e.g. **Crime City**, **Hustle City**, **The Streets**) on a
+  separate sub-bot during the §33.2 validation week. Whichever has
+  better tap-through is the launch theme.
+- **Doc impact:** §2 (Vision) art direction stands; only branding
+  varies. Engine code uses a `theme_id` everywhere a string user-facing
+  noun appears.
+
+#### 32.3.4 Crowded category — we cannot out-feature Mafia City
+
+Mafia City has ~200 engineers, 8+ years of live ops, daily content,
+and a season pass team. We have 1 founder, 1 doc, and (per §31) a
+2 backend + 1 frontend + 1 designer + 1 illustrator + 1 PM team for V1
+if we hire. Trying to **match** their feature surface is a losing
+strategy.
+
+- **Symptom:** We build "their game minus 80 %" and players just go
+  play their game.
+- **Mitigation:** Win on the three structural axes Mafia City
+  **cannot** match: TG-native social (§32.2), zero-install (§32.2),
+  cross-bot platform (§21, §32.2). Cosa Nostra Tycoon at 30 % of this
+  doc's scope still beats 90 % of TG-native games, which is the
+  comp set that actually matters for distribution.
+- **Heuristic:** When a feature is being added "because Mafia City has
+  it," that is a no-add unless it also moves D7 or ARPDAU.
+
+#### 32.3.5 Founder fit — SaaS founder, not game studio
+
+The founder ships SaaS (Botwave). Game economy, daily content
+cadence, live-ops calendar, season passes, balance patches, and
+event design are full-time disciplines that SaaS founders
+chronically underestimate.
+
+- **Symptom:** Economy goes inflationary, daily content stops
+  shipping at week 8, season pass is announced and slips, players
+  notice and quit.
+- **Mitigation:** Plan to hire (or contract) a **game designer**
+  with live-ops experience at 5K MAU. Until then, the live-ops
+  calendar is explicit and small: one event per 2 weeks, fixed
+  template, no novelty. Better to ship a boring event on time than
+  a great event late.
+- **Doc impact:** §31 already lists "1 game designer" in the V1
+  team. Make the hire trigger explicit: **at 5K MAU, the designer
+  hire is critical-path.**
+
+#### 32.3.6 Pre-launch funding is a trap
+
+TG-game investors fund **proven retention + monetization**, not
+decks. Raising on this doc pre-launch yields terrible terms or no
+terms at all.
+
+- **Mitigation:** Do not raise until we have **D7 ≥ 25 %** and
+  **ARPDAU ≥ $0.05** on a real cohort of ≥ 5 K users. Until then,
+  Botwave revenue and founder time are the funding source.
+- **Doc impact:** §33.5 KPI gates govern fundraising readiness, not
+  just feature unlocks.
+
+#### 32.3.7 TON integration is a V3 trap
+
+TON wallet integration looks great on Twitter but adds dev time,
+regulatory exposure, smart-contract audit cost, and gates the
+purchase flow on users having a TON wallet (most don't). Stars
+already gives us a 1-tap native flow.
+
+- **Mitigation:** Cut TON from V1 and V2. Revisit only if a
+  TON-native distribution partner offers material co-marketing in
+  exchange for integration, or if cosmetic NFT becomes a real
+  retention lever post-V2.
+- **Doc impact:** §28.4 already lists TON wallet as Phase 7 (V2
+  polish). Reaffirm: **TON is V3, not V2.** §34 open question on
+  TON scope still stands, but the answer for V1 is "no."
+
+#### 32.3.8 Cheating & multi-accounting
+
+This is a structural risk for any PvP game and especially one where
+a player's identity is "a TG account." TG accounts are cheap to
+spin up; multi-accounting to seed your own family with farms is the
+obvious exploit.
+
+- **Mitigation:** TG account age + Stars purchase history as a
+  primary trust signal (§28). New accounts shielded longer. Family
+  donations / transfers velocity-capped per fresh account. Aggressive
+  shadow-ban over hard-ban for the first offense to preserve
+  false-positive recoverability.
+- **Doc impact:** Tracked as an open question in §34 (cheating
+  defaults — aggressive auto-ban vs human review).
+
+### 32.4 Risk matrix (likelihood × impact)
+
+| Risk | Likelihood | Impact if it hits | Where mitigated |
+|---|---|---|---|
+| Scope creep (32.3.1) | **High** | **Project-killing** | §33.1 scope cut, single scope-owner |
+| PvP cold start (32.3.2) | **High** | **High** (kills D1) | §33.2 validation, shielded onboarding |
+| Theme reach (32.3.3) | Medium | Medium (reach ceiling) | §33.2 A/B test, theme as skin |
+| Out-featuring Mafia City (32.3.4) | High | Medium (slow death) | Pick 3 structural wins, ignore the rest |
+| Founder fit (32.3.5) | Medium | High at scale | Hire designer at 5K MAU |
+| Pre-launch funding (32.3.6) | Medium | Medium (bad terms) | Hit §33.5 gates before raising |
+| TON detour (32.3.7) | Medium | Medium (sunk cost) | TON = V3, locked |
+| Cheating (32.3.8) | High at scale | Medium (D30 drag) | TG-age trust signal, shadow-ban |
+
+"Project-killing" means the project does not reach V1 in any usable
+form. "High impact" means a measurable hit to D7 / ARPDAU / runway but
+the project can still recover.
+
+### 32.5 What we are explicitly betting on
+
+For the avoidance of doubt — here are the bets this design takes.
+If any of these turn out false during the §33.2 validation window,
+**stop and re-plan**.
+
+1. **Botwave DM tap-through > 10 %.** If we DM existing Botwave
+   users a "coming soon" landing page and fewer than 10 % tap, the
+   distribution thesis is wrong and the product won't save it.
+2. **TG group ↔ family is the killer feature.** If user research
+   says players don't want their TG groups conscripted into game
+   families, the §18 design has to change.
+3. **Stars converts at SaaS-grade rates** (1-tap > 5 % of MAU pay
+   at least once in month 1). If Stars conversion is closer to
+   USD-card-IAP rates, the monetization model needs to lean harder
+   on Adsgram and Battle Pass.
+4. **Mafia branding is fine outside MENA.** If the A/B (§33.2)
+   shows the un-themed variant wins everywhere, we re-skin.
+
+### 32.6 What this section is *not*
+
+This is not a kill-the-project section. The structural advantages
+in §32.2 are genuinely rare — most TG mini-games have one of them;
+this project has all six. The point of §32.3 is to make the risks
+**explicit and dated** so we don't pretend they aren't there. Every
+risk above has a mitigation that is the responsibility of a specific
+roadmap phase in §31 or a specific gate in §33.5.
+
+---
+
+## 33. Distribution & launch playbook
+
+This section governs **how the product reaches users**. The design doc
+above this point governs **what** we build; this section governs
+**when** and **for whom**. If §32 is "do not lie to ourselves about
+risk," §33 is "do not lie to ourselves about distribution."
+
+The rule of this section: **distribution is validated before the
+backend is written, not after.**
+
+### 33.1 V1 / V2 / V3 scope split
+
+The roadmap in §31 is engineering phases. The scope split below is
+**product** scope — what's in the box at each public release.
+
+#### V1 — Launch box (~8–10 weeks of engineering)
+
+Single Lagos city, single bot, friends-and-family scale (target 1–5 K
+DAU at launch). Everything below is load-bearing for the 5-minute
+hook (§4) and D7 retention. **If it isn't on this list, it's V2+.**
+
+- Postgres schema + initData auth (§29, §28)
+- Player + Hero + Buffs (§8, §9)
+- Buildings + upgrades (§13) — HQ, Barracks, Vault, Clinic only
+- Troops T1–T3 (§10) — no T4/T5, no Street Forces
+- Combat engine (§14) port from mockup, server-authoritative
+- Energy + idle accrual + daily login (§3)
+- **Shielded onboarding window**: 7–14 day NPC-only raids before PvP
+  unlocks (mitigation for §32.3.2)
+- Single-city PvP (§15) — no turfs, no mayor, no city vs city
+- Stars IAP webhook + Capo Pass + 3 gem packs (§24)
+- Adsgram rewarded video for energy / chest (§25)
+- 1 triggered offer template (§26) — no Battle Pass
+- Bot DM push for shield-expiring + raid-incoming + idle-cap
+- Telegram group as **read-only family chat passthrough** — no
+  family bank, no roles, no war scoring yet (V1.1)
+
+Explicitly **out** of V1: Street Forces, Mayor Election, City vs City
+wars, cross-bot tournaments, Story Mode, Battle Pass, full Family
+system, TON, T4/T5 troops, multi-city.
+
+#### V1.1 — Families (~3–4 weeks after V1 launch)
+
+Unblock the social retention lever. Only ship once V1's D7 ≥ 20 %.
+
+- Family create / join / leave / dissolve (§18)
+- R1–R5 roles, group admin → family officer mapping (§18, §6)
+- Family bank, donations, member roster (§19)
+- Family-vs-Family war declare / accept / scoring (§20)
+- Family chat → game event bridge (raid notifs → group)
+
+#### V2 — City & content (~3–4 months after V1.1)
+
+Only ship once V1.1's D30 ≥ 12 % and ARPDAU ≥ $0.05.
+
+- Turfs + capture mechanic (§16)
+- City map (PixiJS isometric tiles)
+- Convoys + scouting
+- Mayor election full flow (§17)
+- Story Mode chapters 1–5 (§22)
+- Battle Pass season 1 (§26)
+- Street Forces (§11) — recruits + missions
+- T4 troops, Family research tree (§19)
+
+#### V3 — Platform & polish (timeline driven by V2 metrics, not calendar)
+
+- Cross-bot tournaments + KvK (§21)
+- Multi-city deployment
+- T5 troops, advanced cosmetics
+- TON wallet integration (§28.4) — *only* if a distribution partner
+  makes it worth the audit cost
+- Spine 2D production art replace
+- Multi-language localization
+- Native iOS / Android wrapper (cosmetic-premium tier only)
+
+#### Scope governance rule
+
+A feature only moves up a tier (V2 → V1.1, V3 → V2, etc.) by
+**written exception** with a one-paragraph justification of why the
+launch retention number depends on it. Default answer to "can we add
+X to V1" is **no**.
+
+### 33.2 Validate distribution **before** building the backend
+
+The single highest-EV thing we can do this week is **find out whether
+distribution works** before spending engineering hours on the backend.
+If the distribution thesis is wrong, the product doesn't matter.
+
+#### Day 1–2 — Stop adding features to the doc
+
+Freeze the design doc. No new sections, no new mechanics. The doc is
+already long enough; further additions are procrastination disguised
+as productivity. (This is the section that closes that freeze.)
+
+#### Day 3–7 — Ship a "coming soon" landing page
+
+Tiny scope. Should be one engineer-day, max two:
+
+- A static landing page with: hero shot from the mockup, 3–4
+  screenshots, one paragraph of pitch, a TG bot username input
+  ("drop your @ to be notified at launch"), an email field (optional).
+- Drop the landing URL into Botwave's existing bot DMs as a
+  one-time promo card to all opted-in users.
+- Track: open rate, tap rate (Botwave DM → landing), signup rate
+  (landing → @-capture), and theme A/B (Cosa Nostra vs neutral
+  variant, see §32.3.3).
+
+**Pass criterion:** ≥ 10 % of DM-recipients tap the landing page.
+**Fail criterion:** < 5 % tap. If we fail, the distribution thesis
+is broken and no amount of backend rescues it. Re-plan before
+writing schema migrations.
+
+#### Week 2–3 — Cold-DM 20 partner bot operators (B2B2C)
+
+In parallel with backend prep. The cross-bot platform (§21) is only
+real if other bot operators want in. Validate that **before** we
+build the cross-bot infrastructure.
+
+- Identify 20 TG bot operators in adjacent verticals (utility bots,
+  community bots, channel bots) with ≥ 5K MAU each.
+- Cold-DM them with a 3-paragraph pitch: game, our distribution
+  numbers from Day 3–7, revenue share offer.
+- Goal: 2–3 signed letters of intent (LOI) — informal email or DM
+  is fine — to embed the game when V1 ships.
+- LOIs are the validation. Without them, the §21 cross-bot
+  tournament work is V3, not V2.
+
+#### Week 4–12 — Build V1
+
+Only if Day 3–7 hits the pass criterion. Build V1 per §33.1.
+
+- Single named scope-owner for V1.
+- Weekly demo to scope-owner against the §4 5-minute-hook checklist.
+- Anything not on the V1 list (per §33.1) is rejected on intake,
+  not at sprint end.
+
+#### Week 13 — Soft launch via Botwave + 2–3 partner bots
+
+Open V1 to the @-captures from Day 3–7 + the partner-bot LOIs.
+Expected order of magnitude: 5K–50K instant users depending on
+partner-bot fan-out.
+
+- Day-1 monitoring: server tick stability, raid resolver throughput,
+  Stars webhook validation, Adsgram fill rate.
+- Day-3 cohort cut: D1 retention, install funnel by source bot.
+- Day-7 cohort cut: D7 retention, ARPDAU, Capo Pass attach rate.
+
+#### Week 14+ — Iterate on retention, not features
+
+The post-launch trap is "let's ship more features so users come
+back." Wrong. The post-launch correct move is "let's fix the leaks
+in the current funnel until D7 ≥ 25 %, then ship V1.1."
+
+### 33.3 User acquisition channels — ranked by ROI
+
+Four tiers, in order of cost-per-DAU (lowest first). Higher tiers
+unlock when lower-tier saturation is reached, not before.
+
+#### Tier 1 — Owned distribution (Botwave bots) — *free*
+
+Highest-ROI channel by a wide margin. Day-of-launch DAU should come
+**entirely** from this tier.
+
+- One-time launch DM card to opted-in Botwave users.
+- Recurring placement: `!play` / `/games` commands route to Cosa
+  Nostra in addition to existing minigames.
+- Promo-system slot (CLAUDE.md "every 10th use of creative commands")
+  rotates Cosa Nostra into the link wheel.
+- Cost: $0. Effective CAC: $0. Limit: Botwave MAU.
+
+#### Tier 2 — Partner bots (B2B2C revenue share) — *cheap*
+
+Second-highest ROI. Operator gives us their users; we share Stars
+revenue with them at 20–30 %.
+
+- Embed model: partner bot adds a `/play` command that opens the
+  game with a partner-bot tag in initData; revenue tracked per tag.
+- Validated in §33.2 Week 2–3 with LOIs.
+- Cost: rev share only. Effective CAC: ~0 upfront, ~20–30 % LTV.
+- Limit: number of partner bots and their MAU.
+
+#### Tier 3 — TG channel cross-promo + Adsgram cross-promo — *medium*
+
+Mid-tier ROI. Paid placement on TG news/gaming channels and
+in-network Adsgram swaps with other Mini Apps.
+
+- TG channel buys: only after Tier 1+2 saturate. Negotiate flat-rate
+  posts on 3–5 gaming/finance/Africa-business channels.
+- Adsgram cross-promo: list our own rewarded-video inventory back
+  into the network to earn cross-promo impressions from other Mini
+  Apps. Net-out cost depends on relative eCPM.
+- Cost: paid. Effective CAC: $0.10–$0.50 per install in good markets,
+  higher elsewhere. **Only profitable if ARPDAU ≥ $0.05 first.**
+
+#### Tier 4 — Off-platform paid acquisition — *expensive, last*
+
+Lowest ROI. Twitter, Reddit, TikTok, IG. Off-platform users have
+the highest install-to-Mini-App-open drop-off and the worst LTV.
+
+- Only run after Tiers 1–3 saturate.
+- Never run before D7 ≥ 25 % — paying to import users into a leaky
+  funnel is how studios burn runway.
+- Cost: high. Effective CAC: $1–$3 / install in best case.
+
+#### Channel allocation principle
+
+Spend on a tier only after the tier below it has been saturated.
+"Saturated" means CAC has risen above the next tier's CAC, or
+volume has plateaued for 2 consecutive weeks.
+
+### 33.4 Pre-launch validation gates
+
+These are gates **between phases**, not after launch. Each is a
+small, dated, falsifiable test.
+
+| Gate | Trigger | Pass criterion | Fail action |
+|---|---|---|---|
+| **G0 — Demand** | End of Day 7 | ≥ 10 % tap-through on Botwave DM landing card | Re-plan; consider theme A/B, audience re-cut |
+| **G1 — Partners** | End of Week 3 | ≥ 2 partner-bot LOIs signed | Cross-bot work demoted to V3 |
+| **G2 — Theme** | End of Week 3 | A/B winner is statistically clear | Pick higher-tap-rate theme as canonical; engine uses `theme_id` |
+| **G3 — Backend ready** | End of Week 12 | V1 §33.1 checklist 100 % complete; 50–100 friends-and-family playing | Slip launch 2 weeks; do not add features |
+| **G4 — Launch** | End of Week 13 | First-day no SEV-1 issues; D1 ≥ 35 % | Hotfix only; no V1.1 work until G5 |
+| **G5 — V1.1 unlock** | End of Week 18 (post-launch wk 5) | D7 ≥ 20 %, ARPDAU ≥ $0.03 | Iterate V1 funnel, do not start Families |
+| **G6 — V2 unlock** | Driven by metrics | D30 ≥ 12 %, ARPDAU ≥ $0.05 | Stay on V1.1; iterate retention |
+| **G7 — Fundraise** | Driven by metrics | D7 ≥ 25 %, ARPDAU ≥ $0.05, ≥ 5K MAU | Self-fund until gate trips |
+
+### 33.5 KPI gates before adding features
+
+This is the single most important piece of post-launch discipline.
+
+> **Do not add features unless D7 retention is above 25 %.**
+
+D7 is the number that investors, partners, and Telegram itself care
+about for Mini Apps. ARPDAU is the number that gates whether paid
+acquisition (Tier 3+) is even legal accounting (revenue ≥ CAC).
+
+**Hard rules:**
+
+- D7 < 20 %: only fixes, only funnel work. No new mechanics.
+- D7 20–25 %: small content drops OK (event templates, balance
+  patches). No new systems.
+- D7 ≥ 25 %: V1.1 (Families) is on the table.
+- D30 ≥ 12 % **and** ARPDAU ≥ $0.05: V2 (City + Battle Pass) is on
+  the table.
+- ARPDAU < $0.05: no Tier 3+ paid acquisition. Period.
+
+**Why these numbers:** D7 25 % is the published benchmark for
+top-quartile TG Mini Apps. ARPDAU $0.05 is roughly the floor where
+Adsgram + Stars combined cover CAC on Tier 2–3 channels. Below
+that, growth is unprofitable and the runway shortens with every
+new user.
+
+### 33.6 Red flags during launch — stop conditions
+
+If any of these trip in the first 4 weeks post-launch, **stop adding
+features** and fix the funnel:
+
+1. **D1 < 25 %.** Onboarding is broken. Re-check the 5-minute hook
+   (§4) end-to-end. Likely culprits: shielded onboarding window
+   too short (32.3.2), tutorial too long, first raid loss feels
+   unfair.
+2. **D7 < 15 %.** Core loop is not engaging. Re-check idle accrual
+   cadence, daily login reward, shield-expiring DM trigger.
+3. **Stars conversion (paying users / MAU) < 2 %** by week 4.
+   Either price tiers are wrong, trigger placement is wrong, or
+   the Capo Pass value prop is not landing. A/B price + trigger
+   before A/B'ing content.
+4. **Partner bot install share < 20 % of total**. Tier 2 isn't
+   working. Re-pitch with launch numbers; if 3 weeks later still
+   < 20 %, demote cross-bot (§21) to V3.
+5. **Refund rate on Stars > 5 %.** Telegram review risk. Audit the
+   Stars webhook validation path (§24) and check for purchase-not-
+   delivered bugs first; payment-flow bugs masquerade as content
+   complaints.
+
+### 33.7 Launch communications
+
+Small but load-bearing. The launch announcement is *one* DM card,
+*one* TG channel post, and a partner-bot rollout. Not a campaign.
+
+- Botwave DM: timed for Friday evening local — gaming session
+  starts at home.
+- TG channel post: tags @-list captured in Day 3–7.
+- Partner bots: each operator decides their own timing; we provide
+  a copy template and screenshots, they post.
+- Press / Twitter / off-platform: **not at launch.** Saved for the
+  V1.1 (Families) launch, which is a more interesting story
+  ("our users brought their own group chats").
+
+### 33.8 What this section is *not*
+
+This is not a marketing plan. It's the **distribution discipline**
+that backs the design choices upstream. The numbers in §33.5 are
+the actual product spec for "is this version of the game shippable
+to the next phase," and they bind decisions in §31 (Roadmap) and
+§32 (Risk audit). When the numbers say wait, we wait, regardless of
+what the doc above this section says we *could* build next.
+
+---
+
+## 34. Open design questions
 
 These are things this doc deliberately punts on — answer before MVP.
 
@@ -2103,7 +2621,7 @@ These are things this doc deliberately punts on — answer before MVP.
 
 ---
 
-## 33. Glossary
+## 35. Glossary
 
 | Term | Meaning |
 |---|---|
@@ -2141,9 +2659,12 @@ to V1 is laid out in §31; the path to differentiation (vs Mafia City) is
 laid out in §2 (Telegram-native social graph + zero-install + cross-bot
 platform).
 
-Open questions in §32 deserve discussion before each phase begins.
-Roles in §6 govern who can change what. Monetization in §24–26 is the
-fuel. Everything else is execution.
+Risk audit and bets in §32 govern whether we ship at all; distribution
+playbook and KPI gates in §33 govern when each phase unlocks. Open
+questions in §34 deserve discussion before each phase begins. Roles in
+§6 govern who can change what. Monetization in §24–26 is the fuel.
+Everything else is execution.
 
-— v0.3, design pass following PR #557 merge and "use real data + battle
-stats + role-based access" requirements.
+— v0.4, design pass adding §32 (project assessment & risk audit) and
+§33 (distribution & launch playbook). Builds on v0.3 (PR #557 merge and
+"use real data + battle stats + role-based access" requirements).
