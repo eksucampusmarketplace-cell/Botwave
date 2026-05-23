@@ -12,16 +12,59 @@
 import type { PlayerStateBlob, PowerBreakdown } from './types';
 
 /**
- * Unit stat definitions, matching the mockup's `UNIT_DEFS`. Kept here on
- * the server so combat math is server-authoritative.
+ * Unit definitions — full server copy of the mockup's UNIT_DEFS.
+ * Fields beyond hp/atk/def are used by the combat resolver (counters,
+ * load capacity) and the tick worker (speed for marches, trainCost /
+ * trainSec for training queues).
+ *
+ * Keep in sync with the client mockup at `public/miniapp/tycoon-mockup.html`.
  */
-export const UNIT_DEFS = {
-  bruiser: { hp: 200, atk: 60, def: 140 },
-  shooter: { hp: 90, atk: 220, def: 50 },
-  biker: { hp: 130, atk: 150, def: 80 },
-  driver: { hp: 600, atk: 50, def: 380 },
-  made_man: { hp: 480, atk: 380, def: 280 },
-} as const;
+type UnitDef = {
+  hp: number;
+  atk: number;
+  def: number;
+  speed: number;
+  /** Loot carry capacity per unit. */
+  load: number;
+  trainCost: number;
+  trainSec: number;
+  /** HQ level required to unlock training, if any. */
+  unlockAt?: number;
+  /** Multiplicative bonus vs a focused unit type. */
+  counters: Partial<Record<'bruiser' | 'shooter' | 'biker' | 'driver' | 'made_man', number>>;
+};
+
+export const UNIT_DEFS: Record<
+  'bruiser' | 'shooter' | 'biker' | 'driver' | 'made_man',
+  UnitDef
+> = {
+  bruiser: {
+    hp: 200, atk: 60, def: 140, speed: 1.0, load: 12,
+    trainCost: 800, trainSec: 60,
+    counters: { biker: 1.5 },
+  },
+  shooter: {
+    hp: 90, atk: 220, def: 50, speed: 1.2, load: 8,
+    trainCost: 1200, trainSec: 90,
+    counters: { bruiser: 1.5 },
+  },
+  biker: {
+    hp: 130, atk: 150, def: 80, speed: 2.4, load: 6,
+    trainCost: 1600, trainSec: 75,
+    counters: { shooter: 1.5 },
+  },
+  driver: {
+    hp: 600, atk: 50, def: 380, speed: 0.8, load: 200,
+    trainCost: 4500, trainSec: 240,
+    counters: {},
+  },
+  made_man: {
+    hp: 480, atk: 380, def: 280, speed: 1.6, load: 18,
+    trainCost: 8000, trainSec: 480,
+    unlockAt: 13,
+    counters: { bruiser: 1.25, shooter: 1.25, biker: 1.25 },
+  },
+};
 
 export type UnitKey = keyof typeof UNIT_DEFS;
 
