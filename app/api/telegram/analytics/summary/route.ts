@@ -17,15 +17,15 @@ export const dynamic = 'force-dynamic';
  *  - top_commands — top 10 message_type buckets (proxy for "what people use")
  *  - mod_actions_7d / mod_actions_30d — moderation log counts
  *
- * Owner-only — gated by `requireRole: 'admin'` (Telegram-group admin OR bot
- * owner — the bot owner is always admin from the role detector).
+ * Aggregates across every group on the session, so this endpoint is
+ * bot-owner-only. Group admins should use per-chat analytics instead.
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'owner' });
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 

@@ -52,18 +52,31 @@ function toApiScheduled(row: ScheduledRow) {
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = new URL(request.url).searchParams.get('sessionId');
+    const params = new URL(request.url).searchParams;
+    const sessionId = params.get('sessionId');
+    const chatId = params.get('chatId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
 
-    const { data: rows } = await supabase
+    let query = supabase
       .from('telegram_scheduled_messages')
       .select('*')
       .eq('session_id', sessionId)
       .order('next_send_at', { ascending: true });
 
+    if (chatId) {
+      query = query.eq('chat_id', Number(chatId));
+    } else if (role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
+
+    const { data: rows } = await query;
     const mapped = ((rows as ScheduledRow[] | null) || []).map(toApiScheduled);
     return NextResponse.json({ success: true, data: mapped });
   } catch (error) {
@@ -94,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId: String(chat_id), requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;
@@ -142,18 +155,48 @@ export async function DELETE(request: NextRequest) {
     const params = new URL(request.url).searchParams;
     const sessionId = params.get('sessionId');
     const id = params.get('id');
+    const chatId = params.get('chatId');
     if (!id) {
       return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
-
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
-    if (!auth.ok) return auth.response;
-    const { supabase } = auth;
 
     // id is SERIAL (integer) after migration 036.
     const idNum = Number(id);
     if (!Number.isFinite(idNum)) {
       return NextResponse.json({ error: 'id must be numeric' }, { status: 400 });
+    }
+
+    // Look up the chat_id from the row so we can scope auth correctly
+    // without the caller having to know it.
+    const adminClient = (await authorizeTelegramRequest(request, {
+      sessionId,
+      requireRole: 'admin',
+    }));
+    if (!adminClient.ok) return adminClient.response;
+    const lookupSupabase = adminClient.supabase;
+    const { data: row } = await lookupSupabase
+      .from('telegram_scheduled_messages')
+      .select('chat_id')
+      .eq('session_id', sessionId)
+      .eq('id', idNum)
+      .maybeSingle();
+    const rowChatId = row?.chat_id != null ? String(row.chat_id) : null;
+
+    // Re-authorize against the row's chat_id (or caller-supplied chatId for
+    // legacy clients). Group admins can only delete their own chat's rows.
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId: chatId ?? rowChatId,
+      requireRole: 'admin',
+    });
+    if (!auth.ok) return auth.response;
+    const { supabase, role } = auth;
+
+    if (!rowChatId) {
+      return NextResponse.json({ success: true });
+    }
+    if (chatId && chatId !== rowChatId && role !== 'owner') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await supabase

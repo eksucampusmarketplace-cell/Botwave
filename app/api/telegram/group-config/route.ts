@@ -27,7 +27,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
     }
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    // Pass chatId so role is resolved against THIS chat, not 'any group on the session'.
+    // The __list__ pseudo-chatId is session-wide and only safe for bot-creator/cookie callers.
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId: chatId === '__list__' ? null : chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 
@@ -71,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;

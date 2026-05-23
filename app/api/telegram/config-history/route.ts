@@ -23,9 +23,17 @@ export async function GET(request: NextRequest) {
     const configType = params.get('type') || 'bot';
     const chatId = params.get('chatId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
+
+    if (configType === 'group' && !chatId && role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
 
     let query = supabase
       .from('telegram_config_history')
@@ -57,11 +65,15 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase, telegramUserId, ownerUserId } = auth;
+    const { supabase, telegramUserId, ownerUserId, role } = auth;
+
+    if ((type === 'group' || chatId) && !chatId && role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('telegram_config_history')
@@ -92,16 +104,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'snapshotId required' }, { status: 400 });
     }
 
-    const auth = await authorizeTelegramRequest(
+    // Look up the snapshot first so we can scope auth correctly.
+    const firstAuth = await authorizeTelegramRequest(
       request,
       { sessionId, requireRole: 'admin' },
       initData,
     );
-    if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    if (!firstAuth.ok) return firstAuth.response;
 
-    // Load snapshot
-    const { data: snapshot } = await supabase
+    const { data: snapshot } = await firstAuth.supabase
       .from('telegram_config_history')
       .select('config_snapshot, config_type, chat_id')
       .eq('id', snapshotId)
@@ -109,6 +120,19 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (!snapshot) return NextResponse.json({ error: 'Snapshot not found' }, { status: 404 });
+
+    // Re-authorize against the snapshot's chat (or bot-wide).
+    const auth = await authorizeTelegramRequest(
+      request,
+      {
+        sessionId,
+        chatId: snapshot.chat_id ? String(snapshot.chat_id) : null,
+        requireRole: snapshot.config_type === 'group' ? 'admin' : 'owner',
+      },
+      initData,
+    );
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     const configData = snapshot.config_snapshot as Record<string, unknown>;
 

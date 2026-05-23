@@ -77,12 +77,17 @@ export const TELEGRAM_BOT_CONFIG_COLUMNS = new Set([
   'blacklist_mode', 'clean_welcome', 'force_channel', 'auto_delete_seconds',
   // 046 daily summary (new)
   'daily_summary_enabled', 'daily_summary_hour', 'daily_summary_channel_id', 'last_summary_sent_at',
+  // 054 announce / bot-to-bot
+  'announce_channel_id', 'bot_to_bot_enabled',
+  // Per-group default that mirrors to group config
+  'admin_only_mode',
   // Timestamps (read-only, but valid in DB)
   'updated_at',
 ]);
 
 // ─── telegram_group_configs ──────────────────────────────────────────────────
-// Derived from migration 038.
+// Derived from migration 038, plus column additions from later migrations
+// (042 captcha_*, 054 captcha_rules/mute/kick/button, admin_only_mode).
 export const TELEGRAM_GROUP_CONFIG_COLUMNS = new Set([
   'session_id', 'chat_id', 'chat_title',
   // Welcome
@@ -91,6 +96,14 @@ export const TELEGRAM_GROUP_CONFIG_COLUMNS = new Set([
   // Captcha
   'captcha_enabled', 'captcha_mode', 'captcha_timeout', 'captcha_action',
   'captcha_message', 'captcha_restrict_on_join',
+  // 054 captcha additions
+  'captcha_rules', 'captcha_mute_time', 'captcha_kick', 'captcha_kick_time',
+  'captcha_button_text',
+  // Per-group welcome / goodbye image overrides + announce channel
+  // (added in migration 060 alongside admin_only_mode)
+  'welcome_image_url', 'goodbye_image_url', 'announce_channel_id',
+  // Per-group admin-only override (migration 060)
+  'admin_only_mode',
   // Warn
   'warns_enabled', 'warn_limit', 'warn_action', 'warn_expiry_days',
   'warn_message', 'warn_limit_message',

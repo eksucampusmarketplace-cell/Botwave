@@ -23,9 +23,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 });
     }
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
+
+    if (!chatId && role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
 
     // Fetch XP data
     let xpQuery = supabase

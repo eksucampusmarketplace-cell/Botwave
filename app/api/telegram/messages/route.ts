@@ -37,7 +37,11 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
     const chatId = searchParams.get('chatId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 
@@ -83,13 +87,14 @@ export async function PUT(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
 
-    // Separate global fields from per-group fields
+    // Writing global (bot-wide) message defaults is bot-owner-only. Group
+    // admins can only update the per-group fields for THEIR chat.
     const globalUpdates: Record<string, unknown> = {};
     const groupUpdates: Record<string, unknown> = {};
 
@@ -97,9 +102,12 @@ export async function PUT(request: NextRequest) {
       if (key in fields) {
         if (chatId && GROUP_MESSAGE_FIELDS.includes(key)) {
           groupUpdates[key] = fields[key];
-        } else {
+        } else if (role === 'owner') {
           globalUpdates[key] = fields[key];
         }
+        // Otherwise the field is silently dropped: group admins cannot edit
+        // bot-wide texts. Their per-group equivalents (welcome/goodbye/rules)
+        // are still allowed when chatId is set.
       }
     }
 
