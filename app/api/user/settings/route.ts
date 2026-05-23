@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getCachedApiSettings, cacheApiSettings, invalidateApiSettings } from '@/lib/redisApiCache';
+import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -78,7 +79,11 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
+    // Two Redis namespaces, two invalidations. Without the bot-side delete,
+    // the bot uses the OLD AFK message / bot_name / command_prefix / skip
+    // probability for up to SETTINGS_TTL (5 min) after a dashboard save.
     await invalidateApiSettings(user.id);
+    await invalidateBotRedisKey(`settings:${user.id}`);
     return NextResponse.json({ success: true, message: 'Settings saved' });
   } catch (error) {
     console.error('Error saving user settings:', error);

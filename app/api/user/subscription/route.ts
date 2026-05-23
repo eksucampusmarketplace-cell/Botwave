@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PLANS } from '@/lib/squad';
 import { getCachedSubscriptionFull, cacheSubscriptionFull, invalidateSubscription, getCachedRewards, cacheRewards } from '@/lib/redisApiCache';
+import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,10 @@ export async function GET(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', user.id);
+        // Without this, the bot enforces the OLD (paid) plan limits for up to
+        // SUBSCRIPTION_TTL (5 min) after lazy expiry detection.
+        await invalidateBotRedisKey(`sub:${user.id}`);
+        await invalidateSubscription(user.id);
         subscription = { ...subscription, plan: 'free', status: 'expired' };
       }
     }
