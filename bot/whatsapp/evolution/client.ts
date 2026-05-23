@@ -628,6 +628,7 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
       } catch {
         console.warn(`[PROXY] Health ping failed for ${pHost}:${pPort} — skipping, trying next`);
         recordProxyFailure(sessionId || 'pre-assign', pHost, 'health ping failed');
+        await redisRecordProxyFailure(pHost);
         // Try next best proxy from the healthy list
         const fallback = healthy.filter(s => s.idx !== chosen!.idx).sort((a, b) => a.totalCount - b.totalCount);
         if (fallback.length > 0) {
