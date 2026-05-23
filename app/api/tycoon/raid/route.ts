@@ -105,6 +105,10 @@ export async function POST(req: NextRequest) {
       );
     }
   }
+  const energyCost = Math.min(20, Math.max(5, Math.floor(totalCount(troopsSent) / 5)));
+  if (attacker.energy < energyCost) {
+    return NextResponse.json({ error: 'insufficient_energy', energy_cost: energyCost }, { status: 402 });
+  }
 
   // Resolve defender.
   let defender: PlayerRecord | null = null;
@@ -162,7 +166,7 @@ export async function POST(req: NextRequest) {
           troops: collectDefenderTroops(defender),
           buffs: buffsFromState(defender.state),
           walls_level: defender.state.buildings?.walls?.level ?? 0,
-          vault_coins: Math.min(defender.coins, 500_000),
+          vault_coins: Math.max(0, Number(defender.coins) || 0),
           power: defender.power,
         }
       : {
@@ -184,10 +188,6 @@ export async function POST(req: NextRequest) {
   attacker.power = computePower(attacker.state).total;
 
   // Spend attacker energy (raids cost energy — §3 economy).
-  const energyCost = Math.min(20, Math.max(5, Math.floor(totalCount(troopsSent) / 5)));
-  if (attacker.energy < energyCost) {
-    return NextResponse.json({ error: 'insufficient_energy', energy_cost: energyCost }, { status: 402 });
-  }
   attacker.energy = Math.max(0, attacker.energy - energyCost);
 
   try {

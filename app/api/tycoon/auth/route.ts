@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   let created = false;
   if (!existing) {
     const displayName =
-      (body.display_name || '').trim().slice(0, 32) ||
+      validDisplayName(body.display_name) ||
       auth.user.first_name ||
       auth.user.username ||
       `Boss ${auth.user.telegram_user_id}`;
@@ -82,4 +82,10 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ created, ...snapshotPlayer(player) }, { status: 200 });
+}
+
+function validDisplayName(value?: string): string | null {
+  const trimmed = (value || '').trim();
+  if (trimmed.length < 3 || trimmed.length > 32) return null;
+  return trimmed;
 }

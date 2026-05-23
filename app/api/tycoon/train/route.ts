@@ -10,6 +10,7 @@ import type { UnitKey } from '@/lib/tycoon/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+const MAX_TRAINING_SECONDS = 30 * 24 * 60 * 60;
 
 type Body = {
   initData?: string;
@@ -68,7 +69,11 @@ export async function POST(req: NextRequest) {
   }
 
   const nowMs = Date.now();
-  const endsAt = new Date(nowMs + def.trainSec * quantity * 1000).toISOString();
+  const trainingSeconds = def.trainSec * quantity;
+  if (trainingSeconds > MAX_TRAINING_SECONDS) {
+    return NextResponse.json({ error: 'training_duration_too_long' }, { status: 400 });
+  }
+  const endsAt = new Date(nowMs + trainingSeconds * 1000).toISOString();
   player.coins = Number(player.coins) - cost;
   troop.training_count = quantity;
   troop.training_ends_at = endsAt;
