@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Cosa Nostra Tycoon — Mockup</title>
+  <!--
+    Telegram Mini App SDK. Loads when the page is opened from inside the
+    Telegram WebView via a `web_app` button. When the page is opened in a
+    plain browser, window.Telegram is undefined and the mockup falls back
+    to its standalone-demo behaviour (localStorage save, browser-only).
+  -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
 /* ===========================================================
    COSA NOSTRA TYCOON — Visual Mockup Styles
@@ -4632,6 +4639,24 @@ window.Game = {
     wire();
     renderAll();
     setInterval(loop, 1000);
+
+    // Telegram WebApp integration. When loaded inside a Telegram WebView,
+    // signal ready, expand to full height, and match the in-app chrome
+    // colors so the game doesn't look out of place against the system UI.
+    // No-op when window.Telegram is unavailable (plain-browser preview).
+    try {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        if (typeof tg.setHeaderColor === 'function') {
+          tg.setHeaderColor('#0d0d12');
+        }
+        if (typeof tg.setBackgroundColor === 'function') {
+          tg.setBackgroundColor('#0d0d12');
+        }
+      }
+    } catch (_e) { /* swallow: SDK not available, fall back to standalone mode */ }
   });
 })();
 
