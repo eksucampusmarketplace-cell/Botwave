@@ -2214,6 +2214,22 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
         }
       }
 
+      // If the row is completely gone from the DB (deleted by the user,
+      // moved past actionable states like needs_reauth, or wiped by a
+      // cascade delete), force-stop the bot regardless of its in-memory
+      // status. The "don't kill mid-pairing" check below is only meant to
+      // protect transient state changes for sessions that still exist — it
+      // must NOT keep a bot polling against a row that no longer exists,
+      // because that path spams force:true writes every 5s and ties up
+      // Evolution / proxy capacity.
+      if (!allSession) {
+        console.log(`[SYNC] Session ${id.slice(0, 8)} no longer present in DB - force-stopping bot.`);
+        await bot.stop();
+        await releaseLock(id);
+        activeBots.delete(id);
+        continue;
+      }
+
       // Don't kill bots that are mid-reconnect (e.g. 515 pairing restart)
       // or in qr_pending state during the handshake
       const status = bot.getStatus();

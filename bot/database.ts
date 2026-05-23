@@ -347,10 +347,15 @@ export async function updateSessionPairingCode(
 
   if (preErr) {
     console.error(`[PAIRING-DB] Pre-read FAILED for ${sessionId}:`, preErr.message, preErr.code);
-  } else {
-    const existingTail = preState?.pairing_code ? `***${preState.pairing_code.slice(-2)}` : 'null';
-    console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingTail=${existingTail} lastUpdated=${preState?.updated_at}`);
+    // FAIL-CLOSED: PGRST116 ("multiple (or no) rows returned") from .single()
+    // means either the row is gone or RLS is filtering it. We must NOT
+    // continue to the UPDATE below — if the row reappears or if we're
+    // racing with a real session, we could overwrite a fresh pairing code
+    // we just couldn't see. Bail out instead of running an unguarded write.
+    return { applied: false, count: 0, frozen: !bypassFreezeWindow };
   }
+  const existingTail = preState?.pairing_code ? `***${preState.pairing_code.slice(-2)}` : 'null';
+  console.log(`[PAIRING-DB] Pre-state: state=${preState?.state} existingTail=${existingTail} lastUpdated=${preState?.updated_at}`);
 
   // FREEZE-WINDOW GUARD: refuse to overwrite a code that is still on the
   // user's screen. Bypassed explicitly when the user clicked "regenerate
