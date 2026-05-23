@@ -608,10 +608,17 @@ export async function POST(request: NextRequest) {
 
       if (stateErr) {
         console.error(`[PAIRING-WEBHOOK] Failed to read current state for ${sessionId}: ${stateErr.message}`);
-      } else {
-        const existingTail = current?.pairing_code ? `***${current.pairing_code.slice(-2)}` : 'null';
-        console.log(`[PAIRING-WEBHOOK] Current DB state: state=${current?.state} existingTail=${existingTail} lastUpdated=${current?.updated_at}`);
+        // FAIL-CLOSED: if we can't read the row, we can't tell whether
+        // it's a deleted session (row was removed by user) or a session
+        // with a fresh pairing code we shouldn't overwrite. Either way,
+        // accepting the write is unsafe — a deleted session shouldn't be
+        // resurrected by an Evolution webhook, and an in-flight code must
+        // never be replaced by a rotating one. Bail out instead of risking
+        // a fresh-code overwrite via the fallback update path below.
+        return NextResponse.json({ ok: true, skipped: 'preread_failed' });
       }
+      const existingTail = current?.pairing_code ? `***${current.pairing_code.slice(-2)}` : 'null';
+      console.log(`[PAIRING-WEBHOOK] Current DB state: state=${current?.state} existingTail=${existingTail} lastUpdated=${current?.updated_at}`);
 
       // Never regress an active session back to pairing_sent.
       if (current?.state === 'active') {
