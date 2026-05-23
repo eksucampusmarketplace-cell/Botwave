@@ -1310,6 +1310,11 @@ input { font: inherit; color: inherit; }
     return `${seconds}s`;
   }
 
+  function gemSpeedupCost(endsAt) {
+    const remaining = Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 1000));
+    return remaining <= 0 ? 0 : Math.max(1, Math.ceil(remaining / 300));
+  }
+
   function initials(name) {
     if (!name) return '·';
     const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -1385,6 +1390,14 @@ input { font: inherit; color: inherit; }
         initData: (tg && tg.initData) || '',
         session_id: SESSION_ID,
         building_key,
+      });
+    },
+
+    speedup(payload) {
+      return this.post('/api/tycoon/speedup', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        ...payload,
       });
     },
 
@@ -1619,6 +1632,7 @@ input { font: inherit; color: inherit; }
       }
       sub.push(def.role);
       const busy = !!t.training_ends_at;
+      const speedCost = busy ? gemSpeedupCost(t.training_ends_at) : 0;
       return `
         <div class="unit">
           <div class="unit-icon">${def.icon}</div>
@@ -1628,6 +1642,7 @@ input { font: inherit; color: inherit; }
           </div>
           <div class="unit-count">${fmtNum(t.count || 0)}</div>
           <button class="mini-action" data-train="${escapeAttr(k)}" ${busy ? 'disabled' : ''}>TRAIN 5</button>
+          ${busy ? `<button class="mini-action" data-speed-unit="${escapeAttr(k)}">⚡ ${speedCost}💎</button>` : ''}
         </div>`;
     }).join('');
     el.innerHTML = rows;
@@ -1649,6 +1664,7 @@ input { font: inherit; color: inherit; }
         sub = `Unlocks at HQ ${bld.unlock_at}`;
       }
       const busy = !!bld.upgrading_ends_at;
+      const speedCost = busy ? gemSpeedupCost(bld.upgrading_ends_at) : 0;
       return `
         <div class="bldg ${locked ? 'locked' : ''}">
           <div class="bldg-icon">${BLDG_ICON[k] || '🏗'}</div>
@@ -1658,6 +1674,7 @@ input { font: inherit; color: inherit; }
           </div>
           <div class="bldg-lvl">${locked ? '—' : 'LV ' + bld.level}</div>
           <button class="mini-action" data-upgrade="${escapeAttr(k)}" ${busy ? 'disabled' : ''}>UP</button>
+          ${busy ? `<button class="mini-action" data-speed-building="${escapeAttr(k)}">⚡ ${speedCost}💎</button>` : ''}
         </div>`;
     }).join('');
   }
@@ -1758,6 +1775,24 @@ input { font: inherit; color: inherit; }
   });
 
   $('#crew-list').addEventListener('click', async e => {
+    const speed = e.target.closest('button[data-speed-unit]');
+    if (speed && !speed.disabled) {
+      if (!HAS_TG) {
+        showToast('Preview mode is read-only.', 'lose');
+        return;
+      }
+      speed.disabled = true;
+      try {
+        const out = await API.speedup({ kind: 'training', unit: speed.dataset.speedUnit });
+        applySnapshot(out);
+        showToast(`Training finished for ${out.cost} gems.`, 'win');
+      } catch (err) {
+        showToast(humanError(err), 'lose');
+        speed.disabled = false;
+      }
+      return;
+    }
+
     const btn = e.target.closest('button[data-train]');
     if (!btn || btn.disabled) return;
     if (!HAS_TG) {
@@ -1776,6 +1811,24 @@ input { font: inherit; color: inherit; }
   });
 
   $('#bldg-list').addEventListener('click', async e => {
+    const speed = e.target.closest('button[data-speed-building]');
+    if (speed && !speed.disabled) {
+      if (!HAS_TG) {
+        showToast('Preview mode is read-only.', 'lose');
+        return;
+      }
+      speed.disabled = true;
+      try {
+        const out = await API.speedup({ kind: 'building', building_key: speed.dataset.speedBuilding });
+        applySnapshot(out);
+        showToast(`Upgrade finished for ${out.cost} gems.`, 'win');
+      } catch (err) {
+        showToast(humanError(err), 'lose');
+        speed.disabled = false;
+      }
+      return;
+    }
+
     const btn = e.target.closest('button[data-upgrade]');
     if (!btn || btn.disabled) return;
     if (!HAS_TG) {
@@ -2033,8 +2086,10 @@ input { font: inherit; color: inherit; }
     if (r === 'insufficient_troops') return 'Not enough crew for that.';
     if (r === 'insufficient_energy') return 'Not enough energy.';
     if (r === 'insufficient_coins') return 'Not enough coins.';
+    if (r === 'insufficient_gems') return 'Not enough gems.';
     if (r === 'training_busy') return 'That unit is already training.';
     if (r === 'upgrade_busy') return 'That building is already upgrading.';
+    if (r === 'queue_not_found') return 'Nothing to speed up.';
     if (r === 'unit_locked' || r === 'building_locked') return 'Locked until your HQ grows.';
     if (r === 'raid_rate_limited') return 'Lay low for a minute.';
     if (r === 'already_claimed') return 'Already claimed today.';

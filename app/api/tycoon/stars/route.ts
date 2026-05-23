@@ -5,16 +5,9 @@
  * Stars purchase callback for the tycoon bot's pre-checkout / successful-
  * payment flow.
  *
- * V1 scope:
- *  - **Logs every incoming Stars event** to `tycoon_events` so we have a
- *    ground-truth audit trail before we start crediting gems.
- *  - Validates `X-Tycoon-Stars-Signature: hmac-sha256(body, STARS_SECRET)`.
- *    Telegram itself doesn't sign Stars updates the same way as Bot API
- *    webhooks, so this header is set by the upstream bot proxy that
- *    forwards `pre_checkout_query` / `successful_payment` events to us.
- *  - **Does NOT yet credit gems** to the player. Crediting requires the
- *    full SKU table + ledger + idempotency-on-`telegram_payment_charge_id`,
- *    which lands in PR-D2 alongside the SKU definitions.
+ * Validates `X-Tycoon-Stars-Signature: hmac-sha256(body, STARS_SECRET)`.
+ * On successful_payment it validates the SKU, credits gems once, and writes
+ * an immutable ledger entry keyed by telegram_payment_charge_id.
  *
  * Body shape (forwarded from the bot):
  *   {
@@ -31,6 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
+import { GEM_SKUS } from '@/lib/tycoon/monetization';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -81,12 +75,31 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createAdminClient();
+  const sku = GEM_SKUS[body.invoice_payload || ''];
+  if (!sku) {
+    return NextResponse.json({ error: 'unknown_sku' }, { status: 400 });
+  }
+  if (body.star_amount !== sku.stars) {
+    return NextResponse.json({ error: 'bad_star_amount' }, { status: 400 });
+  }
 
-  // pre_checkout_query: answer true (V1 always-accept). We do the answer
-  // upstream in the bot; here we just log.
-  // successful_payment: log + (PR-D2: credit + write ledger).
+  const { data: playerRow, error: playerError } = await supabase
+    .from('tycoon_players')
+    .select('id, gems')
+    .eq('telegram_user_id', body.telegram_user_id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (playerError) {
+    return NextResponse.json({ error: 'player_lookup_failed', detail: playerError.message }, { status: 500 });
+  }
+  if (!playerRow) {
+    return NextResponse.json({ error: 'player_not_found' }, { status: 404 });
+  }
+  const player = playerRow as { id: string; gems: number };
+
   await supabase.from('tycoon_events').insert({
-    player_id: null, // filled in PR-D2 once we look up by telegram_user_id
+    player_id: player.id,
     kind: `stars_${body.event}`,
     payload: {
       telegram_user_id: body.telegram_user_id,
@@ -97,5 +110,44 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ ok: true, recorded: body.event });
+  if (body.event === 'pre_checkout_query') {
+    return NextResponse.json({ ok: true, recorded: body.event, sku: sku.id });
+  }
+
+  const chargeId = (body.telegram_payment_charge_id || '').trim();
+  if (!chargeId) {
+    return NextResponse.json({ error: 'missing_charge_id' }, { status: 400 });
+  }
+  const idempotencyKey = `stars:${chargeId}`;
+  const { error: ledgerError } = await supabase.from('tycoon_ledger').insert({
+    player_id: player.id,
+    kind: 'credit',
+    amount: sku.gems,
+    currency: 'gems',
+    reason: 'telegram_stars_purchase',
+    idempotency_key: idempotencyKey,
+    metadata: {
+      sku: sku.id,
+      label: sku.label,
+      stars: sku.stars,
+      telegram_payment_charge_id: chargeId,
+      provider_payment_charge_id: body.provider_payment_charge_id ?? null,
+    },
+  });
+  if (ledgerError) {
+    if (ledgerError.code === '23505') {
+      return NextResponse.json({ ok: true, recorded: body.event, credited: false, duplicate: true });
+    }
+    return NextResponse.json({ error: 'ledger_insert_failed', detail: ledgerError.message }, { status: 500 });
+  }
+
+  const { error: updateError } = await supabase
+    .from('tycoon_players')
+    .update({ gems: Number(player.gems) + sku.gems })
+    .eq('id', player.id);
+  if (updateError) {
+    return NextResponse.json({ error: 'gem_credit_failed', detail: updateError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, recorded: body.event, credited: true, gems: sku.gems });
 }
