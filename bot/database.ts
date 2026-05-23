@@ -331,7 +331,22 @@ export async function updateSessionPairingCode(
   return { applied: !error && (count ?? 0) > 0, count: count ?? 0 };
 }
 
-export async function updateSessionStatus(sessionId: string, status: string) {
+export interface UpdateSessionStatusOptions {
+  /**
+   * Persist a free-form last_pairing_error string alongside the state change.
+   * Use this to record terminal disconnect reasons (e.g. WhatsApp
+   * device_removed / logged out) so the auto-recovery loop in
+   * sessionCoordinator can skip retries for sessions that will never come
+   * back without a fresh pair.
+   */
+  lastPairingError?: string;
+}
+
+export async function updateSessionStatus(
+  sessionId: string,
+  status: string,
+  opts: UpdateSessionStatusOptions = {},
+) {
   const timestamp = new Date().toISOString();
 
   // Valid state transitions — prevents illegal jumps (e.g. active→pairing).
@@ -379,6 +394,12 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updated_at: timestamp
   };
 
+  // Persist a terminal disconnect reason if one was supplied. Cleared on
+  // successful re-pair (state transitions through 'active').
+  if (opts.lastPairingError !== undefined) {
+    updatePayload.last_pairing_error = opts.lastPairingError;
+  }
+
   const clearedFields: string[] = [];
 
   if (status === 'active') {
@@ -387,6 +408,12 @@ export async function updateSessionStatus(sessionId: string, status: string) {
     updatePayload.qr_expires_at = null;
     updatePayload.qr_generated_at = null;
     updatePayload.pairing_code = null;
+    // Clear any previously stored disconnect reason — a successful re-pair
+    // invalidates the device_removed/logged_out marker so the next disconnect
+    // gets a fresh diagnosis.
+    if (opts.lastPairingError === undefined) {
+      updatePayload.last_pairing_error = null;
+    }
     clearedFields.push('qr_code', 'pairing_code');
     if (preState?.pairing_code) {
       console.log(`[PAIRING-STATE] Clearing pairing_code="${preState.pairing_code}" because session is now active`);
@@ -2169,6 +2196,44 @@ export async function cleanupDeadLetters(olderThanDays: number = 7): Promise<num
     return 0;
   }
   return data?.length ?? 0;
+}
+
+/**
+ * Janitor: delete `bot_sessions` rows that have been in a terminal failed
+ * state (inactive / pairing_failed) for longer than `olderThanDays`.
+ *
+ * Why: failed pair attempts accumulate forever and bloat the admin dashboard
+ * with rows that no longer correspond to any Evolution instance. They make
+ * the connection rate look much worse than it is and prevent users from
+ * re-pairing cleanly (some routes refuse to create a new row if any row
+ * exists for the same phone_number).
+ *
+ * Conservative defaults:
+ *  - 7 day floor before any row is eligible
+ *  - Never touches active / pairing_sent / needs_reauth (those are live)
+ *  - Skips rows that have ever had a successful pair (last_active IS NOT NULL)
+ *    so we don't accidentally evict a long-disconnected real customer
+ */
+export async function cleanupStaleSessions(olderThanDays: number = 7): Promise<number> {
+  const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('bot_sessions')
+    .delete()
+    .in('state', ['inactive', 'pairing_failed'])
+    .is('last_active', null) // never successfully connected — safe to drop
+    .lt('updated_at', cutoff)
+    .select('id, session_name, phone_number');
+
+  if (error) {
+    console.error('[CLEANUP] Failed to delete stale sessions:', error.message);
+    return 0;
+  }
+
+  const count = data?.length ?? 0;
+  if (count > 0) {
+    console.log(`[CLEANUP] Removed ${count} stale bot_sessions row(s) older than ${olderThanDays}d (state=inactive/pairing_failed, never paired)`);
+  }
+  return count;
 }
 
 // ─── Bot Settings (per-session, for !settings command) ────────────────────────

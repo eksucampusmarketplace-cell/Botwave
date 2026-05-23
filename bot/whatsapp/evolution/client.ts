@@ -2029,9 +2029,12 @@ const trackedInstances = new Set<string>();
 
 // Callback invoked when keep-alive detects a disconnected instance.
 // Set by BotManager to trigger reconnection without circular imports.
-let onDisconnectDetected: ((instanceName: string, state: string) => void) | null = null;
+// statusCode forwards the Baileys/WhatsApp DisconnectReason (e.g. 401 for
+// loggedOut / device_removed) so the handler can distinguish terminal
+// auth failures from transient close events.
+let onDisconnectDetected: ((instanceName: string, state: string, statusCode?: number) => void) | null = null;
 
-export function setKeepAliveDisconnectHandler(handler: (instanceName: string, state: string) => void): void {
+export function setKeepAliveDisconnectHandler(handler: (instanceName: string, state: string, statusCode?: number) => void): void {
   onDisconnectDetected = handler;
 }
 
@@ -2167,6 +2170,9 @@ function ensureKeepAlive(): void {
         // trigger reconnection immediately instead of waiting for the 5s poll.
         if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
           console.log(`[EVO-CLIENT] keep-alive detected ${name} is ${state} - notifying BotManager for reconnection`);
+          // Keep-alive doesn't have a statusCode handy — pass undefined so the
+          // handler treats it as a non-terminal close. The WebSocket path
+          // (below) is the source of truth for statusCode=401 device_removed.
           onDisconnectDetected(name, state);
         }
 
@@ -2371,8 +2377,8 @@ export function startEvolutionWebSocket(): void {
       }
 
       if ((state === 'close' || state === 'refused') && onDisconnectDetected) {
-        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket - notifying BotManager`);
-        onDisconnectDetected(instanceName, state);
+        console.log(`[EVO-WS] INSTANT disconnect detected for ${instanceName} via WebSocket - notifying BotManager (statusCode=${statusCode || 'none'})`);
+        onDisconnectDetected(instanceName, state, statusCode);
       }
     });
 
