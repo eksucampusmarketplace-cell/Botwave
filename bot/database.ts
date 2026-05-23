@@ -2289,7 +2289,15 @@ export async function setFeatureEnabled(userId: string, sessionId: string, featu
     return false;
   }
   invalidateCache(userId);
-  await invalidateRedisKey(`feature:${sessionId}:${featureName}`);
+  // Redis cache is keyed by userId (see `cacheFeature` in
+  // infrastructure/redisSessionCache.ts: `feature:${userId}:${featureName}`).
+  // Previously this invalidation used `${sessionId}` which never matched the
+  // actual cache key — every toggle silently left a 5-minute stale value
+  // behind, so `!antidelete on` appeared to succeed but subsequent reads
+  // (revoke handler, `!recover`, etc.) kept returning `false` until the TTL
+  // expired. Keep these two keys in sync.
+  await invalidateRedisKey(`feature:${userId}:${featureName}`);
+  console.log(`[FEATURE-TOGGLE] user=${userId.slice(0, 8)} session=${sessionId.slice(0, 8)} feature=${featureName} enabled=${enabled}`);
   return true;
 }
 
