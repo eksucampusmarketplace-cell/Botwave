@@ -17,7 +17,7 @@ import { startPresenceSimulation, stopPresenceSimulation, getBrowserConfigForSes
 import { SELF_URL, getNextWorker } from './scaling/workerConfig';
 import { tryAcquireLock, releaseLock, refreshHeartbeat, detectConflict, resetAutoRecovery } from './scaling/sessionCoordinator';
 import { EvolutionSocketAdapter } from './whatsapp/evolution/socket';
-import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, reconnectInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, disableInstanceProxy, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
+import { createInstance, deleteInstance, deleteInstanceAndVerify, getPairingCode, refreshPairingCode, getInstanceStatus, setWebhook, trackInstance, untrackInstance, restartInstance, reconnectInstance, connectInstance, recordProxyFailure, recordProxySuccess, isProxyPoolDisabled, setKeepAliveDisconnectHandler, recordMessageActivity, getLastActivity, startEvolutionWebSocket, stopEvolutionWebSocket, trigger428Cooldown, is428CooldownActive, is428CooldownActiveAsync, get428CooldownRemaining, markPairingCodeGenerated, clearPairingStability, recordPairingAttempt, clearPairingAttempts, getReconnectDelay, wasEvolutionRecentlyDown, setInstanceOwner, clearSessionProxy, type PairingResult } from './whatsapp/evolution/client';
 import { redisGetSessionProxy, redisRecordProxyFailure } from './infrastructure/redis';
 import { queueLink, cancelPendingLinks } from './infrastructure/linkQueue';
 import { TelegramBotInstance } from './telegram/manager';
@@ -135,7 +135,7 @@ if (PROXY_LIST.length > 0) {
 function getNextBaileysProxy(): any | undefined {
   if (PROXY_LIST.length === 0 || !HttpsProxyAgent) return undefined;
   if (isProxyPoolDisabled()) {
-    console.log('[PROXY] Baileys: proxy pool disabled (fallback mode) - connecting directly');
+    console.log('[PROXY] Baileys: proxy pool disabled - connecting directly');
     return undefined;
   }
   const entry = PROXY_LIST[baileysProxyCounter % PROXY_LIST.length];
@@ -1176,29 +1176,22 @@ export class EvolutionBot {
           // Waiting for connection - applies to both pairing and reconnect.
           // Check for timeouts so we don't wait forever.
           if (this.isPairingSent) {
-            // Pairing in progress - poll for updated pairing code in case
-            // Evolution API internally reconnected and generated a new one
-            // (the old code shown on the dashboard would be invalid).
+            // Pairing in progress. Do not call /instance/connect again while a
+            // code is already on screen: Baileys-style pair-code flows should
+            // keep one code stable long enough for the user to enter it.
             try {
-              const latestResult = await refreshPairingCode(this.sessionId, this.phoneNumber);
-              if (latestResult) {
-                // Always update QR - it rotates every ~20-30s even when
-                // pairing code stays the same across rotations.
-                if (latestResult.qrCode) {
-                  await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
-                }
-                const dbCode = await getSessionPairingCode(this.sessionId);
-                if (dbCode !== latestResult.pairingCode) {
-                  console.log(`[EVO] Pairing code CHANGED for ${this.sessionId}: "${dbCode}" → "${latestResult.pairingCode}" - updating DB`);
-                  // force: true because the row may still be in 'active' from a
-                  // brief WS state=open before the next close — without this, the
-                  // .neq('state','active') guard silently drops the update and the
-                  // dashboard keeps showing the stale code while Evolution rotates it.
+              const dbCode = await getSessionPairingCode(this.sessionId);
+              if (!dbCode) {
+                const latestResult = await refreshPairingCode(this.sessionId, this.phoneNumber);
+                if (latestResult) {
+                  if (latestResult.qrCode) {
+                    await updateSessionQR(this.sessionId, latestResult.qrCode, new Date(Date.now() + 180000).toISOString(), new Date().toISOString());
+                  }
                   await updateSessionPairingCode(this.sessionId, latestResult.pairingCode, { force: true });
                 }
               }
             } catch (err) {
-              // Non-fatal - just means we couldn't check for updated code
+              // Non-fatal - just means we couldn't check for a missing code
             }
 
             // Early proxy rotation: if stuck in 'connecting' for 60s AND no
@@ -1286,8 +1279,10 @@ export class EvolutionBot {
               console.log(`[EVO] Pairing timed out (connecting) for ${this.sessionId} (finalState=${finalState}) - auto-retry ${pairingRetryCount}/${MAX_PAIRING_RETRIES}`);
 
               if (pairingRetryCount > MAX_PAIRING_RETRIES) {
-                console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting needs_reauth`);
-                await updateSessionStatus(this.sessionId, 'needs_reauth');
+                console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting pairing_failed`);
+                await updateSessionStatus(this.sessionId, 'pairing_failed', {
+                  lastPairingError: `Pairing failed after ${MAX_PAIRING_RETRIES} retries. The pairing code was not accepted before it expired; try again with a fresh code.`,
+                });
                 this.isPairingSent = false;
                 if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
                 return;
@@ -1474,8 +1469,10 @@ export class EvolutionBot {
             console.log(`[EVO] Pairing timed out for ${this.sessionId} (finalState=${finalState}) - auto-retry ${pairingRetryCount}/${MAX_PAIRING_RETRIES}`);
 
             if (pairingRetryCount > MAX_PAIRING_RETRIES) {
-              console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting needs_reauth`);
-              await updateSessionStatus(this.sessionId, 'needs_reauth');
+              console.log(`[EVO] Pairing retry limit (${MAX_PAIRING_RETRIES}) exceeded for ${this.sessionId} - setting pairing_failed`);
+              await updateSessionStatus(this.sessionId, 'pairing_failed', {
+                lastPairingError: `Pairing failed after ${MAX_PAIRING_RETRIES} retries. The pairing code was not accepted before it expired; try again with a fresh code.`,
+              });
               this.isPairingSent = false;
               if (this.pollHandle) { clearInterval(this.pollHandle); this.pollHandle = null; }
               return;

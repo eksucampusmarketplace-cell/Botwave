@@ -254,7 +254,7 @@ export default function SessionsPage() {
       return;
     }
     // For WhatsApp sessions, reset state so the worker generates a fresh pairing code
-    if (session.state === 'needs_reauth' || session.state === 'inactive') {
+    if (session.state === 'needs_reauth' || session.state === 'inactive' || session.state === 'pairing_failed') {
       try {
         const response = await fetch('/api/bot/sessions', {
           method: 'PATCH',

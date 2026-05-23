@@ -1,7 +1,7 @@
 // bot/evolutionClient.ts
 // REST client for Evolution API endpoints.
 
-import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions } from '../../infrastructure/redis';
+import { redisSet428Cooldown, redisGet428Cooldown, redisAcquirePairingLock, redisReleasePairingLock, redisRecordProxyFailure, redisIsProxyBlacklisted, redisClearProxyFailures, redisGetSessionProxy, redisSetSessionProxy, redisClearSessionProxy, redisAddProxyCountrySession, redisRemoveProxyCountrySession, redisGetProxyCountrySessions, redisGetRecentlyFailedSessionProxy, redisSetRecentlyFailedSessionProxy } from '../../infrastructure/redis';
 import { getSessionById, recordSharedProxyAssignment, clearSharedProxyAssignment } from '../../database';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -235,7 +235,7 @@ async function waitForRateLimit(): Promise<void> {
   }
 }
 
-// Proxy health tracking: when proxies fail, fall back to direct VPS connection.
+// Proxy health tracking: when proxies fail, avoid reusing them.
 // Tracks per-proxy failure counts and a global "proxy disabled" flag.
 const proxyFailures = new Map<string, number>();
 let proxyPoolDisabled = false;
@@ -258,8 +258,8 @@ async function sendProxyAlert(subject: string, details: Record<string, string | 
 }
 
 /**
- * Record a proxy failure. If a proxy exceeds the failure threshold,
- * disable it. If all proxies are disabled, fall back to direct VPS.
+ * Record a proxy failure. If the whole pool crosses the failure threshold,
+ * pause new proxy assignments rather than reconnecting every user on the VPS IP.
  */
 export function recordProxyFailure(instanceName: string, proxyHost: string, error: string): void {
   const count = (proxyFailures.get(proxyHost) || 0) + 1;
@@ -275,16 +275,14 @@ export function recordProxyFailure(instanceName: string, proxyHost: string, erro
 
     if (allFailing) {
       proxyPoolDisabled = true;
-      console.error('[PROXY] ALL proxies failing - falling back to direct VPS connection');
-      sendProxyAlert('Proxy Pool Down - Falling Back to Direct VPS', {
-        'Status': 'All proxies failed, using direct VPS IP',
+      console.error('[PROXY] ALL proxies failing - pausing proxy assignment');
+      sendProxyAlert('Proxy Pool Down - Pairing Paused', {
+        'Status': 'All proxies failed; new WhatsApp pairing will pause until proxies recover',
         'Failed Proxies': PROXY_LIST.length.toString(),
         'Last Error': error,
         'Instance': instanceName,
-        'Action': 'Sessions will reconnect without proxy. Add/fix proxies when available.',
+        'Action': 'Add/fix proxies in PROXY_LIST or ask affected users to use custom proxy.',
       });
-      // Disable proxy on all tracked instances so reconnections use direct VPS
-      disableProxiesOnAllInstances();
       startProxyRecoveryCheck();
     }
   }
@@ -352,7 +350,7 @@ function stopProxyRecoveryCheck(): void {
   }
 }
 
-/** Check if proxy pool is currently disabled (falling back to direct VPS). */
+/** Check if proxy pool is currently disabled. */
 export function isProxyPoolDisabled(): boolean {
   return proxyPoolDisabled;
 }
@@ -400,6 +398,9 @@ export async function clearSessionProxy(sessionId: string, phoneNumber?: string)
   }
   sessionProxyMap.delete(sessionId);
   await redisClearSessionProxy(sessionId);
+  if (proxyStr) {
+    await redisSetRecentlyFailedSessionProxy(sessionId, proxyStr.split(':')[0]);
+  }
   // Mirror the clear into the DB so the persisted shared-pool assignment
   // doesn't drift out of sync with the in-flight (Redis) binding.
   await clearSharedProxyAssignment(sessionId).catch(err =>
@@ -467,7 +468,7 @@ export function extractCountryCode(phoneNumber: string): string {
  * 2. Prefer a proxy that already has sessions from the same country code (< cap)
  * 3. Prefer a proxy with no sessions yet (empty)
  * 4. Fall back to least-loaded proxy that hasn't hit the per-country cap
- * 5. If all proxies are full or blacklisted, return null (caller falls back to direct)
+ * 5. If all proxies are full or blacklisted, return null so pairing fails closed
  */
 async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Promise<{ host: string; port: string; protocol: string; username: string; password: string } | null> {
   // Check for user's custom (BYOP) proxy before using the shared pool
@@ -496,6 +497,7 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   }
 
   const countryCode = phoneNumber ? extractCountryCode(phoneNumber) : '';
+  const recentlyFailedProxyHost = sessionId ? await redisGetRecentlyFailedSessionProxy(sessionId) : null;
 
   // Try Redis-backed sticky proxy first
   if (sessionId) {
@@ -504,12 +506,16 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
       const stickyHost = stickyProxyStr.split(':')[0];
       const blacklisted = await redisIsProxyBlacklisted(stickyHost);
       const permanentlyBurnt = isProxyPermanentlyBurnt(stickyProxyStr);
-      if (!blacklisted && !permanentlyBurnt) {
+      const recentlyFailed = recentlyFailedProxyHost === stickyHost;
+      if (!blacklisted && !permanentlyBurnt && !recentlyFailed) {
         const parsed = parseProxy(stickyProxyStr);
         if (parsed) return parsed;
       }
       if (permanentlyBurnt) {
         console.warn(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is PERMANENTLY BURNT — clearing and rotating`);
+        await redisClearSessionProxy(sessionId);
+      } else if (recentlyFailed) {
+        console.log(`[PROXY] Sticky proxy ${stickyHost} recently failed for session ${sessionId?.slice(0, 8)} — rotating`);
         await redisClearSessionProxy(sessionId);
       } else {
         console.log(`[PROXY] Sticky proxy ${stickyHost} for session ${sessionId?.slice(0, 8)} is blacklisted — rotating`);
@@ -531,6 +537,11 @@ async function getNextProxyAsync(sessionId?: string, phoneNumber?: string): Prom
   for (let i = 0; i < PROXY_LIST.length; i++) {
     const candidate = PROXY_LIST[i];
     const candidateHost = candidate.split(':')[0];
+
+    if (recentlyFailedProxyHost && candidateHost === recentlyFailedProxyHost) {
+      scores.push({ idx: i, host: candidateHost, sameCountryCount: 0, totalCount: 0, blacklisted: true });
+      continue;
+    }
 
     // 1. Hardcoded permanent denylist — never assign these, even on cold start.
     if (isProxyPermanentlyBurnt(candidate)) {
@@ -1293,8 +1304,9 @@ export async function rotateStaleProxiesOnStartup(): Promise<{
 }
 
 /**
- * Disable proxy on an existing instance so it falls back to direct VPS connection.
- * Used when the proxy pool is down and sessions need to reconnect without proxy.
+ * Disable proxy on an existing instance.
+ * Kept as an admin recovery helper; automatic pairing no longer falls back to
+ * the VPS IP because that makes WhatsApp reject many accounts at once.
  */
 export async function disableInstanceProxy(instanceName: string): Promise<boolean> {
   try {
@@ -2062,17 +2074,6 @@ export function untrackInstance(instanceName: string): void {
   if (trackedInstances.size === 0 && keepAliveHandle) {
     clearInterval(keepAliveHandle);
     keepAliveHandle = null;
-  }
-}
-
-/** Disable proxy on all currently tracked instances (used during proxy pool fallback). */
-function disableProxiesOnAllInstances(): void {
-  if (trackedInstances.size === 0) return;
-  console.log(`[PROXY] Disabling proxy on ${trackedInstances.size} tracked instance(s)...`);
-  for (const name of trackedInstances) {
-    disableInstanceProxy(name).catch(err => {
-      console.warn(`[PROXY] Failed to disable proxy on ${name}:`, err);
-    });
   }
 }
 

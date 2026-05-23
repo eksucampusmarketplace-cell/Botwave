@@ -142,6 +142,7 @@ function maybeFlushMetrics(): void {
 const lastQrEvent = new Map<string, { ts: number; qrPrefix?: string; pairingCode?: string }>();
 const QR_THROTTLE_MS = 1500;
 const QR_MAP_MAX_SIZE = 500;
+const PAIRING_CODE_FREEZE_MS = 180_000;
 
 function shouldSkipQrEvent(
   sessionId: string,
@@ -600,7 +601,7 @@ export async function POST(request: NextRequest) {
 
       const { data: current, error: stateErr } = await supabase
         .from('bot_sessions')
-        .select('state, pairing_code, updated_at, user_id')
+        .select('state, pairing_code, qr_generated_at, updated_at, user_id')
         .eq('id', sessionId)
         .single();
 
@@ -616,20 +617,39 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      if (current?.state && !['qr_pending', 'pairing_sent', 'connecting'].includes(current.state)) {
+        console.log(`[PAIRING-WEBHOOK] BLOCKED - session ${sessionId} is ${current.state}. Ignoring stale qrcode.updated after logout/reauth.`);
+        return NextResponse.json({ ok: true });
+      }
+
+      const codeStartedAt = current?.qr_generated_at || current?.updated_at;
+      const codeAgeMs = codeStartedAt ? Date.now() - new Date(codeStartedAt).getTime() : 0;
+      const incomingCodeIsFrozen = !!(
+        pairingCode &&
+        current?.pairing_code &&
+        current.pairing_code !== pairingCode &&
+        codeAgeMs > 0 &&
+        codeAgeMs < PAIRING_CODE_FREEZE_MS
+      );
+
       // Always update QR code unconditionally - it rotates every ~20-30s
-      // independently of the pairing code. The duplicate/lock checks below
-      // only protect the pairing code; QR must stay fresh for scan users.
+      // independently of the pairing code. When using an 8-character pair
+      // code, do not replace the QR with one tied to a different frozen code.
       if (qrCode) {
-        const { error: qrErr } = await supabase.from('bot_sessions').update({
-          qr_code: qrCode,
-          qr_generated_at: webhookReceivedAt,
-          qr_expires_at: new Date(Date.now() + 300_000).toISOString(),
-          updated_at: webhookReceivedAt,
-        }).eq('id', sessionId).neq('state', 'active');
-        if (qrErr) {
-          console.error(`[PAIRING-WEBHOOK] QR update FAILED for ${sessionId}: ${qrErr.message}`);
+        if (incomingCodeIsFrozen) {
+          console.log(`[PAIRING-WEBHOOK] QR update skipped for ${sessionId}; incoming QR belongs to rotating code "${pairingCode}".`);
         } else {
-          console.log(`[PAIRING-WEBHOOK] QR updated for ${sessionId} (len=${qrCode.length})`);
+          const { error: qrErr } = await supabase.from('bot_sessions').update({
+            qr_code: qrCode,
+            qr_generated_at: webhookReceivedAt,
+            qr_expires_at: new Date(Date.now() + 300_000).toISOString(),
+            updated_at: webhookReceivedAt,
+          }).eq('id', sessionId).neq('state', 'active');
+          if (qrErr) {
+            console.error(`[PAIRING-WEBHOOK] QR update FAILED for ${sessionId}: ${qrErr.message}`);
+          } else {
+            console.log(`[PAIRING-WEBHOOK] QR updated for ${sessionId} (len=${qrCode.length})`);
+          }
         }
       }
 
@@ -644,8 +664,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      if (pairingCode && current?.pairing_code && current.pairing_code !== pairingCode) {
+        if (incomingCodeIsFrozen) {
+          console.log(`[PAIRING-WEBHOOK] FROZEN - keeping existing code "${current.pairing_code}" for ${sessionId}; ignored rotating code "${pairingCode}" at ${Math.round(codeAgeMs / 1000)}s.`);
+          return NextResponse.json({ ok: true });
+        }
+      }
+
       // Short-circuit rapid-fire code changes within 2 seconds of the last update.
-      // This prevents the ~45s reconnect loop from producing codes the user can't enter.
       if (pairingCode && current?.updated_at) {
         const sinceLastUpdate = Date.now() - new Date(current.updated_at).getTime();
         if (sinceLastUpdate < 2000) {
@@ -654,10 +680,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Always accept a different pairing code. Evolution API only generates
-      // a new code on reconnect (requestPairingCode), which invalidates the
-      // old one. So a different code means the old one is already dead - we
-      // must save the new one immediately regardless of age.
       if (pairingCode) {
         if (current?.pairing_code && current.pairing_code !== pairingCode) {
           console.log(`[PAIRING-WEBHOOK] Pairing code CHANGED for ${sessionId}: "${current.pairing_code}" → "${pairingCode}" (reconnect invalidated old code)`);
