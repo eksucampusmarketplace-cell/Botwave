@@ -1,0 +1,4640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cosa Nostra Tycoon — Mockup</title>
+  <style>
+/* ===========================================================
+   COSA NOSTRA TYCOON — Visual Mockup Styles
+   Stylized 2D cartoon mob aesthetic, multi-screen
+   =========================================================== */
+
+:root {
+  --bg-deep: #0d0d12;
+  --bg-panel: #15131e;
+  --bg-card: #1c1929;
+  --bg-card-2: #252037;
+  --gold: #d4af37;
+  --gold-bright: #f5cf4f;
+  --red: #a8161d;
+  --red-bright: #e0252f;
+  --purple: #2a2638;
+  --green: #10b981;
+  --blue: #4d9fff;
+  --text: #f1ece1;
+  --text-dim: #9b9aa3;
+  --text-faint: #6b6878;
+  --border: rgba(255,255,255,0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background:
+    radial-gradient(ellipse at top, #1a1626 0%, #0a0a0f 60%),
+    #0a0a0f;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px;
+  overflow-x: hidden;
+}
+
+/* ===== Phone frame ===== */
+.phone-frame {
+  position: relative;
+  width: 390px;
+  min-height: 844px;
+  background: #000;
+  border-radius: 44px;
+  padding: 12px;
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.6),
+    0 0 0 2px #1a1a24,
+    0 0 0 4px #2a2a35,
+    inset 0 0 0 1px rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #000;
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 820px;
+  background: linear-gradient(180deg, #0f0d18 0%, #15131e 100%);
+  border-radius: 36px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Status bar ===== */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 32px 4px 32px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.status-icons { font-size: 10px; opacity: 0.7; letter-spacing: 1px; }
+
+/* ===== Telegram header ===== */
+.tg-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px 12px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tg-back, .tg-close {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 300;
+}
+
+.tg-back { color: #4d9fff; font-weight: 400; font-size: 28px; }
+
+.tg-title { flex: 1; text-align: center; }
+.tg-title-main { font-size: 15px; font-weight: 700; }
+.tg-title-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+/* ===== Resource bar ===== */
+.resource-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 12px 8px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.resource-bar::-webkit-scrollbar { display: none; }
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.resource-icon { font-size: 14px; }
+.resource.level {
+  background: linear-gradient(135deg, var(--gold) 0%, #b8941c 100%);
+  color: #1a1a24;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 12px rgba(212,175,55,0.25);
+}
+
+/* ===== Screens container ===== */
+.screens { flex: 1; overflow: hidden; position: relative; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: none;
+  padding-bottom: 80px;
+}
+
+.screen::-webkit-scrollbar { display: none; }
+
+.screen.active { display: block; animation: fadeIn 0.25s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================================================
+   SCREEN 1: EMPIRE — Hero card, crew, businesses
+   =========================================================== */
+
+.hero-card {
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 70% 30%, rgba(168,22,29,0.25), transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(212,175,55,0.10), transparent 60%),
+    linear-gradient(135deg, #2a2638 0%, #1a1626 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.18);
+  overflow: hidden;
+  min-height: 280px;
+  display: flex;
+}
+
+.hero-bg-glow {
+  position: absolute; inset: -20%;
+  background: radial-gradient(circle at center, rgba(168,22,29,0.35) 0%, transparent 60%);
+  pointer-events: none;
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1.0; transform: scale(1.05); }
+}
+
+.halftone {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1.2px);
+  background-size: 5px 5px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.hero-meta {
+  position: relative; z-index: 2;
+  flex: 1;
+  display: flex; flex-direction: column; gap: 4px;
+  align-self: flex-start;
+}
+
+.hero-rank {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--gold);
+  background: rgba(212,175,55,0.12);
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  align-self: flex-start;
+  margin-bottom: 6px;
+}
+
+.hero-name {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.hero-family { font-size: 12px; color: var(--text-dim); font-weight: 600; font-style: italic; }
+.hero-city { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+.hero-stage {
+  position: relative; width: 160px; height: 240px;
+  align-self: flex-end;
+  margin-right: -10px;
+  z-index: 2;
+}
+
+.char-rat {
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
+  animation: idle-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.cigar-ember { animation: ember 1.6s ease-in-out infinite; }
+@keyframes ember { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.smoke {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%);
+  pointer-events: none; opacity: 0;
+}
+
+.smoke1 { width: 14px; height: 14px; left: 36px; top: 165px; animation: rise 3.5s linear infinite; }
+.smoke2 { width: 18px; height: 18px; left: 32px; top: 165px; animation: rise 3.5s linear infinite 1.2s; }
+.smoke3 { width: 22px; height: 22px; left: 38px; top: 165px; animation: rise 3.5s linear infinite 2.4s; }
+
+@keyframes rise {
+  0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+  20%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-100px) translateX(-15px) scale(2); }
+}
+
+.hero-power {
+  position: absolute; bottom: 12px; left: 14px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(212,175,55,0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 6px 10px;
+  z-index: 3;
+}
+
+.power-label { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--text-dim); }
+.power-val { font-size: 18px; font-weight: 900; color: var(--gold-bright); }
+
+/* Section titles */
+.section-title {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 16px 16px 8px 16px;
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--text-dim);
+}
+
+.section-link {
+  color: var(--gold);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+/* Crew strip */
+.crew-strip {
+  display: flex; gap: 10px;
+  padding: 0 12px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.crew-strip::-webkit-scrollbar { display: none; }
+
+.crew-card {
+  flex-shrink: 0;
+  width: 96px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 8px 12px 8px;
+  text-align: center;
+  transition: transform 0.15s ease;
+}
+
+.crew-card:active { transform: scale(0.96); }
+
+.crew-avatar {
+  width: 64px; height: 64px;
+  margin: 0 auto 8px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%), #0d0d12;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(212,175,55,0.25);
+  overflow: hidden;
+}
+
+.char-mini { width: 100%; height: 100%; }
+
+.crew-empty {
+  border: 2px dashed rgba(212,175,55,0.3);
+  background: transparent;
+  color: var(--gold);
+  font-size: 28px; font-weight: 300;
+}
+
+.crew-name { font-size: 12px; font-weight: 700; }
+.crew-role { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* Mansion preview (on Empire screen) */
+.mansion-preview {
+  margin: 0 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a0815 0%, #1a1626 100%);
+  cursor: pointer;
+}
+
+.skyline {
+  width: 100%;
+  height: 130px;
+  display: block;
+  background: linear-gradient(180deg, #15101f 0%, #2a1a2a 100%);
+}
+
+.mansion-cta {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+}
+
+.mansion-cta-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.dim { font-size: 11px; color: var(--text-dim); }
+
+.badge { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
+.badge-red { background: var(--red); color: white; box-shadow: 0 0 10px rgba(168,22,29,0.5); }
+.badge-green { background: var(--green); color: white; }
+.badge-gold { background: var(--gold); color: #1a1a24; }
+
+/* Business grid */
+.biz-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.biz-card {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  position: relative; overflow: hidden;
+}
+
+.biz-card::before {
+  content: '';
+  position: absolute; top: -30px; right: -30px;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, var(--accent, rgba(212,175,55,0.18)) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.biz-pizza   { --accent: rgba(168,22,29,0.25); }
+.biz-casino  { --accent: rgba(16,185,129,0.25); }
+.biz-laundry { --accent: rgba(77,159,255,0.25); }
+.biz-docks   { --accent: rgba(212,175,55,0.25); }
+
+.biz-icon { font-size: 32px; margin-bottom: 4px; }
+.biz-name { font-size: 13px; font-weight: 700; }
+.biz-level { font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.5px; font-weight: 600; }
+.biz-income { font-size: 13px; color: var(--gold-bright); margin-top: 6px; font-weight: 800; }
+
+.biz-collect {
+  width: 100%;
+  margin-top: 10px;
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.biz-collect.ready {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  color: #1a1a24;
+  box-shadow: 0 0 16px rgba(212,175,55,0.5);
+  animation: ready-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ready-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(212,175,55,0.5); }
+  50%      { box-shadow: 0 0 24px rgba(212,175,55,0.8); }
+}
+
+.biz-collect.disabled { opacity: 0.45; cursor: not-allowed; }
+
+.biz-progress {
+  margin-top: 8px;
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.biz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.biz-locked { opacity: 0.55; }
+.biz-locked .biz-icon { filter: grayscale(1); }
+
+/* War banner */
+.war-banner {
+  margin: 14px 12px 12px 12px;
+  position: relative;
+  background:
+    radial-gradient(circle at 80% 50%, rgba(224,37,47,0.4), transparent 60%),
+    linear-gradient(135deg, #3a0d12 0%, #1a0509 100%);
+  border: 1px solid rgba(224,37,47,0.4);
+  border-radius: 14px;
+  padding: 14px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.war-glow {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 30%, rgba(224,37,47,0.15) 50%, transparent 70%);
+  animation: warShine 3s linear infinite;
+}
+
+@keyframes warShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.war-content {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.war-tag {
+  font-size: 10px; font-weight: 900;
+  color: var(--red-bright);
+  letter-spacing: 2px;
+}
+
+.war-title { font-size: 17px; font-weight: 800; margin-top: 2px; }
+.war-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.war-cta {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  border: none; color: white;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 900; font-size: 12px; line-height: 1.1;
+  letter-spacing: 0.8px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(224,37,47,0.4);
+  flex-shrink: 0;
+  animation: war-shake 4s ease-in-out infinite;
+}
+
+@keyframes war-shake {
+  0%, 92%, 100% { transform: translateX(0); }
+  93%           { transform: translateX(-2px) rotate(-1deg); }
+  94%           { transform: translateX(2px) rotate(1deg); }
+  95%           { transform: translateX(-2px); }
+  96%           { transform: translateX(0); }
+}
+
+/* ===========================================================
+   SCREEN 2: MANSION / HQ
+   =========================================================== */
+
+.mansion-hero {
+  margin: 10px 12px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(212,175,55,0.2);
+  background:
+    radial-gradient(ellipse at top, #2a1a2a 0%, #0d0a18 80%),
+    #0d0a18;
+}
+
+.mansion-skyline {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+.mansion-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.mansion-stat {
+  padding: 10px 6px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+
+.mansion-stat:last-child { border-right: none; }
+
+.stat-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+.stat-val { font-size: 16px; font-weight: 900; color: var(--gold-bright); margin-top: 3px; }
+
+.blinker { animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 0%, 60% { opacity: 1; } 70%, 100% { opacity: 0.2; } }
+
+.neon-pulse { animation: neon 2s ease-in-out infinite; }
+@keyframes neon { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.chimney-smoke { animation: chimney 3s linear infinite; transform-origin: center; }
+@keyframes chimney {
+  0%   { opacity: 0.3; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-30px) scale(2.5); }
+}
+
+.float-orb { animation: float 4s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50%      { transform: translateY(-8px); opacity: 1; }
+}
+
+/* Building list */
+.building-list { padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.building-card {
+  display: flex; gap: 12px; align-items: center;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.bld-icon {
+  width: 54px; height: 54px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.bld-info { flex: 1; min-width: 0; }
+.bld-name { font-size: 14px; font-weight: 800; }
+.bld-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.bld-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+
+.tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-dim);
+}
+
+.tag-gold { background: rgba(212,175,55,0.12); border-color: rgba(212,175,55,0.3); color: var(--gold-bright); }
+.tag-red { background: rgba(168,22,29,0.15); border-color: rgba(168,22,29,0.4); color: #ff6b75; }
+.tag-green { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #4ade80; }
+
+.bld-upgrade {
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 78px;
+}
+
+.bld-upgrade.ready-glow {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  box-shadow: 0 0 12px rgba(212,175,55,0.4);
+}
+
+.bld-cost { font-size: 12px; }
+.bld-time { font-size: 9px; opacity: 0.8; margin-top: 2px; letter-spacing: 0.5px; }
+
+.bld-upgrade.disabled { opacity: 0.45; cursor: not-allowed; }
+.building-card.locked { opacity: 0.55; }
+
+/* ===========================================================
+   SCREEN 3: FAMILY
+   =========================================================== */
+
+.family-banner {
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  padding: 18px;
+  display: flex; align-items: center; gap: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.25);
+  background:
+    radial-gradient(circle at 80% 30%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #1a0d18 0%, #2a1a2a 100%);
+  overflow: hidden;
+}
+
+.family-banner-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 30%, rgba(168,22,29,0.15) 60%, transparent 80%);
+  animation: bannerShine 5s linear infinite;
+}
+
+@keyframes bannerShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.family-crest {
+  width: 70px; height: 70px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+  z-index: 2;
+}
+
+.family-meta { flex: 1; z-index: 2; }
+.family-name {
+  font-size: 22px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.3px;
+}
+
+.family-tag { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.family-stats-row {
+  display: flex; gap: 14px; margin-top: 10px;
+}
+
+.family-stats-row > div {
+  display: flex; flex-direction: column;
+}
+
+.family-stats-row strong { font-size: 14px; font-weight: 900; color: var(--gold-bright); }
+.family-stats-row span { font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; }
+
+/* TG link card */
+.tg-link-card {
+  margin: 0 12px;
+  background: linear-gradient(180deg, #1a2a44, #0d1a28);
+  border: 1px solid rgba(77,159,255,0.3);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.tg-link-icon {
+  width: 44px; height: 44px;
+  background: var(--blue);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.tg-link-text { flex: 1; }
+.tg-link-title { font-size: 13px; font-weight: 800; }
+.tg-link-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.tg-link-btn {
+  background: var(--blue);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+
+/* Family tabs */
+.ftabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 12px 4px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ftabs::-webkit-scrollbar { display: none; }
+
+.ftab {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ftab.active {
+  background: var(--gold);
+  color: #1a1a24;
+  border-color: var(--gold-bright);
+}
+
+/* Boss card */
+.boss-card {
+  margin: 10px 12px;
+  padding: 12px;
+  display: flex; gap: 12px; align-items: center;
+  background:
+    radial-gradient(circle at 90% 50%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #2a1610 0%, #1a0a08 100%);
+  border: 1px solid rgba(168,22,29,0.4);
+  border-radius: 14px;
+}
+
+.boss-art {
+  width: 64px; height: 64px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(168,22,29,0.5));
+  animation: boss-bob 2s ease-in-out infinite;
+}
+
+@keyframes boss-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+.boss-info { flex: 1; min-width: 0; }
+.boss-tag { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--red-bright); }
+.boss-name { font-size: 14px; font-weight: 800; margin-top: 2px; }
+
+.boss-hp { margin-top: 6px; }
+.boss-hp-bar {
+  height: 6px; background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red-bright), #ff8800);
+  border-radius: 3px;
+}
+.boss-hp-text { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+.boss-sub { font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+.boss-attack {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(224,37,47,0.4);
+  flex-shrink: 0;
+}
+
+/* Member rows */
+.member-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.member-row.r5 {
+  background: linear-gradient(90deg, rgba(212,175,55,0.08) 0%, transparent 60%);
+}
+
+.member-rank {
+  width: 24px; text-align: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.member-row.r5 .member-rank { color: var(--gold); }
+
+.member-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.member-avatar svg { width: 100%; height: 100%; }
+
+.member-info { flex: 1; min-width: 0; }
+.member-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.member-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+.member-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.member-badge.gold { background: var(--gold); color: #1a1a24; }
+.member-badge.silver { background: #c0c0c0; color: #1a1a24; }
+.member-badge.bronze { background: #cd7f32; color: #1a1a24; }
+.member-badge.red { background: var(--red); color: white; }
+.member-badge.blue { background: var(--blue); color: white; }
+.member-badge.purple { background: #a855f7; color: white; }
+
+.member-power { font-size: 13px; font-weight: 800; color: var(--gold-bright); }
+
+.member-row.dim .member-avatar {
+  background: transparent;
+  border: 1px dashed var(--border);
+}
+
+/* ===========================================================
+   SCREEN 4: CITY MAP
+   =========================================================== */
+
+.city-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+}
+
+.small { font-size: 10px; letter-spacing: 1px; }
+
+.city-name {
+  font-size: 18px; font-weight: 900;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.city-rank-pill {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex; gap: 6px; align-items: baseline;
+}
+.city-rank-pill span { font-size: 10px; color: var(--text-dim); }
+.city-rank-pill strong { color: var(--gold-bright); font-size: 16px; font-weight: 900; }
+
+/* The map */
+.city-map {
+  position: relative;
+  margin: 0 12px 8px 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #15131e 0%, #0d0d12 100%);
+}
+
+.city-map-svg {
+  width: 100%;
+  height: 380px;
+  display: block;
+}
+
+.pulse-ring { animation: ringPulse 2s ease-out infinite; transform-origin: center; }
+@keyframes ringPulse {
+  0%   { opacity: 0.7; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.convoy-line { stroke-dashoffset: 0; animation: dashMove 1s linear infinite; }
+@keyframes dashMove { to { stroke-dashoffset: -16; } }
+
+.map-legend {
+  position: absolute; bottom: 8px; right: 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.map-legend > div { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.gold { background: var(--gold); }
+.dot.red { background: var(--red); }
+.dot.blue { background: var(--blue); }
+.dot.purple { background: #a855f7; }
+.dot.green { background: var(--green); }
+
+/* Target cards */
+.target-card {
+  margin: 0 12px 8px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex; gap: 10px; align-items: center;
+}
+
+.target-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.target-avatar svg { width: 100%; height: 100%; }
+
+.target-info { flex: 1; min-width: 0; }
+.target-name { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.target-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.target-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+
+.target-actions {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0;
+}
+
+.ta-scout, .ta-attack {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  min-width: 78px;
+}
+
+.ta-scout {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ta-attack {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  box-shadow: 0 2px 8px rgba(224,37,47,0.4);
+}
+
+.ta-attack.disabled {
+  background: var(--bg-panel);
+  color: var(--text-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ===========================================================
+   SCREEN 5: WAR ROOM
+   =========================================================== */
+
+.active-war {
+  margin: 10px 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(168,22,29,0.4);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(168,22,29,0.2), transparent 70%),
+    linear-gradient(135deg, #2a0d12 0%, #0d0508 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.war-clash {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+}
+
+.war-side {
+  flex: 1;
+  text-align: center;
+}
+
+.war-side-crest {
+  width: 56px; height: 56px;
+  margin: 0 auto 6px auto;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.war-side-name { font-size: 11px; font-weight: 800; line-height: 1.2; min-height: 26px; }
+.war-side-score { font-size: 26px; font-weight: 900; color: var(--gold-bright); }
+.war-side-tag { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+
+.war-vs {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+}
+.war-vs-text {
+  font-size: 20px; font-weight: 900;
+  background: linear-gradient(180deg, #ff4555, #a8161d);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+}
+.war-time {
+  font-size: 11px;
+  margin-top: 4px;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.war-score-bar {
+  position: relative;
+  height: 10px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 5px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.war-score-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+  border-radius: 5px;
+  box-shadow: 0 0 12px rgba(212,175,55,0.5);
+}
+
+.war-actions {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-top: 14px;
+}
+
+.war-action {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 6px;
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.war-action span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.war-rally { border-color: rgba(212,175,55,0.4); background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05)); }
+.war-solo  { border-color: rgba(168,22,29,0.4); background: linear-gradient(180deg, rgba(168,22,29,0.2), rgba(168,22,29,0.05)); }
+
+/* Contribution */
+.contrib-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.contrib-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 110px 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.contrib-rank { font-size: 18px; text-align: center; }
+.contrib-name { font-size: 12px; font-weight: 700; display: flex; gap: 4px; align-items: center; }
+
+.contrib-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.contrib-fill { height: 100%; border-radius: 4px; }
+
+.contrib-val { font-size: 13px; font-weight: 900; color: var(--gold-bright); text-align: right; }
+
+/* Battle reports */
+.battle-report {
+  margin: 0 12px 6px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex; gap: 10px; align-items: center;
+}
+
+.battle-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.battle-report.victory .battle-icon { background: rgba(16,185,129,0.2); }
+.battle-report.defeat  .battle-icon { background: rgba(168,22,29,0.2); }
+.battle-report.rally   .battle-icon { background: rgba(212,175,55,0.2); }
+
+.battle-info { flex: 1; }
+.battle-title { font-size: 12px; font-weight: 700; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.battle-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.retaliate { color: var(--red-bright); font-weight: 800; cursor: pointer; }
+
+/* ===========================================================
+   SCREEN 6: SHOP
+   =========================================================== */
+
+.capo-pass {
+  position: relative;
+  margin: 10px 12px;
+  padding: 16px;
+  display: flex; gap: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.4);
+  background:
+    radial-gradient(circle at 30% 70%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #3a2a10 0%, #1a1208 100%);
+  overflow: hidden;
+}
+
+.capo-bg-glow {
+  position: absolute; inset: -20%;
+  background: radial-gradient(circle at center, rgba(212,175,55,0.25) 0%, transparent 60%);
+  animation: pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.capo-content { flex: 1; z-index: 2; }
+
+.capo-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: var(--gold);
+  color: #1a1a24;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.capo-title {
+  font-size: 18px;
+  font-weight: 900;
+  margin-top: 6px;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.capo-perks { list-style: none; margin-top: 8px; font-size: 11px; color: var(--text); }
+.capo-perks li { padding: 2px 0; }
+
+.capo-buy {
+  margin-top: 10px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(212,175,55,0.4);
+  width: 100%;
+}
+
+.capo-art {
+  width: 80px;
+  flex-shrink: 0;
+  z-index: 2;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
+}
+.capo-art svg { width: 100%; height: 100%; }
+
+/* Stars grid */
+.stars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.stars-pack {
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.stars-pack.popular {
+  border-color: rgba(77,159,255,0.5);
+  background: linear-gradient(180deg, rgba(77,159,255,0.15), var(--bg-card));
+}
+
+.stars-pack.best {
+  border-color: rgba(212,175,55,0.5);
+  background: linear-gradient(180deg, rgba(212,175,55,0.15), var(--bg-card));
+}
+
+.stars-tag {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: #1a1a24;
+}
+
+.stars-pack.popular .stars-tag { background: var(--blue); color: white; }
+
+.stars-icon { font-size: 28px; }
+.stars-amt { font-size: 20px; font-weight: 900; color: var(--gold-bright); margin-top: 4px; }
+.stars-bonus { font-size: 10px; color: var(--green); margin-top: 2px; font-weight: 700; }
+
+.stars-buy {
+  margin-top: 8px;
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Item rows */
+.item-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 12px 6px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.item-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.item-info { flex: 1; }
+.item-name { font-size: 13px; font-weight: 800; }
+.item-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.item-buy {
+  background: linear-gradient(180deg, var(--bg-panel), #0a0815);
+  border: 1px solid rgba(212,175,55,0.3);
+  color: var(--gold-bright);
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Cosmetics */
+.cosmetics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.cosmetic-card {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.cosmetic-art {
+  font-size: 40px;
+  margin-bottom: 4px;
+}
+
+.cosmetic-name { font-size: 12px; font-weight: 700; }
+.cosmetic-price { font-size: 12px; font-weight: 800; color: var(--gold-bright); margin-top: 6px; }
+
+/* ===========================================================
+   RAID MODAL
+   =========================================================== */
+
+.raid-modal {
+  position: absolute; inset: 0;
+  background: rgba(5,5,10,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.raid-modal.open { display: flex; }
+
+.raid-content {
+  position: relative;
+  width: 100%;
+  max-height: 95%;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #1a1626 0%, #0d0a18 100%);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 18px;
+  padding: 18px 16px;
+  scrollbar-width: none;
+}
+
+.raid-content::-webkit-scrollbar { display: none; }
+
+.raid-close {
+  position: absolute; top: 8px; right: 10px;
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.raid-phase { display: none; }
+.raid-phase.active { display: block; animation: fadeIn 0.3s ease; }
+
+.raid-title {
+  font-size: 11px; font-weight: 900; letter-spacing: 2px;
+  color: var(--red-bright);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.raid-target {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px;
+  background: rgba(168,22,29,0.1);
+  border: 1px solid rgba(168,22,29,0.3);
+  border-radius: 12px;
+}
+
+.raid-target-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--red);
+  flex-shrink: 0;
+}
+.raid-target-avatar svg { width: 100%; height: 100%; }
+
+.raid-target-name { font-size: 16px; font-weight: 900; }
+.raid-target-power { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.raid-target-tags { display: flex; gap: 4px; margin-top: 6px; }
+
+/* VS panel */
+.raid-vs {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.raid-side {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.raid-side-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+.raid-side-value { font-size: 20px; font-weight: 900; color: var(--gold-bright); margin: 4px 0; }
+.raid-mini-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.raid-mini-bar div { height: 100%; border-radius: 3px; }
+
+.raid-mid {
+  font-size: 18px; font-weight: 900;
+  color: var(--red-bright);
+  letter-spacing: 1px;
+}
+
+.raid-squad {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin-bottom: 14px;
+}
+
+.raid-unit {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.unit-icon { font-size: 22px; }
+.unit-count { font-size: 14px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+
+.raid-prediction {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px;
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.raid-pred-text { font-size: 12px; font-weight: 700; color: var(--text); }
+.raid-pred-val { font-size: 22px; font-weight: 900; color: var(--green); }
+
+.raid-attack {
+  width: 100%;
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(224,37,47,0.5);
+  animation: ready-pulse 1.5s ease-in-out infinite;
+}
+
+/* Fight phase */
+.raid-fight-stage {
+  position: relative;
+  height: 260px;
+  background: linear-gradient(180deg, #1a0a08 0%, #2a0d12 100%);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fight-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255,200,50,0.6), transparent 50%);
+  animation: flash 0.6s ease-out infinite;
+}
+
+@keyframes flash {
+  0%, 70%, 100% { opacity: 0; }
+  20%           { opacity: 1; }
+}
+
+.fight-smoke {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,200,200,0.4), transparent 70%);
+}
+
+.fs1 { width: 60px; height: 60px; left: 30%; top: 30%; animation: rise 2s linear infinite; }
+.fs2 { width: 80px; height: 80px; left: 50%; top: 40%; animation: rise 2s linear infinite 0.6s; }
+.fs3 { width: 50px; height: 50px; left: 65%; top: 35%; animation: rise 2s linear infinite 1.2s; }
+
+.fight-char {
+  width: 110px; height: 140px;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.fight-char.left  { animation: charge-left 0.5s ease-in-out infinite alternate; }
+.fight-char.right { animation: charge-right 0.5s ease-in-out infinite alternate; }
+
+@keyframes charge-left  { from { transform: translateX(0); } to { transform: translateX(20px); } }
+@keyframes charge-right { from { transform: translateX(0); } to { transform: translateX(-20px); } }
+
+.fight-text {
+  position: absolute; bottom: 20px;
+  font-size: 22px; font-weight: 900; letter-spacing: 4px;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 8px #000;
+  z-index: 3;
+  animation: textPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* Result */
+.result-title {
+  font-size: 32px; font-weight: 900;
+  text-align: center;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(212,175,55,0.4);
+  letter-spacing: 2px;
+}
+
+.result-sub { text-align: center; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.result-loot {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin: 18px 0;
+}
+
+.loot-item {
+  background: rgba(212,175,55,0.1);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 12px;
+  padding: 10px 4px;
+  text-align: center;
+}
+
+.loot-icon { font-size: 26px; }
+.loot-val { font-size: 13px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+.loot-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.5px; margin-top: 2px; }
+
+.result-cas { font-size: 11px; color: var(--text-dim); text-align: center; margin-bottom: 12px; }
+
+.raid-claim {
+  width: 100%;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(212,175,55,0.5);
+}
+
+/* ===========================================================
+   Bottom nav
+   =========================================================== */
+
+.bottom-nav {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background:
+    linear-gradient(180deg, transparent 0%, #0a0a0f 30%),
+    var(--bg-panel);
+  border-top: 1px solid var(--border);
+  padding: 8px 4px 18px 4px;
+  backdrop-filter: blur(20px);
+  z-index: 50;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.nav-icon { font-size: 22px; filter: grayscale(0.4) opacity(0.7); }
+.nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+
+.nav-item.active { color: var(--gold-bright); }
+.nav-item.active .nav-icon { filter: none; }
+
+/* ===========================================================
+   Notes panel
+   =========================================================== */
+
+.notes {
+  width: 320px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #15131e, #0d0d12);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+  position: sticky;
+  top: 24px;
+}
+
+.notes-title {
+  font-size: 14px; font-weight: 800; letter-spacing: 1px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.notes-section {
+  background: rgba(212,175,55,0.07);
+  border-left: 3px solid var(--gold);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.notes-section strong { color: var(--gold-bright); }
+
+.notes ul { list-style: none; }
+.notes li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+.notes li:last-child { border-bottom: none; }
+.notes strong { color: var(--text); font-weight: 700; }
+
+/* ===== Responsive ===== */
+@media (max-width: 800px) {
+  body { flex-direction: column; align-items: center; padding: 8px; }
+  .phone-frame { transform: scale(0.95); transform-origin: top center; }
+  .notes { width: 100%; max-width: 390px; position: static; }
+}
+
+/* ===========================================================================
+   v3 — Data-driven additions:
+   - aux modals (power / troops / hero)
+   - new building cards
+   - flat list rows (target / contrib / battle / member)
+   - boss / clinic / army cards
+   - hero stats / gear / talents
+   - combat log
+   - casualties
+   - power breakdown bars
+   - misc helpers (tags, error flash, avatar)
+   =========================================================================== */
+
+/* ---- ensure raid modal uses .active too (script writes .active) ---- */
+.raid-modal.active { display: flex; }
+
+/* ---- shared aux modal (power / troops / hero) ---- */
+.aux-modal {
+  position: absolute; inset: 0;
+  background: rgba(5, 5, 12, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 14px;
+}
+.aux-modal.active { display: flex; animation: fadeIn 0.18s ease; }
+.aux-content {
+  background: linear-gradient(180deg, #1a1626 0%, #0f0d18 100%);
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 20px;
+  width: 100%; max-height: 90%;
+  padding: 18px 14px 18px;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.aux-content::-webkit-scrollbar { display: none; }
+.troops-content { max-width: 100%; }
+
+/* ---- POWER BREAKDOWN ---- */
+.power-bd { padding: 8px 6px; }
+.pb-total {
+  font-size: 36px; font-weight: 900; color: var(--gold-bright);
+  text-align: center; line-height: 1;
+}
+.pb-total-label {
+  text-align: center; font-size: 10px; letter-spacing: 3px;
+  color: var(--text-faint); font-weight: 800; margin: 4px 0 18px;
+}
+.pb-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 60px;
+  align-items: center; gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.pb-label { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.pb-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.pb-bar {
+  height: 10px; background: rgba(255,255,255,0.06); border-radius: 6px;
+  overflow: hidden;
+}
+.pb-bar > div { height: 100%; transition: width 0.4s ease; }
+.pb-val { text-align: right; font-size: 12px; font-weight: 800; color: var(--text); }
+.pb-hint {
+  font-size: 11px; color: var(--text-faint); text-align: center;
+  margin-top: 14px; font-style: italic;
+}
+
+/* ---- ARMY / TROOPS ---- */
+.army-totals {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin: 8px 0 14px;
+}
+.at-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 4px; text-align: center;
+}
+.at-card div { font-size: 16px; font-weight: 900; color: var(--gold-bright); line-height: 1; }
+.at-card span { font-size: 9px; color: var(--text-faint); letter-spacing: 1px; font-weight: 800; }
+
+.army-list { display: flex; flex-direction: column; gap: 8px; }
+.army-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px;
+  display: grid; grid-template-columns: 38px 1fr auto;
+  gap: 10px; align-items: center;
+}
+.army-card.locked { opacity: 0.55; }
+.army-icon { font-size: 28px; text-align: center; }
+.army-info { min-width: 0; }
+.army-name { font-size: 14px; font-weight: 800; display: flex; align-items: baseline; gap: 6px; }
+.army-short {
+  font-size: 9px; padding: 1px 5px; background: rgba(212,175,55,0.18);
+  color: var(--gold-bright); border-radius: 4px; letter-spacing: 1px;
+}
+.army-role { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.army-stats {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;
+  font-size: 10px; color: var(--text);
+}
+.army-stats span {
+  background: rgba(255,255,255,0.05); padding: 2px 5px; border-radius: 4px;
+  font-weight: 700;
+}
+.army-counters {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;
+}
+.army-cnt {
+  font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: 800;
+}
+.army-cnt.good { background: rgba(16,185,129,0.18); color: var(--green); }
+.army-cnt.bad { background: rgba(168,22,29,0.18); color: var(--red-bright); }
+.army-counts { font-size: 11px; margin-top: 6px; color: var(--text); }
+.army-counts strong { color: var(--gold-bright); }
+.army-train { display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
+.train-btn {
+  background: linear-gradient(180deg, var(--gold) 0%, #a17e23 100%);
+  color: #1a1a24; font-weight: 900; font-size: 11px;
+  border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+}
+.train-btn:active { transform: scale(0.96); }
+.train-cost { font-size: 9px; text-align: right; color: var(--text-faint); }
+.locked-pill {
+  font-size: 10px; padding: 4px 8px; background: rgba(255,255,255,0.05);
+  border-radius: 6px; color: var(--text-faint); font-weight: 700;
+}
+
+/* ---- CLINIC ---- */
+.clinic-card {
+  margin-top: 12px;
+  background: linear-gradient(180deg, rgba(168,22,29,0.08), rgba(255,255,255,0.02));
+  border: 1px solid rgba(168,22,29,0.25);
+  border-radius: 14px; padding: 12px;
+}
+.clinic-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.clinic-title { font-size: 13px; font-weight: 900; color: var(--red-bright); letter-spacing: 1px; }
+.clinic-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.clinic-cap {
+  font-size: 11px; font-weight: 800; background: rgba(168,22,29,0.18);
+  padding: 4px 8px; border-radius: 6px; color: var(--red-bright);
+}
+.clinic-row {
+  display: grid; grid-template-columns: 28px 1fr auto;
+  gap: 8px; align-items: center;
+  padding: 6px 0; border-top: 1px dashed rgba(255,255,255,0.06);
+}
+.clinic-row:first-child { border-top: none; }
+.clinic-icon { font-size: 20px; text-align: center; }
+.clinic-info { font-size: 12px; font-weight: 700; }
+.clinic-rush {
+  background: var(--bg-card-2); border: 1px solid var(--border); color: var(--text);
+  font-weight: 800; font-size: 10px; padding: 5px 8px; border-radius: 6px; cursor: pointer;
+}
+
+/* ---- HERO MODAL ---- */
+.hero-section { margin-bottom: 18px; }
+.hero-section-title {
+  font-size: 11px; letter-spacing: 2px; color: var(--text-faint);
+  font-weight: 900; margin-bottom: 8px;
+}
+.hero-skill {
+  display: grid; grid-template-columns: 80px 1fr 30px;
+  align-items: center; gap: 8px; padding: 5px 0;
+}
+.hs-name { font-size: 12px; font-weight: 700; }
+.hs-bar { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.hs-bar > div { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); }
+.hs-val { text-align: right; font-size: 12px; font-weight: 800; color: var(--gold-bright); }
+
+.gear-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+}
+.gear-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px;
+}
+.gear-card.gear-rare { border-color: rgba(77,159,255,0.4); }
+.gear-card.gear-epic { border-color: rgba(168,85,247,0.4); background: linear-gradient(180deg, rgba(168,85,247,0.08), transparent); }
+.gear-card.gear-legendary {
+  border-color: rgba(212,175,55,0.5);
+  background: linear-gradient(180deg, rgba(212,175,55,0.12), transparent);
+  box-shadow: 0 0 14px rgba(212,175,55,0.18);
+}
+.gear-slot { font-size: 9px; letter-spacing: 1.5px; color: var(--text-faint); font-weight: 900; }
+.gear-name { font-size: 12px; font-weight: 800; margin-top: 2px; }
+.gear-bonus { font-size: 10px; color: var(--green); margin-top: 2px; font-weight: 700; }
+.gear-rarity { font-size: 9px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+.talent-row {
+  display: grid; grid-template-columns: 80px 1fr;
+  align-items: center; gap: 8px; padding: 6px 0;
+}
+.talent-name { font-size: 12px; font-weight: 700; }
+.talent-dots { display: flex; gap: 3px; }
+.talent-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+}
+.talent-dot.filled {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 6px rgba(212,175,55,0.5);
+}
+
+/* ---- NEW BUILDING CARDS ---- */
+.bld-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px;
+  display: grid; grid-template-columns: 40px 1fr auto;
+  gap: 10px; align-items: center;
+}
+.bld-card.upgrading {
+  border-color: rgba(212,175,55,0.35);
+  background: linear-gradient(180deg, rgba(212,175,55,0.08), var(--bg-card));
+}
+.bld-card.locked { opacity: 0.55; }
+.bld-card .bld-icon {
+  font-size: 26px; text-align: center;
+  background: linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.05));
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bld-lvl {
+  font-size: 10px; padding: 2px 6px; background: rgba(212,175,55,0.18);
+  color: var(--gold-bright); border-radius: 4px; font-weight: 900;
+  margin-left: 4px;
+}
+.bld-upgrading { font-size: 11px; color: var(--gold-bright); margin-top: 4px; font-weight: 700; }
+.bld-locked-msg { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+.bld-cost { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.bld-btn {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  color: #1a1a24; font-weight: 900; font-size: 11px;
+  border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+  white-space: nowrap;
+}
+.bld-btn.rush { background: linear-gradient(180deg, var(--blue), #2563eb); color: white; }
+.bld-btn:active { transform: scale(0.96); }
+.bld-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---- TARGET ROWS (city) ---- */
+#targets-list, .contrib-list, #battles-list, #members-list {
+  padding: 0 12px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.target-row {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px;
+  display: grid; grid-template-columns: 44px 1fr auto;
+  gap: 10px; align-items: center;
+}
+.target-row.shielded { opacity: 0.7; }
+.target-row .target-avatar {
+  width: 44px; height: 44px; border-radius: 10px; overflow: hidden;
+}
+.target-row .target-info { font-size: 12px; }
+.target-row .target-name { font-size: 13px; }
+.target-row .target-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.target-row .target-wc { font-size: 11px; color: var(--gold-bright); font-weight: 800; margin-top: 4px; }
+.target-row .target-wc strong { color: var(--gold-bright); }
+.target-btn {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white; font-weight: 900; font-size: 12px;
+  border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+}
+.target-btn.raid-btn:active { transform: scale(0.96); }
+.target-btn:disabled {
+  background: var(--bg-card-2); color: var(--text-faint); cursor: not-allowed;
+  font-weight: 700;
+}
+
+.tag {
+  font-size: 8px; padding: 2px 5px; border-radius: 3px;
+  letter-spacing: 0.8px; font-weight: 900;
+}
+.tag-hostile  { background: rgba(168,22,29,0.2); color: var(--red-bright); }
+.tag-shielded { background: rgba(77,159,255,0.2); color: var(--blue); }
+.tag-weak     { background: rgba(16,185,129,0.2); color: var(--green); }
+.tag-strong   { background: rgba(212,175,55,0.2); color: var(--gold-bright); }
+
+/* ---- CONTRIB / BATTLE ROWS (war room) ---- */
+.contrib-row {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 10px;
+  display: grid; grid-template-columns: 36px 1fr auto;
+  align-items: center; gap: 10px;
+}
+.contrib-row.you {
+  background: linear-gradient(90deg, rgba(212,175,55,0.18), var(--bg-card));
+  border-color: rgba(212,175,55,0.35);
+}
+.contrib-rank { font-size: 14px; font-weight: 900; color: var(--gold-bright); }
+.contrib-name { font-size: 13px; font-weight: 700; }
+.you-tag {
+  font-size: 9px; background: var(--gold); color: #1a1a24;
+  padding: 1px 5px; border-radius: 3px; font-weight: 900; margin-left: 4px;
+}
+.contrib-pts { font-size: 13px; font-weight: 900; color: var(--gold-bright); }
+
+.battle-row {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px;
+  display: grid; grid-template-columns: 32px 1fr auto;
+  align-items: center; gap: 10px;
+}
+.battle-row.battle-victory { border-left: 3px solid var(--green); }
+.battle-row.battle-defeat  { border-left: 3px solid var(--red); }
+.battle-row.battle-rally   { border-left: 3px solid var(--gold-bright); }
+.battle-icon {
+  font-size: 18px; text-align: center;
+}
+.battle-text { font-size: 12px; font-weight: 800; }
+.battle-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.battle-cta {
+  font-size: 10px; font-weight: 900; padding: 6px 10px;
+  border-radius: 6px; border: none; cursor: pointer;
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+}
+.battle-cta.ghost {
+  background: var(--bg-card-2); color: var(--text-dim); border: 1px solid var(--border);
+}
+
+/* ---- MEMBER ROWS ---- */
+.member-row {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px;
+  display: grid; grid-template-columns: 32px 36px 1fr;
+  align-items: center; gap: 8px;
+}
+.member-row.me {
+  background: linear-gradient(90deg, rgba(212,175,55,0.15), var(--bg-card));
+  border-color: rgba(212,175,55,0.35);
+}
+.member-rank { font-size: 14px; font-weight: 900; color: var(--gold-bright); text-align: center; }
+.member-avatar { width: 36px; height: 36px; border-radius: 8px; overflow: hidden; }
+.member-name { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.member-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.role-r5-boss, .role-r5 {
+  font-size: 9px; background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  color: #1a1a24; padding: 1px 5px; border-radius: 3px; font-weight: 900;
+}
+.role-r4 { font-size: 9px; background: rgba(168,85,247,0.2); color: #c084fc; padding: 1px 5px; border-radius: 3px; font-weight: 900; }
+.role-r3 { font-size: 9px; background: rgba(77,159,255,0.2); color: var(--blue); padding: 1px 5px; border-radius: 3px; font-weight: 900; }
+.role-r2 { font-size: 9px; background: rgba(16,185,129,0.2); color: var(--green); padding: 1px 5px; border-radius: 3px; font-weight: 900; }
+.role-r1 { font-size: 9px; background: rgba(255,255,255,0.05); color: var(--text-dim); padding: 1px 5px; border-radius: 3px; font-weight: 900; }
+
+/* ---- BOSS CARD ---- */
+#boss-card {
+  margin: 0 12px 12px;
+  background: linear-gradient(180deg, rgba(168,22,29,0.12), var(--bg-card));
+  border: 1px solid rgba(168,22,29,0.35);
+  border-radius: 14px; padding: 12px;
+}
+.boss-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.boss-tag { font-size: 9px; letter-spacing: 2px; color: var(--red-bright); font-weight: 900; }
+.boss-name { font-size: 17px; font-weight: 900; margin-top: 2px; }
+.boss-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.boss-art { font-size: 38px; }
+.boss-hp-bar {
+  margin-top: 10px; height: 10px; background: rgba(255,255,255,0.06);
+  border-radius: 6px; overflow: hidden;
+}
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--red-bright));
+  transition: width 0.5s ease;
+}
+.boss-hp-text { font-size: 11px; text-align: center; color: var(--text-dim); margin-top: 4px; }
+.boss-attack {
+  width: 100%; margin-top: 8px; padding: 10px;
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white; font-weight: 900; font-size: 13px; letter-spacing: 1.5px;
+  border: none; border-radius: 8px; cursor: pointer;
+}
+
+/* ---- TG LINK CARD ---- */
+.tg-link-card {
+  margin: 0 12px 10px;
+  background: linear-gradient(90deg, #2a9fd6 0%, #1a78b3 100%);
+  border-radius: 14px; padding: 12px;
+  display: grid; grid-template-columns: 38px 1fr auto;
+  align-items: center; gap: 10px;
+  color: white;
+}
+.tg-link-icon { font-size: 24px; text-align: center; }
+.tg-link-title { font-size: 13px; font-weight: 900; }
+.tg-link-sub { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+.tg-link-btn {
+  background: white; color: #1a78b3;
+  font-weight: 900; font-size: 11px;
+  border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+}
+
+/* ---- FAMILY TABS ---- */
+.ftabs {
+  display: flex; gap: 4px; padding: 0 12px 10px;
+}
+.ftab {
+  flex: 1; padding: 8px 4px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-dim); font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+  cursor: pointer;
+}
+.ftab.active {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24; border-color: var(--gold-bright);
+}
+
+/* ---- CITY HEADER ---- */
+.city-header {
+  padding: 10px 14px; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.city-name { font-size: 17px; font-weight: 900; margin-top: 2px; }
+.city-rank-pill {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; text-align: right;
+}
+.city-rank-pill span { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+.city-rank-pill strong { display: block; font-size: 16px; color: var(--gold-bright); font-weight: 900; }
+
+/* ---- MAP LEGEND ---- */
+.map-legend {
+  position: absolute; bottom: 8px; left: 12px;
+  background: rgba(13,8,21,0.85); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 8px;
+  display: flex; gap: 8px; font-size: 9px;
+}
+.map-legend > div { display: flex; align-items: center; gap: 3px; color: var(--text); }
+.map-legend .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.map-legend .dot.gold   { background: var(--gold); }
+.map-legend .dot.red    { background: var(--red); }
+.map-legend .dot.blue   { background: var(--blue); }
+.map-legend .dot.purple { background: #a855f7; }
+.map-legend .dot.green  { background: var(--green); }
+
+.city-map { position: relative; padding: 0 12px; margin-bottom: 10px; }
+.city-map-svg { width: 100%; height: 320px; border-radius: 12px; }
+
+/* ---- RAID PREP DETAILS ---- */
+.raid-section-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--text-faint);
+  font-weight: 900; margin: 12px 6px 6px;
+}
+.raid-vs {
+  display: grid; grid-template-columns: 1fr 50px 1fr;
+  align-items: center; gap: 8px; padding: 0 6px;
+}
+.raid-side { text-align: center; }
+.raid-side-label { font-size: 10px; letter-spacing: 1px; color: var(--text-faint); font-weight: 800; }
+.raid-side-value { font-size: 22px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+.raid-mini-bar {
+  height: 6px; background: rgba(255,255,255,0.06);
+  border-radius: 4px; margin-top: 4px; overflow: hidden;
+}
+.raid-mini-bar > div { height: 100%; }
+.raid-mid { font-size: 14px; font-weight: 900; color: var(--text-dim); text-align: center; }
+
+.raid-squad {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin: 8px 6px;
+}
+.squad-unit {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px; text-align: center;
+}
+.squad-icon { font-size: 20px; }
+.squad-n { font-size: 14px; font-weight: 900; color: var(--gold-bright); }
+.squad-l { font-size: 9px; letter-spacing: 1px; color: var(--text-faint); font-weight: 800; }
+
+.raid-detail-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin: 4px 6px;
+}
+.raid-detail {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 4px; text-align: center;
+}
+.rd-label { font-size: 8px; letter-spacing: 1px; color: var(--text-faint); font-weight: 800; }
+.rd-val { font-size: 12px; font-weight: 900; color: var(--text); margin-top: 2px; }
+
+.raid-bonuses {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin: 8px 6px; justify-content: center;
+}
+.bonus-tag {
+  font-size: 9px; padding: 3px 6px;
+  background: rgba(16,185,129,0.15); color: var(--green);
+  border-radius: 4px; font-weight: 800;
+}
+
+.raid-target {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px; margin: 0 6px;
+  display: grid; grid-template-columns: 48px 1fr;
+  gap: 10px; align-items: center;
+}
+.raid-target .raid-target-avatar {
+  width: 48px; height: 48px; border-radius: 10px; overflow: hidden;
+}
+.raid-target-name { font-size: 14px; font-weight: 900; }
+.raid-target-fam { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.raid-target-stats { font-size: 11px; margin-top: 4px; color: var(--text); }
+
+/* ---- COMBAT LOG ---- */
+.combat-log-section { margin: 14px 6px; }
+.combat-log-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--text-faint);
+  font-weight: 900; margin-bottom: 6px;
+}
+.combat-log { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+.combat-log::-webkit-scrollbar { width: 4px; }
+.combat-log::-webkit-scrollbar-thumb { background: var(--bg-card-2); border-radius: 2px; }
+.cl-round {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px;
+}
+.cl-r {
+  font-size: 9px; letter-spacing: 1px; color: var(--gold-bright);
+  font-weight: 900; margin-bottom: 4px;
+}
+.cl-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cl-col {
+  background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px;
+}
+.cl-col.our  { border-left: 2px solid var(--gold-bright); }
+.cl-col.their { border-left: 2px solid var(--red-bright); }
+.cl-side-label { font-size: 8px; color: var(--text-faint); font-weight: 800; letter-spacing: 1px; }
+.cl-dmg { font-size: 11px; font-weight: 800; margin-top: 2px; }
+.cl-losses { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px; }
+.cl-losses span {
+  font-size: 9px; background: rgba(168,22,29,0.18); color: var(--red-bright);
+  padding: 1px 4px; border-radius: 3px; font-weight: 800;
+}
+.cl-losses span.dim { background: rgba(255,255,255,0.04); color: var(--text-faint); }
+.cl-alive { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* ---- CASUALTIES ---- */
+.casualties-section { margin: 12px 6px 6px; }
+.cas-title {
+  font-size: 10px; letter-spacing: 2px; color: var(--text-faint);
+  font-weight: 900; margin-bottom: 6px; text-align: center;
+}
+.cas-empty {
+  text-align: center; padding: 12px;
+  font-size: 12px; color: var(--green); font-weight: 800;
+}
+.cas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.cas-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px; text-align: center;
+}
+.cas-icon { font-size: 22px; }
+.cas-name { font-size: 11px; font-weight: 800; }
+.cas-detail { font-size: 9px; margin-top: 2px; }
+.cas-w { color: var(--gold-bright); font-weight: 800; }
+.cas-d { color: var(--red-bright); font-weight: 800; }
+
+/* ---- LOOT GRID ---- */
+.loot-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  margin: 12px 6px;
+}
+.defeat-row { grid-template-columns: 1fr; }
+.loot-cell {
+  background: var(--bg-card); border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 8px; padding: 8px 4px; text-align: center;
+}
+.loot-icon { font-size: 22px; }
+.loot-amt { font-size: 13px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+.loot-l { font-size: 9px; letter-spacing: 1px; color: var(--text-faint); font-weight: 800; }
+.raid-claim {
+  width: calc(100% - 12px); margin: 12px 6px 0;
+  padding: 12px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24; font-weight: 900; font-size: 14px; letter-spacing: 2px;
+  border: none; border-radius: 10px; cursor: pointer;
+}
+.raid-claim:active { transform: scale(0.98); }
+
+.result-title {
+  font-size: 28px; font-weight: 900; text-align: center; letter-spacing: 3px;
+  margin: 8px 0 4px;
+}
+.result-title.win  { color: var(--gold-bright); text-shadow: 0 0 18px rgba(212,175,55,0.6); }
+.result-title.lose { color: var(--red-bright);  text-shadow: 0 0 18px rgba(168,22,29,0.6); }
+.result-sub { text-align: center; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+
+/* ---- RAID PROGRESS / FIGHT ---- */
+.raid-progress { padding: 0 6px; margin-top: 10px; }
+.raid-progress-bar {
+  height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden;
+}
+.raid-progress-bar > div {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.2s linear;
+}
+.raid-progress-label { font-size: 10px; text-align: center; color: var(--text-dim); margin-top: 4px; }
+
+/* ---- ATTACK BUTTON ---- */
+.raid-attack {
+  width: calc(100% - 12px); margin: 14px 6px 4px;
+  padding: 14px;
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white; font-weight: 900; font-size: 16px; letter-spacing: 3px;
+  border: none; border-radius: 10px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(168,22,29,0.4);
+  animation: pulseBtn 1.6s ease-in-out infinite;
+}
+.raid-attack:active { transform: scale(0.98); }
+@keyframes pulseBtn {
+  0%,100% { box-shadow: 0 6px 20px rgba(168,22,29,0.4); }
+  50%     { box-shadow: 0 6px 28px rgba(224,37,47,0.7); }
+}
+
+.raid-prediction {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--bg-card); border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 10px; padding: 10px 14px; margin: 8px 6px;
+}
+.raid-pred-text { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; font-weight: 700; }
+.raid-pred-val { font-size: 26px; font-weight: 900; color: var(--gold-bright); }
+
+/* ---- AVATAR ---- */
+.avatar-svg { width: 100%; height: 100%; display: block; }
+
+/* ---- ERROR FLASH ---- */
+.error-flash {
+  position: absolute; transform: translate(-30%, -110%);
+  background: rgba(168,22,29,0.95); color: white;
+  font-size: 10px; font-weight: 800; padding: 5px 8px;
+  border-radius: 6px; white-space: nowrap; z-index: 200;
+  animation: errFade 1.8s ease forwards;
+}
+@keyframes errFade {
+  0% { opacity: 0; transform: translate(-30%, -100%); }
+  10%, 80% { opacity: 1; transform: translate(-30%, -110%); }
+  100% { opacity: 0; transform: translate(-30%, -130%); }
+}
+
+/* ---- BIZ ready glow ---- */
+.biz-card.ready {
+  box-shadow: 0 0 18px rgba(16,185,129,0.45);
+  border-color: var(--green);
+}
+.biz-card.ready .biz-collect {
+  animation: pulseBtn 1.2s ease-in-out infinite;
+}
+.biz-card.locked { opacity: 0.55; }
+.biz-locked {
+  font-size: 11px; text-align: center; color: var(--text-faint);
+  padding: 10px 6px; font-weight: 700;
+}
+.biz-collect {
+  width: 100%; padding: 7px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24; font-weight: 900; font-size: 11px; letter-spacing: 1px;
+  border: none; border-radius: 6px; cursor: pointer; margin-top: 4px;
+}
+.biz-pending { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
+.biz-bar {
+  height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px;
+  overflow: hidden; margin-top: 6px;
+}
+.biz-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.4s ease;
+}
+
+/* ---- HERO POWER pill (on hero card) ---- */
+.hero-power {
+  position: absolute; bottom: 14px; left: 14px;
+  background: rgba(13,8,21,0.7); border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 8px; padding: 6px 10px;
+  z-index: 3;
+}
+.power-label { font-size: 8px; letter-spacing: 1.5px; color: var(--text-faint); font-weight: 900; }
+.power-val { font-size: 16px; font-weight: 900; color: var(--gold-bright); line-height: 1; }
+
+/* ---- small utilities ---- */
+.dim { color: var(--text-dim); }
+.small { font-size: 10px; }
+.badge { padding: 2px 6px; font-size: 10px; font-weight: 900; border-radius: 4px; }
+.badge-red { background: var(--red); color: white; }
+
+</style>
+</head>
+<body>
+
+  <!-- ===================================================================== -->
+  <!-- Phone frame                                                           -->
+  <!-- ===================================================================== -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+
+    <div class="app">
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●●● 5G ▮▮▮▮</span>
+      </div>
+
+      <!-- TG header -->
+      <div class="tg-header">
+        <button class="tg-back">‹</button>
+        <div class="tg-title">
+          <div class="tg-title-main" id="screen-title">Cosa Nostra Tycoon</div>
+          <div class="tg-title-sub">mini app · via @YourBot · <span data-bind="player.role">R5</span></div>
+        </div>
+        <button class="tg-close" id="settings-btn" title="Reset">⚙</button>
+      </div>
+
+      <!-- Resource bar -->
+      <div class="resource-bar">
+        <div class="resource" data-modal="power">
+          <span class="resource-icon">💰</span>
+          <span class="resource-val" data-bind="player.coins:n">12,855</span>
+        </div>
+        <div class="resource">
+          <span class="resource-icon">💎</span>
+          <span class="resource-val" data-bind="player.gems:n">42</span>
+        </div>
+        <div class="resource">
+          <span class="resource-icon">⚡</span>
+          <span class="resource-val" data-bind="player.energy:e">87/100</span>
+        </div>
+        <div class="resource">
+          <span class="resource-icon">⚔</span>
+          <span class="resource-val" data-bind="power.total:k">2.4M</span>
+        </div>
+        <div class="resource level">
+          <span class="resource-icon">★</span>
+          <span class="resource-val">Lv <span data-bind="player.level">12</span></span>
+        </div>
+      </div>
+
+      <!-- Screen container -->
+      <div class="screens">
+
+        <!-- ============================== EMPIRE / HOME ============================== -->
+        <section class="screen active" data-screen="empire">
+
+          <div class="hero-card" data-modal="hero">
+            <div class="hero-bg-glow"></div>
+            <div class="halftone"></div>
+            <div class="hero-meta">
+              <div class="hero-rank"><span data-bind="player.role">DON · R5</span></div>
+              <div class="hero-name" data-bind="player.name">Don Rattori</div>
+              <div class="hero-family">"<span data-bind="player.family">Iron Whiskers</span>" Family</div>
+              <div class="hero-city">📍 <span data-bind="player.city">Lagos</span> City · Rank #<span data-bind="player.cityRank">3</span></div>
+            </div>
+            <div class="hero-stage">
+              <div class="smoke smoke1"></div>
+              <div class="smoke smoke2"></div>
+              <div class="smoke smoke3"></div>
+              <svg class="char char-rat" viewBox="0 0 200 260">
+                <ellipse cx="100" cy="248" rx="55" ry="6" fill="#000" opacity="0.35"/>
+                <rect x="78" y="200" width="16" height="40" rx="6" fill="#1a1a24"/>
+                <rect x="106" y="200" width="16" height="40" rx="6" fill="#1a1a24"/>
+                <ellipse cx="86" cy="244" rx="14" ry="6" fill="#0d0d12"/>
+                <ellipse cx="114" cy="244" rx="14" ry="6" fill="#0d0d12"/>
+                <path d="M 60 130 Q 60 110 100 110 Q 140 110 140 130 L 138 210 Q 100 220 62 210 Z" fill="#2a2638"/>
+                <path d="M75 130 L72 200 M90 128 L88 205 M110 128 L112 205 M125 130 L128 200" stroke="#3d3852" stroke-width="1.2" fill="none"/>
+                <path d="M 75 115 L 100 145 L 125 115 L 135 130 L 125 155 L 100 165 L 75 155 L 65 130 Z" fill="#1c1929"/>
+                <path d="M 92 125 L 108 125 L 105 160 L 95 160 Z" fill="#f1ece1"/>
+                <path d="M 96 130 L 104 130 L 108 175 L 100 195 L 92 175 Z" fill="#a8161d"/>
+                <path d="M 120 145 L 132 145 L 130 152 L 122 152 Z" fill="#d4af37"/>
+                <path d="M 60 135 Q 40 165 50 200 Q 58 205 65 200 Q 60 175 72 145 Z" fill="#2a2638"/>
+                <path d="M 140 135 Q 160 165 150 200 Q 142 205 135 200 Q 140 175 128 145 Z" fill="#2a2638"/>
+                <circle cx="55" cy="200" r="9" fill="#9b9aa3"/>
+                <rect x="42" y="195" width="22" height="5" rx="2" fill="#5a3a1f"/>
+                <rect x="40" y="195" width="6" height="5" rx="2" fill="#d4af37"/>
+                <circle cx="40" cy="197.5" r="2" fill="#ff5a1f" class="cigar-ember"/>
+                <circle cx="155" cy="200" r="9" fill="#9b9aa3"/>
+                <ellipse cx="100" cy="85" rx="42" ry="38" fill="#a8a7b0"/>
+                <ellipse cx="100" cy="100" rx="22" ry="16" fill="#c5c4cc"/>
+                <ellipse cx="100" cy="108" rx="4" ry="3" fill="#1a1a24"/>
+                <path d="M82 105 L60 100 M82 108 L60 110 M118 105 L140 100 M118 108 L140 110" stroke="#1a1a24" stroke-width="1.3" stroke-linecap="round" opacity="0.7"/>
+                <ellipse cx="85" cy="73" rx="8" ry="10" fill="#fff"/>
+                <ellipse cx="115" cy="73" rx="8" ry="10" fill="#fff"/>
+                <circle cx="85" cy="76" r="4" fill="#1a1a24"/>
+                <circle cx="115" cy="76" r="4" fill="#1a1a24"/>
+                <circle cx="86" cy="74" r="1.5" fill="#fff"/>
+                <circle cx="116" cy="74" r="1.5" fill="#fff"/>
+                <path d="M 72 95 L 80 80 M 128 95 L 120 80" stroke="#1a1a24" stroke-width="2" fill="none" opacity="0.6"/>
+                <ellipse cx="70" cy="68" rx="16" ry="22" fill="#1a1a24" transform="rotate(-30 70 68)"/>
+                <ellipse cx="71" cy="69" rx="8" ry="12" fill="#3d3852" transform="rotate(-30 71 69)"/>
+                <ellipse cx="130" cy="68" rx="16" ry="22" fill="#1a1a24" transform="rotate(30 130 68)"/>
+                <ellipse cx="129" cy="69" rx="8" ry="12" fill="#3d3852" transform="rotate(30 129 69)"/>
+                <ellipse cx="100" cy="48" rx="60" ry="10" fill="#0d0d12"/>
+                <path d="M 50 48 Q 55 18 100 18 Q 145 18 150 48 Z" fill="#0d0d12"/>
+                <path d="M 50 48 L 150 48" stroke="#1a1a24" stroke-width="2"/>
+                <rect x="60" y="42" width="80" height="4" fill="#1a1a24"/>
+                <rect x="60" y="42" width="20" height="4" fill="#a8161d"/>
+              </svg>
+            </div>
+            <div class="hero-power">
+              <div class="power-label">FAMILY POWER</div>
+              <div class="power-val" data-bind="family.power:k">2.4M</div>
+            </div>
+          </div>
+
+          <div class="section-title"><span>YOUR CREW</span><span class="section-link" data-nav="family">See all ›</span></div>
+          <div class="crew-strip" id="crew-strip"></div>
+
+          <div class="section-title">
+            <span>YOUR HIDEOUT</span>
+            <span class="section-link" data-nav="mansion">Manage HQ ›</span>
+          </div>
+          <div class="mansion-preview" data-nav="mansion">
+            <svg class="skyline" viewBox="0 0 380 130" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#2a1a2a"/>
+                  <stop offset="1" stop-color="#0d0815"/>
+                </linearGradient>
+              </defs>
+              <rect width="380" height="130" fill="url(#sky)"/>
+              <circle cx="320" cy="32" r="14" fill="#d4af37" opacity="0.6"/>
+              <rect x="20"  y="60" width="50" height="70" fill="#1c1929"/>
+              <rect x="80"  y="40" width="60" height="90" fill="#252037"/>
+              <rect x="150" y="20" width="80" height="110" fill="#1c1929"/>
+              <rect x="240" y="45" width="55" height="85" fill="#252037"/>
+              <rect x="305" y="55" width="60" height="75" fill="#1c1929"/>
+              <g class="windows">
+                <rect x="30"  y="72" width="6" height="6" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="55"  y="78" width="6" height="6" fill="#f5cf4f" opacity="0.7"/>
+                <rect x="92"  y="55" width="6" height="6" fill="#f5cf4f" opacity="0.95" class="blinker"/>
+                <rect x="108" y="62" width="6" height="6" fill="#f5cf4f" opacity="0.85"/>
+                <rect x="120" y="80" width="6" height="6" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="92"  y="80" width="6" height="6" fill="#f5cf4f" opacity="0.8"/>
+                <rect x="170" y="35" width="6" height="6" fill="#a8161d" opacity="0.85"/>
+                <rect x="190" y="42" width="6" height="6" fill="#f5cf4f"/>
+                <rect x="210" y="35" width="6" height="6" fill="#f5cf4f" opacity="0.7"/>
+                <rect x="170" y="58" width="6" height="6" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="190" y="58" width="6" height="6" fill="#f5cf4f" opacity="0.8"/>
+                <rect x="210" y="58" width="6" height="6" fill="#f5cf4f" opacity="0.95" class="blinker"/>
+                <rect x="170" y="80" width="6" height="6" fill="#f5cf4f"/>
+                <rect x="210" y="80" width="6" height="6" fill="#f5cf4f"/>
+                <rect x="190" y="80" width="6" height="6" fill="#f5cf4f" opacity="0.6"/>
+                <rect x="252" y="60" width="6" height="6" fill="#10b981"/>
+                <rect x="270" y="68" width="6" height="6" fill="#10b981" opacity="0.8" class="neon-pulse"/>
+                <rect x="252" y="82" width="6" height="6" fill="#10b981" opacity="0.6"/>
+                <rect x="318" y="68" width="6" height="6" fill="#f5cf4f"/>
+                <rect x="340" y="72" width="6" height="6" fill="#f5cf4f"/>
+              </g>
+              <rect x="252" y="50" width="35" height="9" rx="2" fill="#10b981"/>
+              <text x="269" y="57" font-family="Impact, sans-serif" font-size="7" fill="#0d3d2a" text-anchor="middle">CASINO</text>
+              <rect x="171" y="14" width="48" height="9" rx="2" fill="#a8161d"/>
+              <text x="195" y="21" font-family="Impact, sans-serif" font-size="7" fill="#fff" text-anchor="middle">RATTORI</text>
+              <rect x="22"  y="55" width="40" height="7" rx="2" fill="#a8161d" opacity="0.9"/>
+              <text x="42" y="61" font-family="Impact, sans-serif" font-size="5" fill="#fff" text-anchor="middle">TONY'S</text>
+              <text x="42" y="68" font-family="Impact, sans-serif" font-size="5" fill="#fff" text-anchor="middle">PIZZA</text>
+              <ellipse cx="190" cy="14" rx="3" ry="2" fill="#9b9aa3" opacity="0.6" class="chimney-smoke"/>
+            </svg>
+            <div class="mansion-cta">
+              <div class="mansion-cta-row">
+                <div>
+                  <div><strong>Hideout</strong> Lv <span data-bind="buildings.hq.level">12</span></div>
+                  <div class="dim"><span id="upgrades-available">3 upgrades available</span></div>
+                </div>
+                <div class="badge badge-red" id="upgrades-count">3</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title"><span>YOUR EMPIRE</span><span class="section-link" data-nav="mansion">Manage ›</span></div>
+          <div class="biz-grid" id="biz-grid"></div>
+
+          <div class="war-banner" data-nav="war">
+            <div class="war-glow"></div>
+            <div class="war-content">
+              <div style="flex:1">
+                <div class="war-tag">⚔ FAMILY WAR</div>
+                <div class="war-title" data-bind="war.enemy.name">Manila Predators</div>
+                <div class="war-sub">Started 3h ago · <span data-bind="war.endsIn">21h</span> remaining</div>
+              </div>
+              <button class="war-cta">JOIN<br/>RAID</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================== MANSION / HQ ============================== -->
+        <section class="screen" data-screen="mansion">
+
+          <div class="mansion-hero">
+            <svg class="mansion-skyline" viewBox="0 0 380 200" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="bigsky" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#3a1a3a"/>
+                  <stop offset="0.5" stop-color="#1a1626"/>
+                  <stop offset="1" stop-color="#0d0815"/>
+                </linearGradient>
+              </defs>
+              <rect width="380" height="200" fill="url(#bigsky)"/>
+              <circle cx="80" cy="40" r="20" fill="#d4af37" opacity="0.5" class="float-orb"/>
+              <circle cx="340" cy="30" r="2" fill="#fff" opacity="0.8"/>
+              <circle cx="60" cy="20" r="1.5" fill="#fff" opacity="0.6"/>
+              <circle cx="270" cy="50" r="2" fill="#fff" opacity="0.7"/>
+              <rect x="0" y="170" width="380" height="30" fill="#0a0610"/>
+              <rect x="40" y="100" width="40" height="70" fill="#1c1929"/>
+              <rect x="90" y="80" width="50" height="90" fill="#252037"/>
+              <rect x="155" y="40" width="70" height="130" fill="#1c1929"/>
+              <polygon points="155,40 190,15 225,40" fill="#a8161d"/>
+              <rect x="180" y="35" width="20" height="5" fill="#d4af37"/>
+              <rect x="240" y="90" width="50" height="80" fill="#252037"/>
+              <rect x="305" y="70" width="55" height="100" fill="#1c1929"/>
+              <g class="big-windows">
+                <rect x="48" y="115" width="8" height="10" fill="#f5cf4f"/>
+                <rect x="62" y="115" width="8" height="10" fill="#f5cf4f" opacity="0.7"/>
+                <rect x="48" y="135" width="8" height="10" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="62" y="135" width="8" height="10" fill="#f5cf4f"/>
+                <rect x="48" y="155" width="8" height="10" fill="#f5cf4f" opacity="0.6"/>
+                <rect x="62" y="155" width="8" height="10" fill="#f5cf4f" opacity="0.8"/>
+                <rect x="100" y="92" width="8" height="10" fill="#10b981" class="neon-pulse"/>
+                <rect x="120" y="92" width="8" height="10" fill="#10b981" opacity="0.7"/>
+                <rect x="100" y="115" width="8" height="10" fill="#10b981" opacity="0.8"/>
+                <rect x="120" y="115" width="8" height="10" fill="#10b981"/>
+                <rect x="100" y="138" width="8" height="10" fill="#10b981" opacity="0.6" class="neon-pulse"/>
+                <rect x="120" y="138" width="8" height="10" fill="#10b981" opacity="0.9"/>
+                <rect x="170" y="60" width="10" height="12" fill="#a8161d"/>
+                <rect x="190" y="60" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="210" y="60" width="10" height="12" fill="#a8161d" opacity="0.8"/>
+                <rect x="170" y="85" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="190" y="85" width="10" height="12" fill="#f5cf4f" class="blinker"/>
+                <rect x="210" y="85" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="170" y="110" width="10" height="12" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="190" y="110" width="10" height="12" fill="#a8161d"/>
+                <rect x="210" y="110" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="170" y="135" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="190" y="135" width="10" height="12" fill="#f5cf4f" opacity="0.7"/>
+                <rect x="210" y="135" width="10" height="12" fill="#f5cf4f"/>
+                <rect x="252" y="105" width="8" height="10" fill="#4d9fff"/>
+                <rect x="270" y="105" width="8" height="10" fill="#4d9fff" opacity="0.8"/>
+                <rect x="252" y="125" width="8" height="10" fill="#4d9fff" opacity="0.6"/>
+                <rect x="270" y="125" width="8" height="10" fill="#4d9fff"/>
+                <rect x="315" y="85" width="8" height="10" fill="#f5cf4f"/>
+                <rect x="335" y="85" width="8" height="10" fill="#f5cf4f" opacity="0.8"/>
+                <rect x="315" y="110" width="8" height="10" fill="#f5cf4f" opacity="0.9"/>
+                <rect x="335" y="110" width="8" height="10" fill="#f5cf4f"/>
+                <rect x="315" y="135" width="8" height="10" fill="#f5cf4f" opacity="0.7" class="blinker"/>
+                <rect x="335" y="135" width="8" height="10" fill="#f5cf4f"/>
+              </g>
+              <rect x="170" y="20" width="40" height="14" rx="2" fill="#a8161d" stroke="#d4af37" stroke-width="1"/>
+              <text x="190" y="30" font-family="Impact, sans-serif" font-size="10" fill="#fff" text-anchor="middle">RATTORI</text>
+              <rect x="155" y="155" width="70" height="15" fill="#3a2a10"/>
+              <rect x="183" y="158" width="14" height="12" fill="#1a1a24"/>
+              <ellipse cx="195" cy="15" rx="3" ry="2" fill="#9b9aa3" opacity="0.5" class="chimney-smoke"/>
+            </svg>
+            <div class="mansion-stats">
+              <div class="mansion-stat"><div class="stat-label">HIDEOUT</div><div class="stat-val">Lv <span data-bind="buildings.hq.level">12</span></div></div>
+              <div class="mansion-stat"><div class="stat-label">DEFENSE</div><div class="stat-val" data-bind="stat.defense:k">48K</div></div>
+              <div class="mansion-stat"><div class="stat-label">CREW</div><div class="stat-val"><span data-bind="stat.crewUsed">24</span>/<span data-bind="stat.crewCap">30</span></div></div>
+              <div class="mansion-stat"><div class="stat-label">VAULT</div><div class="stat-val" data-bind="stat.vault:k">312K</div></div>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <span>BUILD &amp; UPGRADE</span>
+            <span class="section-link" data-modal="troops">⚔ Army ›</span>
+          </div>
+          <div class="building-list" id="building-list"></div>
+        </section>
+
+        <!-- ============================== FAMILY ============================== -->
+        <section class="screen" data-screen="family">
+
+          <div class="family-banner">
+            <div class="family-banner-bg"></div>
+            <svg class="family-crest" viewBox="0 0 100 110">
+              <path d="M 50 5 L 92 22 L 92 60 Q 92 90 50 105 Q 8 90 8 60 L 8 22 Z" fill="#a8161d" stroke="#d4af37" stroke-width="3"/>
+              <text x="50" y="55" font-family="Impact, sans-serif" font-size="32" font-weight="900" fill="#d4af37" text-anchor="middle" data-bind="family.tag">IW</text>
+              <text x="50" y="78" font-family="Impact, sans-serif" font-size="11" fill="#fff" text-anchor="middle">EST. 2026</text>
+              <circle cx="50" cy="22" r="5" fill="#d4af37"/>
+              <polygon points="50,17 52,21 56,21 53,24 54,28 50,26 46,28 47,24 44,21 48,21" fill="#1a1a24"/>
+            </svg>
+            <div class="family-meta">
+              <div class="family-name" data-bind="family.name">Iron Whiskers</div>
+              <div class="family-tag">[<span data-bind="family.tag">IW</span>] · <span data-bind="family.city">Lagos</span> City</div>
+              <div class="family-stats-row">
+                <div><strong><span data-bind="family.members">47</span></strong><span>members</span></div>
+                <div><strong data-bind="family.power:k">2.4M</strong><span>power</span></div>
+                <div><strong>#<span data-bind="family.rank">3</span></strong><span>rank</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tg-link-card">
+            <div class="tg-link-icon">💬</div>
+            <div class="tg-link-text">
+              <div class="tg-link-title">Family Chat</div>
+              <div class="tg-link-sub">@lagos_hustlers · <span data-bind="family.members">47</span> members · 124 msgs today</div>
+            </div>
+            <button class="tg-link-btn">OPEN</button>
+          </div>
+
+          <div class="ftabs">
+            <button class="ftab active" data-ftab="members">Members</button>
+            <button class="ftab" data-ftab="bank">Bank</button>
+            <button class="ftab" data-ftab="quests">Quests</button>
+            <button class="ftab" data-ftab="boss">Boss</button>
+            <button class="ftab" data-ftab="wars">Wars</button>
+          </div>
+
+          <div class="boss-card" id="boss-card"></div>
+
+          <div class="section-title"><span>TOP MEMBERS THIS WEEK</span><span class="section-link">All ›</span></div>
+          <div id="members-list"></div>
+        </section>
+
+        <!-- ============================== CITY MAP ============================== -->
+        <section class="screen" data-screen="city">
+
+          <div class="city-header">
+            <div>
+              <div class="dim small">CURRENT CITY</div>
+              <div class="city-name"><span data-bind="player.city">Lagos</span> City ▾</div>
+            </div>
+            <div class="city-rank-pill">
+              <span>Your rank</span>
+              <strong>#<span data-bind="player.cityRank">3</span></strong>
+            </div>
+          </div>
+
+          <div class="city-map">
+            <svg class="city-map-svg" viewBox="0 0 360 380" preserveAspectRatio="xMidYMid slice">
+              <rect width="360" height="380" fill="#15131e"/>
+              <path d="M 0 80 L 360 80 M 0 160 L 360 160 M 0 240 L 360 240 M 0 320 L 360 320 M 60 0 L 60 380 M 140 0 L 140 380 M 220 0 L 220 380 M 300 0 L 300 380" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+              <text x="80" y="20" font-family="Impact, sans-serif" font-size="9" fill="#6b6878" letter-spacing="3">OLD TOWN</text>
+              <text x="180" y="20" font-family="Impact, sans-serif" font-size="9" fill="#6b6878" letter-spacing="3">DOWNTOWN</text>
+              <text x="280" y="20" font-family="Impact, sans-serif" font-size="9" fill="#6b6878" letter-spacing="3">UPTOWN</text>
+              <text x="180" y="375" font-family="Impact, sans-serif" font-size="9" fill="#6b6878" letter-spacing="3">PORT DISTRICT</text>
+              <path d="M 0 260 Q 80 250 160 270 Q 240 290 360 260 L 360 380 L 0 380 Z" fill="#0a0d1a" opacity="0.6"/>
+              <path d="M 60 320 Q 100 310 140 320 Q 180 330 220 320" stroke="#1c1929" stroke-width="2" fill="none" opacity="0.7"/>
+              <rect x="55" y="55" width="50" height="50" rx="6" fill="rgba(212,175,55,0.18)" stroke="#d4af37" stroke-width="2"/>
+              <circle cx="80" cy="80" r="13" fill="#d4af37"/>
+              <text x="80" y="84" font-family="Impact, sans-serif" font-size="11" fill="#1a1a24" text-anchor="middle">★</text>
+              <text x="80" y="125" font-family="Impact, sans-serif" font-size="8" fill="#d4af37" text-anchor="middle" letter-spacing="2">YOU</text>
+              <rect x="155" y="55" width="50" height="50" rx="6" fill="rgba(168,22,29,0.18)" stroke="#a8161d" stroke-width="2"/>
+              <circle cx="180" cy="80" r="13" fill="#a8161d"/>
+              <text x="180" y="84" font-family="Impact, sans-serif" font-size="10" fill="#fff" text-anchor="middle">M</text>
+              <circle cx="180" cy="80" r="22" fill="none" stroke="#a8161d" stroke-width="1" class="pulse-ring"/>
+              <rect x="255" y="55" width="50" height="50" rx="6" fill="rgba(77,159,255,0.18)" stroke="#4d9fff" stroke-width="2"/>
+              <circle cx="280" cy="80" r="13" fill="#4d9fff"/>
+              <text x="280" y="84" font-family="Impact, sans-serif" font-size="10" fill="#fff" text-anchor="middle">S</text>
+              <rect x="55" y="180" width="50" height="50" rx="6" fill="rgba(168,85,247,0.18)" stroke="#a855f7" stroke-width="2"/>
+              <circle cx="80" cy="205" r="13" fill="#a855f7"/>
+              <text x="80" y="209" font-family="Impact, sans-serif" font-size="10" fill="#fff" text-anchor="middle">S</text>
+              <rect x="155" y="180" width="50" height="50" rx="6" fill="rgba(212,175,55,0.1)" stroke="#d4af37" stroke-width="1" stroke-dasharray="4,3"/>
+              <polygon points="170,195 180,190 190,195 187,210 173,210" fill="#d4af37" opacity="0.6"/>
+              <text x="180" y="222" font-family="Impact, sans-serif" font-size="7" fill="#d4af37" text-anchor="middle">CASINO</text>
+              <rect x="255" y="180" width="50" height="50" rx="6" fill="rgba(16,185,129,0.18)" stroke="#10b981" stroke-width="2"/>
+              <circle cx="280" cy="205" r="13" fill="#10b981"/>
+              <text x="280" y="209" font-family="Impact, sans-serif" font-size="10" fill="#fff" text-anchor="middle">$</text>
+              <circle cx="100" cy="300" r="6" fill="#a8161d"/>
+              <circle cx="180" cy="320" r="6" fill="#10b981"/>
+              <circle cx="250" cy="290" r="6" fill="#a855f7"/>
+              <line x1="80" y1="80" x2="180" y2="80" stroke="#d4af37" stroke-width="2" stroke-dasharray="3,3" class="convoy-line"/>
+              <circle cx="130" cy="80" r="3" fill="#d4af37">
+                <animateMotion path="M -50 0 L 50 0" dur="2.5s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+            <div class="map-legend">
+              <div><span class="dot gold"></span>You</div>
+              <div><span class="dot red"></span>Manila</div>
+              <div><span class="dot blue"></span>Tokyo</div>
+              <div><span class="dot purple"></span>Sicilian</div>
+              <div><span class="dot green"></span>Dubai</div>
+            </div>
+          </div>
+
+          <div class="section-title"><span>NEARBY TARGETS</span><span class="section-link">Filter ▾</span></div>
+          <div id="targets-list"></div>
+        </section>
+
+        <!-- ============================== WAR ROOM ============================== -->
+        <section class="screen" data-screen="war">
+
+          <div class="active-war">
+            <div class="war-clash">
+              <div class="war-side">
+                <svg class="war-side-crest" viewBox="0 0 100 110">
+                  <path d="M 50 5 L 92 22 L 92 60 Q 92 90 50 105 Q 8 90 8 60 L 8 22 Z" fill="#a8161d" stroke="#d4af37" stroke-width="3"/>
+                  <text x="50" y="60" font-family="Impact, sans-serif" font-size="28" fill="#d4af37" text-anchor="middle" data-bind="family.tag">IW</text>
+                </svg>
+                <div class="war-side-name" data-bind="family.name">Iron Whiskers</div>
+                <div class="war-side-score" data-bind="war.ourScore:n">1,247</div>
+                <div class="war-side-tag">YOUR FAMILY</div>
+              </div>
+              <div class="war-vs">
+                <div class="war-vs-text">VS</div>
+                <div class="war-time">⏱ <span data-bind="war.endsIn">21h 14m</span></div>
+              </div>
+              <div class="war-side">
+                <svg class="war-side-crest" viewBox="0 0 100 110">
+                  <path d="M 50 5 L 92 22 L 92 60 Q 92 90 50 105 Q 8 90 8 60 L 8 22 Z" fill="#1a2a44" stroke="#4d9fff" stroke-width="3"/>
+                  <text x="50" y="60" font-family="Impact, sans-serif" font-size="28" fill="#4d9fff" text-anchor="middle" data-bind="war.enemy.tag">MP</text>
+                </svg>
+                <div class="war-side-name" data-bind="war.enemy.name">Manila Predators</div>
+                <div class="war-side-score" data-bind="war.theirScore:n">982</div>
+                <div class="war-side-tag">ENEMY</div>
+              </div>
+            </div>
+            <div class="war-score-bar">
+              <div class="war-score-fill" id="war-fill" style="width: 56%"></div>
+            </div>
+            <div class="war-actions">
+              <button class="war-action war-rally">📢<span>RALLY</span></button>
+              <button class="war-action war-solo">⚔<span>SOLO</span></button>
+              <button class="war-action">🔍<span>SCOUT</span></button>
+              <button class="war-action">🛡<span>SHIELD</span></button>
+            </div>
+          </div>
+
+          <div class="section-title"><span>WAR CONTRIBUTION</span><span class="section-link">All ›</span></div>
+          <div class="contrib-list" id="contrib-list"></div>
+
+          <div class="section-title"><span>RECENT BATTLES</span><span class="section-link">All ›</span></div>
+          <div id="battles-list"></div>
+        </section>
+
+        <!-- ============================== SHOP ============================== -->
+        <section class="screen" data-screen="shop">
+
+          <div class="capo-pass">
+            <div class="capo-bg-glow"></div>
+            <div class="capo-content">
+              <div class="capo-badge">CAPO PASS</div>
+              <div class="capo-title">Become a Made Man</div>
+              <ul class="capo-perks">
+                <li>✓ +50% all income</li>
+                <li>✓ +5 crew slots</li>
+                <li>✓ Daily 100 💎 bonus</li>
+                <li>✓ Skip 3 timers/day</li>
+                <li>✓ Exclusive cosmetics</li>
+              </ul>
+              <button class="capo-buy">⭐ 599 / mo</button>
+            </div>
+            <div class="capo-art">
+              <svg viewBox="0 0 80 130">
+                <ellipse cx="40" cy="125" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <path d="M 22 60 Q 22 50 40 50 Q 58 50 58 60 L 56 110 Q 40 115 24 110 Z" fill="#252037"/>
+                <ellipse cx="40" cy="36" rx="18" ry="16" fill="#c5c4cc"/>
+                <ellipse cx="40" cy="24" rx="26" ry="5" fill="#d4af37"/>
+                <path d="M 22 24 Q 24 8 40 8 Q 56 8 58 24 Z" fill="#d4af37"/>
+                <path d="M 36 60 L 44 60 L 46 105 L 40 115 L 34 105 Z" fill="#a8161d"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="section-title"><span>TELEGRAM STARS</span><span class="section-link">Why?</span></div>
+          <div class="stars-grid">
+            <div class="stars-pack">
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">100</div>
+              <div class="stars-bonus">+5 bonus</div>
+              <button class="stars-buy">⭐ 100</button>
+            </div>
+            <div class="stars-pack popular">
+              <div class="stars-tag">POPULAR</div>
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">550</div>
+              <div class="stars-bonus">+50 bonus</div>
+              <button class="stars-buy">⭐ 500</button>
+            </div>
+            <div class="stars-pack best">
+              <div class="stars-tag">BEST</div>
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">1,200</div>
+              <div class="stars-bonus">+200 bonus</div>
+              <button class="stars-buy">⭐ 1000</button>
+            </div>
+            <div class="stars-pack">
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">6,500</div>
+              <div class="stars-bonus">+1,500 bonus</div>
+              <button class="stars-buy">⭐ 5000</button>
+            </div>
+          </div>
+
+          <div class="section-title"><span>UTILITIES</span><span class="section-link">All ›</span></div>
+          <div class="item-row">
+            <div class="item-icon">🛡</div>
+            <div class="item-info">
+              <div class="item-name">Peace Shield (24h)</div>
+              <div class="item-sub">Block all incoming raids for 24 hours</div>
+            </div>
+            <button class="item-buy">💎 50</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">⚡</div>
+            <div class="item-info">
+              <div class="item-name">Energy Refill</div>
+              <div class="item-sub">Restore energy to 100/100 instantly</div>
+            </div>
+            <button class="item-buy">💎 20</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">⏱</div>
+            <div class="item-info">
+              <div class="item-name">Speedup (1h)</div>
+              <div class="item-sub">Reduce any timer by 1 hour</div>
+            </div>
+            <button class="item-buy">💎 15</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">📜</div>
+            <div class="item-info">
+              <div class="item-name">Migration Ticket</div>
+              <div class="item-sub">Move your family to another city</div>
+            </div>
+            <button class="item-buy">💎 500</button>
+          </div>
+
+          <div class="section-title"><span>COSMETICS</span><span class="section-link">All ›</span></div>
+          <div class="cosmetics-grid">
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🎩</div>
+              <div class="cosmetic-name">Golden Fedora</div>
+              <div class="cosmetic-price">⭐ 199</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🚗</div>
+              <div class="cosmetic-name">'47 Cadillac</div>
+              <div class="cosmetic-price">⭐ 299</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">💍</div>
+              <div class="cosmetic-name">Don's Pinky Ring</div>
+              <div class="cosmetic-price">⭐ 149</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🦴</div>
+              <div class="cosmetic-name">Cigar of Power</div>
+              <div class="cosmetic-price">⭐ 99</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Bottom nav -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-nav="empire">
+          <span class="nav-icon">🏢</span><span class="nav-label">Empire</span>
+        </button>
+        <button class="nav-item" data-nav="family">
+          <span class="nav-icon">👥</span><span class="nav-label">Family</span>
+        </button>
+        <button class="nav-item" data-nav="city">
+          <span class="nav-icon">🗺️</span><span class="nav-label">City</span>
+        </button>
+        <button class="nav-item" data-nav="war">
+          <span class="nav-icon">⚔️</span><span class="nav-label">War</span>
+        </button>
+        <button class="nav-item" data-nav="shop">
+          <span class="nav-icon">🎰</span><span class="nav-label">Shop</span>
+        </button>
+      </nav>
+
+      <!-- =================== RAID MODAL (3 phases, detailed) =================== -->
+      <div class="raid-modal" id="raid-modal">
+        <div class="raid-content">
+          <button class="raid-close" id="raid-close">✕</button>
+
+          <!-- PHASE: PREP -->
+          <div class="raid-phase phase-prep active">
+            <div class="raid-title">⚔ RAID TARGET</div>
+            <div class="raid-target" id="raid-target-card"></div>
+
+            <div class="raid-section-title">YOUR FORCES</div>
+            <div class="raid-vs">
+              <div class="raid-side">
+                <div class="raid-side-label">YOUR SQUAD</div>
+                <div class="raid-side-value" id="raid-our-power">540K</div>
+                <div class="raid-mini-bar"><div id="raid-our-bar" style="background:#d4af37;width:60%"></div></div>
+              </div>
+              <div class="raid-mid">VS</div>
+              <div class="raid-side">
+                <div class="raid-side-label">DEFENSE</div>
+                <div class="raid-side-value" id="raid-their-power">320K</div>
+                <div class="raid-mini-bar"><div id="raid-their-bar" style="background:#a8161d;width:40%"></div></div>
+              </div>
+            </div>
+            <div class="raid-squad" id="raid-squad"></div>
+
+            <div class="raid-detail-grid">
+              <div class="raid-detail">
+                <div class="rd-label">MARCH TIME</div>
+                <div class="rd-val" id="raid-march">0m 24s</div>
+              </div>
+              <div class="raid-detail">
+                <div class="rd-label">LOOT CAP</div>
+                <div class="rd-val" id="raid-cap">8.4K</div>
+              </div>
+              <div class="raid-detail">
+                <div class="rd-label">VAULT</div>
+                <div class="rd-val" id="raid-vault">124K</div>
+              </div>
+              <div class="raid-detail">
+                <div class="rd-label">UNLOCKED</div>
+                <div class="rd-val" id="raid-unlocked">74.4K</div>
+              </div>
+            </div>
+
+            <div class="raid-bonuses" id="raid-bonuses"></div>
+
+            <div class="raid-prediction">
+              <div class="raid-pred-text">Win chance</div>
+              <div class="raid-pred-val" id="raid-winchance">76%</div>
+            </div>
+
+            <button class="raid-attack" id="raid-attack-btn">⚔ STRIKE</button>
+          </div>
+
+          <!-- PHASE: FIGHT -->
+          <div class="raid-phase phase-fight">
+            <div class="raid-title" id="raid-march-title">⚔ MARCHING…</div>
+            <div class="raid-fight-stage">
+              <div class="fight-flash"></div>
+              <div class="fight-smoke fs1"></div>
+              <div class="fight-smoke fs2"></div>
+              <div class="fight-smoke fs3"></div>
+              <svg class="fight-char left" viewBox="0 0 100 130">
+                <ellipse cx="50" cy="125" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <rect x="38" y="65" width="24" height="40" fill="#a8161d"/>
+                <ellipse cx="50" cy="35" rx="18" ry="16" fill="#c5c4cc"/>
+                <ellipse cx="50" cy="20" rx="26" ry="5" fill="#0d0d12"/>
+                <path d="M 24 20 Q 28 4 50 4 Q 72 4 76 20 Z" fill="#0d0d12"/>
+                <ellipse cx="42" cy="32" rx="3" ry="4" fill="#000"/>
+                <ellipse cx="58" cy="32" rx="3" ry="4" fill="#000"/>
+                <path d="M 35 105 L 35 75 M 65 105 L 65 75" stroke="#1a1a24" stroke-width="3"/>
+                <rect x="32" y="60" width="8" height="20" fill="#252037" transform="rotate(-15 36 70)"/>
+                <circle cx="28" cy="55" r="6" fill="#9b9aa3"/>
+              </svg>
+              <svg class="fight-char right" viewBox="0 0 100 130">
+                <ellipse cx="50" cy="125" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <rect x="38" y="65" width="24" height="40" fill="#1a2a44"/>
+                <ellipse cx="50" cy="35" rx="18" ry="16" fill="#f4b878"/>
+                <ellipse cx="42" cy="32" rx="3" ry="4" fill="#000"/>
+                <ellipse cx="58" cy="32" rx="3" ry="4" fill="#000"/>
+                <rect x="42" y="22" width="16" height="6" fill="#252037"/>
+                <path d="M 35 105 L 35 75 M 65 105 L 65 75" stroke="#1a1a24" stroke-width="3"/>
+                <rect x="60" y="60" width="8" height="20" fill="#252037" transform="rotate(15 64 70)"/>
+                <circle cx="72" cy="55" r="6" fill="#9b9aa3"/>
+              </svg>
+              <div class="fight-text" id="fight-text">FIGHT!</div>
+            </div>
+            <div class="raid-progress">
+              <div class="raid-progress-bar"><div id="raid-progress-fill"></div></div>
+              <div class="raid-progress-label" id="raid-progress-label">Marching…</div>
+            </div>
+          </div>
+
+          <!-- PHASE: RESULT -->
+          <div class="raid-phase phase-result">
+            <div class="result-title" id="result-title">VICTORY</div>
+            <div class="result-sub" id="result-sub">You defeated Don Carlito</div>
+
+            <div class="result-loot" id="result-loot"></div>
+
+            <div class="combat-log-section">
+              <div class="combat-log-title">BATTLE REPORT — round by round</div>
+              <div class="combat-log" id="combat-log"></div>
+            </div>
+
+            <div class="casualties-section" id="casualties-section"></div>
+
+            <button class="raid-claim" id="raid-claim">CLAIM REWARDS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================== POWER BREAKDOWN MODAL =================== -->
+      <div class="aux-modal" id="power-modal">
+        <div class="aux-content">
+          <button class="raid-close" data-close="power-modal">✕</button>
+          <div class="raid-title">⚡ POWER BREAKDOWN</div>
+          <div class="power-bd" id="power-breakdown"></div>
+        </div>
+      </div>
+
+      <!-- =================== TROOPS / ARMY MODAL =================== -->
+      <div class="aux-modal" id="troops-modal">
+        <div class="aux-content troops-content">
+          <button class="raid-close" data-close="troops-modal">✕</button>
+          <div class="raid-title">⚔ YOUR ARMY</div>
+          <div class="army-totals" id="army-totals"></div>
+          <div class="army-list" id="army-list"></div>
+          <div class="clinic-card" id="clinic-card"></div>
+        </div>
+      </div>
+
+      <!-- =================== HERO MODAL =================== -->
+      <div class="aux-modal" id="hero-modal">
+        <div class="aux-content">
+          <button class="raid-close" data-close="hero-modal">✕</button>
+          <div class="raid-title">🎩 DON RATTORI — PROFILE</div>
+          <div class="hero-section" id="hero-stats"></div>
+          <div class="hero-section" id="hero-gear"></div>
+          <div class="hero-section" id="hero-talents"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================== Side notes (for desktop preview) =================== -->
+  <aside class="notes">
+    <div class="notes-title">Cosa Nostra Tycoon — Live Sim</div>
+    <div class="notes-section">
+      <strong>Real game state.</strong> Every number is driven by a single
+      <code>STATE</code> object that ticks in real time and persists to
+      <code>localStorage</code> — refresh and your coins, energy, timers,
+      casualties, war score, etc. all stick.
+    </div>
+    <ul>
+      <li><strong>💰 Tap coins</strong> → power breakdown popup (troops + buildings + hero + research + gear).</li>
+      <li><strong>🎩 Tap hero card</strong> → hero skills / talents / gear slots.</li>
+      <li><strong>🏛 Mansion → Army</strong> → all 5 unit types with HP/ATK/DEF/speed/load/counters + training queue + clinic.</li>
+      <li><strong>🍕 Empire businesses</strong> → idle accrual ticking in real time, collect to pocket coins, then timer starts again.</li>
+      <li><strong>🛠 Upgrade a building</strong> → spends coins, starts a real countdown, level applies when timer ends.</li>
+      <li><strong>⚔ City → Raid</strong> → real win chance from squad composition, counters, hero, walls; round-by-round combat log; wound vs kill split; clinic queue updates.</li>
+      <li><strong>⚙ Top-right gear</strong> → reset save (fresh state).</li>
+    </ul>
+    <div class="notes-section" style="background:rgba(168,22,29,0.08); border-color:#a8161d;">
+      <strong>Production:</strong> swap localStorage for server-authoritative
+      state (Postgres + Redis), swap hand-coded SVG for Spine 2D rigs, swap
+      CSS animations for PixiJS particles + GSAP timelines.
+    </div>
+  </aside>
+
+  <script>
+/* ===========================================================================
+   Cosa Nostra Tycoon — Game State + Combat Engine
+   ---------------------------------------------------------------------------
+   Single source of truth for every number in the UI.  Persists to localStorage.
+   Combat math, power calc, idle accrual, energy regen, training queues, etc.
+   =========================================================================== */
+
+const SAVE_KEY = 'cnt_save_v3';
+const NOW = () => Date.now();
+
+/* ---- Unit definitions (Mafia-City style rock/paper/scissors counters) ---- */
+const UNIT_DEFS = {
+  bruiser: {
+    name: 'Bruiser',     icon: '💪', short: 'BRU',
+    hp: 200, atk: 60,  def: 140, speed: 1.0, load: 12,
+    trainCost: 800,    trainSec: 60,
+    counters: { biker: 1.50 },                  // melee crushes bikes
+    weakTo:   { shooter: 1.35 },                // soft to gunfire
+    role: 'Tank · Soaks damage'
+  },
+  shooter: {
+    name: 'Shooter',     icon: '🔫', short: 'SHT',
+    hp: 90,  atk: 220, def: 50,  speed: 1.2, load: 8,
+    trainCost: 1200,   trainSec: 90,
+    counters: { bruiser: 1.50 },                // bullets > muscle
+    weakTo:   { biker: 1.35 },                  // out-flanked
+    role: 'DPS · Burst damage'
+  },
+  biker: {
+    name: 'Biker',       icon: '🏍', short: 'BIK',
+    hp: 130, atk: 150, def: 80,  speed: 2.4, load: 6,
+    trainCost: 1600,   trainSec: 75,
+    counters: { shooter: 1.50 },                // run them down
+    weakTo:   { bruiser: 1.35 },
+    role: 'Skirmish · Fast march'
+  },
+  driver: {
+    name: 'Driver',      icon: '🚗', short: 'DRV',
+    hp: 600, atk: 50,  def: 380, speed: 0.8, load: 200,
+    trainCost: 4500,   trainSec: 240,
+    counters: {},
+    weakTo:   {},
+    role: 'Hauler · Triples loot cap'
+  },
+  made_man: {
+    name: 'Made Man',    icon: '🎩', short: 'MAD',
+    hp: 480, atk: 380, def: 280, speed: 1.6, load: 18,
+    trainCost: 8000,   trainSec: 480,
+    counters: { bruiser: 1.25, shooter: 1.25, biker: 1.25 },
+    weakTo:   {},
+    unlockAt: 13,
+    role: 'Elite · Unlock @ HQ 13'
+  }
+};
+
+/* ---- Building upgrade curve ---- */
+function bldUpgradeCost(level) { return Math.floor(800 * Math.pow(level + 1, 2.1)); }
+function bldUpgradeTime(level) { return Math.floor(60 * Math.pow(level + 1, 1.85)); }
+function bldGemRush(level)     { return Math.max(5, Math.floor(level * 2.5)); }
+
+/* ---- Default game state ---- */
+function freshState() {
+  const now = NOW();
+  return {
+    version: 3,
+    bornAt: now,
+    lastTick: now,
+
+    player: {
+      name: 'Don Rattori',
+      species: 'rat',
+      level: 12,
+      xp: 8420, xpNext: 12000,
+      coins: 12855,
+      gems: 42,
+      energy: 87, energyMax: 100, energyRegenSec: 90,
+      rep: 1240,
+      warPts: 850,
+      role: 'R5 BOSS',
+      family: 'Iron Whiskers',
+      city: 'Lagos',
+      cityRank: 3
+    },
+
+    hero: {
+      skillPts: 4,
+      skills: { attack: 124, defense: 96, leadership: 82, stealth: 65, charisma: 110 },
+      talentPts: 2,
+      talents: { economy: 4, military: 6, defense: 3, raid: 5 },
+      gear: {
+        fedora: { name: 'Pinstripe Fedora', bonus: 'income +5%',  rarity: 'rare',     mod: { income: 0.05 } },
+        tie:    { name: 'Silk Blood Tie',    bonus: 'defense +6%', rarity: 'epic',     mod: { def: 0.06   } },
+        ring:   { name: "Don's Pinky Ring",  bonus: 'rally +8%',   rarity: 'epic',     mod: { rally: 0.08 } },
+        cigar:  { name: 'Cuban Power',       bonus: 'attack +5%',  rarity: 'rare',     mod: { atk: 0.05  } },
+        watch:  { name: 'Gold Rolex',        bonus: 'speedup +10%',rarity: 'legendary',mod: { speed: 0.10 } }
+      }
+    },
+
+    research: {
+      economy:  { income_pct: 0.18 },
+      military: { atk_pct: 0.12, def_pct: 0.08, march_pct: 0.10, load_pct: 0.15 },
+      defense:  { wall_pct: 0.20, vault_pct: 0.25, shield_pct: 0.10 },
+      espionage:{ scout_pct: 0.30 }
+    },
+
+    buildings: {
+      hq:        { name: 'Hideout HQ',    level: 12, upgrading: null },
+      vault:     { name: 'The Vault',     level: 9,  upgrading: { endsAt: now + 11520*1000 } },
+      yard:      { name: 'Training Yard', level: 8,  upgrading: null },
+      clinic:    { name: "Doc's Clinic",  level: 6,  upgrading: { endsAt: now + 3840*1000 } },
+      garage:    { name: 'Garage',        level: 5,  upgrading: null },
+      armory:    { name: 'Armory',        level: 4,  upgrading: { endsAt: now + 19320*1000 } },
+      walls:     { name: 'Walls',         level: 7,  upgrading: null },
+      speakeasy: { name: 'Speakeasy',     level: 0,  upgrading: null, unlockAt: 13 }
+    },
+
+    businesses: [
+      { id: 'pizzeria',    name: "Tony's Pizzeria",     icon: '🍕', level: 8,  rate: 2400, cap: 18000, last: now - 1800*1000,  unlockAt: 1  },
+      { id: 'casino',      name: 'Lucky Cat Casino',    icon: '🎰', level: 5,  rate: 1800, cap: 14000, last: now - 1500*1000,  unlockAt: 1  },
+      { id: 'laundry',     name: 'Clean Sheets',        icon: '🧺', level: 3,  rate: 980,  cap: 8000,  last: now - 5400*1000,  unlockAt: 1  },
+      { id: 'docks',       name: 'Eastside Docks',      icon: '🚢', level: 2,  rate: 3200, cap: 22000, last: now - 9000*1000,  unlockAt: 1  },
+      { id: 'autobody',    name: 'Auto Body Shop',      icon: '🛠', level: 0,  rate: 5000, cap: 30000, last: now,              unlockAt: 10 },
+      { id: 'underground', name: 'Underground Casino',  icon: '🕯', level: 0,  rate: 12000,cap: 70000, last: now,              unlockAt: 15 }
+    ],
+
+    troops: {
+      bruiser:  { count: 124, wounded: 4, dead: 12, training: [] },
+      shooter:  { count: 86,  wounded: 8, dead: 6,  training: [{ qty: 8,  endsAt: now + 720*1000  }] },
+      biker:    { count: 62,  wounded: 2, dead: 4,  training: [] },
+      driver:   { count: 18,  wounded: 0, dead: 0,  training: [] },
+      made_man: { count: 0,   wounded: 0, dead: 0,  training: [] }
+    },
+
+    clinic: {
+      capacity: 20,
+      queue: [
+        { type: 'bruiser', qty: 3, healEndsAt: now + 420*1000 },
+        { type: 'shooter', qty: 5, healEndsAt: now + 940*1000 }
+      ]
+    },
+
+    family: {
+      name: 'Iron Whiskers',
+      tag: 'IW',
+      city: 'Lagos',
+      rank: 3,
+      power: 2400000,
+      members: 47,
+      capacity: 50,
+      bank: { coins: 1240000, gems: 320, intel: 48 },
+      boss: { name: 'The Loan Shark', hp: 3200000, maxHp: 5000000, attackedToday: 12, resetIn: NOW() + 29640*1000 },
+      members_list: [
+        { name: 'Don Rattori',    role: 'R5 BOSS', species: 'rat',     power: 480000, donated: 240000, isMe: true },
+        { name: 'Tony Whiskers',  role: 'R4',      species: 'cat',     power: 312000, donated: 180000 },
+        { name: 'Big Pidge',      role: 'R4',      species: 'pigeon',  power: 285000, donated: 160000 },
+        { name: 'Vinny 2-Paws',   role: 'R3',      species: 'raccoon', power: 198000, donated:  95000 },
+        { name: 'Sal "The Fox"',  role: 'R2',      species: 'fox',     power: 142000, donated:  60000 },
+        { name: 'Mama Carmela',   role: 'R3',      species: 'rat',     power: 124000, donated:  88000 },
+        { name: 'Pauly Beak',     role: 'R2',      species: 'pigeon',  power:  98000, donated:  42000 },
+        { name: 'Lefty Whiskers', role: 'R1',      species: 'cat',     power:  72000, donated:  18000 }
+      ]
+    },
+
+    war: {
+      active: true,
+      enemy: { name: 'Manila Predators', tag: 'MP', power: 2150000 },
+      ourScore: 1247, theirScore: 982,
+      endsAt: now + 76440*1000,
+      contributions: [
+        { name: 'Don Rattori',   pts: 340, you: true },
+        { name: 'Tony Whiskers', pts: 285 },
+        { name: 'Big Pidge',     pts: 228 },
+        { name: 'Sal "The Fox"', pts: 158 },
+        { name: 'Vinny 2-Paws',  pts: 122 }
+      ],
+      battleLog: [
+        { kind: 'victory', text: 'You raided Diego "El Toro"', detail: '+24K coins · +12 rep', when: now - 720*1000 },
+        { kind: 'defeat',  text: 'Hiro "Phantom" raided you',   detail: '−8K coins · −4 rep', when: now - 3600*1000, retaliate: true },
+        { kind: 'victory', text: 'Tony Whiskers raided Sergio', detail: '+18K to family bank', when: now - 7200*1000 },
+        { kind: 'rally',   text: 'Rally on Tokyo Drift family', detail: '5/12 joined · 28m to launch', when: now - 600*1000 }
+      ]
+    },
+
+    targets: [
+      { id: 'carlito', name: 'Don Carlito',    family: 'Manila Predators', species: 'pig',     power: 480000, vault: 124000, shield: 0,        dist: 240, tags: ['HOSTILE'],          troops: { bruiser: 80, shooter: 90,  biker: 40, driver: 8  }, hero: { atk: 80, def: 90  }, walls: 16000 },
+      { id: 'yuki',    name: 'Yuki Saito',     family: 'Tokyo Drift',      species: 'fox',     power: 312000, vault: 240000, shield: 14400*1000, dist: 420, tags: ['SHIELDED'],         troops: { bruiser: 50, shooter: 70,  biker: 60, driver: 5  }, hero: { atk: 60, def: 110 }, walls: 11000 },
+      { id: 'lupo',    name: 'Lupo "Wolf"',    family: 'Sicilian',         species: 'wolf',    power: 198000, vault:  64000, shield: 0,        dist: 580, tags: ['HOSTILE','WEAK'],   troops: { bruiser: 30, shooter: 32,  biker: 18, driver: 2  }, hero: { atk: 40, def: 50  }, walls:  6200 },
+      { id: 'aliyah',  name: 'Aliyah Khan',    family: 'Dubai Hawks',      species: 'falcon',  power: 540000, vault: 180000, shield: 0,        dist: 780, tags: ['HOSTILE','STRONG'], troops: { bruiser: 110,shooter: 130, biker: 70, driver: 14 }, hero: { atk: 110,def: 100 }, walls: 22000 }
+    ],
+
+    shield: 0,           // ms timestamp when shield expires (0 = no shield)
+    inbox: []            // incoming raid notifications
+  };
+}
+
+/* ---- State container with load/save ---- */
+let S = (() => {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.version === 3) return parsed;
+    }
+  } catch (e) { /* fall through */ }
+  return freshState();
+})();
+
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+}
+
+function reset() { S = freshState(); save(); render(); }
+window.gameReset = reset;
+window.gameState = () => S;
+
+/* ===========================================================================
+   POWER CALCULATION
+   =========================================================================== */
+function troopPower(state = S) {
+  let p = 0;
+  for (const k of Object.keys(state.troops)) {
+    const def = UNIT_DEFS[k]; if (!def) continue;
+    const c = state.troops[k].count || 0;
+    p += c * (def.atk + def.def + def.hp * 0.4);
+  }
+  return Math.floor(p);
+}
+
+function buildingPower(state = S) {
+  let p = 0;
+  for (const b of Object.values(state.buildings)) p += b.level * 4200;
+  return p;
+}
+
+function heroPower(state = S) {
+  const s = state.hero.skills;
+  return (s.attack + s.defense + s.leadership + s.stealth + s.charisma) * 320;
+}
+
+function researchPower(state = S) {
+  let p = 0;
+  for (const tier of Object.values(state.research))
+    for (const v of Object.values(tier)) p += v * 60000;
+  return Math.floor(p);
+}
+
+function gearPower(state = S) {
+  let p = 0;
+  for (const g of Object.values(state.hero.gear)) {
+    const r = g.rarity;
+    p += (r === 'legendary' ? 80000 : r === 'epic' ? 45000 : 22000);
+  }
+  return p;
+}
+
+function totalPower(state = S) {
+  return troopPower(state) + buildingPower(state) + heroPower(state) + researchPower(state) + gearPower(state);
+}
+
+function powerBreakdown(state = S) {
+  return {
+    troops:   troopPower(state),
+    buildings:buildingPower(state),
+    hero:     heroPower(state),
+    research: researchPower(state),
+    gear:     gearPower(state),
+    total:    totalPower(state)
+  };
+}
+
+/* ===========================================================================
+   MULTIPLIERS  (research + hero + gear stack into combat math)
+   =========================================================================== */
+function mult(state = S) {
+  const r = state.research, g = state.hero.gear, t = state.hero.talents, s = state.hero.skills;
+
+  const atkBonus =
+    (r.military.atk_pct || 0) +
+    (g.cigar?.mod?.atk || 0) +
+    (t.military || 0) * 0.012 +
+    s.attack * 0.0008;
+
+  const defBonus =
+    (r.military.def_pct || 0) +
+    (g.tie?.mod?.def || 0) +
+    (t.defense || 0) * 0.012 +
+    s.defense * 0.0008;
+
+  const wallBonus = (r.defense.wall_pct || 0);
+  const vaultProt = Math.min(0.85, (r.defense.vault_pct || 0) + 0.40);
+  const incomeBonus = (r.economy.income_pct || 0) + (g.fedora?.mod?.income || 0) + (t.economy || 0) * 0.015;
+  const marchSpeed = 1 + (r.military.march_pct || 0) + (g.watch?.mod?.speed || 0);
+  const rallyCap = 1 + (g.ring?.mod?.rally || 0) + (s.leadership * 0.001);
+  const raidBonus = (t.raid || 0) * 0.010;
+
+  return { atkBonus, defBonus, wallBonus, vaultProt, incomeBonus, marchSpeed, rallyCap, raidBonus };
+}
+
+/* ===========================================================================
+   BUSINESSES — idle accrual
+   =========================================================================== */
+function bizPending(b, m) {
+  if (b.level === 0) return 0;
+  const dtSec = (NOW() - b.last) / 1000;
+  const rate  = b.rate * (1 + m.incomeBonus);
+  return Math.min(b.cap, Math.floor(rate * dtSec / 3600));
+}
+
+function bizCollect(id) {
+  const b = S.businesses.find(x => x.id === id);
+  if (!b || b.level === 0) return 0;
+  const m = mult();
+  const amt = bizPending(b, m);
+  if (amt > 0) {
+    S.player.coins += amt;
+    b.last = NOW();
+    save();
+  }
+  return amt;
+}
+
+function bizTimeFull(b) {
+  if (b.level === 0) return 0;
+  const elapsed = (NOW() - b.last) / 1000;
+  const secToFull = (b.cap / b.rate) * 3600;
+  return Math.max(0, secToFull - elapsed);
+}
+
+/* ===========================================================================
+   ENERGY REGEN + UPGRADE TIMERS
+   =========================================================================== */
+function tick() {
+  const now = NOW();
+  const dt = (now - S.lastTick) / 1000;
+  S.lastTick = now;
+
+  // Energy regen
+  if (S.player.energy < S.player.energyMax) {
+    const gain = dt / S.player.energyRegenSec;
+    S.player.energy = Math.min(S.player.energyMax, S.player.energy + gain);
+  }
+
+  // Building upgrades complete
+  for (const [k, b] of Object.entries(S.buildings)) {
+    if (b.upgrading && b.upgrading.endsAt <= now) {
+      b.level += 1;
+      b.upgrading = null;
+    }
+  }
+
+  // Training queues complete
+  for (const [type, t] of Object.entries(S.troops)) {
+    t.training = t.training.filter(batch => {
+      if (batch.endsAt <= now) { t.count += batch.qty; return false; }
+      return true;
+    });
+  }
+
+  // Clinic heals
+  S.clinic.queue = S.clinic.queue.filter(h => {
+    if (h.healEndsAt <= now) {
+      const t = S.troops[h.type];
+      if (t) { t.count += h.qty; t.wounded = Math.max(0, t.wounded - h.qty); }
+      return false;
+    }
+    return true;
+  });
+}
+
+/* ===========================================================================
+   BUILDING UPGRADES
+   =========================================================================== */
+function bldStartUpgrade(key) {
+  const b = S.buildings[key]; if (!b) return false;
+  if (b.upgrading) return false;
+  if (b.unlockAt && S.buildings.hq.level < b.unlockAt) return false;
+  if (key !== 'hq' && b.level >= S.buildings.hq.level) return false;          // HQ-gated
+  const cost = bldUpgradeCost(b.level);
+  if (S.player.coins < cost) return false;
+  S.player.coins -= cost;
+  const m = mult();
+  const time = Math.max(30, bldUpgradeTime(b.level) / (m.marchSpeed || 1));
+  b.upgrading = { endsAt: NOW() + time * 1000 };
+  save();
+  return true;
+}
+
+/* ===========================================================================
+   TROOP TRAINING
+   =========================================================================== */
+function trainTroop(type, qty) {
+  const def = UNIT_DEFS[type]; if (!def) return false;
+  if (def.unlockAt && S.buildings.hq.level < def.unlockAt) return false;
+  const totalCost = def.trainCost * qty;
+  if (S.player.coins < totalCost) return false;
+  S.player.coins -= totalCost;
+  const m = mult();
+  const time = def.trainSec * qty / (m.marchSpeed || 1);
+  S.troops[type].training.push({ qty, endsAt: NOW() + time * 1000 });
+  save();
+  return true;
+}
+
+/* ===========================================================================
+   COMBAT ENGINE
+   ---------------------------------------------------------------------------
+   Mafia-City-style: rounds of focus-fire, counter system, wound vs kill split,
+   wall absorbs % of damage, hero buffs scale offense / defense.
+   =========================================================================== */
+
+function pickSquad(state = S) {
+  // Default squad = take available troops (capped reasonable)
+  const t = state.troops;
+  return {
+    bruiser:  Math.min(40, t.bruiser.count),
+    shooter:  Math.min(30, t.shooter.count),
+    biker:    Math.min(20, t.biker.count),
+    driver:   Math.min(8,  t.driver.count),
+    made_man: Math.min(6,  t.made_man.count)
+  };
+}
+
+function squadAttack(squad, focus = null, m) {
+  // Total attack output, with counter bonus vs `focus` unit type.
+  let a = 0;
+  for (const [type, n] of Object.entries(squad)) {
+    if (!n) continue;
+    const def = UNIT_DEFS[type]; if (!def) continue;
+    let bonus = 1 + (m?.atkBonus || 0);
+    if (focus && def.counters[focus]) bonus *= def.counters[focus];
+    a += n * def.atk * bonus;
+  }
+  return a;
+}
+
+function squadHP(squad, m) {
+  let h = 0;
+  for (const [type, n] of Object.entries(squad)) {
+    if (!n) continue;
+    const def = UNIT_DEFS[type]; if (!def) continue;
+    h += n * (def.hp + def.def * 0.6) * (1 + (m?.defBonus || 0));
+  }
+  return h;
+}
+
+function squadLoad(squad) {
+  let l = 0;
+  for (const [type, n] of Object.entries(squad)) {
+    if (!n) continue;
+    const def = UNIT_DEFS[type]; if (!def) continue;
+    l += n * def.load;
+  }
+  return l;
+}
+
+function squadSpeedKmh(squad) {
+  // Slowest unit determines march time
+  let min = Infinity;
+  for (const [type, n] of Object.entries(squad)) {
+    if (!n) continue;
+    const def = UNIT_DEFS[type]; if (!def) continue;
+    if (def.speed < min) min = def.speed;
+  }
+  return min === Infinity ? 1 : min;
+}
+
+function marchTime(squad, distance, m) {
+  const base = squadSpeedKmh(squad); // higher = faster
+  const sec = distance / (base * 10) / (m?.marchSpeed || 1);
+  return Math.max(8, Math.floor(sec));
+}
+
+function winChance(squad, target, m) {
+  const oAtk = squadAttack(squad, null, m);
+  const oHP  = squadHP(squad, m);
+  const dAtk = squadAttack(target.troops, null, { atkBonus: 0 });
+  const dHP  = squadHP(target.troops, { defBonus: 0 }) * (1 + (target.walls / 100000));
+  const ratio = (oAtk * oHP) / Math.max(1, dAtk * dHP);
+  const heroEdge = ((S.hero.skills.attack + S.hero.skills.leadership) - (target.hero?.atk + target.hero?.def || 100)) * 0.002;
+  let p = ratio / (ratio + 1) + heroEdge + (m.raidBonus || 0);
+  return Math.max(0.02, Math.min(0.98, p));
+}
+
+function resolveRaid(targetId) {
+  const target = S.targets.find(t => t.id === targetId);
+  if (!target) return null;
+  if (target.shield && target.shield > NOW()) return { error: 'shielded' };
+
+  const m = mult();
+  const squad = pickSquad();
+  const log = [];
+
+  // Track live counts (mutable copies)
+  const live = JSON.parse(JSON.stringify({ ours: squad, theirs: target.troops }));
+
+  let round = 0;
+  const MAX_ROUNDS = 6;
+  while (round < MAX_ROUNDS) {
+    round++;
+
+    const oA = squadAttack(live.ours, dominantType(live.theirs), m);
+    const tA = squadAttack(live.theirs, dominantType(live.ours), { atkBonus: 0 });
+
+    const wallAbs = Math.min(0.35, target.walls / 80000);
+    const ourDmgIn = tA * (1 - 0); // we attack their HQ, walls apply to us defending
+    const theirDmgIn = oA * (1 - wallAbs);
+
+    // Distribute damage proportional to each side's relative HP share
+    const ourCas    = distributeCasualties(live.ours,   ourDmgIn,   m, true);
+    const theirCas  = distributeCasualties(live.theirs, theirDmgIn, { defBonus: 0 }, false);
+
+    log.push({
+      round, our_lost: ourCas, their_lost: theirCas,
+      our_dmg: Math.floor(theirDmgIn), their_dmg: Math.floor(ourDmgIn),
+      our_alive: sumLive(live.ours), their_alive: sumLive(live.theirs)
+    });
+
+    if (sumLive(live.ours) <= 0 || sumLive(live.theirs) <= 0) break;
+  }
+
+  const ourAlive   = sumLive(live.ours);
+  const theirAlive = sumLive(live.theirs);
+  const victory = ourAlive >= theirAlive;
+
+  // Apply casualties to S.troops with wound vs kill split (clinic-gated)
+  const ourLossTotal = aggregateLosses(squad, live.ours);
+  applyCasualties(ourLossTotal);
+
+  // Loot calc
+  let loot = { coins: 0, xp: 0, rep: 0, warPts: 0 };
+  if (victory) {
+    const unprotected = target.vault * (1 - (m.vaultProt || 0.4));
+    const cap = squadLoad(live.ours);
+    loot.coins  = Math.floor(Math.min(cap, unprotected));
+    loot.xp     = 280 + Math.floor(target.power / 5000);
+    loot.rep    = 8 + Math.floor(target.power / 60000);
+    loot.warPts = 30 + Math.floor(target.power / 12000);
+    S.player.coins   += loot.coins;
+    S.player.xp      += loot.xp;
+    S.player.rep     += loot.rep;
+    S.player.warPts  += loot.warPts;
+    S.war.ourScore   += Math.floor(loot.warPts / 2);
+    S.war.battleLog.unshift({ kind: 'victory', text: `You raided ${target.name}`, detail: `+${loot.coins.toLocaleString()} coins · +${loot.rep} rep`, when: NOW() });
+  } else {
+    loot.rep = -4;
+    S.player.rep = Math.max(0, S.player.rep + loot.rep);
+    S.war.battleLog.unshift({ kind: 'defeat', text: `Failed raid on ${target.name}`, detail: `Heavy losses · −4 rep`, when: NOW(), retaliate: false });
+  }
+
+  if (S.war.battleLog.length > 8) S.war.battleLog.length = 8;
+  save();
+
+  return {
+    victory, loot, log, march: marchTime(squad, target.dist, m),
+    target, squad, ourLossTotal, winChance: winChance(squad, target, m)
+  };
+}
+
+function dominantType(live) {
+  let max = 0, best = null;
+  for (const [t, n] of Object.entries(live)) if (n > max) { max = n; best = t; }
+  return best;
+}
+
+function sumLive(live) {
+  let s = 0; for (const n of Object.values(live)) s += Math.max(0, n);
+  return s;
+}
+
+function distributeCasualties(live, totalDmg, m, isDefender) {
+  // For each unit type, kill some fraction proportional to incoming damage / unit HP
+  const totalHP = squadHP(live, m);
+  if (totalHP <= 0) return {};
+  const lossFrac = Math.min(0.6, totalDmg / totalHP);
+  const losses = {};
+  for (const [type, n] of Object.entries(live)) {
+    if (!n) continue;
+    const lost = Math.min(n, Math.ceil(n * lossFrac * (0.85 + Math.random() * 0.3)));
+    live[type] = n - lost;
+    if (lost > 0) losses[type] = lost;
+  }
+  return losses;
+}
+
+function aggregateLosses(start, end) {
+  const out = {};
+  for (const t of Object.keys(start)) out[t] = Math.max(0, (start[t] || 0) - (end[t] || 0));
+  return out;
+}
+
+function applyCasualties(losses) {
+  const clinicSpace = Math.max(0, S.clinic.capacity - clinicUsed());
+  for (const [type, total] of Object.entries(losses)) {
+    if (!total) continue;
+    const woundShare = Math.min(total, Math.floor(total * 0.65));
+    const woundedToClinic = Math.min(woundShare, clinicSpace - usedSoFar());
+    const dead = total - woundedToClinic;
+    if (S.troops[type]) {
+      S.troops[type].count   = Math.max(0, S.troops[type].count - total);
+      S.troops[type].wounded += woundedToClinic;
+      S.troops[type].dead    += dead;
+      if (woundedToClinic > 0) {
+        const def = UNIT_DEFS[type];
+        S.clinic.queue.push({
+          type, qty: woundedToClinic,
+          healEndsAt: NOW() + (def.trainSec * 0.5 * woundedToClinic) * 1000
+        });
+      }
+    }
+  }
+  function usedSoFar() { return S.clinic.queue.reduce((a, b) => a + b.qty, 0); }
+  function clinicUsed() { return S.clinic.queue.reduce((a, b) => a + b.qty, 0); }
+}
+
+function clinicUsedNow() {
+  return S.clinic.queue.reduce((a, b) => a + b.qty, 0);
+}
+
+/* ===========================================================================
+   FORMATTERS
+   =========================================================================== */
+function fmtNum(n) {
+  n = Math.floor(n);
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toLocaleString();
+}
+
+function fmtTime(secs) {
+  if (secs <= 0) return 'ready';
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = Math.floor(secs % 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}m`;
+  if (m > 0) return `${m}m ${s.toString().padStart(2,'0')}s`;
+  return `${s}s`;
+}
+
+function fmtRel(when) {
+  const dt = (NOW() - when) / 1000;
+  if (dt < 60) return 'just now';
+  if (dt < 3600) return Math.floor(dt / 60) + 'm ago';
+  if (dt < 86400) return Math.floor(dt / 3600) + 'h ago';
+  return Math.floor(dt / 86400) + 'd ago';
+}
+
+/* ===========================================================================
+   ACTIONS exposed to UI
+   =========================================================================== */
+window.Game = {
+  S: () => S,
+  defs: () => UNIT_DEFS,
+  tick,
+  save,
+  mult,
+  totalPower, powerBreakdown,
+  fmtNum, fmtTime, fmtRel,
+  bizPending, bizCollect, bizTimeFull,
+  bldStartUpgrade, bldUpgradeCost, bldUpgradeTime, bldGemRush,
+  trainTroop,
+  resolveRaid, winChance, pickSquad, squadAttack, squadHP, squadLoad, marchTime,
+  clinicUsedNow,
+  reset
+};
+
+</script>
+  <script>
+/* ===========================================================================
+   Cosa Nostra Tycoon — UI render + interaction layer.
+   Reads from window.Game.S(), writes back via window.Game.* actions.
+   =========================================================================== */
+(function () {
+  const G = window.Game;
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const SCREEN_TITLES = {
+    empire:  'Cosa Nostra Tycoon',
+    mansion: 'Hideout · HQ Lv',
+    family:  'Iron Whiskers · Family',
+    city:    'Lagos · City Map',
+    war:     'WAR · Iron Whiskers vs Manila',
+    shop:    'Cigar Shop'
+  };
+
+  /* ============================================================
+     SPECIES → tiny SVG avatar (reused everywhere)
+     ============================================================ */
+  function avatarSvg(species, isMe = false) {
+    const bg = isMe ? '#d4af37' : '#252037';
+    const heads = {
+      rat:     `<ellipse cx="50" cy="55" rx="32" ry="28" fill="#9b9aa3"/>
+                <ellipse cx="50" cy="68" rx="14" ry="9" fill="#c5c4cc"/>
+                <ellipse cx="50" cy="73" rx="3" ry="2" fill="#1a1a24"/>
+                <ellipse cx="35" cy="35" rx="10" ry="14" fill="#9b9aa3"/>
+                <ellipse cx="65" cy="35" rx="10" ry="14" fill="#9b9aa3"/>
+                <ellipse cx="35" cy="36" rx="4" ry="8" fill="#3d3852"/>
+                <ellipse cx="65" cy="36" rx="4" ry="8" fill="#3d3852"/>
+                <ellipse cx="42" cy="50" rx="3" ry="4" fill="#000"/>
+                <ellipse cx="58" cy="50" rx="3" ry="4" fill="#000"/>
+                <ellipse cx="50" cy="20" rx="34" ry="6" fill="#1a1a24"/>
+                <path d="M 20 20 Q 24 4 50 4 Q 76 4 80 20 Z" fill="#1a1a24"/>`,
+      cat:     `<ellipse cx="50" cy="55" rx="32" ry="28" fill="#f4a04a"/>
+                <polygon points="22,35 14,12 38,28" fill="#f4a04a"/>
+                <polygon points="78,35 86,12 62,28" fill="#f4a04a"/>
+                <polygon points="24,30 18,18 32,26" fill="#d97706"/>
+                <polygon points="76,30 82,18 68,26" fill="#d97706"/>
+                <rect x="35" y="46" width="30" height="10" rx="3" fill="#1a1a24"/>
+                <rect x="35" y="46" width="30" height="3" fill="#0d0d12"/>
+                <ellipse cx="50" cy="68" rx="6" ry="4" fill="#fff"/>
+                <ellipse cx="50" cy="72" rx="2" ry="1.5" fill="#1a1a24"/>`,
+      pigeon:  `<ellipse cx="50" cy="58" rx="30" ry="26" fill="#6b6878"/>
+                <ellipse cx="50" cy="55" rx="22" ry="22" fill="#9b9aa3"/>
+                <polygon points="50,52 78,58 60,66" fill="#f4a04a"/>
+                <circle cx="44" cy="48" r="3" fill="#000"/>
+                <circle cx="56" cy="48" r="3" fill="#000"/>
+                <ellipse cx="50" cy="22" rx="32" ry="6" fill="#1a1a24"/>
+                <ellipse cx="50" cy="18" rx="22" ry="10" fill="#1a1a24"/>
+                <ellipse cx="50" cy="14" rx="18" ry="3" fill="#a8161d"/>`,
+      raccoon: `<ellipse cx="50" cy="55" rx="32" ry="28" fill="#8b7d6b"/>
+                <ellipse cx="50" cy="65" rx="20" ry="12" fill="#f1ece1"/>
+                <rect x="20" y="44" width="60" height="14" fill="#1a1a24"/>
+                <circle cx="38" cy="51" r="4" fill="#fff"/>
+                <circle cx="62" cy="51" r="4" fill="#fff"/>
+                <circle cx="38" cy="51" r="2" fill="#000"/>
+                <circle cx="62" cy="51" r="2" fill="#000"/>
+                <ellipse cx="50" cy="73" rx="3" ry="2" fill="#1a1a24"/>
+                <rect x="22" y="35" width="56" height="8" rx="2" fill="#10b981"/>`,
+      fox:     `<ellipse cx="50" cy="55" rx="30" ry="26" fill="#d97706"/>
+                <polygon points="22,35 14,12 38,30" fill="#d97706"/>
+                <polygon points="78,35 86,12 62,30" fill="#d97706"/>
+                <ellipse cx="50" cy="68" rx="14" ry="10" fill="#fff"/>
+                <ellipse cx="50" cy="74" rx="3" ry="2" fill="#1a1a24"/>
+                <circle cx="42" cy="48" r="3" fill="#000"/>
+                <circle cx="58" cy="48" r="3" fill="#000"/>`,
+      wolf:    `<ellipse cx="50" cy="55" rx="32" ry="28" fill="#6b6878"/>
+                <polygon points="22,35 14,12 38,30" fill="#6b6878"/>
+                <polygon points="78,35 86,12 62,30" fill="#6b6878"/>
+                <ellipse cx="50" cy="70" rx="16" ry="10" fill="#3d3852"/>
+                <ellipse cx="50" cy="74" rx="3" ry="2" fill="#1a1a24"/>
+                <ellipse cx="42" cy="48" rx="3" ry="4" fill="#f5cf4f"/>
+                <ellipse cx="58" cy="48" rx="3" ry="4" fill="#f5cf4f"/>`,
+      pig:     `<ellipse cx="50" cy="55" rx="32" ry="28" fill="#f4b878"/>
+                <ellipse cx="50" cy="68" rx="14" ry="10" fill="#f7c89f"/>
+                <ellipse cx="46" cy="68" rx="2" ry="3" fill="#1a1a24"/>
+                <ellipse cx="54" cy="68" rx="2" ry="3" fill="#1a1a24"/>
+                <ellipse cx="34" cy="40" rx="6" ry="10" fill="#f4b878"/>
+                <ellipse cx="66" cy="40" rx="6" ry="10" fill="#f4b878"/>
+                <circle cx="42" cy="50" r="3" fill="#000"/>
+                <circle cx="58" cy="50" r="3" fill="#000"/>`,
+      falcon:  `<ellipse cx="50" cy="55" rx="30" ry="28" fill="#5a4a3a"/>
+                <polygon points="50,48 78,54 60,62" fill="#f5cf4f"/>
+                <circle cx="42" cy="48" r="3" fill="#f5cf4f"/>
+                <circle cx="58" cy="48" r="3" fill="#f5cf4f"/>
+                <circle cx="42" cy="48" r="1.5" fill="#000"/>
+                <circle cx="58" cy="48" r="1.5" fill="#000"/>
+                <path d="M 25 25 L 35 45 L 25 50 Z" fill="#3a2a1a"/>
+                <path d="M 75 25 L 65 45 L 75 50 Z" fill="#3a2a1a"/>`
+    };
+    const head = heads[species] || heads.rat;
+    return `<svg viewBox="0 0 100 100" class="avatar-svg" style="background:${bg}">${head}</svg>`;
+  }
+
+  /* ============================================================
+     RENDER: data-bind walker
+     ============================================================ */
+  function getByPath(obj, path) {
+    return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+  }
+
+  function fmtVal(raw, fmt) {
+    if (raw == null) return '—';
+    switch (fmt) {
+      case 'n': return Math.floor(raw).toLocaleString();
+      case 'k': return G.fmtNum(raw);
+      case 'e': return `${Math.floor(raw)}/${G.S().player.energyMax}`;
+      case 'pct': return Math.floor(raw * 100) + '%';
+      default: return raw;
+    }
+  }
+
+  function applyBindings() {
+    const S = G.S();
+    const power = G.powerBreakdown(S);
+    const stat  = computedStats(S);
+    const computed = { power, stat, war: {
+      ...S.war,
+      endsIn: G.fmtTime(Math.max(0, (S.war.endsAt - Date.now()) / 1000))
+    }};
+
+    $$('[data-bind]').forEach(el => {
+      const [path, fmt] = el.getAttribute('data-bind').split(':');
+      let v;
+      if (path.startsWith('power.'))   v = getByPath(power, path.slice(6));
+      else if (path.startsWith('stat.')) v = getByPath(stat, path.slice(5));
+      else if (path.startsWith('war.endsIn')) v = computed.war.endsIn;
+      else                              v = getByPath(S, path);
+      el.textContent = fmtVal(v, fmt);
+    });
+  }
+
+  /* ============================================================
+     RENDER: per-screen content (crew, businesses, buildings, etc)
+     ============================================================ */
+  function computedStats(S) {
+    const m = G.mult(S);
+    const crewUsed = Object.values(S.troops).reduce((a, t) => a + t.count, 0);
+    const crewCap  = S.buildings.yard.level * 30 + S.buildings.hq.level * 8;
+    const defense  = (S.buildings.walls.level * 2400) * (1 + m.wallBonus) + S.buildings.hq.level * 800;
+    const vault    = Math.floor(S.buildings.vault.level * 34000 * (1 + (S.research.defense.vault_pct || 0)));
+    return { crewUsed, crewCap, defense: Math.floor(defense), vault, mult: m };
+  }
+
+  /* ----- crew strip on Empire ----- */
+  const CREW_DEFS = [
+    { species: 'cat',     name: 'Tony Whiskers',  role: 'ENFORCER',  power: 312000 },
+    { species: 'pigeon',  name: 'Big Pidge',      role: 'UNDERBOSS', power: 285000 },
+    { species: 'raccoon', name: 'Vinny 2-Paws',   role: 'BOOKKEEPER',power: 198000 },
+    { species: 'fox',     name: 'Sal "The Fox"',  role: 'SOLDIER',   power: 142000 }
+  ];
+  function renderCrew() {
+    const el = $('#crew-strip'); if (!el) return;
+    el.innerHTML = CREW_DEFS.map(c => `
+      <div class="crew-card">
+        <div class="crew-avatar">${avatarSvg(c.species)}</div>
+        <div class="crew-info">
+          <div class="crew-name">${c.name}</div>
+          <div class="crew-role">${c.role}</div>
+          <div class="crew-power">${G.fmtNum(c.power)} ⚔</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ----- businesses on Empire ----- */
+  function renderBiz() {
+    const el = $('#biz-grid'); if (!el) return;
+    const S = G.S();
+    const m = G.mult(S);
+    el.innerHTML = S.businesses.map(b => {
+      if (b.level === 0) {
+        return `
+          <div class="biz-card locked">
+            <div class="biz-icon">${b.icon}</div>
+            <div class="biz-name">${b.name}</div>
+            <div class="biz-locked">🔒 Unlock @ HQ ${b.unlockAt}</div>
+          </div>`;
+      }
+      const pending = G.bizPending(b, m);
+      const tFull = G.bizTimeFull(b);
+      const pct = Math.min(100, (pending / b.cap) * 100);
+      const ready = pending > b.cap * 0.95;
+      return `
+        <div class="biz-card ${ready ? 'ready' : ''}" data-collect="${b.id}">
+          <div class="biz-icon">${b.icon}</div>
+          <div class="biz-name">${b.name} Lv ${b.level}</div>
+          <div class="biz-rate">+${G.fmtNum(b.rate * (1 + m.incomeBonus))}/hr</div>
+          <div class="biz-bar"><div class="biz-bar-fill" style="width:${pct}%"></div></div>
+          <div class="biz-pending">${G.fmtNum(pending)} ready · ${tFull > 0 ? G.fmtTime(tFull) + ' to full' : 'FULL'}</div>
+          <button class="biz-collect">COLLECT</button>
+        </div>`;
+    }).join('');
+    $$('.biz-card[data-collect]').forEach(card => {
+      const id = card.getAttribute('data-collect');
+      card.querySelector('.biz-collect').addEventListener('click', e => {
+        e.stopPropagation();
+        const amt = G.bizCollect(id);
+        if (amt > 0) coinShower(card, amt);
+        renderAll();
+      });
+    });
+  }
+
+  /* ----- buildings on Mansion ----- */
+  const BUILDING_ICONS = {
+    hq: '🏛', vault: '💰', yard: '⚔', clinic: '⛑',
+    garage: '🚗', armory: '🔧', walls: '🧱', speakeasy: '🍷'
+  };
+  function renderBuildings() {
+    const el = $('#building-list'); if (!el) return;
+    const S = G.S();
+    el.innerHTML = Object.entries(S.buildings).map(([key, b]) => {
+      const locked = b.unlockAt && S.buildings.hq.level < b.unlockAt;
+      const upgrading = b.upgrading != null;
+      const upgRemain = upgrading ? (b.upgrading.endsAt - Date.now()) / 1000 : 0;
+      const cost = G.bldUpgradeCost(b.level);
+      const time = G.bldUpgradeTime(b.level);
+      const gem  = G.bldGemRush(b.level);
+      const desc = buildingDesc(key, b.level);
+      return `
+        <div class="bld-card ${locked ? 'locked' : ''} ${upgrading ? 'upgrading' : ''}">
+          <div class="bld-icon">${BUILDING_ICONS[key] || '🏚'}</div>
+          <div class="bld-info">
+            <div class="bld-name">${b.name} <span class="bld-lvl">Lv ${b.level}</span></div>
+            <div class="bld-desc">${desc}</div>
+            ${upgrading
+              ? `<div class="bld-upgrading">⏱ ${G.fmtTime(upgRemain)} → Lv ${b.level + 1}</div>`
+              : locked
+                ? `<div class="bld-locked-msg">🔒 Unlock @ HQ ${b.unlockAt}</div>`
+                : `<div class="bld-cost">⏱ ${G.fmtTime(time)} · 💰 ${G.fmtNum(cost)} or 💎 ${gem}</div>`
+            }
+          </div>
+          ${upgrading
+            ? `<button class="bld-btn rush">RUSH 💎</button>`
+            : locked
+              ? `<button class="bld-btn" disabled>—</button>`
+              : `<button class="bld-btn" data-upgrade="${key}">UPGRADE</button>`}
+        </div>`;
+    }).join('');
+
+    $$('[data-upgrade]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const key = btn.getAttribute('data-upgrade');
+        const ok = G.bldStartUpgrade(key);
+        if (!ok) flashError(btn, 'Need more coins or HQ level');
+        renderAll();
+      });
+    });
+  }
+
+  function buildingDesc(key, lvl) {
+    switch (key) {
+      case 'hq':        return `Cap +${lvl * 4} crew · unlocks all`;
+      case 'vault':     return `Hold ${G.fmtNum(lvl * 34000)} · protect 65%`;
+      case 'yard':      return `Train queue +${lvl} · cap +${lvl * 30}`;
+      case 'clinic':    return `Heal cap ${lvl * 4} · faster recovery`;
+      case 'garage':    return `Drivers cap +${lvl * 4} · march speed`;
+      case 'armory':    return `Research +${(lvl * 3)}% atk/def`;
+      case 'walls':     return `Wall absorbs ${(lvl * 4)}% incoming dmg`;
+      case 'speakeasy': return `Family income +${(lvl * 5)}% (R5+ only)`;
+      default: return '';
+    }
+  }
+
+  /* ----- family members + boss ----- */
+  function renderMembers() {
+    const el = $('#members-list'); if (!el) return;
+    const S = G.S();
+    el.innerHTML = S.family.members_list.map((m, idx) => `
+      <div class="member-row ${m.isMe ? 'me' : ''}">
+        <div class="member-rank">#${idx + 1}</div>
+        <div class="member-avatar">${avatarSvg(m.species, m.isMe)}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name} <span class="role-${m.role.replace(' ', '-').toLowerCase()}">${m.role}</span></div>
+          <div class="member-sub">${G.fmtNum(m.power)} ⚔ · ${G.fmtNum(m.donated)} donated</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderBoss() {
+    const el = $('#boss-card'); if (!el) return;
+    const S = G.S();
+    const b = S.family.boss;
+    const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100));
+    const resetSec = Math.max(0, (b.resetIn - Date.now()) / 1000);
+    el.innerHTML = `
+      <div class="boss-header">
+        <div>
+          <div class="boss-tag">DAILY FAMILY BOSS</div>
+          <div class="boss-name">${b.name}</div>
+          <div class="boss-sub">Attacked ${b.attackedToday}× today · resets in ${G.fmtTime(resetSec)}</div>
+        </div>
+        <div class="boss-art">🦴</div>
+      </div>
+      <div class="boss-hp-bar"><div class="boss-hp-fill" style="width:${pct}%"></div></div>
+      <div class="boss-hp-text">${G.fmtNum(b.hp)} / ${G.fmtNum(b.maxHp)} HP</div>
+      <button class="boss-attack">⚔ ATTACK BOSS</button>
+    `;
+  }
+
+  /* ----- city targets ----- */
+  function renderTargets() {
+    const el = $('#targets-list'); if (!el) return;
+    const S = G.S();
+    const m = G.mult(S);
+    el.innerHTML = S.targets.map(t => {
+      const shielded = t.shield && t.shield > Date.now();
+      const wc = G.winChance(G.pickSquad(S), t, m);
+      return `
+        <div class="target-row ${shielded ? 'shielded' : ''}">
+          <div class="target-avatar">${avatarSvg(t.species)}</div>
+          <div class="target-info">
+            <div class="target-name">${t.name}
+              ${t.tags.map(tag => `<span class="tag tag-${tag.toLowerCase()}">${tag}</span>`).join('')}
+            </div>
+            <div class="target-sub">${t.family} · ${G.fmtNum(t.power)} ⚔ · ${t.dist}m away · 💰 ${G.fmtNum(t.vault)}</div>
+            <div class="target-wc">Win chance: <strong>${Math.floor(wc * 100)}%</strong></div>
+          </div>
+          ${shielded
+            ? `<button class="target-btn" disabled>🛡 ${G.fmtTime((t.shield - Date.now())/1000)}</button>`
+            : `<button class="target-btn raid-btn" data-raid="${t.id}">⚔ RAID</button>`}
+        </div>`;
+    }).join('');
+
+    $$('[data-raid]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openRaidPrep(btn.getAttribute('data-raid'));
+      });
+    });
+  }
+
+  /* ----- war contributions + battles ----- */
+  function renderWar() {
+    const S = G.S();
+    const contrib = $('#contrib-list');
+    if (contrib) {
+      contrib.innerHTML = S.war.contributions.map((c, idx) => `
+        <div class="contrib-row ${c.you ? 'you' : ''}">
+          <div class="contrib-rank">#${idx + 1}</div>
+          <div class="contrib-name">${c.name}${c.you ? ' <span class="you-tag">YOU</span>' : ''}</div>
+          <div class="contrib-pts">${c.pts} pts</div>
+        </div>`).join('');
+    }
+    const battles = $('#battles-list');
+    if (battles) {
+      battles.innerHTML = S.war.battleLog.map(b => `
+        <div class="battle-row battle-${b.kind}">
+          <div class="battle-icon">${{victory:'⚔',defeat:'💀',rally:'📢'}[b.kind] || '·'}</div>
+          <div class="battle-info">
+            <div class="battle-text">${b.text}</div>
+            <div class="battle-sub">${b.detail} · ${G.fmtRel(b.when)}</div>
+          </div>
+          ${b.retaliate
+            ? `<button class="battle-cta">RETALIATE</button>`
+            : `<button class="battle-cta ghost">DETAILS</button>`}
+        </div>`).join('');
+    }
+    const wf = $('#war-fill');
+    if (wf) {
+      const total = S.war.ourScore + S.war.theirScore;
+      wf.style.width = (total ? (S.war.ourScore / total * 100) : 50).toFixed(1) + '%';
+    }
+  }
+
+  /* ============================================================
+     POWER BREAKDOWN MODAL
+     ============================================================ */
+  function renderPowerBreakdown() {
+    const el = $('#power-breakdown'); if (!el) return;
+    const p = G.powerBreakdown();
+    const rows = [
+      ['Troops',    p.troops,    '#a8161d'],
+      ['Buildings', p.buildings, '#4d9fff'],
+      ['Hero',      p.hero,      '#d4af37'],
+      ['Research',  p.research,  '#10b981'],
+      ['Gear',      p.gear,      '#a855f7']
+    ];
+    el.innerHTML = `
+      <div class="pb-total">⚔ ${G.fmtNum(p.total)}</div>
+      <div class="pb-total-label">TOTAL POWER</div>
+      ${rows.map(([label, val, color]) => `
+        <div class="pb-row">
+          <div class="pb-label"><span class="pb-dot" style="background:${color}"></span>${label}</div>
+          <div class="pb-bar"><div style="width:${(val / p.total * 100).toFixed(1)}%; background:${color}"></div></div>
+          <div class="pb-val">${G.fmtNum(val)}</div>
+        </div>`).join('')}
+      <div class="pb-hint">Tap each category to learn how to grow it.</div>
+    `;
+  }
+
+  /* ============================================================
+     TROOPS / ARMY MODAL
+     ============================================================ */
+  function renderArmy() {
+    const list = $('#army-list'); if (!list) return;
+    const S = G.S();
+    const defs = G.defs();
+    const totals = $('#army-totals');
+    const totalCount = Object.values(S.troops).reduce((a, t) => a + t.count, 0);
+    const totalWounded = Object.values(S.troops).reduce((a, t) => a + t.wounded, 0);
+    const totalDead = Object.values(S.troops).reduce((a, t) => a + t.dead, 0);
+    const inTraining = Object.values(S.troops).reduce((a, t) => a + t.training.reduce((x, b) => x + b.qty, 0), 0);
+    if (totals) {
+      totals.innerHTML = `
+        <div class="at-card"><div>${G.fmtNum(totalCount)}</div><span>FIGHTING</span></div>
+        <div class="at-card"><div>${G.fmtNum(totalWounded)}</div><span>WOUNDED</span></div>
+        <div class="at-card"><div>${G.fmtNum(totalDead)}</div><span>DEAD</span></div>
+        <div class="at-card"><div>${G.fmtNum(inTraining)}</div><span>TRAINING</span></div>
+      `;
+    }
+
+    list.innerHTML = Object.entries(defs).map(([key, def]) => {
+      const t = S.troops[key] || { count: 0, wounded: 0, dead: 0, training: [] };
+      const locked = def.unlockAt && S.buildings.hq.level < def.unlockAt;
+      const counter = Object.keys(def.counters)[0];
+      const weak = Object.keys(def.weakTo)[0];
+      const trainingQty = t.training.reduce((a, b) => a + b.qty, 0);
+      const trainingEnd = t.training[0]?.endsAt;
+      return `
+        <div class="army-card ${locked ? 'locked' : ''}">
+          <div class="army-icon">${def.icon}</div>
+          <div class="army-info">
+            <div class="army-name">${def.name} <span class="army-short">${def.short}</span></div>
+            <div class="army-role">${def.role}</div>
+            <div class="army-stats">
+              <span title="Health">❤ ${def.hp}</span>
+              <span title="Attack">⚔ ${def.atk}</span>
+              <span title="Defense">🛡 ${def.def}</span>
+              <span title="Speed">⚡ ${def.speed.toFixed(1)}×</span>
+              <span title="Loot capacity">🎒 ${def.load}</span>
+            </div>
+            <div class="army-counters">
+              ${counter ? `<span class="army-cnt good">⚔ +50% vs ${defs[counter].name}s</span>` : ''}
+              ${weak    ? `<span class="army-cnt bad">⚠ +35% from ${defs[weak].name}s</span>` : ''}
+            </div>
+            <div class="army-counts">
+              <strong>${G.fmtNum(t.count)}</strong> ready ·
+              <span class="dim">${t.wounded} wounded · ${t.dead} dead</span>
+              ${trainingQty > 0 ? ` · 🔄 training ${trainingQty}${trainingEnd ? ' (' + G.fmtTime((trainingEnd - Date.now())/1000) + ')' : ''}` : ''}
+            </div>
+          </div>
+          <div class="army-train">
+            ${locked
+              ? `<div class="locked-pill">🔒 HQ ${def.unlockAt}</div>`
+              : `<button class="train-btn" data-train="${key}" data-qty="5">+5</button>
+                 <button class="train-btn" data-train="${key}" data-qty="20">+20</button>
+                 <div class="train-cost">💰 ${G.fmtNum(def.trainCost)} ea</div>`}
+          </div>
+        </div>`;
+    }).join('');
+
+    $$('[data-train]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const type = btn.getAttribute('data-train');
+        const qty  = parseInt(btn.getAttribute('data-qty'), 10);
+        const ok = G.trainTroop(type, qty);
+        if (!ok) flashError(btn, 'Not enough coins');
+        renderAll();
+      });
+    });
+
+    /* Clinic */
+    const clinic = $('#clinic-card');
+    if (clinic) {
+      const used = G.clinicUsedNow();
+      clinic.innerHTML = `
+        <div class="clinic-header">
+          <div>
+            <div class="clinic-title">⛑ DOC'S CLINIC</div>
+            <div class="clinic-sub">${used}/${S.clinic.capacity} beds · wounded heal back into your army</div>
+          </div>
+          <div class="clinic-cap">${used}/${S.clinic.capacity}</div>
+        </div>
+        ${S.clinic.queue.length === 0
+          ? `<div class="dim small" style="text-align:center; padding:14px">No wounded — your crew is healthy.</div>`
+          : S.clinic.queue.map(h => `
+            <div class="clinic-row">
+              <div class="clinic-icon">${G.defs()[h.type]?.icon || '·'}</div>
+              <div class="clinic-info">
+                <div>${h.qty}× ${G.defs()[h.type]?.name || h.type}</div>
+                <div class="dim small">healing — ${G.fmtTime((h.healEndsAt - Date.now())/1000)}</div>
+              </div>
+              <button class="clinic-rush">RUSH 💎</button>
+            </div>`).join('')}
+      `;
+    }
+  }
+
+  /* ============================================================
+     HERO MODAL
+     ============================================================ */
+  function renderHero() {
+    const S = G.S();
+    const stats = $('#hero-stats');
+    const gear = $('#hero-gear');
+    const talents = $('#hero-talents');
+
+    if (stats) {
+      stats.innerHTML = `
+        <div class="hero-section-title">SKILLS <span class="dim">· ${S.hero.skillPts} pts to spend</span></div>
+        ${Object.entries(S.hero.skills).map(([k, v]) => `
+          <div class="hero-skill">
+            <div class="hs-name">${k.charAt(0).toUpperCase() + k.slice(1)}</div>
+            <div class="hs-bar"><div style="width:${Math.min(100, v / 200 * 100)}%"></div></div>
+            <div class="hs-val">${v}</div>
+          </div>`).join('')}
+      `;
+    }
+    if (gear) {
+      gear.innerHTML = `
+        <div class="hero-section-title">GEAR EQUIPPED</div>
+        <div class="gear-grid">
+          ${Object.entries(S.hero.gear).map(([slot, g]) => `
+            <div class="gear-card gear-${g.rarity}">
+              <div class="gear-slot">${slot.toUpperCase()}</div>
+              <div class="gear-name">${g.name}</div>
+              <div class="gear-bonus">${g.bonus}</div>
+              <div class="gear-rarity">${g.rarity}</div>
+            </div>`).join('')}
+        </div>
+      `;
+    }
+    if (talents) {
+      talents.innerHTML = `
+        <div class="hero-section-title">TALENT TREE <span class="dim">· ${S.hero.talentPts} pts</span></div>
+        ${Object.entries(S.hero.talents).map(([k, v]) => `
+          <div class="talent-row">
+            <div class="talent-name">${k.charAt(0).toUpperCase() + k.slice(1)}</div>
+            <div class="talent-dots">
+              ${Array.from({length: 10}, (_, i) =>
+                `<span class="talent-dot ${i < v ? 'filled' : ''}"></span>`).join('')}
+            </div>
+          </div>`).join('')}
+      `;
+    }
+  }
+
+  /* ============================================================
+     RAID FLOW
+     ============================================================ */
+  let currentRaid = null;
+  let currentTarget = null;
+
+  function openRaidPrep(targetId) {
+    const S = G.S();
+    const t = S.targets.find(x => x.id === targetId);
+    if (!t) return;
+    currentTarget = t;
+    const squad = G.pickSquad(S);
+    const m = G.mult(S);
+    const wc = G.winChance(squad, t, m);
+    const oA = G.squadAttack(squad, null, m);
+    const oH = G.squadHP(squad, m);
+    const tA = G.squadAttack(t.troops, null, { atkBonus: 0 });
+    const tH = G.squadHP(t.troops, { defBonus: 0 }) * (1 + t.walls / 100000);
+    const ourPow = Math.floor((oA + oH) / 1.5);
+    const theirPow = Math.floor((tA + tH) / 1.5);
+    const total = ourPow + theirPow;
+
+    $('#raid-target-card').innerHTML = `
+      <div class="raid-target-avatar">${avatarSvg(t.species)}</div>
+      <div class="raid-target-info">
+        <div class="raid-target-name">${t.name}</div>
+        <div class="raid-target-fam">${t.family} · ${t.dist}m away</div>
+        <div class="raid-target-stats">⚔ ${G.fmtNum(t.power)} · 💰 ${G.fmtNum(t.vault)} · 🧱 walls ${G.fmtNum(t.walls)}</div>
+      </div>`;
+
+    $('#raid-our-power').textContent = G.fmtNum(ourPow);
+    $('#raid-their-power').textContent = G.fmtNum(theirPow);
+    $('#raid-our-bar').style.width = (ourPow / total * 100).toFixed(1) + '%';
+    $('#raid-their-bar').style.width = (theirPow / total * 100).toFixed(1) + '%';
+
+    $('#raid-squad').innerHTML = Object.entries(squad).filter(([,n]) => n > 0).map(([type, n]) => {
+      const def = G.defs()[type];
+      return `
+        <div class="squad-unit">
+          <div class="squad-icon">${def.icon}</div>
+          <div class="squad-n">${n}</div>
+          <div class="squad-l">${def.short}</div>
+        </div>`;
+    }).join('');
+
+    $('#raid-march').textContent = G.fmtTime(G.marchTime(squad, t.dist, m));
+    $('#raid-cap').textContent   = G.fmtNum(G.squadLoad(squad));
+    $('#raid-vault').textContent = G.fmtNum(t.vault);
+    $('#raid-unlocked').textContent = G.fmtNum(Math.floor(t.vault * (1 - m.vaultProt)));
+
+    $('#raid-bonuses').innerHTML = `
+      <div class="bonus-tag">⚔ +${(m.atkBonus*100).toFixed(0)}% atk</div>
+      <div class="bonus-tag">🛡 +${(m.defBonus*100).toFixed(0)}% def</div>
+      <div class="bonus-tag">🎯 +${(m.raidBonus*100).toFixed(0)}% raid</div>
+      <div class="bonus-tag">⚡ +${((m.marchSpeed-1)*100).toFixed(0)}% march</div>
+    `;
+
+    $('#raid-winchance').textContent = Math.floor(wc * 100) + '%';
+    $('#raid-winchance').style.color = wc > 0.6 ? '#10b981' : wc > 0.4 ? '#d4af37' : '#a8161d';
+
+    setPhase('prep');
+    $('#raid-modal').classList.add('active');
+  }
+
+  function executeRaid() {
+    if (!currentTarget) return;
+    const result = G.resolveRaid(currentTarget.id);
+    if (!result) return;
+    currentRaid = result;
+
+    setPhase('fight');
+    $('#raid-progress-label').textContent = 'Marching…';
+    $('#raid-progress-fill').style.width = '0%';
+    $('#fight-text').textContent = 'MARCHING';
+
+    let prog = 0;
+    const total = 14; // 14 ticks → 2.8s
+    const ticker = setInterval(() => {
+      prog++;
+      $('#raid-progress-fill').style.width = (prog / total * 100) + '%';
+      if (prog === 4) $('#fight-text').textContent = 'CONTACT';
+      else if (prog === 8) $('#fight-text').textContent = 'FIGHT';
+      else if (prog === 11) $('#fight-text').textContent = result.victory ? 'VICTORY' : 'DEFEAT';
+      if (prog >= total) {
+        clearInterval(ticker);
+        showResult(result);
+      }
+    }, 200);
+  }
+
+  function showResult(r) {
+    setPhase('result');
+    $('#result-title').textContent = r.victory ? 'VICTORY' : 'DEFEAT';
+    $('#result-title').className = 'result-title ' + (r.victory ? 'win' : 'lose');
+    $('#result-sub').textContent = (r.victory ? 'You defeated ' : 'You failed to defeat ') + r.target.name;
+
+    if (r.victory) {
+      $('#result-loot').innerHTML = `
+        <div class="loot-row">
+          <div class="loot-cell"><div class="loot-icon">💰</div><div class="loot-amt">+${G.fmtNum(r.loot.coins)}</div><div class="loot-l">coins</div></div>
+          <div class="loot-cell"><div class="loot-icon">★</div><div class="loot-amt">+${r.loot.xp}</div><div class="loot-l">XP</div></div>
+          <div class="loot-cell"><div class="loot-icon">👑</div><div class="loot-amt">+${r.loot.rep}</div><div class="loot-l">rep</div></div>
+          <div class="loot-cell"><div class="loot-icon">⚔</div><div class="loot-amt">+${r.loot.warPts}</div><div class="loot-l">war pts</div></div>
+        </div>`;
+    } else {
+      $('#result-loot').innerHTML = `
+        <div class="loot-row defeat-row">
+          <div class="loot-cell"><div class="loot-icon">💀</div><div class="loot-amt">${r.loot.rep || 0}</div><div class="loot-l">rep lost</div></div>
+        </div>`;
+    }
+
+    /* Round-by-round combat log */
+    $('#combat-log').innerHTML = r.log.map(round => `
+      <div class="cl-round">
+        <div class="cl-r">R${round.round}</div>
+        <div class="cl-cols">
+          <div class="cl-col our">
+            <div class="cl-side-label">YOUR SQUAD</div>
+            <div class="cl-dmg">took ${G.fmtNum(round.our_dmg)} dmg</div>
+            <div class="cl-losses">
+              ${Object.entries(round.our_lost).map(([t, n]) => `<span>−${n} ${G.defs()[t]?.short || t}</span>`).join('') || '<span class="dim">no losses</span>'}
+            </div>
+            <div class="cl-alive">${round.our_alive} left</div>
+          </div>
+          <div class="cl-col their">
+            <div class="cl-side-label">${r.target.name.toUpperCase()}</div>
+            <div class="cl-dmg">took ${G.fmtNum(round.their_dmg)} dmg</div>
+            <div class="cl-losses">
+              ${Object.entries(round.their_lost).map(([t, n]) => `<span>−${n} ${G.defs()[t]?.short || t}</span>`).join('') || '<span class="dim">no losses</span>'}
+            </div>
+            <div class="cl-alive">${round.their_alive} left</div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    /* Casualties block */
+    const cas = Object.entries(r.ourLossTotal).filter(([, n]) => n > 0);
+    $('#casualties-section').innerHTML = cas.length === 0
+      ? '<div class="cas-empty">⚔ No casualties — flawless raid.</div>'
+      : `
+        <div class="cas-title">YOUR CASUALTIES (65% wounded → clinic, rest dead)</div>
+        <div class="cas-grid">
+          ${cas.map(([t, n]) => {
+            const def = G.defs()[t];
+            const w = Math.floor(n * 0.65);
+            const d = n - w;
+            return `
+              <div class="cas-card">
+                <div class="cas-icon">${def?.icon}</div>
+                <div class="cas-name">${def?.name}</div>
+                <div class="cas-detail"><span class="cas-w">${w} wounded</span> · <span class="cas-d">${d} dead</span></div>
+              </div>`;
+          }).join('')}
+        </div>`;
+  }
+
+  function setPhase(name) {
+    $$('.raid-phase').forEach(p => p.classList.remove('active'));
+    const phase = $(`.phase-${name}`);
+    if (phase) phase.classList.add('active');
+  }
+
+  function closeRaid() {
+    $('#raid-modal').classList.remove('active');
+    currentRaid = null;
+    currentTarget = null;
+    renderAll();
+  }
+
+  /* ============================================================
+     UI HELPERS
+     ============================================================ */
+  function coinShower(target, amount) {
+    const rect = target.getBoundingClientRect();
+    const count = Math.min(20, 6 + Math.floor(Math.log10(amount)));
+    for (let i = 0; i < count; i++) {
+      const c = document.createElement('div');
+      c.className = 'coin-shower';
+      c.textContent = '💰';
+      c.style.left = (rect.left + rect.width / 2) + 'px';
+      c.style.top  = (rect.top + 16) + 'px';
+      c.style.setProperty('--dx', (Math.random() * 200 - 100) + 'px');
+      c.style.setProperty('--dy', (-100 - Math.random() * 120) + 'px');
+      c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 1400);
+    }
+  }
+
+  function flashError(el, msg) {
+    const tip = document.createElement('div');
+    tip.className = 'error-flash';
+    tip.textContent = msg;
+    el.parentNode.appendChild(tip);
+    setTimeout(() => tip.remove(), 1800);
+  }
+
+  /* ============================================================
+     SCREEN SWITCHING
+     ============================================================ */
+  function showScreen(name) {
+    $$('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === name));
+    $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === name));
+    const t = SCREEN_TITLES[name] || 'Cosa Nostra Tycoon';
+    const S = G.S();
+    $('#screen-title').textContent = t.replace('Lv', `Lv ${S.buildings.hq.level}`);
+  }
+
+  function openModal(id) {
+    $('#' + id)?.classList.add('active');
+    if (id === 'power-modal') renderPowerBreakdown();
+    if (id === 'troops-modal') renderArmy();
+    if (id === 'hero-modal') renderHero();
+  }
+  function closeModal(id) { $('#' + id)?.classList.remove('active'); }
+
+  /* ============================================================
+     INITIAL WIRE-UP
+     ============================================================ */
+  function wire() {
+    /* nav */
+    $$('[data-nav]').forEach(el => {
+      el.addEventListener('click', e => { e.stopPropagation(); showScreen(el.dataset.nav); });
+    });
+    /* modals open */
+    $$('[data-modal]').forEach(el => {
+      el.addEventListener('click', e => { e.stopPropagation(); openModal(el.dataset.modal + '-modal'); });
+    });
+    /* modals close */
+    $$('[data-close]').forEach(el => {
+      el.addEventListener('click', e => { e.stopPropagation(); closeModal(el.dataset.close); });
+    });
+    /* raid modal */
+    $('#raid-close')?.addEventListener('click', closeRaid);
+    $('#raid-attack-btn')?.addEventListener('click', executeRaid);
+    $('#raid-claim')?.addEventListener('click', closeRaid);
+    /* settings → reset */
+    $('#settings-btn')?.addEventListener('click', () => {
+      if (confirm('Reset game state? (clears localStorage)')) G.reset();
+    });
+    /* family tabs (visual only for now) */
+    $$('.ftab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        $$('.ftab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  }
+
+  /* ============================================================
+     MAIN LOOP
+     ============================================================ */
+  function renderAll() {
+    applyBindings();
+    renderCrew();
+    renderBiz();
+    renderBuildings();
+    renderMembers();
+    renderBoss();
+    renderTargets();
+    renderWar();
+    /* if a modal is open, re-render it too */
+    if ($('#power-modal').classList.contains('active'))  renderPowerBreakdown();
+    if ($('#troops-modal').classList.contains('active')) renderArmy();
+    if ($('#hero-modal').classList.contains('active'))   renderHero();
+  }
+  window.render = renderAll;
+
+  function loop() {
+    G.tick();
+    G.save();
+    renderAll();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    wire();
+    renderAll();
+    setInterval(loop, 1000);
+  });
+})();
+
+</script>
+</body>
+</html>
