@@ -1,0 +1,3319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cosa Nostra Tycoon — Mockup</title>
+  <style>
+/* ===========================================================
+   COSA NOSTRA TYCOON — Visual Mockup Styles
+   Stylized 2D cartoon mob aesthetic, multi-screen
+   =========================================================== */
+
+:root {
+  --bg-deep: #0d0d12;
+  --bg-panel: #15131e;
+  --bg-card: #1c1929;
+  --bg-card-2: #252037;
+  --gold: #d4af37;
+  --gold-bright: #f5cf4f;
+  --red: #a8161d;
+  --red-bright: #e0252f;
+  --purple: #2a2638;
+  --green: #10b981;
+  --blue: #4d9fff;
+  --text: #f1ece1;
+  --text-dim: #9b9aa3;
+  --text-faint: #6b6878;
+  --border: rgba(255,255,255,0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background:
+    radial-gradient(ellipse at top, #1a1626 0%, #0a0a0f 60%),
+    #0a0a0f;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px;
+  overflow-x: hidden;
+}
+
+/* ===== Phone frame ===== */
+.phone-frame {
+  position: relative;
+  width: 390px;
+  min-height: 844px;
+  background: #000;
+  border-radius: 44px;
+  padding: 12px;
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.6),
+    0 0 0 2px #1a1a24,
+    0 0 0 4px #2a2a35,
+    inset 0 0 0 1px rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #000;
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 820px;
+  background: linear-gradient(180deg, #0f0d18 0%, #15131e 100%);
+  border-radius: 36px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Status bar ===== */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 32px 4px 32px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.status-icons { font-size: 10px; opacity: 0.7; letter-spacing: 1px; }
+
+/* ===== Telegram header ===== */
+.tg-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px 12px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tg-back, .tg-close {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 300;
+}
+
+.tg-back { color: #4d9fff; font-weight: 400; font-size: 28px; }
+
+.tg-title { flex: 1; text-align: center; }
+.tg-title-main { font-size: 15px; font-weight: 700; }
+.tg-title-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+/* ===== Resource bar ===== */
+.resource-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 12px 8px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.resource-bar::-webkit-scrollbar { display: none; }
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.resource-icon { font-size: 14px; }
+.resource.level {
+  background: linear-gradient(135deg, var(--gold) 0%, #b8941c 100%);
+  color: #1a1a24;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 12px rgba(212,175,55,0.25);
+}
+
+/* ===== Screens container ===== */
+.screens { flex: 1; overflow: hidden; position: relative; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: none;
+  padding-bottom: 80px;
+}
+
+.screen::-webkit-scrollbar { display: none; }
+
+.screen.active { display: block; animation: fadeIn 0.25s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===========================================================
+   SCREEN 1: EMPIRE — Hero card, crew, businesses
+   =========================================================== */
+
+.hero-card {
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 70% 30%, rgba(168,22,29,0.25), transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(212,175,55,0.10), transparent 60%),
+    linear-gradient(135deg, #2a2638 0%, #1a1626 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.18);
+  overflow: hidden;
+  min-height: 280px;
+  display: flex;
+}
+
+.hero-bg-glow {
+  position: absolute; inset: -20%;
+  background: radial-gradient(circle at center, rgba(168,22,29,0.35) 0%, transparent 60%);
+  pointer-events: none;
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1.0; transform: scale(1.05); }
+}
+
+.halftone {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1.2px);
+  background-size: 5px 5px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.hero-meta {
+  position: relative; z-index: 2;
+  flex: 1;
+  display: flex; flex-direction: column; gap: 4px;
+  align-self: flex-start;
+}
+
+.hero-rank {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--gold);
+  background: rgba(212,175,55,0.12);
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  align-self: flex-start;
+  margin-bottom: 6px;
+}
+
+.hero-name {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.hero-family { font-size: 12px; color: var(--text-dim); font-weight: 600; font-style: italic; }
+.hero-city { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+.hero-stage {
+  position: relative; width: 160px; height: 240px;
+  align-self: flex-end;
+  margin-right: -10px;
+  z-index: 2;
+}
+
+.char-rat {
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
+  animation: idle-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.cigar-ember { animation: ember 1.6s ease-in-out infinite; }
+@keyframes ember { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.smoke {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%);
+  pointer-events: none; opacity: 0;
+}
+
+.smoke1 { width: 14px; height: 14px; left: 36px; top: 165px; animation: rise 3.5s linear infinite; }
+.smoke2 { width: 18px; height: 18px; left: 32px; top: 165px; animation: rise 3.5s linear infinite 1.2s; }
+.smoke3 { width: 22px; height: 22px; left: 38px; top: 165px; animation: rise 3.5s linear infinite 2.4s; }
+
+@keyframes rise {
+  0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+  20%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-100px) translateX(-15px) scale(2); }
+}
+
+.hero-power {
+  position: absolute; bottom: 12px; left: 14px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(212,175,55,0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 6px 10px;
+  z-index: 3;
+}
+
+.power-label { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--text-dim); }
+.power-val { font-size: 18px; font-weight: 900; color: var(--gold-bright); }
+
+/* Section titles */
+.section-title {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 16px 16px 8px 16px;
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--text-dim);
+}
+
+.section-link {
+  color: var(--gold);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+/* Crew strip */
+.crew-strip {
+  display: flex; gap: 10px;
+  padding: 0 12px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.crew-strip::-webkit-scrollbar { display: none; }
+
+.crew-card {
+  flex-shrink: 0;
+  width: 96px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 8px 12px 8px;
+  text-align: center;
+  transition: transform 0.15s ease;
+}
+
+.crew-card:active { transform: scale(0.96); }
+
+.crew-avatar {
+  width: 64px; height: 64px;
+  margin: 0 auto 8px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%), #0d0d12;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(212,175,55,0.25);
+  overflow: hidden;
+}
+
+.char-mini { width: 100%; height: 100%; }
+
+.crew-empty {
+  border: 2px dashed rgba(212,175,55,0.3);
+  background: transparent;
+  color: var(--gold);
+  font-size: 28px; font-weight: 300;
+}
+
+.crew-name { font-size: 12px; font-weight: 700; }
+.crew-role { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* Mansion preview (on Empire screen) */
+.mansion-preview {
+  margin: 0 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a0815 0%, #1a1626 100%);
+  cursor: pointer;
+}
+
+.skyline {
+  width: 100%;
+  height: 130px;
+  display: block;
+  background: linear-gradient(180deg, #15101f 0%, #2a1a2a 100%);
+}
+
+.mansion-cta {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, var(--bg-card), var(--bg-panel));
+}
+
+.mansion-cta-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.dim { font-size: 11px; color: var(--text-dim); }
+
+.badge { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
+.badge-red { background: var(--red); color: white; box-shadow: 0 0 10px rgba(168,22,29,0.5); }
+.badge-green { background: var(--green); color: white; }
+.badge-gold { background: var(--gold); color: #1a1a24; }
+
+/* Business grid */
+.biz-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.biz-card {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  position: relative; overflow: hidden;
+}
+
+.biz-card::before {
+  content: '';
+  position: absolute; top: -30px; right: -30px;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, var(--accent, rgba(212,175,55,0.18)) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.biz-pizza   { --accent: rgba(168,22,29,0.25); }
+.biz-casino  { --accent: rgba(16,185,129,0.25); }
+.biz-laundry { --accent: rgba(77,159,255,0.25); }
+.biz-docks   { --accent: rgba(212,175,55,0.25); }
+
+.biz-icon { font-size: 32px; margin-bottom: 4px; }
+.biz-name { font-size: 13px; font-weight: 700; }
+.biz-level { font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.5px; font-weight: 600; }
+.biz-income { font-size: 13px; color: var(--gold-bright); margin-top: 6px; font-weight: 800; }
+
+.biz-collect {
+  width: 100%;
+  margin-top: 10px;
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px; font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.biz-collect.ready {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  color: #1a1a24;
+  box-shadow: 0 0 16px rgba(212,175,55,0.5);
+  animation: ready-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ready-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(212,175,55,0.5); }
+  50%      { box-shadow: 0 0 24px rgba(212,175,55,0.8); }
+}
+
+.biz-collect.disabled { opacity: 0.45; cursor: not-allowed; }
+
+.biz-progress {
+  margin-top: 8px;
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.biz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.biz-locked { opacity: 0.55; }
+.biz-locked .biz-icon { filter: grayscale(1); }
+
+/* War banner */
+.war-banner {
+  margin: 14px 12px 12px 12px;
+  position: relative;
+  background:
+    radial-gradient(circle at 80% 50%, rgba(224,37,47,0.4), transparent 60%),
+    linear-gradient(135deg, #3a0d12 0%, #1a0509 100%);
+  border: 1px solid rgba(224,37,47,0.4);
+  border-radius: 14px;
+  padding: 14px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.war-glow {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 30%, rgba(224,37,47,0.15) 50%, transparent 70%);
+  animation: warShine 3s linear infinite;
+}
+
+@keyframes warShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.war-content {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.war-tag {
+  font-size: 10px; font-weight: 900;
+  color: var(--red-bright);
+  letter-spacing: 2px;
+}
+
+.war-title { font-size: 17px; font-weight: 800; margin-top: 2px; }
+.war-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.war-cta {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  border: none; color: white;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 900; font-size: 12px; line-height: 1.1;
+  letter-spacing: 0.8px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(224,37,47,0.4);
+  flex-shrink: 0;
+  animation: war-shake 4s ease-in-out infinite;
+}
+
+@keyframes war-shake {
+  0%, 92%, 100% { transform: translateX(0); }
+  93%           { transform: translateX(-2px) rotate(-1deg); }
+  94%           { transform: translateX(2px) rotate(1deg); }
+  95%           { transform: translateX(-2px); }
+  96%           { transform: translateX(0); }
+}
+
+/* ===========================================================
+   SCREEN 2: MANSION / HQ
+   =========================================================== */
+
+.mansion-hero {
+  margin: 10px 12px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(212,175,55,0.2);
+  background:
+    radial-gradient(ellipse at top, #2a1a2a 0%, #0d0a18 80%),
+    #0d0a18;
+}
+
+.mansion-skyline {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+.mansion-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.mansion-stat {
+  padding: 10px 6px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+
+.mansion-stat:last-child { border-right: none; }
+
+.stat-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+.stat-val { font-size: 16px; font-weight: 900; color: var(--gold-bright); margin-top: 3px; }
+
+.blinker { animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 0%, 60% { opacity: 1; } 70%, 100% { opacity: 0.2; } }
+
+.neon-pulse { animation: neon 2s ease-in-out infinite; }
+@keyframes neon { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.chimney-smoke { animation: chimney 3s linear infinite; transform-origin: center; }
+@keyframes chimney {
+  0%   { opacity: 0.3; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-30px) scale(2.5); }
+}
+
+.float-orb { animation: float 4s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50%      { transform: translateY(-8px); opacity: 1; }
+}
+
+/* Building list */
+.building-list { padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.building-card {
+  display: flex; gap: 12px; align-items: center;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.bld-icon {
+  width: 54px; height: 54px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.bld-info { flex: 1; min-width: 0; }
+.bld-name { font-size: 14px; font-weight: 800; }
+.bld-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.bld-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+
+.tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-dim);
+}
+
+.tag-gold { background: rgba(212,175,55,0.12); border-color: rgba(212,175,55,0.3); color: var(--gold-bright); }
+.tag-red { background: rgba(168,22,29,0.15); border-color: rgba(168,22,29,0.4); color: #ff6b75; }
+.tag-green { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #4ade80; }
+
+.bld-upgrade {
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 78px;
+}
+
+.bld-upgrade.ready-glow {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  box-shadow: 0 0 12px rgba(212,175,55,0.4);
+}
+
+.bld-cost { font-size: 12px; }
+.bld-time { font-size: 9px; opacity: 0.8; margin-top: 2px; letter-spacing: 0.5px; }
+
+.bld-upgrade.disabled { opacity: 0.45; cursor: not-allowed; }
+.building-card.locked { opacity: 0.55; }
+
+/* ===========================================================
+   SCREEN 3: FAMILY
+   =========================================================== */
+
+.family-banner {
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  padding: 18px;
+  display: flex; align-items: center; gap: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.25);
+  background:
+    radial-gradient(circle at 80% 30%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #1a0d18 0%, #2a1a2a 100%);
+  overflow: hidden;
+}
+
+.family-banner-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 30%, rgba(168,22,29,0.15) 60%, transparent 80%);
+  animation: bannerShine 5s linear infinite;
+}
+
+@keyframes bannerShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.family-crest {
+  width: 70px; height: 70px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+  z-index: 2;
+}
+
+.family-meta { flex: 1; z-index: 2; }
+.family-name {
+  font-size: 22px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.3px;
+}
+
+.family-tag { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.family-stats-row {
+  display: flex; gap: 14px; margin-top: 10px;
+}
+
+.family-stats-row > div {
+  display: flex; flex-direction: column;
+}
+
+.family-stats-row strong { font-size: 14px; font-weight: 900; color: var(--gold-bright); }
+.family-stats-row span { font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; }
+
+/* TG link card */
+.tg-link-card {
+  margin: 0 12px;
+  background: linear-gradient(180deg, #1a2a44, #0d1a28);
+  border: 1px solid rgba(77,159,255,0.3);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.tg-link-icon {
+  width: 44px; height: 44px;
+  background: var(--blue);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.tg-link-text { flex: 1; }
+.tg-link-title { font-size: 13px; font-weight: 800; }
+.tg-link-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.tg-link-btn {
+  background: var(--blue);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+
+/* Family tabs */
+.ftabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 12px 4px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ftabs::-webkit-scrollbar { display: none; }
+
+.ftab {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ftab.active {
+  background: var(--gold);
+  color: #1a1a24;
+  border-color: var(--gold-bright);
+}
+
+/* Boss card */
+.boss-card {
+  margin: 10px 12px;
+  padding: 12px;
+  display: flex; gap: 12px; align-items: center;
+  background:
+    radial-gradient(circle at 90% 50%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #2a1610 0%, #1a0a08 100%);
+  border: 1px solid rgba(168,22,29,0.4);
+  border-radius: 14px;
+}
+
+.boss-art {
+  width: 64px; height: 64px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(168,22,29,0.5));
+  animation: boss-bob 2s ease-in-out infinite;
+}
+
+@keyframes boss-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+.boss-info { flex: 1; min-width: 0; }
+.boss-tag { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--red-bright); }
+.boss-name { font-size: 14px; font-weight: 800; margin-top: 2px; }
+
+.boss-hp { margin-top: 6px; }
+.boss-hp-bar {
+  height: 6px; background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red-bright), #ff8800);
+  border-radius: 3px;
+}
+.boss-hp-text { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+.boss-sub { font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+.boss-attack {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(224,37,47,0.4);
+  flex-shrink: 0;
+}
+
+/* Member rows */
+.member-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.member-row.r5 {
+  background: linear-gradient(90deg, rgba(212,175,55,0.08) 0%, transparent 60%);
+}
+
+.member-rank {
+  width: 24px; text-align: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.member-row.r5 .member-rank { color: var(--gold); }
+
+.member-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.member-avatar svg { width: 100%; height: 100%; }
+
+.member-info { flex: 1; min-width: 0; }
+.member-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.member-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+.member-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.member-badge.gold { background: var(--gold); color: #1a1a24; }
+.member-badge.silver { background: #c0c0c0; color: #1a1a24; }
+.member-badge.bronze { background: #cd7f32; color: #1a1a24; }
+.member-badge.red { background: var(--red); color: white; }
+.member-badge.blue { background: var(--blue); color: white; }
+.member-badge.purple { background: #a855f7; color: white; }
+
+.member-power { font-size: 13px; font-weight: 800; color: var(--gold-bright); }
+
+.member-row.dim .member-avatar {
+  background: transparent;
+  border: 1px dashed var(--border);
+}
+
+/* ===========================================================
+   SCREEN 4: CITY MAP
+   =========================================================== */
+
+.city-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+}
+
+.small { font-size: 10px; letter-spacing: 1px; }
+
+.city-name {
+  font-size: 18px; font-weight: 900;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.city-rank-pill {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex; gap: 6px; align-items: baseline;
+}
+.city-rank-pill span { font-size: 10px; color: var(--text-dim); }
+.city-rank-pill strong { color: var(--gold-bright); font-size: 16px; font-weight: 900; }
+
+/* The map */
+.city-map {
+  position: relative;
+  margin: 0 12px 8px 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #15131e 0%, #0d0d12 100%);
+}
+
+.city-map-svg {
+  width: 100%;
+  height: 380px;
+  display: block;
+}
+
+.pulse-ring { animation: ringPulse 2s ease-out infinite; transform-origin: center; }
+@keyframes ringPulse {
+  0%   { opacity: 0.7; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.convoy-line { stroke-dashoffset: 0; animation: dashMove 1s linear infinite; }
+@keyframes dashMove { to { stroke-dashoffset: -16; } }
+
+.map-legend {
+  position: absolute; bottom: 8px; right: 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.map-legend > div { display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.gold { background: var(--gold); }
+.dot.red { background: var(--red); }
+.dot.blue { background: var(--blue); }
+.dot.purple { background: #a855f7; }
+.dot.green { background: var(--green); }
+
+/* Target cards */
+.target-card {
+  margin: 0 12px 8px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex; gap: 10px; align-items: center;
+}
+
+.target-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.target-avatar svg { width: 100%; height: 100%; }
+
+.target-info { flex: 1; min-width: 0; }
+.target-name { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.target-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.target-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+
+.target-actions {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0;
+}
+
+.ta-scout, .ta-attack {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  min-width: 78px;
+}
+
+.ta-scout {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ta-attack {
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  box-shadow: 0 2px 8px rgba(224,37,47,0.4);
+}
+
+.ta-attack.disabled {
+  background: var(--bg-panel);
+  color: var(--text-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ===========================================================
+   SCREEN 5: WAR ROOM
+   =========================================================== */
+
+.active-war {
+  margin: 10px 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(168,22,29,0.4);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(168,22,29,0.2), transparent 70%),
+    linear-gradient(135deg, #2a0d12 0%, #0d0508 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.war-clash {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+}
+
+.war-side {
+  flex: 1;
+  text-align: center;
+}
+
+.war-side-crest {
+  width: 56px; height: 56px;
+  margin: 0 auto 6px auto;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.war-side-name { font-size: 11px; font-weight: 800; line-height: 1.2; min-height: 26px; }
+.war-side-score { font-size: 26px; font-weight: 900; color: var(--gold-bright); }
+.war-side-tag { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+
+.war-vs {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+}
+.war-vs-text {
+  font-size: 20px; font-weight: 900;
+  background: linear-gradient(180deg, #ff4555, #a8161d);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+}
+.war-time {
+  font-size: 11px;
+  margin-top: 4px;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.war-score-bar {
+  position: relative;
+  height: 10px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 5px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.war-score-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+  border-radius: 5px;
+  box-shadow: 0 0 12px rgba(212,175,55,0.5);
+}
+
+.war-actions {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-top: 14px;
+}
+
+.war-action {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 6px;
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.war-action span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.war-rally { border-color: rgba(212,175,55,0.4); background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05)); }
+.war-solo  { border-color: rgba(168,22,29,0.4); background: linear-gradient(180deg, rgba(168,22,29,0.2), rgba(168,22,29,0.05)); }
+
+/* Contribution */
+.contrib-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.contrib-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 110px 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.contrib-rank { font-size: 18px; text-align: center; }
+.contrib-name { font-size: 12px; font-weight: 700; display: flex; gap: 4px; align-items: center; }
+
+.contrib-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.contrib-fill { height: 100%; border-radius: 4px; }
+
+.contrib-val { font-size: 13px; font-weight: 900; color: var(--gold-bright); text-align: right; }
+
+/* Battle reports */
+.battle-report {
+  margin: 0 12px 6px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex; gap: 10px; align-items: center;
+}
+
+.battle-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.battle-report.victory .battle-icon { background: rgba(16,185,129,0.2); }
+.battle-report.defeat  .battle-icon { background: rgba(168,22,29,0.2); }
+.battle-report.rally   .battle-icon { background: rgba(212,175,55,0.2); }
+
+.battle-info { flex: 1; }
+.battle-title { font-size: 12px; font-weight: 700; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.battle-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.retaliate { color: var(--red-bright); font-weight: 800; cursor: pointer; }
+
+/* ===========================================================
+   SCREEN 6: SHOP
+   =========================================================== */
+
+.capo-pass {
+  position: relative;
+  margin: 10px 12px;
+  padding: 16px;
+  display: flex; gap: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(212,175,55,0.4);
+  background:
+    radial-gradient(circle at 30% 70%, rgba(168,22,29,0.3), transparent 60%),
+    linear-gradient(135deg, #3a2a10 0%, #1a1208 100%);
+  overflow: hidden;
+}
+
+.capo-bg-glow {
+  position: absolute; inset: -20%;
+  background: radial-gradient(circle at center, rgba(212,175,55,0.25) 0%, transparent 60%);
+  animation: pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.capo-content { flex: 1; z-index: 2; }
+
+.capo-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: var(--gold);
+  color: #1a1a24;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.capo-title {
+  font-size: 18px;
+  font-weight: 900;
+  margin-top: 6px;
+  background: linear-gradient(180deg, #fff 0%, #d4af37 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.capo-perks { list-style: none; margin-top: 8px; font-size: 11px; color: var(--text); }
+.capo-perks li { padding: 2px 0; }
+
+.capo-buy {
+  margin-top: 10px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(212,175,55,0.4);
+  width: 100%;
+}
+
+.capo-art {
+  width: 80px;
+  flex-shrink: 0;
+  z-index: 2;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
+}
+.capo-art svg { width: 100%; height: 100%; }
+
+/* Stars grid */
+.stars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.stars-pack {
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.stars-pack.popular {
+  border-color: rgba(77,159,255,0.5);
+  background: linear-gradient(180deg, rgba(77,159,255,0.15), var(--bg-card));
+}
+
+.stars-pack.best {
+  border-color: rgba(212,175,55,0.5);
+  background: linear-gradient(180deg, rgba(212,175,55,0.15), var(--bg-card));
+}
+
+.stars-tag {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: #1a1a24;
+}
+
+.stars-pack.popular .stars-tag { background: var(--blue); color: white; }
+
+.stars-icon { font-size: 28px; }
+.stars-amt { font-size: 20px; font-weight: 900; color: var(--gold-bright); margin-top: 4px; }
+.stars-bonus { font-size: 10px; color: var(--green); margin-top: 2px; font-weight: 700; }
+
+.stars-buy {
+  margin-top: 8px;
+  background: linear-gradient(180deg, var(--purple), #1a1626);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Item rows */
+.item-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 12px 6px 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.item-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.item-info { flex: 1; }
+.item-name { font-size: 13px; font-weight: 800; }
+.item-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.item-buy {
+  background: linear-gradient(180deg, var(--bg-panel), #0a0815);
+  border: 1px solid rgba(212,175,55,0.3);
+  color: var(--gold-bright);
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Cosmetics */
+.cosmetics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.cosmetic-card {
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.cosmetic-art {
+  font-size: 40px;
+  margin-bottom: 4px;
+}
+
+.cosmetic-name { font-size: 12px; font-weight: 700; }
+.cosmetic-price { font-size: 12px; font-weight: 800; color: var(--gold-bright); margin-top: 6px; }
+
+/* ===========================================================
+   RAID MODAL
+   =========================================================== */
+
+.raid-modal {
+  position: absolute; inset: 0;
+  background: rgba(5,5,10,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.raid-modal.open { display: flex; }
+
+.raid-content {
+  position: relative;
+  width: 100%;
+  max-height: 95%;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #1a1626 0%, #0d0a18 100%);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 18px;
+  padding: 18px 16px;
+  scrollbar-width: none;
+}
+
+.raid-content::-webkit-scrollbar { display: none; }
+
+.raid-close {
+  position: absolute; top: 8px; right: 10px;
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.raid-phase { display: none; }
+.raid-phase.active { display: block; animation: fadeIn 0.3s ease; }
+
+.raid-title {
+  font-size: 11px; font-weight: 900; letter-spacing: 2px;
+  color: var(--red-bright);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.raid-target {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px;
+  background: rgba(168,22,29,0.1);
+  border: 1px solid rgba(168,22,29,0.3);
+  border-radius: 12px;
+}
+
+.raid-target-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--red);
+  flex-shrink: 0;
+}
+.raid-target-avatar svg { width: 100%; height: 100%; }
+
+.raid-target-name { font-size: 16px; font-weight: 900; }
+.raid-target-power { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.raid-target-tags { display: flex; gap: 4px; margin-top: 6px; }
+
+/* VS panel */
+.raid-vs {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.raid-side {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.raid-side-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dim); }
+.raid-side-value { font-size: 20px; font-weight: 900; color: var(--gold-bright); margin: 4px 0; }
+.raid-mini-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.raid-mini-bar div { height: 100%; border-radius: 3px; }
+
+.raid-mid {
+  font-size: 18px; font-weight: 900;
+  color: var(--red-bright);
+  letter-spacing: 1px;
+}
+
+.raid-squad {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin-bottom: 14px;
+}
+
+.raid-unit {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.unit-icon { font-size: 22px; }
+.unit-count { font-size: 14px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+
+.raid-prediction {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px;
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.raid-pred-text { font-size: 12px; font-weight: 700; color: var(--text); }
+.raid-pred-val { font-size: 22px; font-weight: 900; color: var(--green); }
+
+.raid-attack {
+  width: 100%;
+  background: linear-gradient(180deg, var(--red-bright), var(--red));
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(224,37,47,0.5);
+  animation: ready-pulse 1.5s ease-in-out infinite;
+}
+
+/* Fight phase */
+.raid-fight-stage {
+  position: relative;
+  height: 260px;
+  background: linear-gradient(180deg, #1a0a08 0%, #2a0d12 100%);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fight-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255,200,50,0.6), transparent 50%);
+  animation: flash 0.6s ease-out infinite;
+}
+
+@keyframes flash {
+  0%, 70%, 100% { opacity: 0; }
+  20%           { opacity: 1; }
+}
+
+.fight-smoke {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,200,200,0.4), transparent 70%);
+}
+
+.fs1 { width: 60px; height: 60px; left: 30%; top: 30%; animation: rise 2s linear infinite; }
+.fs2 { width: 80px; height: 80px; left: 50%; top: 40%; animation: rise 2s linear infinite 0.6s; }
+.fs3 { width: 50px; height: 50px; left: 65%; top: 35%; animation: rise 2s linear infinite 1.2s; }
+
+.fight-char {
+  width: 110px; height: 140px;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.fight-char.left  { animation: charge-left 0.5s ease-in-out infinite alternate; }
+.fight-char.right { animation: charge-right 0.5s ease-in-out infinite alternate; }
+
+@keyframes charge-left  { from { transform: translateX(0); } to { transform: translateX(20px); } }
+@keyframes charge-right { from { transform: translateX(0); } to { transform: translateX(-20px); } }
+
+.fight-text {
+  position: absolute; bottom: 20px;
+  font-size: 22px; font-weight: 900; letter-spacing: 4px;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 8px #000;
+  z-index: 3;
+  animation: textPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.1); opacity: 0.8; }
+}
+
+/* Result */
+.result-title {
+  font-size: 32px; font-weight: 900;
+  text-align: center;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(212,175,55,0.4);
+  letter-spacing: 2px;
+}
+
+.result-sub { text-align: center; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.result-loot {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin: 18px 0;
+}
+
+.loot-item {
+  background: rgba(212,175,55,0.1);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 12px;
+  padding: 10px 4px;
+  text-align: center;
+}
+
+.loot-icon { font-size: 26px; }
+.loot-val { font-size: 13px; font-weight: 900; color: var(--gold-bright); margin-top: 2px; }
+.loot-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.5px; margin-top: 2px; }
+
+.result-cas { font-size: 11px; color: var(--text-dim); text-align: center; margin-bottom: 12px; }
+
+.raid-claim {
+  width: 100%;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #1a1a24;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(212,175,55,0.5);
+}
+
+/* ===========================================================
+   Bottom nav
+   =========================================================== */
+
+.bottom-nav {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background:
+    linear-gradient(180deg, transparent 0%, #0a0a0f 30%),
+    var(--bg-panel);
+  border-top: 1px solid var(--border);
+  padding: 8px 4px 18px 4px;
+  backdrop-filter: blur(20px);
+  z-index: 50;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.nav-icon { font-size: 22px; filter: grayscale(0.4) opacity(0.7); }
+.nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+
+.nav-item.active { color: var(--gold-bright); }
+.nav-item.active .nav-icon { filter: none; }
+
+/* ===========================================================
+   Notes panel
+   =========================================================== */
+
+.notes {
+  width: 320px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #15131e, #0d0d12);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+  position: sticky;
+  top: 24px;
+}
+
+.notes-title {
+  font-size: 14px; font-weight: 800; letter-spacing: 1px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.notes-section {
+  background: rgba(212,175,55,0.07);
+  border-left: 3px solid var(--gold);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.notes-section strong { color: var(--gold-bright); }
+
+.notes ul { list-style: none; }
+.notes li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+.notes li:last-child { border-bottom: none; }
+.notes strong { color: var(--text); font-weight: 700; }
+
+/* ===== Responsive ===== */
+@media (max-width: 800px) {
+  body { flex-direction: column; align-items: center; padding: 8px; }
+  .phone-frame { transform: scale(0.95); transform-origin: top center; }
+  .notes { width: 100%; max-width: 390px; position: static; }
+}
+
+</style>
+</head>
+<body>
+  <!-- ========================================================== -->
+  <!-- Phone frame                                                  -->
+  <!-- ========================================================== -->
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+
+    <div class="app">
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●●● 5G ▮▮▮▮</span>
+      </div>
+
+      <!-- TG header -->
+      <div class="tg-header">
+        <button class="tg-back">‹</button>
+        <div class="tg-title">
+          <div class="tg-title-main" id="screen-title">Cosa Nostra Tycoon</div>
+          <div class="tg-title-sub">mini app · via @YourBot</div>
+        </div>
+        <button class="tg-close">✕</button>
+      </div>
+
+      <!-- Resource bar (always visible) -->
+      <div class="resource-bar">
+        <div class="resource">
+          <span class="resource-icon">💰</span>
+          <span class="resource-val" id="coins">12,847</span>
+        </div>
+        <div class="resource">
+          <span class="resource-icon">💎</span>
+          <span class="resource-val">42</span>
+        </div>
+        <div class="resource">
+          <span class="resource-icon">⚡</span>
+          <span class="resource-val">87/100</span>
+        </div>
+        <div class="resource level">
+          <span class="resource-icon">★</span>
+          <span class="resource-val">Lv 12</span>
+        </div>
+      </div>
+
+      <!-- ====================================================== -->
+      <!-- Screen container (one of these is active at a time)    -->
+      <!-- ====================================================== -->
+      <div class="screens">
+
+        <!-- ============================================== -->
+        <!-- SCREEN 1: EMPIRE / HOME                         -->
+        <!-- ============================================== -->
+        <section class="screen active" data-screen="empire">
+
+          <!-- Hero card -->
+          <div class="hero-card">
+            <div class="hero-bg-glow"></div>
+            <div class="halftone"></div>
+            <div class="hero-meta">
+              <div class="hero-rank">DON · R5</div>
+              <div class="hero-name">Don Rattori</div>
+              <div class="hero-family">"Iron Whiskers" Family</div>
+              <div class="hero-city">📍 Lagos City · Rank #3</div>
+            </div>
+            <div class="hero-stage">
+              <div class="smoke smoke1"></div>
+              <div class="smoke smoke2"></div>
+              <div class="smoke smoke3"></div>
+              <svg class="char char-rat" viewBox="0 0 200 260">
+                <ellipse cx="100" cy="248" rx="55" ry="6" fill="#000" opacity="0.35"/>
+                <rect x="78" y="200" width="16" height="40" rx="6" fill="#1a1a24"/>
+                <rect x="106" y="200" width="16" height="40" rx="6" fill="#1a1a24"/>
+                <ellipse cx="86" cy="244" rx="14" ry="6" fill="#0d0d12"/>
+                <ellipse cx="114" cy="244" rx="14" ry="6" fill="#0d0d12"/>
+                <path d="M 60 130 Q 60 110 100 110 Q 140 110 140 130 L 138 210 Q 100 220 62 210 Z" fill="#2a2638"/>
+                <path d="M75 130 L72 200 M90 128 L88 205 M110 128 L112 205 M125 130 L128 200" stroke="#3d3852" stroke-width="1.2" fill="none"/>
+                <path d="M 75 115 L 100 145 L 125 115 L 135 130 L 125 155 L 100 165 L 75 155 L 65 130 Z" fill="#1c1929"/>
+                <path d="M 92 125 L 108 125 L 105 160 L 95 160 Z" fill="#f1ece1"/>
+                <path d="M 96 130 L 104 130 L 108 175 L 100 195 L 92 175 Z" fill="#a8161d"/>
+                <path d="M 120 145 L 132 145 L 130 152 L 122 152 Z" fill="#d4af37"/>
+                <path d="M 60 135 Q 40 165 50 200 Q 58 205 65 200 Q 60 175 72 145 Z" fill="#2a2638"/>
+                <path d="M 140 135 Q 160 165 150 200 Q 142 205 135 200 Q 140 175 128 145 Z" fill="#2a2638"/>
+                <circle cx="55" cy="200" r="9" fill="#9b9aa3"/>
+                <rect x="42" y="195" width="22" height="5" rx="2" fill="#5a3a1f"/>
+                <rect x="40" y="195" width="6" height="5" rx="2" fill="#d4af37"/>
+                <circle cx="40" cy="197.5" r="2" fill="#ff5a1f" class="cigar-ember"/>
+                <circle cx="155" cy="200" r="9" fill="#9b9aa3"/>
+                <ellipse cx="100" cy="85" rx="42" ry="38" fill="#a8a7b0"/>
+                <ellipse cx="100" cy="100" rx="22" ry="16" fill="#c5c4cc"/>
+                <ellipse cx="100" cy="108" rx="4" ry="3" fill="#1a1a24"/>
+                <path d="M82 105 L60 100 M82 108 L60 110 M118 105 L140 100 M118 108 L140 110" stroke="#1a1a24" stroke-width="1.3" stroke-linecap="round" opacity="0.7"/>
+                <circle cx="86" cy="78" r="6" fill="#fff"/>
+                <circle cx="114" cy="78" r="6" fill="#fff"/>
+                <circle cx="88" cy="79" r="3" fill="#1a1a24"/>
+                <circle cx="116" cy="79" r="3" fill="#1a1a24"/>
+                <circle cx="89" cy="78" r="1" fill="#fff"/>
+                <circle cx="117" cy="78" r="1" fill="#fff"/>
+                <path d="M78 68 L94 70 M120 70 L136 68" stroke="#1a1a24" stroke-width="2.5" stroke-linecap="round"/>
+                <ellipse cx="68" cy="50" rx="14" ry="16" fill="#a8a7b0"/>
+                <ellipse cx="132" cy="50" rx="14" ry="16" fill="#a8a7b0"/>
+                <ellipse cx="68" cy="52" rx="7" ry="9" fill="#e8a3b0"/>
+                <ellipse cx="132" cy="52" rx="7" ry="9" fill="#e8a3b0"/>
+                <ellipse cx="100" cy="48" rx="60" ry="10" fill="#0d0d12"/>
+                <path d="M 56 48 Q 60 18 100 18 Q 140 18 144 48 Z" fill="#1a1a24"/>
+                <path d="M 56 48 Q 100 40 144 48" stroke="#a8161d" stroke-width="4" fill="none"/>
+                <ellipse cx="100" cy="48" rx="62" ry="3" fill="#0d0d12"/>
+                <path d="M82 65 L92 75" stroke="#5a1414" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="hero-power">
+              <div class="power-label">FAMILY POWER</div>
+              <div class="power-val">2.4M</div>
+            </div>
+          </div>
+
+          <!-- Crew -->
+          <div class="section-title"><span>YOUR CREW</span><span class="section-link">See all ›</span></div>
+          <div class="crew-strip">
+            <div class="crew-card">
+              <div class="crew-avatar">
+                <svg viewBox="0 0 100 100" class="char-mini">
+                  <circle cx="50" cy="55" r="34" fill="#e09040"/>
+                  <ellipse cx="50" cy="62" rx="20" ry="14" fill="#f4b878"/>
+                  <ellipse cx="34" cy="32" rx="10" ry="14" fill="#e09040" transform="rotate(-20 34 32)"/>
+                  <ellipse cx="66" cy="32" rx="10" ry="14" fill="#e09040" transform="rotate(20 66 32)"/>
+                  <rect x="22" y="42" width="56" height="14" rx="4" fill="#1a1a24"/>
+                  <circle cx="38" cy="49" r="5" fill="#0d0d12"/>
+                  <circle cx="62" cy="49" r="5" fill="#0d0d12"/>
+                  <rect x="44" y="48" width="12" height="2" fill="#1a1a24"/>
+                  <ellipse cx="50" cy="68" rx="3" ry="2" fill="#1a1a24"/>
+                  <path d="M40 75 Q50 80 60 75" stroke="#1a1a24" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="crew-name">Tony Whiskers</div>
+              <div class="crew-role">Enforcer · R4</div>
+            </div>
+            <div class="crew-card">
+              <div class="crew-avatar">
+                <svg viewBox="0 0 100 100" class="char-mini">
+                  <ellipse cx="50" cy="58" rx="32" ry="34" fill="#6b7280"/>
+                  <ellipse cx="50" cy="65" rx="20" ry="14" fill="#94a3b8"/>
+                  <polygon points="46,68 54,68 50,80" fill="#f59e0b"/>
+                  <circle cx="40" cy="48" r="5" fill="#fff"/>
+                  <circle cx="60" cy="48" r="5" fill="#fff"/>
+                  <circle cx="41" cy="49" r="2.5" fill="#1a1a24"/>
+                  <circle cx="61" cy="49" r="2.5" fill="#1a1a24"/>
+                  <ellipse cx="50" cy="28" rx="38" ry="8" fill="#1a1a24"/>
+                  <path d="M 22 28 Q 26 8 50 8 Q 74 8 78 28 Z" fill="#2a2638"/>
+                  <ellipse cx="50" cy="28" rx="40" ry="2" fill="#0d0d12"/>
+                </svg>
+              </div>
+              <div class="crew-name">Big Pidge</div>
+              <div class="crew-role">Underboss · R4</div>
+            </div>
+            <div class="crew-card">
+              <div class="crew-avatar">
+                <svg viewBox="0 0 100 100" class="char-mini">
+                  <circle cx="50" cy="55" r="34" fill="#9ca3af"/>
+                  <ellipse cx="50" cy="62" rx="22" ry="14" fill="#d1d5db"/>
+                  <ellipse cx="35" cy="50" rx="12" ry="9" fill="#1a1a24"/>
+                  <ellipse cx="65" cy="50" rx="12" ry="9" fill="#1a1a24"/>
+                  <circle cx="35" cy="50" r="4" fill="#fff"/>
+                  <circle cx="65" cy="50" r="4" fill="#fff"/>
+                  <ellipse cx="50" cy="33" rx="36" ry="6" fill="#10b981"/>
+                  <path d="M 25 33 Q 25 22 50 22 Q 75 22 75 33 Z" fill="#10b981" opacity="0.6"/>
+                  <ellipse cx="22" cy="38" rx="6" ry="8" fill="#9ca3af"/>
+                  <ellipse cx="78" cy="38" rx="6" ry="8" fill="#9ca3af"/>
+                  <ellipse cx="50" cy="68" rx="3" ry="2" fill="#1a1a24"/>
+                </svg>
+              </div>
+              <div class="crew-name">Vinny 2-Paws</div>
+              <div class="crew-role">Bookkeeper · R3</div>
+            </div>
+            <div class="crew-card crew-add">
+              <div class="crew-avatar crew-empty"><span>+</span></div>
+              <div class="crew-name">Recruit</div>
+              <div class="crew-role">Empty slot</div>
+            </div>
+          </div>
+
+          <!-- Mansion preview (links to mansion view) -->
+          <div class="section-title">
+            <span>YOUR HIDEOUT</span>
+            <span class="section-link" data-nav="mansion">Manage HQ ›</span>
+          </div>
+          <div class="mansion-preview" data-nav="mansion">
+            <!-- Cartoon skyline -->
+            <svg viewBox="0 0 360 130" preserveAspectRatio="none" class="skyline">
+              <!-- ground -->
+              <rect x="0" y="115" width="360" height="15" fill="#0d0d12"/>
+              <!-- moon -->
+              <circle cx="310" cy="30" r="14" fill="#f5e8c8" opacity="0.9"/>
+              <circle cx="305" cy="26" r="3" fill="#d4af37" opacity="0.3"/>
+              <!-- building 1: hideout HQ (central tall) -->
+              <rect x="140" y="35" width="80" height="80" fill="#2a2638"/>
+              <rect x="140" y="35" width="80" height="6" fill="#1a1a24"/>
+              <rect x="170" y="20" width="20" height="20" fill="#1c1929"/>
+              <rect x="173" y="22" width="3" height="3" fill="#f5cf4f"/>
+              <rect x="183" y="22" width="3" height="3" fill="#f5cf4f"/>
+              <rect x="173" y="32" width="3" height="3" fill="#f5cf4f"/>
+              <rect x="183" y="32" width="3" height="3" fill="#f5cf4f"/>
+              <!-- HQ windows pattern (lit) -->
+              <g fill="#f5cf4f">
+                <rect x="148" y="50" width="6" height="6"/>
+                <rect x="160" y="50" width="6" height="6"/>
+                <rect x="172" y="50" width="6" height="6"/>
+                <rect x="184" y="50" width="6" height="6"/>
+                <rect x="196" y="50" width="6" height="6"/>
+                <rect x="208" y="50" width="6" height="6"/>
+                <rect x="148" y="62" width="6" height="6"/>
+                <rect x="160" y="62" width="6" height="6" opacity="0.3"/>
+                <rect x="172" y="62" width="6" height="6"/>
+                <rect x="184" y="62" width="6" height="6"/>
+                <rect x="196" y="62" width="6" height="6" opacity="0.3"/>
+                <rect x="208" y="62" width="6" height="6"/>
+                <rect x="148" y="74" width="6" height="6"/>
+                <rect x="160" y="74" width="6" height="6"/>
+                <rect x="172" y="74" width="6" height="6" opacity="0.3"/>
+                <rect x="184" y="74" width="6" height="6"/>
+                <rect x="196" y="74" width="6" height="6"/>
+                <rect x="208" y="74" width="6" height="6"/>
+                <rect x="148" y="86" width="6" height="6"/>
+                <rect x="160" y="86" width="6" height="6"/>
+                <rect x="172" y="86" width="6" height="6"/>
+                <rect x="184" y="86" width="6" height="6" opacity="0.3"/>
+                <rect x="196" y="86" width="6" height="6"/>
+                <rect x="208" y="86" width="6" height="6"/>
+              </g>
+              <!-- Neon sign -->
+              <rect x="158" y="98" width="44" height="10" rx="2" fill="#a8161d"/>
+              <text x="180" y="106" text-anchor="middle" font-family="Impact, sans-serif" font-size="8" fill="#fff" font-weight="900">RATTORI</text>
+
+              <!-- building 2: casino (left) -->
+              <rect x="60" y="65" width="60" height="50" fill="#1c1929"/>
+              <rect x="60" y="65" width="60" height="4" fill="#0d0d12"/>
+              <!-- casino sign -->
+              <rect x="72" y="50" width="36" height="14" rx="2" fill="#10b981"/>
+              <text x="90" y="60" text-anchor="middle" font-family="Impact, sans-serif" font-size="7" fill="#fff" font-weight="900">CASINO</text>
+              <!-- casino windows -->
+              <g fill="#10b981" opacity="0.8">
+                <rect x="68" y="78" width="6" height="8"/>
+                <rect x="80" y="78" width="6" height="8"/>
+                <rect x="92" y="78" width="6" height="8"/>
+                <rect x="104" y="78" width="6" height="8"/>
+                <rect x="68" y="92" width="6" height="8"/>
+                <rect x="80" y="92" width="6" height="8"/>
+                <rect x="92" y="92" width="6" height="8"/>
+                <rect x="104" y="92" width="6" height="8"/>
+              </g>
+
+              <!-- building 3: pizzeria (right) -->
+              <rect x="240" y="80" width="50" height="35" fill="#2a1a1a"/>
+              <polygon points="240,80 265,65 290,80" fill="#1a0d0d"/>
+              <rect x="246" y="65" width="38" height="12" rx="2" fill="#a8161d"/>
+              <text x="265" y="74" text-anchor="middle" font-family="Impact, sans-serif" font-size="7" fill="#fff" font-weight="900">PIZZA</text>
+              <g fill="#f5cf4f">
+                <rect x="250" y="92" width="6" height="8"/>
+                <rect x="262" y="92" width="6" height="8"/>
+                <rect x="274" y="92" width="6" height="8"/>
+              </g>
+
+              <!-- distant buildings -->
+              <rect x="0" y="80" width="40" height="35" fill="#15131e"/>
+              <rect x="20" y="75" width="20" height="5" fill="#15131e"/>
+              <rect x="290" y="75" width="35" height="40" fill="#15131e"/>
+              <rect x="325" y="85" width="35" height="30" fill="#15131e"/>
+
+              <!-- search lights -->
+              <polygon points="180,40 175,5 185,5" fill="#f5cf4f" opacity="0.1"/>
+              <polygon points="180,40 170,5 190,5" fill="#f5cf4f" opacity="0.05"/>
+
+              <!-- street lights -->
+              <circle cx="130" cy="118" r="3" fill="#f5cf4f" opacity="0.5"/>
+              <circle cx="232" cy="118" r="3" fill="#f5cf4f" opacity="0.5"/>
+            </svg>
+
+            <div class="mansion-cta">
+              <div class="mansion-cta-row">
+                <div><strong>Hideout Lv 12</strong><div class="dim">3 upgrades available</div></div>
+                <span class="badge badge-red">3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Businesses -->
+          <div class="section-title"><span>YOUR EMPIRE</span><span class="section-link">Manage ›</span></div>
+          <div class="biz-grid">
+            <div class="biz-card biz-pizza">
+              <div class="biz-icon">🍕</div>
+              <div class="biz-name">Tony's Pizzeria</div>
+              <div class="biz-level">Lv 8</div>
+              <div class="biz-income">+ 2.4K/hr</div>
+              <button class="biz-collect">COLLECT</button>
+              <div class="biz-progress"><div class="biz-progress-fill" style="width:78%"></div></div>
+            </div>
+            <div class="biz-card biz-casino">
+              <div class="biz-icon">🎰</div>
+              <div class="biz-name">Lucky Cat Casino</div>
+              <div class="biz-level">Lv 5</div>
+              <div class="biz-income">+ 1.8K/hr</div>
+              <button class="biz-collect ready">COLLECT</button>
+              <div class="biz-progress"><div class="biz-progress-fill" style="width:100%"></div></div>
+            </div>
+            <div class="biz-card biz-laundry">
+              <div class="biz-icon">🧺</div>
+              <div class="biz-name">Clean Sheets Laundromat</div>
+              <div class="biz-level">Lv 3</div>
+              <div class="biz-income">+ 980/hr</div>
+              <button class="biz-collect">2h 14m</button>
+              <div class="biz-progress"><div class="biz-progress-fill" style="width:45%"></div></div>
+            </div>
+            <div class="biz-card biz-docks">
+              <div class="biz-icon">🚢</div>
+              <div class="biz-name">Eastside Docks</div>
+              <div class="biz-level">Lv 2</div>
+              <div class="biz-income">+ 3.2K/hr</div>
+              <button class="biz-collect">5h 42m</button>
+              <div class="biz-progress"><div class="biz-progress-fill" style="width:22%"></div></div>
+            </div>
+            <div class="biz-card biz-locked">
+              <div class="biz-icon">🔒</div>
+              <div class="biz-name">Auto Body Shop</div>
+              <div class="biz-level">Lv 10 req</div>
+              <div class="biz-income">+ 5K/hr</div>
+              <button class="biz-collect disabled">LOCKED</button>
+            </div>
+            <div class="biz-card biz-locked">
+              <div class="biz-icon">🔒</div>
+              <div class="biz-name">Underground Casino</div>
+              <div class="biz-level">Lv 15 req</div>
+              <div class="biz-income">+ 12K/hr</div>
+              <button class="biz-collect disabled">LOCKED</button>
+            </div>
+          </div>
+
+          <!-- War banner -->
+          <div class="war-banner" data-nav="war">
+            <div class="war-glow"></div>
+            <div class="war-content">
+              <div class="war-left">
+                <div class="war-tag">⚔ FAMILY WAR</div>
+                <div class="war-title">Manila Predators</div>
+                <div class="war-sub">Started 3h ago · 21h remaining</div>
+              </div>
+              <button class="war-cta">JOIN<br/>RAID</button>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- SCREEN 2: MANSION / HQ                         -->
+        <!-- ============================================== -->
+        <section class="screen" data-screen="mansion">
+
+          <!-- Big skyline header -->
+          <div class="mansion-hero">
+            <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice" class="mansion-skyline">
+              <!-- sky gradient handled via CSS bg -->
+              <!-- moon -->
+              <circle cx="310" cy="45" r="20" fill="#f5e8c8" opacity="0.9"/>
+              <circle cx="302" cy="40" r="5" fill="#d4af37" opacity="0.3"/>
+              <!-- distant skyline -->
+              <rect x="0" y="130" width="50" height="60" fill="#0d0a18"/>
+              <rect x="50" y="120" width="40" height="70" fill="#0d0a18"/>
+              <rect x="320" y="125" width="40" height="65" fill="#0d0a18"/>
+
+              <!-- ground street -->
+              <rect x="0" y="180" width="360" height="20" fill="#0d0d12"/>
+              <rect x="0" y="186" width="360" height="2" fill="#1c1929"/>
+              <line x1="20" y1="194" x2="40" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+              <line x1="80" y1="194" x2="100" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+              <line x1="140" y1="194" x2="160" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+              <line x1="200" y1="194" x2="220" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+              <line x1="260" y1="194" x2="280" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+              <line x1="320" y1="194" x2="340" y2="194" stroke="#f5cf4f" stroke-width="2" opacity="0.4"/>
+
+              <!-- HQ tower (the big one) -->
+              <rect x="130" y="45" width="100" height="135" fill="#2a2638"/>
+              <rect x="130" y="45" width="100" height="6" fill="#1a1a24"/>
+              <!-- antenna -->
+              <rect x="175" y="20" width="10" height="25" fill="#1c1929"/>
+              <rect x="178" y="15" width="4" height="10" fill="#f5cf4f"/>
+              <circle cx="180" cy="13" r="3" fill="#a8161d" class="blinker"/>
+              <!-- windows -->
+              <g fill="#f5cf4f">
+                <rect x="140" y="60" width="8" height="8"/>
+                <rect x="156" y="60" width="8" height="8"/>
+                <rect x="172" y="60" width="8" height="8"/>
+                <rect x="188" y="60" width="8" height="8" opacity="0.3"/>
+                <rect x="204" y="60" width="8" height="8"/>
+                <rect x="220" y="60" width="8" height="8"/>
+                <rect x="140" y="76" width="8" height="8"/>
+                <rect x="156" y="76" width="8" height="8" opacity="0.3"/>
+                <rect x="172" y="76" width="8" height="8"/>
+                <rect x="188" y="76" width="8" height="8"/>
+                <rect x="204" y="76" width="8" height="8"/>
+                <rect x="220" y="76" width="8" height="8" opacity="0.3"/>
+                <rect x="140" y="92" width="8" height="8"/>
+                <rect x="156" y="92" width="8" height="8"/>
+                <rect x="172" y="92" width="8" height="8"/>
+                <rect x="188" y="92" width="8" height="8"/>
+                <rect x="204" y="92" width="8" height="8" opacity="0.3"/>
+                <rect x="220" y="92" width="8" height="8"/>
+                <rect x="140" y="108" width="8" height="8" opacity="0.3"/>
+                <rect x="156" y="108" width="8" height="8"/>
+                <rect x="172" y="108" width="8" height="8"/>
+                <rect x="188" y="108" width="8" height="8"/>
+                <rect x="204" y="108" width="8" height="8"/>
+                <rect x="220" y="108" width="8" height="8"/>
+              </g>
+              <!-- giant neon sign -->
+              <rect x="138" y="130" width="84" height="22" rx="3" fill="#a8161d"/>
+              <rect x="138" y="130" width="84" height="22" rx="3" fill="none" stroke="#ff4555" stroke-width="1" class="neon-pulse"/>
+              <text x="180" y="146" text-anchor="middle" font-family="Impact, sans-serif" font-size="16" fill="#fff" font-weight="900">RATTORI</text>
+              <!-- entrance -->
+              <rect x="160" y="160" width="40" height="20" fill="#0d0d12"/>
+              <rect x="168" y="165" width="6" height="15" fill="#d4af37"/>
+              <rect x="186" y="165" width="6" height="15" fill="#d4af37"/>
+              <!-- red carpet -->
+              <polygon points="160,180 200,180 215,195 145,195" fill="#a8161d"/>
+
+              <!-- left building: casino -->
+              <rect x="55" y="100" width="70" height="80" fill="#1c1929"/>
+              <rect x="55" y="100" width="70" height="4" fill="#0d0d12"/>
+              <rect x="65" y="80" width="50" height="22" rx="2" fill="#10b981"/>
+              <text x="90" y="95" text-anchor="middle" font-family="Impact, sans-serif" font-size="11" fill="#fff" font-weight="900">CASINO</text>
+              <g fill="#10b981" opacity="0.8">
+                <rect x="62" y="115" width="8" height="10"/>
+                <rect x="78" y="115" width="8" height="10"/>
+                <rect x="94" y="115" width="8" height="10"/>
+                <rect x="110" y="115" width="8" height="10"/>
+                <rect x="62" y="135" width="8" height="10"/>
+                <rect x="78" y="135" width="8" height="10"/>
+                <rect x="94" y="135" width="8" height="10"/>
+                <rect x="110" y="135" width="8" height="10"/>
+                <rect x="62" y="155" width="8" height="10"/>
+                <rect x="78" y="155" width="8" height="10"/>
+                <rect x="94" y="155" width="8" height="10"/>
+                <rect x="110" y="155" width="8" height="10"/>
+              </g>
+
+              <!-- right building: pizzeria with chimney smoke -->
+              <rect x="245" y="120" width="60" height="60" fill="#2a1a1a"/>
+              <polygon points="245,120 275,100 305,120" fill="#1a0d0d"/>
+              <rect x="280" y="80" width="10" height="25" fill="#1c1929"/>
+              <ellipse cx="285" cy="75" rx="6" ry="3" fill="#fff" opacity="0.3" class="chimney-smoke"/>
+              <rect x="252" y="105" width="46" height="14" rx="2" fill="#a8161d"/>
+              <text x="275" y="116" text-anchor="middle" font-family="Impact, sans-serif" font-size="9" fill="#fff" font-weight="900">TONY'S</text>
+              <g fill="#f5cf4f">
+                <rect x="252" y="130" width="8" height="10"/>
+                <rect x="268" y="130" width="8" height="10"/>
+                <rect x="284" y="130" width="8" height="10"/>
+                <rect x="252" y="150" width="8" height="10"/>
+                <rect x="268" y="150" width="8" height="10"/>
+                <rect x="284" y="150" width="8" height="10"/>
+              </g>
+
+              <!-- floating power orb -->
+              <circle cx="180" cy="170" r="3" fill="#f5cf4f" opacity="0.8" class="float-orb"/>
+            </svg>
+
+            <div class="mansion-stats">
+              <div class="mansion-stat">
+                <div class="stat-label">HIDEOUT LV</div>
+                <div class="stat-val">12</div>
+              </div>
+              <div class="mansion-stat">
+                <div class="stat-label">DEFENSE</div>
+                <div class="stat-val">48.2K</div>
+              </div>
+              <div class="mansion-stat">
+                <div class="stat-label">CREW CAP</div>
+                <div class="stat-val">24/30</div>
+              </div>
+              <div class="mansion-stat">
+                <div class="stat-label">VAULT</div>
+                <div class="stat-val">312K</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title"><span>BUILD & UPGRADE</span><span class="section-link">Filter ▾</span></div>
+
+          <!-- Buildings list -->
+          <div class="building-list">
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#a8161d,#5a0d12)">🏛️</div>
+              <div class="bld-info">
+                <div class="bld-name">Hideout HQ</div>
+                <div class="bld-desc">Main HQ · unlocks new buildings</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 12</span>
+                  <span class="tag tag-gold">↑ unlocks Bank @ 13</span>
+                </div>
+              </div>
+              <button class="bld-upgrade ready-glow">
+                <div class="bld-cost">💰 480K</div>
+                <div class="bld-time">UPGRADE</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#d4af37,#7a5e10)">🏦</div>
+              <div class="bld-info">
+                <div class="bld-name">The Vault</div>
+                <div class="bld-desc">Protects coins from raids</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 9</span>
+                  <span class="tag">Capacity 312K</span>
+                  <span class="tag tag-green">Protected 65%</span>
+                </div>
+              </div>
+              <button class="bld-upgrade">
+                <div class="bld-cost">💎 24</div>
+                <div class="bld-time">3h 12m</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#1f2937,#0d0d12)">🏋️</div>
+              <div class="bld-info">
+                <div class="bld-name">Training Yard</div>
+                <div class="bld-desc">Train Bruisers, Shooters, Bikers</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 8</span>
+                  <span class="tag">Queue: 2</span>
+                </div>
+              </div>
+              <button class="bld-upgrade ready-glow">
+                <div class="bld-cost">💰 180K</div>
+                <div class="bld-time">UPGRADE</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#10b981,#064c34)">🏥</div>
+              <div class="bld-info">
+                <div class="bld-name">Doc's Clinic</div>
+                <div class="bld-desc">Heals wounded crew</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 6</span>
+                  <span class="tag tag-red">3 wounded</span>
+                </div>
+              </div>
+              <button class="bld-upgrade">
+                <div class="bld-cost">💰 92K</div>
+                <div class="bld-time">1h 04m</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#4d9fff,#1a4a8a)">🛠️</div>
+              <div class="bld-info">
+                <div class="bld-name">Garage</div>
+                <div class="bld-desc">Build escape cars + raid vans</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 5</span>
+                  <span class="tag">4 vehicles</span>
+                </div>
+              </div>
+              <button class="bld-upgrade">
+                <div class="bld-cost">💰 64K</div>
+                <div class="bld-time">UPGRADE</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#7c2d12,#3a1208)">🔫</div>
+              <div class="bld-info">
+                <div class="bld-name">Armory</div>
+                <div class="bld-desc">Research weapons + tech</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 4</span>
+                  <span class="tag tag-gold">Research: +12% atk</span>
+                </div>
+              </div>
+              <button class="bld-upgrade">
+                <div class="bld-cost">💰 48K</div>
+                <div class="bld-time">5h 22m</div>
+              </button>
+            </div>
+
+            <div class="building-card">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#6b7280,#1f2937)">🧱</div>
+              <div class="bld-info">
+                <div class="bld-name">Walls</div>
+                <div class="bld-desc">Defense vs incoming raids</div>
+                <div class="bld-tags">
+                  <span class="tag">Lv 7</span>
+                  <span class="tag tag-green">Defense 18.4K</span>
+                </div>
+              </div>
+              <button class="bld-upgrade ready-glow">
+                <div class="bld-cost">💰 120K</div>
+                <div class="bld-time">UPGRADE</div>
+              </button>
+            </div>
+
+            <div class="building-card locked">
+              <div class="bld-icon" style="background:linear-gradient(135deg,#374151,#111827)">🔒</div>
+              <div class="bld-info">
+                <div class="bld-name">Speakeasy</div>
+                <div class="bld-desc">Recruit elite crew · unlock @ HQ 13</div>
+                <div class="bld-tags">
+                  <span class="tag">LOCKED</span>
+                </div>
+              </div>
+              <button class="bld-upgrade disabled">LOCKED</button>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- SCREEN 3: FAMILY (your TG group)               -->
+        <!-- ============================================== -->
+        <section class="screen" data-screen="family">
+
+          <!-- Family banner -->
+          <div class="family-banner">
+            <div class="family-banner-bg"></div>
+            <div class="halftone"></div>
+            <div class="family-crest">
+              <svg viewBox="0 0 80 80">
+                <polygon points="40,5 75,25 65,70 15,70 5,25" fill="#a8161d" stroke="#d4af37" stroke-width="3"/>
+                <text x="40" y="50" text-anchor="middle" font-family="Impact, sans-serif" font-size="34" fill="#d4af37" font-weight="900">IW</text>
+                <polygon points="40,5 75,25 65,70 15,70 5,25" fill="none" stroke="#f5cf4f" stroke-width="1" opacity="0.5"/>
+              </svg>
+            </div>
+            <div class="family-meta">
+              <div class="family-name">Iron Whiskers</div>
+              <div class="family-tag">[IW] · Lagos City</div>
+              <div class="family-stats-row">
+                <div><strong>47</strong><span>members</span></div>
+                <div><strong>2.4M</strong><span>power</span></div>
+                <div><strong>#3</strong><span>rank</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TG group link card -->
+          <div class="tg-link-card">
+            <div class="tg-link-icon">💬</div>
+            <div class="tg-link-text">
+              <div class="tg-link-title">Family Chat</div>
+              <div class="tg-link-sub">@lagos_hustlers · 47 members · 124 msgs today</div>
+            </div>
+            <button class="tg-link-btn">OPEN</button>
+          </div>
+
+          <!-- Family tabs -->
+          <div class="ftabs">
+            <button class="ftab active">Members</button>
+            <button class="ftab">Bank</button>
+            <button class="ftab">Quests</button>
+            <button class="ftab">Boss</button>
+            <button class="ftab">Wars</button>
+          </div>
+
+          <!-- Today's boss countdown -->
+          <div class="boss-card">
+            <div class="boss-art">
+              <svg viewBox="0 0 80 80">
+                <ellipse cx="40" cy="72" rx="28" ry="4" fill="#000" opacity="0.4"/>
+                <ellipse cx="40" cy="40" rx="26" ry="28" fill="#2a1a08"/>
+                <ellipse cx="40" cy="48" rx="18" ry="14" fill="#3d2410"/>
+                <ellipse cx="30" cy="30" rx="6" ry="5" fill="#fff"/>
+                <ellipse cx="50" cy="30" rx="6" ry="5" fill="#fff"/>
+                <circle cx="32" cy="31" r="3" fill="#a8161d"/>
+                <circle cx="52" cy="31" r="3" fill="#a8161d"/>
+                <path d="M 32 50 Q 40 56 48 50" stroke="#fff" stroke-width="2" fill="none"/>
+                <polygon points="28,12 32,22 24,22" fill="#2a1a08"/>
+                <polygon points="52,12 56,22 48,22" fill="#2a1a08"/>
+              </svg>
+            </div>
+            <div class="boss-info">
+              <div class="boss-tag">DAILY FAMILY BOSS</div>
+              <div class="boss-name">The Loan Shark</div>
+              <div class="boss-hp">
+                <div class="boss-hp-bar"><div class="boss-hp-fill" style="width:64%"></div></div>
+                <div class="boss-hp-text">3.2M / 5M HP</div>
+              </div>
+              <div class="boss-sub">Resets in 8h 14m · 12/47 attacked today</div>
+            </div>
+            <button class="boss-attack">ATTACK<br/>(−5 ⚡)</button>
+          </div>
+
+          <!-- Member list -->
+          <div class="section-title"><span>TOP MEMBERS THIS WEEK</span><span class="section-link">All ›</span></div>
+
+          <div class="member-row r5">
+            <div class="member-rank">1</div>
+            <div class="member-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="28" fill="#a8a7b0"/>
+                <ellipse cx="30" cy="35" rx="14" ry="10" fill="#c5c4cc"/>
+                <ellipse cx="30" cy="20" rx="32" ry="4" fill="#0d0d12"/>
+                <path d="M 12 20 Q 14 5 30 5 Q 46 5 48 20 Z" fill="#1a1a24"/>
+                <circle cx="24" cy="28" r="3" fill="#1a1a24"/>
+                <circle cx="36" cy="28" r="3" fill="#1a1a24"/>
+              </svg>
+            </div>
+            <div class="member-info">
+              <div class="member-name">Don Rattori <span class="member-badge gold">R5 BOSS</span></div>
+              <div class="member-sub">Power 480K · Donated 240K this week</div>
+            </div>
+            <div class="member-power">★ 480K</div>
+          </div>
+
+          <div class="member-row">
+            <div class="member-rank">2</div>
+            <div class="member-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="33" r="20" fill="#e09040"/>
+                <ellipse cx="30" cy="37" rx="12" ry="8" fill="#f4b878"/>
+                <ellipse cx="20" cy="18" rx="6" ry="9" fill="#e09040" transform="rotate(-20 20 18)"/>
+                <ellipse cx="40" cy="18" rx="6" ry="9" fill="#e09040" transform="rotate(20 40 18)"/>
+                <rect x="14" y="24" width="32" height="8" rx="2" fill="#1a1a24"/>
+              </svg>
+            </div>
+            <div class="member-info">
+              <div class="member-name">Tony Whiskers <span class="member-badge silver">R4</span></div>
+              <div class="member-sub">Power 312K · Donated 180K</div>
+            </div>
+            <div class="member-power">★ 312K</div>
+          </div>
+
+          <div class="member-row">
+            <div class="member-rank">3</div>
+            <div class="member-avatar">
+              <svg viewBox="0 0 60 60">
+                <ellipse cx="30" cy="35" rx="20" ry="22" fill="#6b7280"/>
+                <ellipse cx="30" cy="40" rx="12" ry="8" fill="#94a3b8"/>
+                <polygon points="27,42 33,42 30,50" fill="#f59e0b"/>
+                <ellipse cx="30" cy="18" rx="24" ry="5" fill="#1a1a24"/>
+                <path d="M 12 18 Q 14 4 30 4 Q 46 4 48 18 Z" fill="#2a2638"/>
+              </svg>
+            </div>
+            <div class="member-info">
+              <div class="member-name">Big Pidge <span class="member-badge silver">R4</span></div>
+              <div class="member-sub">Power 285K · Donated 160K</div>
+            </div>
+            <div class="member-power">★ 285K</div>
+          </div>
+
+          <div class="member-row">
+            <div class="member-rank">4</div>
+            <div class="member-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="33" r="20" fill="#9ca3af"/>
+                <ellipse cx="30" cy="37" rx="14" ry="8" fill="#d1d5db"/>
+                <ellipse cx="20" cy="30" rx="7" ry="6" fill="#1a1a24"/>
+                <ellipse cx="40" cy="30" rx="7" ry="6" fill="#1a1a24"/>
+                <ellipse cx="30" cy="20" rx="22" ry="4" fill="#10b981"/>
+              </svg>
+            </div>
+            <div class="member-info">
+              <div class="member-name">Vinny 2-Paws <span class="member-badge bronze">R3</span></div>
+              <div class="member-sub">Power 198K · Donated 95K</div>
+            </div>
+            <div class="member-power">★ 198K</div>
+          </div>
+
+          <div class="member-row">
+            <div class="member-rank">5</div>
+            <div class="member-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="33" r="20" fill="#7c2d12"/>
+                <ellipse cx="30" cy="37" rx="12" ry="9" fill="#a8542a"/>
+                <ellipse cx="22" cy="20" rx="5" ry="8" fill="#7c2d12"/>
+                <ellipse cx="38" cy="20" rx="5" ry="8" fill="#7c2d12"/>
+              </svg>
+            </div>
+            <div class="member-info">
+              <div class="member-name">Sal "The Fox" <span class="member-badge bronze">R2</span></div>
+              <div class="member-sub">Power 142K · Donated 60K</div>
+            </div>
+            <div class="member-power">★ 142K</div>
+          </div>
+
+          <div class="member-row dim">
+            <div class="member-rank">6</div>
+            <div class="member-avatar"></div>
+            <div class="member-info">
+              <div class="member-name">42 more members</div>
+              <div class="member-sub">Tap to view full roster</div>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- SCREEN 4: CITY MAP                              -->
+        <!-- ============================================== -->
+        <section class="screen" data-screen="city">
+
+          <!-- City selector + your status -->
+          <div class="city-header">
+            <div>
+              <div class="dim small">CURRENT CITY</div>
+              <div class="city-name">Lagos City ▾</div>
+            </div>
+            <div class="city-rank-pill">
+              <span>Your rank</span><strong>#3</strong>
+            </div>
+          </div>
+
+          <!-- The map -->
+          <div class="city-map">
+            <svg viewBox="0 0 360 380" class="city-map-svg">
+              <!-- background grid -->
+              <defs>
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a1626" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="360" height="380" fill="url(#grid)"/>
+
+              <!-- River -->
+              <path d="M -10 220 Q 80 200 180 240 Q 280 280 380 250 L 380 290 Q 280 320 180 280 Q 80 240 -10 260 Z" fill="#1a3a5a" opacity="0.5"/>
+              <!-- Roads -->
+              <path d="M 0 100 L 360 100" stroke="#2a2638" stroke-width="3" opacity="0.6"/>
+              <path d="M 0 180 L 360 180" stroke="#2a2638" stroke-width="3" opacity="0.6"/>
+              <path d="M 120 0 L 120 380" stroke="#2a2638" stroke-width="3" opacity="0.6"/>
+              <path d="M 240 0 L 240 380" stroke="#2a2638" stroke-width="3" opacity="0.6"/>
+
+              <!-- District labels -->
+              <text x="60" y="50" font-size="9" font-weight="700" fill="#5a5466" letter-spacing="2">OLD TOWN</text>
+              <text x="180" y="50" font-size="9" font-weight="700" fill="#5a5466" letter-spacing="2">DOWNTOWN</text>
+              <text x="290" y="50" font-size="9" font-weight="700" fill="#5a5466" letter-spacing="2">UPTOWN</text>
+              <text x="180" y="350" font-size="9" font-weight="700" fill="#5a5466" letter-spacing="2">PORT DISTRICT</text>
+
+              <!-- Turfs (your family = gold, others = red/green/blue/purple) -->
+              <!-- Your turf 1 -->
+              <g class="turf turf-mine">
+                <polygon points="30,70 100,70 100,130 30,130" fill="#d4af37" opacity="0.15" stroke="#d4af37" stroke-width="2"/>
+                <circle cx="65" cy="100" r="11" fill="#d4af37"/>
+                <text x="65" y="104" text-anchor="middle" font-size="11" font-weight="900" fill="#1a1a24">$</text>
+              </g>
+              <!-- Your turf 2 -->
+              <g class="turf turf-mine">
+                <polygon points="130,200 220,200 220,260 130,260" fill="#d4af37" opacity="0.15" stroke="#d4af37" stroke-width="2"/>
+                <circle cx="175" cy="230" r="11" fill="#d4af37"/>
+                <text x="175" y="234" text-anchor="middle" font-size="11" font-weight="900" fill="#1a1a24">$</text>
+              </g>
+              <!-- Enemy turf 1 (red) -->
+              <g class="turf turf-enemy">
+                <polygon points="150,70 230,70 230,130 150,130" fill="#a8161d" opacity="0.15" stroke="#a8161d" stroke-width="2"/>
+                <circle cx="190" cy="100" r="11" fill="#a8161d"/>
+                <text x="190" y="104" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">$</text>
+              </g>
+              <!-- Enemy turf 2 (blue) -->
+              <g class="turf turf-enemy">
+                <polygon points="260,70 340,70 340,130 260,130" fill="#4d9fff" opacity="0.15" stroke="#4d9fff" stroke-width="2"/>
+                <circle cx="300" cy="100" r="11" fill="#4d9fff"/>
+                <text x="300" y="104" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">$</text>
+              </g>
+              <!-- Contested turf (purple) -->
+              <g class="turf turf-contest">
+                <polygon points="30,200 110,200 110,260 30,260" fill="#a855f7" opacity="0.2" stroke="#a855f7" stroke-width="2" stroke-dasharray="4 3"/>
+                <circle cx="70" cy="230" r="11" fill="#a855f7"/>
+                <text x="70" y="234" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">⚔</text>
+              </g>
+              <!-- Enemy turf 3 (green) -->
+              <g class="turf turf-enemy">
+                <polygon points="260,200 340,200 340,260 260,260" fill="#10b981" opacity="0.15" stroke="#10b981" stroke-width="2"/>
+                <circle cx="300" cy="230" r="11" fill="#10b981"/>
+                <text x="300" y="234" text-anchor="middle" font-size="11" font-weight="900" fill="#fff">$</text>
+              </g>
+
+              <!-- Player base markers -->
+              <!-- You (gold star) -->
+              <g class="player-marker mine">
+                <circle cx="65" cy="100" r="20" fill="none" stroke="#d4af37" stroke-width="2" opacity="0.5" class="pulse-ring"/>
+                <polygon points="65,90 67,96 73,96 68,100 70,106 65,103 60,106 62,100 57,96 63,96" fill="#d4af37"/>
+              </g>
+
+              <!-- Enemy bases -->
+              <g class="player-marker enemy" transform="translate(190, 100)">
+                <polygon points="0,-7 7,4 -7,4" fill="#a8161d"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">M</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(50, 160)">
+                <polygon points="0,-7 7,4 -7,4" fill="#a8161d"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">P</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(85, 165)">
+                <polygon points="0,-7 7,4 -7,4" fill="#a8161d"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">P</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(290, 100)">
+                <polygon points="0,-7 7,4 -7,4" fill="#4d9fff"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">T</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(70, 230)">
+                <polygon points="0,-7 7,4 -7,4" fill="#a855f7"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">S</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(290, 230)">
+                <polygon points="0,-7 7,4 -7,4" fill="#10b981"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">D</text>
+              </g>
+              <g class="player-marker enemy" transform="translate(160, 320)">
+                <polygon points="0,-7 7,4 -7,4" fill="#a8161d"/>
+                <text x="0" y="2" text-anchor="middle" font-size="8" fill="#fff" font-weight="900">M</text>
+              </g>
+
+              <!-- Your family allies -->
+              <g class="player-marker ally" transform="translate(175, 230)">
+                <polygon points="0,-7 7,4 -7,4" fill="#d4af37"/>
+              </g>
+              <g class="player-marker ally" transform="translate(140, 245)">
+                <polygon points="0,-6 6,3 -6,3" fill="#d4af37"/>
+              </g>
+              <g class="player-marker ally" transform="translate(205, 215)">
+                <polygon points="0,-6 6,3 -6,3" fill="#d4af37"/>
+              </g>
+
+              <!-- Convoy lines (animated dashed) -->
+              <line x1="65" y1="100" x2="190" y2="100" stroke="#d4af37" stroke-width="2" stroke-dasharray="4 4" opacity="0.6" class="convoy-line"/>
+            </svg>
+
+            <!-- Map legend -->
+            <div class="map-legend">
+              <div><span class="dot gold"></span> You</div>
+              <div><span class="dot red"></span> Manila</div>
+              <div><span class="dot blue"></span> Tokyo</div>
+              <div><span class="dot purple"></span> Sicilian</div>
+              <div><span class="dot green"></span> Dubai</div>
+            </div>
+          </div>
+
+          <!-- Nearby targets -->
+          <div class="section-title"><span>NEARBY TARGETS</span><span class="section-link">Filter ▾</span></div>
+
+          <div class="target-card">
+            <div class="target-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="33" r="22" fill="#7c2d12"/>
+                <ellipse cx="30" cy="38" rx="14" ry="9" fill="#a8542a"/>
+                <ellipse cx="22" cy="20" rx="6" ry="8" fill="#7c2d12"/>
+                <ellipse cx="38" cy="20" rx="6" ry="8" fill="#7c2d12"/>
+                <ellipse cx="30" cy="14" rx="20" ry="4" fill="#a8161d"/>
+              </svg>
+            </div>
+            <div class="target-info">
+              <div class="target-name">Don Carlito <span class="member-badge red">MANILA</span></div>
+              <div class="target-sub">Power 480K · No shield · Vault 124K</div>
+              <div class="target-tags">
+                <span class="tag tag-red">Hostile</span>
+                <span class="tag">240m away</span>
+              </div>
+            </div>
+            <div class="target-actions">
+              <button class="ta-scout">SCOUT</button>
+              <button class="ta-attack" data-action="raid">RAID</button>
+            </div>
+          </div>
+
+          <div class="target-card">
+            <div class="target-avatar">
+              <svg viewBox="0 0 60 60">
+                <ellipse cx="30" cy="35" rx="22" ry="24" fill="#374151"/>
+                <ellipse cx="30" cy="40" rx="14" ry="10" fill="#6b7280"/>
+                <polygon points="27,42 33,42 30,50" fill="#f59e0b"/>
+                <ellipse cx="30" cy="18" rx="26" ry="5" fill="#1a1a24"/>
+                <path d="M 8 18 Q 12 4 30 4 Q 48 4 52 18 Z" fill="#0d0d12"/>
+              </svg>
+            </div>
+            <div class="target-info">
+              <div class="target-name">Yuki Saito <span class="member-badge blue">TOKYO</span></div>
+              <div class="target-sub">Power 312K · 🛡 Shield 4h · Vault 240K</div>
+              <div class="target-tags">
+                <span class="tag">Shielded</span>
+                <span class="tag">420m away</span>
+              </div>
+            </div>
+            <div class="target-actions">
+              <button class="ta-scout">SCOUT</button>
+              <button class="ta-attack disabled">SHIELDED</button>
+            </div>
+          </div>
+
+          <div class="target-card">
+            <div class="target-avatar">
+              <svg viewBox="0 0 60 60">
+                <circle cx="30" cy="33" r="22" fill="#5a3a1f"/>
+                <ellipse cx="30" cy="40" rx="14" ry="9" fill="#8a5f3f"/>
+                <ellipse cx="18" cy="22" rx="7" ry="9" fill="#5a3a1f"/>
+                <ellipse cx="42" cy="22" rx="7" ry="9" fill="#5a3a1f"/>
+                <circle cx="22" cy="32" r="5" fill="#fff"/>
+                <circle cx="38" cy="32" r="5" fill="#fff"/>
+              </svg>
+            </div>
+            <div class="target-info">
+              <div class="target-name">Lupo "Wolf" <span class="member-badge purple">SICILIAN</span></div>
+              <div class="target-sub">Power 198K · No shield · Vault 64K</div>
+              <div class="target-tags">
+                <span class="tag tag-red">Hostile</span>
+                <span class="tag tag-green">Weak</span>
+                <span class="tag">580m away</span>
+              </div>
+            </div>
+            <div class="target-actions">
+              <button class="ta-scout">SCOUT</button>
+              <button class="ta-attack" data-action="raid">RAID</button>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- SCREEN 5: WAR ROOM                              -->
+        <!-- ============================================== -->
+        <section class="screen" data-screen="war">
+
+          <!-- Active war card -->
+          <div class="active-war">
+            <div class="war-clash">
+              <!-- left family -->
+              <div class="war-side">
+                <div class="war-side-crest">
+                  <svg viewBox="0 0 50 50">
+                    <polygon points="25,3 47,16 41,44 9,44 3,16" fill="#a8161d" stroke="#d4af37" stroke-width="2"/>
+                    <text x="25" y="33" text-anchor="middle" font-family="Impact, sans-serif" font-size="20" fill="#d4af37" font-weight="900">IW</text>
+                  </svg>
+                </div>
+                <div class="war-side-name">Iron Whiskers</div>
+                <div class="war-side-score">1,247</div>
+                <div class="war-side-tag">YOUR FAMILY</div>
+              </div>
+
+              <!-- vs -->
+              <div class="war-vs">
+                <div class="war-vs-text">VS</div>
+                <div class="war-time">⏱ 21h 14m</div>
+              </div>
+
+              <!-- right family -->
+              <div class="war-side">
+                <div class="war-side-crest">
+                  <svg viewBox="0 0 50 50">
+                    <polygon points="25,3 47,16 41,44 9,44 3,16" fill="#1a1a24" stroke="#4d9fff" stroke-width="2"/>
+                    <text x="25" y="33" text-anchor="middle" font-family="Impact, sans-serif" font-size="18" fill="#4d9fff" font-weight="900">MP</text>
+                  </svg>
+                </div>
+                <div class="war-side-name">Manila Predators</div>
+                <div class="war-side-score">982</div>
+                <div class="war-side-tag">ENEMY</div>
+              </div>
+            </div>
+
+            <!-- score bar -->
+            <div class="war-score-bar">
+              <div class="war-score-fill" style="width:56%"></div>
+              <div class="war-score-mid"></div>
+            </div>
+
+            <div class="war-actions">
+              <button class="war-action war-rally">📢<br/><span>RALLY</span></button>
+              <button class="war-action war-solo" data-action="raid">⚔<br/><span>SOLO</span></button>
+              <button class="war-action war-scout">🔍<br/><span>SCOUT</span></button>
+              <button class="war-action war-shield">🛡<br/><span>SHIELD</span></button>
+            </div>
+          </div>
+
+          <!-- War contribution -->
+          <div class="section-title"><span>WAR CONTRIBUTION</span><span class="section-link">All ›</span></div>
+
+          <div class="contrib-list">
+            <div class="contrib-row">
+              <div class="contrib-rank">🥇</div>
+              <div class="contrib-name">Don Rattori <span class="member-badge gold">YOU</span></div>
+              <div class="contrib-bar"><div class="contrib-fill" style="width:90%;background:linear-gradient(90deg,#d4af37,#f5cf4f)"></div></div>
+              <div class="contrib-val">340</div>
+            </div>
+            <div class="contrib-row">
+              <div class="contrib-rank">🥈</div>
+              <div class="contrib-name">Tony Whiskers</div>
+              <div class="contrib-bar"><div class="contrib-fill" style="width:75%;background:linear-gradient(90deg,#c0c0c0,#e0e0e0)"></div></div>
+              <div class="contrib-val">285</div>
+            </div>
+            <div class="contrib-row">
+              <div class="contrib-rank">🥉</div>
+              <div class="contrib-name">Big Pidge</div>
+              <div class="contrib-bar"><div class="contrib-fill" style="width:60%;background:linear-gradient(90deg,#cd7f32,#e8a566)"></div></div>
+              <div class="contrib-val">228</div>
+            </div>
+            <div class="contrib-row">
+              <div class="contrib-rank">4</div>
+              <div class="contrib-name">Sal "The Fox"</div>
+              <div class="contrib-bar"><div class="contrib-fill" style="width:42%;background:linear-gradient(90deg,#6b7280,#9ca3af)"></div></div>
+              <div class="contrib-val">158</div>
+            </div>
+            <div class="contrib-row">
+              <div class="contrib-rank">5</div>
+              <div class="contrib-name">Vinny 2-Paws</div>
+              <div class="contrib-bar"><div class="contrib-fill" style="width:32%;background:linear-gradient(90deg,#6b7280,#9ca3af)"></div></div>
+              <div class="contrib-val">122</div>
+            </div>
+          </div>
+
+          <!-- Battle reports -->
+          <div class="section-title"><span>RECENT BATTLES</span><span class="section-link">All ›</span></div>
+
+          <div class="battle-report victory">
+            <div class="battle-icon">⚔</div>
+            <div class="battle-info">
+              <div class="battle-title">You raided Diego "El Toro" <span class="badge badge-green">VICTORY</span></div>
+              <div class="battle-sub">+24K coins · +12 reputation · 12 min ago</div>
+            </div>
+          </div>
+
+          <div class="battle-report defeat">
+            <div class="battle-icon">💥</div>
+            <div class="battle-info">
+              <div class="battle-title">Hiro "Phantom" raided you <span class="badge badge-red">LOST 8K</span></div>
+              <div class="battle-sub">−8K coins · −4 reputation · 1h ago · <span class="retaliate">Retaliate ›</span></div>
+            </div>
+          </div>
+
+          <div class="battle-report victory">
+            <div class="battle-icon">⚔</div>
+            <div class="battle-info">
+              <div class="battle-title">Tony Whiskers raided Sergio <span class="badge badge-green">VICTORY</span></div>
+              <div class="battle-sub">+18K coins to family bank · 2h ago</div>
+            </div>
+          </div>
+
+          <div class="battle-report rally">
+            <div class="battle-icon">📢</div>
+            <div class="battle-info">
+              <div class="battle-title">Rally on Tokyo Drift family <span class="badge badge-gold">IN 28 MIN</span></div>
+              <div class="battle-sub">5/12 joined · Tap to enlist</div>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- SCREEN 6: SHOP                                  -->
+        <!-- ============================================== -->
+        <section class="screen" data-screen="shop">
+
+          <!-- Capo Pass (VIP) -->
+          <div class="capo-pass">
+            <div class="capo-bg-glow"></div>
+            <div class="halftone"></div>
+            <div class="capo-content">
+              <div class="capo-badge">CAPO PASS</div>
+              <div class="capo-title">Become a Made Man</div>
+              <ul class="capo-perks">
+                <li>✓ +50% all income</li>
+                <li>✓ +5 crew slots</li>
+                <li>✓ Daily 100 💎 bonus</li>
+                <li>✓ Skip 3 timers/day</li>
+                <li>✓ Exclusive cosmetics</li>
+              </ul>
+              <button class="capo-buy">⭐ 599 / mo</button>
+            </div>
+            <div class="capo-art">
+              <svg viewBox="0 0 80 100">
+                <ellipse cx="40" cy="92" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <path d="M 25 50 Q 25 40 40 40 Q 55 40 55 50 L 53 88 Q 40 92 27 88 Z" fill="#1a1a24"/>
+                <path d="M 32 45 L 40 60 L 48 45 L 52 50 L 48 60 L 40 65 L 32 60 L 28 50 Z" fill="#0d0d12"/>
+                <path d="M 36 50 L 44 50 L 42 80 L 38 80 Z" fill="#a8161d"/>
+                <ellipse cx="40" cy="28" rx="16" ry="14" fill="#a8a7b0"/>
+                <ellipse cx="40" cy="20" rx="22" ry="4" fill="#0d0d12"/>
+                <path d="M 22 20 Q 24 5 40 5 Q 56 5 58 20 Z" fill="#1a1a24"/>
+                <circle cx="35" cy="26" r="2" fill="#1a1a24"/>
+                <circle cx="45" cy="26" r="2" fill="#1a1a24"/>
+                <!-- gold chain -->
+                <path d="M 30 50 Q 40 55 50 50" stroke="#d4af37" stroke-width="2" fill="none"/>
+                <circle cx="40" cy="54" r="3" fill="#d4af37"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Stars packs -->
+          <div class="section-title"><span>TELEGRAM STARS</span><span class="section-link">Why?</span></div>
+
+          <div class="stars-grid">
+            <div class="stars-pack">
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">100</div>
+              <div class="stars-bonus">+5 bonus</div>
+              <button class="stars-buy">⭐ 100</button>
+            </div>
+            <div class="stars-pack popular">
+              <div class="stars-tag">POPULAR</div>
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">550</div>
+              <div class="stars-bonus">+50 bonus</div>
+              <button class="stars-buy">⭐ 500</button>
+            </div>
+            <div class="stars-pack best">
+              <div class="stars-tag">BEST</div>
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">1,200</div>
+              <div class="stars-bonus">+200 bonus</div>
+              <button class="stars-buy">⭐ 1000</button>
+            </div>
+            <div class="stars-pack">
+              <div class="stars-icon">💎</div>
+              <div class="stars-amt">6,500</div>
+              <div class="stars-bonus">+1,500 bonus</div>
+              <button class="stars-buy">⭐ 5000</button>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div class="section-title"><span>UTILITIES</span><span class="section-link">All ›</span></div>
+
+          <div class="item-row">
+            <div class="item-icon">🛡</div>
+            <div class="item-info">
+              <div class="item-name">Peace Shield (24h)</div>
+              <div class="item-sub">Block all incoming raids for 24 hours</div>
+            </div>
+            <button class="item-buy">💎 50</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">⚡</div>
+            <div class="item-info">
+              <div class="item-name">Energy Refill</div>
+              <div class="item-sub">Restore energy to 100/100 instantly</div>
+            </div>
+            <button class="item-buy">💎 20</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">⏱</div>
+            <div class="item-info">
+              <div class="item-name">Speedup (1h)</div>
+              <div class="item-sub">Reduce any timer by 1 hour</div>
+            </div>
+            <button class="item-buy">💎 15</button>
+          </div>
+          <div class="item-row">
+            <div class="item-icon">📜</div>
+            <div class="item-info">
+              <div class="item-name">Migration Ticket</div>
+              <div class="item-sub">Move your family to another city</div>
+            </div>
+            <button class="item-buy">💎 500</button>
+          </div>
+
+          <!-- Cosmetics -->
+          <div class="section-title"><span>COSMETICS</span><span class="section-link">All ›</span></div>
+
+          <div class="cosmetics-grid">
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🎩</div>
+              <div class="cosmetic-name">Golden Fedora</div>
+              <div class="cosmetic-price">⭐ 199</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🚗</div>
+              <div class="cosmetic-name">'47 Cadillac</div>
+              <div class="cosmetic-price">⭐ 299</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">💍</div>
+              <div class="cosmetic-name">Don's Pinky Ring</div>
+              <div class="cosmetic-price">⭐ 149</div>
+            </div>
+            <div class="cosmetic-card">
+              <div class="cosmetic-art">🦴</div>
+              <div class="cosmetic-name">Cigar of Power</div>
+              <div class="cosmetic-price">⭐ 99</div>
+            </div>
+          </div>
+
+          <div style="height: 100px"></div>
+        </section>
+
+      </div>
+
+      <!-- ============================================== -->
+      <!-- RAID MODAL (overlays any screen)                -->
+      <!-- ============================================== -->
+      <div class="raid-modal" id="raid-modal">
+        <div class="raid-content">
+          <button class="raid-close" id="raid-close">✕</button>
+
+          <div class="raid-phase phase-prep active">
+            <div class="raid-title">⚔ RAID TARGET</div>
+            <div class="raid-target">
+              <div class="raid-target-avatar">
+                <svg viewBox="0 0 80 80">
+                  <circle cx="40" cy="42" r="28" fill="#7c2d12"/>
+                  <ellipse cx="40" cy="48" rx="18" ry="12" fill="#a8542a"/>
+                  <ellipse cx="28" cy="22" rx="8" ry="11" fill="#7c2d12"/>
+                  <ellipse cx="52" cy="22" rx="8" ry="11" fill="#7c2d12"/>
+                  <ellipse cx="40" cy="14" rx="26" ry="5" fill="#a8161d"/>
+                  <circle cx="32" cy="38" r="3" fill="#fff"/>
+                  <circle cx="48" cy="38" r="3" fill="#fff"/>
+                </svg>
+              </div>
+              <div>
+                <div class="raid-target-name">Don Carlito</div>
+                <div class="raid-target-power">Power 480K · Vault 124K</div>
+                <div class="raid-target-tags">
+                  <span class="tag tag-red">No shield</span>
+                  <span class="tag">Manila Predators</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="raid-vs">
+              <div class="raid-side">
+                <div class="raid-side-label">YOUR SQUAD</div>
+                <div class="raid-side-value">540K</div>
+                <div class="raid-mini-bar"><div style="width:65%;background:#10b981"></div></div>
+              </div>
+              <div class="raid-mid">VS</div>
+              <div class="raid-side">
+                <div class="raid-side-label">DEFENSE</div>
+                <div class="raid-side-value">320K</div>
+                <div class="raid-mini-bar"><div style="width:35%;background:#a8161d"></div></div>
+              </div>
+            </div>
+
+            <div class="raid-squad">
+              <div class="raid-unit"><div class="unit-icon">💪</div><div>Bruisers</div><div class="unit-count">12</div></div>
+              <div class="raid-unit"><div class="unit-icon">🔫</div><div>Shooters</div><div class="unit-count">8</div></div>
+              <div class="raid-unit"><div class="unit-icon">🏍</div><div>Bikers</div><div class="unit-count">6</div></div>
+              <div class="raid-unit"><div class="unit-icon">🚗</div><div>Drivers</div><div class="unit-count">3</div></div>
+            </div>
+
+            <div class="raid-prediction">
+              <div class="raid-pred-text">Win chance</div>
+              <div class="raid-pred-val">76%</div>
+            </div>
+
+            <button class="raid-attack" id="raid-attack-btn">⚔ STRIKE</button>
+          </div>
+
+          <div class="raid-phase phase-fight">
+            <div class="raid-fight-stage">
+              <!-- Smoke / muzzle flash overlay -->
+              <div class="fight-flash"></div>
+              <div class="fight-smoke fs1"></div>
+              <div class="fight-smoke fs2"></div>
+              <div class="fight-smoke fs3"></div>
+              <svg class="fight-char left" viewBox="0 0 100 130">
+                <ellipse cx="50" cy="125" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <path d="M 30 60 Q 30 50 50 50 Q 70 50 70 60 L 68 110 Q 50 115 32 110 Z" fill="#2a2638"/>
+                <ellipse cx="50" cy="40" rx="20" ry="18" fill="#a8a7b0"/>
+                <ellipse cx="50" cy="20" rx="26" ry="5" fill="#0d0d12"/>
+                <path d="M 24 20 Q 28 0 50 0 Q 72 0 76 20 Z" fill="#1a1a24"/>
+                <circle cx="44" cy="38" r="3" fill="#1a1a24"/>
+                <circle cx="56" cy="38" r="3" fill="#1a1a24"/>
+                <rect x="70" y="65" width="30" height="6" rx="2" fill="#1a1a24"/>
+                <rect x="68" y="63" width="6" height="10" rx="1" fill="#1a1a24"/>
+              </svg>
+              <svg class="fight-char right" viewBox="0 0 100 130">
+                <ellipse cx="50" cy="125" rx="22" ry="3" fill="#000" opacity="0.4"/>
+                <path d="M 30 60 Q 30 50 50 50 Q 70 50 70 60 L 68 110 Q 50 115 32 110 Z" fill="#7c2d12"/>
+                <ellipse cx="50" cy="40" rx="20" ry="18" fill="#a8542a"/>
+                <ellipse cx="50" cy="20" rx="26" ry="5" fill="#a8161d"/>
+                <circle cx="44" cy="38" r="3" fill="#1a1a24"/>
+                <circle cx="56" cy="38" r="3" fill="#1a1a24"/>
+                <rect x="0" y="65" width="30" height="6" rx="2" fill="#1a1a24"/>
+              </svg>
+              <div class="fight-text">BATTLE...</div>
+            </div>
+          </div>
+
+          <div class="raid-phase phase-result">
+            <div class="result-title">🏆 VICTORY</div>
+            <div class="result-sub">You defeated Don Carlito</div>
+            <div class="result-loot">
+              <div class="loot-item">
+                <div class="loot-icon">💰</div>
+                <div class="loot-val">+24,840</div>
+                <div class="loot-label">coins</div>
+              </div>
+              <div class="loot-item">
+                <div class="loot-icon">⭐</div>
+                <div class="loot-val">+340</div>
+                <div class="loot-label">XP</div>
+              </div>
+              <div class="loot-item">
+                <div class="loot-icon">🔥</div>
+                <div class="loot-val">+12</div>
+                <div class="loot-label">rep</div>
+              </div>
+              <div class="loot-item">
+                <div class="loot-icon">⚔</div>
+                <div class="loot-val">+50</div>
+                <div class="loot-label">war pts</div>
+              </div>
+            </div>
+            <div class="result-cas">Casualties: 1 Bruiser wounded (healing in Clinic)</div>
+            <button class="raid-claim" id="raid-claim">CLAIM REWARDS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom navigation -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-nav="empire">
+          <div class="nav-icon">🏢</div>
+          <div class="nav-label">Empire</div>
+        </button>
+        <button class="nav-item" data-nav="family">
+          <div class="nav-icon">👥</div>
+          <div class="nav-label">Family</div>
+        </button>
+        <button class="nav-item" data-nav="city">
+          <div class="nav-icon">🗺️</div>
+          <div class="nav-label">City</div>
+        </button>
+        <button class="nav-item" data-nav="war">
+          <div class="nav-icon">⚔️</div>
+          <div class="nav-label">War</div>
+        </button>
+        <button class="nav-item" data-nav="shop">
+          <div class="nav-icon">🎰</div>
+          <div class="nav-label">Shop</div>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Side notes panel -->
+  <aside class="notes">
+    <div class="notes-title">Cosa Nostra Tycoon — Screen Tour</div>
+    <div class="notes-section">
+      <strong>How to navigate</strong><br/>
+      Tap the bottom nav (Empire / Family / City / War / Shop). On the Empire screen tap "Manage HQ" to see the Mansion view. On the City screen tap "RAID" on any target to trigger the battle modal.
+    </div>
+    <ul>
+      <li><strong>🏢 Empire (home):</strong> hero card, crew, mansion preview, businesses, war banner.</li>
+      <li><strong>🏛️ Mansion / HQ:</strong> cartoon skyline header, then 8 buildings (Hideout, Vault, Training Yard, Clinic, Garage, Armory, Walls, Speakeasy) — each upgradeable.</li>
+      <li><strong>👥 Family:</strong> your TG group as a Family — crest, TG chat link, daily Boss, member roster with R5/R4/R3 roles, contributions.</li>
+      <li><strong>🗺️ City:</strong> map with your turf (gold), enemy turfs (red/blue/green/purple), capturable + contested zones. Nearby targets list with scout/raid buttons.</li>
+      <li><strong>⚔️ War Room:</strong> active war vs Manila Predators with score bar, member contribution leaderboard, rally / solo / scout / shield actions, battle reports.</li>
+      <li><strong>🎰 Shop:</strong> Capo Pass (VIP subscription), Telegram Stars packs, utility items (shield/energy/speedup/migration), cosmetics.</li>
+      <li><strong>⚔ Raid modal:</strong> tap RAID anywhere → target preview → STRIKE → battle animation → victory/loot screen.</li>
+      <li><strong>Stack reminder:</strong> all hand-coded SVG + CSS for demo. Production = PixiJS + Spine 2D rigs (much more polished art + smooth skeletal animations).</li>
+    </ul>
+  </aside>
+
+  <script>
+// Cosa Nostra Tycoon — multi-screen mockup interactions
+
+const SCREEN_TITLES = {
+  empire: 'Cosa Nostra Tycoon',
+  mansion: 'My Hideout',
+  family: 'Iron Whiskers Family',
+  city: 'Lagos City Map',
+  war: 'War Room',
+  shop: 'Black Market'
+};
+
+// Screen switching
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.toggle('active', s.dataset.screen === name);
+  });
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.nav === name);
+  });
+  const title = document.getElementById('screen-title');
+  if (title && SCREEN_TITLES[name]) title.textContent = SCREEN_TITLES[name];
+  // scroll active to top
+  const active = document.querySelector('.screen.active');
+  if (active) active.scrollTop = 0;
+}
+
+// Wire nav
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', () => showScreen(n.dataset.nav));
+});
+
+// Any element with data-nav goes there too
+document.querySelectorAll('[data-nav]').forEach(el => {
+  if (el.classList.contains('nav-item')) return;
+  el.addEventListener('click', (e) => {
+    if (e.target.closest('button') && !e.target.closest('button').dataset.action) {
+      // let buttons do their own thing
+    }
+    showScreen(el.dataset.nav);
+  });
+});
+
+// Raid modal
+const raidModal = document.getElementById('raid-modal');
+const raidClose = document.getElementById('raid-close');
+const raidAttackBtn = document.getElementById('raid-attack-btn');
+const raidClaim = document.getElementById('raid-claim');
+
+function openRaid() {
+  raidModal.classList.add('open');
+  setPhase('prep');
+}
+
+function closeRaid() {
+  raidModal.classList.remove('open');
+  setPhase('prep');
+}
+
+function setPhase(phase) {
+  document.querySelectorAll('.raid-phase').forEach(p => {
+    p.classList.toggle('active', p.classList.contains('phase-' + phase));
+  });
+}
+
+document.querySelectorAll('[data-action="raid"]').forEach(b => {
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openRaid();
+  });
+});
+
+if (raidClose) raidClose.addEventListener('click', closeRaid);
+if (raidModal) raidModal.addEventListener('click', (e) => {
+  if (e.target === raidModal) closeRaid();
+});
+
+if (raidAttackBtn) raidAttackBtn.addEventListener('click', () => {
+  setPhase('fight');
+  setTimeout(() => setPhase('result'), 2400);
+});
+
+if (raidClaim) raidClaim.addEventListener('click', () => {
+  flashCoinsAtCenter();
+  setTimeout(closeRaid, 700);
+});
+
+// Coins ticker
+(() => {
+  const el = document.getElementById('coins');
+  if (!el) return;
+  let n = parseInt(el.textContent.replace(/,/g, ''), 10);
+  setInterval(() => {
+    n += Math.floor(Math.random() * 13) + 3;
+    el.textContent = n.toLocaleString();
+  }, 1800);
+})();
+
+// Collect button: coin shower
+document.querySelectorAll('.biz-collect.ready').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const card = e.currentTarget.closest('.biz-card');
+    if (!card) return;
+    flashCollect(card);
+    e.currentTarget.classList.remove('ready');
+    e.currentTarget.textContent = '4h 00m';
+    const fill = card.querySelector('.biz-progress-fill');
+    if (fill) fill.style.width = '0%';
+  });
+});
+
+function flashCollect(card) {
+  const rect = card.getBoundingClientRect();
+  spawnCoinShower(rect.left + rect.width / 2, rect.top + 20);
+}
+
+function flashCoinsAtCenter() {
+  spawnCoinShower(window.innerWidth / 2, window.innerHeight / 2);
+}
+
+function spawnCoinShower(x, y) {
+  for (let i = 0; i < 14; i++) {
+    const coin = document.createElement('div');
+    coin.textContent = '💰';
+    coin.style.position = 'fixed';
+    coin.style.left = x + 'px';
+    coin.style.top = y + 'px';
+    coin.style.fontSize = '22px';
+    coin.style.zIndex = '9999';
+    coin.style.pointerEvents = 'none';
+    coin.style.transition = 'transform 0.9s ease-out, opacity 0.9s ease-out';
+    document.body.appendChild(coin);
+    requestAnimationFrame(() => {
+      const dx = (Math.random() - 0.5) * 200;
+      const dy = -100 - Math.random() * 120;
+      coin.style.transform = `translate(${dx}px, ${dy}px) rotate(${Math.random() * 720}deg) scale(0.3)`;
+      coin.style.opacity = '0';
+    });
+    setTimeout(() => coin.remove(), 1000);
+  }
+}
+
+// Family tabs
+document.querySelectorAll('.ftab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.ftab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+
+// Visual press feedback
+document.querySelectorAll(
+  '.crew-card, .biz-card, .war-cta, .building-card, .target-card, .stars-pack, .cosmetic-card, .battle-report, .member-row, .war-action'
+).forEach(el => {
+  el.addEventListener('pointerdown', () => {
+    el.style.transition = 'transform 0.08s ease';
+    el.style.transform = 'scale(0.97)';
+  });
+  el.addEventListener('pointerup',   () => { el.style.transform = ''; });
+  el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+});
+
+</script>
+</body>
+</html>
