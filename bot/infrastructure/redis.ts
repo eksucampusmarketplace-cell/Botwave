@@ -274,7 +274,7 @@ export async function redisReleasePairingLock(sessionId: string): Promise<void> 
 
 const PROXY_FAILURES_PREFIX = 'proxy:failure:';
 const PROXY_BLACKLIST_PREFIX = 'proxy:blacklist:';
-const PROXY_BLACKLIST_TTL = 300; // 5 minutes
+const PROXY_BLACKLIST_TTL = 1800; // 30 minutes
 const REDIS_PROXY_FAIL_THRESHOLD = 3;
 
 /**
@@ -350,6 +350,22 @@ export async function redisClearSessionProxy(sessionId: string): Promise<void> {
   if (!isRedisAvailable()) return;
   try {
     await redis!.del(`session:proxy:${sessionId}`);
+  } catch { /* ignore */ }
+}
+
+export async function redisGetRecentlyFailedSessionProxy(sessionId: string): Promise<string | null> {
+  if (!isRedisAvailable()) return null;
+  try {
+    return await redis!.get(`session:proxy:failed:${sessionId}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function redisSetRecentlyFailedSessionProxy(sessionId: string, proxyHost: string): Promise<void> {
+  if (!isRedisAvailable() || !proxyHost) return;
+  try {
+    await redis!.set(`session:proxy:failed:${sessionId}`, proxyHost, 'EX', 1800);
   } catch { /* ignore */ }
 }
 

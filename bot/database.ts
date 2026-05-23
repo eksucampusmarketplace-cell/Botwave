@@ -358,7 +358,7 @@ export async function updateSessionStatus(
     pairing_sent:    ['active', 'qr_pending', 'inactive', 'needs_reauth', 'pairing_failed'],
     active:          ['inactive', 'needs_reauth'],
     needs_reauth:    ['qr_pending', 'pairing_sent', 'active', 'inactive'],
-    pairing_failed:  ['qr_pending', 'inactive'],
+    pairing_failed:  ['qr_pending', 'pairing_sent', 'inactive'],
   };
 
   // Defense-in-depth: never regress an active session to pairing_sent or
