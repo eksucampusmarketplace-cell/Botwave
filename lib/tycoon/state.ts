@@ -95,15 +95,28 @@ export async function loadAndTickPlayer(
   telegramUserId: number,
   hostBot: string | null,
 ): Promise<PlayerRecord | null> {
-  const before = await findPlayer(supabase, telegramUserId, hostBot);
-  if (!before) return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const before = await findPlayer(supabase, telegramUserId, hostBot);
+    if (!before) return null;
 
-  const ticked = applyTick(before);
-  // Only write if anything actually changed.
-  if (tickProducedChanges(ticked)) {
-    await persistTickedPlayer(supabase, ticked.player, before.save_version);
+    const ticked = applyTick(before);
+    // Only write if anything actually changed.
+    if (!tickProducedChanges(ticked)) {
+      return ticked.player;
+    }
+
+    try {
+      await persistTickedPlayer(supabase, ticked.player, before.save_version);
+      return ticked.player;
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('save_version_conflict') && attempt === 0) {
+        continue;
+      }
+      throw e;
+    }
   }
-  return ticked.player;
+
+  throw new Error('save_version_conflict');
 }
 
 /** In-memory variant for routes that will write back themselves. */
@@ -121,6 +134,7 @@ function tickProducedChanges(ticked: TickResult): boolean {
   const e = ticked.effects;
   return (
     e.energy_regenerated > 0 ||
+    e.coins_accrued > 0 ||
     Object.keys(e.troops_healed).length > 0 ||
     Object.keys(e.troops_completed).length > 0 ||
     e.buildings_completed.length > 0

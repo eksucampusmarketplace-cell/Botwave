@@ -1339,6 +1339,23 @@ input { font: inherit; color: inherit; }
       return data;
     },
 
+    async get(path, params) {
+      const url = new URL(path, window.location.origin);
+      Object.entries(params || {}).forEach(([key, value]) => {
+        if (value != null && value !== '') url.searchParams.set(key, value);
+      });
+      const res = await fetch(url.toString(), { credentials: 'same-origin' });
+      let data = null;
+      try { data = await res.json(); } catch (_) { /* may be empty */ }
+      if (!res.ok) {
+        const err = new Error((data && data.error) || `http_${res.status}`);
+        err.status = res.status;
+        err.body = data;
+        throw err;
+      }
+      return data;
+    },
+
     auth(displayName) {
       return this.post('/api/tycoon/auth', {
         initData: (tg && tg.initData) || '',
@@ -1389,6 +1406,12 @@ input { font: inherit; color: inherit; }
     },
 
     daily(claim) {
+      if (!claim) {
+        return this.get('/api/tycoon/daily', {
+          initData: (tg && tg.initData) || '',
+          session_id: SESSION_ID,
+        });
+      }
       return this.post('/api/tycoon/daily', {
         initData: (tg && tg.initData) || '',
         session_id: SESSION_ID,
@@ -1405,7 +1428,7 @@ input { font: inherit; color: inherit; }
     },
 
     targets() {
-      return this.post('/api/tycoon/targets', {
+      return this.get('/api/tycoon/targets', {
         initData: (tg && tg.initData) || '',
         session_id: SESSION_ID,
       });
@@ -1584,7 +1607,7 @@ input { font: inherit; color: inherit; }
       const accruedPerSec = (b.rate || 0) / 3600;
       const pending = Math.min(b.cap || 0, Math.floor(elapsed * accruedPerSec));
       const pct = b.cap > 0 ? Math.min(100, (pending / b.cap) * 100) : 0;
-      const ready = b.cap > 0 && pending > 0;
+      const ready = b.cap > 0 && pending >= b.cap * 0.95;
 
       if (locked) {
         return `

@@ -33,7 +33,7 @@
 
 import type { PlayerRecord, PlayerStateBlob } from './types';
 import { computePower } from './power';
-import { clinicHealCapacityPerTick, pendingBusinessCoins } from './actions';
+import { clinicHealCapacityPerTick, nextDirtyUntil, pendingBusinessCoins } from './actions';
 
 export type TickResult = {
   /** The mutated player record (new object — reducer does not mutate in place). */
@@ -127,14 +127,13 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
   state.power_breakdown = breakdown;
 
   // ---------- 7. Recompute state_dirty_until ----------------------------
-  const nextTimerMs = nextTimerForState(state);
-  const stateDirtyUntil = nextTimerMs != null ? new Date(nextTimerMs).toISOString() : null;
+  const stateDirtyUntil = nextDirtyUntil(state, nowMs);
 
   return {
     player: {
       ...player,
       energy,
-      coins: player.coins,
+      coins: Number(player.coins) + coinsAccrued,
       hq_level: hqLevel,
       power: breakdown.total,
       state,
@@ -149,19 +148,4 @@ export function applyTick(player: PlayerRecord, nowMs: number = Date.now()): Tic
       buildings_completed: buildingsCompleted,
     },
   };
-}
-
-/** Earliest pending timer (training end, upgrade end). */
-function nextTimerForState(state: PlayerStateBlob): number | null {
-  let earliest: number | null = null;
-  const consider = (iso: string | null) => {
-    if (!iso) return;
-    const ms = new Date(iso).getTime();
-    if (Number.isFinite(ms) && (earliest == null || ms < earliest)) earliest = ms;
-  };
-
-  for (const t of Object.values(state.troops)) consider(t.training_ends_at);
-  for (const b of Object.values(state.buildings)) consider(b.upgrading_ends_at);
-
-  return earliest;
 }

@@ -2,7 +2,7 @@ import type { PlayerRecord, PlayerStateBlob } from './types';
 import { UNIT_DEFS } from './power';
 
 export function clonePlayer(player: PlayerRecord): PlayerRecord {
-  return JSON.parse(JSON.stringify(player)) as PlayerRecord;
+  return structuredClone(player);
 }
 
 export function pendingBusinessCoins(
@@ -16,7 +16,7 @@ export function pendingBusinessCoins(
   return Math.floor(Math.min(business.cap, elapsedHr * business.rate));
 }
 
-export function nextDirtyUntil(state: PlayerStateBlob): string | null {
+export function nextDirtyUntil(state: PlayerStateBlob, nowMs: number = Date.now()): string | null {
   let earliest: number | null = null;
   const consider = (iso: string | null) => {
     if (!iso) return;
@@ -26,6 +26,19 @@ export function nextDirtyUntil(state: PlayerStateBlob): string | null {
 
   for (const troop of Object.values(state.troops)) consider(troop.training_ends_at);
   for (const building of Object.values(state.buildings)) consider(building.upgrading_ends_at);
+
+  const clinicLevel = state.buildings.clinic?.level ?? 0;
+  const healPerHour = clinicHealCapacityPerTick(clinicLevel);
+  if (healPerHour > 0) {
+    const wounded = Object.values(state.troops).reduce(
+      (total, troop) => total + Math.max(0, troop.wounded || 0),
+      0,
+    );
+    if (wounded > 0) {
+      consider(new Date(nowMs + Math.ceil((3600 / healPerHour) * 1000)).toISOString());
+    }
+  }
+
   return earliest == null ? null : new Date(earliest).toISOString();
 }
 
