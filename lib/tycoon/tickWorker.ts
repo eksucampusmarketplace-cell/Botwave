@@ -46,6 +46,7 @@ export async function runTycoonTickSweep(
   const { data, error } = await supabase
     .from('tycoon_players')
     .select('*')
+    .not('state_dirty_until', 'is', null)
     .lte('state_dirty_until', nowIso)
     .order('state_dirty_until', { ascending: true })
     .limit(batchSize);

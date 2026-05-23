@@ -35,9 +35,12 @@ import type { PlayerRecord, UnitKey } from '@/lib/tycoon/types';
 import { NPC_TARGETS } from '@/lib/tycoon/catalog';
 import { clonePlayer, countAvailableTroops } from '@/lib/tycoon/actions';
 import { addQuestProgress } from '@/lib/tycoon/quests';
+import { retryAfterUntil, tycoonError } from '@/lib/tycoon/errors';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+const RAID_LIMIT = 10;
+const RAID_WINDOW_SECONDS = 60;
 
 type Body = {
   initData?: string;
@@ -85,15 +88,15 @@ export async function POST(req: NextRequest) {
   const attacker = loadedAttacker.ticked.player;
 
   // Soft anti-spam guard for V1 while a DB-level rate limiter lands.
-  const since = new Date(Date.now() - 60_000).toISOString();
+  const since = new Date(Date.now() - RAID_WINDOW_SECONDS * 1000).toISOString();
   const { count: recentRaids } = await supabase
     .from('tycoon_events')
     .select('id', { count: 'exact', head: true })
     .eq('player_id', attacker.id)
     .eq('kind', 'raid_launch')
     .gte('created_at', since);
-  if ((recentRaids ?? 0) >= 10) {
-    return NextResponse.json({ error: 'raid_rate_limited' }, { status: 429 });
+  if ((recentRaids ?? 0) >= RAID_LIMIT) {
+    return tycoonError({ error: 'raid_rate_limited', retry_after: RAID_WINDOW_SECONDS }, 429);
   }
 
   // Validate the attacker actually owns the troops they sent.
@@ -107,7 +110,10 @@ export async function POST(req: NextRequest) {
   }
   const energyCost = Math.min(20, Math.max(5, Math.floor(totalCount(troopsSent) / 5)));
   if (attacker.energy < energyCost) {
-    return NextResponse.json({ error: 'insufficient_energy', energy_cost: energyCost }, { status: 402 });
+    return tycoonError(
+      { error: 'insufficient_energy', current: attacker.energy, required: energyCost, energy_cost: energyCost },
+      402,
+    );
   }
 
   // Resolve defender.
@@ -134,7 +140,14 @@ export async function POST(req: NextRequest) {
     defender = data as PlayerRecord;
     // Shield enforcement — never trust client. §15 + §32.3.2.
     if (defender.shield_until && new Date(defender.shield_until).getTime() > Date.now()) {
-      return NextResponse.json({ error: 'defender_shielded' }, { status: 409 });
+      return tycoonError(
+        {
+          error: 'defender_shielded',
+          shield_until: defender.shield_until,
+          retry_after: retryAfterUntil(defender.shield_until),
+        },
+        409,
+      );
     }
     if (defender.id === attacker.id) {
       return NextResponse.json({ error: 'cannot_raid_self' }, { status: 400 });
