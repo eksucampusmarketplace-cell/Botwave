@@ -176,7 +176,7 @@ export default async function TycoonLanderPage({
         <section className="mt-14">
           <h2 className="text-2xl font-bold mb-1">{theme.cta}</h2>
           <p className="text-zinc-400 text-sm mb-5">
-            Drop your Telegram <span className={theme.accent}>@</span> and we'll
+            Drop your Telegram <span className={theme.accent}>@</span> and we&apos;ll
             DM you the moment the bot opens. Email is optional.
           </p>
           <TycoonLanderClient

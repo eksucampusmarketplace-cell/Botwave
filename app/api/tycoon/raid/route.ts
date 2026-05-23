@@ -24,7 +24,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeTycoonRequest } from '@/lib/tycoon/auth';
 import {
-  loadAndTickPlayer,
+  loadAndTickPlayerInMemory,
   persistTickedPlayer,
 } from '@/lib/tycoon/state';
 import { buffsFromState, resolveRaid } from '@/lib/tycoon/combat';
@@ -32,6 +32,8 @@ import { randomSeed } from '@/lib/tycoon/prng';
 import { UNIT_DEFS, computePower } from '@/lib/tycoon/power';
 import { snapshotPlayer } from '@/lib/tycoon/snapshot';
 import type { PlayerRecord, UnitKey } from '@/lib/tycoon/types';
+import { NPC_TARGETS } from '@/lib/tycoon/catalog';
+import { clonePlayer, countAvailableTroops } from '@/lib/tycoon/actions';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -70,15 +72,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'empty_squad' }, { status: 400 });
   }
 
-  // Load attacker (with tick).
-  const attacker = await loadAndTickPlayer(supabase, auth.user.telegram_user_id, hostBot);
-  if (!attacker) {
+  // Load attacker (with tick) and persist once after the raid mutation.
+  const loadedAttacker = await loadAndTickPlayerInMemory(
+    supabase,
+    auth.user.telegram_user_id,
+    hostBot,
+  );
+  if (!loadedAttacker) {
     return NextResponse.json({ error: 'attacker_not_found' }, { status: 404 });
+  }
+  const attacker = loadedAttacker.ticked.player;
+
+  // Soft anti-spam guard for V1 while a DB-level rate limiter lands.
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count: recentRaids } = await supabase
+    .from('tycoon_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('player_id', attacker.id)
+    .eq('kind', 'raid_launch')
+    .gte('created_at', since);
+  if ((recentRaids ?? 0) >= 10) {
+    return NextResponse.json({ error: 'raid_rate_limited' }, { status: 429 });
   }
 
   // Validate the attacker actually owns the troops they sent.
   for (const [unit, count] of Object.entries(troopsSent) as [UnitKey, number][]) {
-    if ((attacker.state.troops[unit]?.count ?? 0) < count) {
+    if (countAvailableTroops(attacker, unit) < count) {
       return NextResponse.json(
         { error: 'insufficient_troops', detail: unit },
         { status: 400 },
@@ -128,6 +147,8 @@ export async function POST(req: NextRequest) {
   const seed = randomSeed();
   const attackerBuffs = buffsFromState(attacker.state);
   const lootCap = totalLoad(troopsSent);
+  const attackerBefore = clonePlayer(attacker);
+  const defenderBefore = defender ? clonePlayer(defender) : null;
 
   const result = resolveRaid({
     attacker: {
@@ -154,7 +175,6 @@ export async function POST(req: NextRequest) {
   });
 
   // Apply attacker casualties: dead → permanent loss; wounded → clinic queue.
-  const before = JSON.parse(JSON.stringify(attacker.state.troops));
   applyCasualties(attacker, result.attacker_casualties);
 
   // Credit loot (V1: PvP only gives coins, no gems).
@@ -164,13 +184,14 @@ export async function POST(req: NextRequest) {
 
   // Spend attacker energy (raids cost energy — §3 economy).
   const energyCost = Math.min(20, Math.max(5, Math.floor(totalCount(troopsSent) / 5)));
+  if (attacker.energy < energyCost) {
+    return NextResponse.json({ error: 'insufficient_energy', energy_cost: energyCost }, { status: 402 });
+  }
   attacker.energy = Math.max(0, attacker.energy - energyCost);
 
   try {
-    await persistTickedPlayer(supabase, attacker, attacker.save_version);
+    await persistTickedPlayer(supabase, attacker, loadedAttacker.before.save_version);
   } catch (e) {
-    // Restore state on conflict so the client can retry safely.
-    attacker.state.troops = before;
     return NextResponse.json(
       {
         error: 'save_conflict',
@@ -188,7 +209,7 @@ export async function POST(req: NextRequest) {
     defender.coins = Math.max(0, Number(defender.coins) - result.loot_coins);
     defender.power = computePower(defender.state).total;
     try {
-      await persistTickedPlayer(supabase, defender, defender.save_version);
+      await persistTickedPlayer(supabase, defender, defenderBefore?.save_version ?? defender.save_version);
     } catch (e) {
       console.warn(
         '[tycoon-raid] defender persist failed:',
@@ -213,7 +234,12 @@ export async function POST(req: NextRequest) {
     loot_coins: result.loot_coins,
     loot_gems: result.loot_gems,
     rep_delta: result.rep_delta,
-    result,
+    result: {
+      ...result,
+      attacker_snapshot: snapshotPlayer(attackerBefore),
+      defender_snapshot: defenderBefore ? snapshotPlayer(defenderBefore) : npcDefender,
+      energy_cost: energyCost,
+    },
   });
 
   // Optional: append an in-game event for analytics.
@@ -225,6 +251,16 @@ export async function POST(req: NextRequest) {
       target_npc_kind: defender ? null : body.target_npc_kind ?? null,
       loot_coins: result.loot_coins,
       rep_delta: result.rep_delta,
+    },
+  });
+
+  await supabase.from('tycoon_events').insert({
+    player_id: attacker.id,
+    kind: 'raid_launch',
+    payload: {
+      target_player_id: defender?.id ?? null,
+      target_npc_kind: defender ? null : body.target_npc_kind ?? null,
+      energy_cost: energyCost,
     },
   });
 
@@ -272,7 +308,7 @@ function totalLoad(t: Partial<Record<UnitKey, number>>): number {
 function collectDefenderTroops(d: PlayerRecord): Partial<Record<UnitKey, number>> {
   const out: Partial<Record<UnitKey, number>> = {};
   for (const k of Object.keys(UNIT_DEFS) as UnitKey[]) {
-    out[k] = d.state.troops?.[k]?.count ?? 0;
+    out[k] = countAvailableTroops(d, k);
   }
   return out;
 }
@@ -302,34 +338,13 @@ function applyCasualties(
   }
 }
 
-/* ---------- NPC defender table ----------------------------- */
-// V1 keeps newbie shield raids on NPCs only (§33.1, §32.3.2). The kind
-// suffix encodes the tier; the table is here so combat is fully
-// deterministic from (npc_kind, seed).
-const NPC_TABLE: Record<
-  string,
-  { troops: Partial<Record<UnitKey, number>>; vault_coins: number; walls_level: number; power: number }
-> = {
-  npc_petty_1: {
-    troops: { bruiser: 8 },
-    vault_coins: 1200,
-    walls_level: 0,
-    power: 2400,
-  },
-  npc_petty_2: {
-    troops: { bruiser: 16, shooter: 4 },
-    vault_coins: 3600,
-    walls_level: 1,
-    power: 6800,
-  },
-  npc_petty_3: {
-    troops: { bruiser: 24, shooter: 10, biker: 4 },
-    vault_coins: 8000,
-    walls_level: 2,
-    power: 16000,
-  },
-};
-
 function synthesizeNpcDefender(kind: string) {
-  return NPC_TABLE[kind] ?? null;
+  const target = NPC_TARGETS.find((t) => t.kind === kind);
+  if (!target) return null;
+  return {
+    troops: target.enemy_troops,
+    vault_coins: target.vault,
+    walls_level: target.walls_level,
+    power: target.power,
+  };
 }

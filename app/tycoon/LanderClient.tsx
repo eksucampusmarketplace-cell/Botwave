@@ -158,7 +158,7 @@ export function TycoonLanderClient({
           {state.deduped ? "You're already on the list." : "You're in."}
         </div>
         <p className="text-sm text-zinc-400">
-          We'll DM you the moment the bot opens. Until then,{' '}
+          We&apos;ll DM you the moment the bot opens. Until then,{' '}
           <a className="underline hover:text-zinc-200" href="/">
             check out Botwave
           </a>{' '}

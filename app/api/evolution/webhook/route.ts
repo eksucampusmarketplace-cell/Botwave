@@ -280,10 +280,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = await request.json() as Record<string, any>;
     const instance = body.instance;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: Record<string, any> | undefined = body.data;
     const event: string = body.event ?? '';
 
