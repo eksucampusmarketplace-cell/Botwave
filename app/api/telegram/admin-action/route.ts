@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId: String(chatId), requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;

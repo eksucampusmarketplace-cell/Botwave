@@ -29,9 +29,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { apiCacheGet, apiCacheSet } from '@/lib/redisApiCache';
 import crypto from 'crypto';
 
 export type TelegramRole = 'owner' | 'admin' | 'user';
+
+/**
+ * Cached role lookup result. Keyed by {sessionId, telegramUserId, chatId}.
+ * Short TTL because admin status can change at any moment in Telegram.
+ */
+const ROLE_CACHE_TTL_SECONDS = 60;
+
+function roleCacheKey(sessionId: string, telegramUserId: string, chatId: string | null | undefined): string {
+  return `tg-role:${sessionId}:${telegramUserId}:${chatId || 'any'}`;
+}
 
 export type TelegramAuthOk = {
   ok: true;
@@ -105,11 +116,53 @@ export function verifyTelegramInitData(
   }
 }
 
+/**
+ * Resolve a Telegram caller's role for the bot session.
+ *
+ * Behavior:
+ * - If `chatId` is provided, the role is resolved against THAT chat only.
+ *   This is the correct behavior for any per-group API surface and is the
+ *   only mode that prevents privilege leakage across groups on the same bot.
+ * - If `chatId` is omitted, the role is the highest role found across ALL
+ *   active groups on the session (legacy behavior, used only for endpoints
+ *   that are session-wide and bot-creator-only).
+ *
+ * Results are cached in Redis for {@link ROLE_CACHE_TTL_SECONDS} to keep the
+ * Telegram `getChatMember` call out of every API request. Cache key includes
+ * `chatId` so different chats are cached independently.
+ */
 async function resolveTelegramRole(
   supabase: SupabaseClient,
   sessionId: string,
   telegramUserId: string,
   botToken: string | null,
+  chatId?: string | null,
+): Promise<TelegramRole> {
+  // Cache lookup.
+  const cacheKey = roleCacheKey(sessionId, telegramUserId, chatId);
+  const cached = await apiCacheGet<TelegramRole>(cacheKey);
+  if (cached) return cached;
+
+  const role = await resolveTelegramRoleUncached(
+    supabase,
+    sessionId,
+    telegramUserId,
+    botToken,
+    chatId,
+  );
+
+  // Only cache non-trivial results to avoid pinning a stale "user" while
+  // Telegram is mid-promotion. Owners and admins rarely demote in 60s.
+  await apiCacheSet(cacheKey, role, ROLE_CACHE_TTL_SECONDS);
+  return role;
+}
+
+async function resolveTelegramRoleUncached(
+  supabase: SupabaseClient,
+  sessionId: string,
+  telegramUserId: string,
+  botToken: string | null,
+  chatId?: string | null,
 ): Promise<TelegramRole> {
   // 1. Explicit owner via telegram_bot_configs.owner_user_id.
   const { data: config } = await supabase
@@ -132,6 +185,24 @@ async function resolveTelegramRole(
 
   // 3. Telegram-side group admin / creator status.
   if (botToken) {
+    if (chatId) {
+      // Chat-scoped path — one Telegram API call.
+      try {
+        const res = await fetch(
+          `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(chatId)}&user_id=${encodeURIComponent(telegramUserId)}`,
+        );
+        const j = await res.json();
+        if (j.ok) {
+          if (j.result?.status === 'creator') return 'owner';
+          if (j.result?.status === 'administrator') return 'admin';
+        }
+      } catch {
+        // ignore
+      }
+      return 'user';
+    }
+
+    // Legacy session-wide path — iterates every active group.
     const { data: groups } = await supabase
       .from('telegram_groups')
       .select('chat_id')
@@ -158,6 +229,17 @@ async function resolveTelegramRole(
 
 export type AuthorizeOpts = {
   sessionId: string | null | undefined;
+  /**
+   * Telegram chat id this request mutates / reads. When supplied, the caller
+   * is authorized AGAINST THAT CHAT only — they cannot claim admin via
+   * membership in some other group on the same bot session.
+   *
+   * Per-group endpoints (`/api/telegram/group-config`, `/notes`, `/filters`,
+   * `/modlog`, `/captcha`, `/admin-action`, `/scheduled`, `/messages` group
+   * fields, `/xp/reset` with chatId) MUST pass this argument. Session-wide
+   * bot-creator-only endpoints can omit it.
+   */
+  chatId?: string | null;
   /** Minimum role required for the endpoint. Defaults to 'admin'. */
   requireRole?: TelegramRole;
 };
@@ -196,7 +278,7 @@ function extractInitData(request: NextRequest, bodyInitData?: string | null): st
  */
 export async function authorizeTelegramRequest(
   request: NextRequest,
-  { sessionId, requireRole = 'admin' }: AuthorizeOpts,
+  { sessionId, chatId, requireRole = 'admin' }: AuthorizeOpts,
   bodyInitData?: string | null,
 ): Promise<TelegramAuthOk | TelegramAuthFail> {
   if (!sessionId) {
@@ -237,6 +319,7 @@ export async function authorizeTelegramRequest(
         sessionId,
         verified.id,
         botToken,
+        chatId ?? null,
       );
       if (!roleAllows(role, requireRole)) {
         return {

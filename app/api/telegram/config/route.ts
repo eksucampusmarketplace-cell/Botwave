@@ -53,9 +53,12 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { sessionId, type, initData, ...configFields } = body;
 
+    // Writing the bot-wide config is bot-owner-only. Group admins cannot
+    // change the session-wide defaults that affect every group they don't
+    // administer. They must use /api/telegram/group-config with a chatId.
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, requireRole: 'owner' },
       initData,
     );
     if (!auth.ok) return auth.response;

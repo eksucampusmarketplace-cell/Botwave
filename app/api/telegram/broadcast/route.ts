@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
 
     const { sessionId, text, pin, silent, initData } = validation.data;
 
+    // Broadcast to ALL groups on the session is bot-owner-only. Group admins
+    // have no authority over groups they aren't admin of, so they cannot use
+    // this endpoint at all (use the group-config messages flow per chat).
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, requireRole: 'owner' },
       initData,
     );
     if (!auth.ok) return auth.response;

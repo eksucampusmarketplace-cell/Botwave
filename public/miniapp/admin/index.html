@@ -708,14 +708,19 @@ function apiCall(path, opts) {
   if (tgInitData) url += '&initData=' + encodeURIComponent(tgInitData);
   var headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
   if (tgInitData) headers['X-Telegram-Init-Data'] = tgInitData;
-  // For body-carrying methods, also inject initData into the JSON payload so
-  // routes that consume the body before calling authorize() still see it.
+  // For body-carrying methods, also inject initData AND chatId into the JSON
+  // payload so routes that consume the body before calling authorize() still
+  // see both. Without chatId in the body, notes/filters/scheduled POSTs save
+  // with chat_id=null and the bot's /get <name> handler can't find them.
   var fetchOpts = Object.assign({}, opts, { headers: headers });
-  if (tgInitData && opts.body && typeof opts.body === 'string') {
+  if (opts.body && typeof opts.body === 'string') {
     try {
       var parsed = JSON.parse(opts.body);
-      if (parsed && typeof parsed === 'object' && parsed.initData === undefined) {
-        parsed.initData = tgInitData;
+      if (parsed && typeof parsed === 'object') {
+        if (tgInitData && parsed.initData === undefined) parsed.initData = tgInitData;
+        if (currentChatId && parsed.chatId === undefined && parsed.chat_id === undefined) {
+          parsed.chatId = currentChatId;
+        }
         fetchOpts.body = JSON.stringify(parsed);
       }
     } catch (e) { /* leave body as-is */ }
@@ -1347,7 +1352,15 @@ document.getElementById('fcp-save').addEventListener('click', function() {
     if (el.type === 'number') val = parseInt(val, 10);
     payload[el.dataset.key] = val || null;
   });
-  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
+  // When a group is selected, route to the per-group endpoint so the
+  // deep-config knobs save to telegram_group_configs (the change only
+  // affects this chat). Without this, every group on the bot would
+  // share the same feature config because the save targeted
+  // telegram_bot_configs (bot-wide).
+  var endpoint = currentChatId ? '/api/telegram/group-config' : '/api/telegram/config';
+  var method   = currentChatId ? 'POST' : 'PUT';
+  if (currentChatId) payload.chatId = currentChatId;
+  apiCall(endpoint, { method: method, body: JSON.stringify(payload) })
     .then(function(res) { toast(res.success ? 'Feature config saved!' : 'Failed to save'); if (res.success) loadFeatures(); })
     .catch(function() { toast('Error saving feature config'); });
 });
@@ -1406,8 +1419,11 @@ function saveCaptchaConfig() {
     captcha_kick_time: parseInt(document.getElementById('captcha-kick-time').value, 10) || 60,
     captcha_button_text: document.getElementById('captcha-button-text').value || null,
   };
-  if (chatId) payload.chatId = chatId;
-  apiCall('/api/telegram/config', { method: 'PUT', body: JSON.stringify(payload) })
+  // Group-aware save: when a chat is selected, write to telegram_group_configs
+  // via /api/telegram/captcha (which speaks both global and per-group). Without
+  // this the captcha settings clobber every other group on the bot.
+  if (currentChatId) payload.chatId = currentChatId;
+  apiCall('/api/telegram/captcha', { method: 'PUT', body: JSON.stringify(payload) })
     .then(function(res) { toast(res.success ? 'Captcha settings saved!' : 'Failed to save'); })
     .catch(function() { toast('Error saving captcha config'); });
 }

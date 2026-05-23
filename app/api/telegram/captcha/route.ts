@@ -26,9 +26,18 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
     const chatId = searchParams.get('chatId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'admin' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      chatId,
+      requireRole: 'admin',
+    });
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
+
+    // Falling back to global config is bot-owner-only.
+    if (!chatId && role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
 
     // Try per-group config first
     if (chatId) {
@@ -65,11 +74,15 @@ export async function PUT(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin' },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase } = auth;
+    const { supabase, role } = auth;
+
+    if (!chatId && role !== 'owner') {
+      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
+    }
 
     const updates: Record<string, unknown> = {};
     for (const key of CAPTCHA_FIELDS) {
