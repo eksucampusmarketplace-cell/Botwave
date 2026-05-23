@@ -451,6 +451,31 @@ input { font: inherit; color: inherit; }
   flex-shrink: 0;
 }
 .mini-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.reward-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.reward-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+}
+.reward-title { font-size: 12px; font-weight: 800; }
+.reward-sub { font-size: 10px; color: var(--dim); margin-top: 3px; line-height: 1.4; }
+.reward-progress {
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+.reward-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #7dd3fc);
+}
 
 /* ---------- Empty states ---------------------------------- */
 
@@ -991,6 +1016,12 @@ input { font: inherit; color: inherit; }
       <div class="section-title">The Books <span class="small">· idle earnings</span></div>
       <div class="biz-grid" id="biz-grid"></div>
 
+      <div class="section-title">Daily Work <span class="small">· rewards & quests</span></div>
+      <div class="card">
+        <div id="daily-card" class="reward-card" style="margin-bottom:8px;"></div>
+        <div class="reward-grid" id="quest-grid"></div>
+      </div>
+
       <div class="section-title">The Block</div>
       <div class="card" style="padding:10px 14px;">
         <div class="card-row">
@@ -1357,6 +1388,22 @@ input { font: inherit; color: inherit; }
       });
     },
 
+    daily(claim) {
+      return this.post('/api/tycoon/daily', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        claim: !!claim,
+      });
+    },
+
+    quests(quest_key) {
+      return this.post('/api/tycoon/quests', {
+        initData: (tg && tg.initData) || '',
+        session_id: SESSION_ID,
+        quest_key,
+      });
+    },
+
     targets() {
       return this.post('/api/tycoon/targets', {
         initData: (tg && tg.initData) || '',
@@ -1375,6 +1422,8 @@ input { font: inherit; color: inherit; }
     clientAt: null,        // performance.now()-equivalent client ms at snapshot time
     pollTimer: null,
     targets: FALLBACK_NPC_TARGETS,
+    daily: null,
+    quests: [],
   };
 
   function nowSeconds() {
@@ -1457,6 +1506,7 @@ input { font: inherit; color: inherit; }
 
     // Businesses
     renderBiz(s);
+    renderRewards();
 
     // Crew
     renderCrew(s);
@@ -1466,6 +1516,46 @@ input { font: inherit; color: inherit; }
 
     // Targets
     renderTargets(p);
+  }
+
+  function renderRewards() {
+    const dailyEl = $('#daily-card');
+    const questsEl = $('#quest-grid');
+    if (!dailyEl || !questsEl) return;
+
+    if (!HAS_TG) {
+      dailyEl.innerHTML = `
+        <div class="reward-title">Daily Tribute</div>
+        <div class="reward-sub">Open from Telegram to claim live rewards.</div>`;
+      questsEl.innerHTML = '';
+      return;
+    }
+
+    const d = G.daily;
+    if (!d) {
+      dailyEl.innerHTML = `
+        <div class="reward-title">Daily Tribute</div>
+        <div class="reward-sub">Loading…</div>`;
+    } else {
+      const reward = (d.rewards || [])[Math.max(0, (d.next_streak || 1) - 1)] || {};
+      const label = `Day ${d.next_streak || 1}: ${fmtNum(reward.coins || 0)} coins · ${reward.gems || 0} gems`;
+      dailyEl.innerHTML = `
+        <div class="reward-title">Daily Tribute</div>
+        <div class="reward-sub">${escapeHtml(label)}</div>
+        <button class="mini-action" id="daily-claim" style="margin-top:8px;" ${d.can_claim ? '' : 'disabled'}>${d.can_claim ? 'CLAIM' : 'CLAIMED'}</button>`;
+    }
+
+    questsEl.innerHTML = (G.quests || []).map(q => {
+      const pct = q.target > 0 ? Math.min(100, Math.floor((q.progress / q.target) * 100)) : 0;
+      return `
+        <div class="reward-card">
+          <div class="reward-title">${escapeHtml(q.title)}</div>
+          <div class="reward-sub">${escapeHtml(q.description)}</div>
+          <div class="reward-progress"><span style="width:${pct}%"></span></div>
+          <div class="reward-sub">${fmtNum(q.progress)} / ${fmtNum(q.target)}</div>
+          <button class="mini-action" data-quest-claim="${escapeAttr(q.key)}" style="margin-top:8px;" ${q.completed && !q.claimed ? '' : 'disabled'}>${q.claimed ? 'CLAIMED' : 'CLAIM'}</button>
+        </div>`;
+    }).join('');
   }
 
   function cityNameFor(cityId) {
@@ -1703,6 +1793,36 @@ input { font: inherit; color: inherit; }
     }
   });
 
+  $('#daily-card').addEventListener('click', async e => {
+    const btn = e.target.closest('#daily-claim');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const out = await API.daily(true);
+      applySnapshot(out);
+      showToast('Daily tribute claimed.', 'win');
+      refreshRewards().catch(() => {});
+    } catch (err) {
+      showToast(humanError(err), 'lose');
+      btn.disabled = false;
+    }
+  });
+
+  $('#quest-grid').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-quest-claim]');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const out = await API.quests(btn.dataset.questClaim);
+      applySnapshot(out);
+      showToast('Quest reward claimed.', 'win');
+      refreshRewards().catch(() => {});
+    } catch (err) {
+      showToast(humanError(err), 'lose');
+      btn.disabled = false;
+    }
+  });
+
   /* ============================================================
      Raid flow
      ============================================================ */
@@ -1881,6 +2001,8 @@ input { font: inherit; color: inherit; }
       $('#splash').style.display = 'none';
       // Welcome toast.
       showToast(`Welcome, ${v}.`, 'win');
+      refreshTargets().catch(() => {});
+      refreshRewards().catch(() => {});
       // Auto-open help on first run so the player sees the rules.
       setTimeout(() => openModal('help-modal'), 600);
       startPolling();
@@ -1915,6 +2037,9 @@ input { font: inherit; color: inherit; }
     if (r === 'upgrade_busy') return 'That building is already upgrading.';
     if (r === 'unit_locked' || r === 'building_locked') return 'Locked until your HQ grows.';
     if (r === 'raid_rate_limited') return 'Lay low for a minute.';
+    if (r === 'already_claimed') return 'Already claimed today.';
+    if (r === 'quest_incomplete') return 'Finish the job first.';
+    if (r === 'quest_already_claimed') return 'Quest already paid out.';
     if (r === 'empty_squad') return 'You sent no one.';
     if (r === 'save_conflict') return 'Try again in a sec.';
     return 'Something went wrong.';
@@ -1933,6 +2058,9 @@ input { font: inherit; color: inherit; }
       if (snap && snap.exists === false) return;
       applySnapshot(snap);
       refreshTargets().catch(() => {});
+      refreshRewards().catch(() => {});
+      refreshTargets().catch(() => {});
+      refreshRewards().catch(() => {});
     } catch (err) {
       // Don't spam errors on every poll; only when the first call fails.
       if (err.status === 404 || err.status === 401) {
@@ -1959,12 +2087,21 @@ input { font: inherit; color: inherit; }
     }
   }
 
+  async function refreshRewards() {
+    if (!HAS_TG) return;
+    const [daily, quests] = await Promise.all([API.daily(false), API.quests()]);
+    G.daily = daily;
+    G.quests = quests && Array.isArray(quests.quests) ? quests.quests : [];
+    renderRewards();
+  }
+
   // Re-render scrolling progress (timers) once per second without
   // re-hitting the server.
   setInterval(() => {
     if (!G.snapshot) return;
     // Only re-render the views that show timers / accrual bars.
     renderBiz(G.snapshot.state);
+    renderRewards();
     renderCrew(G.snapshot.state);
     renderBuildings(G.snapshot.state);
     // Shield + sub-pill timer.

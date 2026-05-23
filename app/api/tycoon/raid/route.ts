@@ -34,6 +34,7 @@ import { snapshotPlayer } from '@/lib/tycoon/snapshot';
 import type { PlayerRecord, UnitKey } from '@/lib/tycoon/types';
 import { NPC_TARGETS } from '@/lib/tycoon/catalog';
 import { clonePlayer, countAvailableTroops } from '@/lib/tycoon/actions';
+import { addQuestProgress } from '@/lib/tycoon/quests';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -263,6 +264,7 @@ export async function POST(req: NextRequest) {
       energy_cost: energyCost,
     },
   });
+  await addQuestProgress(supabase, attacker.id, 'raids', 1);
 
   return NextResponse.json({
     result,
