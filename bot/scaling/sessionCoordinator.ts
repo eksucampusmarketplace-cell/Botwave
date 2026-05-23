@@ -623,7 +623,7 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
 
   const { data: stale, error } = await supabase
     .from('bot_sessions')
-    .select('id, user_id, last_active, updated_at, phone_number, session_name')
+    .select('id, user_id, last_active, updated_at, phone_number, session_name, last_pairing_error')
     .eq('state', 'needs_reauth')
     .lt('updated_at', minCooldownCutoff)
     .not('last_active', 'is', null); // only recover sessions that were previously connected
@@ -636,6 +636,33 @@ export async function autoRecoverNeedsReauth(): Promise<number> {
     if (recovered >= AUTO_RECOVERY_MAX_PER_CYCLE) {
       console.log(`[AUTO-RECOVERY] Per-cycle limit reached (${AUTO_RECOVERY_MAX_PER_CYCLE}) - deferring remaining sessions to next cycle`);
       break;
+    }
+
+    // Hard bail-out: WhatsApp explicitly evicted the device (loggedOut /
+    // device_removed / conflict). Auth state is dead and soft reconnect cannot
+    // bring it back — only a fresh QR scan from the user will. Skip the 5/3-hour
+    // retry storm and mark the session pairing_failed immediately so the
+    // dashboard surfaces the actionable error.
+    const terminalReason = session.last_pairing_error || '';
+    if (terminalReason.startsWith('whatsapp_device_removed')) {
+      const sid = session.id.slice(0, 8);
+      const { data: current } = await supabase
+        .from('bot_sessions')
+        .select('state')
+        .eq('id', session.id)
+        .single();
+      if (current?.state === 'needs_reauth') {
+        await supabase
+          .from('bot_sessions')
+          .update({
+            state: 'pairing_failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', session.id)
+          .eq('state', 'needs_reauth');
+        console.log(`[AUTO-RECOVERY] Session ${sid} skipped - terminal disconnect (${terminalReason.split(':')[0]}). Re-pair required.`);
+      }
+      continue;
     }
 
     const attempts = autoRecoveryAttempts.get(session.id) || 0;

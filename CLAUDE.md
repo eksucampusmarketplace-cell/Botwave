@@ -96,9 +96,15 @@ npm run lint         # Run ESLint
 
 6. **Session persistence:** Auth state is stored in Supabase (`auth_state` column) and in Evolution API's PostgreSQL (if `DATABASE_SAVE_DATA_INSTANCE=true`). Normal restarts do NOT require users to re-pair. Only infrastructure changes (wiping Evolution DB, changing API keys) or user-initiated logouts break sessions.
 
-7. **Auto-recovery is disabled** (`AUTO_RECOVERY_MAX_ATTEMPTS = 0` in `sessionCoordinator.ts`). Do NOT re-enable without also having a working proxy pool configured. Without proxies, auto-recovery creates an orphan cycle: reconnect → WhatsApp 401 → delete instance → retry.
+7. **Auto-recovery runs with exponential backoff** (`AUTO_RECOVERY_MAX_ATTEMPTS = 5` in `sessionCoordinator.ts`, backoff 2/4/8/16/32 minutes — total ~62 minutes before the session is marked `pairing_failed`). The loop **short-circuits to `pairing_failed`** as soon as `last_pairing_error` is set to `whatsapp_device_removed:*` — that signal is written by `BotManager`'s keep-alive disconnect handler when the WebSocket reports `statusCode === 401` (loggedOut / device_removed / conflict). The user must re-pair from the dashboard once this happens; soft reconnect cannot recover a 401. **Pre-condition:** a working `PROXY_LIST` must be configured — without it, auto-recovery creates an orphan cycle (reconnect → 401 → retry).
 
 8. **Proxy pool (`PROXY_LIST`)** must be configured before scaling beyond 1 WhatsApp session. Without proxies, all sessions connect from the server IP and get mass-disconnected by WhatsApp.
+
+9. **Device fingerprint (`CONFIG_SESSION_PHONE_CLIENT` / `CONFIG_SESSION_PHONE_NAME`)** must be set in `.env.evolution` to a generic desktop string (e.g. `Chrome (Linux)` / `Chrome`). The Evolution API default is `Evolution API` — which broadcasts to WhatsApp's anti-abuse system that the client is a bot. The env vars are read by `evolution-api` on container start (changes require `docker compose up -d --force-recreate evolution-api`, not just `restart`).
+
+10. **Webhook delivery is fire-and-forget.** Evolution sends webhooks to `botwave-web:10000/api/evolution/webhook` and drops events that can't be delivered. When rebuilding `botwave_web`, ALWAYS use `deploy/rebuild-web.sh` (pauses Evolution during the swap so webhooks queue instead of failing). Direct `docker compose up -d --build botwave-web` will silently lose any `connection.update` / `messages.upsert` events fired during the rebuild window.
+
+11. **Stale-session janitor** runs every 12h from `whatsapp-entrypoint.ts` (`cleanupStaleSessions`). Deletes `bot_sessions` rows in `inactive`/`pairing_failed` state older than 7 days that have never had a successful pair (`last_active IS NULL`). Keeps the admin dashboard's connection rate honest.
 
 ## Environment Variables
 See `.env.example` for required environment variables.

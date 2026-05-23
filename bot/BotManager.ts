@@ -1797,7 +1797,24 @@ export function initializeBot() {
   // loop and WebSocket can trigger immediate reconnection in BotManager
   // when they detect a session went offline - faster than the 5s poll loop.
   if (USE_EVOLUTION) {
-    setKeepAliveDisconnectHandler((instanceName: string, state: string) => {
+    setKeepAliveDisconnectHandler((instanceName: string, state: string, statusCode?: number) => {
+      // statusCode === 401 (DisconnectReason.loggedOut) means WhatsApp explicitly
+      // evicted the device — either user unlinked from their phone OR an
+      // identical auth connected elsewhere (conflict / device_removed). Auth is
+      // dead; no amount of soft reconnect or retries will bring it back. Mark
+      // the session needs_reauth with a terminal disconnect reason so the
+      // auto-recovery loop (sessionCoordinator.autoRecoverNeedsReauth) short
+      // circuits to pairing_failed instead of burning 5 attempts over 3 hours.
+      if (statusCode === 401) {
+        console.warn(`[KEEPALIVE-HANDLER] Instance ${instanceName} got 401/loggedOut - WhatsApp evicted device. Marking session terminal (no retry).`);
+        updateSessionStatus(instanceName, 'needs_reauth', {
+          lastPairingError: 'whatsapp_device_removed: WhatsApp logged out the linked device (user unlinked from phone, or a duplicate auth conflicted). Re-pair required.',
+        }).catch((err) => {
+          console.error(`[KEEPALIVE-HANDLER] Failed to mark ${instanceName} terminal:`, err);
+        });
+        return;
+      }
+
       const bot = activeBots.get(instanceName);
       if (bot && bot instanceof EvolutionBot) {
         const status = bot.getStatus();

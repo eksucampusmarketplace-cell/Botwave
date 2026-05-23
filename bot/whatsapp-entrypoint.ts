@@ -19,7 +19,7 @@ if (!isMainThread) {
 process.env.BOT_PLATFORM = 'whatsapp';
 
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
-import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, cleanupDeadLetters } from './database';
+import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, cleanupDeadLetters, cleanupStaleSessions } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
 import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
@@ -242,6 +242,19 @@ async function start() {
         console.error('[WHATSAPP] Dead letter cleanup error:', err);
       }
     }, 6 * 60 * 60 * 1000));
+
+    // Stale bot_sessions janitor (every 12h): delete rows in inactive/
+    // pairing_failed older than 7 days that never paired successfully. Keeps
+    // the admin dashboard's session counts honest — otherwise failed pair
+    // attempts pile up and the connection rate looks much worse than it is.
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        await cleanupStaleSessions(7);
+      } catch (err) {
+        console.error('[WHATSAPP] Stale session cleanup error:', err);
+      }
+    }, 12 * 60 * 60 * 1000));
   }
 
   // Reminder + Scheduled Message delivery (every 30s)
