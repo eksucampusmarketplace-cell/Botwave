@@ -105,3 +105,11 @@ battle flow.
 5. Adsgram + Telegram Stars integration.
 
 See the standalone HTML for the full visual reference.
+
+## Master design document
+For the full game design — game logic, families (create/join/leave), city
+& turf system, mayor election, troop tiers, buildings, companies, combat
+math, Street Forces, story mode, statistics, ads + Stars IAP placements,
+Telegram integration, backend architecture, role-based access (Users /
+Bot Admins / Platform Owners), roadmap — see
+[`docs/design/cosa-nostra-design.md`](../design/cosa-nostra-design.md).
