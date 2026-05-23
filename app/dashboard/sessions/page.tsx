@@ -860,6 +860,7 @@ export default function SessionsPage() {
           pairingCode={activeSession?.pairing_code}
           sessionState={activeSession?.state}
           queuePosition={activeSession?.queue_position}
+          lastPairingError={activeSession?.last_pairing_error}
           onRegenerate={activeSession ? async () => {
             try {
               const r = await fetch('/api/bot/sessions', {
