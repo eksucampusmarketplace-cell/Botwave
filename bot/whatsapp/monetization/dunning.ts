@@ -14,9 +14,19 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { invalidateRedisKey } from '../../infrastructure/redisSessionCache';
+import { invalidateSubscription as invalidateApiSubscription } from '../../../lib/redisApiCache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+async function invalidateSubscriptionCaches(userId: string): Promise<void> {
+  // Single source of truth for "subscription row changed for user X".
+  // Hits both Redis namespaces (`bw:sub:*` for the bot, `api:sub:*` for the
+  // dashboard). All dunning paths that mutate `subscriptions` must call this.
+  await invalidateRedisKey(`sub:${userId}`);
+  await invalidateApiSubscription(userId);
+}
 
 function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
@@ -91,6 +101,8 @@ export async function handlePaymentFailed(
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId);
+
+  await invalidateSubscriptionCaches(userId);
 }
 
 /**
@@ -194,6 +206,10 @@ export async function downgradeUser(userId: string): Promise<void> {
     notification_type: 'downgraded',
     notified_via: 'whatsapp',
   });
+
+  // Critical: without this the bot keeps enforcing the OLD (paid) plan
+  // quota/session limits for up to 5 min after the dunning downgrade.
+  await invalidateSubscriptionCaches(userId);
 }
 
 /**
@@ -216,6 +232,8 @@ export async function resolveDunning(userId: string): Promise<void> {
     .update({ status: 'recovered', resolved_at: new Date().toISOString() })
     .eq('user_id', userId)
     .in('status', ['notified', 'retry_scheduled']);
+
+  await invalidateSubscriptionCaches(userId);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

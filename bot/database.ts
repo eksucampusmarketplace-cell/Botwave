@@ -4,6 +4,7 @@ import { trackMap } from './infrastructure/memoryGuard';
 import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './infrastructure/redisSessionCache';
 import { queueWrite } from './infrastructure/writeQueue';
 import { sendAlertEmail, buildAlertHtml } from '../lib/email-service';
+import { invalidateRewards as invalidateApiRewards } from '../lib/redisApiCache';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -536,6 +537,10 @@ export async function clearAuthState(sessionId: string) {
     console.error(`[DB] Error clearing auth state for ${sessionId}:`, error);
   } else {
     console.log(`[DB] Auth state cleared for ${sessionId}`);
+    // Stale `bw:sess:${sessionId}` would still carry the old auth_state for up
+    // to SESSION_TTL (60s) and trick the reconnect path into thinking creds
+    // are still present.
+    await invalidateSessionCache(sessionId);
   }
 }
 
@@ -558,6 +563,12 @@ export async function updateSessionWorker(sessionId: string, workerUrl: string |
     console.error(`Error updating worker for session ${sessionId}:`, error);
   } else {
     console.log(`[DB] Session ${sessionId} reassigned to worker: ${workerUrl ?? 'main'}`);
+    // Worker reassignment is a complete state reset (state, worker_url, auth,
+    // qr, pairing all change). Without invalidation the bot keeps routing to
+    // the old worker for up to SESSION_TTL (60s) and the dashboard shows the
+    // wrong QR.
+    await invalidateSessionCache(sessionId);
+    await invalidateQRCache(sessionId);
   }
 }
 
@@ -2568,6 +2579,10 @@ export async function creditReward(
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
   rewardBalanceCache.delete(userId);
+  // The dashboard reads rewards from `api:rewards:${userId}` (5-min TTL).
+  // Without invalidation, the rewards balance shown on the rewards page
+  // stays stale for up to REWARDS_TTL after the bot credits a reward.
+  await invalidateApiRewards(userId);
 
   return amount;
 }
@@ -2606,6 +2621,7 @@ export async function checkAndCashout(userId: string, phoneNumber: string): Prom
       updated_at: new Date().toISOString(),
     }).eq('user_id', userId);
     rewardBalanceCache.delete(userId);
+    await invalidateApiRewards(userId);
 
     return true;
   }
