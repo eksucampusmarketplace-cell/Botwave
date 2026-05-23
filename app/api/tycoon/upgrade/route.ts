@@ -9,6 +9,7 @@ import {
 } from '@/lib/tycoon/catalog';
 import { loadAndTickPlayerInMemory, persistTickedPlayer } from '@/lib/tycoon/state';
 import { snapshotPlayer } from '@/lib/tycoon/snapshot';
+import { retryAfterUntil, tycoonError } from '@/lib/tycoon/errors';
 import type { BuildingKey } from '@/lib/tycoon/types';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'building_locked', required_hq: unlockAt }, { status: 409 });
   }
   if (building.upgrading_ends_at) {
-    return NextResponse.json({ error: 'upgrade_busy' }, { status: 409 });
+    return tycoonError(
+      {
+        error: 'upgrade_busy',
+        ends_at: building.upgrading_ends_at,
+        retry_after: retryAfterUntil(building.upgrading_ends_at),
+      },
+      409,
+    );
   }
 
   const currentLevel = Math.max(0, building.level);
@@ -69,8 +77,9 @@ export async function POST(req: NextRequest) {
   }
 
   const cost = buildingUpgradeCost(key, Math.max(1, currentLevel));
-  if (Number(player.coins) < cost) {
-    return NextResponse.json({ error: 'insufficient_coins', cost }, { status: 402 });
+  const currentCoins = Number(player.coins);
+  if (currentCoins < cost) {
+    return tycoonError({ error: 'insufficient_coins', current: currentCoins, required: cost, cost }, 402);
   }
 
   const seconds = buildingUpgradeSeconds(key, Math.max(1, currentLevel));

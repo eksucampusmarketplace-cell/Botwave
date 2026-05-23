@@ -6,6 +6,7 @@ import { UNIT_DEFS } from '@/lib/tycoon/power';
 import { loadAndTickPlayerInMemory, persistTickedPlayer } from '@/lib/tycoon/state';
 import { snapshotPlayer } from '@/lib/tycoon/snapshot';
 import { addQuestProgress } from '@/lib/tycoon/quests';
+import { retryAfterUntil, tycoonError } from '@/lib/tycoon/errors';
 import type { UnitKey } from '@/lib/tycoon/types';
 
 export const dynamic = 'force-dynamic';
@@ -60,12 +61,20 @@ export async function POST(req: NextRequest) {
 
   const troop = player.state.troops[unit];
   if (troop.training_ends_at) {
-    return NextResponse.json({ error: 'training_busy' }, { status: 409 });
+    return tycoonError(
+      {
+        error: 'training_busy',
+        ends_at: troop.training_ends_at,
+        retry_after: retryAfterUntil(troop.training_ends_at),
+      },
+      409,
+    );
   }
 
   const cost = def.trainCost * quantity;
-  if (Number(player.coins) < cost) {
-    return NextResponse.json({ error: 'insufficient_coins', cost }, { status: 402 });
+  const currentCoins = Number(player.coins);
+  if (currentCoins < cost) {
+    return tycoonError({ error: 'insufficient_coins', current: currentCoins, required: cost, cost }, 402);
   }
 
   const nowMs = Date.now();

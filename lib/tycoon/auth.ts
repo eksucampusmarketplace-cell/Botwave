@@ -48,7 +48,7 @@ export type TycoonAuthFail = {
 
 export type TycoonAuthResult = TycoonAuthOk | TycoonAuthFail;
 
-const INITDATA_MAX_AGE_SEC = 86_400; // 24h, matches the lib/telegram-auth.ts contract.
+const INITDATA_MAX_AGE_SEC = 7 * 86_400;
 
 /**
  * Resolve which bot token to verify against. Returns the token plus a

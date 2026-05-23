@@ -48,9 +48,13 @@ export async function createClient() {
 }
 
 export async function createAdminClient() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin Supabase operations');
+  }
+
   return createSupabaseClient(
     getInternalSupabaseUrl(),
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
