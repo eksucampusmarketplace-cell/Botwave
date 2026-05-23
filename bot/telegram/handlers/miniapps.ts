@@ -72,6 +72,13 @@ const MINI_APPS: MiniApp[] = [
     description: 'Combine tiles to reach 2048',
     path: '/miniapp/2048.html',
   },
+  {
+    id: 'tycoon',
+    name: 'Cosa Nostra Tycoon',
+    emoji: '🎩',
+    description: 'Run your crew, raid rivals, take the city',
+    path: '/miniapp/tycoon-mockup.html',
+  },
 ];
 
 function getAppUrl(baseUrl: string, app: MiniApp): string {
@@ -156,5 +163,38 @@ export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
 
     await updateTelegramConfig(sessionId, { miniapp_base_url: url });
     await ctx.reply(`✅ Mini apps base URL set to: <code>${url}</code>`, { parse_mode: 'HTML' });
+  });
+
+  // Dedicated one-tap entry for Cosa Nostra Tycoon. Skips the /games list
+  // for users who already know they want to open the game.
+  bot.command(['tycoon', 'cosanostra', 'mafia'], async (ctx) => {
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+    const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
+
+    if (!baseUrl) {
+      await ctx.reply(
+        '❌ Mini apps base URL not configured. Use /setgamesurl to set it.',
+      );
+      return;
+    }
+
+    const tycoon = MINI_APPS.find((a) => a.id === 'tycoon');
+    if (!tycoon) return;
+
+    const keyboard = new InlineKeyboard().webApp(
+      `🎩 Open Cosa Nostra Tycoon`,
+      getAppUrl(baseUrl, tycoon),
+    );
+
+    await ctx.reply(
+      [
+        '🎩 <b>Cosa Nostra Tycoon</b>',
+        '',
+        'Build your hideout. Train your crew. Raid rivals. Take the city.',
+        '',
+        'Tap the button below to play.',
+      ].join('\n'),
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
   });
 }
