@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +101,11 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
+    // Without this, the bot serves the stale auto-reply list for up to
+    // AUTO_REPLY_TTL (5 min) and new triggers don't fire until the cache
+    // expires.
+    await invalidateBotRedisKey(`autoreplies:${session_id}`);
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error('[AUTO-REPLIES] POST error:', err);
@@ -137,6 +143,10 @@ export async function PUT(request: NextRequest) {
 
     if (error) throw error;
 
+    if (data?.session_id) {
+      await invalidateBotRedisKey(`autoreplies:${data.session_id}`);
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error('[AUTO-REPLIES] PUT error:', err);
@@ -157,6 +167,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Read session_id before delete so we know which cache to invalidate;
+    // after the delete the row is gone.
+    const { data: existing } = await supabase
+      .from('auto_replies')
+      .select('session_id')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     const { error } = await supabase
       .from('auto_replies')
       .delete()
@@ -164,6 +184,10 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (error) throw error;
+
+    if (existing?.session_id) {
+      await invalidateBotRedisKey(`autoreplies:${existing.session_id}`);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
