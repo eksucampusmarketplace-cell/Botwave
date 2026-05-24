@@ -64,6 +64,9 @@ HEALER_AUTO_FIX = os.getenv("AGENT_HEALER_AUTO_FIX", "true").lower() == "true"
 
 OWNER_TRUST_MODE = os.getenv("AGENT_ORCHESTRA_OWNER_TRUST_MODE", "true").lower() == "true"
 OWNER_TRUST_TIMEOUTS = {"explainer": 8, "reflector": 12}
+SPARE_CAPACITY_CODER_MODEL = os.getenv("AGENT_SPARE_CAPACITY_CODER_MODEL", "premium-coder")
+SPARE_CAPACITY_CODE_WRITE_RPM = int(os.getenv("AGENT_SPARE_CAPACITY_CODE_WRITE_RPM", "15"))
+SPARE_CAPACITY_CODE_WRITE_WINDOW_SECONDS = int(os.getenv("AGENT_SPARE_CAPACITY_CODE_WRITE_WINDOW_SECONDS", "60"))
 
 AGENT_LIMITS: dict[str, dict[str, int]] = {
     "planner": {"max_input_tokens": 12000, "max_output_tokens": 3000, "timeout": 35, "retries": 1},
@@ -84,15 +87,15 @@ AGENT_LIMITS: dict[str, dict[str, int]] = {
 }
 
 AGENT_FALLBACK_MODELS = {
-    "executor": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "builder"],
-    "builder": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "executor"],
-    "planner": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "hard-coder", "glm-agent"],
-    "thinker": ["premium-coder", "kimi-agent", "glm-agent", "specialist-coder", "primary-coder"],
+    "executor": ["specialist-coder", "primary-coder", "deepseek-flash", "kimi-agent", SPARE_CAPACITY_CODER_MODEL, "builder"],
+    "builder": ["specialist-coder", "primary-coder", "deepseek-flash", "kimi-agent", SPARE_CAPACITY_CODER_MODEL, "executor"],
+    "planner": ["glm-agent", "specialist-coder", "primary-coder", "hard-coder", "kimi-agent", SPARE_CAPACITY_CODER_MODEL],
+    "thinker": ["glm-agent", "deepseek-flash", "specialist-coder", "primary-coder", "kimi-agent", SPARE_CAPACITY_CODER_MODEL],
     "researcher": ["long-context-reader-lite", "kimi-agent", "primary-coder"],
-    "critic": ["premium-coder", "kimi-agent", "glm-agent", "primary-coder"],
-    "reflector": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder"],
-    "explainer": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder"],
-    "guardian": ["premium-coder", "primary-coder", "deepseek-flash"],
+    "critic": ["glm-agent", "deepseek-flash", "specialist-coder", "primary-coder", "kimi-agent", SPARE_CAPACITY_CODER_MODEL],
+    "reflector": ["specialist-coder", "primary-coder", "kimi-agent", SPARE_CAPACITY_CODER_MODEL],
+    "explainer": ["specialist-coder", "primary-coder", "kimi-agent", SPARE_CAPACITY_CODER_MODEL],
+    "guardian": ["primary-coder", "deepseek-flash", SPARE_CAPACITY_CODER_MODEL],
 }
 
 CODE_WRITE_AGENTS = {"planner", "executor", "critic", "builder", "synthesizer"}
@@ -100,6 +103,7 @@ READER_ONLY_MODELS = {"researcher", "long-context-reader", "long-context-reader-
 SEMAPHORES = {"default": asyncio.Semaphore(8), "researcher": asyncio.Semaphore(1), "guardian": asyncio.Semaphore(16)}
 CIRCUIT: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=8))
 COOLDOWN_UNTIL: dict[str, float] = defaultdict(float)
+MODEL_USAGE: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=200))
 
 WEB_SEARCH_CACHE: dict[str, dict[str, Any]] = {}
 
@@ -341,6 +345,30 @@ def model_candidates(agent_name: str, primary_model: str) -> list[str]:
     if primary_model not in candidates:
         candidates.append(primary_model)
     return candidates
+
+
+def model_has_capacity(model: str, now: float | None = None) -> bool:
+    if model != SPARE_CAPACITY_CODER_MODEL:
+        return True
+    now = now or time.time()
+    recent = MODEL_USAGE[model]
+    while recent and now - recent[0] > SPARE_CAPACITY_CODE_WRITE_WINDOW_SECONDS:
+        recent.popleft()
+    return len(recent) < SPARE_CAPACITY_CODE_WRITE_RPM
+
+
+def record_model_usage(model: str) -> None:
+    if model == SPARE_CAPACITY_CODER_MODEL:
+        MODEL_USAGE[model].append(time.time())
+
+
+def available_model_candidates(agent_name: str, primary_model: str) -> list[str]:
+    now = time.time()
+    return [
+        candidate
+        for candidate in model_candidates(agent_name, primary_model)
+        if COOLDOWN_UNTIL[candidate] <= now and model_has_capacity(candidate, now)
+    ]
 
 
 async def require_key(authorization: str | None = Header(default=None), x_agent_api_key: str | None = Header(default=None)) -> None:
@@ -814,9 +842,9 @@ async def invoke(agent_name: str, req: InvokeRequest, _: None = Depends(require_
     limits = AGENT_LIMITS[agent_name]
     if approx_tokens(req.input) > limits["max_input_tokens"]:
         raise HTTPException(status_code=413, detail="input exceeds agent token envelope")
-    candidates = [candidate for candidate in model_candidates(agent_name, model) if COOLDOWN_UNTIL[candidate] <= time.time()]
+    candidates = available_model_candidates(agent_name, model)
     if not candidates:
-        raise HTTPException(status_code=429, detail="all candidate models are cooling down after recent failures")
+        raise HTTPException(status_code=429, detail="all candidate models are cooling down or rate-limited")
 
     agent_input = await enrich_researcher_input(req.input) if agent_name == "researcher" else req.input
     messages = [
@@ -862,6 +890,7 @@ async def invoke(agent_name: str, req: InvokeRequest, _: None = Depends(require_
                 msg = data["choices"][0]["message"]["content"]
                 usage = data.get("usage") or {}
                 model_used = data.get("model") or candidate_model
+                record_model_usage(candidate_model)
                 response_obj = parse_model_json(msg)
                 verdict = "passed"
                 error = None

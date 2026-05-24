@@ -39,6 +39,18 @@ async def main() -> None:
     result = await module.self_tests_quality(None)
     if not result.get("passed"):
         raise SystemExit(result)
+    executor_candidates = module.model_candidates("executor", "executor")
+    if executor_candidates[0] == module.SPARE_CAPACITY_CODER_MODEL:
+        raise SystemExit({"passed": False, "error": "executor should prefer modern coder routes before spare GPT"})
+    if module.SPARE_CAPACITY_CODER_MODEL not in executor_candidates:
+        raise SystemExit({"passed": False, "error": "executor should keep spare GPT as a fallback"})
+    for _ in range(module.SPARE_CAPACITY_CODE_WRITE_RPM):
+        module.record_model_usage(module.SPARE_CAPACITY_CODER_MODEL)
+    rate_limited_candidates = module.available_model_candidates("executor", "executor")
+    if module.SPARE_CAPACITY_CODER_MODEL in rate_limited_candidates:
+        raise SystemExit({"passed": False, "error": "spare GPT coder should be skipped when at RPM limit"})
+    if not rate_limited_candidates:
+        raise SystemExit({"passed": False, "error": "executor should keep fallbacks when GPT is busy"})
     template = await module.new_repo_template(None)
     required = " ".join(template["template"].get("minimum_files", []))
     if "README.md" not in required or "CI workflow" not in required:
