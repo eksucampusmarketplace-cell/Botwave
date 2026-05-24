@@ -84,15 +84,15 @@ AGENT_LIMITS: dict[str, dict[str, int]] = {
 }
 
 AGENT_FALLBACK_MODELS = {
-    "executor": ["specialist-coder", "primary-coder", "builder"],
-    "builder": ["specialist-coder", "primary-coder", "executor"],
-    "planner": ["specialist-coder", "primary-coder", "hard-coder"],
-    "thinker": ["premium-coder", "specialist-coder", "primary-coder"],
-    "researcher": ["long-context-reader-lite", "primary-coder"],
-    "critic": ["premium-coder", "primary-coder"],
-    "reflector": ["premium-coder", "specialist-coder", "primary-coder"],
-    "explainer": ["specialist-coder", "primary-coder"],
-    "guardian": ["primary-coder"],
+    "executor": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "builder"],
+    "builder": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "executor"],
+    "planner": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder", "hard-coder", "glm-agent"],
+    "thinker": ["premium-coder", "kimi-agent", "glm-agent", "specialist-coder", "primary-coder"],
+    "researcher": ["long-context-reader-lite", "kimi-agent", "primary-coder"],
+    "critic": ["premium-coder", "kimi-agent", "glm-agent", "primary-coder"],
+    "reflector": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder"],
+    "explainer": ["premium-coder", "kimi-agent", "specialist-coder", "primary-coder"],
+    "guardian": ["premium-coder", "primary-coder", "deepseek-flash"],
 }
 
 CODE_WRITE_AGENTS = {"planner", "executor", "critic", "builder", "synthesizer"}
