@@ -68,14 +68,14 @@ AGENT_LIMITS: dict[str, dict[str, int]] = {
     "researcher": {"max_input_tokens": 120000, "max_output_tokens": 4096, "timeout": 70, "retries": 0},
     "executor": {"max_input_tokens": 16000, "max_output_tokens": 2500, "timeout": 18, "retries": 2},
     "critic": {"max_input_tokens": 16000, "max_output_tokens": 2500, "timeout": 30, "retries": 1},
-    "reflector": {"max_input_tokens": 50000, "max_output_tokens": 3000, "timeout": 60, "retries": 0},
+    "reflector": {"max_input_tokens": 24000, "max_output_tokens": 1200, "timeout": 25, "retries": 1},
     "synthesizer": {"max_input_tokens": 20000, "max_output_tokens": 3000, "timeout": 50, "retries": 0},
     "mediator": {"max_input_tokens": 16000, "max_output_tokens": 3000, "timeout": 45, "retries": 0},
-    "guardian": {"max_input_tokens": 8000, "max_output_tokens": 1500, "timeout": 30, "retries": 0},
+    "guardian": {"max_input_tokens": 6000, "max_output_tokens": 800, "timeout": 18, "retries": 1},
     "benchmark": {"max_input_tokens": 20000, "max_output_tokens": 3000, "timeout": 45, "retries": 0},
     "regression": {"max_input_tokens": 16000, "max_output_tokens": 2500, "timeout": 45, "retries": 0},
     "governor": {"max_input_tokens": 8000, "max_output_tokens": 1200, "timeout": 30, "retries": 0},
-    "explainer": {"max_input_tokens": 12000, "max_output_tokens": 2500, "timeout": 35, "retries": 0},
+    "explainer": {"max_input_tokens": 8000, "max_output_tokens": 1000, "timeout": 20, "retries": 1},
     "scheduler": {"max_input_tokens": 8000, "max_output_tokens": 1200, "timeout": 30, "retries": 0},
     "builder": {"max_input_tokens": 20000, "max_output_tokens": 3000, "timeout": 35, "retries": 1},
 }
@@ -87,7 +87,9 @@ AGENT_FALLBACK_MODELS = {
     "thinker": ["primary-coder", "specialist-coder"],
     "researcher": ["long-context-reader-lite", "primary-coder"],
     "critic": ["primary-coder", "premium-coder"],
-    "explainer": ["primary-coder"],
+    "reflector": ["primary-coder", "specialist-coder"],
+    "explainer": ["primary-coder", "specialist-coder"],
+    "guardian": ["primary-coder"],
 }
 
 CODE_WRITE_AGENTS = {"planner", "executor", "critic", "builder", "synthesizer"}
@@ -216,7 +218,7 @@ def parse_model_json(content: str | None) -> Any:
 def model_candidates(agent_name: str, primary_model: str) -> list[str]:
     candidates = [primary_model]
     for candidate in AGENT_FALLBACK_MODELS.get(agent_name, []):
-        if candidate not in candidates and candidate not in READER_ONLY_MODELS:
+        if candidate not in candidates:
             candidates.append(candidate)
     return candidates
 
@@ -710,33 +712,37 @@ async def invoke(agent_name: str, req: InvokeRequest, _: None = Depends(require_
         raise HTTPException(status_code=503, detail={"error": error, "trace": trace})
     headers = {"Authorization": f"Bearer {LITELLM_MASTER_KEY}", "Content-Type": "application/json"}
 
+    max_attempts = min(len(candidates), limits["retries"] + 1)
+    timeout_seconds = limits["timeout"]
     async with sem:
-        async with httpx.AsyncClient(timeout=limits["timeout"]) as client:
-            for attempt, candidate_model in enumerate(candidates[: limits["retries"] + 1 + len(candidates)]):
-                payload["model"] = candidate_model
-                try:
+        for attempt, candidate_model in enumerate(candidates[:max_attempts]):
+            payload["model"] = candidate_model
+            try:
+                async with httpx.AsyncClient(timeout=timeout_seconds) as client:
                     resp = await client.post(f"{LITELLM_BASE_URL}/chat/completions", headers=headers, json=payload)
-                    if resp.status_code in {429, 500, 502, 503, 504} and attempt < len(candidates) - 1:
-                        await asyncio.sleep(1.5 * (attempt + 1))
-                        continue
-                    if resp.status_code >= 400:
-                        raise RuntimeError(f"LiteLLM {resp.status_code}: {resp.text[:1000]}")
-                    data = resp.json()
-                    msg = data["choices"][0]["message"]["content"]
-                    usage = data.get("usage") or {}
-                    model_used = data.get("model") or candidate_model
-                    response_obj = parse_model_json(msg)
-                    verdict = "passed"
-                    error = None
-                    break
-                except Exception as exc:
-                    error = str(exc)
-                    CIRCUIT[candidate_model].append(time.time())
-                    recent = [t for t in CIRCUIT[candidate_model] if time.time() - t < 300]
-                    if len(recent) >= 2:
-                        COOLDOWN_UNTIL[candidate_model] = time.time() + 30
-                    if attempt >= len(candidates) - 1:
-                        dead_letter({"run_id": run_id, "agent": agent_name, "model": candidate_model, "error": error, "input": req.input, "created_at": int(time.time())})
+                if resp.status_code in {429, 500, 502, 503, 504} and attempt < max_attempts - 1:
+                    await asyncio.sleep(1.5 * (attempt + 1))
+                    continue
+                if resp.status_code >= 400:
+                    raise RuntimeError(f"LiteLLM {resp.status_code}: {resp.text[:1000]}")
+                data = resp.json()
+                msg = data["choices"][0]["message"]["content"]
+                usage = data.get("usage") or {}
+                model_used = data.get("model") or candidate_model
+                response_obj = parse_model_json(msg)
+                verdict = "passed"
+                error = None
+                break
+            except httpx.TimeoutException:
+                error = f"{candidate_model} timed out after {timeout_seconds}s"
+            except Exception as exc:
+                error = str(exc) or f"{candidate_model} failed without detail"
+            CIRCUIT[candidate_model].append(time.time())
+            recent = [t for t in CIRCUIT[candidate_model] if time.time() - t < 300]
+            if len(recent) >= 2:
+                COOLDOWN_UNTIL[candidate_model] = time.time() + 30
+            if attempt >= max_attempts - 1:
+                dead_letter({"run_id": run_id, "agent": agent_name, "model": candidate_model, "error": error, "input": req.input, "created_at": int(time.time())})
 
     latency_ms = int((time.perf_counter() - start) * 1000)
     cost = float(usage.get("cost") or 0.0)
