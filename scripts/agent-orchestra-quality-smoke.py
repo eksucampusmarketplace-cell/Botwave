@@ -39,6 +39,10 @@ async def main() -> None:
     result = await module.self_tests_quality(None)
     if not result.get("passed"):
         raise SystemExit(result)
+    template = await module.new_repo_template(None)
+    required = " ".join(template["template"].get("minimum_files", []))
+    if "README.md" not in required or "CI workflow" not in required:
+        raise SystemExit({"passed": False, "error": "new repo template missing core files"})
     print(result)
 
 
