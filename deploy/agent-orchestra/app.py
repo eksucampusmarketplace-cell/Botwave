@@ -313,9 +313,31 @@ def dead_letter(record: dict[str, Any]) -> None:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def detect_tool_markup_loop(content: str | None) -> dict[str, Any] | None:
+    if not content:
+        return None
+    closing_count = content.count("</function>")
+    tool_call_count = content.count("<tool_call>")
+    file_editor_count = content.count("<function=file_editor>")
+    parameter_count = content.count("<parameter=") + content.count("<parameter ")
+    if closing_count < 12 and (tool_call_count + file_editor_count + parameter_count) < 4:
+        return None
+    return {
+        "detected": True,
+        "closing_function_tags": closing_count,
+        "tool_call_tags": tool_call_count,
+        "file_editor_calls": file_editor_count,
+        "parameter_tags": parameter_count,
+        "reason": "model emitted repeated malformed tool-call markup",
+    }
+
+
 def parse_model_json(content: str | None) -> Any:
     if not content:
         return {"raw": content or "", "parse_warning": "model returned empty content"}
+    markup_loop = detect_tool_markup_loop(content)
+    if markup_loop:
+        return {"raw": content[:2000], "parse_warning": "tool_markup_loop_detected", "tool_markup_loop": markup_loop}
     try:
         return json.loads(content)
     except json.JSONDecodeError:
@@ -892,6 +914,8 @@ async def invoke(agent_name: str, req: InvokeRequest, _: None = Depends(require_
                 model_used = data.get("model") or candidate_model
                 record_model_usage(candidate_model)
                 response_obj = parse_model_json(msg)
+                if isinstance(response_obj, dict) and response_obj.get("parse_warning") == "tool_markup_loop_detected":
+                    raise RuntimeError("tool markup loop detected in model output")
                 verdict = "passed"
                 error = None
                 break
