@@ -296,6 +296,88 @@ def record_trace(row: dict[str, Any]) -> None:
     conn.close()
 
 
+def record_worklog(entry: dict[str, Any]) -> dict[str, Any]:
+    worklog = {
+        "updated_at": int(time.time()),
+        "conversation_id": str(entry.get("conversation_id") or ""),
+        "status": str(entry.get("status") or "running"),
+        "current_step": str(entry.get("current_step") or ""),
+        "why": str(entry.get("why") or ""),
+        "files_or_commands": [str(item) for item in entry.get("files_or_commands", [])][:8],
+        "next": str(entry.get("next") or ""),
+        "pr_status": str(entry.get("pr_status") or "not_started"),
+        "trace_url": str(entry.get("trace_url") or ""),
+    }
+    conn = sqlite3.connect(TRACE_DB)
+    conn.execute(
+        """
+        create table if not exists worklog (
+            id integer primary key check (id = 1),
+            updated_at integer not null,
+            conversation_id text,
+            status text,
+            current_step text,
+            why text,
+            files_or_commands text,
+            next text,
+            pr_status text,
+            trace_url text
+        )
+        """
+    )
+    conn.execute(
+        """
+        insert or replace into worklog(id,updated_at,conversation_id,status,current_step,why,files_or_commands,next,pr_status,trace_url)
+        values(1,:updated_at,:conversation_id,:status,:current_step,:why,:files_or_commands,:next,:pr_status,:trace_url)
+        """,
+        {**worklog, "files_or_commands": json.dumps(worklog["files_or_commands"])},
+    )
+    conn.commit()
+    conn.close()
+    return worklog
+
+
+def latest_worklog() -> dict[str, Any]:
+    conn = sqlite3.connect(TRACE_DB)
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """
+        create table if not exists worklog (
+            id integer primary key check (id = 1),
+            updated_at integer not null,
+            conversation_id text,
+            status text,
+            current_step text,
+            why text,
+            files_or_commands text,
+            next text,
+            pr_status text,
+            trace_url text
+        )
+        """
+    )
+    row = conn.execute("select * from worklog where id=1").fetchone()
+    conn.close()
+    if not row:
+        return {
+            "updated_at": None,
+            "conversation_id": "",
+            "status": "idle",
+            "current_step": "No supervisor run has reported live progress yet.",
+            "why": "Run the Agent Orchestra supervisor to populate this panel.",
+            "files_or_commands": [],
+            "next": "Start or refresh a supervised task.",
+            "pr_status": "not_started",
+            "trace_url": "",
+        }
+    data = dict(row)
+    try:
+        data["files_or_commands"] = json.loads(data.get("files_or_commands") or "[]")
+    except json.JSONDecodeError:
+        data["files_or_commands"] = []
+    return data
+
+
 def conversation_cost(conversation_id: str) -> float:
     conn = sqlite3.connect(TRACE_DB)
     cur = conn.execute("select coalesce(sum(cost),0) from traces where conversation_id=?", (conversation_id,))
@@ -404,6 +486,12 @@ async def health() -> dict[str, Any]:
         "ok": True,
         "agents": sorted(AGENTS),
         "litellm_base_url": LITELLM_BASE_URL,
+        "visible_worklog_policy": {
+            "enabled": True,
+            "dashboard_panel": "/dashboard",
+            "latest_json": "/worklog/latest",
+            "fields": ["status", "current_step", "why", "files_or_commands", "next", "pr_status"],
+        },
         "capabilities": [
             "supervisor/execute", "supervisor/plan",
             "guardian/pre-edit-check", "validator/predict-side-effects",
@@ -433,6 +521,11 @@ async def list_agents(_: None = Depends(require_key)) -> dict[str, Any]:
     return {"agents": [{"name": n, "model": a["model"], "job": a.get("job", "")} for n, a in sorted(AGENTS.items())]}
 
 # ─── Live trace dashboard ───────────────────────────────────────────
+
+@app.get("/worklog/latest")
+async def worklog_latest() -> dict[str, Any]:
+    return {"visible_worklog": latest_worklog()}
+
 
 @app.get("/traces/recent")
 async def traces_recent(
@@ -489,6 +582,12 @@ async def web_dashboard() -> HTMLResponse:
     traces_data = await traces_recent(minutes=60, limit=100, agent=None, verdict=None)
     watcher_data = await watcher_status()
     lessons_data = _get_all_lessons(10)
+    worklog = latest_worklog()
+    worklog_items = "".join(
+        f"<li>{html.escape(str(item))}</li>" for item in worklog.get("files_or_commands", [])
+    ) or "<li>None reported yet.</li>"
+    updated_at = worklog.get("updated_at")
+    updated_label = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(updated_at)) if updated_at else "never"
 
     html = f"""<!DOCTYPE html>
 <html><head><title>Agent Orchestra Dashboard</title>
@@ -506,6 +605,11 @@ th {{ color: #8b949e; }}
 .fail {{ color: #f85149; }}
 .warn {{ color: #d29922; }}
 a {{ color: #58a6ff; }}
+.worklog {{ border-color: #238636; }}
+.worklog-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }}
+.worklog-field {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; }}
+.worklog-field strong {{ display: block; color: #8b949e; font-size: 12px; text-transform: uppercase; margin-bottom: 6px; }}
+.worklog ul {{ margin: 0; padding-left: 18px; }}
 </style></head><body>
 <h1>Agent Orchestra Dashboard</h1>
 <div class="grid">
@@ -514,6 +618,20 @@ a {{ color: #58a6ff; }}
   <div class="card"><div class="stat">{len(lessons_data)}</div><div class="label">Lessons</div></div>
   <div class="card"><div class="stat">{len(watcher_data.get('current', {}).get('checks', []))}</div><div class="label">Checks</div></div>
 </div>
+<section class="card worklog">
+<h2>Latest Worklog</h2>
+<p style='color:#8b949e'>Live progress from the most recent Agent Orchestra supervisor run. Last updated: {html.escape(updated_label)}</p>
+<div class="worklog-grid">
+  <div class="worklog-field"><strong>Status</strong>{html.escape(str(worklog.get('status', '')))}</div>
+  <div class="worklog-field"><strong>Current step</strong>{html.escape(str(worklog.get('current_step', '')))}</div>
+  <div class="worklog-field"><strong>Why</strong>{html.escape(str(worklog.get('why', '')))}</div>
+  <div class="worklog-field"><strong>Next</strong>{html.escape(str(worklog.get('next', '')))}</div>
+  <div class="worklog-field"><strong>PR status</strong>{html.escape(str(worklog.get('pr_status', '')))}</div>
+  <div class="worklog-field"><strong>Conversation</strong>{html.escape(str(worklog.get('conversation_id', '')))}</div>
+</div>
+<div class="worklog-field" style="margin-top:10px"><strong>Files / commands</strong><ul>{worklog_items}</ul></div>
+<p><a href="/worklog/latest">Latest worklog JSON</a>{' · <a href="' + html.escape(str(worklog.get('trace_url'))) + '">Trace</a>' if worklog.get('trace_url') else ''}</p>
+</section>
 <h2>Agent Activity</h2>
 <p style='color:#8b949e'>Activity only includes runs from the last 60 minutes. Loaded agents with 0 recent runs are still available.</p>
 <table><tr><th>Agent</th><th>Runs</th><th>Passed</th><th>Failed</th><th>Avg Latency</th><th>Status</th></tr>"""
@@ -958,6 +1076,16 @@ async def supervisor_plan(req: SupervisorRequest, _: None = Depends(require_key)
     conversation_id = req.conversation_id or "supervisor-" + str(uuid.uuid4())
     blocked = blocked_actions_for(req)
     deep_reasoning, deep_reasons = should_deep_reason(req)
+    record_worklog({
+        "conversation_id": conversation_id,
+        "status": "running",
+        "current_step": "Planning the supervised workflow",
+        "why": "The owner needs live progress instead of a static rule card.",
+        "files_or_commands": ["POST /supervisor/plan"],
+        "next": "Run Guardian and Planner, then summarize next safe action.",
+        "pr_status": "not_started",
+        "trace_url": f"/traces/{conversation_id}",
+    })
 
     planner_input = {
         "goal": req.request,
@@ -1049,10 +1177,21 @@ async def supervisor_plan(req: SupervisorRequest, _: None = Depends(require_key)
         "fallback_behavior": "timeout/failure triggers alternate model or safer plan; no silent guessing",
     }
     workflow = DEEP_MODE_SEQUENCE if deep_reasoning else FAST_MODE_SEQUENCE
+    visible_worklog = record_worklog({
+        "conversation_id": conversation_id,
+        "status": "ready_for_owner",
+        "current_step": "Supervisor plan completed",
+        "why": "The plan, safety checks, and next action are available for review.",
+        "files_or_commands": [f"agent:{name}" for name in workflow],
+        "next": "Approve the PR workflow for this request, or ask Supervisor to revise the plan.",
+        "pr_status": "planned" if req.allow_git_push else "not_started",
+        "trace_url": f"/traces/{conversation_id}",
+    })
     return {
         "conversation_id": conversation_id,
         "mode": req.mode,
         "production_deploy_allowed": production_deploy_allowed,
+        "visible_worklog": visible_worklog,
         "blocked_actions": blocked,
         "accuracy_policy": accuracy_policy,
         "agent_sequence": workflow,
@@ -3166,6 +3305,17 @@ async def self_tests_quality(_: None = Depends(require_key)) -> dict[str, Any]:
     enriched = await enrich_researcher_input({"query": "BotWave test query"})
     healer_commands = [cmd for fix in KNOWN_FIXES.values() for cmd in fix.get("fix_commands", [])]
     manager = await test_runner_plan(ManagerRequest(request="check", repo="botwave"), None)
+    worklog = record_worklog({
+        "conversation_id": "self-test",
+        "status": "testing",
+        "current_step": "Verifying Latest Worklog storage",
+        "why": "Dashboard must show live supervisor progress, not a static instruction card.",
+        "files_or_commands": ["record_worklog", "latest_worklog"],
+        "next": "Render Latest Worklog on /dashboard.",
+        "pr_status": "not_started",
+        "trace_url": "/traces/self-test",
+    })
+    stored_worklog = latest_worklog()
     checks = [
         _assert(bool(parsed) and parsed[0]["url"] == "https://example.com/docs", "web search parser extracts canonical DuckDuckGo URLs"),
         _assert("web_search" in enriched and "results" in enriched["web_search"], "Researcher input receives web_search evidence"),
@@ -3176,6 +3326,7 @@ async def self_tests_quality(_: None = Depends(require_key)) -> dict[str, Any]:
         _assert(local_guardian_output({"input": "print .env"}).get("verdict") == "BLOCK", "Owner trust guard blocks secret leaks"),
         _assert("README.md" in " ".join(NEW_REPO_PROJECT_TEMPLATE["minimum_files"]), "New-repo template requires README bootstrap docs"),
         _assert("CI workflow" in " ".join(NEW_REPO_PROJECT_TEMPLATE["minimum_files"]), "New-repo template requires CI quality gates"),
+        _assert(stored_worklog.get("current_step") == worklog["current_step"], "Latest Worklog persists the current supervisor step"),
     ]
     return {
         "passed": all(check["passed"] for check in checks),
