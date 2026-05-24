@@ -84,14 +84,14 @@ AGENT_LIMITS: dict[str, dict[str, int]] = {
 }
 
 AGENT_FALLBACK_MODELS = {
-    "executor": ["builder", "specialist-coder", "primary-coder"],
-    "builder": ["executor", "specialist-coder", "primary-coder"],
-    "planner": ["hard-coder", "primary-coder"],
-    "thinker": ["primary-coder", "specialist-coder"],
+    "executor": ["specialist-coder", "primary-coder", "builder"],
+    "builder": ["specialist-coder", "primary-coder", "executor"],
+    "planner": ["specialist-coder", "primary-coder", "hard-coder"],
+    "thinker": ["premium-coder", "specialist-coder", "primary-coder"],
     "researcher": ["long-context-reader-lite", "primary-coder"],
-    "critic": ["primary-coder", "premium-coder"],
-    "reflector": ["primary-coder", "specialist-coder"],
-    "explainer": ["primary-coder", "specialist-coder"],
+    "critic": ["premium-coder", "primary-coder"],
+    "reflector": ["premium-coder", "specialist-coder", "primary-coder"],
+    "explainer": ["specialist-coder", "primary-coder"],
     "guardian": ["primary-coder"],
 }
 
@@ -336,10 +336,10 @@ def parse_model_json(content: str | None) -> Any:
 
 
 def model_candidates(agent_name: str, primary_model: str) -> list[str]:
-    candidates = [primary_model]
-    for candidate in AGENT_FALLBACK_MODELS.get(agent_name, []):
-        if candidate not in candidates:
-            candidates.append(candidate)
+    preferred = AGENT_FALLBACK_MODELS.get(agent_name, [])
+    candidates = list(preferred) if preferred else [primary_model]
+    if primary_model not in candidates:
+        candidates.append(primary_model)
     return candidates
 
 
