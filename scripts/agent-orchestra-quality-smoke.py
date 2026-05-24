@@ -51,6 +51,14 @@ async def main() -> None:
         raise SystemExit({"passed": False, "error": "spare GPT coder should be skipped when at RPM limit"})
     if not rate_limited_candidates:
         raise SystemExit({"passed": False, "error": "executor should keep fallbacks when GPT is busy"})
+    malformed_tool_output = (
+        'file_editor: {"command": "view", "path": "/opt/workspace_base/Botwave/docs/architecture.md"}\n'
+        "<tool_call>\n<function=file_editor>\n<parameter=command>\nview\n</parameter>\n"
+        + "</function>\n" * 20
+    )
+    parsed = module.parse_model_json(malformed_tool_output)
+    if parsed.get("parse_warning") != "tool_markup_loop_detected":
+        raise SystemExit({"passed": False, "error": "malformed tool-call loop was not detected"})
     template = await module.new_repo_template(None)
     required = " ".join(template["template"].get("minimum_files", []))
     if "README.md" not in required or "CI workflow" not in required:
