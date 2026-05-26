@@ -53,7 +53,7 @@ const VPS_HELP = [
   {
     category: 'Connecting to Your VPS',
     commands: [
-      { cmd: 'ssh root@144.91.107.59', desc: 'Connect to your VPS via terminal (Mac: Terminal app, Windows: PowerShell or PuTTY)' },
+      { cmd: 'ssh root@164.68.101.194', desc: 'Connect to your VPS via terminal (Mac: Terminal app, Windows: PowerShell or PuTTY)' },
       { cmd: 'exit', desc: 'Disconnect from VPS' },
     ],
   },
@@ -775,7 +775,7 @@ export default function DeploymentTab() {
           <div className="mb-6">
             <p className="text-zinc-500 font-mono text-xs mb-2">{'// Quick reference for managing your VPS via terminal'}</p>
             <p className="text-zinc-600 font-mono text-[10px]">
-              Your VPS: <span className="text-cyan-400">144.91.107.59</span> &middot; OS: Ubuntu &middot; User: root
+              Your VPS: <span className="text-cyan-400">164.68.101.194</span> &middot; OS: Ubuntu &middot; User: root
             </p>
           </div>
 
@@ -804,7 +804,7 @@ export default function DeploymentTab() {
               <li>&bull; Never run <code className="text-red-400">rm -rf /</code> - it deletes EVERYTHING</li>
               <li>&bull; Use this admin panel instead of terminal when possible - it&apos;s safer</li>
               <li>&bull; If something breaks, containers auto-restart. Worst case: reboot the VPS</li>
-              <li>&bull; Your domain botwave.online should point to 144.91.107.59 in DNS settings</li>
+              <li>&bull; Your domain botwave.online should point to 164.68.101.194 in DNS settings</li>
             </ul>
           </div>
         </div>
