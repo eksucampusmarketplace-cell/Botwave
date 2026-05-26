@@ -552,9 +552,16 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
-    if (isGroup) markGroupReplied(chatJid);
-    trackContactReply(senderJid);
-    trackWhoSentLast(chatJid, true);
+    // Only update tracking state if the bot actually replied to something
+    // (command result, auto-reply, chatbot flow, AFK mention, etc.)
+    // otherHandlerReplied is true when auto-reply, chatbot flow, or AI reply was sent.
+    // Commands always send a reply (result, error, or usage hint), so track those too.
+    const botReplied = otherHandlerReplied || isCommand;
+    if (botReplied) {
+      if (isGroup) markGroupReplied(chatJid);
+      trackContactReply(senderJid);
+      trackWhoSentLast(chatJid, true);
+    }
 
     if (userId) {
       void (async () => {
@@ -660,8 +667,12 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
         // Check e-commerce commands
         const shopHandled = await processShopCommand(context, sock, commandName, args, vars);
         if (!shopHandled) {
-          console.log(`Unknown command: !${commandName} - sending help hint`);
-          await sendUnknownCommand(context, sock, vars);
+          if (context.isGroup) {
+            console.log(`Unknown command: !${commandName} in group - silently ignored`);
+          } else {
+            console.log(`Unknown command: !${commandName} - sending help hint`);
+            await sendUnknownCommand(context, sock, vars);
+          }
         }
       }
     }
@@ -689,6 +700,9 @@ async function processCommand(context: MessageContext, sock: any): Promise<void>
 
 async function checkAfkMentions(context: MessageContext, sock: any): Promise<void> {
   if (!context.sessionId) return;
+  // AFK mentions only fire in DMs - in groups, quote/mention patterns from
+  // other members would trigger unwanted AFK replies to everyone
+  if (context.isGroup) return;
 
   const contextInfo = context.rawMessage.message?.extendedTextMessage?.contextInfo;
   const jidsToCheck = new Set<string>(contextInfo?.mentionedJid || []);
@@ -764,6 +778,8 @@ async function processAutoReply(context: MessageContext, sock: any): Promise<boo
   if (!context.sessionId) return false;
   const prefix = context.commandPrefix || DEFAULT_COMMAND_PREFIX;
   if (context.message.startsWith(prefix)) return false;
+  // Auto-replies only fire in DMs by default to avoid responding to group messages unintentionally
+  if (context.isGroup) return false;
 
   try {
     const rules = await getAutoReplies(context.sessionId);
@@ -913,6 +929,8 @@ async function executeFlowNode(
 
 async function processChatbotFlow(context: MessageContext, sock: any): Promise<boolean> {
   if (!context.userId || !context.sessionId) return false;
+  // Chatbot flows only fire in DMs by default to avoid responding to group messages unintentionally
+  if (context.isGroup) return false;
 
   const sessionId = context.sessionId;
   const senderJid = context.senderJid;
@@ -1242,7 +1260,7 @@ export async function handleGroupParticipantsUpdate(
 
     if (action !== 'add' && action !== 'remove') return;
 
-    const isEnabled = await getFeatureEnabled(userId, 'welcome');
+    const isEnabled = await getFeatureEnabled(userId, 'welcome', sessionId);
     if (!isEnabled) return;
 
     let groupName = groupJid.split('@')[0];

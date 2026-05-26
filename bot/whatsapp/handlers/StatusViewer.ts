@@ -167,7 +167,7 @@ export async function handleStatusUpdate(
     if (msg.key.fromMe) return;
 
     // Check if autoview is enabled for this user
-    const isEnabled = await getFeatureEnabled(userId, 'autoview');
+    const isEnabled = await getFeatureEnabled(userId, 'autoview', sessionId);
     if (!isEnabled) return;
 
     // Add to queue

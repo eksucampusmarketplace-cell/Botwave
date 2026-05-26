@@ -19,3 +19,7 @@ import './featureRequest';
 export { getCommand, getAllCommands, getCommandsByCategory } from './registry';
 export type { MessageContext, TemplateVars, CommandHandler, CommandCategory } from './registry';
 export { sendUnknownCommand } from './general';
+
+// Log registered command count at startup for diagnostics
+import { getAllCommands as getRegisteredCommands } from './registry';
+console.log(`[COMMANDS] Registered ${getRegisteredCommands().length} command(s) at startup`);
