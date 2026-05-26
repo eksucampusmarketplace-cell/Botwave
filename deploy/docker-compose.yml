@@ -354,7 +354,7 @@ services:
       GOTRUE_SMS_AUTOCONFIRM: "true"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_URI_ALLOW_LIST: "*"
-      API_EXTERNAL_URL: http://144.91.107.59:8000
+      API_EXTERNAL_URL: ${GOTRUE_API_EXTERNAL_URL:-http://164.68.101.194:8000}
       GOTRUE_SITE_URL: https://botwave.online
     networks:
       botwave-net:
