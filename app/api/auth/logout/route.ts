@@ -17,6 +17,17 @@ function getCookieSupabaseUrl(request: NextRequest): string {
   }
 }
 
+function getAuthCookieName(): string {
+  const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+  try {
+    const publicHost = new URL(publicUrl).hostname.split('.')[0];
+    return `sb-${publicHost}-auth-token`;
+  } catch {
+    return 'supabase.auth.token';
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const response = NextResponse.json({ success: true, message: 'Logged out' });
@@ -25,6 +36,9 @@ export async function POST(request: NextRequest) {
       getCookieSupabaseUrl(request),
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: {
+          name: getAuthCookieName(),
+        },
         cookies: {
           get(name: string) {
             return request.cookies.get(name)?.value;
