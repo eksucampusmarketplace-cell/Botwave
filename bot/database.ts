@@ -34,7 +34,7 @@ interface CacheEntry<T> { value: T; expiresAt: number; }
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
 const CACHE_TTL_MEDIUM_MS = 120_000; // 2 minutes - leaderboard, stats
-const CACHE_TTL_LONG_MS = 300_000; // 5 minutes - settings, features, subscriptions, welcome msgs
+const CACHE_TTL_LONG_MS = 30_000; // 30 seconds - settings, features, subscriptions, welcome msgs
 
 const settingsCache = new Map<string, CacheEntry<any>>();
 const featureCache = new Map<string, CacheEntry<boolean>>();
@@ -101,6 +101,15 @@ export function invalidateCache(prefix: string): void {
     }
   }
   invalidateStaleCache(prefix);
+}
+
+/**
+ * Invalidate bot in-memory caches for a specific user (called via internal API endpoint
+ * when dashboard settings change, so the bot picks up changes without waiting for TTL expiry).
+ * Falls back to the prefix-based invalidateCache which handles the cache key patterns.
+ */
+export function invalidateBotCaches(userId: string): void {
+  invalidateCache(userId);
 }
 
 export { getCircuitStats };
@@ -1275,8 +1284,8 @@ export async function getLeaderboard(sessionId: string, limit: number = 10) {
 // Features that default to OFF when no toggle row exists
 const FEATURES_DEFAULT_OFF = new Set(['welcome', 'autoview', 'anti_delete', 'nlp', 'savage']);
 
-export async function getFeatureEnabled(userId: string, featureName: string): Promise<boolean> {
-  const cacheKey = `${userId}:${featureName}`;
+export async function getFeatureEnabled(userId: string, featureName: string, sessionId?: string): Promise<boolean> {
+  const cacheKey = sessionId ? `${userId}:${sessionId}:${featureName}` : `${userId}:${featureName}`;
   const cached = getCached(featureCache, cacheKey);
   if (cached !== undefined) return cached;
 
@@ -1293,15 +1302,20 @@ export async function getFeatureEnabled(userId: string, featureName: string): Pr
     cacheKey: `feature:${cacheKey}`,
     fallbackValue: defaultVal,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bot_features')
         .select('enabled')
         .eq('user_id', userId)
-        .eq('feature_name', featureName)
-        .single();
+        .eq('feature_name', featureName);
+
+      if (sessionId) {
+        query = query.eq('session_id', sessionId);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       let result: boolean;
-      if (error) {
+      if (error || !data) {
         result = defaultVal;
       } else {
         result = data?.enabled ?? defaultVal;

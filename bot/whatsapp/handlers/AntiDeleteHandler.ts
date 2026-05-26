@@ -181,7 +181,7 @@ export async function handleMessageRevoke(
   if (!deletedKey?.id) return;
 
   try {
-    const enabled = await getFeatureEnabled(userId, 'anti_delete');
+    const enabled = await getFeatureEnabled(userId, 'anti_delete', sessionId);
     if (!enabled) return;
   } catch {
     return;
