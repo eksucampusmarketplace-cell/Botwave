@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getCachedApiSettings, cacheApiSettings, invalidateApiSettings } from '@/lib/redisApiCache';
-import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -83,7 +82,19 @@ export async function POST(req: NextRequest) {
     // the bot uses the OLD AFK message / bot_name / command_prefix / skip
     // probability for up to SETTINGS_TTL (5 min) after a dashboard save.
     await invalidateApiSettings(user.id);
-    await invalidateBotRedisKey(`settings:${user.id}`);
+    // Also invalidate the bot process's in-memory caches via internal endpoint
+    // (replaces the less comprehensive invalidateBotRedisKey call)
+    try {
+      const selfUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SELF_URL || 'http://localhost:3000';
+      const intSecret = process.env.INTERNAL_SECRET;
+      if (intSecret) {
+        fetch(`${selfUrl}/api/internal/cache-invalidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': intSecret },
+          body: JSON.stringify({ userId: user.id }),
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ } (Fix WhatsApp bot command system: group spam, caching, and session-scoped features)
     return NextResponse.json({ success: true, message: 'Settings saved' });
   } catch (error) {
     console.error('Error saving user settings:', error);

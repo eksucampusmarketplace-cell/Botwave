@@ -124,6 +124,18 @@ export async function POST(request: NextRequest) {
     }
 
     await invalidateFeatures(user.id);
+    // Also invalidate the bot process's in-memory caches by calling the internal endpoint
+    try {
+      const selfUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SELF_URL || 'http://localhost:3000';
+      const intSecret = process.env.INTERNAL_SECRET;
+      if (intSecret) {
+        fetch(`${selfUrl}/api/internal/cache-invalidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': intSecret },
+          body: JSON.stringify({ userId: user.id, sessionId }),
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ }
     return NextResponse.json({
       success: true,
       data: feature,

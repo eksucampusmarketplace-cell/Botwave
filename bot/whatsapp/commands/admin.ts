@@ -709,7 +709,7 @@ async function handleAntiDelete(
   const action = args[0]?.toLowerCase();
 
   if (!action || (action !== 'on' && action !== 'off' && action !== 'enable' && action !== 'disable' && action !== 'status')) {
-    const current = await getFeatureEnabled(context.userId, 'anti_delete');
+    const current = await getFeatureEnabled(context.userId, 'anti_delete', context.sessionId);
     await sendReply(
       context.chatJid,
       `*Anti-Delete* is currently *${current ? 'ON' : 'OFF'}*\n\nUsage:\n!antidelete on - recover deleted messages\n!antidelete off - disable recovery`,
@@ -721,7 +721,7 @@ async function handleAntiDelete(
   }
 
   if (action === 'status') {
-    const current = await getFeatureEnabled(context.userId, 'anti_delete');
+    const current = await getFeatureEnabled(context.userId, 'anti_delete', context.sessionId);
     await sendReply(context.chatJid, `Anti-Delete is *${current ? 'ON' : 'OFF'}*`, sock, context.rawMessage.key, context.queue);
     return;
   }
@@ -755,7 +755,7 @@ async function handleRecover(
     return;
   }
 
-  const enabled = await getFeatureEnabled(context.userId, 'anti_delete');
+  const enabled = await getFeatureEnabled(context.userId, 'anti_delete', context.sessionId);
   if (!enabled) {
     await sendReply(context.chatJid, 'Anti-delete is not enabled. Use *!antidelete on* first.', sock, context.rawMessage.key, context.queue);
     return;
