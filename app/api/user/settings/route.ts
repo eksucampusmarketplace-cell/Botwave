@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ userId: user.id }),
         }).catch(() => {});
       }
-    } catch { /* non-critical */ } (Fix WhatsApp bot command system: group spam, caching, and session-scoped features)
+    } catch { /* non-critical */ }
     return NextResponse.json({ success: true, message: 'Settings saved' });
   } catch (error) {
     console.error('Error saving user settings:', error);
