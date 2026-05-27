@@ -92,7 +92,7 @@ const SESSION_RATE_LIMIT = parseInt(process.env.SESSION_RATE_LIMIT || '120', 10)
 const USER_RATE_LIMIT = parseInt(process.env.USER_RATE_LIMIT || '200', 10);
 const SPAM_THRESHOLD = parseInt(process.env.FLOOD_THRESHOLD || '12', 10);
 const SPAM_WINDOW = 10_000;
-const COMMAND_COOLDOWN_MS = parseInt(process.env.COMMAND_COOLDOWN_MS || '2000', 10);
+const COMMAND_COOLDOWN_MS = parseInt(process.env.COMMAND_COOLDOWN_MS || '300', 10);
 
 function isUserRateLimited(userId: string): boolean {
   const now = Date.now();
@@ -466,8 +466,16 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       }
     }
 
+    // In Evolution API mode, the bot owner's outgoing group messages may have
+    // fromMe=false (Evolution API bug). If isOwnerEarly is false but we have a
+    // valid userId, check if this session's phone matches the sender's phone
+    // as a last-resort owner detection. If still not owner, block the command.
+    // This ensures only the bot's linked owner can run commands.
     if (isCommand && !isOwnerEarly) {
-      return;
+      // Last-resort: try matching sender phone against session phone number
+      if (!sessionRecord?.phone_number || !senderPhone || normalizePhoneDigits(String(sessionRecord.phone_number)) !== senderPhone) {
+        return;
+      }
     }
 
     if (isCommand && userId) {
