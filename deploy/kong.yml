@@ -1,0 +1,25 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth-service
+    host: gotrue
+    port: 9999
+    protocol: http
+    routes:
+      - name: auth-route
+        paths:
+          - /auth/v1
+        strip_path: true
+        preserve_host: false
+
+  - name: rest-service
+    host: postgrest
+    port: 3000
+    protocol: http
+    routes:
+      - name: rest-route
+        paths:
+          - /rest/v1
+        strip_path: true
+        preserve_host: false
