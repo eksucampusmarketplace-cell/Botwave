@@ -35,7 +35,7 @@ interface CacheEntry<T> { value: T; expiresAt: number; }
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
 const CACHE_TTL_MEDIUM_MS = 120_000; // 2 minutes - leaderboard, stats
-const CACHE_TTL_LONG_MS = 30_000; // 30 seconds - settings, features, subscriptions, welcome msgs
+const CACHE_TTL_LONG_MS = 5_000; // 5 seconds - quick cross-process propagation fallback
 
 const settingsCache = new Map<string, CacheEntry<any>>();
 const featureCache = new Map<string, CacheEntry<boolean>>();
@@ -1412,23 +1412,30 @@ export async function getFeatureEnabled(userId: string, featureName: string, ses
     cacheKey: `feature:${cacheKey}`,
     fallbackValue: defaultVal,
     queryFn: async () => {
-      let query = supabase
+      const baseQuery = supabase
         .from('bot_features')
         .select('enabled')
         .eq('user_id', userId)
         .eq('feature_name', featureName);
 
-      if (sessionId) {
-        query = query.eq('session_id', sessionId);
-      }
-
-      const { data, error } = await query.maybeSingle();
-
       let result: boolean;
-      if (error || !data) {
-        result = defaultVal;
+      if (sessionId) {
+        const { data, error } = await baseQuery
+          .eq('session_id', sessionId)
+          .maybeSingle();
+        if (error || !data) {
+          result = defaultVal;
+        } else {
+          result = data.enabled ?? defaultVal;
+        }
       } else {
-        result = data?.enabled ?? defaultVal;
+        const { data, error } = await baseQuery.limit(1);
+        const row = Array.isArray(data) ? data[0] : null;
+        if (error || !row) {
+          result = defaultVal;
+        } else {
+          result = row.enabled ?? defaultVal;
+        }
       }
       setCache(featureCache, cacheKey, result, CACHE_TTL_LONG_MS);
       await cacheFeature(userId, featureName, result);
@@ -2544,17 +2551,51 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
  */
 export async function incrementQuotaUsage(userId: string): Promise<boolean> {
   const sub = await getUserSubscription(userId);
+  const nowIso = new Date().toISOString();
+
+  // Ensure a quota row exists. Missing row should never block commands.
+  const { data: existingRow, error: rowErr } = await supabase
+    .from('subscriptions')
+    .select('plan, status, quota_limit, quota_used, session_limit, ai_daily_limit')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (rowErr || !existingRow) {
+    const { error: insertErr } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: userId,
+        plan: 'free',
+        status: 'active',
+        quota_limit: 300,
+        quota_used: 1,
+        session_limit: 1,
+        ai_daily_limit: 10,
+        updated_at: nowIso,
+      }, { onConflict: 'user_id' });
+
+    if (insertErr) {
+      console.error(`[QUOTA] Failed to create missing subscription row for ${userId}:`, insertErr);
+    }
+
+    invalidateCache(userId);
+    await invalidateRedisKey(`sub:${userId}`);
+    return true;
+  }
+
+  const quotaLimit = existingRow.quota_limit ?? sub.quotaLimit;
+  const quotaUsed = existingRow.quota_used ?? sub.quotaUsed;
 
   // Unlimited plan
-  if (sub.quotaLimit === -1) return true;
+  if (quotaLimit === -1) return true;
 
-  if (sub.quotaUsed >= sub.quotaLimit) return false;
+  if (quotaUsed >= quotaLimit) return false;
 
   await supabase
     .from('subscriptions')
     .update({
-      quota_used: sub.quotaUsed + 1,
-      updated_at: new Date().toISOString(),
+      quota_used: quotaUsed + 1,
+      updated_at: nowIso,
     })
     .eq('user_id', userId);
 

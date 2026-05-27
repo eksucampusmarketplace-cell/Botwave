@@ -30,18 +30,27 @@ export class EvolutionSocketAdapter {
   public userId: string;
   private instanceName: string;
   // Mimics Baileys sock.user - used by MessageQueue to check connection
-  public user: { id: string } | null = null;
+  public user: { id: string; lid?: string } | null = null;
 
   constructor(instanceName: string, sessionId: string, userId: string, phoneNumber?: string) {
     this.instanceName = instanceName;
     this.sessionId = sessionId;
     this.userId = userId;
+
+    if (!this.sessionId) {
+      throw new Error('[EVO-SOCKET] Missing sessionId in EvolutionSocketAdapter constructor');
+    }
+    if (!this.userId) {
+      throw new Error(`[EVO-SOCKET] Missing userId for session ${this.sessionId}`);
+    }
+
     // Set user.id to the real phone JID when available so that the owner
-    // check in MessageHandler (normalizeJid comparison) works correctly in
-    // group chats where fromMe may be false. Falls back to instanceName
-    // for backward compatibility.
+    // check in MessageHandler works correctly in group chats where fromMe may be false.
     const cleanPhone = phoneNumber?.replace(/\D/g, '');
-    this.user = { id: cleanPhone ? `${cleanPhone}@s.whatsapp.net` : `${instanceName}@s.whatsapp.net` };
+    this.user = {
+      id: cleanPhone ? `${cleanPhone}@s.whatsapp.net` : `${instanceName}@s.whatsapp.net`,
+      lid: cleanPhone ? `${cleanPhone}@lid` : undefined,
+    };
   }
 
   /**

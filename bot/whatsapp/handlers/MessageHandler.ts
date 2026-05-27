@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts, loadFlowSession, saveFlowSession, deleteFlowSession } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, getSessionById, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts, loadFlowSession, saveFlowSession, deleteFlowSession } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -64,6 +64,18 @@ const RATE_LIMIT_WINDOW = 60_000; // 1 minute
 function normalizeJid(jid: string): string {
   if (!jid) return jid;
   return jid.replace(/:\d+@/, '@').trim();
+}
+
+function normalizePhoneDigits(value?: string | null): string | null {
+  if (!value) return null;
+  const digits = value.replace(/\D/g, '');
+  return digits || null;
+}
+
+function normalizeLidValue(value?: string | null): string | null {
+  if (!value) return null;
+  const normalized = normalizeJid(value).toLowerCase();
+  return normalized.endsWith('@lid') ? normalized.slice(0, -4) : normalized;
 }
 
 // ─── Rate Limiting (configurable via env vars) ──────────────────────────────
@@ -230,16 +242,28 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     const rawParticipant = message.key.participant;
     const participantPn = (message.key as any).participantPn;
     const senderJid = normalizeJid(participantPn || rawParticipant || chatJid);
-    // Normalize owner JID to phone number only for comparison
-    const ownerPhone = (sock as any).user?.id?.replace(/:\d+@/, '@').replace(/@.*/, '') ?? null;
-    const senderPhone = senderJid.replace(/@.*/, '');
-    const isOwnerByPhone = ownerPhone && senderPhone === ownerPhone;
     const isGroup = chatJid.endsWith('@g.us');
     const pushName = message.pushName || 'User';
     const sessionId = (sock as any).sessionId || queue?.['sessionId'];
-    const userId = (sock as any).userId;
 
-    // Load user's command prefix from settings (default '!')
+    let userId = (sock as any).userId as string | undefined;
+    let sessionRecord: Record<string, any> | null = null;
+    if (sessionId) {
+      try {
+        sessionRecord = await getSessionById(sessionId);
+      } catch {
+        sessionRecord = null;
+      }
+    }
+
+    if (!userId && sessionRecord?.user_id) {
+      userId = String(sessionRecord.user_id);
+      (sock as any).userId = userId;
+      console.warn(`[MSG] sock.userId missing for session=${sessionId}; recovered from DB session row`);
+    }
+
+    // Load user's command prefix from settings (default '!').
+    // If userId is missing, try session-row fallback before defaulting.
     let commandPrefix = DEFAULT_COMMAND_PREFIX;
     let ownerSettings: { afk_enabled?: boolean; afk_message?: string; skip_probability?: number; command_prefix?: string } | null = null;
     if (userId) {
@@ -247,6 +271,11 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
         ownerSettings = await getUserSettings(userId);
         if (ownerSettings?.command_prefix) commandPrefix = ownerSettings.command_prefix;
       } catch { /* non-critical */ }
+    } else if (sessionRecord?.command_prefix) {
+      commandPrefix = String(sessionRecord.command_prefix);
+      console.warn(`[MSG] userId missing while processing session=${sessionId}; using session-row command_prefix fallback (${commandPrefix})`);
+    } else {
+      console.warn(`[MSG] userId missing while processing session=${sessionId}; falling back to default prefix "${DEFAULT_COMMAND_PREFIX}"`);
     }
 
     const isCommand = content.startsWith(commandPrefix);
@@ -274,14 +303,39 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       } catch { /* non-critical – allow message through on error */ }
     }
 
-    // Owner detection: compare phone JID and also LID (WhatsApp's new format)
+    // Owner detection: Evolution group events may set fromMe=false and may use @lid.
     const ownerJidEarly = (sock as any).user?.id ? normalizeJid((sock as any).user.id) : null;
-    const ownerLidEarly = (sock as any).user?.lid ? normalizeJid((sock as any).user.lid) : null;
-    const senderLidEarly = rawParticipant && rawParticipant.endsWith('@lid') ? normalizeJid(rawParticipant) : null;
-    const isOwnerEarly = fromMe ||
+    const ownerLidEarlyRaw = (sock as any).user?.lid ? String((sock as any).user.lid) : null;
+    const senderLidEarlyRaw = rawParticipant && rawParticipant.endsWith('@lid') ? String(rawParticipant) : null;
+
+    const ownerLidEarly = normalizeLidValue(ownerLidEarlyRaw);
+    const senderLidEarly = normalizeLidValue(senderLidEarlyRaw);
+
+    const ownerPhone = normalizePhoneDigits((sock as any).user?.id || null);
+    const senderPhone = normalizePhoneDigits(participantPn || rawParticipant || senderJid);
+    const sessionPhone = normalizePhoneDigits((sessionRecord as any)?.phone_number || null);
+
+    const isOwnerByPhone = !!(ownerPhone && senderPhone && ownerPhone === senderPhone);
+    const isOwnerBySessionPhone = !!(sessionPhone && senderPhone && sessionPhone === senderPhone);
+    const isOwnerByJid = !!(ownerJidEarly && senderJid === ownerJidEarly);
+    const isOwnerByLid = !!(ownerLidEarly && senderLidEarly && senderLidEarly === ownerLidEarly);
+
+    const isOwnerEarly = !!(
+      fromMe ||
       isOwnerByPhone ||
-      (ownerJidEarly && senderJid === ownerJidEarly) ||
-      (ownerLidEarly && senderLidEarly && senderLidEarly === ownerLidEarly);
+      isOwnerBySessionPhone ||
+      isOwnerByJid ||
+      isOwnerByLid
+    );
+
+    if (process.env.DEBUG_OWNER_DETECTION === '1') {
+      console.log(
+        `[OWNER-DETECT] session=${sessionId} fromMe=${fromMe} isGroup=${isGroup} sender=${senderJid} rawParticipant=${rawParticipant || 'n/a'} ` +
+        `ownerJid=${ownerJidEarly || 'n/a'} ownerLid=${ownerLidEarly || 'n/a'} senderLid=${senderLidEarly || 'n/a'} ` +
+        `senderPhone=${senderPhone || 'n/a'} ownerPhone=${ownerPhone || 'n/a'} sessionPhone=${sessionPhone || 'n/a'} ` +
+        `=> isOwner=${isOwnerEarly} (phone=${isOwnerByPhone}, sessionPhone=${isOwnerBySessionPhone}, jid=${isOwnerByJid}, lid=${isOwnerByLid})`
+      );
+    }
 
     const context: MessageContext = {
       senderJid,

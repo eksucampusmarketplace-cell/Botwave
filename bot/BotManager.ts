@@ -267,6 +267,10 @@ export class BotWaveBot {
     (this.socket as any).sessionId = this.sessionId;
     (this.socket as any).userId = this.userId;
 
+    if (!(this.socket as any).userId) {
+      throw new Error(`[BAILEYS] sock.userId missing for session ${this.sessionId}`);
+    }
+
     this.messageQueue = new MessageQueue(this.socket, this.sessionId);
 
     this.socket.ev.on('creds.update', saveCreds);
@@ -945,6 +949,9 @@ export class EvolutionBot {
 
   async start(): Promise<void> {
     console.log(`[EVO] Starting session ${this.sessionId} for ${this.phoneNumber} (previousDbState=${this.previousDbState})`);
+    if (!this.userId) {
+      throw new Error(`[EVO] Missing userId for session ${this.sessionId}`);
+    }
     this.isReconnecting = true;
 
     // Mark pairing start EARLY so the queue blocks other sessions immediately.
