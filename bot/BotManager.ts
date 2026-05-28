@@ -6,7 +6,7 @@ import {
   delay
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
-import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, getPairingCodeFreshness, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, creditReward, getUserSettings, PAIRING_CODE_FREEZE_MS } from './database';
+import { initDatabase, getSessionsNeedingBot, updateSessionQR, updateSessionPairingCode, getSessionPairingCode, getPairingCodeFreshness, updateSessionStatus, updateSessionWorker, clearAuthState, getSessionUserId, getFeatureEnabled, incrementLeaderboard, acquirePairingLock, releasePairingLock, isWorkerPairingLocked, logPairingEvent, updateQueuePosition, logHealthEvent, getUserSettings, PAIRING_CODE_FREEZE_MS } from './database';
 import { useSupabaseAuthState } from './whatsapp/SupabaseAuthState';
 import { handleMessage, handleGroupParticipantsUpdate } from './whatsapp/handlers/MessageHandler';
 // Autoview removed entirely
@@ -1207,9 +1207,7 @@ export class EvolutionBot {
           void setWebhook(this.sessionId).catch(err =>
             console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
 
-          // Credit first-session reward (₦10, one-time, non-blocking)
-          void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
-
+          
           this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
           this.startPresenceLoop();
           this.startDeafSessionDetector();
@@ -1314,7 +1312,6 @@ export class EvolutionBot {
                 await updateSessionStatus(this.sessionId, 'active');
                 void setWebhook(this.sessionId).catch(err =>
                   console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
-                void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
                 this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
                 this.startPresenceLoop();
                 const cleanPhone = this.phoneNumber.replace(/\D/g, '');
@@ -1502,7 +1499,6 @@ export class EvolutionBot {
               console.log(`[EVO] Session ${this.sessionId} is now active (caught at timeout boundary)!`);
               void setWebhook(this.sessionId).catch(err =>
                 console.error(`[EVO] Failed to refresh webhook for ${this.sessionId}:`, err));
-              void creditReward(this.userId, 'first_session', 'First WhatsApp session connected').catch(() => {});
               this.socketAdapter = new EvolutionSocketAdapter(this.sessionId, this.sessionId, this.userId, this.phoneNumber);
               this.startPresenceLoop();
               const cleanPhone = this.phoneNumber.replace(/\D/g, '');

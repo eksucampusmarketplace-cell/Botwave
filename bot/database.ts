@@ -4,7 +4,6 @@ import { trackMap } from './infrastructure/memoryGuard';
 import { cacheSession, getCachedSession, invalidateSessionCache, invalidateQRCache, cachePairingLock, getCachedPairingLock, invalidatePairingLock, cacheSessionUserId, getCachedSessionUserId, cacheSessionExists, getCachedSessionExists, cacheSettings, getCachedSettings, cacheFeature, getCachedFeature, cacheAutoReplies, getCachedAutoReplies, cacheAfkState, getCachedAfkState, cacheSubscription, getCachedSubscription, cacheLeaderboard, getCachedLeaderboard, invalidateRedisKey, invalidateRedisPattern, bufferLeaderboardIncrement, drainLeaderboardBuffer, getBufferedSessionIds, bufferTrackMessage, drainMessageBuffer } from './infrastructure/redisSessionCache';
 import { queueWrite } from './infrastructure/writeQueue';
 import { sendAlertEmail, buildAlertHtml } from '../lib/email-service';
-import { invalidateRewards as invalidateApiRewards } from '../lib/redisApiCache';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -52,8 +51,6 @@ const scheduledMsgsCache = new Map<string, CacheEntry<any[]>>();
 const sessionStatsCache = new Map<string, CacheEntry<any>>();
 const healthEventsCache = new Map<string, CacheEntry<any[]>>();
 const webhookRetryCache = new Map<string, CacheEntry<any[]>>();
-const rewardBalanceCache = new Map<string, CacheEntry<any>>();
-const referralCache = new Map<string, CacheEntry<any>>();
 const pairingCountsCache = new Map<string, CacheEntry<Record<string, number>>>();
 
 // Register all caches with memory guard for periodic cleanup
@@ -76,8 +73,6 @@ trackMap('scheduledMsgsCache', scheduledMsgsCache as Map<string, unknown>, CACHE
 trackMap('sessionStatsCache', sessionStatsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 trackMap('healthEventsCache', healthEventsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 trackMap('webhookRetryCache', webhookRetryCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
-trackMap('rewardBalanceCache', rewardBalanceCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
-trackMap('referralCache', referralCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 trackMap('pairingCountsCache', pairingCountsCache as Map<string, unknown>, CACHE_TTL_MS * 2, getExpiresAt);
 
 function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
@@ -96,7 +91,7 @@ function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, t
 
 /** Invalidate all cache entries for a given prefix (e.g. userId or sessionId). */
 export function invalidateCache(prefix: string): void {
-  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache, afkCache, subscriptionCache, welcomeCache, pollCache, leaderboardCache, remindersCache, notesCache, scheduledMsgsCache, sessionStatsCache, healthEventsCache, webhookRetryCache, rewardBalanceCache, referralCache, pairingCountsCache]) {
+  for (const cache of [settingsCache, featureCache, autoReplyCache, sessionUserIdCache, afkCache, subscriptionCache, welcomeCache, pollCache, leaderboardCache, remindersCache, notesCache, scheduledMsgsCache, sessionStatsCache, healthEventsCache, webhookRetryCache, pairingCountsCache]) {
     for (const key of cache.keys()) {
       if (key.startsWith(prefix)) cache.delete(key);
     }
@@ -2624,164 +2619,7 @@ export async function resetMonthlyQuotas(): Promise<void> {
   await invalidateRedisPattern(`sub:*`);
 }
 
-// ─── Monetization: Rewards ───────────────────────────────────────────────────
 
-const REWARD_ACTIONS: Record<string, { amount: number; dailyLimit: number; once?: boolean }> = {
-  'first_session': { amount: 10, dailyLimit: 1, once: true },
-  'command_use': { amount: 1, dailyLimit: 10 },
-  'daily_active': { amount: 3, dailyLimit: 1 },
-  'referral': { amount: 15, dailyLimit: 100 },
-  'plan_upgrade': { amount: 30, dailyLimit: 1, once: true },
-  'weekly_streak': { amount: 10, dailyLimit: 1 },
-};
-
-const CASHOUT_THRESHOLD = 100;
-
-export interface RewardBalance {
-  balance: number;
-  totalEarned: number;
-  totalCashedOut: number;
-}
-
-export async function getRewardBalance(userId: string): Promise<RewardBalance> {
-  const cached = getCached(rewardBalanceCache, userId);
-  if (cached !== undefined) return cached as RewardBalance;
-
-  const defaults: RewardBalance = { balance: 0, totalEarned: 0, totalCashedOut: 0 };
-
-  return resilientRead({
-    cacheKey: `rewardBalance:${userId}`,
-    fallbackValue: defaults,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('reward_balances')
-        .select('balance, total_earned, total_cashed_out')
-        .eq('user_id', userId)
-        .single();
-
-      if (!data) {
-        setCache(rewardBalanceCache, userId, defaults);
-        return defaults;
-      }
-
-      const result: RewardBalance = {
-        balance: data.balance,
-        totalEarned: data.total_earned,
-        totalCashedOut: data.total_cashed_out,
-      };
-      setCache(rewardBalanceCache, userId, result);
-      return result;
-    },
-  });
-}
-
-/**
- * Credit reward to user. Handles daily limits and one-time actions.
- * Returns the amount credited (0 if limit reached).
- */
-export async function creditReward(
-  userId: string,
-  action: string,
-  description?: string,
-): Promise<number> {
-  const config = REWARD_ACTIONS[action];
-  if (!config) return 0;
-
-  // Check one-time actions
-  if (config.once) {
-    const { count } = await supabase
-      .from('reward_transactions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('action', action);
-    if ((count || 0) > 0) return 0;
-  }
-
-  // Check daily limit
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const { count: todayCount } = await supabase
-    .from('reward_transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('action', action)
-    .gte('created_at', todayStart.toISOString());
-
-  if ((todayCount || 0) >= config.dailyLimit) return 0;
-
-  const amount = config.amount;
-
-  // Insert transaction
-  await supabase.from('reward_transactions').insert({
-    user_id: userId,
-    action,
-    amount,
-    description: description || action,
-  });
-
-  // Upsert balance
-  const current = await getRewardBalance(userId);
-  const newBalance = current.balance + amount;
-  const newTotalEarned = current.totalEarned + amount;
-
-  await supabase.from('reward_balances').upsert({
-    user_id: userId,
-    balance: newBalance,
-    total_earned: newTotalEarned,
-    total_cashed_out: current.totalCashedOut,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' });
-  rewardBalanceCache.delete(userId);
-  // The dashboard reads rewards from `api:rewards:${userId}` (5-min TTL).
-  // Without invalidation, the rewards balance shown on the rewards page
-  // stays stale for up to REWARDS_TTL after the bot credits a reward.
-  await invalidateApiRewards(userId);
-
-  return amount;
-}
-
-/**
- * Check if balance meets cashout threshold. If so, initiate airtime cashout.
- * Returns true if cashout was triggered.
- */
-export async function checkAndCashout(userId: string, phoneNumber: string): Promise<boolean> {
-  const balance = await getRewardBalance(userId);
-  if (balance.balance < CASHOUT_THRESHOLD) return false;
-
-  // Import Inlomax client
-  const { sendAirtime, detectNetwork } = await import('./whatsapp/utils/inlomax');
-
-  const networkInfo = detectNetwork(phoneNumber);
-  const result = await sendAirtime(phoneNumber, CASHOUT_THRESHOLD);
-
-  // Record the cashout attempt
-  await supabase.from('airtime_cashouts').insert({
-    user_id: userId,
-    phone_number: phoneNumber,
-    amount: CASHOUT_THRESHOLD,
-    network: networkInfo?.network || 'UNKNOWN',
-    status: result.success ? 'success' : 'failed',
-    inlomax_reference: result.reference,
-    error_message: result.error,
-  });
-
-  if (result.success) {
-    // Deduct from balance
-    await supabase.from('reward_balances').update({
-      balance: balance.balance - CASHOUT_THRESHOLD,
-      total_cashed_out: balance.totalCashedOut + CASHOUT_THRESHOLD,
-      last_cashout_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId);
-    rewardBalanceCache.delete(userId);
-    await invalidateApiRewards(userId);
-
-    return true;
-  }
-
-  return false;
-}
 
 // ─── Referral Code ───────────────────────────────────────────────────────────
 
@@ -2793,9 +2631,6 @@ function generateReferralCode(): string {
 }
 
 export async function getUserReferralCode(userId: string): Promise<{ code: string; totalReferred: number; totalEarned: number } | null> {
-  const cached = getCached(referralCache, userId);
-  if (cached !== undefined) return cached;
-
   return resilientRead({
     cacheKey: `referral:${userId}`,
     fallbackValue: null as { code: string; totalReferred: number; totalEarned: number } | null,
@@ -2807,9 +2642,7 @@ export async function getUserReferralCode(userId: string): Promise<{ code: strin
         .single();
 
       if (referral) {
-        const result = { code: referral.code, totalReferred: referral.total_referred || 0, totalEarned: referral.total_earned || 0 };
-        setCache(referralCache, userId, result);
-        return result;
+        return { code: referral.code, totalReferred: referral.total_referred || 0, totalEarned: referral.total_earned || 0 };
       }
 
       // Auto-create referral code
@@ -2821,9 +2654,7 @@ export async function getUserReferralCode(userId: string): Promise<{ code: strin
         .single();
 
       if (error || !newRef) return null;
-      const result = { code: newRef.code, totalReferred: 0, totalEarned: 0 };
-      setCache(referralCache, userId, result);
-      return result;
+      return { code: newRef.code, totalReferred: 0, totalEarned: 0 };
     },
   });
 }
@@ -3059,4 +2890,4 @@ export async function getProducts(userId: string): Promise<any[]> {
   });
 }
 
-export { PLAN_CONFIGS, REWARD_ACTIONS, CASHOUT_THRESHOLD };
+export { PLAN_CONFIGS };

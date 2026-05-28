@@ -1,6 +1,6 @@
 import { registerCommand, type MessageContext } from './registry';
 import { sendReply, downloadMedia, getQuotedMessage, pickResponse } from './helpers';
-import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getRewardBalance, getSessionUserId, getUserReferralCode, getReferralLeaderboard } from '../../database';
+import { getAfkState, setAfkState, getFeatureEnabled, setFeatureEnabled, getSessionSettings, updateSessionSettings, getWelcomeMessage, setWelcomeMessage, getUserSubscription, getSessionUserId, getUserReferralCode, getReferralLeaderboard } from '../../database';
 import { getDeletedMessages, clearRecoveredMessages } from '../handlers/AntiDeleteHandler';
 
 const CASHOUT_THRESHOLD = 100;

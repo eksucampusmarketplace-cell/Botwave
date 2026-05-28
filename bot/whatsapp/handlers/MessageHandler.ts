@@ -1,5 +1,5 @@
 import { delay } from '../../../lib/utils';
-import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, getSessionById, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, creditReward, checkAndCashout, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts, loadFlowSession, saveFlowSession, deleteFlowSession } from '../../database';
+import { getUserSettings, getAfkState, setAfkState, getAutoReplies, incrementLeaderboard, getSessionUserId, getSessionById, trackCommand, trackMessage, getUserSubscription, incrementQuotaUsage, getFeatureEnabled, getWelcomeMessage, isActiveBotPhone, getChatbotFlows, getCustomCommands, getProducts, loadFlowSession, saveFlowSession, deleteFlowSession } from '../../database';
 // import { matchIntent, classifyWithAI, getQuotedText, type NLPContext } from '../nlp/nlpEngine';
 // import { processSavageMode } from './SavageMode';
 import { trackCommandExecution } from '../../../lib/error-tracker';
@@ -493,7 +493,6 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
         return;
       }
 
-      void creditReward(userId, 'command_use', content.split(' ')[0]).catch(() => {});
     }
 
     if (isCommand && !isUserRateLimited(senderJid)) {
@@ -625,15 +624,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
       trackWhoSentLast(chatJid, true);
     }
 
-    if (userId) {
-      void (async () => {
-        try {
-          await creditReward(userId, 'daily_active', 'Daily active usage');
-          const phoneNumber = senderJid.replace(/@s\.whatsapp\.net$/, '');
-          await checkAndCashout(userId, phoneNumber);
-        } catch { /* non-critical */ }
-      })();
-    }
+
   } catch (error) {
     console.error('Error handling message:', error);
   }

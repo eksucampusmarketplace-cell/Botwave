@@ -10,7 +10,7 @@
 
 import { Bot, GrammyError, HttpError } from 'grammy';
 import { createClient } from '@supabase/supabase-js';
-import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementLeaderboard, incrementQuotaUsage, getUserSubscription, creditReward } from '../database';
+import { getUserSettings, getAutoReplies, trackCommand, trackMessage, incrementLeaderboard, incrementQuotaUsage, getUserSubscription } from '../database';
 import { refreshHeartbeat } from '../scaling/sessionCoordinator';
 import { registerAllHandlers } from './factory';
 import { getTelegramConfig, getDueScheduledMessages, markScheduledMessageSent } from './utils/db';
