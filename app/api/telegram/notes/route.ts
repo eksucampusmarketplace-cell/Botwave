@@ -1,8 +1,8 @@
 /**
  * Telegram Notes CRUD API
- * GET /api/telegram/notes?sessionId=xxx
- * POST /api/telegram/notes (create)
- * DELETE /api/telegram/notes?sessionId=xxx&name=xxx
+ * GET /api/telegram/notes?sessionId=xxx&chatId=yyy
+ * POST /api/telegram/notes (create/update, chat-scoped)
+ * DELETE /api/telegram/notes?sessionId=xxx&chatId=yyy&name=xxx
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -40,25 +40,17 @@ export async function GET(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let query = supabase
+    const { data: notes } = await supabase
       .from('telegram_notes')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .order('created_at', { ascending: false });
-
-    // Bot owner without chatId can see all notes for the session; everyone else
-    // must scope to the chatId they passed (or '0' for the legacy mini-app default).
-    if (chatId) {
-      query = query.eq('chat_id', chatId);
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    const { data: notes } = await query;
     const mapped = ((notes as NoteRow[] | null) || []).map(toApiNote);
     return NextResponse.json({ success: true, data: mapped });
   } catch (error) {
@@ -80,23 +72,17 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, chatId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin', requireChatId: true },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase, telegramUserId, ownerUserId, role } = auth;
-
-    // Non-owner callers must scope to a specific chat. Owners may save a
-    // session-wide note (chat_id '0') which is what the legacy mini-app does.
-    if (!chatId && role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
+    const { supabase, telegramUserId, ownerUserId } = auth;
 
     const { data, error } = await supabase
       .from('telegram_notes')
       .upsert({
         session_id: sessionId,
-        chat_id: chatId || '0',
+        chat_id: chatId,
         note_name: String(name).toLowerCase(),
         content,
         media_type: media_type || null,
@@ -128,23 +114,17 @@ export async function DELETE(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let q = supabase
+    await supabase
       .from('telegram_notes')
       .delete()
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .eq('note_name', name.toLowerCase());
-
-    if (chatId) {
-      q = q.eq('chat_id', chatId);
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    await q;
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[TG-NOTES] DELETE error:', error);

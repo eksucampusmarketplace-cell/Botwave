@@ -1,8 +1,8 @@
 /**
  * Unified CAPTCHA API for Mini App
  *
- * GET  /api/telegram/captcha?sessionId=X&chatId=Y - Get CAPTCHA settings
- * PUT  /api/telegram/captcha - Update CAPTCHA settings
+ * GET  /api/telegram/captcha?sessionId=X&chatId=Y - Get per-group CAPTCHA settings
+ * PUT  /api/telegram/captcha - Update per-group CAPTCHA settings
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -30,37 +30,19 @@ export async function GET(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    // Falling back to global config is bot-owner-only.
-    if (!chatId && role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    // Try per-group config first
-    if (chatId) {
-      const { data: groupConfig } = await supabase
-        .from('telegram_group_configs')
-        .select(CAPTCHA_FIELDS.join(','))
-        .eq('session_id', sessionId)
-        .eq('chat_id', chatId)
-        .single();
-
-      if (groupConfig) {
-        return NextResponse.json({ success: true, data: groupConfig });
-      }
-    }
-
-    // Fallback to global config
-    const { data: globalConfig } = await supabase
-      .from('telegram_bot_configs')
+    const { data: groupConfig } = await supabase
+      .from('telegram_group_configs')
       .select(CAPTCHA_FIELDS.join(','))
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .single();
 
-    return NextResponse.json({ success: true, data: globalConfig || {} });
+    return NextResponse.json({ success: true, data: groupConfig || {} });
   } catch (error) {
     console.error('[TG-CAPTCHA-API] GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch CAPTCHA settings' }, { status: 500 });
@@ -74,15 +56,11 @@ export async function PUT(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, chatId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin', requireChatId: true },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
-
-    if (!chatId && role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
+    const { supabase } = auth;
 
     const updates: Record<string, unknown> = {};
     for (const key of CAPTCHA_FIELDS) {
@@ -95,27 +73,15 @@ export async function PUT(request: NextRequest) {
 
     updates.updated_at = new Date().toISOString();
 
-    if (chatId) {
-      const { error } = await supabase
-        .from('telegram_group_configs')
-        .upsert(
-          { session_id: sessionId, chat_id: chatId, ...updates },
-          { onConflict: 'session_id,chat_id' },
-        )
-        .select()
-        .single();
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('telegram_bot_configs')
-        .upsert(
-          { session_id: sessionId, ...updates },
-          { onConflict: 'session_id' },
-        )
-        .select()
-        .single();
-      if (error) throw error;
-    }
+    const { error } = await supabase
+      .from('telegram_group_configs')
+      .upsert(
+        { session_id: sessionId, chat_id: chatId, ...updates },
+        { onConflict: 'session_id,chat_id' },
+      )
+      .select()
+      .single();
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

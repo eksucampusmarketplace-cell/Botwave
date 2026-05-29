@@ -2,9 +2,9 @@
  * Groups API for Telegram Mini App
  *
  * GET /api/telegram/groups?sessionId=X
- * Returns the list of groups the caller has authority over. Bot owner sees
- * every active group on the session; Telegram group admins see only the
- * groups where Telegram reports them as administrator/creator.
+ * Returns the list of groups the caller belongs to. Bot owner sees every
+ * active group on the session; Telegram callers see only groups where
+ * Telegram reports member/admin/creator status.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,16 +38,15 @@ export async function GET(request: NextRequest) {
 
     const rows = data || [];
 
-    // Bot owner / cookie auth: show everything.
-    if (role === 'owner' || !telegramUserId || !botToken) {
+    if (role === 'owner') {
       return NextResponse.json({ success: true, data: rows });
     }
 
-    // Telegram caller: filter to groups they administer in Telegram. We do
-    // this with one getChatMember per group; the role cache in
-    // resolveTelegramRole prevents this from being expensive on subsequent
-    // requests, but the FIRST request still pays N. Acceptable for typical
-    // groups counts; revisit when we have bots with >50 groups.
+    if (!telegramUserId || !botToken) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const allowedStatuses = new Set(['creator', 'administrator', 'member', 'restricted']);
     const allowed: typeof rows = [];
     for (const g of rows) {
       try {
@@ -55,7 +54,8 @@ export async function GET(request: NextRequest) {
           `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${g.chat_id}&user_id=${telegramUserId}`,
         );
         const j = await res.json();
-        if (j.ok && (j.result?.status === 'creator' || j.result?.status === 'administrator')) {
+        const status = String(j?.result?.status || '').toLowerCase();
+        if (j.ok && allowedStatuses.has(status)) {
           allowed.push(g);
         }
       } catch {

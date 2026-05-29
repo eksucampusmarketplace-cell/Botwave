@@ -23,29 +23,14 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId');
     const chatId = searchParams.get('chatId');
 
-    if (!chatId) {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    // Pass chatId so role is resolved against THIS chat, not 'any group on the session'.
-    // The __list__ pseudo-chatId is session-wide and only safe for bot-creator/cookie callers.
     const auth = await authorizeTelegramRequest(request, {
       sessionId,
-      chatId: chatId === '__list__' ? null : chatId,
+      chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
-
-    // Special case: list all groups for this session
-    if (chatId === '__list__') {
-      const { data: groups } = await supabase
-        .from('telegram_group_configs')
-        .select('chat_id, chat_title')
-        .eq('session_id', sessionId)
-        .order('updated_at', { ascending: false });
-      return NextResponse.json({ success: true, data: groups || [] });
-    }
 
     const { data: config } = await supabase
       .from('telegram_group_configs')
@@ -71,13 +56,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { sessionId, chatId, initData, ...configFields } = body;
 
-    if (!chatId) {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, chatId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin', requireChatId: true },
       initData,
     );
     if (!auth.ok) return auth.response;

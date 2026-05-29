@@ -2,7 +2,7 @@
  * Telegram Moderation Log API
  * GET /api/telegram/modlog?sessionId=xxx&chatId=yyy&limit=50&offset=0
  *
- * Caller must be admin of the requested chat (or bot owner for session-wide).
+ * Caller must be admin of the requested chat.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,24 +22,18 @@ export async function GET(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let query = supabase
+    const { data: logs, count } = await supabase
       .from('telegram_moderation_log')
       .select('*', { count: 'exact' })
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
-
-    if (chatId) {
-      query = query.eq('chat_id', chatId);
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    const { data: logs, count } = await query;
     return NextResponse.json({ success: true, data: logs || [], total: count || 0 });
   } catch (error) {
     console.error('[MODLOG] Error:', error);

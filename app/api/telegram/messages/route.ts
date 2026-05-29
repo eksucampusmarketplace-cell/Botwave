@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,10 @@ const GROUP_MESSAGE_FIELDS = [
   'welcome_image_url',
   'goodbye_image_url',
 ];
+
+const GLOBAL_MESSAGE_FIELDS = EDITABLE_FIELDS.filter(
+  (field) => !GROUP_MESSAGE_FIELDS.includes(field),
+);
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,33 +90,49 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { sessionId, chatId, initData, ...fields } = body;
 
-    const auth = await authorizeTelegramRequest(
-      request,
-      { sessionId, chatId, requireRole: 'admin' },
-      initData,
-    );
-    if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
-
-    // Writing global (bot-wide) message defaults is bot-owner-only. Group
-    // admins can only update the per-group fields for THEIR chat.
     const globalUpdates: Record<string, unknown> = {};
     const groupUpdates: Record<string, unknown> = {};
 
     for (const key of EDITABLE_FIELDS) {
-      if (key in fields) {
-        if (chatId && GROUP_MESSAGE_FIELDS.includes(key)) {
-          groupUpdates[key] = fields[key];
-        } else if (role === 'owner') {
-          globalUpdates[key] = fields[key];
-        }
-        // Otherwise the field is silently dropped: group admins cannot edit
-        // bot-wide texts. Their per-group equivalents (welcome/goodbye/rules)
-        // are still allowed when chatId is set.
+      if (!(key in fields)) continue;
+      if (GROUP_MESSAGE_FIELDS.includes(key)) {
+        groupUpdates[key] = fields[key];
+      }
+      if (GLOBAL_MESSAGE_FIELDS.includes(key)) {
+        globalUpdates[key] = fields[key];
       }
     }
 
-    // Update global config if there are global fields
+    if (Object.keys(globalUpdates).length === 0 && Object.keys(groupUpdates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    let supabase: SupabaseClient | null = null;
+
+    if (Object.keys(groupUpdates).length > 0) {
+      const groupAuth = await authorizeTelegramRequest(
+        request,
+        { sessionId, chatId, requireRole: 'admin', requireChatId: true },
+        initData,
+      );
+      if (!groupAuth.ok) return groupAuth.response;
+      supabase = groupAuth.supabase;
+    }
+
+    if (Object.keys(globalUpdates).length > 0) {
+      const ownerAuth = await authorizeTelegramRequest(request, {
+        sessionId,
+        requireRole: 'owner',
+        source: 'cookie',
+      });
+      if (!ownerAuth.ok) return ownerAuth.response;
+      supabase = ownerAuth.supabase;
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
     if (Object.keys(globalUpdates).length > 0) {
       const { error } = await supabase
         .from('telegram_bot_configs')
@@ -129,8 +150,7 @@ export async function PUT(request: NextRequest) {
       if (error) throw error;
     }
 
-    // Update per-group config if chatId is provided and there are group fields
-    if (chatId && Object.keys(groupUpdates).length > 0) {
+    if (Object.keys(groupUpdates).length > 0) {
       const { error } = await supabase
         .from('telegram_group_configs')
         .upsert(
@@ -146,10 +166,6 @@ export async function PUT(request: NextRequest) {
         .single();
 
       if (error) throw error;
-    }
-
-    if (Object.keys(globalUpdates).length === 0 && Object.keys(groupUpdates).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });

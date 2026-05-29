@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    const auth = await authorizeTelegramRequest(request, { sessionId, requireRole: 'owner' });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      requireRole: 'owner',
+      source: 'cookie',
+    });
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 
