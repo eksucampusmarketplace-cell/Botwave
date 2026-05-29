@@ -17,8 +17,14 @@ async function getPaymentsEnabled(supabase: Awaited<ReturnType<typeof createAdmi
 
     if (error) return process.env.PAYMENTS_ENABLED === 'true';
 
-    const enabled = (data?.value as { enabled?: unknown } | null)?.enabled;
-    if (typeof enabled === 'boolean') return enabled;
+    const settingsRow = data as unknown as { value?: unknown } | null;
+    const settingValue = settingsRow?.value;
+
+    if (settingValue && typeof settingValue === 'object') {
+      const enabled = (settingValue as { enabled?: unknown }).enabled;
+      if (typeof enabled === 'boolean') return enabled;
+    }
+
     return process.env.PAYMENTS_ENABLED === 'true';
   } catch {
     return process.env.PAYMENTS_ENABLED === 'true';
