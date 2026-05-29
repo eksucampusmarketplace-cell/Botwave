@@ -577,9 +577,7 @@ export default function DashboardPage() {
                   { href: '/dashboard/rate-limits', icon: '\uD83D\uDCCA', label: 'Rate Limits', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
                   { href: '/dashboard/group-analytics', icon: '\uD83D\uDCC8', label: 'Analytics', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
                   { href: '/dashboard/shop', icon: '\uD83D\uDED2', label: 'Shop', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
-                  { href: '/dashboard/referrals', icon: '\uD83D\uDD17', label: 'Referrals', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
                   { href: '/dashboard/pricing', icon: '\uD83D\uDCB3', label: 'Pricing', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
-                  { href: '/dashboard/rewards', icon: '\uD83C\uDF81', label: 'Rewards', platforms: ['whatsapp', 'telegram_bot', 'telegram_userbot'] as Platform[] },
                 ]).filter(link => {
                   const activePlatforms = sessions.map(s => s.platform || 'whatsapp');
                   return link.platforms.some(p => activePlatforms.includes(p));

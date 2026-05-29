@@ -25,19 +25,20 @@ interface PricingTier {
 
 const DEFAULT_TIERS: PricingTier[] = [
   { name: 'free', price: 0, sessions: 2, commands: 100, features: ['Basic commands', '2 bot sessions', '100 commands/day'] },
-  { name: 'starter', price: 5, sessions: 5, commands: 500, features: ['All free features', '5 bot sessions', '500 commands/day', 'Auto-replies'] },
-  { name: 'pro', price: 15, sessions: 15, commands: 2000, features: ['All starter features', '15 bot sessions', '2000 commands/day', 'Priority support', 'Custom responses'] },
-  { name: 'enterprise', price: 50, sessions: 100, commands: -1, features: ['Unlimited everything', '100 bot sessions', 'Unlimited commands', 'Dedicated support', 'API access'] },
+  { name: 'lite', price: 500, sessions: 1, commands: 2000, features: ['All free features', '2,000 messages/month', '50 AI queries/day', 'Auto-replies'] },
+  { name: 'standard', price: 1000, sessions: 3, commands: 10000, features: ['All lite features', '10,000 messages/month', '200 AI queries/day', 'Group analytics'] },
+  { name: 'boss', price: 2000, sessions: 5, commands: -1, features: ['Everything unlimited', 'Unlimited messages', 'Unlimited AI', 'Priority support'] },
 ];
 
 export default function SubscriptionsPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserPlan[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>(DEFAULT_TIERS);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [togglingPayments, setTogglingPayments] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filterPlan, setFilterPlan] = useState('all');
-  const [editingTier, setEditingTier] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -48,6 +49,7 @@ export default function SubscriptionsPage() {
       if (data.success) {
         setUsers(data.data?.users || data.users || []);
         if (data.data?.tiers) setTiers(data.data.tiers);
+        if (typeof data.paymentsEnabled === 'boolean') setPaymentsEnabled(data.paymentsEnabled);
       }
     } catch (err) {
       console.error('Error fetching monetization data:', err);
@@ -57,6 +59,31 @@ export default function SubscriptionsPage() {
   }, [router]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleTogglePayments = async () => {
+    setTogglingPayments(true);
+    setMessage(null);
+    try {
+      const next = !paymentsEnabled;
+      const res = await fetch('/api/admin/monetization', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentsEnabled: next }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPaymentsEnabled(next);
+        setMessage({ type: 'success', text: `Payments ${next ? 'enabled' : 'disabled'} successfully` });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to update payments toggle' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to update payments toggle' });
+    } finally {
+      setTogglingPayments(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
 
   const handleUpgrade = async (userId: string, plan: string) => {
     try {
@@ -78,9 +105,9 @@ export default function SubscriptionsPage() {
 
   const planCounts = {
     free: users.filter(u => !u.plan || u.plan === 'free').length,
-    starter: users.filter(u => u.plan === 'starter').length,
-    pro: users.filter(u => u.plan === 'pro').length,
-    enterprise: users.filter(u => u.plan === 'enterprise').length,
+    lite: users.filter(u => u.plan === 'lite').length,
+    standard: users.filter(u => u.plan === 'standard').length,
+    boss: users.filter(u => u.plan === 'boss').length,
   };
 
   const totalRevenue = users.reduce((sum, u) => {
@@ -105,6 +132,24 @@ export default function SubscriptionsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Pricing & Subscriptions</h1>
         <p className="text-gray-500 text-sm mt-1">Manage user plans and pricing tiers</p>
+      </div>
+
+      <div className="mb-6 bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-white">Payments</p>
+          <p className="text-xs text-gray-400">Disable this to keep all upgrades on hold.</p>
+        </div>
+        <button
+          onClick={handleTogglePayments}
+          disabled={togglingPayments}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            paymentsEnabled
+              ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+              : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+          } disabled:opacity-60`}
+        >
+          {togglingPayments ? 'Saving...' : paymentsEnabled ? 'ON' : 'OFF'}
+        </button>
       </div>
 
       {message && (
@@ -151,7 +196,7 @@ export default function SubscriptionsPage() {
         <div className="p-4 border-b border-white/5 flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-white font-semibold">User Plans</h2>
           <div className="flex gap-1">
-            {['all', 'free', 'starter', 'pro', 'enterprise'].map(plan => (
+            {['all', 'free', 'lite', 'standard', 'boss'].map(plan => (
               <button
                 key={plan}
                 onClick={() => setFilterPlan(plan)}
@@ -179,9 +224,9 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3 text-white">{user.username || user.id.slice(0, 8)}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      user.plan === 'pro' ? 'bg-purple-500/20 text-purple-400'
-                      : user.plan === 'enterprise' ? 'bg-yellow-500/20 text-yellow-400'
-                      : user.plan === 'starter' ? 'bg-blue-500/20 text-blue-400'
+                      user.plan === 'standard' ? 'bg-purple-500/20 text-purple-400'
+                      : user.plan === 'boss' ? 'bg-yellow-500/20 text-yellow-400'
+                      : user.plan === 'lite' ? 'bg-blue-500/20 text-blue-400'
                       : 'bg-gray-500/20 text-gray-400'
                     }`}>
                       {user.plan || 'free'}
