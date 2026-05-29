@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { validateWebhookSignature, PLANS } from '@/lib/squad';
+import { validateWebhookSignature, verifyPayment, PLANS } from '@/lib/flutterwave';
 import { invalidateSubscription, invalidatePaymentHistory, invalidateRewards } from '@/lib/redisApiCache';
 import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 import { sendPaymentConfirmationEmail, sendSubscriptionEmail } from '@/lib/email';
@@ -28,45 +28,54 @@ async function isPaymentsEnabled(supabase: ReturnType<typeof createClient>): Pro
 
 /**
  * POST /api/payments/webhook
- * Receives payment notifications from Squad.
+ * Receives payment notifications from Flutterwave.
  * Validates signature, updates payment record, and activates subscription.
  */
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
-    const signature = request.headers.get('x-squad-encrypted-body') || '';
+    const verifHash = request.headers.get('verif-hash') || '';
+    const flutterwaveSignature = request.headers.get('flutterwave-signature') || request.headers.get('x-flutterwave-signature') || '';
 
-    if (!validateWebhookSignature(rawBody, signature)) {
-      console.warn('[SQUAD-WEBHOOK] Invalid signature');
+    if (!validateWebhookSignature(rawBody, verifHash, flutterwaveSignature)) {
+      console.warn('[FLW-WEBHOOK] Invalid signature/hash');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody) as Record<string, unknown>;
-    const eventData = body.Body as Record<string, unknown> | undefined;
+    const event = (body.event as string | undefined)?.toLowerCase();
+    const eventData = body.data as Record<string, unknown> | undefined;
+
     if (!eventData) {
       return NextResponse.json({ ok: true });
     }
 
-    const transactionRef = eventData.transaction_ref as string | undefined;
-    const transactionStatus = eventData.transaction_status as string | undefined;
-    const gatewayRef = eventData.gateway_ref as string | undefined;
-    const channel = eventData.payment_type as string | undefined;
+    const transactionRef =
+      (eventData.tx_ref as string | undefined)
+      || (eventData.txRef as string | undefined)
+      || (eventData.transaction_ref as string | undefined);
+
+    let transactionStatus = ((eventData.status as string | undefined) || '').toLowerCase();
+    let gatewayRef =
+      (eventData.flw_ref as string | undefined)
+      || (eventData.id ? String(eventData.id) : undefined);
+    let channel = eventData.payment_type as string | undefined;
 
     if (!transactionRef) {
       return NextResponse.json({ ok: true });
     }
 
-    console.log(`[SQUAD-WEBHOOK] ref=${transactionRef} status=${transactionStatus} channel=${channel}`);
+    console.log(`[FLW-WEBHOOK] event=${event || 'unknown'} ref=${transactionRef} status=${transactionStatus || 'unknown'} channel=${channel || 'unknown'}`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const paymentsEnabled = await isPaymentsEnabled(supabase);
 
     if (!paymentsEnabled) {
-      console.log(`[SQUAD-WEBHOOK] Ignored while payments are disabled: ref=${transactionRef}`);
+      console.log(`[FLW-WEBHOOK] Ignored while payments are disabled: ref=${transactionRef}`);
       return NextResponse.json({ ok: true });
     }
 
-    // Find the payment record
+    // Legacy DB note: `squad_transaction_ref` now stores Flutterwave tx_ref.
     const { data: payment } = await supabase
       .from('payments')
       .select('id, user_id, status, plan, amount, squad_transaction_ref')
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!payment) {
-      console.warn(`[SQUAD-WEBHOOK] No payment found for ref: ${transactionRef}`);
+      console.warn(`[FLW-WEBHOOK] No payment found for ref: ${transactionRef}`);
       return NextResponse.json({ ok: true });
     }
 
@@ -83,8 +92,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    if (transactionStatus === 'success') {
-      // Update payment to success
+    let isSuccessful = transactionStatus === 'successful' || event === 'charge.completed';
+    let isFailed = ['failed', 'cancelled', 'reversed', 'voided'].includes(transactionStatus)
+      || event === 'charge.failed';
+
+    if (isSuccessful) {
+      const verification = await verifyPayment(transactionRef);
+      if (verification.success) {
+        transactionStatus = (verification.status || transactionStatus).toLowerCase();
+        gatewayRef = verification.providerReference || gatewayRef;
+        channel = verification.paymentType || channel;
+      } else {
+        console.warn(`[FLW-WEBHOOK] verifyPayment failed for ref=${transactionRef}, continuing with webhook payload`);
+      }
+
+      isSuccessful = transactionStatus === 'successful' || (event === 'charge.completed' && !transactionStatus);
+      isFailed = ['failed', 'cancelled', 'reversed', 'voided'].includes(transactionStatus)
+        || event === 'charge.failed';
+    }
+
+    if (isSuccessful) {
       const { error: payUpdateErr } = await supabase
         .from('payments')
         .update({
@@ -96,18 +123,19 @@ export async function POST(request: NextRequest) {
         .eq('id', payment.id);
 
       if (payUpdateErr) {
-        console.error(`[SQUAD-WEBHOOK] Failed to update payment ${payment.id}:`, payUpdateErr);
+        console.error(`[FLW-WEBHOOK] Failed to update payment ${payment.id}:`, payUpdateErr);
         return NextResponse.json({ error: 'Payment update failed' }, { status: 500 });
       }
 
-      // Activate/upgrade subscription
       const plan = payment.plan as string;
       const planConfig = PLANS[plan];
+
       if (planConfig) {
         const now = new Date();
         const nextRenewal = new Date(now);
         nextRenewal.setMonth(nextRenewal.getMonth() + 1);
 
+        // Legacy DB note: `squad_transaction_ref` keeps the provider tx_ref value.
         const { error: subErr } = await supabase
           .from('subscriptions')
           .upsert({
@@ -125,7 +153,7 @@ export async function POST(request: NextRequest) {
           }, { onConflict: 'user_id' });
 
         if (subErr) {
-          console.error(`[SQUAD-WEBHOOK] Subscription activation failed for user=${payment.user_id}, rolling back payment status:`, subErr);
+          console.error(`[FLW-WEBHOOK] Subscription activation failed for user=${payment.user_id}, rolling back payment status:`, subErr);
           await supabase
             .from('payments')
             .update({ status: 'pending', updated_at: new Date().toISOString() })
@@ -133,32 +161,28 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Subscription activation failed' }, { status: 500 });
         }
 
-        console.log(`[SQUAD-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
-        // Two Redis namespaces, two invalidations: `api:sub:*` for the dashboard,
-        // `bw:sub:*` for the bot. Without the bot-side delete the bot enforces
-        // the old (free) plan quota for up to 5 min after a paid upgrade.
+        console.log(`[FLW-WEBHOOK] Subscription activated: user=${payment.user_id} plan=${plan}`);
         await invalidateSubscription(payment.user_id);
         await invalidatePaymentHistory(payment.user_id);
         await invalidateBotRedisKey(`sub:${payment.user_id}`);
 
-        // Send payment confirmation + subscription emails
         try {
           const { data: userData } = await supabase.auth.admin.getUserById(payment.user_id);
           if (userData?.user?.email) {
             const uname = userData.user.user_metadata?.username || userData.user.email.split('@')[0];
             const amount = String(payment.amount || planConfig.price || '0');
+
             sendPaymentConfirmationEmail(userData.user.email, uname, plan, amount, 'NGN').catch((e) =>
-              console.error('[SQUAD-WEBHOOK] Payment email failed:', e),
+              console.error('[FLW-WEBHOOK] Payment email failed:', e),
             );
             sendSubscriptionEmail(userData.user.email, uname, plan, 'activated').catch((e) =>
-              console.error('[SQUAD-WEBHOOK] Subscription email failed:', e),
+              console.error('[FLW-WEBHOOK] Subscription email failed:', e),
             );
           }
         } catch (emailErr) {
-          console.error('[SQUAD-WEBHOOK] Email notification failed (non-blocking):', emailErr);
+          console.error('[FLW-WEBHOOK] Email notification failed (non-blocking):', emailErr);
         }
 
-        // Resolve any active dunning
         await supabase
           .from('subscriptions')
           .update({
@@ -174,7 +198,6 @@ export async function POST(request: NextRequest) {
           .eq('user_id', payment.user_id)
           .in('status', ['notified', 'retry_scheduled']);
 
-        // Credit reward for plan upgrade
         try {
           const { data: rewardBal } = await supabase
             .from('reward_balances')
@@ -199,14 +222,15 @@ export async function POST(request: NextRequest) {
               reason: `Upgraded to ${plan} plan`,
               created_at: now.toISOString(),
             });
+
             await invalidateRewards(payment.user_id);
-            console.log(`[SQUAD-WEBHOOK] Reward credited: user=${payment.user_id} +\u20a630`);
+            console.log(`[FLW-WEBHOOK] Reward credited: user=${payment.user_id} +₦30`);
           }
         } catch (rewardErr) {
-          console.error('[SQUAD-WEBHOOK] Reward credit failed:', rewardErr);
+          console.error('[FLW-WEBHOOK] Reward credit failed:', rewardErr);
         }
       }
-    } else if (transactionStatus === 'failed') {
+    } else if (isFailed) {
       await supabase
         .from('payments')
         .update({
@@ -216,7 +240,6 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', payment.id);
 
-      // Start/continue dunning sequence
       const { data: existingDunning } = await supabase
         .from('dunning_attempts')
         .select('attempt_number')
@@ -256,12 +279,15 @@ export async function POST(request: NextRequest) {
       await invalidateSubscription(payment.user_id);
       await invalidatePaymentHistory(payment.user_id);
       await invalidateBotRedisKey(`sub:${payment.user_id}`);
-      console.log(`[SQUAD-WEBHOOK] Payment failed + dunning started: ref=${transactionRef} user=${payment.user_id} attempt=${attemptNumber}`);
+
+      console.log(`[FLW-WEBHOOK] Payment failed + dunning started: ref=${transactionRef} user=${payment.user_id} attempt=${attemptNumber}`);
+    } else {
+      console.log(`[FLW-WEBHOOK] Event ignored: ref=${transactionRef} status=${transactionStatus || 'unknown'} event=${event || 'unknown'}`);
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[SQUAD-WEBHOOK] Error:', err);
+    console.error('[FLW-WEBHOOK] Error:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

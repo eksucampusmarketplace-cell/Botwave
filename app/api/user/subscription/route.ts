@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { PLANS } from '@/lib/squad';
+import { PLANS } from '@/lib/flutterwave';
 import { getCachedSubscriptionFull, cacheSubscriptionFull, invalidateSubscription, getCachedRewards, cacheRewards } from '@/lib/redisApiCache';
 import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
 
@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get or create subscription (default to free)
+    // Get or create subscription (default to free).
+    // Legacy DB note: `squad_transaction_ref` stores the provider tx_ref value.
     let { data: subscription } = await supabase
       .from('subscriptions')
       .select('user_id, plan, status, quota_limit, quota_used, session_limit, ai_daily_limit, billing_start, next_renewal, squad_transaction_ref, dunning_status, updated_at')

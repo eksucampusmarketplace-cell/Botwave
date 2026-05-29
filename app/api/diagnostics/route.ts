@@ -18,8 +18,9 @@ export async function GET() {
     { key: 'NEXT_PUBLIC_SUPABASE_URL', label: 'Supabase URL' },
     { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', label: 'Supabase Anon Key' },
     { key: 'SUPABASE_SERVICE_ROLE_KEY', label: 'Supabase Service Key' },
-    { key: 'SQUAD_SECRET_KEY', label: 'Squad Secret Key' },
-    { key: 'SQUAD_PUBLIC_KEY', label: 'Squad Public Key' },
+    { key: 'FLW_SECRET_KEY', label: 'Flutterwave Secret Key' },
+    { key: 'FLW_PUBLIC_KEY', label: 'Flutterwave Public Key' },
+    { key: 'FLW_SECRET_HASH', label: 'Flutterwave Webhook Hash' },
     { key: 'INLOMAX_API_KEY', label: 'Inlomax API Key' },
   ];
 
@@ -83,24 +84,24 @@ export async function GET() {
     console.error('[STARTUP] Supabase: MISSING credentials');
   }
 
-  // 3. Squad payment gateway
-  const squadKey = process.env.SQUAD_SECRET_KEY;
-  if (squadKey) {
+  // 3. Flutterwave payment gateway
+  const flutterwaveKey = process.env.FLW_SECRET_KEY;
+  if (flutterwaveKey) {
     try {
-      const res = await fetch('https://api-d.squadco.com/merchant/balance', {
-        headers: { Authorization: `Bearer ${squadKey}` },
+      const res = await fetch('https://api.flutterwave.com/v3/balances', {
+        headers: { Authorization: `Bearer ${flutterwaveKey}` },
       });
       const status = res.ok ? 'ok' : 'fail';
       const detail = res.ok ? `Connected (HTTP ${res.status})` : `HTTP ${res.status} - check key`;
-      checks.push({ name: 'Squad Payment Gateway', status, detail });
-      console.log(`[STARTUP] Squad API: ${status === 'ok' ? 'CONNECTED' : `FAIL (${res.status})`}`);
+      checks.push({ name: 'Flutterwave Payment Gateway', status, detail });
+      console.log(`[STARTUP] Flutterwave API: ${status === 'ok' ? 'CONNECTED' : `FAIL (${res.status})`}`);
     } catch (err) {
-      checks.push({ name: 'Squad Payment Gateway', status: 'fail', detail: `Network error: ${err}` });
-      console.error('[STARTUP] Squad API: NETWORK ERROR -', err);
+      checks.push({ name: 'Flutterwave Payment Gateway', status: 'fail', detail: `Network error: ${err}` });
+      console.error('[STARTUP] Flutterwave API: NETWORK ERROR -', err);
     }
   } else {
-    checks.push({ name: 'Squad Payment Gateway', status: 'missing', detail: 'SQUAD_SECRET_KEY not set' });
-    console.warn('[STARTUP] Squad API: MISSING key');
+    checks.push({ name: 'Flutterwave Payment Gateway', status: 'missing', detail: 'FLW_SECRET_KEY not set' });
+    console.warn('[STARTUP] Flutterwave API: MISSING key');
   }
 
   // 4. Inlomax airtime API

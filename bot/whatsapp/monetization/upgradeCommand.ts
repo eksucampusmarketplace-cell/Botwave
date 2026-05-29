@@ -7,15 +7,15 @@
  * - !upgrade standard - initiate payment for Standard plan
  * - !upgrade boss - initiate payment for Boss plan
  *
- * The command generates a Squad payment link and sends it directly
+ * The command generates a Flutterwave payment link and sends it directly
  * in the chat, so the user can tap to pay without leaving WhatsApp.
  */
 
 import { registerCommand, type MessageContext } from '../commands/registry';
 import { sendReply } from '../commands/helpers';
 import { getUserSubscription, getSessionUserId } from '../../database';
-import { PLANS, type PlanConfig } from '../../../lib/squad';
-import { initializePayment } from '../../../lib/squad';
+import { PLANS } from '../../../lib/flutterwave';
+import { initializePayment } from '../../../lib/flutterwave';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -65,7 +65,7 @@ async function handleUpgrade(
     return;
   }
 
-  // Generate payment link using shared Squad client
+  // Generate payment link using shared Flutterwave client
   const paymentLink = await generatePaymentLink(userId, requestedPlan);
 
   if (!paymentLink) {
@@ -86,7 +86,7 @@ async function handleUpgrade(
     `━━━━━━━━━━━━━━━━━\n` +
     `🔗 *Tap to pay:*\n${paymentLink}\n` +
     `━━━━━━━━━━━━━━━━━\n\n` +
-    `Payment is via bank transfer. Your plan activates instantly after payment confirms.\n\n` +
+    `Payment is securely processed by Flutterwave. Your plan activates instantly after payment confirms.\n\n` +
     `_Link expires in 30 minutes. Send !upgrade ${requestedPlan} again if it does._`;
 
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
@@ -105,16 +105,16 @@ async function showPlanMenu(
     `*FREE*${currentIndicator('free')}\n` +
     `₦0 • 300 msgs/mo • 1 session • 10 AI/day\n\n` +
     `*LITE*${currentIndicator('lite')}\n` +
-    `_Coming Soon_ • 2,000 msgs • 1 session • 50 AI/day\n` +
+    `₦500/mo • 2,000 msgs • 1 session • 50 AI/day\n` +
     `+ Auto reply, custom commands, templates\n\n` +
     `*STANDARD*${currentIndicator('standard')}\n` +
-    `_Coming Soon_ • 10,000 msgs • 3 sessions • 200 AI/day\n` +
+    `₦1,000/mo • 10,000 msgs • 3 sessions • 200 AI/day\n` +
     `+ Status viewer, analytics, flow builder\n\n` +
     `*BOSS*${currentIndicator('boss')}\n` +
-    `_Coming Soon_ • Unlimited everything • 5 sessions\n` +
+    `₦2,000/mo • Unlimited everything • 5 sessions\n` +
     `+ API access, custom branding, all features\n` +
     `━━━━━━━━━━━━━━━━━\n\n` +
-    `_Paid plans are coming soon. The free tier remains free with 300 msgs/month, 10 AI queries/day, and all 150+ commands._`;
+    `Send *!upgrade lite*, *!upgrade standard*, or *!upgrade boss* to generate your Flutterwave payment link.`;
 
   await sendReply(context.chatJid, msg, sock, context.rawMessage.key, context.queue);
 }
@@ -154,7 +154,7 @@ async function generatePaymentLink(userId: string, plan: string): Promise<string
       return result.checkoutUrl;
     }
 
-    console.error('[UPGRADE] Squad payment init failed:', result.error);
+    console.error('[UPGRADE] Flutterwave payment init failed:', result.error);
     return null;
   } catch (err) {
     console.error('[UPGRADE] Failed to generate payment link:', err);

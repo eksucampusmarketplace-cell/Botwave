@@ -18,6 +18,7 @@ interface PaymentRecord {
   plan: string;
   amount: number;
   status: string;
+  // Legacy DB column name; stores provider transaction reference.
   squad_transaction_ref: string;
   created_at: string;
 }
@@ -40,7 +41,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   lite: {
     name: 'Lite',
-    price: 0,
+    price: 500,
     quotaLimit: 2000,
     sessionLimit: 1,
     aiDailyLimit: 50,
@@ -58,7 +59,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   standard: {
     name: 'Standard',
-    price: 0,
+    price: 1000,
     quotaLimit: 10000,
     sessionLimit: 3,
     aiDailyLimit: 200,
@@ -80,7 +81,7 @@ const PLANS: Record<string, PlanInfo> = {
   },
   boss: {
     name: 'Boss',
-    price: 0,
+    price: 2000,
     quotaLimit: -1,
     sessionLimit: 5,
     aiDailyLimit: -1,
@@ -103,19 +104,12 @@ const PLANS: Record<string, PlanInfo> = {
   },
 };
 
-declare global {
-  interface Window {
-    squad?: new (config: Record<string, unknown>) => { setup: () => void };
-  }
-}
-
 export default function PricingPage() {
   const [currentPlan, setCurrentPlan] = useState<string>('free');
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [squadReady, setSquadReady] = useState(false);
 
   useEffect(() => {
     fetch('/api/user/subscription', { credentials: 'include' })
@@ -126,23 +120,6 @@ export default function PricingPage() {
         }
       })
       .catch(() => {});
-
-    // Load Squad inline script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.squadco.com/widget/squad.min.js';
-    script.async = true;
-    script.onload = () => setSquadReady(true);
-    script.onerror = () => {
-      console.warn('[PAYMENT] Squad widget failed to load, will use checkout URL redirect');
-      setSquadReady(false);
-    };
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
   }, []);
 
   const fetchPaymentHistory = async () => {
@@ -176,17 +153,19 @@ export default function PricingPage() {
         signal: controller.signal,
       });
       clearTimeout(fetchTimeout);
+
       console.log(`[PAYMENT] /api/payments/initiate responded: HTTP ${res.status} in ${Math.round(performance.now() - startMs)}ms`);
 
       if (res.status === 401) {
         setMessage({ type: 'error', text: 'Session expired. Please log in again.' });
         setLoading(null);
-        setTimeout(() => { window.location.href = '/login'; }, 1500);
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
         return;
       }
 
       const data = await res.json();
-
       if (!data.success) {
         console.error('[PAYMENT] API returned failure:', data.error);
         setMessage({ type: 'error', text: data.error || 'Payment initialization failed' });
@@ -194,87 +173,20 @@ export default function PricingPage() {
         return;
       }
 
-      console.log('[PAYMENT] API success:', JSON.stringify({ checkoutUrl: data.checkoutUrl ? data.checkoutUrl.slice(0, 60) + '...' : 'NONE', publicKey: !!data.publicKey, transactionRef: data.transactionRef, squadWidgetReady: squadReady }));
-
-      // Strategy 1: Redirect to Squad checkout URL (fastest, most reliable)
-      if (data.checkoutUrl) {
-        console.log('[PAYMENT] Strategy 1: opening checkoutUrl:', data.checkoutUrl);
-        setMessage({ type: 'success', text: 'Opening payment page...' });
-        const popup = window.open(data.checkoutUrl, '_blank');
-        if (!popup || popup.closed) {
-          console.log('[PAYMENT] Popup blocked, redirecting in same tab');
-          window.location.href = data.checkoutUrl;
-        }
-        setLoading(null);
-        return;
-      }
-      console.warn('[PAYMENT] No checkoutUrl in response, trying fallback strategies');
-
-      // Strategy 2: Try Squad inline modal
-      if (squadReady && window.squad && data.publicKey) {
-        try {
-          let callbackFired = false;
-          const safetyTimeout = setTimeout(() => {
-            if (!callbackFired) {
-              console.warn('[PAYMENT] Squad widget timed out - no callback fired in 10s');
-              setLoading(null);
-              setMessage({ type: 'error', text: 'Payment widget timed out. Please try again.' });
-            }
-          }, 10000);
-
-          const squadInstance = new window.squad({
-            onClose: () => {
-              callbackFired = true;
-              clearTimeout(safetyTimeout);
-              setLoading(null);
-            },
-            onLoad: () => {
-              console.log('[PAYMENT] Squad widget loaded');
-            },
-            onSuccess: () => {
-              callbackFired = true;
-              clearTimeout(safetyTimeout);
-              setMessage({ type: 'success', text: 'Payment successful! Your plan will be activated shortly.' });
-              setCurrentPlan(planKey);
-              setLoading(null);
-            },
-            key: data.publicKey,
-            email: data.email,
-            amount: data.amount * 100,
-            currency_code: 'USD',
-            transaction_ref: data.transactionRef,
-            payment_channels: ['bank', 'transfer'],
-            customer_name: '',
-            metadata: { plan: planKey },
-          });
-          squadInstance.setup();
-          return;
-        } catch (err) {
-          console.warn('[PAYMENT] Squad widget error:', err);
-        }
-      }
-
-      // Strategy 3: Build Squad checkout URL manually from transaction ref
-      if (data.transactionRef) {
-        const manualUrl = `https://checkout.squadco.com/${data.transactionRef}`;
-        console.log('[PAYMENT] Strategy 3: manual checkout URL:', manualUrl);
-        setMessage({ type: 'success', text: 'Opening payment page...' });
-        const popup = window.open(manualUrl, '_blank');
-        if (!popup || popup.closed) {
-          window.location.href = manualUrl;
-        }
+      if (!data.checkoutUrl) {
+        console.error('[PAYMENT] Missing checkout URL in initiate response');
+        setMessage({ type: 'error', text: 'Payment gateway is unavailable right now. Please try again shortly.' });
         setLoading(null);
         return;
       }
 
-      // Nothing worked
-      console.error('[PAYMENT] ALL strategies exhausted. No checkoutUrl, no widget, no transactionRef.');
-      setMessage({ type: 'error', text: 'Payment gateway is not responding. Please try again or contact support.' });
-      setLoading(null);
+      setMessage({ type: 'success', text: 'Redirecting to secure Flutterwave checkout...' });
+      window.location.href = data.checkoutUrl;
     } catch (err) {
       clearTimeout(fetchTimeout);
       const isTimeout = err instanceof Error && err.name === 'AbortError';
       const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+
       console.error(`[PAYMENT] CATCH: ${isTimeout ? 'TIMEOUT (12s)' : errDetail}`, err);
       setMessage({
         type: 'error',
@@ -347,10 +259,10 @@ export default function PricingPage() {
 
                 <div className="mb-6">
                   <span className="font-display text-3xl font-black text-blue-600 dark:text-blue-400">
-                    {plan.price === 0 && key === 'free' ? 'FREE' : 'Coming Soon'}
+                    {plan.price === 0 ? 'FREE' : `₦${plan.price.toLocaleString()}`}
                   </span>
-                  {key !== 'free' && (
-                    <span className="font-mono text-xs text-[#5a9a7a] ml-1"></span>
+                  {plan.price > 0 && (
+                    <span className="font-mono text-xs text-[#5a9a7a] ml-1">/mo</span>
                   )}
                 </div>
 
@@ -365,11 +277,11 @@ export default function PricingPage() {
 
                 <button
                   onClick={() => handleUpgrade(key)}
-                  disabled={isCurrent || key === 'free' || (plan.price === 0 && key !== 'free') || loading !== null}
+                  disabled={isCurrent || key === 'free' || loading !== null}
                   className={`w-full py-3 font-mono text-xs tracking-[2px] transition-all ${
                     isCurrent
                       ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 cursor-default'
-                      : key === 'free' || (plan.price === 0 && key !== 'free')
+                      : key === 'free'
                         ? 'bg-dark border border-blue-500/10 text-[#5a9a7a] cursor-default'
                         : 'bg-blue-500 text-dark font-bold hover:bg-blue-500/90 hover:shadow-[0_0_20px_rgba(0,255,136,0.3)] active:scale-[0.98]'
                   } ${loading === key ? 'opacity-50' : ''}`}
@@ -378,21 +290,21 @@ export default function PricingPage() {
                     ? 'CURRENT PLAN'
                     : key === 'free'
                       ? 'FREE TIER'
-                      : plan.price === 0
-                        ? 'COMING SOON'
-                        : loading === key
-                          ? 'PROCESSING...'
-                          : 'UPGRADE'}
+                      : loading === key
+                        ? 'PROCESSING...'
+                        : 'UPGRADE'}
                 </button>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Payment history */}
         <div className="mt-12 max-w-2xl mx-auto">
           <button
-            onClick={() => { setShowHistory(!showHistory); if (!showHistory) fetchPaymentHistory(); }}
+            onClick={() => {
+              setShowHistory(!showHistory);
+              if (!showHistory) fetchPaymentHistory();
+            }}
             className="w-full text-center font-mono text-xs text-[#5a9a7a] tracking-[1px] hover:text-blue-600 dark:text-blue-400 transition-colors py-2"
           >
             {showHistory ? '▲ HIDE PAYMENT HISTORY' : '▼ VIEW PAYMENT HISTORY'}
@@ -414,12 +326,16 @@ export default function PricingPage() {
                       <span className="text-[#5a9a7a] ml-2">{new Date(p.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-blue-600 dark:text-blue-400">${p.amount?.toLocaleString()}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] ${
-                        p.status === 'completed' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
-                        p.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
-                        'bg-red-500/10 text-red-400'
-                      }`}>
+                      <span className="text-blue-600 dark:text-blue-400">₦{p.amount?.toLocaleString()}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] ${
+                          p.status === 'success'
+                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                            : p.status === 'pending'
+                              ? 'bg-yellow-500/10 text-yellow-400'
+                              : 'bg-red-500/10 text-red-400'
+                        }`}
+                      >
                         {p.status}
                       </span>
                     </div>
@@ -432,7 +348,7 @@ export default function PricingPage() {
 
         <div className="mt-8 text-center">
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[1px]">
-            All payments are processed securely via Squad. Bank transfer supported.
+            All payments are processed securely via Flutterwave.
           </p>
           <p className="font-mono text-xs text-[#5a9a7a] tracking-[1px] mt-2">
             Plans renew monthly. Cancel anytime from the dashboard.

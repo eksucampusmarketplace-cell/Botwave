@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyAdminToken } from '@/lib/admin-auth';
-import { PLANS } from '@/lib/squad';
+import { PLANS } from '@/lib/flutterwave';
 
 export const dynamic = 'force-dynamic';
 

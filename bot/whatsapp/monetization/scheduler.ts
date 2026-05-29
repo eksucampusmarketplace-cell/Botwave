@@ -14,7 +14,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getActiveBotSocket } from '../../BotManager';
 import { delay } from '../../../lib/utils';
-import { PLANS } from '../../../lib/squad';
+import { PLANS } from '../../../lib/flutterwave';
 import { invalidateRedisKey } from '../../infrastructure/redisSessionCache';
 import { invalidateSubscription as invalidateApiSubscription } from '../../../lib/redisApiCache';
 import {
