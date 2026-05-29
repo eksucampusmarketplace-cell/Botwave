@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { validateWebhookSignature, verifyPayment, PLANS } from '@/lib/flutterwave';
 import { invalidateSubscription, invalidatePaymentHistory, invalidateRewards } from '@/lib/redisApiCache';
 import { invalidateRedisKey as invalidateBotRedisKey } from '@/bot/infrastructure/redisSessionCache';
@@ -11,7 +11,7 @@ const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const PAYMENTS_SETTING_KEY = 'payments_enabled';
 
-async function isPaymentsEnabled(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+async function isPaymentsEnabled(supabase: SupabaseClient): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from('app_settings')
