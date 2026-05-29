@@ -4,8 +4,7 @@
  * POST /api/telegram/filters (create/update)
  * DELETE /api/telegram/filters?sessionId=xxx&keyword=xxx&chatId=yyy
  *
- * Group admins must pass chatId so they can only see/modify filters for the
- * chat they administer. Bot owner can omit chatId for a session-wide view.
+ * Group-scoped endpoint: chatId is required for all reads/writes/deletes.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,23 +22,17 @@ export async function GET(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let query = supabase
+    const { data: filters } = await supabase
       .from('telegram_filters')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .order('created_at', { ascending: false });
-
-    if (chatId) {
-      query = query.eq('chat_id', chatId);
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    const { data: filters } = await query;
     return NextResponse.json({ success: true, data: filters || [] });
   } catch (error) {
     console.error('[TG-FILTERS] GET error:', error);
@@ -59,21 +52,17 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, chatId, requireRole: 'admin' },
+      { sessionId, chatId, requireRole: 'admin', requireChatId: true },
       initData,
     );
     if (!auth.ok) return auth.response;
-    const { supabase, telegramUserId, ownerUserId, role } = auth;
-
-    if (!chatId && role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
+    const { supabase, telegramUserId, ownerUserId } = auth;
 
     const { data, error } = await supabase
       .from('telegram_filters')
       .upsert({
         session_id: sessionId,
-        chat_id: chatId || '0',
+        chat_id: chatId,
         keyword: String(keyword).toLowerCase(),
         response,
         media_type: media_type || null,
@@ -105,23 +94,17 @@ export async function DELETE(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let q = supabase
+    await supabase
       .from('telegram_filters')
       .delete()
       .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
       .eq('keyword', keyword.toLowerCase());
-
-    if (chatId) {
-      q = q.eq('chat_id', chatId);
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    await q;
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[TG-FILTERS] DELETE error:', error);

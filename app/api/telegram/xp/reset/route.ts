@@ -12,19 +12,20 @@ export async function POST(request: NextRequest) {
   try {
     const { sessionId, chatId, initData } = await request.json();
 
-    // Resetting XP without a chatId wipes EVERY group on the session. Only
-    // the bot owner can do that. Group admins must scope to their own chat.
-    const auth = await authorizeTelegramRequest(
-      request,
-      { sessionId, chatId, requireRole: 'admin' },
-      initData,
-    );
-    if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const auth = chatId
+      ? await authorizeTelegramRequest(
+          request,
+          { sessionId, chatId: String(chatId), requireRole: 'admin', requireChatId: true },
+          initData,
+        )
+      : await authorizeTelegramRequest(request, {
+          sessionId,
+          requireRole: 'owner',
+          source: 'cookie',
+        });
 
-    if (!chatId && role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     let query = supabase
       .from('telegram_xp')
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       .eq('session_id', sessionId);
 
     if (chatId) {
-      query = query.eq('chat_id', chatId);
+      query = query.eq('chat_id', String(chatId));
     }
 
     const { error } = await query;

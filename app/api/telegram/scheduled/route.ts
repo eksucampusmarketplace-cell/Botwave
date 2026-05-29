@@ -1,8 +1,8 @@
 /**
  * Telegram Scheduled Messages API
- * GET /api/telegram/scheduled?sessionId=xxx
- * POST /api/telegram/scheduled (create)
- * DELETE /api/telegram/scheduled?sessionId=xxx&id=xxx
+ * GET /api/telegram/scheduled?sessionId=xxx&chatId=yyy
+ * POST /api/telegram/scheduled (create, chat-scoped)
+ * DELETE /api/telegram/scheduled?sessionId=xxx&chatId=yyy&id=xxx
  *
  * The dashboard / mini-app speak {message, scheduled_at, status}; the DB
  * (telegram_scheduled_messages, migration 035) speaks
@@ -60,23 +60,22 @@ export async function GET(request: NextRequest) {
       sessionId,
       chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
+    const { supabase } = auth;
 
-    let query = supabase
+    const chatIdNum = Number(chatId);
+    if (!Number.isFinite(chatIdNum)) {
+      return NextResponse.json({ error: 'chatId must be numeric' }, { status: 400 });
+    }
+
+    const { data: rows } = await supabase
       .from('telegram_scheduled_messages')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('chat_id', chatIdNum)
       .order('next_send_at', { ascending: true });
-
-    if (chatId) {
-      query = query.eq('chat_id', Number(chatId));
-    } else if (role !== 'owner') {
-      return NextResponse.json({ error: 'chatId is required' }, { status: 400 });
-    }
-
-    const { data: rows } = await query;
     const mapped = ((rows as ScheduledRow[] | null) || []).map(toApiScheduled);
     return NextResponse.json({ success: true, data: mapped });
   } catch (error) {
@@ -107,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     const auth = await authorizeTelegramRequest(
       request,
-      { sessionId, chatId: String(chat_id), requireRole: 'admin' },
+      { sessionId, chatId: String(chat_id), requireRole: 'admin', requireChatId: true },
       initData,
     );
     if (!auth.ok) return auth.response;
@@ -156,53 +155,35 @@ export async function DELETE(request: NextRequest) {
     const sessionId = params.get('sessionId');
     const id = params.get('id');
     const chatId = params.get('chatId');
+
     if (!id) {
       return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
 
-    // id is SERIAL (integer) after migration 036.
     const idNum = Number(id);
     if (!Number.isFinite(idNum)) {
       return NextResponse.json({ error: 'id must be numeric' }, { status: 400 });
     }
 
-    // Look up the chat_id from the row so we can scope auth correctly
-    // without the caller having to know it.
-    const adminClient = (await authorizeTelegramRequest(request, {
-      sessionId,
-      requireRole: 'admin',
-    }));
-    if (!adminClient.ok) return adminClient.response;
-    const lookupSupabase = adminClient.supabase;
-    const { data: row } = await lookupSupabase
-      .from('telegram_scheduled_messages')
-      .select('chat_id')
-      .eq('session_id', sessionId)
-      .eq('id', idNum)
-      .maybeSingle();
-    const rowChatId = row?.chat_id != null ? String(row.chat_id) : null;
+    const chatIdNum = Number(chatId);
+    if (!Number.isFinite(chatIdNum)) {
+      return NextResponse.json({ error: 'chatId must be numeric' }, { status: 400 });
+    }
 
-    // Re-authorize against the row's chat_id (or caller-supplied chatId for
-    // legacy clients). Group admins can only delete their own chat's rows.
     const auth = await authorizeTelegramRequest(request, {
       sessionId,
-      chatId: chatId ?? rowChatId,
+      chatId,
       requireRole: 'admin',
+      requireChatId: true,
     });
     if (!auth.ok) return auth.response;
-    const { supabase, role } = auth;
-
-    if (!rowChatId) {
-      return NextResponse.json({ success: true });
-    }
-    if (chatId && chatId !== rowChatId && role !== 'owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { supabase } = auth;
 
     await supabase
       .from('telegram_scheduled_messages')
       .delete()
       .eq('session_id', sessionId)
+      .eq('chat_id', chatIdNum)
       .eq('id', idNum);
 
     return NextResponse.json({ success: true });
