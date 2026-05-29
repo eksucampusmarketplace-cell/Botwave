@@ -13,6 +13,7 @@ import {
   USERBOT_CONFIG_COLUMNS,
   filterValidColumns,
   normalizeAntilinkWhitelist,
+  normalizeTelegramConfigAliases,
   validateNumericFields,
   parseSupabaseError,
 } from '@/lib/telegram-valid-columns';
@@ -64,13 +65,18 @@ export async function PUT(request: NextRequest) {
     const table = type === 'userbot' ? 'telegram_userbot_configs' : 'telegram_bot_configs';
     const validColumns = type === 'userbot' ? USERBOT_CONFIG_COLUMNS : TELEGRAM_BOT_CONFIG_COLUMNS;
 
+    const normalizedFields =
+      type === 'userbot'
+        ? configFields
+        : normalizeTelegramConfigAliases(configFields, 'bot');
+
     // Convert antilink_whitelist from string to array if needed
-    if ('antilink_whitelist' in configFields) {
-      configFields.antilink_whitelist = normalizeAntilinkWhitelist(configFields.antilink_whitelist);
+    if ('antilink_whitelist' in normalizedFields) {
+      normalizedFields.antilink_whitelist = normalizeAntilinkWhitelist(normalizedFields.antilink_whitelist);
     }
 
     // Filter to only valid DB columns
-    let filtered = filterValidColumns(configFields, validColumns);
+    let filtered = filterValidColumns(normalizedFields, validColumns);
 
     // Validate numeric fields
     filtered = validateNumericFields(filtered);
