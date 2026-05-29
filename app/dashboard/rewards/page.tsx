@@ -1,217 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import DashboardNav from '@/components/layout/DashboardNav';
 
-interface RewardBalance {
-  balance: number;
-  total_earned: number;
-  total_cashed_out: number;
-}
-
-interface SubscriptionData {
-  plan: string;
-  plan_name: string;
-  plan_price: number;
-  status: string;
-  quota_limit: number;
-  quota_used: number;
-  session_limit: number;
-  ai_daily_limit: number;
-  next_renewal: string | null;
-}
-
-const EARNING_GUIDE = [
-  { action: 'Connect first session', reward: '₦10', note: 'One-time' },
-  { action: 'Use a command', reward: '₦1', note: 'Max 10/day' },
-  { action: 'Daily active (5+ msgs)', reward: '₦3', note: 'Once/day' },
-  { action: 'Refer a friend', reward: '₦15', note: 'No limit' },
-  { action: 'Upgrade plan', reward: '₦30', note: 'Once per tier' },
-  { action: '7-day streak', reward: '₦10', note: 'Weekly' },
-];
-
 export default function RewardsPage() {
-  const [rewards, setRewards] = useState<RewardBalance | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/user/subscription')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.rewards) setRewards(data.rewards);
-        if (data.subscription) setSubscription(data.subscription);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const progress = rewards ? Math.min(100, Math.round((rewards.balance / 100) * 100)) : 0;
-
   return (
     <main className="min-h-screen bg-dark relative">
       <DashboardNav />
-      <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
-        <div className="text-center mb-12">
-          <h1 className="font-display text-3xl md:text-4xl font-black text-white tracking-[4px] mt-6 mb-4">
-            REWARDS & <span className="text-blue-600 dark:text-blue-400">PLAN</span>
-          </h1>
-        </div>
-
-        {loading ? (
-          <div className="text-center font-mono text-sm text-[#5a9a7a]">Loading...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Current Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-card border border-blue-500/10 p-6 relative"
-            >
-              <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-blue-500/30" />
-              <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-blue-500/30" />
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-blue-500/30" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-blue-500/30" />
-
-              <h2 className="font-display text-sm font-bold text-white tracking-[3px] mb-4">
-                CURRENT PLAN
-              </h2>
-
-              {subscription && (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="font-mono text-xs text-[#5a9a7a]">Plan</span>
-                    <span className="font-mono text-sm text-blue-600 dark:text-blue-400 font-bold">{subscription.plan_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-mono text-xs text-[#5a9a7a]">Status</span>
-                    <span className={`font-mono text-xs ${subscription.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-red-400'}`}>
-                      {subscription.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-mono text-xs text-[#5a9a7a]">Messages</span>
-                    <span className="font-mono text-xs text-white">
-                      {subscription.quota_limit === -1 ? 'Unlimited' : `${subscription.quota_used}/${subscription.quota_limit}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-mono text-xs text-[#5a9a7a]">Sessions</span>
-                    <span className="font-mono text-xs text-white">{subscription.session_limit}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-mono text-xs text-[#5a9a7a]">AI Queries</span>
-                    <span className="font-mono text-xs text-white">
-                      {subscription.ai_daily_limit === -1 ? 'Unlimited' : `${subscription.ai_daily_limit}/day`}
-                    </span>
-                  </div>
-                  {subscription.next_renewal && (
-                    <div className="flex justify-between">
-                      <span className="font-mono text-xs text-[#5a9a7a]">Renews</span>
-                      <span className="font-mono text-xs text-white">
-                        {new Date(subscription.next_renewal).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Link
-                href="/dashboard/pricing"
-                className="block mt-6 text-center py-2 bg-blue-500 text-dark font-mono text-xs font-bold tracking-[2px] hover:bg-blue-500/90 transition-colors"
-              >
-                {subscription?.plan === 'free' ? 'UPGRADE PLAN' : 'CHANGE PLAN'}
-              </Link>
-            </motion.div>
-
-            {/* Reward Balance */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-card border border-blue-500/10 p-6 relative"
-            >
-              <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan/30" />
-              <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan/30" />
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan/30" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan/30" />
-
-              <h2 className="font-display text-sm font-bold text-white tracking-[3px] mb-4">
-                REWARD BALANCE
-              </h2>
-
-              {rewards && (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <span className="font-display text-4xl font-black text-blue-500 dark:text-blue-400">
-                      ₦{rewards.balance}
-                    </span>
-                    <p className="font-mono text-xs text-[#5a9a7a] mt-1">current balance</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between font-mono text-xs">
-                      <span className="text-[#5a9a7a]">Progress to ₦100 cashout</span>
-                      <span className="text-blue-500 dark:text-blue-400">{progress}%</span>
-                    </div>
-                    <div className="h-3 bg-dark border border-cyan/20 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-400/60 transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="text-center">
-                      <span className="font-mono text-lg text-blue-600 dark:text-blue-400 font-bold">₦{rewards.total_earned}</span>
-                      <p className="font-mono text-[10px] text-[#5a9a7a]">TOTAL EARNED</p>
-                    </div>
-                    <div className="text-center">
-                      <span className="font-mono text-lg text-blue-600 dark:text-blue-400 font-bold">₦{rewards.total_cashed_out}</span>
-                      <p className="font-mono text-[10px] text-[#5a9a7a]">CASHED OUT</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-
-            {/* How to Earn */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="md:col-span-2 bg-card border border-blue-500/10 p-6 relative"
-            >
-              <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-blue-500/30" />
-              <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-blue-500/30" />
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-blue-500/30" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-blue-500/30" />
-
-              <h2 className="font-display text-sm font-bold text-white tracking-[3px] mb-6">
-                HOW TO EARN
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {EARNING_GUIDE.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-dark/50 border border-blue-500/5">
-                    <span className="font-display text-xl font-black text-blue-600 dark:text-blue-400">{item.reward}</span>
-                    <div>
-                      <p className="font-mono text-xs text-white">{item.action}</p>
-                      <p className="font-mono text-[10px] text-[#5a9a7a]">{item.note}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="font-mono text-xs text-[#5a9a7a] mt-6 text-center">
-                When your balance reaches ₦100, free airtime is automatically sent to your WhatsApp number!
-              </p>
-            </motion.div>
+      <div className="max-w-3xl mx-auto px-4 pt-24 pb-12">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="p-8 rounded-2xl border text-center bg-card border-blue-500/10">
+            <h1 className="text-2xl font-bold mb-2 text-white">
+              Rewards
+            </h1>
+            <p className="text-sm text-[#5a9a7a]">
+              Rewards are currently unavailable.
+            </p>
           </div>
-        )}
+        </motion.div>
       </div>
     </main>
   );

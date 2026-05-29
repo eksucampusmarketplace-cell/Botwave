@@ -7,6 +7,22 @@ export const dynamic = 'force-dynamic';
 
 const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const PAYMENTS_SETTING_KEY = 'payments_enabled';
+
+async function isPaymentsEnabled(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', PAYMENTS_SETTING_KEY)
+      .maybeSingle();
+    if (error) return process.env.PAYMENTS_ENABLED === 'true';
+    const enabled = (data?.value as { enabled?: unknown } | null)?.enabled;
+    return typeof enabled === 'boolean' ? enabled : process.env.PAYMENTS_ENABLED === 'true';
+  } catch {
+    return process.env.PAYMENTS_ENABLED === 'true';
+  }
+}
 
 /**
  * POST /api/payments/initiate
@@ -50,6 +66,14 @@ export async function POST(request: NextRequest) {
     const planConfig = PLANS[plan];
     const transactionRef = `bw-${plan}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const paymentsEnabled = await isPaymentsEnabled(supabase);
+
+    if (!paymentsEnabled) {
+      return NextResponse.json({
+        success: false,
+        error: 'Payments are temporarily on hold. All plans are free for now.',
+      }, { status: 403 });
+    }
 
     // Check for pending payment for same plan
     const { data: existing } = await supabase
