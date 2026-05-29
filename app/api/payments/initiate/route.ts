@@ -17,8 +17,16 @@ async function isPaymentsEnabled(supabase: ReturnType<typeof createClient>): Pro
       .eq('key', PAYMENTS_SETTING_KEY)
       .maybeSingle();
     if (error) return process.env.PAYMENTS_ENABLED === 'true';
-    const enabled = (data?.value as { enabled?: unknown } | null)?.enabled;
-    return typeof enabled === 'boolean' ? enabled : process.env.PAYMENTS_ENABLED === 'true';
+
+    const settingsRow = data as unknown as { value?: unknown } | null;
+    const settingValue = settingsRow?.value;
+
+    if (settingValue && typeof settingValue === 'object') {
+      const enabled = (settingValue as { enabled?: unknown }).enabled;
+      if (typeof enabled === 'boolean') return enabled;
+    }
+
+    return process.env.PAYMENTS_ENABLED === 'true';
   } catch {
     return process.env.PAYMENTS_ENABLED === 'true';
   }
