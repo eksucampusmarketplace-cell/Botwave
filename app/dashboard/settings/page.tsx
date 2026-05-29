@@ -22,6 +22,7 @@ interface SessionInfo {
   id: string;
   session_name: string;
   platform?: Platform;
+  command_throttling_enabled?: boolean;
 }
 
 const platformPrefixDefaults: Record<string, string> = {
@@ -54,6 +55,8 @@ export default function SettingsPage() {
   const [creatingKey, setCreatingKey] = useState(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [activePlatforms, setActivePlatforms] = useState<Set<string>>(new Set(['whatsapp']));
+  const [throttlingSaving, setThrottlingSaving] = useState<Record<string, boolean>>({});
+  const [throttlingMessage, setThrottlingMessage] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const checkUser = async () => {
@@ -184,6 +187,49 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSessionThrottlingToggle = async (sessionId: string, enabled: boolean) => {
+    setThrottlingSaving((prev) => ({ ...prev, [sessionId]: true }));
+    setThrottlingMessage((prev) => ({ ...prev, [sessionId]: '' }));
+
+    try {
+      const response = await fetch('/api/bot/sessions/command-throttling', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          commandThrottlingEnabled: enabled,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update command throttling setting');
+      }
+
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId
+            ? { ...session, command_throttling_enabled: enabled }
+            : session,
+        ),
+      );
+
+      setThrottlingMessage((prev) => ({
+        ...prev,
+        [sessionId]: enabled
+          ? 'ON: stricter command throttling for scale'
+          : 'OFF: free/open command usage',
+      }));
+    } catch (err: unknown) {
+      setThrottlingMessage((prev) => ({
+        ...prev,
+        [sessionId]: err instanceof Error ? err.message : 'Failed to update setting',
+      }));
+    } finally {
+      setThrottlingSaving((prev) => ({ ...prev, [sessionId]: false }));
     }
   };
 
@@ -510,6 +556,60 @@ export default function SettingsPage() {
             </div>
 
             {activePlatforms.has('whatsapp') && <ProxySettingsSection />}
+
+            <div className="border-t border-blue-500/10 pt-8">
+              <h3 className="font-display text-sm tracking-[3px] text-blue-600 dark:text-blue-400 mb-4">SESSION COMMAND THROTTLING</h3>
+              <p className="font-mono text-[10px] text-[#3a6a5a] mb-4">
+                Default is OFF for every session to keep command usage free/open.
+                OFF: free/open command usage. ON: stricter command throttling for scale.
+              </p>
+
+              {sessions.length === 0 ? (
+                <p className="font-mono text-[10px] text-[#3a6a5a]">No sessions available yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sessions.map((session) => {
+                    const enabled = session.command_throttling_enabled === true;
+                    const savingState = throttlingSaving[session.id] === true;
+                    const statusMessage = throttlingMessage[session.id];
+
+                    return (
+                      <div key={session.id} className="bg-dark/30 border border-blue-500/10 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-mono text-xs text-white">{session.session_name}</p>
+                            <p className="font-mono text-[10px] text-[#5a9a7a] mt-1">
+                              {platformLabels[session.platform || 'whatsapp']}
+                            </p>
+                            <p className="font-mono text-[10px] text-[#3a6a5a] mt-1">
+                              {enabled
+                                ? 'ON: stricter command throttling for scale'
+                                : 'OFF: free/open command usage'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleSessionThrottlingToggle(session.id, !enabled)}
+                            disabled={savingState}
+                            className={`px-4 py-2 font-mono text-[10px] font-bold tracking-[2px] transition-colors disabled:opacity-50 ${
+                              enabled
+                                ? 'bg-blue-500 text-dark hover:bg-blue-400'
+                                : 'border border-blue-500/30 text-blue-500 dark:text-blue-400 hover:bg-blue-500/10'
+                            }`}
+                          >
+                            {savingState ? 'SAVING...' : enabled ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+                        {statusMessage && (
+                          <p className={`font-mono text-[10px] mt-2 ${statusMessage.toLowerCase().includes('fail') ? 'text-red-400' : 'text-blue-500 dark:text-blue-400'}`}>
+                            {statusMessage}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <div className="border-t border-red-400/20 pt-8">
               <h3 className="font-display text-sm tracking-[3px] text-red-400 mb-4">DANGER ZONE</h3>

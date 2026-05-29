@@ -51,6 +51,7 @@ export interface BotSession {
   proxy_port?: string;
   proxy_username?: string;
   proxy_password?: string;
+  command_throttling_enabled?: boolean;
 }
 
 // ─── Feature Types ────────────────────────────────────────────────────────────
