@@ -15,11 +15,19 @@ export async function GET(request: NextRequest) {
     const chatId = params.get('chatId');
     const limit = parseInt(params.get('limit') || '20', 10);
 
-    const auth = await authorizeTelegramRequest(request, {
-      sessionId,
-      chatId,
-      requireRole: 'user',
-    });
+    const auth = chatId
+      ? await authorizeTelegramRequest(request, {
+          sessionId,
+          chatId,
+          requireRole: 'user',
+          requireChatId: true,
+        })
+      : await authorizeTelegramRequest(request, {
+          sessionId,
+          requireRole: 'owner',
+          source: 'cookie',
+        });
+
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 

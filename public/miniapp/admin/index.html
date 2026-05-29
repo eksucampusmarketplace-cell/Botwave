@@ -1027,7 +1027,7 @@ document.getElementById('send-broadcast').addEventListener('click', function() {
   statusText.textContent = 'Sending broadcast...';
   var broadcastPayload = {
     sessionId: sessionId,
-    message: text,
+    text: text,
     pin: document.getElementById('broadcast-pin').checked,
     silent: document.getElementById('broadcast-silent').checked,
   };
@@ -1433,7 +1433,7 @@ function saveCaptchaConfig() {
 function loadAnalyticsSummary() {
   if (!sessionId) return;
   var url = '/api/telegram/analytics/summary?sessionId=' + sessionId;
-  if (chatId) url += '&chatId=' + chatId;
+  if (currentChatId) url += '&chatId=' + currentChatId;
   apiCall(url, { method: 'GET' })
     .then(function(res) {
       if (!res.success) return;

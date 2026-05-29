@@ -115,7 +115,7 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
   bot.use(async (ctx, next) => {
     if (ctx.chat && ctx.chat.type !== 'private') {
       try {
-        const adminOnly = await getAdminOnlyMode(sessionId);
+        const adminOnly = await getAdminOnlyMode(sessionId, ctx.chat.id.toString());
         if (adminOnly) {
           const elevated = ctx.from ? await isElevated(ctx, sessionId) : false;
           if (!elevated) return;

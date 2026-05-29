@@ -1,15 +1,15 @@
 /**
  * Telegram Group Config Bulk Copy API
- * 
+ *
  * POST /api/telegram/group-config/bulk-copy
- * { sessionId, sourceChatId, targetChatIds: number[], fields?: string[] }
- * 
- * Copies config from one group to one or more target groups.
- * Optionally specify which fields to copy; defaults to all.
+ * { sessionId, sourceChatId, targetChatIds: (string|number)[], fields?: string[] }
+ *
+ * Owner-only endpoint. Copies config from one group to one or more target
+ * groups within the same bot session.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 import {
   TELEGRAM_GROUP_CONFIG_COLUMNS,
   filterValidColumns,
@@ -25,13 +25,17 @@ const SKIP_FIELDS = new Set([
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { sessionId, sourceChatId, targetChatIds, fields } = await request.json();
 
-    if (!sessionId || !sourceChatId || !Array.isArray(targetChatIds) || targetChatIds.length === 0) {
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      requireRole: 'owner',
+      source: 'cookie',
+    });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
+
+    if (!sessionId || sourceChatId === undefined || !Array.isArray(targetChatIds) || targetChatIds.length === 0) {
       return NextResponse.json(
         { error: 'sessionId, sourceChatId, and targetChatIds[] are required' },
         { status: 400 },
@@ -42,33 +46,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Maximum 50 target groups at a time' }, { status: 400 });
     }
 
-    // Verify session
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
+    const sourceChatIdStr = String(sourceChatId);
 
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-
-    // Load source config
     const { data: sourceConfig } = await supabase
       .from('telegram_group_configs')
       .select('*')
       .eq('session_id', sessionId)
-      .eq('chat_id', sourceChatId)
+      .eq('chat_id', sourceChatIdStr)
       .single();
 
     if (!sourceConfig) {
       return NextResponse.json({ error: 'Source group config not found' }, { status: 404 });
     }
 
-    // Build the fields to copy
     let configToCopy: Record<string, unknown> = {};
 
     if (fields && Array.isArray(fields) && fields.length > 0) {
-      // Only copy specified fields
       for (const field of fields) {
         if (SKIP_FIELDS.has(field)) continue;
         if (TELEGRAM_GROUP_CONFIG_COLUMNS.has(field) && field in sourceConfig) {
@@ -76,7 +69,6 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
-      // Copy all config fields (except identifiers)
       configToCopy = filterValidColumns(sourceConfig, TELEGRAM_GROUP_CONFIG_COLUMNS);
       for (const skip of SKIP_FIELDS) {
         delete configToCopy[skip];
@@ -87,11 +79,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to copy' }, { status: 400 });
     }
 
-    // Apply to each target
-    const results: { chatId: number; success: boolean; error?: string }[] = [];
+    const results: { chatId: string; success: boolean; error?: string }[] = [];
 
-    for (const targetChatId of targetChatIds) {
-      if (targetChatId === sourceChatId) continue;
+    for (const targetChatIdRaw of targetChatIds) {
+      const targetChatId = String(targetChatIdRaw);
+      if (targetChatId === sourceChatIdStr) continue;
 
       const { error } = await supabase
         .from('telegram_group_configs')
@@ -112,7 +104,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const successCount = results.filter(r => r.success).length;
+    const successCount = results.filter((r) => r.success).length;
     return NextResponse.json({
       success: true,
       message: `Config copied to ${successCount}/${results.length} groups`,
