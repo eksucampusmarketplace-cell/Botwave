@@ -63,6 +63,7 @@ npm run lint         # Run ESLint
 - Session-level (10 msgs/min) and user-level (20 msgs/min) rate limiting
 - Anti-spam flood detection (5 msgs in 10s = warning)
 - Never-send-same-message-twice dedup (10-message LRU buffer per pool)
+- Per-session command throttling toggle (`command_throttling_enabled`): default OFF (free/open). Set ON to enforce command throttling guard for that specific session.
 
 ## Advanced Anti-Ban System (`bot/utils/advancedAntiban.ts`)
 - **Session Warmup**: New sessions limited to 15 msgs/day, scales to 200 over 7 days

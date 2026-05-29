@@ -279,6 +279,7 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     const isCommand = content.startsWith(commandPrefix);
+    const commandThrottlingEnabled = sessionRecord?.command_throttling_enabled === true;
 
     // Owner's outgoing messages - autopilot learning disabled
     if (fromMe && !isCommand) {
@@ -479,9 +480,11 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
     }
 
     if (isCommand && userId) {
-      // Per-user command cooldown to prevent spam without hurting games
-      if (isCommandOnCooldown(senderJid)) return;
-      markCommandUsed(senderJid);
+      if (commandThrottlingEnabled) {
+        // Per-user command cooldown to prevent spam without hurting games
+        if (isCommandOnCooldown(senderJid)) return;
+        markCommandUsed(senderJid);
+      }
 
       const quotaOk = await incrementQuotaUsage(userId);
       if (!quotaOk) {
@@ -495,12 +498,14 @@ export async function handleMessage(message: any, sock: any, queue?: MessageQueu
 
     }
 
-    if (isCommand && !isUserRateLimited(senderJid)) {
-      await processCommand(context, sock);
-    } else if (isCommand) {
-      console.log(`User rate limited: ${senderJid}`);
-      const response = pickResponse(spamWarnings, { name: pushName });
-      await sendReply(chatJid, response, sock, message.key, queue);
+    if (isCommand) {
+      if (!commandThrottlingEnabled || !isUserRateLimited(senderJid)) {
+        await processCommand(context, sock);
+      } else {
+        console.log(`User rate limited: ${senderJid}`);
+        const response = pickResponse(spamWarnings, { name: pushName });
+        await sendReply(chatJid, response, sock, message.key, queue);
+      }
     }
 
     // Track whether any handler already replied (for autopilot priority)

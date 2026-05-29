@@ -19,6 +19,7 @@ export interface BotSession {
   pairing_code: string | null;
   last_active: string | null;
   last_pairing_error: string | null;
+  command_throttling_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

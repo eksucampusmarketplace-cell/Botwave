@@ -33,6 +33,7 @@ import {
   getMessageSendDelay,
 } from './utils/humanizer';
 import { logProxyStatus } from './utils/proxy';
+import { getSessionById } from '../database';
 
 // BotWave support group — userbot commands are completely blocked here
 const SUPPORT_GROUP_ID = '-1003986594255';
@@ -526,6 +527,18 @@ export class UserbotManager {
 
     const command = text.slice(prefix.length).split(/\s+/)[0].toLowerCase();
 
+    const userId = msg.senderId?.toString() || sessionId;
+    let commandThrottlingEnabled = false;
+    try {
+      const session = await getSessionById(sessionId);
+      commandThrottlingEnabled = session?.command_throttling_enabled === true;
+    } catch {
+      commandThrottlingEnabled = false;
+    }
+    if (commandThrottlingEnabled && !checkUserCooldown(userId)) {
+      return; // silently drop — user is sending commands too fast
+    }
+
     // Handle .support inline
     if (command === 'support') {
       await waitForRateLimit('message_send');
@@ -537,12 +550,6 @@ export class UserbotManager {
           '• Dashboard: https://botwave.online/dashboard',
       });
       return;
-    }
-
-    // Per-user command cooldown (2s between commands)
-    const userId = msg.senderId?.toString() || sessionId;
-    if (!checkUserCooldown(userId)) {
-      return; // silently drop — user is sending commands too fast
     }
 
     // Check if command's module is disabled

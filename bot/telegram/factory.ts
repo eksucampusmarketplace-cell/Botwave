@@ -77,6 +77,7 @@ import { getGroupConfig, ensureGroupConfig } from './utils/db';
 import { isElevated, invalidateAdminCache } from './utils/permissions';
 import { ensureConfig, getAdminOnlyMode, isGroupAllowed, isUserAllowed } from './utils/db';
 import { checkCooldown, setCooldown } from './utils/cooldown';
+import { getSessionById } from '../database';
 
 /**
  * Register all Telegram-specific command handlers on the bot instance.
@@ -177,11 +178,25 @@ export async function registerAllHandlers(bot: Bot, sessionId: string): Promise<
     await next();
   });
 
-  // Middleware: command cooldown per user
+  // Middleware: command cooldown per user (guarded by per-session toggle)
   bot.on('message:text', async (ctx, next) => {
     if (!ctx.from || !ctx.message?.text) { await next(); return; }
     const text = ctx.message.text;
     if (!text.startsWith('/')) { await next(); return; }
+
+    let commandThrottlingEnabled = false;
+    try {
+      const session = await getSessionById(sessionId);
+      commandThrottlingEnabled = session?.command_throttling_enabled === true;
+    } catch {
+      commandThrottlingEnabled = false;
+    }
+
+    if (!commandThrottlingEnabled) {
+      await next();
+      return;
+    }
+
     const cmd = text.split(/[@\s]/)[0].slice(1).toLowerCase();
     if (!cmd) { await next(); return; }
     const remaining = checkCooldown(ctx.from.id, cmd);
