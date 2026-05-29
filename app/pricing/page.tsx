@@ -46,7 +46,7 @@ const faqs = [
   {
     question: 'How does monthly billing work?',
     answer:
-      'Paid plans renew every 30 days from the day you upgrade. We bill in Naira via Squad (Paystack for some accounts). Cancel anytime from your dashboard, there are no lock-in contracts and refunds are issued for the unused portion of the current cycle on request.',
+      'Paid plans renew every 30 days from the day you upgrade. We bill in Naira via Flutterwave. Cancel anytime from your dashboard, there are no lock-in contracts and refunds are issued for the unused portion of the current cycle on request.',
   },
   {
     question: 'Can I switch plans up or down?',
@@ -61,7 +61,7 @@ const faqs = [
   {
     question: 'Which payment methods are supported?',
     answer:
-      'Squad (Naira card, bank transfer, USSD) and Paystack on selected accounts. International cards work via Squad\'s international gateway. Crypto and PayPal are on the roadmap for 2026 Q3.',
+      'Flutterwave supports Naira card payments, bank transfer, and USSD. International cards are also supported via Flutterwave. Crypto and PayPal are on the roadmap for 2026 Q3.',
   },
   {
     question: 'What counts as "1 message"?',
@@ -276,7 +276,7 @@ export default function PricingPage() {
             <div className="p-6 rounded-2xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">
               <h3 className="font-bold text-[var(--text-primary)] mb-2">Naira-native billing</h3>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                We price in NGN and bill via Squad / Paystack, zero FX fees for Nigerian customers. International cards work too via the Squad global gateway.
+                We price in NGN and bill via Flutterwave, with local payment rails for Nigerian customers and support for international cards.
               </p>
             </div>
             <div className="p-6 rounded-2xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)]">

@@ -159,7 +159,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Custom branding',
       'Chatbot flow builder (unlimited flows)',
       'Group analytics + CSV export',
-      'E-commerce integrations (Paystack, Squad, Stripe)',
+      'E-commerce integrations (Flutterwave, Paystack, Stripe)',
       'Unlimited templates + custom commands',
       'Priority WhatsApp + email support',
       'All channel alerts (email + WhatsApp + Telegram)',

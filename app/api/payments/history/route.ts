@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     if (cached) return NextResponse.json({ success: true, payments: cached });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Legacy DB note: `squad_transaction_ref` stores the provider tx_ref value.
     const { data: payments, error } = await supabase
       .from('payments')
       .select('id, plan, amount, status, squad_transaction_ref, created_at')
