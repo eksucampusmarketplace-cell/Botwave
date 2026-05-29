@@ -196,6 +196,73 @@ export function filterValidColumns(
   return filtered;
 }
 
+function toBool(value: unknown): boolean | unknown {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off', 'disabled'].includes(normalized)) return false;
+  }
+  return value;
+}
+
+function toNumber(value: unknown): number | unknown {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return value;
+}
+
+/**
+ * Normalize legacy Mini App / dashboard keys that drifted from DB column names.
+ * This keeps older clients working while routes still whitelist real columns.
+ */
+export function normalizeTelegramConfigAliases(
+  obj: Record<string, unknown>,
+  scope: 'bot' | 'group' | 'userbot' = 'bot',
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = { ...obj };
+
+  const remap = (
+    from: string,
+    to: string,
+    transform?: (value: unknown) => unknown,
+  ) => {
+    if (!(from in normalized)) return;
+    if (!(to in normalized)) {
+      const raw = normalized[from];
+      normalized[to] = transform ? transform(raw) : raw;
+    }
+    delete normalized[from];
+  };
+
+  remap('antiflood_mute_duration', 'antiflood_duration', toNumber);
+  remap('xp_announce_levelup', 'xp_levelup_announce', toBool);
+  remap('votekick_threshold', 'votekick_required_votes', toNumber);
+  remap('votekick_duration', 'votekick_timeout_secs', (value) => {
+    const parsed = toNumber(value);
+    if (typeof parsed !== 'number') return parsed;
+    return parsed <= 120 ? parsed * 60 : parsed;
+  });
+  remap('ai_max_response_length', 'ai_max_length', toNumber);
+  remap('boost_goal', 'booster_goal', toNumber);
+  remap('boost_reward_text', 'booster_reward_text');
+  remap('force_channel_text', 'force_channel_message');
+  remap('blacklist_words', 'forbidden_words');
+  remap('blacklist_action', 'blacklist_mode');
+  remap('games_timeout', 'game_cooldown', toNumber);
+
+  if (scope === 'group') {
+    remap('antiflood_max_per_min', 'antiflood_max', toNumber);
+    remap('antiraid_duration_mins', 'antiraid_duration', toNumber);
+    remap('bot_language', 'language');
+  }
+
+  return normalized;
+}
+
 /**
  * Convert antilink_whitelist from comma-separated string to array.
  */

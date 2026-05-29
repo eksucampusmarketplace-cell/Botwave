@@ -874,28 +874,28 @@ function loadFeatures() {
       document.getElementById('ft-welcome').checked = !!(c.welcome_message);
       document.getElementById('ft-joinapproval').checked = c.join_approval_enabled || false;
       document.getElementById('ft-channelforce').checked = !!(c.force_channel);
-      document.getElementById('ft-namehistory').checked = true;
-      document.getElementById('ft-analytics').checked = true;
-      document.getElementById('ft-language').checked = true;
+      document.getElementById('ft-namehistory').checked = c.namehistory_enabled !== false;
+      document.getElementById('ft-analytics').checked = c.analytics_enabled !== false;
+      document.getElementById('ft-language').checked = !!(c.bot_language || c.language);
       document.getElementById('ft-games').checked = c.games_enabled !== false;
       document.getElementById('ft-texttools').checked = c.texttools_enabled !== false;
       document.getElementById('ft-quicktools').checked = c.quicktools_enabled !== false;
-      document.getElementById('ft-profiletools').checked = true;
-      document.getElementById('ft-mediatools').checked = true;
-      document.getElementById('ft-slowmode').checked = true;
-      document.getElementById('ft-stickers').checked = true;
-      document.getElementById('ft-polls').checked = true;
+      document.getElementById('ft-profiletools').checked = c.profiletools_enabled !== false;
+      document.getElementById('ft-mediatools').checked = c.mediatools_enabled !== false;
+      document.getElementById('ft-slowmode').checked = c.slowmode_enabled === true;
+      document.getElementById('ft-stickers').checked = c.stickers_enabled !== false;
+      document.getElementById('ft-polls').checked = c.polls_enabled !== false;
       document.getElementById('ft-fun').checked = true;
       document.getElementById('ft-blacklist').checked = true;
       document.getElementById('ft-locks').checked = true;
-      document.getElementById('ft-reports').checked = true;
+      document.getElementById('ft-reports').checked = c.reports_enabled !== false;
       document.getElementById('ft-schedule').checked = true;
-      document.getElementById('ft-federation').checked = true;
-      document.getElementById('ft-tickets').checked = true;
+      document.getElementById('ft-federation').checked = c.federation_enabled === true;
+      document.getElementById('ft-tickets').checked = c.tickets_enabled === true;
       document.getElementById('ft-funextras').checked = c.funextras_enabled !== false;
-      document.getElementById('ft-autoreply').checked = true;
+      document.getElementById('ft-autoreply').checked = c.autoreply_enabled !== false;
       document.getElementById('ft-mediadownload').checked = c.mediadownload_enabled !== false;
-      document.getElementById('ft-imagetools').checked = true;
+      document.getElementById('ft-imagetools').checked = c.imagetools_enabled !== false;
       document.getElementById('ft-infolookup').checked = c.infolookup_enabled !== false;
       document.getElementById('bot-info').textContent = 'Session: ' + sessionId.slice(0, 8) + '...';
     }
@@ -923,8 +923,20 @@ document.getElementById('save-features').addEventListener('click', function() {
     games_enabled: document.getElementById('ft-games').checked,
     texttools_enabled: document.getElementById('ft-texttools').checked,
     quicktools_enabled: document.getElementById('ft-quicktools').checked,
+    namehistory_enabled: document.getElementById('ft-namehistory').checked,
+    analytics_enabled: document.getElementById('ft-analytics').checked,
+    profiletools_enabled: document.getElementById('ft-profiletools').checked,
+    mediatools_enabled: document.getElementById('ft-mediatools').checked,
+    slowmode_enabled: document.getElementById('ft-slowmode').checked,
+    stickers_enabled: document.getElementById('ft-stickers').checked,
+    polls_enabled: document.getElementById('ft-polls').checked,
+    reports_enabled: document.getElementById('ft-reports').checked,
+    federation_enabled: document.getElementById('ft-federation').checked,
+    tickets_enabled: document.getElementById('ft-tickets').checked,
     funextras_enabled: document.getElementById('ft-funextras').checked,
+    autoreply_enabled: document.getElementById('ft-autoreply').checked,
     mediadownload_enabled: document.getElementById('ft-mediadownload').checked,
+    imagetools_enabled: document.getElementById('ft-imagetools').checked,
     infolookup_enabled: document.getElementById('ft-infolookup').checked,
   };
   // Save to per-group config when chatId is present, otherwise global
@@ -1233,7 +1245,7 @@ var FEATURE_CONFIGS = {
   'ft-antiflood': { title: '🛡️ Anti-Flood Settings', fields: [
     { key: 'antiflood_max_per_min', label: 'Max messages per minute', type: 'number', min: 1, max: 100, default: 10 },
     { key: 'antiflood_action', label: 'Action on flood', type: 'select', options: ['mute','ban','kick','warn'], default: 'mute' },
-    { key: 'antiflood_mute_duration', label: 'Mute duration (minutes)', type: 'number', min: 1, max: 1440, default: 5 },
+    { key: 'antiflood_duration', label: 'Mute duration (minutes)', type: 'number', min: 1, max: 1440, default: 5 },
   ]},
   'ft-antilink': { title: '🔗 Anti-Link Settings', fields: [
     { key: 'antilink_action', label: 'Action on link', type: 'select', options: ['delete','warn','mute','ban'], default: 'delete' },
@@ -1259,26 +1271,26 @@ var FEATURE_CONFIGS = {
   ]},
   'ft-xp': { title: '⭐ XP System Settings', fields: [
     { key: 'xp_per_message', label: 'XP per message', type: 'number', min: 1, max: 50, default: 5 },
-    { key: 'xp_cooldown_seconds', label: 'Cooldown between XP (seconds)', type: 'number', min: 0, max: 300, default: 30 },
-    { key: 'xp_announce_levelup', label: 'Announce level-up', type: 'select', options: ['yes','no'], default: 'yes' },
+    { key: 'xp_levelup_announce', label: 'Announce level-up', type: 'select', options: ['yes','no'], default: 'yes' },
   ]},
-  'ft-karma': { title: '👍 Karma Settings', fields: [
-    { key: 'karma_cooldown', label: 'Cooldown between votes (seconds)', type: 'number', min: 0, max: 3600, default: 60 },
-  ]},
+
   'ft-votekick': { title: '🗳️ VoteKick Settings', fields: [
-    { key: 'votekick_threshold', label: 'Votes needed', type: 'number', min: 2, max: 50, default: 5 },
-    { key: 'votekick_duration', label: 'Vote window (minutes)', type: 'number', min: 1, max: 60, default: 5 },
+    { key: 'votekick_required_votes', label: 'Votes needed', type: 'number', min: 2, max: 50, default: 5 },
+    { key: 'votekick_timeout_secs', label: 'Vote timeout (seconds)', type: 'number', min: 10, max: 600, default: 300 },
   ]},
   'ft-welcome': { title: '👋 Welcome Settings', fields: [
     { key: 'welcome_message', label: 'Welcome message (use {first_name}, {group_name})', type: 'textarea', default: '' },
     { key: 'goodbye_message', label: 'Goodbye message', type: 'textarea', default: '' },
+    { key: 'welcome_image_url', label: 'Welcome image URL', type: 'text', default: '' },
+    { key: 'goodbye_image_url', label: 'Goodbye image URL', type: 'text', default: '' },
   ]},
   'ft-games': { title: '🎮 Mini Games Settings', fields: [
-    { key: 'games_timeout', label: 'Game timeout (seconds)', type: 'number', min: 10, max: 120, default: 30 },
+    { key: 'game_cooldown', label: 'Game cooldown (seconds)', type: 'number', min: 10, max: 3600, default: 30 },
   ]},
-  'ft-channelforce': { title: '📢 Force Join Channel Settings', fields: [
-    { key: 'force_channel', label: 'Required channel (@username or ID)', type: 'text', default: '' },
+  'ft-channelforce': { title: '📢 Force Channel Join', fields: [
+    { key: 'force_channel', label: 'Channel username (e.g. @mychannel)', type: 'text', default: '' },
     { key: 'force_channel_action', label: 'Action on non-member', type: 'select', options: ['delete','restrict','kick'], default: 'delete' },
+    { key: 'force_channel_message', label: 'Custom message for non-members', type: 'textarea', default: '' },
   ]},
   'ft-language': { title: '🌐 Language Settings', fields: [
     { key: 'bot_language', label: 'Group language', type: 'select', options: ['en','es','fr','de','pt','ar','hi','ru','tr','yo','ha','ig','pcm'], default: 'en' },
@@ -1286,26 +1298,16 @@ var FEATURE_CONFIGS = {
   'ft-ai': { title: '🤖 AI Settings', fields: [
     { key: 'ai_provider', label: 'AI Provider', type: 'select', options: ['groq','gemini','auto'], default: 'groq' },
     { key: 'ai_system_prompt', label: 'System prompt (personality)', type: 'textarea', default: '' },
-    { key: 'ai_max_response_length', label: 'Max response length (chars)', type: 'number', min: 50, max: 2000, default: 500 },
+    { key: 'ai_max_length', label: 'Max response length (chars)', type: 'number', min: 50, max: 2000, default: 500 },
   ]},
   'ft-booster': { title: '📢 Booster Settings', fields: [
-    { key: 'boost_goal', label: 'Invites needed for boost goal', type: 'number', min: 1, max: 100, default: 5 },
-    { key: 'boost_reward_text', label: 'Reward message ({name}, {count})', type: 'textarea', default: '' },
-    { key: 'boost_invite_text', label: 'Invite prompt text', type: 'textarea', default: '' },
-    { key: 'boost_leaderboard_text', label: 'Leaderboard header text', type: 'textarea', default: '' },
-  ]},
-  'ft-channelforce': { title: '📢 Force Channel Join', fields: [
-    { key: 'force_channel', label: 'Channel username (e.g. @mychannel)', type: 'text', default: '' },
-    { key: 'force_channel_text', label: 'Custom message for non-members', type: 'textarea', default: '' },
+    { key: 'booster_goal', label: 'Invites needed for boost goal', type: 'number', min: 1, max: 100, default: 5 },
+    { key: 'booster_reward_text', label: 'Reward message ({name}, {count})', type: 'textarea', default: '' },
   ]},
   'ft-blacklist': { title: '🚫 Blacklist / Prohibited Words', fields: [
-    { key: 'blacklist_words', label: 'Forbidden words (one per line)', type: 'textarea', default: '' },
-    { key: 'blacklist_action', label: 'Action', type: 'select', options: ['delete','warn','mute','ban'], default: 'delete' },
+    { key: 'forbidden_words', label: 'Forbidden words (one per line)', type: 'textarea', default: '' },
+    { key: 'blacklist_mode', label: 'Action', type: 'select', options: ['delete','warn','mute','ban'], default: 'delete' },
     { key: 'necessary_words', label: 'Necessary words (messages must contain one, one per line)', type: 'textarea', default: '' },
-  ]},
-  'ft-welcome': { title: '👋 Welcome Settings', fields: [
-    { key: 'welcome_image_url', label: 'Welcome image URL', type: 'text', default: '' },
-    { key: 'goodbye_image_url', label: 'Goodbye image URL', type: 'text', default: '' },
   ]},
 };
 

@@ -11,6 +11,7 @@ import {
   TELEGRAM_GROUP_CONFIG_COLUMNS,
   filterValidColumns,
   normalizeAntilinkWhitelist,
+  normalizeTelegramConfigAliases,
   validateNumericFields,
   parseSupabaseError,
 } from '@/lib/telegram-valid-columns';
@@ -64,13 +65,15 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
     const { supabase } = auth;
 
+    const normalizedFields = normalizeTelegramConfigAliases(configFields, 'group');
+
     // Convert antilink_whitelist from string to array if needed
-    if ('antilink_whitelist' in configFields) {
-      configFields.antilink_whitelist = normalizeAntilinkWhitelist(configFields.antilink_whitelist);
+    if ('antilink_whitelist' in normalizedFields) {
+      normalizedFields.antilink_whitelist = normalizeAntilinkWhitelist(normalizedFields.antilink_whitelist);
     }
 
     // Filter to only valid DB columns
-    let filtered = filterValidColumns(configFields, TELEGRAM_GROUP_CONFIG_COLUMNS);
+    let filtered = filterValidColumns(normalizedFields, TELEGRAM_GROUP_CONFIG_COLUMNS);
 
     // Validate numeric fields
     filtered = validateNumericFields(filtered);
