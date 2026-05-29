@@ -10,7 +10,15 @@ type Tab = 'general' | 'features' | 'protection' | 'prohibitions' | 'numerical' 
 
 interface Note { name: string; content: string; created_at: string; }
 interface Filter { keyword: string; response: string; created_at: string; }
-interface ModLog { action_type: string; target_user_id: string; reason: string; admin_user_id: string; created_at: string; }
+interface ModLog {
+  action?: string;
+  action_type?: string;
+  target_user_id: string;
+  reason: string;
+  moderator_user_id?: string;
+  admin_user_id?: string;
+  created_at: string;
+}
 interface XpEntry { user_id: string; xp: number; level: number; }
 interface ScheduledMsg { id: string; chat_id: string; message: string; scheduled_at: string; status: string; }
 
@@ -395,6 +403,10 @@ export default function TelegramConfigPage() {
         } catch {}
       }
       setGroups(allGroups);
+      setSelectedGroup(prev => {
+        if (prev && allGroups.some(g => g.chat_id === prev)) return prev;
+        return allGroups[0]?.chat_id || '';
+      });
     } catch {}
   }, [sessionId]);
 
@@ -433,44 +445,49 @@ export default function TelegramConfigPage() {
   }, [sessionId, configMode, selectedGroup]);
 
   const fetchNotes = useCallback(async () => {
+    if (!selectedGroup) { setNotes([]); return; }
     try {
-      const res = await fetch(`/api/telegram/notes?sessionId=${sessionId}`);
+      const res = await fetch(`/api/telegram/notes?sessionId=${sessionId}&chatId=${selectedGroup}`);
       const data = await res.json();
       if (data.success) setNotes(data.data || []);
     } catch {}
-  }, [sessionId]);
+  }, [sessionId, selectedGroup]);
 
   const fetchFilters = useCallback(async () => {
+    if (!selectedGroup) { setFilters([]); return; }
     try {
-      const res = await fetch(`/api/telegram/filters?sessionId=${sessionId}`);
+      const res = await fetch(`/api/telegram/filters?sessionId=${sessionId}&chatId=${selectedGroup}`);
       const data = await res.json();
       if (data.success) setFilters(data.data || []);
     } catch {}
-  }, [sessionId]);
+  }, [sessionId, selectedGroup]);
 
   const fetchModlog = useCallback(async () => {
+    if (!selectedGroup) { setModlog([]); return; }
     try {
-      const res = await fetch(`/api/telegram/modlog?sessionId=${sessionId}`);
+      const res = await fetch(`/api/telegram/modlog?sessionId=${sessionId}&chatId=${selectedGroup}`);
       const data = await res.json();
       if (data.success) setModlog(data.data || []);
     } catch {}
-  }, [sessionId]);
+  }, [sessionId, selectedGroup]);
 
   const fetchXP = useCallback(async () => {
+    if (!selectedGroup) { setXpData([]); return; }
     try {
-      const res = await fetch(`/api/telegram/xp/leaderboard?sessionId=${sessionId}`);
+      const res = await fetch(`/api/telegram/xp/leaderboard?sessionId=${sessionId}&chatId=${selectedGroup}`);
       const data = await res.json();
       if (data.success) setXpData(data.data || []);
     } catch {}
-  }, [sessionId]);
+  }, [sessionId, selectedGroup]);
 
   const fetchScheduled = useCallback(async () => {
+    if (!selectedGroup) { setScheduled([]); return; }
     try {
-      const res = await fetch(`/api/telegram/scheduled?sessionId=${sessionId}`);
+      const res = await fetch(`/api/telegram/scheduled?sessionId=${sessionId}&chatId=${selectedGroup}`);
       const data = await res.json();
       if (data.success) setScheduled(data.data || []);
     } catch {}
-  }, [sessionId]);
+  }, [sessionId, selectedGroup]);
 
   useEffect(() => {
     fetch(`/api/bot/sessions`)
@@ -656,34 +673,40 @@ export default function TelegramConfigPage() {
 
   const addNote = async () => {
     if (!newNoteName || !newNoteContent) return;
-    await fetch('/api/telegram/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, name: newNoteName, content: newNoteContent }) });
+    if (!selectedGroup) return;
+    await fetch('/api/telegram/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, chatId: selectedGroup, name: newNoteName, content: newNoteContent }) });
     setNewNoteName(''); setNewNoteContent(''); fetchNotes();
   };
 
   const deleteNote = async (name: string) => {
-    await fetch(`/api/telegram/notes?sessionId=${sessionId}&name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+    if (!selectedGroup) return;
+    await fetch(`/api/telegram/notes?sessionId=${sessionId}&chatId=${selectedGroup}&name=${encodeURIComponent(name)}`, { method: 'DELETE' });
     fetchNotes();
   };
 
   const addFilter = async () => {
     if (!newFilterKeyword || !newFilterResponse) return;
-    await fetch('/api/telegram/filters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, keyword: newFilterKeyword, response: newFilterResponse }) });
+    if (!selectedGroup) return;
+    await fetch('/api/telegram/filters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, chatId: selectedGroup, keyword: newFilterKeyword, response: newFilterResponse }) });
     setNewFilterKeyword(''); setNewFilterResponse(''); fetchFilters();
   };
 
   const deleteFilter = async (keyword: string) => {
-    await fetch(`/api/telegram/filters?sessionId=${sessionId}&keyword=${encodeURIComponent(keyword)}`, { method: 'DELETE' });
+    if (!selectedGroup) return;
+    await fetch(`/api/telegram/filters?sessionId=${sessionId}&chatId=${selectedGroup}&keyword=${encodeURIComponent(keyword)}`, { method: 'DELETE' });
     fetchFilters();
   };
 
   const resetXP = async () => {
     if (!confirm('Reset all XP data? This cannot be undone.')) return;
-    await fetch('/api/telegram/xp/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId }) });
+    if (!selectedGroup) return;
+    await fetch('/api/telegram/xp/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, chatId: selectedGroup }) });
     fetchXP();
   };
 
   const deleteScheduled = async (id: string) => {
-    await fetch(`/api/telegram/scheduled?sessionId=${sessionId}&id=${id}`, { method: 'DELETE' });
+    if (!selectedGroup) return;
+    await fetch(`/api/telegram/scheduled?sessionId=${sessionId}&chatId=${selectedGroup}&id=${id}`, { method: 'DELETE' });
     fetchScheduled();
   };
 
@@ -754,7 +777,7 @@ export default function TelegramConfigPage() {
         <div className="rounded-2xl p-4 mb-6" style={{ background: 'var(--card-bg)' }}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex gap-2">
-              <button onClick={() => { setConfigMode('global'); setSelectedGroup(''); }}
+              <button onClick={() => setConfigMode('global')}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${configMode === 'global' ? 'bg-blue-600 text-white' : ''}`}
                 style={configMode !== 'global' ? { background: 'var(--bg)', color: 'var(--text-secondary)' } : undefined}>
                 Global Defaults

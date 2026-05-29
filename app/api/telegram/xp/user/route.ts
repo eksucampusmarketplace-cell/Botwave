@@ -1,17 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     const chatId = searchParams.get('chatId');
@@ -20,23 +13,18 @@ export async function GET(request: NextRequest) {
     if (!sessionId || !chatId || !userId) {
       return NextResponse.json(
         { error: 'sessionId, chatId, and userId are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Verify session ownership
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      requireRole: 'owner',
+      source: 'cookie',
+    });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
-    if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    // Get user XP data
     const { data: xpData } = await supabase
       .from('telegram_xp')
       .select('*')
@@ -52,7 +40,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate rank
     const { count: rank } = await supabase
       .from('telegram_xp')
       .select('*', { count: 'exact', head: true })

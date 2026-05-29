@@ -30,6 +30,8 @@ export interface TelegramConfig {
   warn_action: string;
   xp_enabled: boolean;
   log_channel_id: string | null;
+  announce_channel_id: string | null;
+  admin_only_mode: boolean;
   start_text: string | null;
   start_image_file_id: string | null;
   start_group_dm_text: string | null;
@@ -232,6 +234,8 @@ const DEFAULT_CONFIG: Omit<TelegramConfig, 'session_id'> = {
   warn_action: 'mute',
   xp_enabled: true,
   log_channel_id: null,
+  announce_channel_id: null,
+  admin_only_mode: false,
   start_text: null,
   start_image_file_id: null,
   start_group_dm_text: null,
@@ -492,8 +496,10 @@ export interface GroupConfig {
   welcome_message: string | null;
   welcome_delete_after: number;
   welcome_show_rules_btn: boolean;
+  welcome_image_url: string | null;
   goodbye_enabled: boolean;
   goodbye_message: string | null;
+  goodbye_image_url: string | null;
   // Captcha
   captcha_enabled: boolean;
   captcha_mode: string;
@@ -554,6 +560,7 @@ export interface GroupConfig {
   // Modlog
   modlog_enabled: boolean;
   modlog_channel_id: string | null;
+  announce_channel_id: string | null;
   modlog_bans: boolean;
   modlog_mutes: boolean;
   modlog_warns: boolean;
@@ -624,6 +631,11 @@ export interface GroupConfig {
   profiletools_enabled: boolean;
   mediatools_enabled: boolean;
   imagetools_enabled: boolean;
+  admin_only_mode: boolean;
+  daily_summary_enabled: boolean;
+  daily_summary_hour: number;
+  daily_summary_channel_id: string | null;
+  last_summary_sent_at?: string | null;
   timezone: string;
   created_at?: string;
   updated_at?: string;
@@ -634,8 +646,10 @@ const GROUP_CONFIG_DEFAULTS: Omit<GroupConfig, 'session_id' | 'chat_id'> = {
   welcome_message: null,
   welcome_delete_after: 0,
   welcome_show_rules_btn: false,
+  welcome_image_url: null,
   goodbye_enabled: false,
   goodbye_message: null,
+  goodbye_image_url: null,
   captcha_enabled: false,
   captcha_mode: 'button',
   captcha_timeout: 60,
@@ -687,6 +701,7 @@ const GROUP_CONFIG_DEFAULTS: Omit<GroupConfig, 'session_id' | 'chat_id'> = {
   rules_button_on_welcome: false,
   modlog_enabled: false,
   modlog_channel_id: null,
+  announce_channel_id: null,
   modlog_bans: true,
   modlog_mutes: true,
   modlog_warns: true,
@@ -748,6 +763,10 @@ const GROUP_CONFIG_DEFAULTS: Omit<GroupConfig, 'session_id' | 'chat_id'> = {
   profiletools_enabled: true,
   mediatools_enabled: true,
   imagetools_enabled: true,
+  admin_only_mode: false,
+  daily_summary_enabled: false,
+  daily_summary_hour: 23,
+  daily_summary_channel_id: null,
   timezone: 'UTC',
 };
 
@@ -1129,7 +1148,7 @@ export async function getFilters(
   return (data as Filter[]) || [];
 }
 
-// ─── XP ────────────────────────────────────────────────────────────────────
+// ─── XP ───────────────────────────────────────────────��────────────────────
 
 const XP_PER_MESSAGE = 2;
 const XP_LEVEL_MULTIPLIER = 100;
@@ -2375,7 +2394,7 @@ export async function getGroupStats(
   return data || [];
 }
 
-// ─── Bot Ignored Chats ─────────────────────────────────────────────────────
+// ─── Bot Ignored Chats ──────────────────────────────────���──────────────────
 
 export async function getIgnoredChats(
   sessionId: string,
@@ -2429,23 +2448,63 @@ export async function isIgnoredChat(
 
 // ─── Admin-Only Mode ───────────────────────────────────────────────────────
 
-export async function getAdminOnlyMode(sessionId: string): Promise<boolean> {
+export async function getAdminOnlyMode(
+  sessionId: string,
+  chatId?: string,
+): Promise<boolean> {
+  if (chatId) {
+    const { data: groupData } = await supabase
+      .from('telegram_group_configs')
+      .select('admin_only_mode')
+      .eq('session_id', sessionId)
+      .eq('chat_id', chatId)
+      .maybeSingle();
+
+    const groupMode = (groupData as Record<string, unknown> | null)?.admin_only_mode;
+    if (groupMode !== null && groupMode !== undefined) {
+      return !!groupMode;
+    }
+  }
+
   const { data } = await supabase
     .from('telegram_bot_configs')
     .select('admin_only_mode')
     .eq('session_id', sessionId)
     .maybeSingle();
+
   return !!(data as Record<string, unknown> | null)?.admin_only_mode;
 }
 
 export async function setAdminOnlyMode(
   sessionId: string,
   enabled: boolean,
+  chatId?: string,
 ): Promise<void> {
+  if (chatId) {
+    const { error } = await supabase
+      .from('telegram_group_configs')
+      .upsert(
+        {
+          session_id: sessionId,
+          chat_id: chatId,
+          admin_only_mode: enabled,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'session_id,chat_id' },
+      );
+
+    if (error) {
+      console.error('[TG-DB] setAdminOnlyMode(group) error:', error.message);
+    }
+    groupConfigCache.delete(`${sessionId}:${chatId}`);
+    return;
+  }
+
   const { error } = await supabase
     .from('telegram_bot_configs')
     .upsert({ session_id: sessionId, admin_only_mode: enabled }, { onConflict: 'session_id' });
   if (error) console.error('[TG-DB] setAdminOnlyMode error:', error.message);
+  configCache.delete(sessionId);
 }
 
 // ─── Access Control (public/private mode + allowlists/blocklists) ─────────

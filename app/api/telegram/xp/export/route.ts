@@ -1,35 +1,30 @@
 /**
  * Telegram XP Export API
  * GET /api/telegram/xp/export?sessionId=xxx&chatId=xxx&format=csv
- * 
+ *
  * Returns XP leaderboard as CSV for download.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { authorizeTelegramRequest } from '@/lib/telegram-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     const params = new URL(request.url).searchParams;
     const sessionId = params.get('sessionId');
     const chatId = params.get('chatId');
 
     if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 });
 
-    const { data: session } = await supabase
-      .from('bot_sessions')
-      .select('id')
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    const auth = await authorizeTelegramRequest(request, {
+      sessionId,
+      requireRole: 'owner',
+      source: 'cookie',
+    });
+    if (!auth.ok) return auth.response;
+    const { supabase } = auth;
 
     let query = supabase
       .from('telegram_xp')
@@ -48,7 +43,6 @@ export async function GET(request: NextRequest) {
       return new NextResponse('No data', { status: 204 });
     }
 
-    // Build CSV
     const headers = ['Rank', 'User ID', 'Username', 'Display Name', 'XP', 'Level', 'Messages', 'Chat ID', 'Last Active'];
     const rows = leaderboard.map((entry, i) => [
       i + 1,
