@@ -78,9 +78,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1024M
         reservations:
-          memory: 256M
+          memory: 512M
     logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${EVOLUTION_DB_USER:-evolution}"]
@@ -165,6 +165,55 @@ services:
       retries: 5
       start_period: 40s
 
+  # ── BotWave Webhook Worker (internal Evolution webhook sink) ──
+  botwave-webhook-worker:
+    container_name: botwave_webhook_worker
+    image: ${IMAGE_REGISTRY:-ghcr.io/eksucampusmarketplace-cell}/botwave-web:${IMAGE_TAG:-latest}
+    build:
+      <<: *bot-build-args
+      target: web
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+        REDIS_URL: ${REDIS_URL}
+    restart: unless-stopped
+    expose:
+      - "10000"
+    env_file:
+      - .env.botwave
+    environment:
+      - PORT=10000
+      - NODE_ENV=production
+      - SELF_URL=http://botwave-web:10000
+      - IS_WORKER=false
+      - EVOLUTION_API_URL=http://evolution-api:8080
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
+    volumes:
+      - /opt/botwave:/opt/botwave
+    command: ["node", "--max-old-space-size=900", "dist/bot/server/customServer.js"]
+    networks:
+      - botwave-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      evolution-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1280M
+        reservations:
+          memory: 512M
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "try { const http = require('http'); const r = http.get('http://localhost:10000/', res => { process.exit(res.statusCode < 500 ? 0 : 1); }); r.on('error', () => process.exit(1)); r.setTimeout(5000, () => process.exit(1)); } catch(e) { process.exit(1); }"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
   # ── BotWave Telegram Bot (isolated) ───────────────────
   botwave-telegram:
     container_name: botwave_telegram
@@ -222,7 +271,7 @@ services:
       - WORKER_URLS=
       - REDIS_URL=redis://redis:6379
       - EVOLUTION_API_URL=http://evolution-api:8080
-      - WEBHOOK_BASE_URL=http://botwave-web:10000
+      - WEBHOOK_BASE_URL=http://botwave-webhook-worker:10000
       - INTERNAL_SECRET=${INTERNAL_SECRET:-botwave-internal-docker-secret}
       - MAX_WORKER_THREADS=${MAX_WORKER_THREADS:-40}
       - SCALE_THRESHOLD=${SCALE_THRESHOLD:-25}
@@ -318,9 +367,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1024M
         reservations:
-          memory: 256M
+          memory: 512M
     logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U botwave"]

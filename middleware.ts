@@ -142,70 +142,76 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Middleware MUST use NEXT_PUBLIC_SUPABASE_URL (not internal URL) because the
-  // cookie name is derived from the URL hostname. Using internal URL would look
-  // for "sb-supabase-kong-auth-token" instead of the actual "sb-144-auth-token".
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+  const authPath = request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup');
+
+  if (authPath) {
+    // Middleware MUST use NEXT_PUBLIC_SUPABASE_URL (not internal URL) because the
+    // cookie name is derived from the URL hostname. Using internal URL would look
+    // for "sb-supabase-kong-auth-token" instead of the actual "sb-144-auth-token".
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            })
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: CookieOptions) {
+            request.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            })
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+    let authenticatedUser = user;
+    if (!authenticatedUser) {
+      const { data: { session } } = await supabase.auth.getSession();
+      authenticatedUser = session?.user ?? null;
     }
-  )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  let authenticatedUser = user;
-  if (!authenticatedUser) {
-    const { data: { session } } = await supabase.auth.getSession();
-    authenticatedUser = session?.user ?? null;
-  }
+    // Protect dashboard routes
+    if (!authenticatedUser && request.nextUrl.pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
 
-  // Protect dashboard routes
-  if (!authenticatedUser && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // Redirect logged in users away from auth pages
-  if (authenticatedUser && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // Redirect logged in users away from auth pages
+    if (authenticatedUser && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   // Protect admin routes
