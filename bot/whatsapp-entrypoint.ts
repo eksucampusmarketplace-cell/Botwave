@@ -21,7 +21,7 @@ process.env.BOT_PLATFORM = 'whatsapp';
 import { initializeBot, syncSessionsWithDb, getActiveBotSocket, getActiveSessionCount, getLastSyncCycleDuration } from './BotManager';
 import { recoverStaleSessions, recoverStaleStandaloneSessions, getDueReminders, markReminderDelivered, getDueScheduledMessages, markScheduledMessageSent, cleanupDeadLetters, cleanupStaleSessions } from './database';
 import { WORKER_URLS, IS_WORKER, SELF_URL, isWorkerHealthy, areAllWorkersDown } from './scaling/workerConfig';
-import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks } from './scaling/sessionCoordinator';
+import { cleanupOnStartup, startHeartbeatLoop, stopHeartbeatLoop, recoverOrphanedSessions, auditSessions, getInstanceId, autoRecoverNeedsReauth, cleanupStuckPairingSessions, releaseAllOwnedLocks, reconcileEvolutionSessionStates } from './scaling/sessionCoordinator';
 import { startMonetizationScheduler, stopMonetizationScheduler } from './whatsapp/monetization';
 import { startAutoScaler, stopAutoScaler, setStandaloneSyncCallbacks, updateScalingMetrics, isInScaledMode, getScalingStatus } from './scaling/autoScaler';
 import { waitForEvolutionReady, resetEvolutionHealth, verifyEvolutionDataPersistence, rotateStaleProxiesOnStartup } from './whatsapp/evolution/client';
@@ -86,6 +86,19 @@ async function start() {
       }
     } else {
       console.warn('[WHATSAPP] Evolution API did not become ready - sessions will retry during sync loop');
+    }
+  }
+
+  // Reconcile DB session state with Evolution before starting bots so stale
+  // dashboard-active rows do not remain active when Evolution reports close/gone.
+  if (USE_EVOLUTION && !IS_WORKER) {
+    try {
+      const reconciled = await reconcileEvolutionSessionStates('whatsapp');
+      if (reconciled > 0) {
+        console.log(`[WHATSAPP] Reconciled ${reconciled} stale Evolution session state(s) on startup`);
+      }
+    } catch (err) {
+      console.error('[WHATSAPP] Startup Evolution state reconciliation failed (non-fatal):', err);
     }
   }
 
@@ -203,6 +216,21 @@ async function start() {
         console.error('[WHATSAPP] Audit error:', err);
       }
     }, 300_000));
+
+    registerInterval(setInterval(async () => {
+      if (isShutdown() || isCircuitOpen()) return;
+      try {
+        const reconciled = await reconcileEvolutionSessionStates('whatsapp');
+        if (reconciled > 0) {
+          console.log(`[WHATSAPP] Reconciled ${reconciled} stale Evolution session state(s)`);
+        }
+        recordPollerSuccess('evolutionReconcile');
+      } catch (err) {
+        recordPollerError('evolutionReconcile');
+        console.error('[WHATSAPP] Evolution reconciliation error:', err);
+      }
+    }, 300_000));
+
 
     registerInterval(setInterval(async () => {
       if (isShutdown() || isCircuitOpen()) return;
