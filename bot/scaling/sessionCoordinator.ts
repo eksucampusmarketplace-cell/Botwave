@@ -18,9 +18,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync, areAllWorkersDown } from './workerConfig';
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from '../infrastructure/redis';
+import { invalidateQRCache, invalidateSessionCache } from '../infrastructure/redisSessionCache';
 import { isCircuitOpen } from '../infrastructure/circuitBreaker';
 import { isShutdown } from '../infrastructure/gracefulShutdown';
-import { deleteInstanceAndVerify, reconnectInstance } from '../whatsapp/evolution/client';
+import { deleteInstanceAndVerify, fetchAllEvolutionInstances, getInstanceStatus, reconnectInstance } from '../whatsapp/evolution/client';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -595,6 +596,108 @@ export async function cleanupOnStartup(platformFilter?: string): Promise<void> {
   } else {
     console.log('[COORD] No stale locks to clean up');
   }
+}
+
+// ─── Evolution State Reconciliation ──────────────────────────────────────────
+
+/**
+ * Compare DB session state with live Evolution API state.
+ * Marks sessions as needs_reauth when Evolution definitively reports that the
+ * instance is gone, and queues closed instances for the existing soft-recovery
+ * loop instead of leaving the dashboard stuck on active.
+ */
+export async function reconcileEvolutionSessionStates(platformFilter = 'whatsapp'): Promise<number> {
+  if (IS_WORKER || isCircuitOpen() || isShutdown()) return 0;
+
+  const { data: sessions, error } = await supabase
+    .from('bot_sessions')
+    .select('id, state, platform, phone_number')
+    .in('state', ['active', 'connected', 'connecting'])
+    .not('phone_number', 'is', null);
+
+  if (error || !sessions || sessions.length === 0) {
+    if (error) console.error('[EVO-RECONCILE] Failed to fetch DB sessions:', error);
+    return 0;
+  }
+
+  const relevantSessions = sessions.filter(session => {
+    const sessionPlatform = session.platform || 'whatsapp';
+    if (platformFilter === 'whatsapp') return sessionPlatform === 'whatsapp';
+    return sessionPlatform === platformFilter;
+  });
+
+  if (relevantSessions.length === 0) return 0;
+
+  const knownInstances = await fetchAllEvolutionInstances();
+  if (knownInstances.size === 0) {
+    console.warn('[EVO-RECONCILE] Evolution returned zero instances; skipping to avoid mass false reauth during startup/loading');
+    return 0;
+  }
+
+  let reconciled = 0;
+  for (const session of relevantSessions) {
+    const sid = session.id.slice(0, 8);
+    const liveState = knownInstances.has(session.id) ? await getInstanceStatus(session.id) : 'gone';
+
+    if (liveState === 'unknown') {
+      // fetchInstances saw the instance, but connectionState was unclear. Leave
+      // it to the poll/keep-alive loops rather than risking a false downgrade.
+      continue;
+    }
+
+    if (liveState === 'gone') {
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'needs_reauth',
+          pairing_code: null,
+          qr_code: null,
+          qr_expires_at: null,
+          qr_generated_at: null,
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id)
+        .in('state', ['active', 'connected', 'connecting']);
+
+      if (updateErr) {
+        console.error(`[EVO-RECONCILE] Failed to mark ${sid} needs_reauth:`, updateErr);
+      } else {
+        reconciled++;
+        await invalidateSessionCache(session.id);
+        await invalidateQRCache(session.id);
+        console.warn(`[EVO-RECONCILE] ${sid} DB=${session.state} live=gone -> needs_reauth`);
+      }
+      continue;
+    }
+
+    if (liveState === 'close' || liveState === 'refused') {
+      const { error: updateErr } = await supabase
+        .from('bot_sessions')
+        .update({
+          state: 'needs_reauth',
+          locked_by: null,
+          locked_at: null,
+          heartbeat_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.id)
+        .in('state', ['active', 'connected', 'connecting']);
+
+      if (updateErr) {
+        console.error(`[EVO-RECONCILE] Failed to queue ${sid} for soft recovery:`, updateErr);
+      } else {
+        reconciled++;
+        await invalidateSessionCache(session.id);
+        await invalidateQRCache(session.id);
+        console.warn(`[EVO-RECONCILE] ${sid} DB=${session.state} live=${liveState} -> needs_reauth for soft recovery`);
+      }
+    }
+  }
+
+  return reconciled;
 }
 
 // ─── Auto-Recovery for needs_reauth ──────────────────────────────────────────
