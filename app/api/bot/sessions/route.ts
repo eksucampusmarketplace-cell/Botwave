@@ -2,7 +2,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assignWorkerAsync, INTERNAL_SECRET } from '@/bot/scaling/workerConfig';
-import { getCachedSessions, cacheSessions, invalidateSessions } from '@/lib/redisApiCache';
+import { invalidateSessions } from '@/lib/redisApiCache';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'christolu994@gmail.com';
@@ -52,6 +52,99 @@ function validatePhoneNumber(phone: string): boolean {
 }
 
 const platformEnum = z.enum(['whatsapp', 'telegram_bot', 'telegram_userbot']).default('whatsapp');
+
+type SessionRow = {
+  id: string;
+  platform: string | null;
+  state: string | null;
+  heartbeat_at: string | null;
+  evolution_state?: string;
+  status_source?: string;
+};
+
+type JsonRecord = Record<string, unknown>;
+
+const ACTIVE_HEARTBEAT_TTL_MS = parseInt(process.env.SESSION_ACTIVE_HEARTBEAT_TTL_MS || '180000', 10);
+
+function asRecord(value: unknown): JsonRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : null;
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function nestedRecord(record: JsonRecord, key: string): JsonRecord {
+  return asRecord(record[key]) || {};
+}
+
+function instanceString(record: JsonRecord, nested: JsonRecord, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = stringValue(record[key]) || stringValue(nested[key]);
+    if (value) return value;
+  }
+  return null;
+}
+
+function hasFreshHeartbeat(heartbeatAt: string | null): boolean {
+  if (!heartbeatAt) return false;
+  const heartbeatTime = new Date(heartbeatAt).getTime();
+  if (Number.isNaN(heartbeatTime)) return false;
+  return Date.now() - heartbeatTime <= ACTIVE_HEARTBEAT_TTL_MS;
+}
+
+async function fetchEvolutionInstanceStatuses(): Promise<Map<string, string>> {
+  const statuses = new Map<string, string>();
+  const baseUrl = process.env.EVOLUTION_API_URL;
+  const apiKey = process.env.EVOLUTION_API_KEY || process.env.AUTHENTICATION_API_KEY;
+
+  if (!baseUrl || !apiKey) return statuses;
+
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/instance/fetchInstances`, {
+      headers: { apikey: apiKey },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.warn(`[API] Evolution instance fetch failed: ${response.status}`);
+      return statuses;
+    }
+
+    const payload: unknown = await response.json();
+    const instances = Array.isArray(payload) ? payload : [];
+
+    for (const item of instances) {
+      const record = asRecord(item);
+      if (!record) continue;
+      const nested = nestedRecord(record, 'instance');
+      const id = instanceString(record, nested, ['name', 'instanceName']);
+      const state = instanceString(record, nested, ['connectionStatus', 'status', 'state']);
+      if (id && state) statuses.set(id, state);
+    }
+  } catch (error) {
+    console.warn('[API] Evolution instance fetch error:', error);
+  }
+
+  return statuses;
+}
+
+function reconcileSessionState(session: SessionRow, liveStatuses: Map<string, string>): SessionRow {
+  if (session.platform !== 'whatsapp') return session;
+
+  const liveState = liveStatuses.get(session.id) || 'missing';
+  const liveOpen = liveState === 'open';
+
+  if (liveOpen && session.state !== 'active') {
+    return { ...session, state: 'active', evolution_state: liveState, status_source: 'evolution' };
+  }
+
+  if (session.state === 'active' && !hasFreshHeartbeat(session.heartbeat_at) && !liveOpen) {
+    return { ...session, state: 'needs_reauth', evolution_state: liveState, status_source: 'heartbeat' };
+  }
+
+  return { ...session, evolution_state: liveState, status_source: 'database' };
+}
 
 const createSessionSchema = z.object({
   phoneNumber: z.string().min(1).transform(normalizePhoneNumber).refine(
@@ -106,14 +199,6 @@ export async function GET() {
       );
     }
 
-    // Skip cache when any session is in pairing flow (QR codes expire quickly)
-    const cached = await getCachedSessions(user.id);
-    const hasPairingSession = cached && Array.isArray(cached) &&
-      cached.some((s: any) => s.state === 'qr_pending' || s.state === 'pairing_sent');
-    if (cached && !hasPairingSession) {
-      return NextResponse.json({ success: true, data: cached });
-    }
-
     const { data: sessions, error } = await supabase
       .from('bot_sessions')
       .select('id, user_id, session_name, phone_number, platform, state, pairing_code, qr_code, qr_expires_at, qr_generated_at, worker_url, locked_by, locked_at, heartbeat_at, created_at, updated_at, proxy_type, proxy_host, proxy_port, proxy_username, command_throttling_enabled')
@@ -142,8 +227,11 @@ export async function GET() {
       }
     }
 
-    const result = sessions || [];
-    await cacheSessions(user.id, result);
+    const liveStatuses = await fetchEvolutionInstanceStatuses();
+    const result = ((sessions || []) as SessionRow[]).map((session) =>
+      reconcileSessionState(session, liveStatuses)
+    );
+
     return NextResponse.json({
       success: true,
       data: result,
