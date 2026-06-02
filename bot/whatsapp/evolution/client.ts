@@ -1353,7 +1353,95 @@ export async function getPairingCode(instanceName: string, phoneNumber: string):
   }
 }
 
+type QrPayload = Pick<PairingResult, 'qrCode' | 'qrBase64'>;
+type PairingApiResponse = {
+  pairingCode: string | null;
+  code: string | null;
+  base64: string | null;
+  state: string | null;
+  count: number | null;
+};
+
+function parsePairingApiResponse(value: unknown): PairingApiResponse {
+  const empty = {
+    pairingCode: null,
+    code: null,
+    base64: null,
+    state: null,
+    count: null,
+  };
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return empty;
+  const record = value as Record<string, unknown>;
+
+  return {
+    pairingCode: typeof record.pairingCode === 'string' ? record.pairingCode : null,
+    code: typeof record.code === 'string' ? record.code : null,
+    base64: typeof record.base64 === 'string' ? record.base64 : null,
+    state: typeof record.state === 'string' ? record.state : null,
+    count: typeof record.count === 'number' ? record.count : null,
+  };
+}
+
+function extractQrPayload(data: PairingApiResponse): QrPayload {
+  const base64 = data.base64 && data.base64.length > 0 ? data.base64 : null;
+  const code = data.code && data.code.length > 0 ? data.code : null;
+  return {
+    qrCode: code || base64,
+    qrBase64: base64,
+  };
+}
+
+function mergeQrPayload(primary: QrPayload, fallback: QrPayload): QrPayload {
+  return {
+    qrCode: primary.qrCode || fallback.qrCode,
+    qrBase64: primary.qrBase64 || fallback.qrBase64,
+  };
+}
+
+async function requestQrCode(instanceName: string, flowStart: number): Promise<QrPayload> {
+  const empty: QrPayload = { qrCode: null, qrBase64: null };
+
+  try {
+    const qrStart = Date.now();
+    const qrRes = await withRetry(() =>
+      apiFetch(`${BASE}/instance/connect/${instanceName}`, {
+        method: 'GET',
+        headers,
+      }).then(r => {
+        if (r.status === 502 || r.status === 503) {
+          throw new Error(`Evolution API returned ${r.status} (transient) - will retry`);
+        }
+        return r;
+      }),
+      2,
+      1000,
+    );
+    const qrData = parsePairingApiResponse(await safeJson(qrRes));
+    let qr = extractQrPayload(qrData);
+    console.log(`[PAIRING-EVO-CLIENT] Explicit QR connect response: status=${qrRes.status} pairingCode=${qrData.pairingCode || 'none'} code=${qrData.code ? 'yes' : 'no'} base64=${qrData.base64 ? 'yes' : 'no'} duration=${Date.now() - qrStart}ms totalElapsed=${Date.now() - flowStart}ms`);
+
+    if (qr.qrCode) return qr;
+
+    await new Promise(r => setTimeout(r, 1500));
+    const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}`, {
+      method: 'GET',
+      headers,
+    });
+    const retryData = parsePairingApiResponse(await safeJson(retryRes));
+    qr = extractQrPayload(retryData);
+    console.log(`[PAIRING-EVO-CLIENT] Explicit QR retry: status=${retryRes.status} pairingCode=${retryData.pairingCode || 'none'} code=${retryData.code ? 'yes' : 'no'} base64=${retryData.base64 ? 'yes' : 'no'} totalElapsed=${Date.now() - flowStart}ms`);
+    return qr;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[PAIRING-EVO-CLIENT] Explicit QR request failed: ${message}`);
+    return empty;
+  }
+}
+
 async function getPairingCodeInner(instanceName: string, cleanPhone: string, flowStart: number): Promise<PairingResult | null> {
+  let qrCandidate = await requestQrCode(instanceName, flowStart);
+
   const connectStart = Date.now();
   const connectRes = await withRetry(() =>
     apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, {
@@ -1366,28 +1454,27 @@ async function getPairingCodeInner(instanceName: string, cleanPhone: string, flo
       return r;
     }),
   );
-  const connectData: any = await safeJson(connectRes);
+  const connectData = parsePairingApiResponse(await safeJson(connectRes));
   const connectDuration = Date.now() - connectStart;
-  console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData?.pairingCode || 'none'} base64=${connectData?.base64 ? 'yes' : 'no'} state=${connectData?.state || 'unknown'} duration=${connectDuration}ms`);
-  if (connectData?.pairingCode) {
-    // If pairing code is present but QR data is missing, the Evolution API's
-    // async toDataURL callback hasn't completed yet. Wait briefly and retry.
-    if (!connectData.code) {
+  console.log(`[PAIRING-EVO-CLIENT] Initial connect response: status=${connectRes.status} pairingCode=${connectData.pairingCode || 'none'} base64=${connectData.base64 ? 'yes' : 'no'} state=${connectData.state || 'unknown'} duration=${connectDuration}ms`);
+  if (connectData.pairingCode) {
+    let qr = mergeQrPayload(extractQrPayload(connectData), qrCandidate);
+    if (!qr.qrCode) {
       console.log(`[PAIRING-EVO-CLIENT] Got pairing code but QR data missing - retrying after 1.5s`);
       await new Promise(r => setTimeout(r, 1500));
       try {
         const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
-        const retryData: any = await safeJson(retryRes);
-        if (retryData?.code) {
+        const retryData = parsePairingApiResponse(await safeJson(retryRes));
+        qr = mergeQrPayload(extractQrPayload(retryData), qr);
+        if (qr.qrCode) {
           console.log(`[PAIRING-EVO-CLIENT] QR data received on retry. totalDuration=${Date.now() - flowStart}ms`);
-          return { pairingCode: connectData.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
         }
       } catch (retryErr: any) {
         console.warn(`[PAIRING-EVO-CLIENT] QR retry failed: ${retryErr?.message}`);
       }
     }
-    console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" hasQR=${!!connectData.code} totalDuration=${Date.now() - flowStart}ms`);
-    return { pairingCode: connectData.pairingCode, qrCode: connectData.code || null, qrBase64: connectData.base64 || null };
+    console.log(`[PAIRING-EVO-CLIENT] Got code on first try: "${connectData.pairingCode}" hasQR=${!!qr.qrCode} totalDuration=${Date.now() - flowStart}ms`);
+    return { pairingCode: connectData.pairingCode, qrCode: qr.qrCode, qrBase64: qr.qrBase64 };
   }
 
   const POLL_ATTEMPTS = 20;
@@ -1408,33 +1495,37 @@ async function getPairingCodeInner(instanceName: string, cleanPhone: string, flo
         console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: got ${res.status} (transient) - skipping`);
         continue;
       }
-      const data: any = await safeJson(res);
-      if (!data) {
+      const data = parsePairingApiResponse(await safeJson(res));
+      if (!data.pairingCode && !data.code && !data.base64) {
         console.warn(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: non-JSON response - skipping`);
         continue;
       }
       const pollDuration = Date.now() - pollStart;
-      const hasQrCount = typeof data?.count === 'number';
-      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data?.pairingCode || 'none'} base64=${data?.base64 ? 'yes' : 'no'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
-      if (data?.pairingCode) {
-        // If pairing code is present but QR data not ready, retry once
-        if (!data.code) {
+      const hasQrCount = typeof data.count === 'number';
+      console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS}: status=${res.status} pairingCode=${data.pairingCode || 'none'} base64=${data.base64 ? 'yes' : 'no'} qrCount=${hasQrCount ? data.count : 'n/a'} pollDuration=${pollDuration}ms totalElapsed=${elapsed}ms`);
+      const polledQr = extractQrPayload(data);
+      qrCandidate = mergeQrPayload(polledQr, qrCandidate);
+      if (data.pairingCode) {
+        let qr = qrCandidate;
+        if (!qr.qrCode) {
           console.log(`[PAIRING-EVO-CLIENT] Poll ${i + 1}: pairing code present but QR missing - retrying after 1.5s`);
           await new Promise(r => setTimeout(r, 1500));
           try {
             const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
-            const retryData: any = await safeJson(retryRes);
-            if (retryData?.code) {
+            const retryData = parsePairingApiResponse(await safeJson(retryRes));
+            qr = mergeQrPayload(extractQrPayload(retryData), qr);
+            qrCandidate = qr;
+            if (qr.qrCode) {
               console.log(`[PAIRING-EVO-CLIENT] QR data received on poll retry. totalDuration=${Date.now() - flowStart}ms`);
-              return { pairingCode: data.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
             }
           } catch { /* non-fatal */ }
         }
-        console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" hasQR=${!!data.code} totalDuration=${Date.now() - flowStart}ms`);
-        return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
+        console.log(`[PAIRING-EVO-CLIENT] Got code on poll ${i + 1}: "${data.pairingCode}" hasQR=${!!qr.qrCode} totalDuration=${Date.now() - flowStart}ms`);
+        return { pairingCode: data.pairingCode, qrCode: qr.qrCode, qrBase64: qr.qrBase64 };
       }
-    } catch (err: any) {
-      console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS} FAILED: error=${err?.message} totalElapsed=${elapsed}ms`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[PAIRING-EVO-CLIENT] Poll ${i + 1}/${POLL_ATTEMPTS} FAILED: error=${message} totalElapsed=${elapsed}ms`);
     }
     if (i < POLL_ATTEMPTS - 1) {
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
@@ -1455,20 +1546,18 @@ export async function refreshPairingCode(instanceName: string, phoneNumber: stri
       headers,
     });
     if (res.status === 502 || res.status === 503) return null;
-    const data: any = await safeJson(res);
-    if (!data?.pairingCode) return null;
-    // If pairing code is present but QR data not ready, retry once
-    if (!data.code) {
+    const data = parsePairingApiResponse(await safeJson(res));
+    if (!data.pairingCode) return null;
+    let qr = extractQrPayload(data);
+    if (!qr.qrCode) {
       await new Promise(r => setTimeout(r, 1500));
       try {
         const retryRes = await apiFetch(`${BASE}/instance/connect/${instanceName}?number=${cleanPhone}`, { method: 'GET', headers });
-        const retryData: any = await safeJson(retryRes);
-        if (retryData?.code) {
-          return { pairingCode: data.pairingCode, qrCode: retryData.code, qrBase64: retryData.base64 || null };
-        }
+        const retryData = parsePairingApiResponse(await safeJson(retryRes));
+        qr = mergeQrPayload(extractQrPayload(retryData), qr);
       } catch { /* non-fatal */ }
     }
-    return { pairingCode: data.pairingCode, qrCode: data.code || null, qrBase64: data.base64 || null };
+    return { pairingCode: data.pairingCode, qrCode: qr.qrCode, qrBase64: qr.qrBase64 };
   } catch {
     return null;
   }
