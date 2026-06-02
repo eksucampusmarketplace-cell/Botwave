@@ -233,6 +233,8 @@ export default function SessionsPage() {
   };
 
   const handleConnect = async (session: BotSession) => {
+    setError(null);
+
     // Telegram bot and userbot don't use QR/pairing codes — they reconnect automatically
     if (session.platform === 'telegram_bot' || session.platform === 'telegram_userbot') {
       try {
@@ -242,7 +244,7 @@ export default function SessionsPage() {
           body: JSON.stringify({ sessionId: session.id }),
         });
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && data.success) {
           fetchSessions();
         } else {
           setError(data.error || 'Failed to reconnect session');
@@ -253,8 +255,10 @@ export default function SessionsPage() {
       }
       return;
     }
-    // For WhatsApp sessions, reset state so the worker generates a fresh pairing code
+
+    let sessionForQr = session;
     if (session.state === 'needs_reauth' || session.state === 'inactive' || session.state === 'pairing_failed') {
+      setShowQR(false);
       try {
         const response = await fetch('/api/bot/sessions', {
           method: 'PATCH',
@@ -262,14 +266,20 @@ export default function SessionsPage() {
           body: JSON.stringify({ sessionId: session.id }),
         });
         const data = await response.json();
-        if (data.success) {
-          session = data.data;
+        if (!response.ok || !data.success || !data.data) {
+          setError(data.error || 'Failed to start WhatsApp reconnect');
+          return;
         }
+        sessionForQr = data.data;
+        fetchSessions(true);
       } catch (err) {
         console.error('Reconnect error:', err);
+        setError('Failed to start WhatsApp reconnect');
+        return;
       }
     }
-    setActiveSession(session);
+
+    setActiveSession(sessionForQr);
     setShowQR(true);
   };
 

@@ -102,6 +102,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
   const isConnected = sessionState === 'active';
   const hasContent = pairingCode || qrCode;
   const isLoading = !hasContent && !isConnected;
+  const qrImageSrc = qrCode?.startsWith('data:image/') ? qrCode : null;
   // Show the regenerate button when the user is genuinely stuck — either the
   // code on screen has expired, or the session has been marked needs_reauth /
   // pairing_failed by the worker. Hidden while a fresh code is still valid.
@@ -249,13 +250,18 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
             <div>
               <div className="flex justify-center mb-4">
                 <div className="bg-white p-3 rounded-lg">
-                  <QRCodeSVG
-                    value={qrCode}
-                    size={220}
-                    level="H"
-                    bgColor="#ffffff"
-                    fgColor="#000000"
-                  />
+                  {qrImageSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={qrImageSrc} alt="WhatsApp pairing QR code" className="h-[220px] w-[220px]" />
+                  ) : (
+                    <QRCodeSVG
+                      value={qrCode}
+                      size={220}
+                      level="H"
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                    />
+                  )}
                 </div>
               </div>
               <div className="bg-[var(--bg)] border border-[var(--border)] p-3 mb-4 rounded-xl space-y-1.5">
