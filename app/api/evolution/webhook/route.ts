@@ -255,8 +255,9 @@ function timingSafeCompare(a: string, b: string): boolean {
 }
 
 function resolveSessionId(instance: unknown): string | null {
+  if (instance == null) return null;
   if (typeof instance === 'string') return instance;
-  if (instance && typeof instance === 'object' && 'instanceName' in instance) {
+  if (typeof instance === 'object' && 'instanceName' in instance) {
     return (instance as Record<string, string>).instanceName || null;
   }
   // Some Evolution API events (global error events, malformed payloads) carry

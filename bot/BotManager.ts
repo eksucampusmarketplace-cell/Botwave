@@ -2001,6 +2001,20 @@ async function _syncSessionsWithDbInner(isWorker?: boolean) {
     await Promise.all(staleReleases);
   }
 
+  const desiredSessionIds = new Set(sessions.map((session) => session.id));
+  for (const [sessionId, bot] of activeBots) {
+    if (desiredSessionIds.has(sessionId)) continue;
+
+    console.log(`[SYNC] Stopping bot for session ${sessionId.slice(0, 8)} - no longer eligible for this worker`);
+    if (bot instanceof EvolutionBot) {
+      await bot.stop(true);
+    } else {
+      await bot.stop();
+    }
+    activeBots.delete(sessionId);
+    await releaseLock(sessionId);
+  }
+
   // Track how many NEW pairing sessions we start in THIS sync cycle.
   // Only limit new starts - already-running pairing sessions are already
   // connected to WhatsApp and won't cause additional 428 rate limits.
