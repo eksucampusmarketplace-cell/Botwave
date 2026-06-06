@@ -1,6 +1,7 @@
 /**
  * Info commands: id, info, chatinfo, admins, setowner, addsudo, delsudo, sudolist.
  */
+import { supabase } from "../utils/db";
 
 import { Bot } from 'grammy';
 import { mentionUser, mentionById, escapeHtml } from '../utils/format';
@@ -98,6 +99,53 @@ export function registerInfoHandlers(bot: Bot, sessionId: string): void {
   });
 
   // Sudo commands
+
+
+  // Safe first-run owner claim (no owner required)
+  bot.command('claimowner', async (ctx) => {
+    if (!ctx.from || !ctx.chat) return;
+
+    // Only in private DM
+    if (ctx.chat.type !== 'private') {
+      await ctx.reply('⚠️ /claimowner only works in a private chat with this bot.');
+      return;
+    }
+
+    // Check if already claimed
+    const { data: config } = await supabase
+      .from('telegram_bot_configs')
+      .select('owner_user_id')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (config?.owner_user_id) {
+      await ctx.reply("❌ This bot already has an owner.\n" +
+        "If you are the real owner, use /setowner from that account or contact support.");
+      return;
+    }
+
+    // Claim ownership
+    const { error } = await supabase
+      .from('telegram_bot_configs')
+      .upsert({
+        session_id: sessionId,
+        owner_user_id: ctx.from.id.toString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'session_id' });
+
+    if (error) {
+      await ctx.reply("❌ Failed to claim ownership. Please try again later.");
+      console.error('[claimowner] upsert error:', error);
+      return;
+    }
+
+    await ctx.reply(
+      "✅ You are now the owner of this bot.\n" +
+      "🔑 Your Telegram ID: <code>" + ctx.from.id + "</code>\n\n" +
+      "📌 To give helpers elevated access: /addsudo @username",
+      { parse_mode: "HTML" }
+    );
+  });
   bot.command('addsudo', async (ctx) => {
     if (!(await requireOwnerOrSudo(ctx, sessionId))) return;
 
