@@ -13,7 +13,29 @@
   --link: var(--tg-theme-link-color, #5eaeff);
   --btn: var(--tg-theme-button-color, #5eaeff);
   --btn-text: var(--tg-theme-button-text-color, #fff);
-<div class="section" id="sec-moderation"> <div id="mod-panel"> <div class="card"> <h3>Target User</h3> <div class="input-group"> <label>User ID or @username</label> <input type="text" id="mod-user-id" placeholder="123456789 or @username"> </div> </div> <div class="card"> <h3>Actions</h3> <button class="mod-btn" data-action="warn">Warn</button> <button class="mod-btn" data-action="mute">Mute</button> <button class="mod-btn" data-action="kick">Kick</button> <button class="mod-btn" data-action="ban">Ban</button> <button class="mod-btn" data-action="unban">Unban</button> </div> </div> </div>
+<!-- Tab button (add after filters tab): -->
+<button class="tab" data-tab="moderation" data-roles="owner,admin">Moderation</button>
+<!-- Section div: -->
+<div class="section" id="sec-moderation">
+    <div id="mod-panel">
+        <div class="card">
+            <h3>Target User</h3>
+            <div class="input-group">
+                <label>User ID or @username</label>
+                <input type="text" id="mod-user-id" placeholder="123456789 or @username">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Actions</h3>
+            <button class="mod-btn" data-action="warn">Warn</button>
+            <button class="mod-btn" data-action="mute">Mute</button>
+            <button class="mod-btn" data-action="kick">Kick</button>
+            <button class="mod-btn" data-action="ban">Ban</button>
+            <button class="mod-btn" data-action="unban">Unban</button>
+        </div>
+    </div>
+</div>
+
   --secondary-bg: var(--tg-theme-secondary-bg-color, #16213e);
   --card-bg: var(--tg-theme-secondary-bg-color, #1e2a4a);
 }
