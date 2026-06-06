@@ -1216,10 +1216,10 @@ document.getElementById('reset-xp').addEventListener('click', function() {
 function loadTabData(tab, silent) {
   switch(tab) {
     case 'features': loadFeatures(); break;
-    case 'stats': if (!silent) loadStats(); break;
-    case 'broadcast': break;
+     if (!silent) loadStats(); break;
+     break;
     case 'groupmsgs': loadGroupMessages(); break;
-    case 'messages': loadMessages(); break;
+     
     case 'notes': if (!silent) loadNotes(); break;
     case 'filters': if (!silent) loadFilters(); break;
     case 'modlog': loadModlog(); break;
