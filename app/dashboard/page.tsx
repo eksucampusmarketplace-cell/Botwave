@@ -8,6 +8,11 @@ import DashboardNav from '@/components/layout/DashboardNav';
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay';
 import FeatureToggle from '@/components/ui/FeatureToggle';
 import SessionCard from '@/components/ui/SessionCard';
+<div className="input-group">
+            <label>Your Telegram User ID (optional)</label>
+            <input type="text" placeholder="e.g. 123456789" value={ownerTelegramId} onChange={e => setOwnerTelegramId(e.target.value.trim())} />
+            <p className="hint"> Find your ID by messaging @userinfobot on Telegram. Leave blank to use /claimowner from the bot DM instead. </p>
+        </div>
 import BotStatus from '@/components/ui/BotStatus';
 import PlatformSelector from '@/components/ui/PlatformSelector';
 import TelegramBotSetup from '@/components/ui/TelegramBotSetup';
