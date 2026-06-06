@@ -1,5 +1,6 @@
 /**
  * Permission utilities for Telegram bot handlers.
+owner_user_id must be set explicitly via /claimowner DM or the web dashboard setup form. There is no automatic promotion from group membership.
  * Supports admin, owner, and sudo user checks.
  */
 
