@@ -8,6 +8,17 @@
  */
 
 import { Bot } from 'grammy';
+const boosterGoal = config.booster_goal;
+const boosterMultiplier = config.booster_multiplier;
+const maxInvites = config.booster_max_invites;
+const hardMode = config.hard_mode_enabled;
+const boosterBtnText = config.booster_btn_text;
+const boosterMbText = config.booster_mbtext;
+const dailyMode = config.booster_daily_mode;
+const dailyResetHour = config.booster_daily_reset_hour;
+const forcedBoostEnabled = config.forced_boost_enabled;
+const forceChannel = config.booster_force_channel;
+const topCount = config.booster_top_count;
 import { requireAdmin } from '../utils/permissions';
 import { escapeHtml } from '../utils/format';
 import { getGroupConfig, updateTelegramConfig } from '../utils/db';
