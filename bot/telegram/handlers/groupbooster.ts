@@ -170,11 +170,11 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
     const newMode = config.memberbooster_daily_mode === 'reset' ? 'accumulate' : 'reset';
     await updateTelegramConfig(sessionId, { memberbooster_daily_mode: newMode } as Record<string, unknown>);
-    await ctx.reply(`Daily mode: ${newMode === 'reset' ? 'Resets after period' : 'Accumulates (no reset)'}`);
+    await ctx.reply(`Daily mode: ${newMode === 'reset' ? 'Resets after period' : 'Accumulates (no reset)'}`, { parse_mode: 'Markdown' });
   });
 
   // ── booster_daily_reset_hour - Reset user's daily limit ───────────────────────────────
-  bot.command('dailyreset', async (ctx) => {
+  bot.command('booster_daily_reset_hour', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await ctx.reply('Daily limit reset for the replied user.');
   });
