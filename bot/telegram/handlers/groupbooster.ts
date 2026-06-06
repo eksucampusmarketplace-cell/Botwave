@@ -173,7 +173,7 @@ export function registerGroupBoosterHandlers(bot: Bot, sessionId: string): void 
     await ctx.reply(`Daily mode: ${newMode === 'reset' ? 'Resets after period' : 'Accumulates (no reset)'}`);
   });
 
-  // ── /dailyreset - Reset user's daily limit ───────────────────────────────
+  // ── booster_daily_reset_hour - Reset user's daily limit ───────────────────────────────
   bot.command('dailyreset', async (ctx) => {
     if (!(await requireAdmin(ctx, sessionId))) return;
     await ctx.reply('Daily limit reset for the replied user.');
