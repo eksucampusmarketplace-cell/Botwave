@@ -1,4 +1,5 @@
 'use client';
+const [ownerTelegramId, setOwnerTelegramId] = useState('');
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
