@@ -157,6 +157,7 @@ const createSessionSchema = z.object({
   platform: platformEnum,
   telegramBotToken: z.string().optional(),
   telegramBotUsername: z.string().optional(),
+  ownerTelegramId: z.string().trim().regex(/^\d+$/, 'Must be a numeric Telegram user ID').optional(),
   telegramApiId: z.number().optional(),
   telegramApiHash: z.string().optional(),
   telegramSessionString: z.string().optional(),
@@ -267,7 +268,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { phoneNumber, sessionName, platform, telegramBotToken, telegramBotUsername, telegramApiId, telegramApiHash, telegramSessionString, proxyType, proxyHost, proxyPort, proxyUsername, proxyPassword } = validation.data;
+    const { phoneNumber, sessionName, platform, telegramBotToken, telegramBotUsername, ownerTelegramId, telegramApiId, telegramApiHash, telegramSessionString, proxyType, proxyHost, proxyPort, proxyUsername, proxyPassword } = validation.data;
 
     // Enforce session limit: check how many sessions this user already has
     const adminClient = await createAdminClient();
@@ -344,6 +345,18 @@ export async function POST(request: NextRequest) {
         );
       }
       throw error;
+    }
+
+    if (platform === 'telegram_bot' && ownerTelegramId?.trim()) {
+      const { error: configError } = await supabase
+        .from('telegram_bot_configs')
+        .upsert({
+          session_id: session.id,
+          owner_user_id: ownerTelegramId.trim(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'session_id' });
+
+      if (configError) throw configError;
     }
 
     if (workerUrl && INTERNAL_SECRET) {

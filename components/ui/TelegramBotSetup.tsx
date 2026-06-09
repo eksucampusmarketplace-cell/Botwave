@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface TelegramBotSetupProps {
-  onComplete: (data: { token: string; botUsername: string; sessionName: string }) => void;
+  onComplete: (data: { token: string; botUsername: string; sessionName: string; ownerTelegramId?: string }) => void;
   onCancel: () => void;
 }
 
@@ -19,6 +19,7 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
     canReadAllGroupMessages: boolean;
   } | null>(null);
   const [error, setError] = useState('');
+  const [ownerTelegramId, setOwnerTelegramId] = useState('');
 
   const handleValidate = async () => {
     if (!token.trim()) {
@@ -59,6 +60,7 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
       token: token.trim(),
       botUsername: botInfo.username,
       sessionName: sessionName || botInfo.username,
+      ...(ownerTelegramId.trim() ? { ownerTelegramId: ownerTelegramId.trim() } : {}),
     });
   };
 
@@ -142,6 +144,24 @@ export default function TelegramBotSetup({ onComplete, onCancel }: TelegramBotSe
               className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-sm text-[var(--text-primary)] rounded-xl focus:border-blue-500 outline-none transition-colors"
             />
           </div>
+
+
+            <div>
+              <label className="text-sm text-[var(--text-secondary)] block mb-2 font-medium">
+                Your Telegram User ID (optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 123456789"
+                value={ownerTelegramId}
+                onChange={(e) => setOwnerTelegramId(e.target.value.trim())}
+                className="w-full bg-[var(--bg)] border border-[var(--border)] p-3 text-sm text-[var(--text-primary)] rounded-xl focus:border-blue-500 outline-none transition-colors"
+              />
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                Find your ID by messaging @userinfobot on Telegram.
+                Leave blank to use /claimowner from the bot DM instead.
+              </p>
+            </div>
 
           <motion.button
             whileHover={{ scale: 1.02 }}
