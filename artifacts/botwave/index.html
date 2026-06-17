@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>BotWave: Free WhatsApp &amp; Telegram Bot Platform (2026)</title>
+    <meta name="description" content="Everyone is paying $20/mo for bots that barely work. BotWave is 100% free with 150+ commands across WhatsApp &amp; Telegram - stickers, AI chat, games, anti-spam, media downloads. No coding. No catch." />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="BotWave: Free WhatsApp &amp; Telegram Bot Platform (2026)" />
+    <meta property="og:description" content="Why pay for bots when BotWave gives you 150+ commands across WhatsApp &amp; Telegram for FREE? AI chat, stickers, games, anti-spam. No coding. No catch." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.botwave.online" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BotWave: Free WhatsApp &amp; Telegram Bot Platform (2026)" />
+    <meta name="twitter:description" content="BotWave gives you 150+ commands across WhatsApp &amp; Telegram for FREE. AI chat, stickers, games, group management. No coding needed." />
+    <meta name="twitter:image" content="/og-image.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,fr,yo,ha,ig,zu,af,hi,ar,es,pt,de,sw,am,pcm',
+          layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL,
+          autoDisplay: false,
+        }, 'google_translate_element');
+
+        setTimeout(function() {
+          var combo = document.querySelector('#google_translate_element .goog-te-combo');
+          var wrapper = document.getElementById('gtx-wrapper');
+          if (combo && wrapper) {
+            wrapper.classList.add('gtx-collapsed');
+
+            function updateGlobeDim() {
+              var toggles = document.querySelectorAll('.gtx-nav-toggle');
+              toggles.forEach(function(t) {
+                if (combo.value && combo.value !== 'en' && combo.value !== '') {
+                  t.classList.add('gtx-lang-active');
+                } else {
+                  t.classList.remove('gtx-lang-active');
+                }
+              });
+            }
+
+            combo.addEventListener('change', function() {
+              updateGlobeDim();
+              setTimeout(function() { wrapper.classList.add('gtx-collapsed'); }, 300);
+            });
+            document.addEventListener('click', function(e) {
+              if (!wrapper.contains(e.target) && !e.target.closest('.gtx-nav-toggle')) {
+                wrapper.classList.add('gtx-collapsed');
+              }
+            });
+
+            updateGlobeDim();
+          }
+        }, 1500);
+      }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
+  </body>
+</html>

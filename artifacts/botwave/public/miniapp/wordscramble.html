@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Scramble</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#fff)}
+h1{font-size:1.5rem;margin-bottom:.5rem}
+#stats{margin-bottom:1rem;font-size:.9rem;opacity:.8}
+#scrambled{font-size:2.5rem;letter-spacing:.3rem;margin:1rem 0;font-weight:bold}
+#hint{font-size:.9rem;opacity:.6;margin-bottom:1rem}
+input{padding:.8rem 1.5rem;border:2px solid var(--tg-theme-button-color,#e94560);border-radius:12px;background:var(--tg-theme-secondary-bg-color,#16213e);color:var(--tg-theme-text-color,#fff);font-size:1.2rem;text-align:center;width:min(80vw,280px);outline:none}
+button{padding:.8rem 2rem;border:none;border-radius:8px;background:var(--tg-theme-button-color,#e94560);color:var(--tg-theme-button-text-color,#fff);font-size:1rem;cursor:pointer;margin-top:.8rem}
+#feedback{margin:1rem 0;font-size:1.1rem;min-height:1.5rem}
+</style>
+</head>
+<body>
+<h1>🔤 Word Scramble</h1>
+<div id="stats">Score: 0 | Skipped: 0</div>
+<div id="scrambled"></div>
+<div id="hint"></div>
+<input type="text" id="guess" placeholder="Type your answer..." autocomplete="off">
+<button onclick="checkGuess()">Submit</button>
+<button onclick="skip()" style="background:#555">Skip</button>
+<div id="feedback"></div>
+<script>
+const words=["PYTHON","JAVASCRIPT","TELEGRAM","COMPUTER","KEYBOARD","PROGRAM","NETWORK","DATABASE","FUNCTION","VARIABLE","ANDROID","BROWSER","DESKTOP","DIGITAL","ENCRYPT","GATEWAY","HACKER","INSTALL","LIBRARY","MACHINE","OBJECT","PACKAGE","ROUTER","SERVER","SYSTEM","UPDATE","VIRTUAL","WEBSITE"];
+let current,score=0,skipped=0;
+
+function scramble(w){const a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const s=a.join('');return s===w?scramble(w):s;}
+
+function next(){
+  current=words[Math.floor(Math.random()*words.length)];
+  document.getElementById('scrambled').textContent=scramble(current);
+  document.getElementById('hint').textContent=`${current.length} letters`;
+  document.getElementById('guess').value='';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('guess').focus();
+}
+
+function checkGuess(){
+  const g=document.getElementById('guess').value.trim().toUpperCase();
+  if(!g)return;
+  if(g===current){score++;document.getElementById('feedback').textContent='✅ Correct!';document.getElementById('stats').textContent=`Score: ${score} | Skipped: ${skipped}`;setTimeout(next,1000);}
+  else{document.getElementById('feedback').textContent='❌ Try again!';}
+}
+
+function skip(){skipped++;document.getElementById('feedback').textContent=`The word was: ${current}`;document.getElementById('stats').textContent=`Score: ${score} | Skipped: ${skipped}`;setTimeout(next,1500);}
+
+document.getElementById('guess').addEventListener('keydown',e=>{if(e.key==='Enter')checkGuess();});
+next();
+</script>
+</body>
+</html>
