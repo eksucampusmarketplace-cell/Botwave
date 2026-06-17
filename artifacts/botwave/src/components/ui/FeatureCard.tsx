@@ -60,7 +60,7 @@ export default function FeatureCard({ feature, index }: FeatureCardProps) {
 
       {feature.platforms && feature.platforms.length > 0 && (
         <div className="flex gap-1.5 flex-wrap">
-          {feature.platforms.map((p) => (
+          {[...new Set(feature.platforms)].map((p) => (
             <span
               key={p}
               className={`px-2.5 py-1 rounded-full border text-[11px] font-medium ${platformColors[p] || 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10'}`}

@@ -6,12 +6,10 @@ import { docPages, getAllDocCategories } from '@/lib/docs/data';
 const platformColors: Record<string, string> = {
   all: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   telegram: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  telegram: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
 };
 
 const platformLabels: Record<string, string> = {
   all: 'All Platforms',
-  telegram: 'Telegram Bot',
   telegram: 'Telegram Bot',
 };
 

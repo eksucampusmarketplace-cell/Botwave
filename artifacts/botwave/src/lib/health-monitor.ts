@@ -7,7 +7,10 @@
 
 import { sendAlertEmail, buildAlertHtml, isEmailConfigured } from './email-service';
 import { onErrorSpike } from './error-tracker';
-import { expireStuckPairingSessions, cleanupOldNeedsReauthSessions, cleanupGhostSessions } from '../bot/database';
+// Stubs for session cleanup functions (handled by API server)
+const expireStuckPairingSessions = async () => 0;
+const cleanupOldNeedsReauthSessions = async () => 0;
+const cleanupGhostSessions = async (_hours: number) => 0;
 
 const CHECK_INTERVAL_MS = 60_000; // 60 seconds
 const GHOST_CLEANUP_INTERVAL_MS = 60 * 60_000; // once per hour
