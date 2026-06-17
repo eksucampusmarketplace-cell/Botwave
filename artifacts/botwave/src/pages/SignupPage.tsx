@@ -88,6 +88,7 @@ export default function SignupPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Signup failed');
+      if (data.token) localStorage.setItem('bw_token', data.token);
       setVerifyEmail(formData.email);
       setStep('verify');
     } catch (err) {

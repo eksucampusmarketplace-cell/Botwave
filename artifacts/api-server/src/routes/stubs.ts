@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 
 const router = Router();
 
@@ -43,44 +43,23 @@ router.post("/community-commands", (_req, res) => {
   return res.status(503).json({ error: "Community commands not yet configured." });
 });
 
-// Bot session events (SSE)
-router.get("/bot/events", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.write('data: {"type":"connected"}\n\n');
-  const interval = setInterval(() => {
-    res.write('data: {"type":"ping"}\n\n');
-  }, 30000);
-  req.on("close", () => clearInterval(interval));
-});
-
-router.get("/bot/sessions", (_req, res) => {
-  return res.status(401).json({ error: "Authentication required.", code: "UNAUTHENTICATED" });
-});
-
-router.get("/bot/qr-alerts", (_req, res) => {
-  return res.status(401).json({ error: "Authentication required.", code: "UNAUTHENTICATED" });
-});
-
-// Wildcard handlers for authenticated sections — use router.use() for prefix matching (Express 5 / path-to-regexp v8)
-const requireAuth = (_req: Request, res: Response, _next: NextFunction) => {
-  return res.status(401).json({ error: "Authentication required.", code: "UNAUTHENTICATED" });
-};
+// Wildcard catch-alls — these come after real routers so they only fire for unimplemented sub-paths
 const notConfigured = (_req: Request, res: Response, _next: NextFunction) => {
   return res.status(503).json({ error: "Service not yet configured." });
 };
+const requireAuthFallback = (_req: Request, res: Response, _next: NextFunction) => {
+  return res.status(401).json({ error: "Authentication required.", code: "UNAUTHENTICATED" });
+};
 
-router.use("/bot", requireAuth);
-router.use("/telegram", requireAuth);
-router.use("/admin", requireAuth);
-router.use("/user", requireAuth);
-router.use("/payments", requireAuth);
+router.use("/telegram", requireAuthFallback);
+router.use("/admin", requireAuthFallback);
+router.use("/user", requireAuthFallback);
+router.use("/payments", requireAuthFallback);
 router.use("/support", notConfigured);
 router.use("/email", notConfigured);
-router.use("/internal", requireAuth);
-router.use("/study", requireAuth);
-router.use("/miniapp", requireAuth);
+router.use("/internal", requireAuthFallback);
+router.use("/study", requireAuthFallback);
+router.use("/miniapp", requireAuthFallback);
 router.use("/game", notConfigured);
 router.use("/indexnow", notConfigured);
 router.use("/evolution", notConfigured);

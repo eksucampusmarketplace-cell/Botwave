@@ -72,6 +72,7 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Login failed');
+      if (data.token) localStorage.setItem('bw_token', data.token);
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
