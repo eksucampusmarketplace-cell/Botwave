@@ -10,7 +10,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 router.use(guestPostsRouter);
-router.use(botSessionsRouter);
+router.use("/bot", botSessionsRouter);
 router.use(stubsRouter);
 
 export default router;

@@ -7,7 +7,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get("/bot/sessions", async (req, res) => {
+router.get("/sessions", async (req, res) => {
   const sessions = await db
     .select()
     .from(botSessionsTable)
@@ -16,7 +16,7 @@ router.get("/bot/sessions", async (req, res) => {
   return res.json({ sessions });
 });
 
-router.post("/bot/sessions", async (req, res) => {
+router.post("/sessions", async (req, res) => {
   const { name, platform, botToken } = req.body as Record<string, string>;
   if (!name) return res.status(400).json({ error: "Session name is required" });
   if (!platform || !["whatsapp", "telegram-bot", "telegram-userbot"].includes(platform)) {
@@ -38,7 +38,7 @@ router.post("/bot/sessions", async (req, res) => {
   return res.status(201).json({ session });
 });
 
-router.get("/bot/sessions/:id", async (req, res) => {
+router.get("/sessions/:id", async (req, res) => {
   const [session] = await db
     .select()
     .from(botSessionsTable)
@@ -49,7 +49,7 @@ router.get("/bot/sessions/:id", async (req, res) => {
   return res.json({ session });
 });
 
-router.patch("/bot/sessions/:id", async (req, res) => {
+router.patch("/sessions/:id", async (req, res) => {
   const { name, status, botToken } = req.body as Record<string, string>;
 
   const [session] = await db
@@ -74,7 +74,7 @@ router.patch("/bot/sessions/:id", async (req, res) => {
   return res.json({ session: updated });
 });
 
-router.delete("/bot/sessions/:id", async (req, res) => {
+router.delete("/sessions/:id", async (req, res) => {
   const result = await db
     .delete(botSessionsTable)
     .where(and(eq(botSessionsTable.id, req.params["id"]!), eq(botSessionsTable.userId, req.user!.userId)))
@@ -84,7 +84,7 @@ router.delete("/bot/sessions/:id", async (req, res) => {
   return res.json({ success: true });
 });
 
-router.get("/bot/sessions/:id/features", async (req, res) => {
+router.get("/sessions/:id/features", async (req, res) => {
   const [session] = await db
     .select({ features: botSessionsTable.features })
     .from(botSessionsTable)
@@ -95,7 +95,7 @@ router.get("/bot/sessions/:id/features", async (req, res) => {
   return res.json({ features: session.features ?? defaultFeatures });
 });
 
-router.put("/bot/sessions/:id/features", async (req, res) => {
+router.put("/sessions/:id/features", async (req, res) => {
   const { features } = req.body as { features: Record<string, boolean> };
   if (!features || typeof features !== "object") {
     return res.status(400).json({ error: "features object is required" });
@@ -119,7 +119,7 @@ router.put("/bot/sessions/:id/features", async (req, res) => {
   return res.json({ features: updated.features });
 });
 
-router.get("/bot/stats", async (req, res) => {
+router.get("/stats", async (req, res) => {
   const sessions = await db
     .select({ status: botSessionsTable.status })
     .from(botSessionsTable)
@@ -133,7 +133,7 @@ router.get("/bot/stats", async (req, res) => {
   });
 });
 
-router.get("/bot/events", requireAuth, (req, res) => {
+router.get("/events", requireAuth, (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");

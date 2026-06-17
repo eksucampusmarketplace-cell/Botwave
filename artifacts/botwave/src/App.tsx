@@ -50,6 +50,7 @@ import SearchEnginesPage from "@/pages/SearchEnginesPage";
 import DeployTelegramBotPage from "@/pages/DeployTelegramBotPage";
 import AdminLoginPage from "@/pages/AdminLoginPage";
 import GamePage from "@/pages/GamePage";
+import LandingSlugPage from "@/pages/LandingSlugPage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -187,6 +188,9 @@ function Router() {
       <Route path="/admin" component={AdminLoginPage} />
       <Route path="/admin/dashboard" component={AdminLoginPage} />
       <Route path="/admin/dashboard/:section" component={AdminLoginPage} />
+
+      {/* Dynamic landing pages — must come last before 404 */}
+      <Route path="/:slug" component={LandingSlugPage} />
 
       <Route component={NotFound} />
     </Switch>
