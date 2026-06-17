@@ -26,8 +26,9 @@
  * routes are responsible for scoping every query to `session_id`.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+// Note: this file is server-only dead code retained from the Next.js migration.
+// It is not imported by any Vite/React component.
+import { createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { apiCacheGet, apiCacheSet } from '@/lib/redisApiCache';
 import crypto from 'crypto';

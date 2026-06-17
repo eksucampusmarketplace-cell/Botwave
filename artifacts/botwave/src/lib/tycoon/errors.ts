@@ -1,12 +1,13 @@
-import { NextResponse } from 'next/server';
-
 type ErrorBody = {
   error: string;
   [key: string]: unknown;
 };
 
 export function tycoonError(body: ErrorBody, status: number) {
-  return NextResponse.json(body, { status });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 export function retryAfterUntil(iso: string | null): number | null {

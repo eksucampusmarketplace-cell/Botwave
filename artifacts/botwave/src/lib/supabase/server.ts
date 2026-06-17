@@ -1,6 +1,9 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+// Note: this file is server-only dead code retained from the Next.js migration.
+// It is not imported by any Vite/React component. The `next/headers` import
+// has been removed; cookie-based Supabase clients are managed by the API server.
+
+type CookieOptions = Record<string, unknown>;
 
 /** Internal Supabase URL for admin/service-role operations (no cookies). */
 export function getInternalSupabaseUrl(): string {
