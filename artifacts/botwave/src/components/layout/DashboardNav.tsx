@@ -21,7 +21,7 @@ interface NavGroup {
 
 const primaryLinks: NavLink[] = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/sessions', label: 'WhatsApp Sessions', tour: 'nav-sessions' },
+  { href: '/dashboard/sessions', label: 'Bot Sessions', tour: 'nav-sessions' },
   { href: '/dashboard/messages', label: 'Messages' },
   { href: '/dashboard/telegram', label: 'Telegram Bot Manager' },
 ];
@@ -50,7 +50,6 @@ const navGroups: NavGroup[] = [
   {
     label: 'Support',
     links: [
-      { href: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', label: 'WhatsApp Group' },
       { href: 'https://t.me/botwavegrp', label: 'Telegram Group' },
       { href: '/feature-suggestions', label: 'Suggest a Feature' },
     ],

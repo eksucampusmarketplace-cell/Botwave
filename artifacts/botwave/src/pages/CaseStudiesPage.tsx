@@ -7,7 +7,7 @@ const studies = [
     slug: 'school-group-spam',
     title: 'How a university class group cut spam to near zero',
     category: 'Education',
-    problem: 'A 300-member university class group on WhatsApp was flooded with off-topic messages, memes, and promotional links. The 3 group admins spent 30+ minutes daily deleting spam and warning students.',
+    problem: 'A 300-member university class group on Telegram was flooded with off-topic messages, memes, and promotional links. The 3 group admins spent 30+ minutes daily deleting spam and warning students.',
     solution: 'Enabled anti-spam protection, custom welcome message with rules, flood detection, and !warn system.',
     results: [
       'Spam messages dropped from 50+ per day to under 5',
@@ -23,7 +23,7 @@ const studies = [
     slug: 'business-auto-reply',
     title: 'How an online vendor automated customer replies',
     category: 'Business',
-    problem: "An online vendor selling clothes on WhatsApp received 100+ messages daily asking the same questions: pricing, shipping, availability. She was losing sales because she couldn't reply fast enough.",
+    problem: "An online vendor selling clothes on Telegram received 100+ messages daily asking the same questions: pricing, shipping, availability. She was losing sales because she couldn't reply fast enough.",
     solution: 'Set up keyword auto-replies for "price", "shipping", "size", and AI fallback for unusual questions.',
     results: [
       'Response time went from 2-4 hours to under 10 seconds',
@@ -55,7 +55,7 @@ const studies = [
     slug: 'church-group',
     title: 'How a church group automated daily devotionals',
     category: 'Community',
-    problem: 'A church WhatsApp group with 400 members needed to send daily devotional messages, prayer requests, and event reminders — but the admin was manually doing it every morning.',
+    problem: 'A church Telegram group with 400 members needed to send daily devotional messages, prayer requests, and event reminders — but the admin was manually doing it every morning.',
     solution: 'Scheduled daily devotionals at 6 AM, set up prayer request collection with !pray command, and configured event reminders.',
     results: [
       'Admin freed from 30 minutes of daily manual messaging',

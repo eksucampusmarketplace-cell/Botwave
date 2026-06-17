@@ -4,12 +4,12 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 const topRequests = [
-  { title: 'WhatsApp Web multi-device sync', votes: 234, status: 'in-progress' },
+  { title: 'Telegram Bot multi-session sync', votes: 234, status: 'in-progress' },
   { title: 'Zapier / Make integration', votes: 189, status: 'planned' },
   { title: 'Group analytics CSV export', votes: 156, status: 'planned' },
   { title: 'Custom bot profile picture', votes: 143, status: 'shipped' },
   { title: 'Google Sheets sync for group members', votes: 121, status: 'planned' },
-  { title: 'WhatsApp Business API (official)', votes: 98, status: 'researching' },
+  { title: 'Telegram Business API support', votes: 98, status: 'researching' },
 ];
 
 const statusColors: Record<string, string> = {

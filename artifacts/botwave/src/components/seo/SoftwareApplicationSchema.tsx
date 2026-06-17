@@ -16,7 +16,7 @@ interface SoftwareApplicationSchemaProps {
 export default function SoftwareApplicationSchema({
   url = 'https://www.botwave.online',
   name = 'BotWave',
-  description = 'Free WhatsApp & Telegram bot automation platform with 150+ built-in commands. AI chat, stickers, games, anti-spam, group moderation, media downloads. No coding required.',
+  description = 'Free Telegram bot automation platform with 150+ built-in commands. AI chat, stickers, games, anti-spam, group moderation, media downloads. No coding required.',
   ratingValue = '4.8',
   ratingCount = 124,
 }: SoftwareApplicationSchemaProps = {}) {
@@ -35,7 +35,7 @@ export default function SoftwareApplicationSchema({
         name: 'Free',
         price: '0',
         priceCurrency: 'USD',
-        description: '300 messages/month, 10 AI queries/day, 1 WhatsApp session, all 150+ commands.',
+        description: '300 messages/month, 10 AI queries/day, 1 Telegram bot session, all 150+ commands.',
       },
       {
         '@type': 'Offer',
@@ -82,9 +82,7 @@ export default function SoftwareApplicationSchema({
       'Custom auto-replies',
       'Scheduled messages',
       'Polls and leaderboards',
-      'Multi-session support',
-      'Telegram bot + userbot support',
-      'Anti-ban session warmup',
+      'Multi-session Telegram bot support',
       'Self-hosted bot containers',
     ],
   };

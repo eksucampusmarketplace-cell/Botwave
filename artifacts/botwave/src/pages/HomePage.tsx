@@ -9,24 +9,24 @@ import FeatureCard from '@/components/ui/FeatureCard';
 import HowItWorks from '@/components/ui/HowItWorks';
 import Disclaimer from '@/components/ui/Disclaimer';
 
-type PlatformBadge = 'WhatsApp' | 'Telegram Bot' | 'Telegram Userbot';
+type PlatformBadge = 'Telegram Bot' | 'Telegram Userbot';
 
 const features: { icon: string; title: string; description: string; platforms: PlatformBadge[] }[] = [
-  { icon: 'sticker', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: 'ai', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'download', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: 'welcome', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'shield', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'game', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess \u2014 play fun games right inside your group.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: 'chart', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['WhatsApp', 'Telegram Bot'] },
-  { icon: 'tools', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes \u2014 all accessible with simple commands.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'reply', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'lock', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands \u2014 nothing else is stored or shared.', platforms: ['WhatsApp', 'Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'sticker', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['Telegram Bot'] },
+  { icon: 'ai', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'download', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['Telegram Bot'] },
+  { icon: 'welcome', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'shield', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'game', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess \u2014 play fun games right inside your group.', platforms: ['Telegram Bot'] },
+  { icon: 'chart', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['Telegram Bot'] },
+  { icon: 'tools', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes \u2014 all accessible with simple commands.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'reply', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'lock', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands \u2014 nothing else is stored or shared.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
 ];
 
 const stats = [
   { value: '150+', label: 'Bot Commands' },
-  { value: '3', label: 'Platforms' },
+  { value: '2', label: 'Platforms' },
   { value: '35+', label: 'Searchable Pages' },
   { value: '0', label: 'Coding Required' },
 ];
@@ -186,16 +186,15 @@ function NotifyMeButton({ highlight, planName }: { highlight: boolean; planName:
 }
 
 const faqs = [
-  { q: 'Is BotWave actually free?', a: 'Yes. Free plan includes 300 messages/month, 10 AI queries/day, and 1 WhatsApp session. BotWave runs from your own device via QR code, keeping costs low. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
-  { q: 'Will WhatsApp ban my number?', a: 'No bot can guarantee zero ban risk on WhatsApp. But BotWave significantly reduces the risk with session warmup over 7 days, human-like typing delays, 50-100 message variations, rate limiting, read-but-skip in groups, and media fingerprint jittering. Your session runs from your own device IP, not a shared server.' },
+  { q: 'Is BotWave actually free?', a: 'Yes. Free plan includes 300 messages/month, 10 AI queries/day, and 1 Telegram Bot session. No credit card required. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
   { q: "What's the difference between Telegram Bot and Telegram Userbot?", a: 'Telegram Bot uses the official Bot API via @BotFather with zero ban risk, ideal for group management and moderation. Telegram Userbot automates your real Telegram account via MTProto to do things like .ban, .mute, .purge, .gban as if you typed them yourself. Both are managed from the same dashboard.' },
   { q: 'How many groups can my bot manage?', a: 'No group limit on any plan. Your bot works in every group your connected account is in. The only limit is messages per month (300 on free, unlimited on paid plans).' },
-  { q: 'Does BotWave work on iPhone?', a: 'Yes. BotWave works on any device. Connect through the web dashboard, scan a QR code for WhatsApp, paste a token for Telegram Bot, or enter API credentials for Userbot. iPhone, Android, desktop, any browser.' },
+  { q: 'Does BotWave work on iPhone?', a: 'Yes. BotWave works on any device. Paste a token for Telegram Bot, or enter API credentials for Userbot. iPhone, Android, desktop, any browser.' },
   { q: 'Can I use BotWave for my school or business group?', a: 'Yes. BotWave works well for campus groups, church groups, business communities, and social clubs. Polls, trivia, anti-spam, AI chat, and auto-replies all help manage larger groups.' },
-  { q: 'Is my WhatsApp number safe?', a: 'BotWave only processes messages in groups where the bot is active. Private messages are never read or stored. All processing happens in memory and is discarded immediately. Your session runs on your device IP.' },
-  { q: 'How do I set up a bot?', a: 'Sign up at botwave.online, go to your dashboard, pick your platform. WhatsApp: scan QR code. Telegram Bot: paste @BotFather token. Userbot: enter API credentials. Live in under 2 minutes, no coding needed.' },
-  { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for Nigeria and Africa. Payments are in Naira via bank transfer. The platform is optimized for Nigerian internet speeds and WhatsApp usage patterns.' },
-  { q: 'How is BotWave different from other bots?', a: 'BotWave supports WhatsApp, Telegram Bot, and Telegram Userbot from one dashboard. It runs from your own accounts, has strong anti-ban protection, AI chat, and 150+ built-in commands. Most alternatives support only one platform.' },
+  { q: 'Is my Telegram account safe?', a: 'BotWave only processes messages in groups where the bot is active. Private messages are never read or stored. All processing happens in memory and is discarded immediately. Telegram Bot uses the official API with zero ban risk.' },
+  { q: 'How do I set up a bot?', a: 'Sign up at botwave.online, go to your dashboard, and pick your platform. Telegram Bot: paste your @BotFather token. Userbot: enter your API credentials. Live in under 2 minutes, no coding needed.' },
+  { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for Nigeria and Africa. Payments are in Naira via bank transfer. The platform is optimized for Nigerian internet speeds and Telegram usage patterns.' },
+  { q: 'How is BotWave different from other bots?', a: 'BotWave supports both Telegram Bot and Telegram Userbot from one dashboard. It runs from your own accounts, has strong anti-ban protection, AI chat, and 150+ built-in commands. Most alternatives support only one platform.' },
 ];
 
 export default function HomePage() {
@@ -220,11 +219,11 @@ export default function HomePage() {
 
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[var(--text-primary)] leading-[1.1] mb-6 tracking-tight">
                 Automate Your<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">WhatsApp &amp; Telegram</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Telegram Groups</span>
               </h1>
 
               <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-4 leading-relaxed">
-                <strong>BotWave is a free bot automation platform for WhatsApp and Telegram.</strong> Connect via QR scan, Bot token, or Userbot credentials, all from one dashboard.
+                <strong>BotWave is a free Telegram bot automation platform.</strong> Connect via Bot token or Userbot credentials, all from one dashboard.
               </p>
               <p className="text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
                 150+ built-in commands: AI chat, stickers, games, anti-spam, media downloads, and group management. No coding, no credit card, no catch.
@@ -241,7 +240,7 @@ export default function HomePage() {
 
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm text-[var(--text-muted)] font-medium">Powered by</span>
-                {['Node.js', 'WhatsApp API', 'Telegram API', 'Supabase', 'AI'].map((tech) => (
+                {['Node.js', 'Telegram API', 'Supabase', 'AI'].map((tech) => (
                   <span key={tech} className="px-3 py-1.5 bg-[var(--bg-alt)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-secondary)] font-medium">{tech}</span>
                 ))}
               </div>
@@ -276,9 +275,8 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">Join Our Support Groups</h2>
             <p className="mt-3 text-base text-[var(--text-secondary)] max-w-xl mx-auto leading-relaxed">Get help, share tips, and stay updated with the BotWave community.</p>
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-2xl mx-auto">
             {[
-              { icon: '\u{1F4AC}', title: 'WhatsApp Support Group', desc: 'Real-time help from the BotWave team and community.', link: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf', cta: 'Join WhatsApp Group', color: 'green' },
               { icon: '\u2708\uFE0F', title: 'Telegram Support Group', desc: 'Chat with other BotWave users. Setup help, commands, and tips.', link: 'https://t.me/botwavegrp', cta: 'Join Telegram Group', color: 'blue' },
               { icon: '\u{1F4E2}', title: 'Telegram Updates', desc: 'Latest releases, new commands, and announcements.', link: 'https://t.me/BotWaveUpdates', cta: 'Follow Updates', color: 'violet' },
             ].map((group, i) => (
@@ -322,7 +320,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-sm text-[var(--text-muted)] font-medium mb-8 uppercase tracking-wider">Built with industry-leading technology</p>
           <div className="flex items-center justify-center gap-10 flex-wrap opacity-60">
-            {['Node.js', 'Supabase', 'AI', 'WhatsApp', 'Telegram'].map((name) => (
+            {['Node.js', 'Supabase', 'AI', 'Telegram'].map((name) => (
               <div key={name} className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
                 <div className="w-10 h-10 rounded-full bg-[var(--bg-alt)] border border-[var(--border)] flex items-center justify-center text-sm font-bold">{name[0]}</div>
                 <span className="text-xs font-medium">{name}</span>
@@ -337,8 +335,8 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto relative z-10">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-16">
             <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Features</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">150+ Bot Commands for WhatsApp and Telegram</h2>
-            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto leading-relaxed">From sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your WhatsApp and Telegram groups.</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">150+ Bot Commands for Telegram</h2>
+            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto leading-relaxed">From sticker creation to AI chatbot responses, BotWave gives you every tool to automate and supercharge your Telegram groups.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
@@ -360,9 +358,9 @@ export default function HomePage() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: 'Free', price: '$0', period: '/forever', features: ['1 WhatsApp session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
-              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 WhatsApp sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Notify Me', highlight: true, comingSoon: true },
-              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 WhatsApp sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Notify Me', highlight: false, comingSoon: true },
+              { name: 'Free', price: '$0', period: '/forever', features: ['1 Telegram Bot session', '300 messages/month', '10 AI queries/day', 'All basic commands', 'Community support'], cta: 'Get Started Free', highlight: false, comingSoon: false },
+              { name: 'Standard', price: 'Coming Soon', period: '', features: ['3 Telegram sessions', 'Unlimited messages', '100 AI queries/day', 'Priority support', 'Custom commands'], cta: 'Notify Me', highlight: true, comingSoon: true },
+              { name: 'Boss', price: 'Coming Soon', period: '', features: ['10 Telegram sessions', 'Unlimited everything', 'Unlimited AI queries', 'Dedicated support', 'White-label option'], cta: 'Notify Me', highlight: false, comingSoon: true },
             ].map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }} viewport={{ once: true }}
                 className={`rounded-2xl p-8 text-left ${plan.highlight ? 'bg-blue-600 text-white ring-4 ring-blue-600/20 scale-105' : 'bg-[var(--card-bg,var(--surface))] border border-[var(--border)] shadow-sm'}`}>
@@ -427,7 +425,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Security</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Your Accounts Are Safe With BotWave</h2>
-            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Your WhatsApp session runs from your own device IP, not a shared server. The advanced anti-ban system uses 7-day session warmup, human-like delays, and message variation to reduce risk significantly.</p>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">BotWave uses the official Telegram Bot API with zero ban risk. For userbots, the advanced anti-ban system uses human-like delays and message variation to reduce risk significantly.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
@@ -455,7 +453,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Telegram</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Now Supporting Telegram</h2>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Built for Telegram</h2>
             <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Connect your Telegram Bot token or link your Telegram Userbot. Manage groups, auto-reply, and anti-spam from the same dashboard.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -484,8 +482,7 @@ export default function HomePage() {
           </div>
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} viewport={{ once: true }} className="flex flex-wrap gap-4 justify-center mt-10">
             <Link href="/telegram-bot-nigeria" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">Telegram Bot Nigeria</Link>
-            <Link href="/telegram-userbot-commands" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">All Userbot Commands</Link>
-            <Link href="/blog/telegram-bot-vs-whatsapp-bot" className="px-6 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold rounded-xl hover:border-blue-500/30 transition-colors">TG Bot vs WA Bot</Link>
+            <Link href="/commands" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">All Userbot Commands</Link>
             <Link href="/blog/telegram-anti-spam-bot" className="px-6 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold rounded-xl hover:border-blue-500/30 transition-colors">Anti-Spam Guide</Link>
           </motion.div>
         </div>
@@ -500,28 +497,28 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-12">
             <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Guides &amp; Tutorials</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Learn How to Build Your Bot</h2>
-            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">Step-by-step guides, comparisons, and country-specific setup tutorials for WhatsApp and Telegram automation.</p>
+            <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">Step-by-step guides, comparisons, and country-specific setup tutorials for Telegram bot automation.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { slug: 'how-to-create-free-whatsapp-bot-2026', title: 'How to Create a Free WhatsApp Bot in 2026', tag: 'Tutorial' },
-              { slug: 'whatsapp-bot-commands-list-2026', title: '100+ WhatsApp Bot Commands Reference', tag: 'Reference' },
-              { slug: 'whatsapp-ai-chatbot-free', title: 'Free ChatGPT-Like AI on WhatsApp', tag: 'AI' },
-              { slug: 'whatsapp-bot-for-business-nigeria', title: 'WhatsApp Bot for Business in Nigeria', tag: 'Nigeria' },
-              { slug: 'whatsapp-bot-for-schools-campus-groups', title: 'WhatsApp Bot for Schools &amp; Campus Groups', tag: 'Education' },
-              { slug: 'free-whatsapp-group-management-bot', title: 'Free WhatsApp Group Management Bot', tag: 'Groups' },
-              { slug: 'whatsapp-anti-spam-bot-for-groups', title: 'WhatsApp Anti-Spam Bot for Groups', tag: 'Security' },
-              { slug: 'free-whatsapp-sticker-bot-how-to-make-stickers', title: 'Free WhatsApp Sticker Bot Tutorial', tag: 'Stickers' },
-              { slug: 'how-to-automate-whatsapp-messages-free', title: 'How to Automate WhatsApp Messages Free', tag: 'Automation' },
-              { slug: 'best-free-whatsapp-bot-groups-nigeria', title: 'Best Free WhatsApp Bot for Nigerian Groups', tag: 'Nigeria' },
-              { slug: 'whatsapp-bot-vs-telegram-bot-africa', title: 'WhatsApp Bot vs Telegram Bot in Africa', tag: 'Comparison' },
-              { slug: 'whatsapp-bot-south-africa', title: 'WhatsApp Bot for South Africa', tag: 'South Africa' },
               { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria', tag: 'Telegram' },
               { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation Guide', tag: 'Userbot' },
               { slug: 'free-telegram-group-management-bot', title: 'Free Telegram Group Management Bot', tag: 'Telegram' },
-              { slug: 'telegram-bot-vs-whatsapp-bot', title: 'Telegram Bot vs WhatsApp Bot Comparison', tag: 'Comparison' },
               { slug: 'telegram-anti-spam-bot', title: 'Free Telegram Anti-Spam Bot', tag: 'Security' },
               { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms of 2026', tag: 'Roundup' },
+              { slug: 'how-to-create-telegram-bot-2026', title: 'How to Create a Free Telegram Bot in 2026', tag: 'Tutorial' },
+              { slug: 'telegram-bot-commands-list-2026', title: '100+ Telegram Bot Commands Reference', tag: 'Reference' },
+              { slug: 'telegram-ai-chatbot-free', title: 'Free AI Chatbot for Telegram Groups', tag: 'AI' },
+              { slug: 'telegram-bot-for-business-nigeria', title: 'Telegram Bot for Business in Nigeria', tag: 'Nigeria' },
+              { slug: 'telegram-bot-for-schools', title: 'Telegram Bot for Schools &amp; Campus Groups', tag: 'Education' },
+              { slug: 'telegram-sticker-bot', title: 'Free Telegram Sticker Maker Bot', tag: 'Stickers' },
+              { slug: 'automate-telegram-messages', title: 'How to Automate Telegram Messages Free', tag: 'Automation' },
+              { slug: 'best-free-telegram-bot-groups-nigeria', title: 'Best Free Telegram Bot for Nigerian Groups', tag: 'Nigeria' },
+              { slug: 'telegram-group-moderation-bot', title: 'Telegram Group Moderation Bot Guide', tag: 'Moderation' },
+              { slug: 'telegram-bot-south-africa', title: 'Telegram Bot for South Africa', tag: 'South Africa' },
+              { slug: 'telegram-bot-vs-alternatives', title: 'Telegram Bot vs Alternatives 2026', tag: 'Comparison' },
+              { slug: 'telegram-bot-welcome-message', title: 'Auto Welcome Message for Telegram Groups', tag: 'Groups' },
+              { slug: 'telegram-translate-bot', title: 'Telegram Auto-Translate Bot Guide', tag: 'Tools' },
             ].map((post, i) => (
               <motion.div
                 key={post.slug}
@@ -568,11 +565,10 @@ export default function HomePage() {
               <tbody className="text-sm">
                 {[
                   ['Price', 'Free forever', '$10-50/month'],
-                  ['WhatsApp support', 'Yes (QR code)', 'Some'],
                   ['Telegram Bot', 'Yes (Bot API)', 'Some'],
                   ['Telegram Userbot', 'Yes (MTProto)', 'No'],
-                  ['One dashboard', 'All 3 platforms', '1 platform only'],
-                  ['Anti-ban system', 'Advanced (7-day warmup)', 'Basic or none'],
+                  ['One dashboard', 'Both platforms', '1 platform only'],
+                  ['Anti-ban system', 'Advanced (human-like delays)', 'Basic or none'],
                   ['AI chat', 'Google Gemini', 'ChatGPT ($$$)'],
                   ['Commands', '50+ built-in', '10-20'],
                   ['Coding required', 'No', 'Usually yes'],
@@ -619,10 +615,10 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-6 text-center">What Is BotWave?</h2>
           <div className="space-y-4 text-base text-[var(--text-secondary)] leading-relaxed">
             <p>
-              <strong>BotWave</strong> is a free, no-code bot automation platform that works across WhatsApp, Telegram Bot, and Telegram Userbot. It was created by BotWave Team in 2026 and serves users in Nigeria and worldwide.
+              <strong>BotWave</strong> is a free, no-code Telegram bot automation platform that supports both Telegram Bot and Telegram Userbot. It was created by BotWave Team in 2026 and serves users in Nigeria and worldwide.
             </p>
             <p>
-              <strong>How it works:</strong> Sign up at botwave.online, connect your account (WhatsApp via QR scan, Telegram Bot via @BotFather token, Telegram Userbot via MTProto API credentials), and your bot is live in under 2 minutes.
+              <strong>How it works:</strong> Sign up at botwave.online, connect your account (Telegram Bot via @BotFather token, or Telegram Userbot via MTProto API credentials), and your bot is live in under 2 minutes.
             </p>
             <p>
               <strong>Key features:</strong> 150+ built-in commands including AI chat (Google Gemini), sticker creation, media downloads, trivia games, polls, anti-spam protection, auto-reply, and group management.
@@ -653,12 +649,12 @@ export default function HomePage() {
                 <Link href="/how-to" className="text-xs text-blue-400 hover:underline">All 69 →</Link>
               </div>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/how-to/create-whatsapp-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Create a WhatsApp bot</Link></li>
-                <li><Link href="/how-to/auto-reply-whatsapp" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply on WhatsApp</Link></li>
-                <li><Link href="/how-to/whatsapp-group-bot" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp group bot</Link></li>
-                <li><Link href="/how-to/whatsapp-ai-assistant" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp AI assistant</Link></li>
+                <li><Link href="/how-to/create-telegram-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Create a Telegram bot</Link></li>
+                <li><Link href="/how-to/auto-reply-telegram" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply on Telegram</Link></li>
+                <li><Link href="/how-to/telegram-group-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram group bot</Link></li>
+                <li><Link href="/how-to/telegram-ai-assistant" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram AI assistant</Link></li>
                 <li><Link href="/how-to/telegram-bot-setup" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot setup</Link></li>
-                <li><Link href="/how-to/whatsapp-sticker-maker" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp sticker maker</Link></li>
+                <li><Link href="/how-to/telegram-sticker-maker" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram sticker maker</Link></li>
               </ul>
             </div>
 
@@ -669,12 +665,12 @@ export default function HomePage() {
                 <Link href="/fix" className="text-xs text-blue-400 hover:underline">All 37 →</Link>
               </div>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/fix/whatsapp-bot-disconnected" className="text-[var(--text-secondary)] hover:text-blue-400">Bot disconnected</Link></li>
-                <li><Link href="/fix/whatsapp-qr-not-scanning" className="text-[var(--text-secondary)] hover:text-blue-400">QR code not scanning</Link></li>
-                <li><Link href="/fix/whatsapp-bot-banned" className="text-[var(--text-secondary)] hover:text-blue-400">Bot got banned, recover</Link></li>
-                <li><Link href="/fix/whatsapp-auto-reply-not-working" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply not working</Link></li>
-                <li><Link href="/fix/whatsapp-ai-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">AI not responding</Link></li>
+                <li><Link href="/fix/telegram-bot-disconnected" className="text-[var(--text-secondary)] hover:text-blue-400">Bot disconnected</Link></li>
                 <li><Link href="/fix/telegram-bot-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot silent</Link></li>
+                <li><Link href="/fix/telegram-bot-token-invalid" className="text-[var(--text-secondary)] hover:text-blue-400">Invalid bot token</Link></li>
+                <li><Link href="/fix/telegram-auto-reply-not-working" className="text-[var(--text-secondary)] hover:text-blue-400">Auto-reply not working</Link></li>
+                <li><Link href="/fix/telegram-ai-not-responding" className="text-[var(--text-secondary)] hover:text-blue-400">AI not responding</Link></li>
+                <li><Link href="/fix/telegram-group-permissions" className="text-[var(--text-secondary)] hover:text-blue-400">Group permission errors</Link></li>
               </ul>
             </div>
 
@@ -689,8 +685,8 @@ export default function HomePage() {
                 <li><Link href="/compare/botwave-vs-baileys" className="text-[var(--text-secondary)] hover:text-blue-400">vs Baileys</Link></li>
                 <li><Link href="/compare/botwave-vs-twilio" className="text-[var(--text-secondary)] hover:text-blue-400">vs Twilio</Link></li>
                 <li><Link href="/compare/botwave-vs-wati" className="text-[var(--text-secondary)] hover:text-blue-400">vs WATI</Link></li>
-                <li><Link href="/compare/best-whatsapp-bots-2026" className="text-[var(--text-secondary)] hover:text-blue-400">Best WhatsApp bots 2026</Link></li>
                 <li><Link href="/compare/best-telegram-bots-2026" className="text-[var(--text-secondary)] hover:text-blue-400">Best Telegram bots 2026</Link></li>
+                <li><Link href="/compare/botwave-vs-gramjs" className="text-[var(--text-secondary)] hover:text-blue-400">vs GramJS</Link></li>
               </ul>
             </div>
 
@@ -704,8 +700,8 @@ export default function HomePage() {
                 <li><Link href="/use-cases/schools" className="text-[var(--text-secondary)] hover:text-blue-400">Schools</Link></li>
                 <li><Link href="/use-cases/businesses" className="text-[var(--text-secondary)] hover:text-blue-400">SMB customer support</Link></li>
                 <li><Link href="/use-cases/creators" className="text-[var(--text-secondary)] hover:text-blue-400">Creators &amp; influencers</Link></li>
-                <li><Link href="/use-cases/whatsapp-bot-for-online-stores" className="text-[var(--text-secondary)] hover:text-blue-400">Online stores</Link></li>
-                <li><Link href="/use-cases/whatsapp-bot-for-real-estate" className="text-[var(--text-secondary)] hover:text-blue-400">Real estate</Link></li>
+                <li><Link href="/use-cases/telegram-bot-for-online-stores" className="text-[var(--text-secondary)] hover:text-blue-400">Online stores</Link></li>
+                <li><Link href="/use-cases/telegram-bot-for-real-estate" className="text-[var(--text-secondary)] hover:text-blue-400">Real estate</Link></li>
                 <li><Link href="/use-cases/crypto" className="text-[var(--text-secondary)] hover:text-blue-400">Crypto / Web3</Link></li>
               </ul>
             </div>
@@ -718,12 +714,12 @@ export default function HomePage() {
               <Link href="/blog" className="text-xs text-blue-400 hover:underline">All posts →</Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <Link href="/blog/how-to-create-free-whatsapp-bot-2026" className="text-[var(--text-secondary)] hover:text-blue-400">How to create a free WhatsApp bot in 2026</Link>
-              <Link href="/blog/best-free-whatsapp-bot-groups-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">Best free WhatsApp bot for Nigerian groups</Link>
-              <Link href="/blog/whatsapp-bot-vs-telegram-bot-africa" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp bot vs Telegram bot in Africa</Link>
-              <Link href="/blog/whatsapp-bot-for-business-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">WhatsApp bot for Nigerian businesses</Link>
-              <Link href="/blog/whatsapp-ai-chatbot-free" className="text-[var(--text-secondary)] hover:text-blue-400">Free WhatsApp AI chatbot</Link>
+              <Link href="/blog/how-to-create-telegram-bot-2026" className="text-[var(--text-secondary)] hover:text-blue-400">How to create a free Telegram bot in 2026</Link>
+              <Link href="/blog/best-free-telegram-bot-groups-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">Best free Telegram bot for Nigerian groups</Link>
+              <Link href="/blog/telegram-bot-for-business-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot for Nigerian businesses</Link>
+              <Link href="/blog/telegram-ai-chatbot-free" className="text-[var(--text-secondary)] hover:text-blue-400">Free Telegram AI chatbot</Link>
               <Link href="/blog/telegram-anti-spam-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram anti-spam bot</Link>
+              <Link href="/blog/telegram-userbot-automation" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram userbot automation guide</Link>
             </div>
           </div>
 
@@ -742,7 +738,7 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">Start Automating Your Groups. Free Forever</h2>
-            <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto">Join users across Nigeria who automate their WhatsApp and Telegram groups with BotWave. No credit card, no coding, no downloads.</p>
+            <p className="text-xl text-blue-100 mb-10 max-w-xl mx-auto">Join users across Nigeria who automate their Telegram groups with BotWave. No credit card, no coding, no downloads.</p>
             <Link href="/signup" className="group inline-block px-10 py-4 bg-white text-blue-600 font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-lg">
               Get Started Free <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
             </Link>

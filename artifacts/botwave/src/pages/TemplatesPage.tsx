@@ -10,7 +10,7 @@ const templates = [
     category: 'Protection',
     icon: '🛡️',
     features: ['Flood detection (5 msgs/10s)', 'Link blocking with whitelist', 'Auto-warn repeat offenders', '3 warnings = auto-mute', 'Bad word filter'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '2 minutes',
   },
   {
@@ -20,7 +20,7 @@ const templates = [
     category: 'Education',
     icon: '🎓',
     features: ['Welcome message with rules', 'Off-topic content filter', 'Scheduled announcements', 'Trivia quizzes for revision', 'Admin-only hours'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '3 minutes',
   },
   {
@@ -30,7 +30,7 @@ const templates = [
     category: 'Business',
     icon: '💼',
     features: ['Keyword-triggered replies', 'Business hours detection', 'AI fallback for unknown questions', 'Order confirmation templates', 'Away message outside hours'],
-    platform: 'WhatsApp',
+    platform: 'Telegram',
     setupTime: '5 minutes',
   },
   {
@@ -40,7 +40,7 @@ const templates = [
     category: 'Engagement',
     icon: '🎮',
     features: ['Daily trivia questions', 'Weekly polls', 'Hangman and word chain', 'XP leaderboards', 'Achievement badges'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '2 minutes',
   },
   {
@@ -50,7 +50,7 @@ const templates = [
     category: 'Business',
     icon: '🤖',
     features: ['AI-powered responses', 'Custom knowledge base', 'Escalation to human admin', 'Multi-language support', 'Conversation memory'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '5 minutes',
   },
   {
@@ -60,17 +60,17 @@ const templates = [
     category: 'Creator',
     icon: '🎨',
     features: ['Multi-group management', 'Welcome sequences', 'Scheduled content drops', 'Fan polls and voting', 'Spam protection'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '4 minutes',
   },
   {
     slug: 'church-group',
     title: 'Church and Faith Group',
-    description: 'Manage your church WhatsApp group with automated devotionals, prayer request collection, and event reminders.',
+    description: 'Manage your church Telegram group with automated devotionals, prayer request collection, and event reminders.',
     category: 'Community',
     icon: '⛪',
     features: ['Daily devotional messages', 'Prayer request collection', 'Event reminders', 'Respectful content filter', 'Member directory'],
-    platform: 'WhatsApp',
+    platform: 'Telegram',
     setupTime: '3 minutes',
   },
   {
@@ -80,7 +80,7 @@ const templates = [
     category: 'Finance',
     icon: '📈',
     features: ['Scam link detection', 'New member verification', 'Signal formatting', 'Anti-raid protection', 'Admin-only announcements'],
-    platform: 'WhatsApp & Telegram',
+    platform: 'Telegram',
     setupTime: '4 minutes',
   },
 ];
@@ -113,7 +113,7 @@ export default function TemplatesPage() {
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Bot Templates</h1>
             <p className="text-lg text-[var(--text-secondary)] max-w-2xl">
-              Prebuilt bot configurations you can activate in minutes. Pick a template, connect your WhatsApp or Telegram, and it works.
+              Prebuilt bot configurations you can activate in minutes. Pick a template, connect your Telegram Bot or Userbot, and it works.
             </p>
           </div>
 

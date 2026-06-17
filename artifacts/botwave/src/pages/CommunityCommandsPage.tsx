@@ -8,7 +8,7 @@ interface CommunityCommand {
   title: string;
   description: string;
   author: string;
-  platform: 'WhatsApp' | 'Telegram' | 'Both';
+  platform: 'Telegram' | 'Both';
   category: string;
   commands: string[];
   setup: string;
@@ -22,7 +22,7 @@ const communityCommands: CommunityCommand[] = [
     title: 'Welcome Quiz Gate',
     description: 'New members must answer a trivia question within 60 seconds or get removed. Stops spam bots cold.',
     author: 'GroupAdmin_NG',
-    platform: 'WhatsApp',
+    platform: 'Telegram',
     category: 'Moderation',
     commands: ['!welcome-quiz on', '!welcome-quiz set "What is 2+2?"', '!welcome-quiz timeout 60'],
     setup: 'Enable in Dashboard → Moderation → Welcome Quiz. Or use the commands above in your group.',
@@ -46,7 +46,7 @@ const communityCommands: CommunityCommand[] = [
     title: 'Crypto Price Alert',
     description: 'Get hourly BTC and ETH price updates posted to your trading group automatically.',
     author: 'CryptoTrader_ZA',
-    platform: 'WhatsApp',
+    platform: 'Telegram',
     category: 'Finance',
     commands: ['!schedule hourly "!crypto BTC ETH"'],
     setup: 'Enable the !crypto command in your dashboard, then schedule it with the command above.',
@@ -58,7 +58,7 @@ const communityCommands: CommunityCommand[] = [
     title: 'School Attendance Poll',
     description: 'Auto-send a weekly attendance poll on Monday mornings for class groups.',
     author: 'SchoolAdmin',
-    platform: 'WhatsApp',
+    platform: 'Telegram',
     category: 'Education',
     commands: ['!schedule weekly monday 08:00 "!poll Are you in class today? Yes|No|Late"'],
     setup: 'Paste into group chat as admin. The bot will send the poll every Monday at 8 AM.',

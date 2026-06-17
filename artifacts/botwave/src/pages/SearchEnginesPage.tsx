@@ -3,14 +3,14 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 const searchEngines = [
-  { name: 'Google', audience: 'Mainstream search', indexSource: 'Googlebot', searchUrl: 'https://www.google.com/search?q=botwave+whatsapp+bot', status: 'indexed' },
-  { name: 'Bing', audience: 'Microsoft / Windows users', indexSource: 'Bingbot', searchUrl: 'https://www.bing.com/search?q=botwave+whatsapp+bot', status: 'indexed' },
-  { name: 'DuckDuckGo', audience: 'Privacy-focused users', indexSource: 'Bing index', searchUrl: 'https://duckduckgo.com/?q=botwave+whatsapp+bot', status: 'indexed' },
-  { name: 'Yahoo', audience: 'Yahoo ecosystem', indexSource: 'Bing index', searchUrl: 'https://search.yahoo.com/search?p=botwave+whatsapp+bot', status: 'indexed' },
-  { name: 'Perplexity', audience: 'AI answer engine users', indexSource: 'Bing + web crawl', searchUrl: 'https://www.perplexity.ai/search?q=botwave+whatsapp+bot', status: 'cited' },
+  { name: 'Google', audience: 'Mainstream search', indexSource: 'Googlebot', searchUrl: 'https://www.google.com/search?q=botwave+telegram+bot', status: 'indexed' },
+  { name: 'Bing', audience: 'Microsoft / Windows users', indexSource: 'Bingbot', searchUrl: 'https://www.bing.com/search?q=botwave+telegram+bot', status: 'indexed' },
+  { name: 'DuckDuckGo', audience: 'Privacy-focused users', indexSource: 'Bing index', searchUrl: 'https://duckduckgo.com/?q=botwave+telegram+bot', status: 'indexed' },
+  { name: 'Yahoo', audience: 'Yahoo ecosystem', indexSource: 'Bing index', searchUrl: 'https://search.yahoo.com/search?p=botwave+telegram+bot', status: 'indexed' },
+  { name: 'Perplexity', audience: 'AI answer engine users', indexSource: 'Bing + web crawl', searchUrl: 'https://www.perplexity.ai/search?q=botwave+telegram+bot', status: 'cited' },
   { name: 'ChatGPT Search', audience: 'OpenAI users', indexSource: 'Bing index', searchUrl: 'https://chatgpt.com/?q=botwave', status: 'cited' },
-  { name: 'You.com', audience: 'AI-enhanced search', indexSource: 'Own crawl + partners', searchUrl: 'https://you.com/search?q=botwave+whatsapp+bot', status: 'indexed' },
-  { name: 'Ecosia', audience: 'Green / eco-conscious', indexSource: 'Bing index', searchUrl: 'https://www.ecosia.org/search?q=botwave+whatsapp+bot', status: 'indexed' },
+  { name: 'You.com', audience: 'AI-enhanced search', indexSource: 'Own crawl + partners', searchUrl: 'https://you.com/search?q=botwave+telegram+bot', status: 'indexed' },
+  { name: 'Ecosia', audience: 'Green / eco-conscious', indexSource: 'Bing index', searchUrl: 'https://www.ecosia.org/search?q=botwave+telegram+bot', status: 'indexed' },
 ];
 
 const statusStyles: Record<string, string> = {

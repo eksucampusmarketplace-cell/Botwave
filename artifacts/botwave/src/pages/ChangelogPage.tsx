@@ -14,7 +14,7 @@ const changelog: ChangelogEntry[] = [
     date: 'May 2026',
     changes: [
       { type: 'feature', text: 'Telegram Userbot support via GramJS (MTProto). Connect your real Telegram account.' },
-      { type: 'feature', text: 'Command Gallery with searchable pages for all 150+ commands across 3 platforms' },
+      { type: 'feature', text: 'Command Gallery with searchable pages for all 150+ commands across both Telegram platforms' },
       { type: 'feature', text: 'Documentation section with step-by-step setup guides and troubleshooting' },
       { type: 'improvement', text: 'Userbot session state preserved during container restarts' },
       { type: 'fix', text: 'Fixed userbot entrypoint session sync using wrong DB state values' },
@@ -64,7 +64,7 @@ const changelog: ChangelogEntry[] = [
       { type: 'feature', text: 'Complete rewrite with new architecture' },
       { type: 'feature', text: 'Advanced anti-ban system with session warmup and message variation' },
       { type: 'feature', text: 'AI chat powered by advanced language models' },
-      { type: 'feature', text: '50+ WhatsApp commands including games, polls, and media tools' },
+      { type: 'feature', text: '50+ Telegram commands including games, polls, and media tools' },
       { type: 'feature', text: 'User dashboard with session management' },
       { type: 'improvement', text: 'Naira pricing for Nigerian users' },
     ],
@@ -74,7 +74,7 @@ const changelog: ChangelogEntry[] = [
     date: 'January 2026',
     changes: [
       { type: 'feature', text: 'Initial release of BotWave' },
-      { type: 'feature', text: 'WhatsApp QR code connection' },
+      { type: 'feature', text: 'Telegram Bot @BotFather token connection' },
       { type: 'feature', text: 'Basic commands: sticker, ping, help, AI chat' },
       { type: 'feature', text: 'Anti-spam flood detection' },
     ],

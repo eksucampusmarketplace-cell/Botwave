@@ -3,14 +3,13 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 const platforms = [
-  { name: 'WhatsApp via QR', desc: 'Connect using a QR code scan. Your session runs from your own device IP — not a shared server.', icon: '💬' },
-  { name: 'Telegram Bot API', desc: 'Use @BotFather to create a bot token. Zero ban risk. Full group management.', icon: '🤖' },
+  { name: 'Telegram Bot API', desc: 'Use @BotFather to create a bot token. Zero ban risk. Full group management and automation.', icon: '🤖' },
   { name: 'Telegram Userbot', desc: 'Connect your real Telegram account using MTProto. Full automation from your personal account.', icon: '👤' },
 ];
 
 const commandHighlights = [
   { name: 'AI Chat', cmd: '!ai', desc: 'Powered by Google Gemini 2.0 Flash' },
-  { name: 'Sticker Maker', cmd: '!sticker', desc: 'Any image or video → WhatsApp sticker' },
+  { name: 'Sticker Maker', cmd: '/sticker', desc: 'Any image or video → Telegram sticker' },
   { name: 'Media Downloader', cmd: '!yt / !tiktok / !ig', desc: 'Download without watermarks' },
   { name: 'Anti-Spam', cmd: 'Auto', desc: 'Flood detection and auto-moderation' },
   { name: 'Polls & Games', cmd: '!poll / !trivia', desc: 'Group engagement tools' },
@@ -19,9 +18,9 @@ const commandHighlights = [
 
 const faq = [
   { q: 'Is BotWave free?', a: 'Yes. The free tier gives you 300 messages/month, 10 AI queries/day, and all 150+ commands. No credit card required.' },
-  { q: 'Will my WhatsApp get banned?', a: 'BotWave uses a multi-layer anti-ban system: your own device IP, 7-day warmup, human-like delays, typing indicators, and message variation. Most users never get banned.' },
-  { q: 'Do I need coding knowledge?', a: 'No. BotWave is a no-code platform. You connect via QR code and configure everything from a web dashboard or directly in your chat.' },
-  { q: 'Which countries are supported?', a: 'BotWave works in all countries where WhatsApp and Telegram are available. Pricing includes Nigerian Naira (₦), South African Rand, and USD.' },
+  { q: 'Is there any ban risk?', a: 'Telegram Bots use the official Bot API — zero ban risk. Telegram Userbots use MTProto, which is also officially supported. BotWave is built on top of Telegram\'s official infrastructure.' },
+  { q: 'Do I need coding knowledge?', a: 'No. BotWave is a no-code platform. You connect via @BotFather token or Telegram credentials and configure everything from a web dashboard or directly in your chat.' },
+  { q: 'Which countries are supported?', a: 'BotWave works in all countries where Telegram is available. Pricing includes Nigerian Naira (₦), South African Rand, and USD.' },
 ];
 
 export default function WhatIsBotWavePage() {
@@ -36,11 +35,11 @@ export default function WhatIsBotWavePage() {
           </h1>
 
           <p className="text-lg text-[var(--text-secondary)] leading-relaxed mb-6">
-            BotWave is a free, multi-platform bot automation platform that lets you add powerful features to your WhatsApp and Telegram accounts without writing a single line of code. You connect your own account — WhatsApp via QR code, Telegram Bot via @BotFather token, or Telegram Userbot via API credentials — and instantly get access to 150+ built-in commands including AI chat (powered by Google Gemini), sticker creation, media downloads, anti-spam, group management, games, polls, and more.
+            BotWave is a free Telegram bot automation platform that lets you add powerful features to your Telegram groups and channels without writing a single line of code. You connect your account — Telegram Bot via @BotFather token, or Telegram Userbot via API credentials — and instantly get access to 150+ built-in commands including AI chat (powered by Google Gemini), sticker creation, media downloads, anti-spam, group management, games, polls, and more.
           </p>
 
           <p className="text-lg text-[var(--text-secondary)] leading-relaxed mb-10">
-            Unlike most bot platforms that charge $20–50/month and run your connection through their servers, BotWave runs your WhatsApp session from your own device IP (via QR code scan), drastically reducing ban risk. For Telegram, the official Bot API ensures zero ban risk. BotWave is used by thousands of users across Nigeria, South Africa, India, and worldwide — with pricing in local currencies including Nigerian Naira (₦).
+            Unlike most bot platforms that charge $20–50/month, BotWave is free forever. The official Telegram Bot API ensures zero ban risk. BotWave is used by thousands of users across Nigeria, South Africa, India, and worldwide — with pricing in local currencies including Nigerian Naira (₦).
           </p>
 
           <section className="mb-12">

@@ -18,8 +18,8 @@ const sections = [
     id: 'service',
     title: '2. Service description',
     paragraphs: [
-      'BotWave is a self-service automation platform for WhatsApp and Telegram. You connect your own messaging account (via WhatsApp pairing code or Telegram bot token / userbot session) and the Service runs configurable bots, group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features.',
-      'BotWave is a software platform. We do not provide WhatsApp or Telegram themselves and do not act as a messaging service of record.',
+      'BotWave is a self-service automation platform for Telegram. You connect your own Telegram account (via Telegram bot token or Telegram Userbot session) and the Service runs configurable bots, group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features.',
+      'BotWave is a software platform. We do not provide Telegram itself and do not act as a messaging service of record.',
     ],
     items: [],
   },
@@ -44,7 +44,7 @@ const sections = [
       'Engage in harassment, hate speech, threats, doxxing, or any form of abusive behaviour.',
       'Distribute illegal content, malware, fraudulent schemes, or intellectual property infringement.',
       'Circumvent rate limits, anti-abuse mechanisms, or any technical limitation of the Service.',
-      'Use the Service to violate WhatsApp\'s, Telegram\'s, or any other platform\'s Terms of Service.',
+      "Use the Service to violate Telegram's or any other platform's Terms of Service.",
       'Impersonate another person or entity.',
     ],
   },
@@ -70,7 +70,7 @@ const sections = [
     id: 'liability',
     title: '7. Limitation of liability',
     paragraphs: [
-      'BotWave is provided "as is" without warranties of any kind. We are not liable for WhatsApp or Telegram account bans that may occur as a result of bot usage, even when using our anti-ban features. Using messaging automation carries inherent platform risk.',
+      'BotWave is provided "as is" without warranties of any kind. Telegram Bots use the official Bot API with zero official ban risk, but Telegram Userbots carry inherent platform risk. We are not liable for account restrictions that may result from Userbot usage.',
       'Our total liability to you for any claim arising from these Terms will not exceed the amount you paid us in the 3 months preceding the claim.',
     ],
     items: [],

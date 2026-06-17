@@ -5,56 +5,57 @@ import Footer from '@/components/layout/Footer';
 import { howToPages } from '@/lib/howto/data';
 
 const howToContent: Record<string, string> = {
-  'create-whatsapp-bot': `## Create a WhatsApp Bot in Under 2 Minutes
+  'create-telegram-bot': `## Create a Telegram Bot in Under 2 Minutes
 
 ### What You Need
-- A WhatsApp account on your phone
+- A Telegram account on your phone
 - A web browser
 
 ### Step 1: Sign Up for Free
 Go to [botwave.online/signup](https://www.botwave.online/signup) and create your free account. No credit card needed.
 
-### Step 2: Go to Dashboard → Connect WhatsApp
-After logging in, click "Connect WhatsApp" in your dashboard.
+### Step 2: Create a Bot via @BotFather
+Open Telegram and search for @BotFather:
+- Send /newbot to @BotFather
+- Choose a name for your bot (e.g. "My Group Bot")
+- Choose a username ending in "bot" (e.g. "mygroupbot")
+- Copy the token @BotFather sends you
 
-### Step 3: Scan the QR Code
-Open WhatsApp on your phone:
-- Tap the three dots (Android) or Settings (iPhone)
-- Tap Linked Devices → Link a Device
-- Scan the QR code shown in BotWave
+### Step 3: Connect to BotWave
+After logging in, click "Connect Telegram Bot" in your dashboard and paste your bot token.
 
-### Step 4: Wait for Connection
-The connection takes about 5-10 seconds. You'll see "Connected" in your dashboard.
+### Step 4: Add Bot to Your Group
+In Telegram, open your group and add your new bot as a member. Make it an admin so it can manage messages.
 
 ### Step 5: Test Your Bot
-Go to any WhatsApp group and type:
+Go to your Telegram group and type:
 
 \`\`\`
-!ping
+/ping
 \`\`\`
 
-The bot should reply immediately. Type \`!help\` to see all available commands.
+The bot should reply immediately. Type \`/help\` to see all available commands.
 
 ### What's Next?
-- Browse the [Commands page](/commands) to see all 100+ WhatsApp commands
-- Set up welcome messages with \`!welcome\`
-- Enable anti-spam with \`!antispam on\``,
+- Browse the [Commands page](/commands) to see all 100+ Telegram commands
+- Set up welcome messages with \`/welcome\`
+- Enable anti-spam with \`/antispam on\``,
 
-  'auto-reply-whatsapp': `## Set Up WhatsApp Auto-Reply
+  'auto-reply-telegram': `## Set Up Telegram Auto-Reply
 
 ### Enable Auto-Reply
-Once your WhatsApp is connected, auto-reply works in two ways:
+Once your Telegram Bot is connected, auto-reply works in multiple ways:
 
 ### Method 1: Keyword Auto-Reply
 Set up custom responses to specific words or phrases:
 
 \`\`\`
-!autorespond [keyword] [reply message]
+/autorespond [keyword] [reply message]
 \`\`\`
 
 Example:
 \`\`\`
-!autorespond price Our products start at ₦5,000. DM for catalog.
+/autorespond price Our products start at ₦5,000. DM for catalog.
 \`\`\`
 
 Now whenever anyone says "price" in the group, the bot automatically replies.
@@ -63,21 +64,21 @@ Now whenever anyone says "price" in the group, the bot automatically replies.
 Tell the bot you're away and it will reply to all messages:
 
 \`\`\`
-!afk [optional message]
+/afk [optional message]
 \`\`\`
 
 Example:
 \`\`\`
-!afk I'm in a meeting, will reply in 2 hours
+/afk I'm in a meeting, will reply in 2 hours
 \`\`\`
 
-To turn it off: \`!afk off\`
+To turn it off: \`/afk off\`
 
 ### Method 3: AI Auto-Reply (Autopilot)
 The AI command can be set to auto-reply to questions:
 
 \`\`\`
-!autopilot on
+/autopilot on
 \`\`\`
 
 The AI will read messages and automatically reply when it detects a question.
@@ -87,27 +88,27 @@ The AI will read messages and automatically reply when it detects a question.
 - Use AFK for when you're sleeping or in meetings
 - Combine both for maximum coverage`,
 
-  'whatsapp-ai-assistant': `## Use WhatsApp AI Assistant
+  'telegram-ai-assistant': `## Use Telegram AI Assistant
 
-The \`!ai\` command connects you to Google Gemini AI directly inside WhatsApp.
+The \`/ai\` command connects you to Google Gemini AI directly inside Telegram.
 
 ### Basic Usage
 
-Just type \`!ai\` followed by your question:
+Just type \`/ai\` followed by your question:
 
 \`\`\`
-!ai what is the capital of Nigeria?
-!ai explain photosynthesis simply
-!ai write a professional email declining a job offer
-!ai translate: good morning everyone → Yoruba
+/ai what is the capital of Nigeria?
+/ai explain photosynthesis simply
+/ai write a professional email declining a job offer
+/ai translate: good morning everyone → Yoruba
 \`\`\`
 
 ### Asking About a Message
-Reply to any message with \`!ai\` to ask the AI about it:
+Reply to any message with \`/ai\` to ask the AI about it:
 
-1. Long-press any message in WhatsApp
+1. Long-press any message in Telegram
 2. Tap Reply
-3. Type \`!ai\` and send
+3. Type \`/ai\` and send
 
 The AI will read and respond to the original message.
 
@@ -127,8 +128,8 @@ The AI will read and respond to the original message.
 
 ### Tips
 - Be specific in your prompts for better answers
-- Send a document (PDF, Word) and ask !ai to summarize it
-- Use !ai in groups for shared AI access`,
+- Send a document (PDF, Word) and ask /ai to summarize it
+- Use /ai in groups for shared AI access`,
 };
 
 const difficultyColors: Record<string, string> = {

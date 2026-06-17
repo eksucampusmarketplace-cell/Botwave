@@ -31,7 +31,6 @@ interface FeatureCardProps {
 }
 
 const platformColors: Record<string, string> = {
-  'WhatsApp': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
   'Telegram Bot': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
   'Telegram Userbot': 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
 };

@@ -25,7 +25,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-type Platform = 'whatsapp' | 'telegram-bot' | 'telegram-userbot';
+type Platform = 'telegram-bot' | 'telegram-userbot';
 
 interface ApiSession {
   id: string;
@@ -78,13 +78,11 @@ const CATEGORIES: { id: FeatureCategory; label: string; icon: string }[] = [
 ];
 
 const platformLabels: Record<Platform, string> = {
-  whatsapp: 'WhatsApp',
   'telegram-bot': 'Telegram Bot',
   'telegram-userbot': 'Telegram Userbot',
 };
 
 const platformIcons: Record<Platform, string> = {
-  whatsapp: '💬',
   'telegram-bot': '🤖',
   'telegram-userbot': '👤',
 };
@@ -347,7 +345,7 @@ export default function DashboardPage() {
                   <div className="text-5xl mb-4">🤖</div>
                   <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">No sessions yet</h2>
                   <p className="text-[var(--text-secondary)] mb-6 max-w-sm mx-auto">
-                    Connect your WhatsApp or Telegram account to start automating your groups.
+                    Connect your Telegram bot or userbot account to start automating your groups.
                   </p>
                   <button
                     onClick={() => setShowAddModal(true)}
@@ -516,7 +514,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-[var(--text-secondary)] mb-4">Choose which platform to connect:</p>
                 <div className="space-y-2">
-                  {(['whatsapp', 'telegram-bot', 'telegram-userbot'] as Platform[]).map(platform => (
+                  {(['telegram-bot', 'telegram-userbot'] as Platform[]).map(platform => (
                     <button
                       key={platform}
                       onClick={() => { setSelectedPlatform(platform); setStep(2); }}
@@ -526,7 +524,6 @@ export default function DashboardPage() {
                       <div>
                         <p className="font-semibold text-[var(--text-primary)] text-sm">{platformLabels[platform]}</p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          {platform === 'whatsapp' && 'Connect via QR code scan'}
                           {platform === 'telegram-bot' && 'Connect via @BotFather token'}
                           {platform === 'telegram-userbot' && 'Connect your personal Telegram account'}
                         </p>
@@ -550,20 +547,10 @@ export default function DashboardPage() {
                     type="text"
                     value={newSessionName}
                     onChange={e => setNewSessionName(e.target.value)}
-                    placeholder={selectedPlatform === 'whatsapp' ? 'My WhatsApp Bot' : 'My Telegram Bot'}
+                    placeholder="My Telegram Bot"
                     className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
-
-                {selectedPlatform === 'whatsapp' && (
-                  <div className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)] mb-4 text-center">
-                    <p className="text-sm text-[var(--text-secondary)] mb-3">After clicking Connect, scan the QR code in WhatsApp to link your device.</p>
-                    <div className="w-40 h-40 mx-auto rounded-xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] text-xs">
-                      QR Code<br />appears here
-                    </div>
-                    <p className="text-xs text-[var(--text-muted)] mt-3">WhatsApp → Linked Devices → Link a Device</p>
-                  </div>
-                )}
 
                 {selectedPlatform === 'telegram-bot' && (
                   <div className="mb-4">

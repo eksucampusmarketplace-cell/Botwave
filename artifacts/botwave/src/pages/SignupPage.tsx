@@ -9,7 +9,7 @@ const terminalLines = [
   { cls: 'output', text: '→ Setting up your workspace...' },
   { cls: 'blank', text: '' },
   { cls: 'comment', text: '# What you get:' },
-  { cls: 'flag', text: '  → WhatsApp, Telegram Bot & Userbot' },
+  { cls: 'flag', text: '  → Telegram Bot & Userbot automation' },
   { cls: 'flag', text: '  → 50+ automation commands' },
   { cls: 'flag', text: '  → AI chatbot (BYOK)' },
   { cls: 'flag', text: '  → Sticker maker & media tools' },
@@ -17,7 +17,7 @@ const terminalLines = [
   { cls: 'flag', text: '  → Group management toolkit' },
   { cls: 'flag', text: '  → Mini games & engagement' },
   { cls: 'blank', text: '' },
-  { cls: 'success', text: '→ 3 platforms. Free forever. No credit card.' },
+  { cls: 'success', text: '→ 2 platforms. Free forever. No credit card.' },
   { cls: 'success', text: '→ Fill in your details to begin →' },
 ];
 

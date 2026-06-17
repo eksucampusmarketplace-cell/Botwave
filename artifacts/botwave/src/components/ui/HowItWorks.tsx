@@ -12,8 +12,8 @@ const steps = [
   {
     number: '02',
     title: 'Choose Your Platform',
-    cmd: '$ botwave init --platform [whatsapp|telegram-bot|telegram-userbot]',
-    description: 'Pick your platform: scan a WhatsApp QR code, paste a Telegram Bot token from @BotFather, or log in with your Telegram account for userbot mode.',
+    cmd: '$ botwave init --platform [telegram-bot|telegram-userbot]',
+    description: 'Pick your platform: paste a Telegram Bot token from @BotFather, or log in with your Telegram account for userbot mode.',
   },
   {
     number: '03',
@@ -25,7 +25,7 @@ const steps = [
     number: '04',
     title: 'Bot is Live',
     cmd: '→ status: online | commands: ready',
-    description: "That's it. Your bot is active. Use commands in your WhatsApp or Telegram group and BotWave handles the rest instantly.",
+    description: "That's it. Your bot is active. Use commands in your Telegram group and BotWave handles the rest instantly.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function HowItWorks() {
             How It Works
           </h2>
           <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-xl mx-auto leading-relaxed">
-            Get your WhatsApp or Telegram bot running in under 2 minutes. No technical skills needed.
+            Get your Telegram bot running in under 2 minutes. No technical skills needed.
           </p>
         </motion.div>
 

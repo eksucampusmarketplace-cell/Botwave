@@ -4,15 +4,6 @@ import Footer from '@/components/layout/Footer';
 
 const supportGroups = [
   {
-    platform: 'WhatsApp',
-    name: 'WhatsApp Support Group',
-    description: 'Get real-time help from the BotWave team and community members. Ask questions, report issues, and share tips.',
-    link: 'https://chat.whatsapp.com/GMyXXv1hhnbI7JcCF5sNEf',
-    icon: '💬',
-    color: 'emerald',
-    members: '500+',
-  },
-  {
     platform: 'Telegram',
     name: 'Telegram Support Group',
     description: 'Chat with other BotWave users on Telegram. Get help with setup, commands, troubleshooting, and feature requests.',
@@ -84,7 +75,7 @@ export default function CommunityPage() {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">BotWave Community</h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Join thousands of group admins, creators, and builders who use BotWave to automate their WhatsApp and Telegram communities.
+            Join thousands of group admins, creators, and builders who use BotWave to automate their Telegram communities.
           </p>
         </div>
       </section>

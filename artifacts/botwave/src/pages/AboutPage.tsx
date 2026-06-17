@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 const stats = [
   { label: 'Commands Available', value: '150+' },
   { label: 'Countries Supported', value: '50+' },
-  { label: 'Platforms', value: '3' },
+  { label: 'Platforms', value: '2' },
   { label: 'Price', value: 'Free' },
 ];
 
@@ -17,7 +17,7 @@ const values = [
   },
   {
     title: 'Your Device, Your IP',
-    description: 'Unlike other bot services, your WhatsApp session runs from your own device via QR code. You never share a server IP with other bot users, dramatically reducing ban risk.',
+    description: 'Unlike other bot services, your Telegram connection uses the official Bot API. Zero ban risk, fully supported by Telegram, and no IP-sharing with other bot users.',
     icon: '🛡️',
   },
   {
@@ -33,8 +33,7 @@ const values = [
 ];
 
 const platforms = [
-  { name: 'WhatsApp (Baileys)', desc: 'QR code connection from your own device. Full message handling, media, groups, and session management.', icon: '💬', color: 'emerald' },
-  { name: 'Telegram Bot API', desc: 'Official Telegram bot. Zero ban risk. Anti-spam, captcha, welcome messages, and group management.', icon: '✈️', color: 'blue' },
+  { name: 'Telegram Bot API', desc: 'Official Telegram bot via @BotFather. Zero ban risk. Anti-spam, CAPTCHA, welcome messages, and full group management.', icon: '✈️', color: 'blue' },
   { name: 'Telegram Userbot', desc: 'Connect your real Telegram account via MTProto. Full personal account automation.', icon: '👤', color: 'violet' },
 ];
 
@@ -49,7 +48,7 @@ export default function AboutPage() {
             About <span className="text-blue-500">BotWave</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-3xl mx-auto leading-relaxed">
-            BotWave is a free, multi-platform bot automation platform for WhatsApp and Telegram. We are built around one belief: powerful group management tools should be available to everyone, not just enterprises with six-figure software budgets.
+            BotWave is a free Telegram bot automation platform. We are built around one belief: powerful group management tools should be available to everyone, not just enterprises with six-figure software budgets.
           </p>
         </div>
       </section>
@@ -83,7 +82,7 @@ export default function AboutPage() {
       <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-[var(--text-primary)] text-center mb-4">Supported Platforms</h2>
-          <p className="text-center text-[var(--text-secondary)] mb-10">One BotWave account covers all three platforms.</p>
+          <p className="text-center text-[var(--text-secondary)] mb-10">One BotWave account covers both Telegram platforms.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {platforms.map(p => (
               <div key={p.name} className="p-6 rounded-2xl bg-[var(--card-bg,var(--surface))] border border-[var(--border)] text-center">
@@ -100,7 +99,7 @@ export default function AboutPage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Not affiliated with other "BotWave" projects</h2>
           <p className="text-[var(--text-secondary)] mb-8">
-            BotWave (botwave.online) is an independent WhatsApp and Telegram automation platform. We are not affiliated with any other projects sharing similar names.
+            BotWave (botwave.online) is an independent Telegram bot automation platform. We are not affiliated with any other projects sharing similar names.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/signup" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors">

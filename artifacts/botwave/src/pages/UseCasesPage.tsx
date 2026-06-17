@@ -105,7 +105,7 @@ function UseCaseIndex() {
 
         <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Built for your community</h1>
         <p className="text-lg text-[var(--text-secondary)] max-w-2xl mb-12">
-          BotWave works for any WhatsApp or Telegram group. Here's how different communities use it.
+          BotWave works for any Telegram group. Here's how different communities use it.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -125,7 +125,7 @@ function UseCaseIndex() {
 
         <div className="mt-16 p-8 bg-gradient-to-r from-blue-600/10 to-green-600/10 border border-blue-500/20 rounded-2xl text-center">
           <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Don't see your use case?</h3>
-          <p className="text-[var(--text-secondary)] mb-4">BotWave works for any WhatsApp or Telegram group. Try it free.</p>
+          <p className="text-[var(--text-secondary)] mb-4">BotWave works for any Telegram group. Try it free.</p>
           <Link href="/signup" className="inline-flex px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
             Get Started Free
           </Link>

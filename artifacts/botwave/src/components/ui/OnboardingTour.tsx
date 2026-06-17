@@ -12,18 +12,18 @@ const TOUR_KEY = 'botwave_tour_completed';
 const steps = [
   {
     target: '[data-tour="sessions"]',
-    content: 'This is where your WhatsApp sessions live. Each session connects one WhatsApp number to BotWave.',
+    content: 'This is where your Telegram bot sessions live. Each session connects one bot or account to BotWave.',
     disableBeacon: true,
     placement: 'bottom' as const,
   },
   {
     target: '[data-tour="add-session"]',
-    content: 'Click here to connect a new WhatsApp number. You\'ll get a pairing code to link your device.',
+    content: 'Click here to connect a new Telegram bot or userbot. You\'ll need your @BotFather token.',
     placement: 'top' as const,
   },
   {
     target: '[data-tour="features"]',
-    content: 'Toggle bot features on and off. Each feature adds new commands to your WhatsApp - stickers, AI chat, games, and more!',
+    content: 'Toggle bot features on and off. Each feature adds new commands to your Telegram group — stickers, AI chat, games, and more!',
     placement: 'top' as const,
   },
   {
@@ -33,7 +33,7 @@ const steps = [
   },
   {
     target: '[data-tour="nav-sessions"]',
-    content: 'Manage all your sessions in detail - connect, disconnect, or delete WhatsApp connections.',
+    content: 'Manage all your sessions in detail — connect, disconnect, or delete Telegram connections.',
     placement: 'bottom' as const,
   },
   {

@@ -5,12 +5,7 @@ import { motion } from 'framer-motion';
 const disclaimerItems = [
   <>
     BotWave is an <strong className="text-amber-400">independent third-party service</strong> and is NOT affiliated
-    with, endorsed by, or connected to WhatsApp LLC, Meta Platforms Inc., or Telegram FZ-LLC in any way.
-  </>,
-  <>
-    <strong className="text-amber-400">WhatsApp:</strong> WhatsApp&apos;s Terms of Service prohibit automation on personal
-    accounts. Using BotWave with WhatsApp may violate these terms and could result in your account being{' '}
-    <strong className="text-amber-400">temporarily or permanently banned</strong>. BotWave includes advanced anti-ban protection, but no guarantee is made.
+    with, endorsed by, or connected to Telegram FZ-LLC in any way.
   </>,
   <>
     <strong className="text-amber-400">Telegram Bot:</strong> Telegram Bot mode uses the{' '}

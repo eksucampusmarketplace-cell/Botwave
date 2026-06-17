@@ -1,0 +1,1 @@
+- [BotWave Telegram pivot](botwave-telegram-pivot.md) — full WhatsApp removal done across all pages; 4 data-key strings remain as slug refs (not user-visible)

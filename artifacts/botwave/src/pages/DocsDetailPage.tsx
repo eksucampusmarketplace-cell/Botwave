@@ -86,14 +86,12 @@ function renderMarkdown(content: string) {
 
 const platformColors: Record<string, string> = {
   all: 'bg-blue-500/10 text-blue-500',
-  whatsapp: 'bg-green-600/10 text-green-600',
   telegram: 'bg-blue-500/10 text-blue-500',
   userbot: 'bg-violet-600/10 text-violet-600',
 };
 
 const platformLabels: Record<string, string> = {
   all: 'All Platforms',
-  whatsapp: 'WhatsApp',
   telegram: 'Telegram Bot',
   userbot: 'Userbot',
 };

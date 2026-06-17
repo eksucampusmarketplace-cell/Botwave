@@ -7,7 +7,7 @@ const features = [
   { icon: '🔀', title: 'Multiple Aliases', desc: 'Create multiple email aliases from a single inbox. Use different addresses for different signups to avoid spam.' },
   { icon: '📱', title: 'Mobile-First Dashboard', desc: 'Read and manage emails from any device. Clean, distraction-free inbox optimized for mobile.' },
   { icon: '🤖', title: 'AI Email Summarizer', desc: 'Long newsletters? Hit summarize and get the key points in under 30 words.' },
-  { icon: '🔔', title: 'WhatsApp Notifications', desc: 'Forward email alerts to your WhatsApp so you never miss important messages.' },
+  { icon: '🔔', title: 'Telegram Notifications', desc: 'Forward email alerts to your Telegram bot so you never miss important messages.' },
   { icon: '🔒', title: 'No Phone Required', desc: 'Sign up for services that require email verification without using your personal email or phone number.' },
 ];
 
@@ -64,7 +64,7 @@ export default function MailboxPage() {
               'Sign up for websites that require email verification',
               'Receive newsletters without cluttering your personal inbox',
               'Use separate aliases for different services',
-              'Get email alerts forwarded to WhatsApp',
+              'Get email alerts forwarded to Telegram',
               'Test email workflows as a developer',
               'Protect your personal email from spam lists',
             ].map((uc, i) => (

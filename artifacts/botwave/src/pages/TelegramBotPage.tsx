@@ -113,7 +113,7 @@ export default function TelegramBotPage() {
       <section className="py-16 px-6 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-4">Try both platforms free</h2>
-          <p className="text-[var(--text-secondary)] mb-8">One BotWave account covers WhatsApp + Telegram Bot + Telegram Userbot.</p>
+          <p className="text-[var(--text-secondary)] mb-8">One BotWave account covers both Telegram Bot and Telegram Userbot.</p>
           <Link href="/signup" className="inline-flex px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors text-lg">
             Get Started Free →
           </Link>

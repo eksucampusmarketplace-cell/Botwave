@@ -5,126 +5,109 @@ import Footer from '@/components/layout/Footer';
 import { fixPages } from '@/lib/fix/data';
 
 const fixContent: Record<string, string> = {
-  'whatsapp-bot-disconnected': `## Why WhatsApp Bots Disconnect
+  'whatsapp-bot-disconnected': `## Why Telegram Bots Disconnect
 
-WhatsApp QR sessions are linked devices — like WhatsApp Web. They can disconnect for several reasons.
+Telegram Bot sessions are long-lived API connections. They can occasionally drop for a few reasons.
 
 ### Common Causes
 
-**QR Session Expired**
-WhatsApp periodically invalidates linked device sessions, especially if:
-- Your phone has been offline for too long
-- You haven't used the bot session for several days
-- WhatsApp released an update that broke the session protocol
+**Token Revoked**
+If you regenerated your bot token in @BotFather without updating BotWave, the session will fail.
 
-**Solution**: Go to BotWave dashboard → Disconnect → Scan QR again.
+**Solution**: Go to @BotFather → /mybots → Select your bot → API Token → Revoke. Then paste the new token in BotWave dashboard.
 
-**Rate Limit (428)**
-If the bot sent too many messages too fast, WhatsApp may temporarily disconnect the session.
+**Rate Limit (429)**
+If the bot sent too many messages too fast, Telegram's API will temporarily block the session.
 
-**Solution**: Wait 10-15 minutes before reconnecting. The warmup period will restart.
+**Solution**: Wait 10-15 minutes before reconnecting. BotWave rate limits are set well below Telegram's limits by default.
 
 **Network Issue**
-If the BotWave server couldn't reach WhatsApp's servers, the session drops.
+If the BotWave server lost its connection to Telegram's API servers, the session drops.
 
 **Solution**: Usually auto-reconnects within 60 seconds. Check the session status in your dashboard.
 
-**Multi-Device Conflict**
-If you logged into WhatsApp Web on another browser at the same time, the old session may be invalidated.
+**Bot Removed from Group**
+If the bot was removed from a group it was polling, it may show as disconnected.
 
-**Solution**: Remove unused linked devices from your phone (WhatsApp Settings → Linked Devices).
+**Solution**: Re-add the bot to the group and give it admin permissions.
 
 ### How to Reconnect
 
 1. Go to BotWave dashboard
 2. Find the disconnected session (shown in red)
-3. Click "Reconnect" or "Rescan QR"
-4. Scan the new QR code with your phone
+3. Click "Reconnect"
+4. Verify your bot token is still valid in @BotFather
 5. Wait 5-10 seconds for connection`,
 
-  'whatsapp-bot-banned': `## Why WhatsApp Bots Get Banned
+  'whatsapp-bot-banned': `## Telegram Bot Restrictions
 
-WhatsApp bans accounts that violate their Terms of Service. Bots using the unofficial API are technically against ToS — but the risk depends on how the bot behaves.
+Unlike unofficial messaging APIs, Telegram Bots use the official Bot API — so there is zero platform ban risk for bots. However, Telegram Userbots (personal account automation) can sometimes get restricted.
 
-### High Ban Risk Behaviors
-- Sending 500+ messages per day from one account
-- Sending identical messages to many people (spam pattern)
-- Getting reported by multiple users
-- Running from a VPS/cloud IP shared with other bot users
+### Telegram Bot (zero ban risk)
+Telegram bots are officially supported and encouraged by Telegram. Your bot cannot be "banned" by Telegram for normal automation use. The only way a bot gets disabled is if:
+- You delete it yourself in @BotFather
+- Telegram removes it for ToS violations (spam, scams, illegal content)
+- Your token expires (it doesn't — tokens are permanent unless revoked)
 
-### How BotWave Prevents Bans
+### Telegram Userbot Restrictions
+Userbots use your real Telegram account via MTProto. Telegram can restrict accounts for:
+- Sending spam to users who haven't messaged you first
+- Rapid joining/leaving many groups
+- Getting reported by many users
 
-**Your Own IP, Your Own Device**
-Your WhatsApp session runs from BotWave's isolated container but identifies as your device. You're not sharing an IP with hundreds of other bot users.
+### If Your Userbot Account Got Restricted
 
-**Session Warmup**
-New accounts start at 15 messages/day and increase over 7 days. This prevents "new bot spike" detection.
+1. **SpamBot check**: Message @SpamBot on Telegram — it will tell you if you're restricted
+2. **Request unban**: @SpamBot also has an "I didn't send spam" button for appeals
+3. **Wait**: Most restrictions lift automatically in 24-48 hours
+4. **Reduce activity**: Lower your message rate in BotWave settings
 
-**Human-Like Behavior**
-- Random delays (1-5 seconds) before each reply
-- Typing indicators before responses
-- Read receipts sent first
-- 15% of group messages are "ignored" (read but not replied to)
+### Best Practices
 
-### If Your Account Got Banned
+- Only message users who have messaged you first
+- Don't mass-join groups you didn't create
+- Keep your message rate under 50 per hour for Userbots`,
 
-1. **Temporary ban**: Wait 24-48 hours. Try logging in normally.
-2. **Permanent ban**: You'll need a different WhatsApp number. BotWave supports multiple sessions.
-3. **Submit an appeal**: Go to WhatsApp Settings → Help → Contact Us.
+  'whatsapp-qr-not-scanning': `## Fix Telegram Bot Token Not Working
 
-### Recovery Steps
+### Quick Diagnosis
 
-1. Stop all bot activity immediately
-2. Don't try to reconnect the banned number
-3. Wait 48 hours minimum
-4. If temporary, reconnect with lower message limits
-5. Consider upgrading to get a fresh session with warmup`,
+**Get a fresh token**
+Open Telegram → @BotFather → /mybots → select your bot → API Token.
+Copy the full token (it starts with a number, e.g. \`123456789:ABCdef...\`).
 
-  'whatsapp-qr-not-scanning': `## Fix WhatsApp QR Not Scanning
+**Check for copy errors**
+Make sure there are no extra spaces, line breaks, or missing characters. The token must be copied exactly.
 
-### Quick Fixes
+**Verify the bot exists**
+In @BotFather, type /mybots to list your bots. If your bot is missing, you may need to create a new one with /newbot.
 
-**Clean your camera lens**
-Dust or smudges on the phone camera can prevent QR scanning.
+### Common Token Errors
 
-**Increase screen brightness**
-Make the QR code brighter on your monitor. The camera needs good contrast.
+**"Unauthorized" error**
+Your token is invalid or was revoked. Solution: Generate a new token in @BotFather → Revoke current token.
 
-**Use Chrome or Firefox**
-Some browsers render the QR canvas differently. Safari on Mac sometimes has issues.
+**"Bot was kicked" error**
+The bot was removed from the group. Re-add it and grant admin permissions.
 
-**Refresh the QR code**
-QR codes expire after 60 seconds. Click "Refresh" if it's greyed out.
+**"Forbidden: bot is not a member" error**
+Add the bot to your group first, then try the command.
 
-### Phone-Side Fixes
+### Creating a New Bot Token
 
-**On Android:**
-1. Open WhatsApp
-2. Tap ⋮ (three dots) → Linked Devices
-3. Tap "Link a Device"
-4. Point camera at QR code — hold steady for 2-3 seconds
+1. Open Telegram and search @BotFather
+2. Send /newbot
+3. Choose a display name (e.g. "My Group Bot")
+4. Choose a username ending in "bot" (e.g. "mygroupbot")
+5. Copy the token @BotFather provides
+6. Paste it into BotWave dashboard → Connect Telegram Bot
 
-**On iPhone:**
-1. Open WhatsApp
-2. Tap Settings (bottom right)
-3. Tap Linked Devices → Link a Device
-4. Wait for camera to open
-5. Scan the QR
+### Bot Not Responding in Group
 
-### Use Pairing Code Instead
-
-If QR scanning keeps failing, use the phone number pairing method:
-1. In BotWave, click "Use Pairing Code instead"
-2. Enter your WhatsApp phone number (with country code)
-3. WhatsApp will show a 8-digit code in the app
-4. Enter that code in BotWave
-
-### Browser Compatibility Issues
-
-If using a work computer with content filtering:
-- Try a personal device or phone browser
-- Use incognito/private mode
-- Disable VPN while scanning`,
+If the token connects but the bot doesn't respond to commands:
+- Make sure the bot is added to the group as an admin
+- Check if commands are enabled: @BotFather → /mybots → Edit Bot → Edit Commands
+- Confirm the command prefix matches (default is /)`,
 };
 
 export default function FixDetailPage() {
@@ -199,13 +182,13 @@ export default function FixDetailPage() {
             <h3 className="font-bold text-[var(--text-primary)] mb-2">Still stuck?</h3>
             <p className="text-sm text-[var(--text-secondary)] mb-4">Get live help from the BotWave support community.</p>
             <div className="flex flex-wrap gap-3">
-              <a href="https://chat.whatsapp.com/HFP3yJfQGDCLzm4YvysPPv" target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg bg-green-600/10 border border-green-600/20 text-green-600 text-sm font-medium hover:bg-green-600/20 transition-colors">
-                WhatsApp Support
+              <a href="https://t.me/botwavegrp" target="_blank" rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium hover:bg-blue-500/20 transition-colors">
+                Telegram Support Group
               </a>
               <a href="https://t.me/botwaveonline" target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium hover:bg-blue-500/20 transition-colors">
-                Telegram Support
+                className="px-4 py-2 rounded-lg bg-blue-600/10 border border-blue-600/20 text-blue-600 text-sm font-medium hover:bg-blue-600/20 transition-colors">
+                Telegram Channel
               </a>
             </div>
           </div>

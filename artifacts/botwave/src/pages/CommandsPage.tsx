@@ -13,7 +13,7 @@ function PlatformSection({ platform }: { platform: Platform }) {
     <div className="mb-20">
       <div className="flex items-center gap-4 mb-8">
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold ${
-          platform === 'whatsapp' ? 'bg-green-600' : platform === 'telegram' ? 'bg-blue-500' : 'bg-violet-600'
+          platform === 'telegram' ? 'bg-blue-500' : 'bg-violet-600'
         }`}>
           {meta.icon}
         </div>
@@ -77,15 +77,13 @@ export default function CommandsPage() {
             Command Gallery
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mb-4">
-            {totalCommands}+ commands across WhatsApp, Telegram Bot, and Telegram Userbot. Everything you need to automate, moderate, and supercharge your groups.
+            {totalCommands}+ commands across Telegram Bot and Telegram Userbot. Everything you need to automate, moderate, and supercharge your groups.
           </p>
           <div className="flex gap-3 flex-wrap mb-12">
-            <a href="#whatsapp" className="px-4 py-2 rounded-lg bg-green-600/10 border border-green-600/20 text-green-600 text-sm font-medium hover:bg-green-600/20 transition-colors">WhatsApp Bot</a>
             <a href="#telegram" className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium hover:bg-blue-500/20 transition-colors">Telegram Bot</a>
             <a href="#userbot" className="px-4 py-2 rounded-lg bg-violet-600/10 border border-violet-600/20 text-violet-600 text-sm font-medium hover:bg-violet-600/20 transition-colors">Telegram Userbot</a>
           </div>
 
-          <div id="whatsapp"><PlatformSection platform="whatsapp" /></div>
           <div id="telegram"><PlatformSection platform="telegram" /></div>
           <div id="userbot"><PlatformSection platform="userbot" /></div>
         </div>

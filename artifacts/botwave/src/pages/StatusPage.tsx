@@ -11,7 +11,7 @@ interface ServiceStatus {
 
 const services: ServiceStatus[] = [
   { name: 'API Server', status: 'operational', description: 'REST API endpoints and authentication' },
-  { name: 'WhatsApp Sessions', status: 'operational', description: 'WhatsApp bot connections via Baileys' },
+  { name: 'Telegram Bot Sessions', status: 'operational', description: 'Telegram bot connections via Bot API' },
   { name: 'Telegram Bot API', status: 'operational', description: 'Telegram bot and group management' },
   { name: 'AI Chat (Gemini)', status: 'operational', description: 'AI-powered chat responses' },
   { name: 'Media Downloader', status: 'operational', description: 'YouTube, TikTok, Instagram downloads' },

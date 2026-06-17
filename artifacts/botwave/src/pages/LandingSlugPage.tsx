@@ -2,15 +2,15 @@ import { useParams } from 'wouter';
 import { Link } from 'wouter';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { landingPages } from '@/lib/landing/data';
+import { landingPages } from '@/lib/landing/index';
 
 const FEATURES = [
-  { title: 'AI Chat Assistant', desc: 'Ask questions, get answers. Powered by Google Gemini. Works in groups and private chats.', command: '!ai' },
-  { title: 'Sticker Maker', desc: 'Send any image and convert it to a WhatsApp sticker instantly. No app needed.', command: '!sticker' },
-  { title: 'Group Moderation', desc: 'Anti-spam, warnings, kicks, and welcome messages. Keep your group clean.', command: '!warn' },
-  { title: 'Media Downloads', desc: 'Download videos from TikTok, YouTube, and Instagram. Share directly in chat.', command: '!download' },
-  { title: 'Games and Trivia', desc: 'Trivia, hangman, word chain, chess. Leaderboards and XP tracking.', command: '!trivia' },
-  { title: 'Translation', desc: 'Translate messages to 20+ languages. Works with replies.', command: '!translate' },
+  { title: 'AI Chat Assistant', desc: 'Ask questions, get answers. Powered by Google Gemini. Works in groups and private chats.', command: '/ai' },
+  { title: 'Sticker Maker', desc: 'Send any image and convert it to a Telegram sticker instantly. No app needed.', command: '/sticker' },
+  { title: 'Group Moderation', desc: 'Anti-spam, warnings, kicks, and welcome messages. Keep your group clean.', command: '/warn' },
+  { title: 'Media Downloads', desc: 'Download videos from TikTok, YouTube, and Instagram. Share directly in chat.', command: '/download' },
+  { title: 'Games and Trivia', desc: 'Trivia, hangman, word chain, chess. Leaderboards and XP tracking.', command: '/trivia' },
+  { title: 'Translation', desc: 'Translate messages to 20+ languages. Works with replies.', command: '/translate' },
 ];
 
 export default function LandingSlugPage() {
@@ -38,9 +38,6 @@ export default function LandingSlugPage() {
   const relatedPages = landingPages
     .filter(p => p.slug !== page.slug && p.category === page.category)
     .slice(0, 6);
-
-  const isPlatformWhatsApp = page.slug.includes('whatsapp') || page.category === 'country';
-  const platform = page.slug.includes('telegram') ? 'Telegram' : 'WhatsApp';
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
@@ -83,7 +80,7 @@ export default function LandingSlugPage() {
       <section className="py-16 px-6 bg-[var(--surface,#0d0d14)]">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-10">
-            Everything you need to run {page.category === 'country' ? `your ${platform} group` : 'your group'}
+            Everything you need to run your Telegram group
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(f => (
@@ -108,8 +105,8 @@ export default function LandingSlugPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             {[
               { icon: '🆓', title: 'Free Tier', desc: 'Start for free. No credit card needed. Upgrade when you grow.' },
-              { icon: '🛡️', title: 'Anti-Ban', desc: 'Our SafeConnect layer runs on your device. Your own IP, your own account.' },
-              { icon: '⚡', title: '150+ Commands', desc: 'Every command you need, ready to use immediately.' },
+              { icon: '⚡', title: '150+ Commands', desc: 'Every Telegram bot command you need, ready to use immediately.' },
+              { icon: '🛡️', title: 'Group Protection', desc: 'Anti-spam, link detection, and moderation built in from day one.' },
             ].map(item => (
               <div key={item.title} className="p-6 rounded-2xl bg-[var(--surface,#0d0d14)] border border-white/5">
                 <div className="text-4xl mb-3">{item.icon}</div>
@@ -125,7 +122,7 @@ export default function LandingSlugPage() {
       <section className="py-16 px-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-black text-[var(--text-primary)] mb-4">
-            Ready to automate your {platform} group?
+            Ready to automate your Telegram group?
           </h2>
           <p className="text-[var(--text-secondary)] mb-8">
             Join thousands of group admins using BotWave. Free to start, no coding needed.

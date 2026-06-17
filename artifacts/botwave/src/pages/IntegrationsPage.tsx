@@ -15,7 +15,7 @@ const integrations = [
   {
     category: 'Media and Content',
     items: [
-      { name: 'TikTok', description: 'Download TikTok videos without watermark directly into WhatsApp. Just paste the link.', status: 'live', icon: '🎵' },
+      { name: 'TikTok', description: 'Download TikTok videos without watermark directly into Telegram. Just paste the link.', status: 'live', icon: '🎵' },
       { name: 'YouTube', description: 'Download YouTube videos and music. Supports video and audio-only downloads.', status: 'live', icon: '📺' },
       { name: 'Instagram', description: 'Download Reels, posts, and stories from Instagram directly into your chat.', status: 'live', icon: '📸' },
       { name: 'Spotify', description: 'Search and preview tracks. Find song info and share music recommendations.', status: 'live', icon: '🎧' },
@@ -24,8 +24,7 @@ const integrations = [
   {
     category: 'Platforms',
     items: [
-      { name: 'WhatsApp (Baileys)', description: 'Core platform. Connect via QR code scan. Full message handling, media, groups, and session management.', status: 'live', icon: '💬' },
-      { name: 'Telegram Bot API', description: 'Official Telegram bot support. Zero ban risk. Full group management, anti-spam, CAPTCHA, and federation.', status: 'live', icon: '✈️' },
+      { name: 'Telegram Bot API', description: 'Official Telegram bot support via @BotFather. Zero ban risk. Full group management, anti-spam, CAPTCHA, and federation.', status: 'live', icon: '✈️' },
       { name: 'Telegram Userbot (GramJS)', description: 'Connect your real Telegram account. Run automation from your personal account with MTProto.', status: 'live', icon: '👤' },
     ],
   },
@@ -43,7 +42,7 @@ const integrations = [
       { name: 'Google Sheets', description: 'Export group analytics, member lists, and command logs to Google Sheets automatically.', status: 'soon', icon: '📊' },
       { name: 'Notion', description: 'Sync group notes, meeting summaries, and digests directly to your Notion workspace.', status: 'soon', icon: '📓' },
       { name: 'Webhooks', description: 'Send real-time notifications to any URL when specific events happen in your groups.', status: 'soon', icon: '🔗' },
-      { name: 'Zapier', description: 'Connect BotWave to 5000+ apps through Zapier automations. Trigger workflows from WhatsApp messages.', status: 'soon', icon: '⚙️' },
+      { name: 'Zapier', description: 'Connect BotWave to 5000+ apps through Zapier automations. Trigger workflows from Telegram messages.', status: 'soon', icon: '⚙️' },
     ],
   },
 ];
@@ -105,10 +104,10 @@ export default function IntegrationsPage() {
               We are actively building new integrations. Let us know what tools you want connected to BotWave.
             </p>
             <a
-              href="https://chat.whatsapp.com/HFP3yJfQGDCLzm4YvysPPv"
+              href="https://t.me/botwavegrp"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors"
+              className="inline-flex px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
             >
               Request an Integration
             </a>

@@ -24,7 +24,6 @@ import TemplatesPage from "@/pages/TemplatesPage";
 import ChangelogPage from "@/pages/ChangelogPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
-import WhatsAppBotPage from "@/pages/WhatsAppBotPage";
 import TelegramBotPage from "@/pages/TelegramBotPage";
 import TelegramBotForGroupsPage from "@/pages/TelegramBotForGroupsPage";
 import TelegramAutoReplyPage from "@/pages/TelegramAutoReplyPage";
@@ -66,7 +65,6 @@ function Router() {
       <Route path="/what-is-botwave" component={WhatIsBotWavePage} />
 
       {/* Platform landing pages */}
-      <Route path="/whatsapp-bot" component={WhatsAppBotPage} />
       <Route path="/telegram-bot" component={TelegramBotPage} />
       <Route path="/telegram-bot-for-groups" component={TelegramBotForGroupsPage} />
       <Route path="/telegram-auto-reply" component={TelegramAutoReplyPage} />
@@ -74,12 +72,7 @@ function Router() {
       <Route path="/deploy-telegram-bot" component={DeployTelegramBotPage} />
 
       {/* Region-specific landing pages */}
-      <Route path="/whatsapp-bot-nigeria" component={WhatsAppBotPage} />
-      <Route path="/whatsapp-bot-south-africa" component={WhatsAppBotPage} />
-      <Route path="/whatsapp-bot-india" component={WhatsAppBotPage} />
-      <Route path="/whatsapp-bot-usa" component={WhatsAppBotPage} />
       <Route path="/telegram-bot-nigeria" component={TelegramBotPage} />
-      <Route path="/telegram-userbot-commands" component={TelegramBotPage} />
 
       {/* Features */}
       <Route path="/features" component={FeaturesPage} />
@@ -95,7 +88,6 @@ function Router() {
       {/* Commands */}
       <Route path="/commands" component={CommandsPage} />
       <Route path="/commands/telegram" component={CommandsPage} />
-      <Route path="/commands/userbot" component={CommandsPage} />
       <Route path="/commands/:platform" component={CommandsPage} />
       <Route path="/commands/:platform/:slug" component={CommandsPage} />
 

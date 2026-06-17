@@ -106,7 +106,7 @@ export default function PricingPage() {
 
           <div className="text-center p-10 rounded-2xl bg-gradient-to-r from-blue-500/10 to-emerald-500/10 border border-emerald-500/20">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">Ready to automate?</h2>
-            <p className="text-[var(--text-secondary)] mb-6">Free forever. No credit card. Works on WhatsApp and Telegram.</p>
+            <p className="text-[var(--text-secondary)] mb-6">Free forever. No credit card. Telegram Bot and Userbot ready.</p>
             <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
               Get Started Free →
             </Link>

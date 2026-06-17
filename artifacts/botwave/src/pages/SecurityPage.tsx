@@ -6,7 +6,7 @@ const layers = [
   {
     name: 'SafeConnect Layer',
     tagline: 'Your device, your IP',
-    description: 'Your WhatsApp session runs from your own device via QR code. You are not sharing a server IP with hundreds of other bot users. This is the single biggest factor in avoiding bans because WhatsApp flags accounts that share IPs with known automation traffic.',
+    description: 'BotWave uses the official Telegram Bot API — fully sanctioned by Telegram. Your bot token is unique to your account and is never shared. Telegram bots are officially encouraged, meaning zero platform ban risk.',
     color: 'emerald',
     icon: '🏠',
   },
@@ -34,7 +34,7 @@ const layers = [
   {
     name: 'Session Isolation',
     tagline: 'No cross-account contamination',
-    description: 'Each WhatsApp session runs in a fully isolated container. A ban on one session cannot affect another. Session credentials are encrypted at rest.',
+    description: 'Each Telegram session runs in a fully isolated container. An issue on one session cannot affect another. Session credentials are encrypted at rest.',
     color: 'red',
     icon: '🔒',
   },
@@ -79,7 +79,7 @@ export default function SecurityPage() {
 
           <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Security & Anti-Ban</h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mb-12">
-            BotWave uses a multi-layer approach to protect your WhatsApp and Telegram accounts. Here's exactly how it works.
+            BotWave uses a multi-layer approach to protect your Telegram accounts and keep your bots running smoothly. Here's exactly how it works.
           </p>
 
           <div className="space-y-5 mb-16">

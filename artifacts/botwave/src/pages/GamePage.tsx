@@ -10,7 +10,7 @@ export default function GamePage() {
           <div className="text-6xl mb-6">🎮</div>
           <h1 className="text-3xl font-extrabold text-[var(--text-primary)] mb-4">BotWave Games</h1>
           <p className="text-[var(--text-secondary)] mb-8">
-            Head-to-Head challenges, tournaments, and live games are available in WhatsApp and Telegram groups.
+            Head-to-Head challenges, tournaments, and live games are available in Telegram groups.
             Start a game in your group chat using <code className="text-blue-400">!trivia</code> or <code className="text-blue-400">!hangman</code>.
           </p>
           <div className="flex gap-4 justify-center">

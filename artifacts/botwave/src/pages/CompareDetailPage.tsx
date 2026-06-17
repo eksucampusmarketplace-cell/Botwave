@@ -6,22 +6,22 @@ import { comparePages } from '@/lib/compare/data';
 
 const compareContent: Record<string, { intro: string; botwave: string[]; other: string[]; verdict: string }> = {
   'botwave-vs-evolution-api': {
-    intro: "Evolution API is a popular open-source WhatsApp API wrapper. It's powerful but requires technical knowledge, your own hosting, and configuration. BotWave wraps all of that into a no-code dashboard.",
-    botwave: ['No hosting required', 'No coding needed', 'Built-in anti-ban system', 'Commands included (stickers, AI, games)', 'Dashboard with analytics', 'Free tier available', '60-second setup'],
-    other: ['Requires VPS/cloud hosting ($5-20/mo)', 'Node.js + Docker knowledge needed', 'No built-in commands (just API)', 'Anti-ban not included', 'Self-managed', 'Open source (free software, expensive to run)'],
-    verdict: "BotWave is better if you want a working bot without building one. Evolution API is better if you're a developer building a custom bot for clients."
+    intro: "Evolution API is a popular open-source API wrapper for messaging bots. It's powerful but requires technical knowledge, your own hosting, and configuration. BotWave wraps all of that into a no-code dashboard with official Telegram support.",
+    botwave: ['No hosting required', 'No coding needed', 'Official Telegram Bot API (zero ban risk)', 'Commands included (stickers, AI, games)', 'Dashboard with analytics', 'Free tier available', '2-minute setup'],
+    other: ['Requires VPS/cloud hosting ($5-20/mo)', 'Node.js + Docker knowledge needed', 'No built-in commands (just API)', 'No official API support', 'Self-managed', 'Open source (free software, expensive to run)'],
+    verdict: "BotWave is better if you want a working Telegram bot without building one. Evolution API is better if you're a developer building a fully custom solution for clients."
   },
   'botwave-vs-baileys': {
-    intro: "Baileys is the open-source WhatsApp Web library that BotWave itself is built on. Using Baileys directly means building your own bot from scratch in Node.js.",
-    botwave: ['No coding needed', 'Commands included', 'Anti-ban built in', 'Hosted and managed', 'Dashboard UI', 'Free tier'],
-    other: ['Requires Node.js + JavaScript knowledge', 'Build every command from scratch', 'Anti-ban must be implemented manually', 'Host yourself', 'No UI unless you build one', 'Free library, expensive to build'],
-    verdict: "BotWave is Baileys with a dashboard, 150+ commands, anti-ban, and hosting — built for non-developers. Use Baileys directly if you're a developer who wants full control."
+    intro: "Baileys is an open-source messaging library. Using it directly means building your own bot from scratch in Node.js with no dashboard, no commands, and significant infrastructure work.",
+    botwave: ['No coding needed', 'Commands included', 'Official Telegram Bot API', 'Hosted and managed', 'Dashboard UI', 'Free tier'],
+    other: ['Requires Node.js + JavaScript knowledge', 'Build every command from scratch', 'Must implement all features manually', 'Host yourself', 'No UI unless you build one', 'Free library, expensive to build'],
+    verdict: "BotWave gives you a dashboard, 150+ commands, and hosting — built for non-developers. Use a raw library if you're a developer who needs complete custom control."
   },
   'best-whatsapp-bots-2026': {
-    intro: "There are several WhatsApp bot platforms in 2026. Here's an honest comparison of the top options.",
-    botwave: ['Free tier with 300 msgs/month', '150+ built-in commands', 'Anti-ban system', 'WhatsApp + Telegram in one dashboard', 'Nigeria-native (Naira billing)', '60-second setup'],
-    other: ['Most platforms: $20-50/month', 'Limited command sets (10-30 commands)', 'No anti-ban protection', 'WhatsApp only', 'USD billing only', 'Complex setup required'],
-    verdict: "BotWave leads on features-per-dollar (especially on the free tier), anti-ban protection, and multi-platform support. Best for individual users, community managers, and small businesses."
+    intro: "There are several Telegram bot platforms in 2026. Here's an honest comparison of the top options.",
+    botwave: ['Free tier with 300 msgs/month', '150+ built-in commands', 'Official Telegram Bot API', 'Telegram Bot + Userbot in one dashboard', 'Nigeria-native (Naira billing)', '2-minute setup'],
+    other: ['Most platforms: $20-50/month', 'Limited command sets (10-30 commands)', 'Unofficial APIs with ban risk', 'Single platform only', 'USD billing only', 'Complex setup required'],
+    verdict: "BotWave leads on features-per-dollar (especially on the free tier), zero ban risk via official API, and multi-platform Telegram support. Best for individual users, community managers, and small businesses."
   },
 };
 

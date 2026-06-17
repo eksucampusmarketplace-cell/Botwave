@@ -10,12 +10,6 @@ interface PlatformSelectorProps {
 
 const platforms: { id: Platform; label: string; icon: string; description: string }[] = [
   {
-    id: 'whatsapp',
-    label: 'WhatsApp',
-    icon: '📱',
-    description: 'Connect your WhatsApp number via QR code or pairing code',
-  },
-  {
     id: 'telegram_bot',
     label: 'Telegram Bot',
     icon: '🤖',

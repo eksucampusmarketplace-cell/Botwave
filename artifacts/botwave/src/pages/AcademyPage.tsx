@@ -4,18 +4,18 @@ import Footer from '@/components/layout/Footer';
 
 const courses = [
   {
-    title: 'WhatsApp Automation Fundamentals',
-    description: 'Learn how WhatsApp bots work, how to set them up safely, and how to automate your group without getting banned.',
+    title: 'Telegram Bot Fundamentals',
+    description: 'Learn how Telegram bots work, how to set them up in minutes, and how to automate your group with zero ban risk.',
     lessons: 6,
     duration: '30 min',
     level: 'Beginner',
-    topics: ['What is WhatsApp automation', 'How QR-based bots work', 'Understanding ban risk', 'Your first bot setup', 'Basic commands and features', 'Anti-ban best practices'],
+    topics: ['What is a Telegram bot', 'How @BotFather token works', 'Understanding Bot API vs Userbot', 'Your first bot setup', 'Basic commands and features', 'Group management best practices'],
     link: '/docs/getting-started',
     icon: '📱',
   },
   {
     title: 'Community Growth Masterclass',
-    description: 'Strategies for growing active WhatsApp and Telegram communities from zero to thousands of engaged members.',
+    description: 'Strategies for growing active Telegram communities from zero to thousands of engaged members.',
     lessons: 8,
     duration: '45 min',
     level: 'Intermediate',
@@ -54,8 +54,8 @@ const courses = [
     icon: '🤖',
   },
   {
-    title: 'Business WhatsApp Bot',
-    description: 'Turn your WhatsApp into a customer service powerhouse. Auto-replies, keyword triggers, business hours, and order tracking.',
+    title: 'Business Telegram Bot',
+    description: 'Turn your Telegram into a customer service powerhouse. Auto-replies, keyword triggers, business hours, and order tracking.',
     lessons: 7,
     duration: '35 min',
     level: 'Intermediate',
@@ -83,7 +83,7 @@ export default function AcademyPage() {
           </span>
           <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Learn Bot Automation</h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Free step-by-step guides for WhatsApp automation, community management, AI chatbots, and Telegram group management.
+            Free step-by-step guides for Telegram bot automation, community management, AI chatbots, and group management.
           </p>
         </div>
       </section>

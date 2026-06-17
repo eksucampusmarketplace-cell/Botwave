@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import SessionHealthBadge from './SessionHealthBadge';
 
-type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
+type Platform = 'telegram_bot' | 'telegram_userbot';
 
 interface SessionCardProps {
   name: string;
@@ -21,13 +21,11 @@ interface SessionCardProps {
 }
 
 const platformIcons: Record<Platform, string> = {
-  whatsapp: '📱',
   telegram_bot: '🤖',
   telegram_userbot: '👤',
 };
 
 const platformLabels: Record<Platform, string> = {
-  whatsapp: 'WhatsApp',
   telegram_bot: 'TG Bot',
   telegram_userbot: 'TG User',
 };

@@ -5,20 +5,18 @@ import { docPages, getAllDocCategories } from '@/lib/docs/data';
 
 const platformColors: Record<string, string> = {
   all: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  whatsapp: 'bg-green-600/10 text-green-600 border-green-600/20',
   telegram: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   userbot: 'bg-violet-600/10 text-violet-600 border-violet-600/20',
 };
 
 const platformLabels: Record<string, string> = {
   all: 'All Platforms',
-  whatsapp: 'WhatsApp',
   telegram: 'Telegram Bot',
   userbot: 'Userbot',
 };
 
 const categoryBlurbs: Record<string, string> = {
-  Setup: 'Get connected in minutes — WhatsApp QR, Telegram bot tokens, userbot pairing.',
+  Setup: 'Get connected in minutes — Telegram bot tokens and userbot pairing.',
   Features: 'AI, welcome messages, group management, and the day-to-day power user toolkit.',
   Security: 'How BotWave protects your account and how to use the anti-ban system properly.',
   Troubleshooting: 'Fixes for QR errors, disconnections, missing features, and edge cases.',
@@ -29,7 +27,7 @@ const categoryBlurbs: Record<string, string> = {
 export default function DocsPage() {
   const categories = getAllDocCategories();
   const popular = docPages
-    .filter(d => ['getting-started', 'connect-whatsapp', 'connect-telegram', 'ai-commands'].includes(d.slug))
+    .filter(d => ['getting-started', 'connect-telegram', 'connect-userbot', 'ai-commands'].includes(d.slug))
     .slice(0, 4);
 
   return (
@@ -45,7 +43,7 @@ export default function DocsPage() {
 
           <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Documentation</h1>
           <p className="text-lg text-[var(--text-secondary)] mb-12">
-            Setup guides, feature tutorials, and troubleshooting for WhatsApp Bot, Telegram Bot, and Telegram Userbot.
+            Setup guides, feature tutorials, and troubleshooting for Telegram Bot and Telegram Userbot.
           </p>
 
           {popular.length > 0 && (

@@ -16,7 +16,7 @@ const sections: Section[] = [
     id: 'overview',
     title: 'TL;DR — what BotWave does and does not do with your data',
     paragraphs: [
-      'BotWave is a no-code platform for running WhatsApp and Telegram bots. We do not store message content, we do not read your private DMs, we do not sell your data to advertisers, and we do not embed third-party trackers or ad networks. Your WhatsApp session runs from your own device IP via the Baileys library, which significantly reduces ban risk.',
+      'BotWave is a no-code platform for running Telegram bots. We do not store message content, we do not read your private DMs, we do not sell your data to advertisers, and we do not embed third-party trackers or ad networks. Your Telegram Bot uses the official Bot API, meaning zero ban risk and full Telegram compliance.',
       'We only store the minimum data needed to keep your bot connected and your account secure: your email, hashed session credentials, plan/billing info, and aggregate usage counts (e.g. messages sent this month). Everything else — including the content of group messages your bot sees — is processed in memory and discarded after the command is handled.',
     ],
   },
@@ -25,7 +25,7 @@ const sections: Section[] = [
     title: 'What BotWave can access',
     items: [
       'Messages in groups where the bot is active, needed to detect commands and apply moderation rules you configured.',
-      'Your WhatsApp / Telegram session token, needed to maintain the connection from your device.',
+      'Your Telegram session token, needed to maintain the bot connection.',
       'Your email address and authentication info, for login, password reset, and billing.',
       'Your dashboard configuration — bot settings, welcome messages, anti-spam rules, custom commands.',
     ],
@@ -35,7 +35,7 @@ const sections: Section[] = [
     title: 'What BotWave cannot do',
     items: [
       'Read your private 1:1 messages or DMs (the bot only sees messages in chats where it is added).',
-      'Access your WhatsApp or Telegram contacts list.',
+      'Access your Telegram contacts list.',
       'Send messages from your number without your bot being explicitly active.',
       'Access your phone storage, camera, microphone, or device data.',
       'Share your session with other users or impersonate you elsewhere.',
@@ -48,7 +48,7 @@ const sections: Section[] = [
     items: [
       'Email address — for login, billing, and password reset.',
       'Hashed password — we never store plain-text passwords.',
-      'WhatsApp/Telegram session credentials — encrypted. Required to maintain your bot connection.',
+      'Telegram session credentials — encrypted. Required to maintain your bot connection.',
       'Bot configuration — your welcome message, anti-spam settings, custom commands.',
       'Usage counts — messages sent this month, AI queries today. Not message content.',
       'Billing info — plan, payment status. Card details are handled by Flutterwave, not BotWave.',
@@ -62,7 +62,7 @@ const sections: Section[] = [
       'Images, videos, or media sent in groups.',
       'Phone numbers of group members (only your own account phone number for session purposes).',
       'Private 1:1 message content of any kind.',
-      'Your WhatsApp or Telegram contacts.',
+      'Your Telegram contacts.',
     ],
   },
   {
