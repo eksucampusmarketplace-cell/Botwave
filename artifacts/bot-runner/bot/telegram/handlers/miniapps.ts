@@ -1,0 +1,207 @@
+/**
+ * Mini Apps handler: Telegram WebApp games and interactive features.
+ * Ported from Nexus bot reference implementation.
+ */
+
+import { Bot, InlineKeyboard } from 'grammy';
+import { requireAdmin } from '../utils/permissions';
+import { getGroupConfig, updateTelegramConfig } from '../utils/db';
+
+interface MiniApp {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  path: string;
+}
+
+const MINI_APPS: MiniApp[] = [
+  {
+    id: 'tictactoe',
+    name: 'Tic Tac Toe',
+    emoji: '❌⭕',
+    description: 'Classic Tic Tac Toe game',
+    path: '/miniapp/tictactoe.html',
+  },
+  {
+    id: 'trivia',
+    name: 'Trivia Quiz',
+    emoji: '🧠',
+    description: 'Test your knowledge',
+    path: '/miniapp/trivia.html',
+  },
+  {
+    id: 'memory',
+    name: 'Memory Game',
+    emoji: '🃏',
+    description: 'Match the cards',
+    path: '/miniapp/memory.html',
+  },
+  {
+    id: 'snake',
+    name: 'Snake',
+    emoji: '🐍',
+    description: 'Classic Snake game',
+    path: '/miniapp/snake.html',
+  },
+  {
+    id: 'math',
+    name: 'Math Challenge',
+    emoji: '🔢',
+    description: 'Solve math problems',
+    path: '/miniapp/math.html',
+  },
+  {
+    id: 'wordscramble',
+    name: 'Word Scramble',
+    emoji: '🔤',
+    description: 'Unscramble the word',
+    path: '/miniapp/wordscramble.html',
+  },
+  {
+    id: 'rps',
+    name: 'Rock Paper Scissors',
+    emoji: '✊✋✌️',
+    description: 'Play against the bot',
+    path: '/miniapp/rps.html',
+  },
+  {
+    id: '2048',
+    name: '2048',
+    emoji: '🔢',
+    description: 'Combine tiles to reach 2048',
+    path: '/miniapp/2048.html',
+  },
+  {
+    id: 'tycoon',
+    name: 'Cosa Nostra Tycoon',
+    emoji: '🎩',
+    description: 'Run your crew, raid rivals, take the city',
+    path: '/miniapp/tycoon-mockup.html',
+  },
+];
+
+function getAppUrl(baseUrl: string, app: MiniApp, sessionId?: string): string {
+  // Tycoon needs to know the Botwave bot session it was launched from so
+  // /api/tycoon/* can verify initData against the right bot token. Other
+  // games are stateless WebApps and don't need the parameter.
+  if (app.id === 'tycoon' && sessionId) {
+    const sep = app.path.includes('?') ? '&' : '?';
+    return `${baseUrl}${app.path}${sep}session=${encodeURIComponent(sessionId)}`;
+  }
+  return `${baseUrl}${app.path}`;
+}
+
+export function registerMiniAppsHandlers(bot: Bot, sessionId: string): void {
+  bot.command(['games', 'mgame', 'multiplayer'], async (ctx) => {
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+    const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
+
+    if (!baseUrl) {
+      await ctx.reply('❌ Mini apps base URL not configured. Use /setgamesurl to set it.');
+      return;
+    }
+
+    const keyboard = new InlineKeyboard();
+    for (let i = 0; i < MINI_APPS.length; i += 2) {
+      const app1 = MINI_APPS[i];
+      const app2 = MINI_APPS[i + 1];
+
+      keyboard.webApp(`${app1.emoji} ${app1.name}`, getAppUrl(baseUrl, app1, sessionId));
+      if (app2) {
+        keyboard.webApp(`${app2.emoji} ${app2.name}`, getAppUrl(baseUrl, app2, sessionId));
+      }
+      keyboard.row();
+    }
+
+    await ctx.reply(
+      `🎮 <b>Mini Apps & Games</b>\n\nChoose a game to play:`,
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
+  });
+
+  bot.command('game', async (ctx) => {
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+    const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
+
+    if (!baseUrl) {
+      await ctx.reply('❌ Mini apps base URL not configured.');
+      return;
+    }
+
+    const gameId = (ctx.match?.toString() || '').trim().toLowerCase();
+    if (!gameId) {
+      const list = MINI_APPS.map(a => `• <code>${a.id}</code> - ${a.emoji} ${a.name}`).join('\n');
+      await ctx.reply(
+        `Usage: /game <id>\n\nAvailable games:\n${list}`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+
+    const app = MINI_APPS.find(a => a.id === gameId);
+    if (!app) {
+      await ctx.reply(`❌ Game "${gameId}" not found. Use /games to see available games.`);
+      return;
+    }
+
+    const keyboard = new InlineKeyboard()
+      .webApp(`${app.emoji} Play ${app.name}`, getAppUrl(baseUrl, app, sessionId));
+
+    await ctx.reply(
+      `${app.emoji} <b>${app.name}</b>\n${app.description}`,
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
+  });
+
+  bot.command('setgamesurl', async (ctx) => {
+    if (!(await requireAdmin(ctx, sessionId))) return;
+
+    const url = (ctx.match?.toString() || '').trim();
+    if (!url) {
+      const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+      const current = config.miniapp_base_url || 'Not set';
+      await ctx.reply(
+        `🎮 <b>Mini Apps URL</b>\n\nCurrent: <code>${current}</code>\n\nUsage: /setgamesurl <base_url>`,
+        { parse_mode: 'HTML' },
+      );
+      return;
+    }
+
+    await updateTelegramConfig(sessionId, { miniapp_base_url: url });
+    await ctx.reply(`✅ Mini apps base URL set to: <code>${url}</code>`, { parse_mode: 'HTML' });
+  });
+
+  // Dedicated one-tap entry for Cosa Nostra Tycoon. Skips the /games list
+  // for users who already know they want to open the game.
+  bot.command(['tycoon', 'cosanostra', 'mafia'], async (ctx) => {
+    const config = await getGroupConfig(sessionId, ctx.chat!.id.toString());
+    const baseUrl = config.miniapp_base_url || process.env.NEXT_PUBLIC_APP_URL || '';
+
+    if (!baseUrl) {
+      await ctx.reply(
+        '❌ Mini apps base URL not configured. Use /setgamesurl to set it.',
+      );
+      return;
+    }
+
+    const tycoon = MINI_APPS.find((a) => a.id === 'tycoon');
+    if (!tycoon) return;
+
+    const keyboard = new InlineKeyboard().webApp(
+      `🎩 Open Cosa Nostra Tycoon`,
+      getAppUrl(baseUrl, tycoon, sessionId),
+    );
+
+    await ctx.reply(
+      [
+        '🎩 <b>Cosa Nostra Tycoon</b>',
+        '',
+        'Build your hideout. Train your crew. Raid rivals. Take the city.',
+        '',
+        'Tap the button below to play.',
+      ].join('\n'),
+      { parse_mode: 'HTML', reply_markup: keyboard },
+    );
+  });
+}
