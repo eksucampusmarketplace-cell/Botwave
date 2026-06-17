@@ -507,7 +507,7 @@ export const fixContent: Record<string, FixContent> = {
     intro: '515 = Telegram expected a fresh connection after auth. The bot client handles this automatically.',
     symptoms: ['515 in log.', 'Brief disconnect then reconnect.'],
     quickFix: ['Wait; the bot auto-recovers.'],
-    causes: [{ label: 'Normal post-auth handshake quirk', fix: ['Self-resolves.'] }],
+    causes: [{ label: 'Normal post-auth handshake quirk', detail: 'Telegram sends a 515 after auth as part of connection handshake. Normal behavior.', fix: ['Self-resolves.'] }],
     resolutionSteps: [{ title: 'Wait 30s', body: '' }],
     expectedResult: 'Session reconnects automatically.',
     relatedFix: ['telegram-bot-428-error', 'telegram-bot-disconnected'],

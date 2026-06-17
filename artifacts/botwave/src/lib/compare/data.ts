@@ -5,6 +5,7 @@ export interface ComparePage {
   seoTitle: string;
   seoDescription: string;
   keywords: string[];
+  platforms?: string[];
 }
 
 export const comparePages: ComparePage[] = [

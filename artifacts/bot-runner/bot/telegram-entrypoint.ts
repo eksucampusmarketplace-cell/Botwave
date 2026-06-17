@@ -126,8 +126,8 @@ async function start() {
         if (sock) {
           try {
             const msg = `*Reminder:* ${reminder.message}`;
-            if (typeof sock.sendMessage === 'function') {
-              await sock.sendMessage(reminder.chat_jid, { text: msg });
+            if (typeof (sock as any).sendMessage === 'function') {
+              await (sock as any).sendMessage(reminder.chat_jid, { text: msg });
             }
             await markReminderDelivered(reminder.id);
           } catch (err) {
@@ -141,8 +141,8 @@ async function start() {
         const sock = getActiveBotSocket(scheduled.session_id);
         if (sock) {
           try {
-            if (typeof sock.sendMessage === 'function') {
-              await sock.sendMessage(scheduled.target_jid, { text: scheduled.message });
+            if (typeof (sock as any).sendMessage === 'function') {
+              await (sock as any).sendMessage(scheduled.target_jid, { text: scheduled.message });
             }
             await markScheduledMessageSent(scheduled.id);
           } catch (err) {

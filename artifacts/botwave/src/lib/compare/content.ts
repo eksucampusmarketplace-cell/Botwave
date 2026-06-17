@@ -96,7 +96,7 @@ export const compareContent: Record<string, CompareContent> = {
     ],
   },
 
-  'botwave-vs-telegraf': {
+  'botwave-vs-telegraf-library': {
     intro:
       'Telegraf is the Node.js library that powers most Telegram automation, including BotWave itself. Comparing "BotWave vs Telegraf" is really comparing a managed product to a raw library, same way you might compare Vercel to running Node yourself.',
     features: [

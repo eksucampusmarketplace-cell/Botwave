@@ -12,6 +12,9 @@
     "grammy": "^1.43.0",
     "ioredis": "^5.10.1",
     "pino": "^10.3.1",
+    "@grammyjs/types": "^3.14.0",
+    "@vitalets/google-translate-api": "^9.2.0",
+    "nodemailer": "^6.10.1",
     "telegram": "^2.26.22"
   },
   "devDependencies": {

@@ -125,7 +125,7 @@ router.get("/stats", async (req, res) => {
     .from(botSessionsTable)
     .where(eq(botSessionsTable.userId, req.user!.userId));
 
-  const active = sessions.filter((s) => s.status === "active").length;
+  const active = sessions.filter((s: { status: string }) => s.status === "active").length;
   return res.json({
     sessions: { total: sessions.length, active, offline: sessions.length - active },
     messages: { sent: 0, received: 0, commands: 0 },

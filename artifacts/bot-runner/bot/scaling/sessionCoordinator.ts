@@ -20,7 +20,9 @@ import { SELF_URL, IS_WORKER, isWorkerHealthy, assignWorkerAsync, areAllWorkersD
 import { isRedisAvailable, redisSetHeartbeat, redisSetHeartbeatBatch, redisAcquireLock, redisReleaseLock, redisGetHeartbeat } from '../infrastructure/redis';
 import { isCircuitOpen } from '../infrastructure/circuitBreaker';
 import { isShutdown } from '../infrastructure/gracefulShutdown';
-import { deleteInstanceAndVerify, reconnectInstance } from '../whatsapp/evolution/client';
+// WhatsApp Evolution API stubs — Telegram-only deployment, these are no-ops
+async function deleteInstanceAndVerify(_sessionId: string): Promise<void> {}
+async function reconnectInstance(_sessionId: string, _phone?: string): Promise<boolean> { return false; }
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
