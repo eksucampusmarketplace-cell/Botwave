@@ -27,7 +27,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     keywords: ['how to create telegram bot 2026', 'free telegram bot tutorial', 'no code telegram bot', 'botwave tutorial', 'telegram bot setup'],
     faqs: [
       { question: 'Do I need coding skills to create a Telegram bot in 2026?', answer: 'No. With BotWave you sign up, create a bot via @BotFather, and the bot is live with 100+ commands. No code, no server setup, no Node.js, the platform handles all of that.' },
-      { question: 'Will Telegram restrict my bot?', answer: 'WhatsApp\'s policy targets bulk unsolicited messaging, not automation per se. BotWave\'s anti-ban system (session warmup, randomised typing delays, 200/day default cap, message variation) is designed specifically to keep your number safe. We have seen <0.5% ban rates across 12,000+ active sessions in 2026.' },
+      { question: 'Will Telegram restrict my bot?', answer: 'Telegram\'s policy targets bulk unsolicited messaging, not automation per se. BotWave\'s anti-ban system (session warmup, randomised typing delays, 200/day default cap, message variation) is designed specifically to keep your number safe. We have seen <0.5% ban rates across 12,000+ active sessions in 2026.' },
       { question: 'Is the free tier really free?', answer: 'Yes. Free tier = 300 messages/month, 10 AI queries/day, 1 session, all basic commands. No credit card required. Paid plans for higher limits are coming soon.' },
       { question: 'Which is better, pairing code or QR code?', answer: 'Pairing code is more reliable on shared/public networks (no camera required) and is the default in BotWave\'s 2026 onboarding. QR is faster if you have your phone in hand.' },
       { question: 'Can I run multiple Telegram bots from one BotWave account?', answer: 'Free tier supports 1 session. Paid tiers (coming soon) will support 3+ sessions, each independently connected via BotFather token.' },
@@ -48,21 +48,21 @@ export const blogMeta: Record<string, BlogMeta> = {
   },
 
   'telegram-bot-for-nigeria-communities': {
-    description: 'Detailed comparison of WhatsApp bots vs Telegram bots for African use cases, group size, moderation, anti-spam, AI.',
-    keywords: ['whatsapp bot vs telegram bot', 'best chat bot africa', 'whatsapp or telegram for bots', 'african community bot'],
+    description: 'Detailed comparison of Telegram bots vs Telegram bots for African use cases, group size, moderation, anti-spam, AI.',
+    keywords: ['telegram bot vs telegram bot', 'best chat bot africa', 'telegram or telegram for bots', 'african community bot'],
     faqs: [
-      { question: 'Why are Telegram bots usually free but WhatsApp bots not?', answer: 'Telegram has an official Bot API, anyone can spin one up at zero cost. WhatsApp relies on either the WhatsApp Business API (paid, per-conversation pricing) or unofficial libraries (Baileys, what BotWave uses). The bot infra cost is higher on WhatsApp, so most providers charge.' },
-      { question: 'Group size, which is better for big communities?', answer: 'Telegram supports up to 200,000 members per group. WhatsApp caps at 1024. For mega-communities (crypto, esports, fan-clubs), Telegram wins. For SMB customer chat and tight-knit groups, WhatsApp.' },
-      { question: 'Which is better for African business comms?', answer: 'WhatsApp dominates 1:1 customer comms in Nigeria, Ghana, Kenya, SA. Telegram dominates niche tech, crypto, and creator communities. Most serious operators run both, which is why BotWave supports both from one dashboard.' },
-      { question: 'Can I migrate my Telegram bot users to WhatsApp?', answer: 'Not automatically, they\'re separate platforms with different IDs. But you can run both bots side-by-side and gradually migrate via in-bot cross-promotion.' },
+      { question: 'Why are Telegram bots usually free but Telegram bots not?', answer: 'Telegram has an official Bot API, anyone can spin one up at zero cost. Telegram relies on either the Telegram Business API (paid, per-conversation pricing) or unofficial libraries (Baileys, what BotWave uses). The bot infra cost is higher on Telegram, so most providers charge.' },
+      { question: 'Group size, which is better for big communities?', answer: 'Telegram supports up to 200,000 members per group. Telegram caps at 1024. For mega-communities (crypto, esports, fan-clubs), Telegram wins. For SMB customer chat and tight-knit groups, Telegram.' },
+      { question: 'Which is better for African business comms?', answer: 'Telegram dominates 1:1 customer comms in Nigeria, Ghana, Kenya, SA. Telegram dominates niche tech, crypto, and creator communities. Most serious operators run both, which is why BotWave supports both from one dashboard.' },
+      { question: 'Can I migrate my Telegram bot users to Telegram?', answer: 'Not automatically, they\'re separate platforms with different IDs. But you can run both bots side-by-side and gradually migrate via in-bot cross-promotion.' },
     ],
   },
 
   'telegram-bot-for-business-nigeria': {
-    description: 'How Nigerian SMBs use WhatsApp bots in 2026 to handle customer FAQ, auto-reply, broadcasts, and order management.',
-    keywords: ['whatsapp bot business nigeria', 'auto reply nigeria', 'whatsapp business automation', 'sme whatsapp bot'],
+    description: 'How Nigerian SMBs use Telegram bots in 2026 to handle customer FAQ, auto-reply, broadcasts, and order management.',
+    keywords: ['telegram bot business nigeria', 'auto reply nigeria', 'telegram business automation', 'sme telegram bot'],
     faqs: [
-      { question: 'Is it legal to run a WhatsApp bot for my Nigerian business?', answer: 'Yes, automation of opt-in customer comms is permitted. Avoid sending unsolicited messages to numbers that haven\'t DM\'d you first (that\'s a NDPC and a WhatsApp policy violation).' },
+      { question: 'Is it legal to run a Telegram bot for my Nigerian business?', answer: 'Yes, automation of opt-in customer comms is permitted. Avoid sending unsolicited messages to numbers that haven\'t DM\'d you first (that\'s a NDPC and a Telegram policy violation).' },
       { question: 'How much money will I save vs hiring a customer service rep?', answer: 'A Lagos-based CS rep is ₦80k-150k/month. BotWave\'s free tier already handles ~80% of FAQ-level questions, and paid tiers (coming soon) lift the per-month message limits. ROI typically within week 1.' },
       { question: 'Can the bot take payments?', answer: 'BotWave does not process payments directly. It can share your Paystack/Flutterwave/Selar link and confirm payment receipts customers send. Final payment happens in your existing provider.' },
       { question: 'Will my customers know it\'s a bot?', answer: 'Yes, BotWave is transparent. The !help command and the AI mode self-identify. Hiding bot status would damage trust and is against our T&Cs.' },
@@ -107,8 +107,8 @@ export const blogMeta: Record<string, BlogMeta> = {
     keywords: ['free telegram sticker bot', 'make telegram stickers', 'sticker maker bot', 'image to sticker'],
     faqs: [
       { question: 'Can the bot turn videos into animated stickers?', answer: 'Yes, reply to a short video with !sticker and BotWave will convert it to a WebP animated sticker (max 3s, looped).' },
-      { question: 'Why is the sticker quality lower than the original image?', answer: 'WhatsApp\'s sticker format caps at 512×512 px, 100KB. The bot resizes proportionally, for best results, send high-resolution square images.' },
-      { question: 'Can I add a custom pack name?', answer: 'Yes, !stickerpack "My Pack Name" sets the author/pack metadata that shows in the WhatsApp sticker tray.' },
+      { question: 'Why is the sticker quality lower than the original image?', answer: 'Telegram\'s sticker format caps at 512×512 px, 100KB. The bot resizes proportionally, for best results, send high-resolution square images.' },
+      { question: 'Can I add a custom pack name?', answer: 'Yes, !stickerpack "My Pack Name" sets the author/pack metadata that shows in the Telegram sticker tray.' },
       { question: 'Do stickers work on all Telegram clients?', answer: 'Yes, Telegram stickers work on Android, iPhone, desktop, and web. Animated stickers (TGS) are natively supported.' },
     ],
   },
@@ -160,7 +160,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     description: 'Telegram bot for South African SMBs, Rand pricing, Vodacom/MTN/CellC compatibility, local POPIA-compliant data handling.',
     keywords: ['telegram bot south africa', 'sa telegram bot', 'rand pricing telegram bot', 'popia telegram bot'],
     faqs: [
-      { question: 'Does BotWave work with Vodacom, MTN, Cell C, Telkom Mobile?', answer: 'Yes, bot pairs with your WhatsApp account, not your SIM. Any South African carrier works.' },
+      { question: 'Does BotWave work with Vodacom, MTN, Cell C, Telkom Mobile?', answer: 'Yes, bot pairs with your Telegram account, not your SIM. Any South African carrier works.' },
       { question: 'Are you POPIA-compliant?', answer: 'Yes. We process minimum data, never store message content beyond command logs, and respond to data-subject requests within 14 days. See privacy policy.' },
       { question: 'Pricing in Rand?', answer: 'Pay in Rand via Yoco/PayFast at the current FX. Local invoices on Boss plans for SARS compliance.' },
       { question: 'Local support hours?', answer: 'SAST 09:00-18:00 weekdays. Live chat for urgent issues.' },

@@ -1,4 +1,4 @@
-import { knowledgeBase, type KBEntry } from '../bot/whatsapp/commands/knowledgeBase';
+import { knowledgeBase, type KBEntry } from '../bot/telegram/commands/knowledgeBase';
 
 const FAQ_ITEMS: KBEntry[] = [
   { keywords: ['what is botwave', 'about botwave'], question: 'What is BotWave?', answer: 'BotWave is a free Telegram bot automation platform with 150+ commands including AI chat, sticker maker, anti-spam, group management, and more. No coding required.', category: 'general' },

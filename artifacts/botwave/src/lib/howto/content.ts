@@ -54,33 +54,33 @@ export interface HowToContent {
 }
 
 export const howToContent: Record<string, HowToContent> = {
-  'create-whatsapp-bot': {
+  'create-telegram-bot': {
     intro:
-      'BotWave converts your own WhatsApp number into a fully programmable bot in under two minutes. The bot runs from your device IP via the Baileys library, which is dramatically safer than the server-IP approach used by most paid WhatsApp bot services. This guide walks you through every screen you will see, from signup to your first !sticker command.',
+      'BotWave converts your own Telegram number into a fully programmable bot in under two minutes. The bot runs from your device IP via the Baileys library, which is dramatically safer than the server-IP approach used by most paid Telegram bot services. This guide walks you through every screen you will see, from signup to your first !sticker command.',
     prerequisites: [
-      'A working WhatsApp account (regular or Business) installed on your phone.',
+      'A working Telegram account (regular or Business) installed on your phone.',
       'A free BotWave account at botwave.online/signup.',
       'About 2 minutes of uninterrupted time, pairing codes expire after 60 seconds.',
-      'WhatsApp version 2.23 or newer (older versions do not support the Link a Device flow with pairing codes).',
+      'Telegram version 2.23 or newer (older versions do not support the Link a Device flow with pairing codes).',
     ],
     steps: [
       {
         title: 'Sign up at botwave.online/signup',
         body: 'Create a free account using your email. You will need to confirm the address via a link before you can connect a session.',
-        tip: 'Use a different email from the one tied to the WhatsApp account you plan to connect, it keeps your recovery flows cleanly separated.',
+        tip: 'Use a different email from the one tied to the Telegram account you plan to connect, it keeps your recovery flows cleanly separated.',
       },
       {
         title: 'Open the Sessions tab in the dashboard',
-        body: 'Click "Sessions" in the left sidebar and then "Connect WhatsApp". The pairing code modal will appear with a 60-second countdown.',
+        body: 'Click "Sessions" in the left sidebar and then "Connect Telegram". The pairing code modal will appear with a 60-second countdown.',
       },
       {
-        title: 'Open WhatsApp → Settings → Linked Devices',
-        body: 'On your phone, open WhatsApp, tap the three-dot menu, choose Settings, then Linked Devices, then Link a Device. Tap "Link with phone number instead" at the bottom of the QR screen.',
+        title: 'Open Telegram → Settings → Linked Devices',
+        body: 'On your phone, open Telegram, tap the three-dot menu, choose Settings, then Linked Devices, then Link a Device. Tap "Link with phone number instead" at the bottom of the QR screen.',
         tip: 'On iOS the option is called "Link with phone number"; on Android it is "Link a device with phone number".',
       },
       {
         title: 'Enter the 8-character pairing code',
-        body: 'Type the code displayed in the BotWave dashboard. WhatsApp will pair the device and the dashboard will flip to "Connected" within 5-10 seconds.',
+        body: 'Type the code displayed in the BotWave dashboard. Telegram will pair the device and the dashboard will flip to "Connected" within 5-10 seconds.',
       },
       {
         title: 'Send your first command',
@@ -89,60 +89,60 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Add the bot to a group (optional)',
-        body: 'Add your bot number to a WhatsApp group like any other contact. The bot will start responding to commands in that group automatically.',
+        body: 'Add your bot number to a Telegram group like any other contact. The bot will start responding to commands in that group automatically.',
       },
     ],
     expectedResult:
       'The Sessions tab in your dashboard shows a green "Connected" badge, and !help replies with a list of 50+ commands in any chat the bot is in.',
     tips: [
-      'The session is tied to your phone, if you log out of WhatsApp Web everywhere, you lose the BotWave session too.',
+      'The session is tied to your phone, if you log out of Telegram Web everywhere, you lose the BotWave session too.',
       'Free tier ships with all 150+ commands enabled, but caps you at 300 messages/month. Upgrade is needed only if you cross that limit.',
       'You can disable individual commands per session from Dashboard → Settings → Commands.',
       'For best anti-ban behaviour, leave the default session warmup on for the first 7 days (15 → 200 msgs/day ramp).',
     ],
     pitfalls: [
-      'Do not connect the same WhatsApp number from two different BotWave sessions, WhatsApp only allows one Linked Device entry per session and the older one will be silently killed.',
+      'Do not connect the same Telegram number from two different BotWave sessions, Telegram only allows one Linked Device entry per session and the older one will be silently killed.',
       'Pairing codes expire after 60 seconds; if you miss the window, click "Regenerate code" instead of typing the old one.',
-      'Avoid pairing on a number that is brand-new (<24 hours old), WhatsApp aggressively rate-limits new accounts and the session may get banned within minutes.',
+      'Avoid pairing on a number that is brand-new (<24 hours old), Telegram aggressively rate-limits new accounts and the session may get banned within minutes.',
     ],
-    relatedHowTo: ['whatsapp-pairing-code', 'connect-whatsapp-bot-qr', 'whatsapp-anti-ban-setup', 'set-up-bot-dashboard'],
-    relatedFix: ['whatsapp-qr-not-scanning', 'whatsapp-pairing-code-expired', 'whatsapp-bot-disconnected'],
-    relatedCompare: ['botwave-vs-baileys', 'botwave-vs-evolution-api', 'best-free-whatsapp-bot'],
+    relatedHowTo: ['telegram-pairing-code', 'connect-telegram-bot-qr', 'telegram-anti-ban-setup', 'set-up-bot-dashboard'],
+    relatedFix: ['telegram-qr-not-scanning', 'telegram-pairing-code-expired', 'telegram-bot-disconnected'],
+    relatedCompare: ['botwave-vs-baileys', 'botwave-vs-evolution-api', 'best-free-telegram-bot'],
     relatedUseCase: ['schools', 'businesses', 'creators'],
     faqs: [
       {
-        question: 'Do I need to be a developer to create a WhatsApp bot with BotWave?',
+        question: 'Do I need to be a developer to create a Telegram bot with BotWave?',
         answer:
           'No. BotWave is no-code from end to end, you sign up, paste a pairing code, and start using commands. There is no JavaScript, Python, or webhook configuration required. Developers who want webhooks and a REST API can opt into them from the Boss plan.',
       },
       {
-        question: 'Is BotWave the same as a WhatsApp Business API account?',
+        question: 'Is BotWave the same as a Telegram Business API account?',
         answer:
-          'No. BotWave runs on a regular WhatsApp (or WhatsApp Business app) account via the Baileys library, it is a Linked Device, the same way WhatsApp Web is a Linked Device. The official WhatsApp Business API (Cloud API) requires a Meta-approved business account, a phone number not used in the consumer app, and is billed per conversation. BotWave is faster to set up and free to start; the Business API is the right choice if you need broadcast-template messaging at scale.',
+          'No. BotWave runs on a regular Telegram (or Telegram Business app) account via the Baileys library, it is a Linked Device, the same way Telegram Web is a Linked Device. The official Telegram Business API (Cloud API) requires a Meta-approved business account, a phone number not used in the consumer app, and is billed per conversation. BotWave is faster to set up and free to start; the Business API is the right choice if you need broadcast-template messaging at scale.',
       },
       {
-        question: 'Will my WhatsApp number get banned for using BotWave?',
+        question: 'Will my Telegram number get banned for using BotWave?',
         answer:
-          'WhatsApp can ban any automation, but BotWave applies a multi-layer anti-ban system specifically designed to look human: session warmup (15→200 msgs/day over 7 days), randomised typing and read receipts, message variation, presence simulation, and quiet-hours throttling. Following the on-boarding warmup period and avoiding bulk outbound to non-opted-in numbers keeps risk low, most BotWave users go years without a ban.',
+          'Telegram can ban any automation, but BotWave applies a multi-layer anti-ban system specifically designed to look human: session warmup (15→200 msgs/day over 7 days), randomised typing and read receipts, message variation, presence simulation, and quiet-hours throttling. Following the on-boarding warmup period and avoiding bulk outbound to non-opted-in numbers keeps risk low, most BotWave users go years without a ban.',
       },
       {
         question: 'How long does the initial setup take?',
         answer:
-          'About two minutes end-to-end if WhatsApp is already installed on your phone. The slowest step is usually finding "Link a Device" in WhatsApp Settings.',
+          'About two minutes end-to-end if Telegram is already installed on your phone. The slowest step is usually finding "Link a Device" in Telegram Settings.',
       },
       {
-        question: 'Can I use BotWave with WhatsApp Business?',
+        question: 'Can I use BotWave with Telegram Business?',
         answer:
-          'Yes. The WhatsApp Business consumer app uses the same protocol as regular WhatsApp for Linked Devices, so pairing works identically. Note that this is the Business *app* (free, mobile-only), not the Business *API* (paid, Meta-approved).',
+          'Yes. The Telegram Business consumer app uses the same protocol as regular Telegram for Linked Devices, so pairing works identically. Note that this is the Business *app* (free, mobile-only), not the Business *API* (paid, Meta-approved).',
       },
     ],
   },
 
-  'auto-reply-whatsapp': {
+  'auto-reply-telegram': {
     intro:
-      'WhatsApp auto-reply turns your bot into a 24/7 receptionist that answers customer questions, sends business hours, or politely defers off-topic chatter while you sleep. BotWave\'s !afk and AI auto-reply modes cover both the "I am away" use case and the "AI answers anything" use case in a single dashboard toggle.',
+      'Telegram auto-reply turns your bot into a 24/7 receptionist that answers customer questions, sends business hours, or politely defers off-topic chatter while you sleep. BotWave\'s !afk and AI auto-reply modes cover both the "I am away" use case and the "AI answers anything" use case in a single dashboard toggle.',
     prerequisites: [
-      'An active BotWave WhatsApp session (see Create a WhatsApp Bot if you have not connected one yet).',
+      'An active BotWave Telegram session (see Create a Telegram Bot if you have not connected one yet).',
       'A clear answer to the question "what should the bot say automatically?". Even a one-sentence reply works, you can iterate.',
       'Optionally, an idea of which chats should auto-reply (e.g. only DMs, or only one specific group).',
     ],
@@ -162,7 +162,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
       {
         title: 'Test it',
-        body: 'Ask a friend to message you, or send a message from a different WhatsApp account. The bot should reply within 1-3 seconds with the AFK text.',
+        body: 'Ask a friend to message you, or send a message from a different Telegram account. The bot should reply within 1-3 seconds with the AFK text.',
       },
       {
         title: 'Turn it off when you are back',
@@ -171,7 +171,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'Incoming WhatsApp messages get an automatic, personalised reply within ~2 seconds, with no input from you. The reply respects your scope and cooldown settings so contacts do not get bombarded.',
+      'Incoming Telegram messages get an automatic, personalised reply within ~2 seconds, with no input from you. The reply respects your scope and cooldown settings so contacts do not get bombarded.',
     tips: [
       'Combine AFK + AI: set AFK as the default and let AI take over for messages that mention specific keywords (e.g. "price", "menu", "hours").',
       'Use the {name} placeholder in your AFK text, it pulls the contact\'s push name so the reply feels personal.',
@@ -179,15 +179,15 @@ export const howToContent: Record<string, HowToContent> = {
       'Schedule recurring AFK windows (e.g. every weekday 11pm-6am) from Dashboard → Auto-reply → Schedule.',
     ],
     pitfalls: [
-      'Do not set AFK to fire in every chat by default, WhatsApp can flag accounts that auto-reply to *every* message as automation. Scope it.',
+      'Do not set AFK to fire in every chat by default, Telegram can flag accounts that auto-reply to *every* message as automation. Scope it.',
       'AI mode counts against your daily AI query limit (10/day on free tier). If you run a busy customer-support flow, upgrade or restrict AI to specific groups.',
     ],
-    relatedHowTo: ['whatsapp-ai-auto-reply', 'whatsapp-afk-status', 'whatsapp-auto-responses', 'whatsapp-business-automation'],
-    relatedFix: ['whatsapp-auto-reply-not-working', 'whatsapp-ai-not-responding'],
+    relatedHowTo: ['telegram-ai-auto-reply', 'telegram-afk-status', 'telegram-auto-responses', 'telegram-business-automation'],
+    relatedFix: ['telegram-auto-reply-not-working', 'telegram-ai-not-responding'],
     relatedUseCase: ['businesses', 'customer-support', 'vendors'],
     faqs: [
       {
-        question: 'Does WhatsApp auto-reply only work for DMs?',
+        question: 'Does Telegram auto-reply only work for DMs?',
         answer:
           'No. By default it works in DMs and groups where the bot is added. You can scope it to DMs only, specific groups only, or specific contacts only from the dashboard.',
       },
@@ -209,9 +209,9 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-group-bot': {
+  'telegram-group-bot': {
     intro:
-      'Adding a bot to a WhatsApp group unlocks anti-spam, welcome messages, AI Q&A, polls, games, and moderation tools that would otherwise eat hours of your time as an admin. BotWave is a regular WhatsApp Linked Device, so adding it to a group is exactly the same as adding any contact, there is no special "bot account" type.',
+      'Adding a bot to a Telegram group unlocks anti-spam, welcome messages, AI Q&A, polls, games, and moderation tools that would otherwise eat hours of your time as an admin. BotWave is a regular Telegram Linked Device, so adding it to a group is exactly the same as adding any contact, there is no special "bot account" type.',
     prerequisites: [
       'You are an admin of the group (you can add and remove members).',
       'A connected BotWave session whose phone number you can save as a contact.',
@@ -220,11 +220,11 @@ export const howToContent: Record<string, HowToContent> = {
     steps: [
       {
         title: 'Save the bot number as a contact',
-        body: 'Add the WhatsApp number tied to your BotWave session to your phone\'s contact list. A name like "BotWave Bot" is fine.',
+        body: 'Add the Telegram number tied to your BotWave session to your phone\'s contact list. A name like "BotWave Bot" is fine.',
         tip: 'You can find the bot number in Dashboard → Sessions → click your session → "Phone number".',
       },
       {
-        title: 'Open the WhatsApp group',
+        title: 'Open the Telegram group',
         body: 'Tap the group name at the top to open Group info.',
       },
       {
@@ -247,7 +247,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'The bot greets new members, deletes spam, runs games, answers AI questions, and runs polls, all inside a single WhatsApp group, with per-group settings you control from the dashboard.',
+      'The bot greets new members, deletes spam, runs games, answers AI questions, and runs polls, all inside a single Telegram group, with per-group settings you control from the dashboard.',
     tips: [
       'Run !rules in the group to publish the rules anytime; new members can pull them up with !rules whenever they join.',
       'Use !tagall (admin-only) sparingly, Mass-tagging too often is the #1 way admins lose group members to "too noisy" frustration.',
@@ -255,16 +255,16 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     pitfalls: [
       'Without admin permissions, the bot cannot delete messages or kick users, most "moderation does nothing" support tickets are actually missing-admin tickets.',
-      'Adding the bot to more than ~50 groups at once on a brand-new session is a fast way to a WhatsApp ban. Stagger group adds over a few days, especially during the warmup period.',
+      'Adding the bot to more than ~50 groups at once on a brand-new session is a fast way to a Telegram ban. Stagger group adds over a few days, especially during the warmup period.',
     ],
-    relatedHowTo: ['whatsapp-welcome-message', 'whatsapp-moderation-setup', 'whatsapp-anti-spam', 'whatsapp-custom-commands'],
-    relatedFix: ['whatsapp-group-bot-not-admin', 'whatsapp-bot-not-joining-group', 'whatsapp-bot-not-reading-messages'],
+    relatedHowTo: ['telegram-welcome-message', 'telegram-moderation-setup', 'telegram-anti-spam', 'telegram-custom-commands'],
+    relatedFix: ['telegram-group-bot-not-admin', 'telegram-bot-not-joining-group', 'telegram-bot-not-reading-messages'],
     relatedUseCase: ['schools', 'businesses', 'churches', 'study-groups'],
     faqs: [
       {
         question: 'Why do I need to make the bot an admin?',
         answer:
-          'WhatsApp\'s permission model only allows admins to delete other members\' messages, kick or ban members, change group settings, and use !tagall. Without admin rights the bot can still respond to commands aimed at it (like !sticker or !ai), but it cannot moderate.',
+          'Telegram\'s permission model only allows admins to delete other members\' messages, kick or ban members, change group settings, and use !tagall. Without admin rights the bot can still respond to commands aimed at it (like !sticker or !ai), but it cannot moderate.',
       },
       {
         question: 'Can the bot be in multiple groups at once?',
@@ -272,7 +272,7 @@ export const howToContent: Record<string, HowToContent> = {
           'Yes. A single BotWave session supports unlimited groups simultaneously. Each group can have its own welcome message, anti-spam rules, and command permissions.',
       },
       {
-        question: 'Does adding the bot count as adding a "participant" for WhatsApp\'s 1024-member limit?',
+        question: 'Does adding the bot count as adding a "participant" for Telegram\'s 1024-member limit?',
         answer:
           'Yes, the bot occupies one member slot like any other participant. In groups close to the limit, plan accordingly.',
       },
@@ -284,11 +284,11 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-ai-assistant': {
+  'telegram-ai-assistant': {
     intro:
-      'BotWave\'s !ai command turns your WhatsApp into a Groq-powered (with optional Gemini fallback) AI assistant. It answers questions, drafts messages, summarises long threads, translates text, and even helps with homework, all inside the chat. No copy-pasting to ChatGPT, no separate app to open.',
+      'BotWave\'s !ai command turns your Telegram into a Groq-powered (with optional Gemini fallback) AI assistant. It answers questions, drafts messages, summarises long threads, translates text, and even helps with homework, all inside the chat. No copy-pasting to ChatGPT, no separate app to open.',
     prerequisites: [
-      'An active BotWave WhatsApp session.',
+      'An active BotWave Telegram session.',
       'The !ai command enabled for that session (it is on by default on free tier with a 10-queries-per-day cap).',
       'Optional: a Groq API key on the Boss plan if you want to use your own quota.',
     ],
@@ -296,7 +296,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         title: 'Send !ai followed by your question',
         body: 'In any chat where the bot is active, type !ai then your question. The bot will reply with an AI-generated answer in 1-3 seconds.',
-        code: '!ai explain the difference between WhatsApp Business app and WhatsApp Business API',
+        code: '!ai explain the difference between Telegram Business app and Telegram Business API',
       },
       {
         title: 'Use reply mode for context-aware answers',
@@ -328,9 +328,9 @@ export const howToContent: Record<string, HowToContent> = {
       'Do not feed the AI personally identifiable information you would not want logged by an upstream AI provider for short-term abuse monitoring.',
       'The free-tier 10/day cap is shared across all chats, if you have 20 chats using AI, plan for the cap to hit fast.',
     ],
-    relatedHowTo: ['whatsapp-ai-auto-reply', 'whatsapp-translate-messages', 'api-key-setup'],
-    relatedFix: ['whatsapp-ai-not-responding'],
-    relatedCompare: ['best-ai-chatbot-whatsapp', 'best-ai-chatbots-2026'],
+    relatedHowTo: ['telegram-ai-auto-reply', 'telegram-translate-messages', 'api-key-setup'],
+    relatedFix: ['telegram-ai-not-responding'],
+    relatedCompare: ['best-ai-chatbot-telegram', 'best-ai-chatbots-2026'],
     relatedUseCase: ['businesses', 'customer-support', 'study-groups'],
     faqs: [
       {
@@ -356,11 +356,11 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-sticker-maker': {
+  'telegram-sticker-maker': {
     intro:
-      'BotWave\'s !sticker command turns any image into a WhatsApp-compliant sticker in under a second. It supports JPGs, PNGs, WebPs (transparent), short videos (auto-trimmed to 6 seconds for animated stickers), and even text with a built-in caption generator. Stickers cost nothing extra against your message quota.',
+      'BotWave\'s !sticker command turns any image into a Telegram-compliant sticker in under a second. It supports JPGs, PNGs, WebPs (transparent), short videos (auto-trimmed to 6 seconds for animated stickers), and even text with a built-in caption generator. Stickers cost nothing extra against your message quota.',
     prerequisites: [
-      'Active WhatsApp session connected to BotWave.',
+      'Active Telegram session connected to BotWave.',
       'An image to convert, sent to any chat where the bot is active.',
       'Optional: a sticker pack name if you want the bot to push the sticker into a named pack.',
     ],
@@ -390,10 +390,10 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'The bot posts a WhatsApp-compliant sticker back to the chat within a couple of seconds. Tapping the sticker shows the pack name (if you set one) and lets the recipient save it to their library.',
+      'The bot posts a Telegram-compliant sticker back to the chat within a couple of seconds. Tapping the sticker shows the pack name (if you set one) and lets the recipient save it to their library.',
     tips: [
       'For best results, send a square or near-square image, heavily landscape images get letterboxed.',
-      'The bot is anti-fingerprint by default: each sticker has microscopic random byte jitter so WhatsApp does not flag repeated sticker creation as automation.',
+      'The bot is anti-fingerprint by default: each sticker has microscopic random byte jitter so Telegram does not flag repeated sticker creation as automation.',
       'Use !sticker text=...your text... to overlay text on the image (great for memes).',
       'Animated stickers count the same against your message quota as static stickers.',
     ],
@@ -401,19 +401,19 @@ export const howToContent: Record<string, HowToContent> = {
       'Videos longer than 6 seconds will be silently trimmed, start with the most important visual moment.',
       'PNG transparency is preserved only on regular !sticker; the --circle crop draws a solid background for the masked corners.',
     ],
-    relatedHowTo: ['create-whatsapp-stickers-bot', 'whatsapp-logo-maker'],
-    relatedFix: ['whatsapp-sticker-not-sending', 'whatsapp-sticker-not-working'],
-    relatedCompare: ['best-sticker-bot-whatsapp'],
+    relatedHowTo: ['create-telegram-stickers-bot', 'telegram-logo-maker'],
+    relatedFix: ['telegram-sticker-not-sending', 'telegram-sticker-not-working'],
+    relatedCompare: ['best-sticker-bot-telegram'],
     faqs: [
       {
         question: 'Are there any size or resolution limits?',
         answer:
-          'WhatsApp\'s own sticker spec caps stickers at 512×512 px and ~100KB for static, 500KB for animated. BotWave auto-resizes and re-encodes to stay within the spec, so you can send any reasonable input.',
+          'Telegram\'s own sticker spec caps stickers at 512×512 px and ~100KB for static, 500KB for animated. BotWave auto-resizes and re-encodes to stay within the spec, so you can send any reasonable input.',
       },
       {
         question: 'Can I save the stickers BotWave makes to a permanent pack?',
         answer:
-          'Yes. Tap the sticker in WhatsApp, then "Add to favourites". For full custom packs, use !sticker pack=PackName when creating, others in the chat can then save the whole pack.',
+          'Yes. Tap the sticker in Telegram, then "Add to favourites". For full custom packs, use !sticker pack=PackName when creating, others in the chat can then save the whole pack.',
       },
       {
         question: 'Does !sticker work on iPhone too?',
@@ -423,9 +423,9 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-moderation-setup': {
+  'telegram-moderation-setup': {
     intro:
-      'Group moderation on WhatsApp is normally a manual nightmare, admins delete messages by hand, warn people in DMs, and chase rule-breakers across multiple chats. BotWave automates the whole loop: anti-spam, anti-link, anti-flood, warning ladders, auto-kick, profanity filter, and a publicly visible mod log so the rest of the group can see fairness in action.',
+      'Group moderation on Telegram is normally a manual nightmare, admins delete messages by hand, warn people in DMs, and chase rule-breakers across multiple chats. BotWave automates the whole loop: anti-spam, anti-link, anti-flood, warning ladders, auto-kick, profanity filter, and a publicly visible mod log so the rest of the group can see fairness in action.',
     prerequisites: [
       'BotWave session connected and added to the group as admin.',
       'A clear sense of the rules you want enforced (e.g. no links from non-admins, max 5 messages per 10s, no profanity).',
@@ -472,14 +472,14 @@ export const howToContent: Record<string, HowToContent> = {
       'Profanity filter false-positives are common in multilingual groups, start with the "mild" list and add words yourself rather than starting on "strict".',
       'If the bot is not an admin, anti-spam can detect spam but cannot delete it.',
     ],
-    relatedHowTo: ['whatsapp-anti-spam', 'whatsapp-anti-link', 'whatsapp-welcome-message', 'set-up-auto-moderation'],
-    relatedFix: ['whatsapp-group-bot-not-admin', 'bot-commands-not-working'],
+    relatedHowTo: ['telegram-anti-spam', 'telegram-anti-link', 'telegram-welcome-message', 'set-up-auto-moderation'],
+    relatedFix: ['telegram-group-bot-not-admin', 'bot-commands-not-working'],
     relatedUseCase: ['schools', 'businesses', 'churches', 'creators'],
     faqs: [
       {
         question: 'Does the bot need admin to delete spam?',
         answer:
-          'Yes. WhatsApp\'s permission model only allows admins to delete other members\' messages. Without admin rights the bot can still issue warnings privately, but the offending message stays in chat.',
+          'Yes. Telegram\'s permission model only allows admins to delete other members\' messages. Without admin rights the bot can still issue warnings privately, but the offending message stays in chat.',
       },
       {
         question: 'How does anti-flood differ from anti-spam?',
@@ -494,11 +494,11 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'download-tiktok-whatsapp': {
+  'download-tiktok-telegram': {
     intro:
-      'Sharing a TikTok in WhatsApp normally means a watermarked, cropped, lossy preview. BotWave\'s !download command pulls the original watermark-free MP4 from TikTok and posts it back into the chat in the highest quality TikTok serves. Same flow works for Instagram Reels, YouTube Shorts, Twitter videos, and Facebook Reels.',
+      'Sharing a TikTok in Telegram normally means a watermarked, cropped, lossy preview. BotWave\'s !download command pulls the original watermark-free MP4 from TikTok and posts it back into the chat in the highest quality TikTok serves. Same flow works for Instagram Reels, YouTube Shorts, Twitter videos, and Facebook Reels.',
     prerequisites: [
-      'Active BotWave WhatsApp session.',
+      'Active BotWave Telegram session.',
       'A TikTok URL, either the full https://www.tiktok.com/@user/video/123... or the shortened vm.tiktok.com link.',
       'The !download command enabled (on by default).',
     ],
@@ -508,7 +508,7 @@ export const howToContent: Record<string, HowToContent> = {
         body: 'In the TikTok app, tap Share → Copy Link. Both the short vm.tiktok.com and the full URL work.',
       },
       {
-        title: 'Paste it into a WhatsApp chat with the bot',
+        title: 'Paste it into a Telegram chat with the bot',
         body: 'Send the URL to any chat where the bot is active.',
       },
       {
@@ -521,8 +521,8 @@ export const howToContent: Record<string, HowToContent> = {
         body: 'Add a flag: `!download --hd` for the highest-quality stream, `!download --audio` to grab the audio track as an MP3.',
       },
       {
-        title: 'Forward the video like any other WhatsApp media',
-        body: 'Once the bot posts the video, it behaves like any other WhatsApp media, forward, save to gallery, react, or quote it.',
+        title: 'Forward the video like any other Telegram media',
+        body: 'Once the bot posts the video, it behaves like any other Telegram media, forward, save to gallery, react, or quote it.',
       },
     ],
     expectedResult:
@@ -537,8 +537,8 @@ export const howToContent: Record<string, HowToContent> = {
       'Some videos are geo-blocked from BotWave\'s server region; in that case the bot returns a clear error instead of a silent failure.',
       'Downloading copyrighted content for redistribution may violate the original platform\'s ToS or copyright law, you are responsible for usage.',
     ],
-    relatedHowTo: ['download-youtube-whatsapp', 'whatsapp-music-download'],
-    relatedFix: ['whatsapp-download-not-working', 'whatsapp-download-failed', 'whatsapp-media-not-sending'],
+    relatedHowTo: ['download-youtube-telegram', 'telegram-music-download'],
+    relatedFix: ['telegram-download-not-working', 'telegram-download-failed', 'telegram-media-not-sending'],
     faqs: [
       {
         question: 'Does !download keep a copy of the video?',
@@ -560,7 +560,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   'telegram-bot-setup': {
     intro:
-      'BotWave runs Telegram bots through @BotFather, the official Telegram tool for creating bots. The whole setup takes about three minutes: ask @BotFather for a bot token, paste it into BotWave, and your Telegram bot has all 150+ commands. Same dashboard, same anti-spam, same AI features as the WhatsApp side.',
+      'BotWave runs Telegram bots through @BotFather, the official Telegram tool for creating bots. The whole setup takes about three minutes: ask @BotFather for a bot token, paste it into BotWave, and your Telegram bot has all 150+ commands. Same dashboard, same anti-spam, same AI features as the Telegram side.',
     prerequisites: [
       'A Telegram account (any account, not your phone number specifically).',
       'A BotWave account at botwave.online.',
@@ -601,7 +601,7 @@ export const howToContent: Record<string, HowToContent> = {
       },
     ],
     expectedResult:
-      'Your Telegram bot is live with 150+ commands, moderates groups, answers AI queries, makes stickers, runs polls, and shares config and analytics with your WhatsApp bot if you have one.',
+      'Your Telegram bot is live with 150+ commands, moderates groups, answers AI queries, makes stickers, runs polls, and shares config and analytics with your Telegram bot if you have one.',
     tips: [
       'Set a bot description and "about" text via BotFather → /setdescription → /setabouttext. These show in the bot\'s profile and help your bot get discovered via Telegram search.',
       'Configure /setcommands in BotFather with a short list so Telegram\'s autocomplete UI works nicely.',
@@ -626,7 +626,7 @@ export const howToContent: Record<string, HowToContent> = {
           'Set /setprivacy to DISABLED in @BotFather. By default Telegram bots only see commands directed at them with @-mentions; with privacy disabled the bot sees all group messages, which is required for anti-spam and analytics.',
       },
       {
-        question: 'Can the same BotWave account run WhatsApp and Telegram bots simultaneously?',
+        question: 'Can the same BotWave account run Telegram and Telegram bots simultaneously?',
         answer:
           'Yes. Each session is independent, but they share the same dashboard, the same configuration interface, and the same usage-quota pool. Most plans include both platforms at no extra cost.',
       },
@@ -705,7 +705,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   // ---- Remaining how-to entries (concise, slug-tuned) ----
 
-  'whatsapp-welcome-message': {
+  'telegram-welcome-message': {
     intro:
       'Welcoming new members manually scales for the first few people and breaks down at the tenth. BotWave\'s welcome bot fires a customised greeting the instant a new member joins, with placeholders for {name}, {group}, and {memberCount}, plus a button to read pinned rules.',
     prerequisites: [
@@ -725,18 +725,18 @@ export const howToContent: Record<string, HowToContent> = {
       'Localise: configure different welcome text per group, e.g. English for one and Yoruba/Hausa/Pidgin for another.',
       'Set the cooldown to 60s so a burst of joiners does not blow up the chat with 50 welcome messages.',
     ],
-    relatedHowTo: ['whatsapp-group-bot', 'whatsapp-moderation-setup', 'whatsapp-custom-commands'],
+    relatedHowTo: ['telegram-group-bot', 'telegram-moderation-setup', 'telegram-custom-commands'],
     relatedUseCase: ['schools', 'churches', 'businesses'],
     faqs: [
       { question: 'Can I have different welcome messages for different groups?', answer: 'Yes. Each group has its own welcome configuration in Dashboard → Groups → click the group → Welcome.' },
       { question: 'Does it work if the bot is not admin?', answer: 'Yes, welcome messages need only member status, not admin. Admin is required for moderation actions like kicking.' },
-      { question: 'Can the welcome trigger include the user\'s WhatsApp display name?', answer: 'Yes via {name}. If the user has not set a public name, it falls back to their phone number.' },
+      { question: 'Can the welcome trigger include the user\'s Telegram display name?', answer: 'Yes via {name}. If the user has not set a public name, it falls back to their phone number.' },
     ],
   },
 
-  'whatsapp-anti-spam': {
+  'telegram-anti-spam': {
     intro:
-      'WhatsApp groups attract spam, link drops, copy-paste broadcasts, repeated emoji walls. BotWave\'s anti-spam is configurable per-group, tracks every offender via a warning ladder, and pairs with anti-flood (catches identical-message repetition) and anti-link (catches URL drops). Together they handle 90% of community spam without admin attention.',
+      'Telegram groups attract spam, link drops, copy-paste broadcasts, repeated emoji walls. BotWave\'s anti-spam is configurable per-group, tracks every offender via a warning ladder, and pairs with anti-flood (catches identical-message repetition) and anti-link (catches URL drops). Together they handle 90% of community spam without admin attention.',
     prerequisites: [
       'BotWave bot in the group as admin (admin is required to delete spam).',
       'A clear definition of "spam" for your community, high-bar communities can be strict, casual hangouts should be lenient.',
@@ -754,8 +754,8 @@ export const howToContent: Record<string, HowToContent> = {
       'Run !modlog weekly to see what the bot has been doing; tune thresholds based on real activity.',
     ],
     pitfalls: ['Anti-spam without bot-admin can only warn, not delete. Promote the bot first.'],
-    relatedHowTo: ['whatsapp-moderation-setup', 'whatsapp-anti-link', 'set-up-auto-moderation'],
-    relatedFix: ['whatsapp-bot-not-reading-messages'],
+    relatedHowTo: ['telegram-moderation-setup', 'telegram-anti-link', 'set-up-auto-moderation'],
+    relatedFix: ['telegram-bot-not-reading-messages'],
     relatedUseCase: ['schools', 'businesses'],
     faqs: [
       { question: 'Does anti-spam delete in real time?', answer: 'Yes. The bot reacts within 1-2 seconds of the offending message appearing.' },
@@ -763,9 +763,9 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-poll-creation': {
+  'telegram-poll-creation': {
     intro:
-      'Native WhatsApp polls are limited to one image, no anonymity, and no ability to schedule. BotWave\'s !poll wraps richer polls, anonymous voting, scheduled close, results pinning, leaderboard integration, and works as both a one-liner and a multi-line "form" syntax.',
+      'Native Telegram polls are limited to one image, no anonymity, and no ability to schedule. BotWave\'s !poll wraps richer polls, anonymous voting, scheduled close, results pinning, leaderboard integration, and works as both a one-liner and a multi-line "form" syntax.',
     prerequisites: ['BotWave bot in the group.', 'A question and at least two options ready.'],
     steps: [
       { title: 'Single-line syntax', body: 'Send: `!poll Best food in Nigeria? | Jollof | Egusi | Eba`. The bot posts a styled poll with vote buttons.', code: '!poll Best food in Nigeria? | Jollof | Egusi | Eba' },
@@ -774,19 +774,19 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Schedule the close', body: 'Add `--close=24h` (or 2h, 7d, etc.). The poll auto-closes and posts results at that time.', code: '!poll --close=24h Today\'s mood? | Great | Tired | Stressed' },
       { title: 'Pin the results', body: 'Reply to the closed poll with `!pin`. The bot pins the results message so latecomers can see.' },
     ],
-    expectedResult: 'A styled poll, optional anonymity, optional scheduled close, and a clear results summary, all without leaving WhatsApp.',
+    expectedResult: 'A styled poll, optional anonymity, optional scheduled close, and a clear results summary, all without leaving Telegram.',
     tips: [
       'Use !vote <number> from any chat to vote programmatically (useful when polls are running across multiple groups).',
       'Polls count once against your message quota when created, then zero per vote.',
     ],
-    relatedHowTo: ['whatsapp-polls-bot', 'telegram-polls'],
+    relatedHowTo: ['telegram-polls-bot', 'telegram-polls'],
     faqs: [
-      { question: 'How many options can a poll have?', answer: 'Up to 12 options per poll, same as native WhatsApp polls.' },
+      { question: 'How many options can a poll have?', answer: 'Up to 12 options per poll, same as native Telegram polls.' },
       { question: 'Can I edit a poll after sending?', answer: 'No, but you can close the current one and start a new one with the corrected options.' },
     ],
   },
 
-  'whatsapp-games-setup': {
+  'telegram-games-setup': {
     intro:
       'BotWave\'s game system is built to keep community groups alive without admin effort: trivia auto-rotates categories, hangman picks new words from a daily pool, word-chain enforces a 5-second turn timer, and chess pairs players with persistent boards. Leaderboards roll up across all games into a single XP score per user.',
     prerequisites: ['BotWave bot in the group with the !play command enabled (on by default).'],
@@ -802,7 +802,7 @@ export const howToContent: Record<string, HowToContent> = {
       'Set up weekly leaderboard reset for fairness, new joiners stand a chance.',
       'Pair games with XP-based command unlocks (e.g. unlock !customcommand at 100 XP).',
     ],
-    relatedHowTo: ['whatsapp-trivia-games', 'whatsapp-leaderboard', 'whatsapp-xp-system'],
+    relatedHowTo: ['telegram-trivia-games', 'telegram-leaderboard', 'telegram-xp-system'],
     relatedUseCase: ['creators', 'gaming-groups'],
     faqs: [
       { question: 'Do games count against my message quota?', answer: 'Each bot response counts as one message. A 10-question trivia game ≈ 20 bot messages.' },
@@ -810,31 +810,31 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'whatsapp-music-download': {
+  'telegram-music-download': {
     intro:
-      'Want the audio from a YouTube or TikTok video stripped out as an MP3? BotWave\'s !download --audio pulls the highest-quality audio track from any of the platforms !download supports, transcodes it to MP3, and posts it back as a regular WhatsApp voice/audio message.',
+      'Want the audio from a YouTube or TikTok video stripped out as an MP3? BotWave\'s !download --audio pulls the highest-quality audio track from any of the platforms !download supports, transcodes it to MP3, and posts it back as a regular Telegram voice/audio message.',
     prerequisites: ['Active BotWave session.', 'A URL pointing at a video or audio-only resource.'],
     steps: [
       { title: 'Copy the source URL', body: 'YouTube, TikTok, Instagram, Twitter, SoundCloud, Spotify-share, Apple Music link.' },
       { title: 'Send !download --audio', body: 'In the chat: `!download --audio <url>`. The bot fetches, transcodes to MP3, posts as audio.', code: '!download --audio https://youtu.be/...' },
       { title: 'Pick a bitrate (optional)', body: 'Add `--bitrate=320` for 320kbps, `--bitrate=192` for default 192kbps.' },
       { title: 'Trim the start/end (optional)', body: '`!download --audio --trim=10s:60s` extracts only the segment between 10s and 1min.' },
-      { title: 'Forward or save', body: 'The audio behaves like any WhatsApp audio file, forward, save, react.' },
+      { title: 'Forward or save', body: 'The audio behaves like any Telegram audio file, forward, save, react.' },
     ],
     expectedResult: 'A clean MP3 file in the chat within a few seconds, ready to forward or save.',
     tips: ['Spotify-share links are resolved to the canonical track and audio is pulled from a public source where allowed.'],
     pitfalls: ['DRM-protected sources (e.g. Apple Music subscription tracks) cannot be downloaded, only public/share-link content.'],
-    relatedHowTo: ['download-tiktok-whatsapp', 'download-youtube-whatsapp'],
-    relatedFix: ['whatsapp-download-failed', 'whatsapp-download-not-working'],
+    relatedHowTo: ['download-tiktok-telegram', 'download-youtube-telegram'],
+    relatedFix: ['telegram-download-failed', 'telegram-download-not-working'],
     faqs: [
       { question: 'Is downloading music from YouTube legal?', answer: 'Depends on the source license and your jurisdiction. For your own non-commercial use of public videos, most jurisdictions consider it personal use; redistribution is a different matter and is your responsibility.' },
       { question: 'What audio formats are supported?', answer: 'MP3 (default), M4A, OGG, WAV, pick via --format=mp3 / m4a / ogg / wav.' },
     ],
   },
 
-  'whatsapp-translate-messages': {
+  'telegram-translate-messages': {
     intro:
-      'Multilingual WhatsApp groups need fast translation without copy-pasting to Google Translate. BotWave\'s !translate uses the same underlying engine as Google\'s free public translate, supports 100+ languages, and works on quoted messages so context stays clean.',
+      'Multilingual Telegram groups need fast translation without copy-pasting to Google Translate. BotWave\'s !translate uses the same underlying engine as Google\'s free public translate, supports 100+ languages, and works on quoted messages so context stays clean.',
     prerequisites: ['Active BotWave session.', 'A message you want translated.'],
     steps: [
       { title: 'Reply to the message with !translate', body: 'Tap-and-hold the message, Reply, then send !translate. The bot detects the source language and translates to your account\'s default target.' },
@@ -845,14 +845,14 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'Multilingual groups feel mono-lingual to every member, no copy-paste, no app-switching.',
     tips: ['Combine with !ai for cross-language Q&A: !ai --translate yo "What time is the meeting?".'],
     pitfalls: ['Slang and abbreviations translate poorly; tweak after if accuracy matters.'],
-    relatedHowTo: ['whatsapp-ai-assistant', 'whatsapp-auto-responses'],
+    relatedHowTo: ['telegram-ai-assistant', 'telegram-auto-responses'],
     faqs: [
       { question: 'How many languages are supported?', answer: 'Over 100, including Yoruba, Hausa, Igbo, Pidgin English, Swahili, Arabic, French, Spanish, Portuguese, Hindi, Mandarin.' },
       { question: 'Is it real-time?', answer: 'Yes, responses come back in 1-2 seconds for short messages, 3-4 seconds for paragraphs.' },
     ],
   },
 
-  'whatsapp-logo-maker': {
+  'telegram-logo-maker': {
     intro:
       'BotWave\'s !logo command generates a quick brand-mark image from a single text prompt, useful for small businesses, community groups, and side-hustle vendors who need a placeholder logo in a hurry. The output is a 1080×1080 PNG ready to set as the group icon or business profile picture.',
     prerequisites: ['Active BotWave session.', 'A name or short phrase for the logo.'],
@@ -860,44 +860,44 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Run !logo with your text', body: '`!logo CampusBites`. The bot generates a logo and replies with the image.', code: '!logo CampusBites' },
       { title: 'Pick a style', body: '`!logo --style=minimal CampusBites`, --modern, --playful, --bold. Each style applies a different colour palette and font weight.' },
       { title: 'Iterate', body: 'Reply !regen to try a different variation with the same prompt. Do this until you like the result.', code: '!regen' },
-      { title: 'Set as group icon', body: 'Long-press the logo, save to gallery, then update the group icon manually. (WhatsApp prevents bots from setting group icons directly.)' },
+      { title: 'Set as group icon', body: 'Long-press the logo, save to gallery, then update the group icon manually. (Telegram prevents bots from setting group icons directly.)' },
     ],
     expectedResult: 'A clean square logo image in chat in a few seconds, ready to use as a placeholder.',
     tips: ['Run !logo with a colour: !logo --color=emerald NewCafe.'],
-    relatedHowTo: ['whatsapp-sticker-maker', 'whatsapp-ai-assistant'],
+    relatedHowTo: ['telegram-sticker-maker', 'telegram-ai-assistant'],
     faqs: [
       { question: 'Can I get the SVG?', answer: 'On Boss plan, yes, append --format=svg.' },
       { question: 'Is the generated logo copyrightable?', answer: 'You own the output for commercial use. Two different prompts may sometimes produce visually similar outputs, pick a result that\'s clearly your own brand.' },
     ],
   },
 
-  'whatsapp-anti-ban-tips': {
+  'telegram-anti-ban-tips': {
     intro:
-      'WhatsApp aggressively bans accounts that look automated. BotWave bakes in a multi-layer anti-ban system, but a few admin-side habits make the difference between "never banned" and "weekly reconnects". This guide is a checklist of every habit that lowers ban risk.',
+      'Telegram aggressively bans accounts that look automated. BotWave bakes in a multi-layer anti-ban system, but a few admin-side habits make the difference between "never banned" and "weekly reconnects". This guide is a checklist of every habit that lowers ban risk.',
     prerequisites: ['Working BotWave session.', 'An honest look at how your bot is currently being used.'],
     steps: [
       { title: 'Leave session warmup on for the first 7 days', body: 'New sessions are capped at 15 msgs/day on day 1 and ramp to 200 by day 7. This is the single biggest ban-risk reducer, do not override it.' },
       { title: 'Keep daily volume below 200 messages on free tier', body: 'BotWave enforces a 200 msg/day cap by default. Going higher is paid-plan territory and requires a "warmed" session (>30 days old).' },
       { title: 'Use randomised reply delays', body: 'Default ON. Each reply has a randomised 1.5-4.5s delay so the bot does not look robotic. Do not disable this unless you know what you are doing.' },
-      { title: 'Avoid bulk outbound to non-opted-in numbers', body: 'WhatsApp\'s primary ban signal is unsolicited bulk messaging. Only send to users who have explicitly opted in (group members count as opt-in; cold lists do not).' },
+      { title: 'Avoid bulk outbound to non-opted-in numbers', body: 'Telegram\'s primary ban signal is unsolicited bulk messaging. Only send to users who have explicitly opted in (group members count as opt-in; cold lists do not).' },
       { title: 'Rotate AI personas', body: 'Identical responses across many groups raise fingerprinting risk. BotWave already rotates responses; do not paste static templates that defeat that.' },
       { title: 'Respect quiet hours', body: 'Default 12am-6am is quiet (slower replies, shorter messages). Keeping it on simulates human sleep patterns.' },
     ],
     expectedResult: 'Sessions that survive months/years without bans, verified by BotWave\'s own internal tracking on long-lived sessions.',
     tips: ['If a session does get banned, do not pair the same number again immediately. Wait 24-48h.'],
     pitfalls: ['Disabling anti-ban "to make replies faster" is the most common self-inflicted ban cause.'],
-    relatedHowTo: ['whatsapp-anti-ban-setup', 'create-whatsapp-bot', 'whatsapp-session-recovery'],
-    relatedFix: ['whatsapp-bot-banned', 'whatsapp-bot-disconnected'],
+    relatedHowTo: ['telegram-anti-ban-setup', 'create-telegram-bot', 'telegram-session-recovery'],
+    relatedFix: ['telegram-bot-banned', 'telegram-bot-disconnected'],
     faqs: [
-      { question: 'Will I ever get banned if I follow this guide?', answer: 'Risk drops dramatically but never to zero, WhatsApp\'s ban algorithm is opaque and changes. Plan for the rare ban (have a backup number) rather than betting on "never".' },
+      { question: 'Will I ever get banned if I follow this guide?', answer: 'Risk drops dramatically but never to zero, Telegram\'s ban algorithm is opaque and changes. Plan for the rare ban (have a backup number) rather than betting on "never".' },
       { question: 'Does using BotWave automatically ban my number?', answer: 'No. BotWave is one of the most ban-conservative automation platforms; thousands of sessions run for months without incident. The risk comes from how the bot is used, not from the platform itself.' },
     ],
   },
 
-  'whatsapp-business-automation': {
+  'telegram-business-automation': {
     intro:
-      'Automating a WhatsApp Business account with BotWave gives you 24/7 customer answers, instant catalog pulls, auto-replies to common questions ("price?", "location?", "hours?"), and a clean handoff to a human when needed. All without paying for WhatsApp Cloud API.',
-    prerequisites: ['A WhatsApp Business app account (free).', 'BotWave connected to it as a Linked Device.', 'A short FAQ list of the questions you get most.'],
+      'Automating a Telegram Business account with BotWave gives you 24/7 customer answers, instant catalog pulls, auto-replies to common questions ("price?", "location?", "hours?"), and a clean handoff to a human when needed. All without paying for Telegram Cloud API.',
+    prerequisites: ['A Telegram Business app account (free).', 'BotWave connected to it as a Linked Device.', 'A short FAQ list of the questions you get most.'],
     steps: [
       { title: 'Build the FAQ playbook', body: 'Dashboard → Business → FAQ. Add 10-20 of your most common customer questions and the canned answers you want the bot to use.' },
       { title: 'Set business hours and AFK', body: 'Dashboard → Business → Hours. Configure your open hours; outside hours, the bot auto-replies "We are closed, will reply when we open at X". Inside hours, the bot defers to FAQ and AI.' },
@@ -907,18 +907,18 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Customers get instant answers to 80%+ of common questions, you get pinged only for the genuinely tricky cases, and conversion data tells you what to improve.',
     tips: ['Build the FAQ from your last 200 customer DMs, those are your real questions, not the ones you assume.'],
-    pitfalls: ['Bulk outbound to non-opted-in numbers is the fastest way to a WhatsApp Business ban. Always opt-in.'],
-    relatedHowTo: ['automate-customer-support', 'bot-for-online-business', 'whatsapp-broadcast-bot'],
+    pitfalls: ['Bulk outbound to non-opted-in numbers is the fastest way to a Telegram Business ban. Always opt-in.'],
+    relatedHowTo: ['automate-customer-support', 'bot-for-online-business', 'telegram-broadcast-bot'],
     relatedUseCase: ['businesses', 'vendors', 'customer-support'],
     faqs: [
-      { question: 'Is this WhatsApp Business API?', answer: 'No. This is the free WhatsApp Business app via the same Linked Device protocol as regular WhatsApp. No Meta approval, no per-conversation pricing.' },
-      { question: 'Can the bot send catalog cards?', answer: 'Native catalog is WhatsApp-Business-only; the bot can reply with a catalog *link* and price summary text. For true rich-card catalog, the official Cloud API is required.' },
+      { question: 'Is this Telegram Business API?', answer: 'No. This is the free Telegram Business app via the same Linked Device protocol as regular Telegram. No Meta approval, no per-conversation pricing.' },
+      { question: 'Can the bot send catalog cards?', answer: 'Native catalog is Telegram-Business-only; the bot can reply with a catalog *link* and price summary text. For true rich-card catalog, the official Cloud API is required.' },
     ],
   },
 
-  'set-up-whatsapp-moderation': {
+  'set-up-telegram-moderation': {
     intro:
-      'WhatsApp moderation at scale = anti-spam + anti-link + anti-flood + warning ladder + auto-kick + transparent mod log. This is the all-in-one walkthrough, different from /whatsapp-moderation-setup in that it is the dashboard-first variant for admins who prefer GUI configuration.',
+      'Telegram moderation at scale = anti-spam + anti-link + anti-flood + warning ladder + auto-kick + transparent mod log. This is the all-in-one walkthrough, different from /telegram-moderation-setup in that it is the dashboard-first variant for admins who prefer GUI configuration.',
     prerequisites: ['Bot is admin in target group.', 'Defined rules.'],
     steps: [
       { title: 'Dashboard → Groups → click group → Moderation', body: 'You will see toggles for Anti-spam, Anti-link, Anti-flood, Profanity filter, Warning ladder.' },
@@ -929,33 +929,33 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'A self-moderating group with clear escalation rules.',
     tips: ['Start permissive; tighten only if data shows offenders slipping through.'],
-    relatedHowTo: ['whatsapp-moderation-setup', 'whatsapp-anti-spam', 'whatsapp-anti-link', 'set-up-auto-moderation'],
+    relatedHowTo: ['telegram-moderation-setup', 'telegram-anti-spam', 'telegram-anti-link', 'set-up-auto-moderation'],
     faqs: [
       { question: 'Bot or dashboard?', answer: 'Both, they edit the same config. Dashboard is friendlier for first-time setup; in-chat commands are faster for tweaks.' },
     ],
   },
 
-  'create-whatsapp-stickers-bot': {
+  'create-telegram-stickers-bot': {
     intro:
-      'Building a dedicated WhatsApp sticker bot used to mean spinning up Baileys, writing media handlers, and dealing with WebP encoding. BotWave gives you a sticker bot in 2 minutes with full sticker-pack support, animated stickers, and customisation.',
+      'Building a dedicated Telegram sticker bot used to mean spinning up Baileys, writing media handlers, and dealing with WebP encoding. BotWave gives you a sticker bot in 2 minutes with full sticker-pack support, animated stickers, and customisation.',
     prerequisites: ['BotWave session connected.', '!sticker command enabled (default).'],
     steps: [
-      { title: 'Pair a session, see "Create a WhatsApp Bot"', body: 'No special config needed for sticker mode; it ships ready.' },
+      { title: 'Pair a session, see "Create a Telegram Bot"', body: 'No special config needed for sticker mode; it ships ready.' },
       { title: 'Configure default sticker pack', body: 'Dashboard → Stickers → Default pack name. Every !sticker reply will be tagged with this pack so recipients can save the whole set.' },
       { title: 'Enable animated stickers', body: 'Dashboard → Stickers → Animated → ON. The bot will accept short videos and return animated WebP.' },
       { title: 'Pin sticker tutorials in your groups', body: 'A pinned message explaining !sticker, !sticker --circle, !sticker --animated drives adoption.' },
     ],
     expectedResult: 'A fully functional sticker bot that members can use without any documentation.',
     tips: ['Use !sticker text=... for meme-style captioned stickers.'],
-    relatedHowTo: ['whatsapp-sticker-maker'],
-    relatedFix: ['whatsapp-sticker-not-sending', 'whatsapp-sticker-not-working'],
-    relatedCompare: ['best-sticker-bot-whatsapp'],
+    relatedHowTo: ['telegram-sticker-maker'],
+    relatedFix: ['telegram-sticker-not-sending', 'telegram-sticker-not-working'],
+    relatedCompare: ['best-sticker-bot-telegram'],
     faqs: [
-      { question: 'Do animated stickers work on iPhone?', answer: 'Yes, WhatsApp added cross-platform animated sticker support in 2021.' },
+      { question: 'Do animated stickers work on iPhone?', answer: 'Yes, Telegram added cross-platform animated sticker support in 2021.' },
     ],
   },
 
-  'whatsapp-ai-auto-reply': {
+  'telegram-ai-auto-reply': {
     intro:
       'AI auto-reply takes Auto-Reply one step further: instead of a fixed string, the bot uses an LLM to generate context-aware replies based on the incoming message. Best for customer-support, FAQ heavy DMs, and study groups.',
     prerequisites: ['Active BotWave session.', '!ai command enabled.', 'A short system prompt with your business/group info.'],
@@ -968,15 +968,15 @@ export const howToContent: Record<string, HowToContent> = {
     expectedResult: 'DMs and configured groups get LLM-generated, context-aware replies within 1-3 seconds.',
     tips: ['Include "escalate to human if uncertain" in the system prompt, the bot will defer rather than hallucinate.'],
     pitfalls: ['AI auto-reply will sometimes get a question wrong. Use the conversation log to spot patterns and improve the prompt.'],
-    relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-assistant', 'api-key-setup'],
-    relatedFix: ['whatsapp-ai-not-responding'],
+    relatedHowTo: ['auto-reply-telegram', 'telegram-ai-assistant', 'api-key-setup'],
+    relatedFix: ['telegram-ai-not-responding'],
     relatedUseCase: ['businesses', 'customer-support'],
     faqs: [
       { question: 'Can I review and approve AI replies before they send?', answer: 'Yes, enable Suggest mode in Dashboard → AI → Auto-reply.' },
     ],
   },
 
-  'whatsapp-group-analytics': {
+  'telegram-group-analytics': {
     intro:
       'BotWave\'s group analytics surface who posts, what gets engagement, when activity spikes, and which commands users actually invoke. Useful for community managers to spot dying groups and double-down on what works.',
     prerequisites: ['BotWave bot in the group with read access.', 'Analytics enabled (Dashboard → Groups → click group → Analytics → ON).'],
@@ -988,13 +988,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'A clear picture of who is engaged and what content drives engagement, refreshed daily.',
     tips: ['Cross-reference analytics with the moderation log to spot if a moderation action affected activity.'],
-    relatedHowTo: ['telegram-analytics', 'whatsapp-member-tracking'],
+    relatedHowTo: ['telegram-analytics', 'telegram-member-tracking'],
     faqs: [
       { question: 'Do you store message content for analytics?', answer: 'No. Only aggregate counts and timestamps. Message bodies are never persisted.' },
     ],
   },
 
-  'whatsapp-scheduled-messages': {
+  'telegram-scheduled-messages': {
     intro:
       'Schedule a message for any future time and BotWave fires it from your session at the exact second, works for daily standups, birthday greetings, weekly digests, sales-launch announcements, prayer-time reminders. No standalone scheduler app needed.',
     prerequisites: ['Active BotWave session.', 'Knowing what time you want the message to fire.'],
@@ -1006,13 +1006,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Messages fire automatically at the scheduled time, with success/failure tracked in the dashboard.',
     tips: ['Schedule "behind the scenes" reminders to yourself in your own DM, a great hack to replace separate reminder apps.'],
-    relatedHowTo: ['whatsapp-broadcast-bot', 'whatsapp-custom-commands'],
+    relatedHowTo: ['telegram-broadcast-bot', 'telegram-custom-commands'],
     faqs: [
       { question: 'What if my session is disconnected when the message is due?', answer: 'The message is queued and fires when the session reconnects, with a "delivered late by Xm" note. To skip late messages, add --skip-if-offline.' },
     ],
   },
 
-  'whatsapp-anti-link': {
+  'telegram-anti-link': {
     intro:
       'Anti-link automatically deletes external URLs posted by non-admin members and applies a warning. You can allowlist trusted domains so legitimate links (your own site, YouTube, etc.) pass through.',
     prerequisites: ['Bot admin in the target group.'],
@@ -1024,29 +1024,29 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Off-topic link drops vanish within 1-2 seconds; legitimate links pass.',
     pitfalls: ['Without bot-admin, anti-link warns but cannot delete.'],
-    relatedHowTo: ['whatsapp-anti-spam', 'whatsapp-moderation-setup'],
+    relatedHowTo: ['telegram-anti-spam', 'telegram-moderation-setup'],
     faqs: [
-      { question: 'Does it block t.me / chat.whatsapp.com invites?', answer: 'Yes by default, those are common spam vectors. Allowlist them if you trust the source.' },
+      { question: 'Does it block t.me / chat.telegram.com invites?', answer: 'Yes by default, those are common spam vectors. Allowlist them if you trust the source.' },
     ],
   },
 
-  'whatsapp-polls-bot': {
+  'telegram-polls-bot': {
     intro:
       'BotWave\'s polls bot is a wrapper around !poll with extras: scheduled close, anonymous mode, pinned results, and per-group quotas. Setup is one toggle.',
     prerequisites: ['Bot in the group.'],
     steps: [
       { title: 'Enable: Dashboard → Polls → ON', body: 'Per-group toggle.' },
       { title: 'Set defaults', body: 'Default close window (24h), default anonymity (off), default emoji palette.' },
-      { title: 'Run polls with !poll', body: 'See "Set up WhatsApp polls" for syntax.' },
+      { title: 'Run polls with !poll', body: 'See "Set up Telegram polls" for syntax.' },
     ],
     expectedResult: 'Polls behave consistently across all your groups.',
-    relatedHowTo: ['whatsapp-poll-creation', 'telegram-polls'],
+    relatedHowTo: ['telegram-poll-creation', 'telegram-polls'],
     faqs: [
       { question: 'Can members create polls or only admins?', answer: 'Configurable per group. Default: members can create; admins can close any.' },
     ],
   },
 
-  'whatsapp-trivia-games': {
+  'telegram-trivia-games': {
     intro:
       'Trivia is BotWave\'s most-played game. Auto-scheduled daily questions keep dying groups alive, and topic packs (science, sports, pop, history) let you target your audience.',
     prerequisites: ['Bot in group; !play enabled.'],
@@ -1058,13 +1058,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Active engagement spikes during trivia time; long-term, members open the group more.',
     tips: ['Cap the daily auto-trivia at 5 questions so it does not flood.'],
-    relatedHowTo: ['whatsapp-games-setup', 'whatsapp-leaderboard', 'whatsapp-xp-system'],
+    relatedHowTo: ['telegram-games-setup', 'telegram-leaderboard', 'telegram-xp-system'],
     faqs: [
       { question: 'Can I import 100 trivia questions at once?', answer: 'Yes, CSV import on Standard plan and up.' },
     ],
   },
 
-  'download-youtube-whatsapp': {
+  'download-youtube-telegram': {
     intro:
       'Same flow as !download for TikTok, but YouTube has a few extras: age-gated content (requires cookies), 4K downloads (Boss plan), and subtitle extraction.',
     prerequisites: ['Active session.', 'YouTube URL.'],
@@ -1076,14 +1076,14 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Watermark-free, high-quality YouTube video posted to the chat.',
     pitfalls: ['Age-gated videos require cookies, see API key setup guide.'],
-    relatedHowTo: ['download-tiktok-whatsapp', 'whatsapp-music-download'],
-    relatedFix: ['whatsapp-download-failed'],
+    relatedHowTo: ['download-tiktok-telegram', 'telegram-music-download'],
+    relatedFix: ['telegram-download-failed'],
     faqs: [
       { question: 'YouTube Shorts?', answer: 'Yes, treated like normal videos.' },
     ],
   },
 
-  'whatsapp-custom-commands': {
+  'telegram-custom-commands': {
     intro:
       'Custom commands let you create your own bot triggers without writing code. !menu for your restaurant menu, !price for current pricing, !rules for group rules, all editable from the dashboard.',
     prerequisites: ['Active session.', 'A list of commands you want to add.'],
@@ -1095,13 +1095,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Your group has its own command vocabulary, all without code.',
     tips: ['Track which custom commands get used most via Dashboard → Analytics → Commands.'],
-    relatedHowTo: ['whatsapp-business-automation', 'bot-engagement-tips'],
+    relatedHowTo: ['telegram-business-automation', 'bot-engagement-tips'],
     faqs: [
       { question: 'How many custom commands can I add?', answer: 'Free: 5 / session. Starter: 20. Standard: 100. Boss: unlimited.' },
     ],
   },
 
-  'whatsapp-broadcast-bot': {
+  'telegram-broadcast-bot': {
     intro:
       'Send the same message to many chats at once, only to your contacts/groups, not random numbers. Used for product launches, prayer reminders, weekly digests, and emergency alerts.',
     prerequisites: ['Active session.', 'List of chats you want to broadcast to.'],
@@ -1112,14 +1112,14 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'A consistent message reaches every listed chat over a 1-5 minute window depending on count.',
     pitfalls: ['Broadcasting to non-opted-in numbers is a top ban trigger. Only broadcast to chats you legitimately own/admin.'],
-    relatedHowTo: ['whatsapp-business-automation', 'whatsapp-scheduled-messages'],
+    relatedHowTo: ['telegram-business-automation', 'telegram-scheduled-messages'],
     relatedUseCase: ['businesses', 'churches', 'creators'],
     faqs: [
       { question: 'How many chats can I broadcast to at once?', answer: 'Free: 5. Starter: 20. Standard: 100. Boss: unlimited.' },
     ],
   },
 
-  'whatsapp-member-tracking': {
+  'telegram-member-tracking': {
     intro:
       'Track who joins, who leaves, and who has been quiet. Useful for community managers to spot churn early and reactivate inactive members.',
     prerequisites: ['Bot in the group; analytics enabled.'],
@@ -1130,13 +1130,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'A current census of your group with engagement signals per member.',
     pitfalls: ['Do not weaponise the data, pinging lurkers too hard creates resentment.'],
-    relatedHowTo: ['whatsapp-group-analytics'],
+    relatedHowTo: ['telegram-group-analytics'],
     faqs: [
       { question: 'Do you store phone numbers?', answer: 'JIDs (which include the number), yes, for bot operation. Numbers are never shared and are deleted on session deletion.' },
     ],
   },
 
-  'whatsapp-afk-status': {
+  'telegram-afk-status': {
     intro:
       '!afk sets an auto-reply for incoming messages while you are away. !back clears it. The status is per-session and respects scope and cooldown settings.',
     prerequisites: ['Active session.'],
@@ -1148,13 +1148,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Messages get a friendly auto-reply while you are away; cleared when you are back.',
     tips: ['Pair with !ai auto-reply for hybrid coverage.'],
-    relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-auto-reply'],
+    relatedHowTo: ['auto-reply-telegram', 'telegram-ai-auto-reply'],
     faqs: [
       { question: 'Will it spam someone if they message me many times?', answer: 'No, there is a per-user cooldown (default 30min) so the same user only gets the AFK reply once per session.' },
     ],
   },
 
-  'whatsapp-anti-delete': {
+  'telegram-anti-delete': {
     intro:
       'Anti-delete re-posts messages that members try to delete from groups, with the original author and a "deleted" tag. Useful for accountability in groups where vanishing claims are a recurring problem.',
     prerequisites: ['Bot admin in the group.'],
@@ -1165,13 +1165,13 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: '"Deleted for everyone" doesn\'t hide behaviour from admins.',
     pitfalls: ['Tell your group the policy is on, using anti-delete covertly is a fast way to lose member trust.'],
-    relatedHowTo: ['whatsapp-moderation-setup'],
+    relatedHowTo: ['telegram-moderation-setup'],
     faqs: [
-      { question: 'Is this against WhatsApp policy?', answer: 'No, the bot is just a regular Linked Device that received the message before it was deleted. It is the same as any user who saw it before deletion.' },
+      { question: 'Is this against Telegram policy?', answer: 'No, the bot is just a regular Linked Device that received the message before it was deleted. It is the same as any user who saw it before deletion.' },
     ],
   },
 
-  'whatsapp-leaderboard': {
+  'telegram-leaderboard': {
     intro:
       'BotWave\'s !leaderboard summarises XP and game wins per user across all your groups. Weekly resets keep new joiners competitive.',
     prerequisites: ['Bot in groups; games enabled.'],
@@ -1182,13 +1182,13 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Reset', body: 'Dashboard → Games → Reset weekly leaderboard. (Auto-resets Sunday by default.)' },
     ],
     expectedResult: 'A clear, contested leaderboard that drives engagement.',
-    relatedHowTo: ['whatsapp-games-setup', 'whatsapp-xp-system'],
+    relatedHowTo: ['telegram-games-setup', 'telegram-xp-system'],
     faqs: [
       { question: 'Can I exclude admins?', answer: 'Yes via Dashboard → Games → Leaderboard → Exclude admins.' },
     ],
   },
 
-  'whatsapp-xp-system': {
+  'telegram-xp-system': {
     intro:
       'Members earn XP for game wins, helpful messages, and command usage. XP unlocks tiers (Newbie → Regular → Veteran) and access to perks like custom command creation.',
     prerequisites: ['Bot in group; XP enabled.'],
@@ -1199,49 +1199,49 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Tier-gate commands', body: 'Optional: require Regular tier for !customcommand to prevent spam.' },
     ],
     expectedResult: 'A gamified progression system that rewards active members.',
-    relatedHowTo: ['whatsapp-leaderboard', 'whatsapp-games-setup'],
+    relatedHowTo: ['telegram-leaderboard', 'telegram-games-setup'],
     faqs: [
       { question: 'Does XP transfer between groups?', answer: 'No by default, each group has its own XP economy. Toggle global XP in Dashboard → Games if you want shared XP.' },
     ],
   },
 
-  'connect-whatsapp-bot-qr': {
+  'connect-telegram-bot-qr': {
     intro:
-      'Pairing code is the recommended way to connect; QR is an alternative if pairing fails. Both produce the same Linked Device entry on WhatsApp.',
-    prerequisites: ['BotWave session.', 'Phone with WhatsApp.'],
+      'Pairing code is the recommended way to connect; QR is an alternative if pairing fails. Both produce the same Linked Device entry on Telegram.',
+    prerequisites: ['BotWave session.', 'Phone with Telegram.'],
     steps: [
       { title: 'Dashboard → Sessions → New', body: 'Pick "Connect via QR" instead of pairing code.' },
-      { title: 'Open WhatsApp → Linked Devices → Link a Device', body: 'Hold the phone\'s camera up to the QR code on the dashboard.' },
+      { title: 'Open Telegram → Linked Devices → Link a Device', body: 'Hold the phone\'s camera up to the QR code on the dashboard.' },
       { title: 'Wait for handshake', body: '5-10 seconds. The session flips to Connected.' },
     ],
-    expectedResult: 'Linked Device entry appears in WhatsApp; BotWave session is live.',
+    expectedResult: 'Linked Device entry appears in Telegram; BotWave session is live.',
     pitfalls: ['QR refreshes every 20s, if it expires, click Regenerate.'],
-    relatedHowTo: ['whatsapp-pairing-code', 'create-whatsapp-bot'],
-    relatedFix: ['whatsapp-qr-not-scanning'],
+    relatedHowTo: ['telegram-pairing-code', 'create-telegram-bot'],
+    relatedFix: ['telegram-qr-not-scanning'],
     faqs: [
-      { question: 'Which is better, QR or pairing code?', answer: 'Pairing code on phones that support it; QR on older WhatsApp versions or if pairing code keeps failing.' },
+      { question: 'Which is better, QR or pairing code?', answer: 'Pairing code on phones that support it; QR on older Telegram versions or if pairing code keeps failing.' },
     ],
   },
 
-  'whatsapp-pairing-code': {
+  'telegram-pairing-code': {
     intro:
-      'The pairing code flow generates an 8-character code that you enter into WhatsApp\'s Linked Devices screen, no camera, no QR scanning. Recommended for desktop-only setups or shared screens where showing a QR is awkward.',
-    prerequisites: ['WhatsApp 2.23+ (older versions don\'t support pairing codes).'],
+      'The pairing code flow generates an 8-character code that you enter into Telegram\'s Linked Devices screen, no camera, no QR scanning. Recommended for desktop-only setups or shared screens where showing a QR is awkward.',
+    prerequisites: ['Telegram 2.23+ (older versions don\'t support pairing codes).'],
     steps: [
       { title: 'Open BotWave Sessions → "Connect via pairing code"', body: 'Wait for the 8-char code to appear with a 60s countdown.' },
-      { title: 'In WhatsApp → Linked Devices → Link a Device → "Link with phone number"', body: 'Enter the 8-char code.' },
+      { title: 'In Telegram → Linked Devices → Link a Device → "Link with phone number"', body: 'Enter the 8-char code.' },
       { title: 'Wait for handshake', body: 'Connection completes in 5-10 seconds.' },
     ],
-    expectedResult: 'Same outcome as QR pairing, a Linked Device entry in WhatsApp.',
+    expectedResult: 'Same outcome as QR pairing, a Linked Device entry in Telegram.',
     pitfalls: ['60s window, regenerate if you miss it.'],
-    relatedHowTo: ['create-whatsapp-bot', 'connect-whatsapp-bot-qr'],
-    relatedFix: ['whatsapp-pairing-code-expired'],
+    relatedHowTo: ['create-telegram-bot', 'connect-telegram-bot-qr'],
+    relatedFix: ['telegram-pairing-code-expired'],
     faqs: [
       { question: 'Does the pairing code reuse?', answer: 'No, single-use, expires after 60s.' },
     ],
   },
 
-  'whatsapp-anti-ban-setup': {
+  'telegram-anti-ban-setup': {
     intro:
       'The dashboard-level anti-ban configuration for sessions. Tunes warmup speed, daily message caps, presence simulation, and quiet hours.',
     prerequisites: ['Active session.'],
@@ -1253,16 +1253,16 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Enable presence simulation', body: 'Bot toggles online/offline based on time-of-day to simulate human behaviour.' },
     ],
     expectedResult: 'Session is maximally protected against fingerprinting.',
-    relatedHowTo: ['whatsapp-anti-ban-tips', 'create-whatsapp-bot'],
-    relatedFix: ['whatsapp-bot-banned'],
+    relatedHowTo: ['telegram-anti-ban-tips', 'create-telegram-bot'],
+    relatedFix: ['telegram-bot-banned'],
     faqs: [
       { question: 'Can I skip warmup?', answer: 'You can, but ban risk on a fresh session goes up by ~5x. Not recommended.' },
     ],
   },
 
-  'whatsapp-session-recovery': {
+  'telegram-session-recovery': {
     intro:
-      'If a session disconnects (phone loses connection, WhatsApp web logout, etc.), BotWave attempts to reconnect using saved credentials. This guide walks through what happens automatically and what to do if it does not.',
+      'If a session disconnects (phone loses connection, Telegram web logout, etc.), BotWave attempts to reconnect using saved credentials. This guide walks through what happens automatically and what to do if it does not.',
     prerequisites: ['A previously-connected session that is now disconnected.'],
     steps: [
       { title: 'Check Dashboard → Sessions', body: 'See the status. "Disconnected" with a recent timestamp usually self-heals within 60s.' },
@@ -1271,15 +1271,15 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'If reconnect fails → pair fresh', body: 'Use pairing code or QR on the same number. Configuration and groups are preserved.' },
     ],
     expectedResult: 'Session restored without losing custom commands, warnings, or analytics history.',
-    pitfalls: ['If WhatsApp shows "Device logged out", reconnect won\'t help, you must re-pair from scratch.'],
-    relatedHowTo: ['create-whatsapp-bot', 'whatsapp-pairing-code'],
-    relatedFix: ['whatsapp-bot-disconnected', 'whatsapp-bot-logged-out', 'bot-session-needs-reauth'],
+    pitfalls: ['If Telegram shows "Device logged out", reconnect won\'t help, you must re-pair from scratch.'],
+    relatedHowTo: ['create-telegram-bot', 'telegram-pairing-code'],
+    relatedFix: ['telegram-bot-disconnected', 'telegram-bot-logged-out', 'bot-session-needs-reauth'],
     faqs: [
-      { question: 'Will I lose group memberships if I re-pair?', answer: 'No, re-pairing is just authenticating again. Group memberships are at the WhatsApp account level, not the session level.' },
+      { question: 'Will I lose group memberships if I re-pair?', answer: 'No, re-pairing is just authenticating again. Group memberships are at the Telegram account level, not the session level.' },
     ],
   },
 
-  'whatsapp-bot-permissions': {
+  'telegram-bot-permissions': {
     intro:
       'BotWave\'s in-app permission system limits which users can invoke which commands. Useful for groups where you want !ai available to everyone but !kick locked to admins.',
     prerequisites: ['Active session; bot in group.'],
@@ -1290,13 +1290,13 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Test', body: 'Try the command as a non-admin, bot will silently ignore or post a permission-denied message.' },
     ],
     expectedResult: 'Granular control over who can do what.',
-    relatedHowTo: ['whatsapp-moderation-setup', 'set-up-bot-dashboard'],
+    relatedHowTo: ['telegram-moderation-setup', 'set-up-bot-dashboard'],
     faqs: [
       { question: 'Can users see which commands they have access to?', answer: 'Yes, !help shows only commands the calling user can invoke.' },
     ],
   },
 
-  'whatsapp-auto-responses': {
+  'telegram-auto-responses': {
     intro:
       'Trigger-based auto-responses: when a member posts a specific keyword or pattern, the bot replies automatically. Different from AI auto-reply in that it is rule-based, deterministic, and free of LLM cost.',
     prerequisites: ['Active session.'],
@@ -1308,28 +1308,9 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Common questions get instant rule-based answers without LLM cost.',
     tips: ['Combine with AI auto-reply: rules handle the common 80%, AI handles the long tail.'],
-    relatedHowTo: ['auto-reply-whatsapp', 'whatsapp-ai-auto-reply', 'whatsapp-custom-commands'],
+    relatedHowTo: ['auto-reply-telegram', 'telegram-ai-auto-reply', 'telegram-custom-commands'],
     faqs: [
       { question: 'How many auto-responses can I have?', answer: 'Free: 5. Starter: 20. Standard: 100. Boss: unlimited.' },
-    ],
-  },
-
-  'create-telegram-bot': {
-    intro:
-      'Same as Telegram Bot Setup, walked through end-to-end with extra detail on BotFather customisation (description, commands list, profile photo).',
-    prerequisites: ['Telegram account.', 'BotWave account.'],
-    steps: [
-      { title: 'Open @BotFather and /newbot', body: '', code: '/newbot' },
-      { title: 'Pick name + username', body: 'Username must end in "bot".' },
-      { title: 'Set the bot photo', body: '/setuserpic in BotFather, send your logo image.' },
-      { title: 'Set description', body: '/setdescription. Visible in the bot\'s profile.' },
-      { title: 'Set commands list', body: '/setcommands. Each line: command - description. Enables Telegram\'s autocomplete UI.' },
-      { title: 'Paste token into BotWave', body: 'Dashboard → Sessions → New Telegram Bot.' },
-    ],
-    expectedResult: 'A fully-branded Telegram bot users discover via search.',
-    relatedHowTo: ['telegram-bot-setup', 'telegram-bot-group'],
-    faqs: [
-      { question: 'Can I change the username later?', answer: 'Once set, the username is permanent. Pick carefully.' },
     ],
   },
 
@@ -1351,23 +1332,6 @@ export const howToContent: Record<string, HowToContent> = {
     ],
   },
 
-  'telegram-anti-spam': {
-    intro:
-      'Same anti-spam philosophy as WhatsApp, applied to Telegram via the Bot API. Tighter rate-limits available since Telegram exposes more granular events.',
-    prerequisites: ['Telegram bot in the group as admin.', 'Privacy mode DISABLED in BotFather.'],
-    steps: [
-      { title: '/antispam on', body: 'In the group.', code: '/antispam on' },
-      { title: 'Tune thresholds', body: 'Default: 5 msgs in 10s = warning.' },
-      { title: 'Pair with /antiflood', body: 'Catches identical reposts.' },
-      { title: 'Configure warning ladder', body: 'Default 3 warnings → kick.' },
-    ],
-    expectedResult: 'Spam handled at Telegram\'s native speed (~200ms).',
-    relatedHowTo: ['whatsapp-anti-spam', 'telegram-moderation'],
-    faqs: [
-      { question: 'Channels too?', answer: 'Not yet, anti-spam is group-only. Channels rarely have spam since only admins post.' },
-    ],
-  },
-
   'telegram-welcome-bot': {
     intro: 'Telegram\'s native welcome bot tools are limited, BotWave adds placeholders, scheduled welcome, captcha, and DM-only mode.',
     prerequisites: ['Telegram bot in the group, privacy mode off.'],
@@ -1378,7 +1342,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Configure DM vs group', body: 'Welcome can post in-group, DM the new member, or both.' },
     ],
     expectedResult: 'Genuine new members get welcomed; join-spam bots get filtered.',
-    relatedHowTo: ['telegram-bot-setup', 'telegram-anti-spam', 'whatsapp-welcome-message'],
+    relatedHowTo: ['telegram-bot-setup', 'telegram-anti-spam', 'telegram-welcome-message'],
     faqs: [
       { question: 'Does captcha annoy real users?', answer: 'Most users solve it in <5 seconds. The drop-off rate from captcha is far lower than the spam reduction.' },
     ],
@@ -1394,14 +1358,14 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Pin results', body: 'Reply to closed poll with /pin.' },
     ],
     expectedResult: 'Richer poll UX than native.',
-    relatedHowTo: ['whatsapp-poll-creation', 'whatsapp-polls-bot'],
+    relatedHowTo: ['telegram-poll-creation', 'telegram-polls-bot'],
     faqs: [
       { question: 'Native Telegram poll or /poll?', answer: 'Both available, native is good for quick polls; /poll adds anonymity, scheduling, pinning.' },
     ],
   },
 
   'telegram-analytics': {
-    intro: 'Telegram exposes more granular events than WhatsApp, so analytics are richer: message-edits, replies, sticker usage, view counts on forwarded posts.',
+    intro: 'Telegram exposes more granular events than Telegram, so analytics are richer: message-edits, replies, sticker usage, view counts on forwarded posts.',
     prerequisites: ['Bot in group with privacy off.'],
     steps: [
       { title: 'Dashboard → Analytics → Telegram', body: 'Pick the chat and date range.' },
@@ -1409,7 +1373,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Channel-specific metrics', body: 'For channels: post views, share rate, forward counts.' },
     ],
     expectedResult: 'A detailed picture of group health.',
-    relatedHowTo: ['whatsapp-group-analytics'],
+    relatedHowTo: ['telegram-group-analytics'],
     faqs: [
       { question: 'Channel subscriber list?', answer: 'Telegram does not expose subscribers to bots for privacy. Only aggregate counts.' },
     ],
@@ -1422,10 +1386,10 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Enable anti-spam: /antispam on', body: '', code: '/antispam on' },
       { title: 'Enable anti-link: /antilink on', body: '' },
       { title: 'Set locks: /locks photo off', body: 'Restrict media types in chat (photos, videos, voice notes, stickers).' },
-      { title: 'Configure warning ladder', body: 'Same as WhatsApp side.' },
+      { title: 'Configure warning ladder', body: 'Same as Telegram side.' },
     ],
     expectedResult: 'Robust group moderation across all major spam vectors.',
-    relatedHowTo: ['telegram-anti-spam', 'whatsapp-moderation-setup', 'telegram-locks'],
+    relatedHowTo: ['telegram-anti-spam', 'telegram-moderation-setup', 'telegram-locks'],
     faqs: [
       { question: 'Captcha for joins?', answer: 'Configured separately in Welcome settings.' },
     ],
@@ -1440,24 +1404,9 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Test', body: 'Send the trigger keyword; verify response.' },
     ],
     expectedResult: 'Rule-based, deterministic auto-replies.',
-    relatedHowTo: ['whatsapp-auto-responses', 'whatsapp-ai-auto-reply'],
+    relatedHowTo: ['telegram-auto-responses', 'telegram-ai-auto-reply'],
     faqs: [
       { question: 'Can I have AI fallback?', answer: 'Yes, set rule-based response with fallback to !ai for unmatched messages.' },
-    ],
-  },
-
-  'telegram-custom-commands': {
-    intro: 'Same as WhatsApp custom commands, on Telegram side. Bonus: Telegram bots can expose commands in the autocomplete menu via /setcommands in BotFather.',
-    prerequisites: ['Telegram bot active.'],
-    steps: [
-      { title: 'Dashboard → Custom commands → New', body: '' },
-      { title: 'Register the command with BotFather', body: '/setcommands so it appears in the user\'s autocomplete.', code: '/setcommands' },
-      { title: 'Test', body: 'Type / in the chat; the command should appear in the dropdown.' },
-    ],
-    expectedResult: 'Custom commands discoverable via Telegram\'s native UI.',
-    relatedHowTo: ['whatsapp-custom-commands'],
-    faqs: [
-      { question: 'How many can I register?', answer: 'Telegram cap: 100 commands per bot.' },
     ],
   },
 
@@ -1487,7 +1436,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: '/forget notename', body: 'Delete a note.', code: '/forget rules' },
     ],
     expectedResult: 'A shared mini-wiki inside Telegram, recallable with one hashtag.',
-    relatedHowTo: ['telegram-filters', 'whatsapp-custom-commands'],
+    relatedHowTo: ['telegram-filters', 'telegram-custom-commands'],
     faqs: [
       { question: 'Who can save notes?', answer: 'Admins only by default; configurable to all members.' },
     ],
@@ -1503,7 +1452,7 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Common questions auto-answered without manual intervention.',
     pitfalls: ['Too many filters = spammy chat. Cap at ~10.'],
-    relatedHowTo: ['telegram-notes', 'whatsapp-auto-responses'],
+    relatedHowTo: ['telegram-notes', 'telegram-auto-responses'],
     faqs: [
       { question: 'Regex support?', answer: 'Yes via /filter --regex.' },
     ],
@@ -1518,7 +1467,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Pick what gets muted', body: 'Welcome messages, auto-replies, AI responses, game prompts. Moderation (anti-spam) stays active.' },
     ],
     expectedResult: 'Bot stays quiet during off-hours; resumes automatically.',
-    relatedHowTo: ['whatsapp-anti-ban-tips'],
+    relatedHowTo: ['telegram-anti-ban-tips'],
     faqs: [
       { question: 'Manual override?', answer: '/nightmode on / off in the chat.' },
     ],
@@ -1534,7 +1483,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: '/topkarma', body: 'Leaderboard.', code: '/topkarma' },
     ],
     expectedResult: 'Members are subtly incentivised to help each other.',
-    relatedHowTo: ['whatsapp-xp-system', 'whatsapp-leaderboard'],
+    relatedHowTo: ['telegram-xp-system', 'telegram-leaderboard'],
     faqs: [
       { question: 'Negative karma?', answer: 'Disabled by default to avoid drama. Enable via Dashboard if you really want it.' },
     ],
@@ -1632,44 +1581,44 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     expectedResult: 'Your own evolving sticker pack drawn from any sticker you reply to.',
     pitfalls: ['Respect the original sticker creator, kanging copyrighted stickers for redistribution may breach copyright.'],
-    relatedHowTo: ['whatsapp-sticker-maker', 'create-whatsapp-stickers-bot'],
+    relatedHowTo: ['telegram-sticker-maker', 'create-telegram-stickers-bot'],
     faqs: [
       { question: 'Animated stickers?', answer: 'Yes, kang preserves animation.' },
     ],
   },
 
-  'migrate-whatsapp-to-telegram': {
-    intro: 'Moving a community from WhatsApp to Telegram is mostly social, but a few BotWave features make the transition smoother: cross-platform announcements, shared bot config, and analytics that map across.',
+  'migrate-telegram-to-telegram': {
+    intro: 'Moving a community from Telegram to Telegram is mostly social, but a few BotWave features make the transition smoother: cross-platform announcements, shared bot config, and analytics that map across.',
     prerequisites: ['BotWave session for both platforms.', 'A migration plan and a target Telegram group.'],
     steps: [
       { title: 'Set up the Telegram bot/group first', body: 'Use the Telegram Bot Setup guide.' },
-      { title: 'Pin a cross-link in the WhatsApp group', body: 'Use !pin with the Telegram invite link.' },
+      { title: 'Pin a cross-link in the Telegram group', body: 'Use !pin with the Telegram invite link.' },
       { title: 'Schedule announcements via BotWave', body: 'Multi-day countdown, posted in both groups simultaneously via Dashboard → Broadcast.' },
-      { title: 'Replicate moderation settings', body: 'Dashboard → Groups → click WhatsApp group → "Copy settings to Telegram group". Anti-spam, welcome, rules, all replicated.' },
-      { title: 'After migration, ramp down WhatsApp bot', body: 'Set a forwarding auto-reply pointing at the Telegram group.' },
+      { title: 'Replicate moderation settings', body: 'Dashboard → Groups → click Telegram group → "Copy settings to Telegram group". Anti-spam, welcome, rules, all replicated.' },
+      { title: 'After migration, ramp down Telegram bot', body: 'Set a forwarding auto-reply pointing at the Telegram group.' },
     ],
     expectedResult: 'Most of your active members make the move without friction.',
-    tips: ['Migrations work best with a 2-week dual-running window, do not cut WhatsApp off cold.'],
+    tips: ['Migrations work best with a 2-week dual-running window, do not cut Telegram off cold.'],
     relatedHowTo: ['run-bot-on-multiple-platforms', 'grow-community-with-bots'],
-    relatedCompare: ['whatsapp-bot-vs-telegram-bot'],
+    relatedCompare: ['telegram-bot-vs-telegram-bot'],
     faqs: [
       { question: 'Can I auto-forward messages?', answer: 'Cross-platform message forwarding is on the roadmap. Today, you can cross-post announcements via Broadcast.' },
     ],
   },
 
   'run-bot-on-multiple-platforms': {
-    intro: 'Running one community across WhatsApp + Telegram (and optionally Telegram userbot) is BotWave\'s default mode. Shared dashboard, shared config, shared analytics.',
+    intro: 'Running one community across Telegram + Telegram (and optionally Telegram userbot) is BotWave\'s default mode. Shared dashboard, shared config, shared analytics.',
     prerequisites: ['Sessions for each platform you want to use.'],
     steps: [
       { title: 'Connect each session as a separate entry', body: 'Dashboard → Sessions → New (one per platform).' },
       { title: 'Group sessions into a "channel"', body: 'Dashboard → Channels → New → select sessions. A channel shares config and analytics.' },
       { title: 'Define shared commands', body: 'Custom commands defined at channel level apply to every member session.' },
-      { title: 'Per-platform overrides', body: 'For features that only make sense on one platform (e.g. WhatsApp stickers vs Telegram /locks), override at session level.' },
+      { title: 'Per-platform overrides', body: 'For features that only make sense on one platform (e.g. Telegram stickers vs Telegram /locks), override at session level.' },
     ],
     expectedResult: 'A unified community ops surface across all platforms.',
-    relatedHowTo: ['migrate-whatsapp-to-telegram', 'grow-community-with-bots', 'set-up-bot-dashboard'],
+    relatedHowTo: ['migrate-telegram-to-telegram', 'grow-community-with-bots', 'set-up-bot-dashboard'],
     faqs: [
-      { question: 'Can the same number be on both?', answer: 'WhatsApp uses your number, Telegram uses an API token tied to a Telegram account, different identifiers. So yes, but they are technically separate identities.' },
+      { question: 'Can the same number be on both?', answer: 'Telegram uses your number, Telegram uses an API token tied to a Telegram account, different identifiers. So yes, but they are technically separate identities.' },
     ],
   },
 
@@ -1684,7 +1633,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Track everything', body: 'Dashboard → Analytics → Customer support metrics: resolution rate, escalation rate, response time.' },
     ],
     expectedResult: '80%+ first-touch resolution rate for FAQ questions; humans handle only the genuinely tricky cases.',
-    relatedHowTo: ['whatsapp-business-automation', 'whatsapp-ai-auto-reply', 'whatsapp-custom-commands'],
+    relatedHowTo: ['telegram-business-automation', 'telegram-ai-auto-reply', 'telegram-custom-commands'],
     relatedUseCase: ['businesses', 'customer-support'],
     faqs: [
       { question: 'Does this work for vendors?', answer: 'Yes, order tracking, price lookups, location, hours, all common patterns built in.' },
@@ -1702,7 +1651,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Run monthly cohort analysis', body: 'Dashboard → Analytics → Cohorts. Spot what drives stickiness.' },
     ],
     expectedResult: 'Healthier engagement metrics, lower churn, and more time freed for high-leverage admin work.',
-    relatedHowTo: ['whatsapp-games-setup', 'bot-engagement-tips', 'whatsapp-broadcast-bot'],
+    relatedHowTo: ['telegram-games-setup', 'bot-engagement-tips', 'telegram-broadcast-bot'],
     relatedUseCase: ['creators', 'schools', 'churches'],
     faqs: [
       { question: 'Is automated content "fake" engagement?', answer: 'Only if it replaces real interaction. Used to seed and sustain conversation, it works well.' },
@@ -1719,7 +1668,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Post-purchase NPS', body: 'Schedule a follow-up 24h after purchase: "How was your experience?". Track NPS in dashboard.' },
     ],
     expectedResult: 'A 24/7 sales/support layer that reduces support load and recovers abandoned revenue.',
-    relatedHowTo: ['whatsapp-business-automation', 'automate-customer-support'],
+    relatedHowTo: ['telegram-business-automation', 'automate-customer-support'],
     relatedUseCase: ['businesses', 'vendors', 'customer-support'],
     faqs: [
       { question: 'Which platforms integrate?', answer: 'Shopify, WooCommerce, Paystack (Nigeria), Flutterwave, BigCommerce. CSV import for everything else.' },
@@ -1737,7 +1686,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Tweak from there', body: 'Profiles are starting points, adjust individual settings as you learn.' },
     ],
     expectedResult: 'Sane moderation in 30 seconds.',
-    relatedHowTo: ['whatsapp-moderation-setup', 'whatsapp-anti-spam', 'telegram-moderation'],
+    relatedHowTo: ['telegram-moderation-setup', 'telegram-anti-spam', 'telegram-moderation'],
     faqs: [
       { question: 'Are profiles editable?', answer: 'Yes, pick one, then tweak.' },
     ],
@@ -1755,7 +1704,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Track ENGAGEMENT (not just activity)', body: 'Active posters vs replies-per-post in Dashboard → Analytics.' },
     ],
     expectedResult: 'A community that grows without becoming noisy.',
-    relatedHowTo: ['grow-community-with-bots', 'whatsapp-games-setup'],
+    relatedHowTo: ['grow-community-with-bots', 'telegram-games-setup'],
     faqs: [
       { question: 'When is the bot too much?', answer: 'When members start muting the group. Pull back if mute rate climbs.' },
     ],
@@ -1774,7 +1723,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Settings', body: 'API keys, BYOK, account preferences, account deletion.' },
     ],
     expectedResult: 'You know where everything lives without searching.',
-    relatedHowTo: ['create-whatsapp-bot', 'set-up-auto-moderation', 'whatsapp-group-analytics'],
+    relatedHowTo: ['create-telegram-bot', 'set-up-auto-moderation', 'telegram-group-analytics'],
     faqs: [
       { question: 'Dashboard on mobile?', answer: 'Fully responsive, same functionality, optimised layout.' },
     ],
@@ -1791,7 +1740,7 @@ export const howToContent: Record<string, HowToContent> = {
       { title: 'Set per-session model override (optional)', body: 'A specific session can pin a specific model, useful for testing.' },
     ],
     expectedResult: 'Your AI usage uses your own provider quota and billing; BotWave\'s daily cap is removed.',
-    relatedHowTo: ['whatsapp-ai-assistant', 'whatsapp-ai-auto-reply'],
+    relatedHowTo: ['telegram-ai-assistant', 'telegram-ai-auto-reply'],
     faqs: [
       { question: 'What if my key gets revoked?', answer: 'BotWave detects the failure and falls back to its shared pool with a notification.' },
       { question: 'Can I use OpenAI?', answer: 'On the Boss plan, yes. Default models are Groq + Gemini because they have free tiers; OpenAI is for users who prefer it.' },

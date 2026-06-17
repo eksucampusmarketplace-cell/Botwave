@@ -43,7 +43,7 @@ export interface CompareContent {
 export const compareContent: Record<string, CompareContent> = {
   'botwave-vs-evolution-api': {
     intro:
-      'BotWave and Evolution API both rely on the Baileys library under the hood, but they target completely different users. Evolution API is a self-hosted REST API for developers who want to wire WhatsApp into custom backends. BotWave is a managed dashboard that gives you a fully working bot in 90 seconds without writing code. This page is the honest, line-by-line comparison.',
+      'BotWave and Evolution API both rely on the Baileys library under the hood, but they target completely different users. Evolution API is a self-hosted REST API for developers who want to wire Telegram into custom backends. BotWave is a managed dashboard that gives you a fully working bot in 90 seconds without writing code. This page is the honest, line-by-line comparison.',
     features: [
       { feature: 'Setup time', botwave: '90 seconds (pairing code in dashboard)', competitor: 'Hours (Docker, env vars, port mapping)' },
       { feature: 'Hosting', botwave: 'We host', competitor: 'You host (Docker / VPS)' },
@@ -60,14 +60,14 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'Open source', botwave: 'Closed product; open SDK', competitor: 'Yes' },
     ],
     botwaveStrengths: [
-      'You get a working WhatsApp bot in 90 seconds without writing code.',
+      'You get a working Telegram bot in 90 seconds without writing code.',
       'Anti-ban (warmup, randomised delays, daily caps) is configured by default, Evolution leaves that to you.',
       'Built-in features (AI, stickers, moderation, downloads) cover the 90% of what most teams need without integration work.',
       'You don\'t maintain a server, monitor Baileys breaking changes, or roll Docker.',
       'Local payment methods (NGN, mobile money) and a free tier vs paying VPS hosting up-front.',
     ],
     altStrengths: [
-      'If you already have a custom backend and just need WhatsApp as a transport, Evolution API plugs in cleanly.',
+      'If you already have a custom backend and just need Telegram as a transport, Evolution API plugs in cleanly.',
       'Source code transparency, you can audit and modify every line.',
       'No vendor lock-in: your data and session credentials live entirely on your server.',
       'Multi-instance scaling: you can run 100 Evolution containers if you have the infra to manage them.',
@@ -80,25 +80,25 @@ export const compareContent: Record<string, CompareContent> = {
       'People who want anti-ban, AI, stickers, downloads, group moderation out of the box.',
     ],
     whoIsAltFor: [
-      'Software companies building WhatsApp into a larger product.',
+      'Software companies building Telegram into a larger product.',
       'Developers who must self-host for compliance or data residency.',
-      'Teams running 50+ concurrent WhatsApp accounts where licensing economics matter.',
+      'Teams running 50+ concurrent Telegram accounts where licensing economics matter.',
       'Anyone with strong DevOps capacity who wants full source control.',
     ],
     verdict:
-      'Pick BotWave if you want a working bot today without touching code or servers. Pick Evolution API if you are a developer building WhatsApp into a custom product and you have the DevOps capacity to host, monitor, and patch a Baileys-based service. Many BotWave customers actually migrated from Evolution because they got tired of the operational burden.',
+      'Pick BotWave if you want a working bot today without touching code or servers. Pick Evolution API if you are a developer building Telegram into a custom product and you have the DevOps capacity to host, monitor, and patch a Baileys-based service. Many BotWave customers actually migrated from Evolution because they got tired of the operational burden.',
     relatedCompare: ['botwave-vs-baileys', 'baileys-vs-evolution-api', 'botwave-vs-greenapi', 'botwave-vs-whapi'],
-    relatedHowTo: ['create-whatsapp-bot', 'whatsapp-anti-ban-setup'],
+    relatedHowTo: ['create-telegram-bot', 'telegram-anti-ban-setup'],
     faqs: [
       { question: 'Can I migrate an Evolution API session into BotWave?', answer: 'Sessions cannot be transferred, re-pair your number in BotWave. Group config, member lists, and analytics start fresh, but the number itself stays the same.' },
       { question: 'Does BotWave use Evolution API internally?', answer: 'No. BotWave uses Baileys directly, the same upstream library Evolution wraps. We skip the Evolution layer.' },
-      { question: 'Is Evolution API officially supported by WhatsApp?', answer: 'No, neither BotWave nor Evolution is "official". Both are Linked Device clients of WhatsApp, same trust model as WhatsApp Web.' },
+      { question: 'Is Evolution API officially supported by Telegram?', answer: 'No, neither BotWave nor Evolution is "official". Both are Linked Device clients of Telegram, same trust model as Telegram Web.' },
     ],
   },
 
   'botwave-vs-baileys': {
     intro:
-      'Baileys is the Node.js library that powers most WhatsApp automation, including BotWave itself. Comparing "BotWave vs Baileys" is really comparing a managed product to a raw library, same way you might compare Vercel to running Node yourself.',
+      'Baileys is the Node.js library that powers most Telegram automation, including BotWave itself. Comparing "BotWave vs Baileys" is really comparing a managed product to a raw library, same way you might compare Vercel to running Node yourself.',
     features: [
       { feature: 'What you get', botwave: 'A working bot', competitor: 'A Node.js library' },
       { feature: 'Code required', botwave: 'None', competitor: 'TypeScript / JavaScript' },
@@ -115,7 +115,7 @@ export const compareContent: Record<string, CompareContent> = {
       'Working bot vs starter code, you skip the hardest 80% of building one.',
       'Battle-tested anti-ban defaults from running thousands of sessions.',
       'Session recovery, reconnect, multi-device handling, all the edge cases solved.',
-      'Updates ride along automatically when WhatsApp protocol changes.',
+      'Updates ride along automatically when Telegram protocol changes.',
     ],
     altStrengths: [
       'Total control, every line is yours.',
@@ -123,12 +123,12 @@ export const compareContent: Record<string, CompareContent> = {
       'Free of charge for code; you only pay your host.',
       'Vendor independence: any bug or feature can be patched by you.',
     ],
-    whoIsBotwaveFor: ['Anyone who isn\'t building WhatsApp infrastructure as their core product.'],
-    whoIsAltFor: ['Engineering teams shipping their own WhatsApp service or product.'],
+    whoIsBotwaveFor: ['Anyone who isn\'t building Telegram infrastructure as their core product.'],
+    whoIsAltFor: ['Engineering teams shipping their own Telegram service or product.'],
     verdict:
-      'Use BotWave to ship a bot. Use Baileys directly if you ARE the WhatsApp infrastructure team.',
-    relatedCompare: ['botwave-vs-evolution-api', 'baileys-vs-evolution-api', 'nodejs-vs-python-whatsapp-bot'],
-    relatedHowTo: ['create-whatsapp-bot', 'whatsapp-anti-ban-setup'],
+      'Use BotWave to ship a bot. Use Baileys directly if you ARE the Telegram infrastructure team.',
+    relatedCompare: ['botwave-vs-evolution-api', 'baileys-vs-evolution-api', 'nodejs-vs-python-telegram-bot'],
+    relatedHowTo: ['create-telegram-bot', 'telegram-anti-ban-setup'],
     faqs: [
       { question: 'Does BotWave open-source its Baileys wrapper?', answer: 'We open-source SDKs for embedding BotWave; the Baileys orchestration is proprietary.' },
       { question: 'Can I use my own Baileys version with BotWave?', answer: 'Not currently, we maintain a pinned, patched fork for stability.' },
@@ -137,7 +137,7 @@ export const compareContent: Record<string, CompareContent> = {
 
   'baileys-vs-evolution-api': {
     intro:
-      'Both are open WhatsApp-automation choices for developers. Baileys is the underlying Node.js library; Evolution API is a REST wrapper around it. Picking between them comes down to whether you want a library or a service.',
+      'Both are open Telegram-automation choices for developers. Baileys is the underlying Node.js library; Evolution API is a REST wrapper around it. Picking between them comes down to whether you want a library or a service.',
     features: [
       { feature: 'Form factor', botwave: 'Library (npm package)', competitor: 'REST service (Docker)' },
       { feature: 'Language', botwave: 'TypeScript/Node only', competitor: 'Any language (HTTP)' },
@@ -154,14 +154,14 @@ export const compareContent: Record<string, CompareContent> = {
     altStrengths: [
       'Use any language: Python, PHP, Go, Ruby.',
       'Multi-session and webhooks out of the box.',
-      'Cleaner separation of concerns (your app vs the WhatsApp layer).',
+      'Cleaner separation of concerns (your app vs the Telegram layer).',
     ],
     whoIsBotwaveFor: ['Note: this row is for Baileys.', 'Node.js teams comfortable working close to the library.'],
     whoIsAltFor: ['Multi-language teams who want a REST contract instead of a library.'],
     verdict:
       'Baileys for Node-native control; Evolution API for language-agnostic REST. Either way, you\'re running infrastructure, for a managed alternative see BotWave.',
     relatedCompare: ['botwave-vs-evolution-api', 'botwave-vs-baileys'],
-    relatedHowTo: ['create-whatsapp-bot'],
+    relatedHowTo: ['create-telegram-bot'],
     faqs: [
       { question: 'Is Evolution just Baileys with REST?', answer: 'Roughly yes, plus multi-session orchestration, webhook routing, and an opinionated process model.' },
     ],
@@ -169,14 +169,14 @@ export const compareContent: Record<string, CompareContent> = {
 
   'botwave-vs-greenapi': {
     intro:
-      'Green API is a hosted WhatsApp gateway popular in Eastern Europe. It exposes REST endpoints and is similar in audience to Evolution API\'s hosted offering. BotWave covers the same ground but adds a no-code dashboard and free tier.',
+      'Green API is a hosted Telegram gateway popular in Eastern Europe. It exposes REST endpoints and is similar in audience to Evolution API\'s hosted offering. BotWave covers the same ground but adds a no-code dashboard and free tier.',
     features: [
       { feature: 'Setup', botwave: '90s pairing code', competitor: 'Account → instance → QR' },
       { feature: 'Dashboard', botwave: 'Full', competitor: 'Minimal' },
       { feature: 'Free tier', botwave: 'Yes, indefinite', competitor: 'Trial; throttled' },
       { feature: 'Pricing model', botwave: 'Tier subscription', competitor: 'Per-message / per-instance' },
       { feature: 'No-code features', botwave: 'Anti-ban, AI, stickers, moderation', competitor: 'API-only; you build features' },
-      { feature: 'Multi-platform', botwave: 'WhatsApp + Telegram + userbot', competitor: 'WhatsApp only' },
+      { feature: 'Multi-platform', botwave: 'Telegram + Telegram + userbot', competitor: 'Telegram only' },
     ],
     botwaveStrengths: [
       'No-code = no engineer required.',
@@ -197,7 +197,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-whapi': {
-    intro: 'WhaPi (whapi.cloud) is another REST-style WhatsApp gateway. Comparison is similar to Green API and Evolution: dashboard-led product (BotWave) vs REST endpoints (WhaPi).',
+    intro: 'WhaPi (whapi.cloud) is another REST-style Telegram gateway. Comparison is similar to Green API and Evolution: dashboard-led product (BotWave) vs REST endpoints (WhaPi).',
     features: [
       { feature: 'Form factor', botwave: 'Dashboard + features', competitor: 'REST API' },
       { feature: 'Free tier', botwave: 'Yes', competitor: 'Trial only' },
@@ -215,7 +215,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-ultramsg': {
-    intro: 'UltraMsg is a pay-per-message WhatsApp REST API. BotWave\'s subscription model and bundled features differ.',
+    intro: 'UltraMsg is a pay-per-message Telegram REST API. BotWave\'s subscription model and bundled features differ.',
     features: [
       { feature: 'Pricing', botwave: 'Tier subscription', competitor: 'Per-message ($X / 1000)' },
       { feature: 'Dashboard', botwave: 'Full', competitor: 'Basic instance manager' },
@@ -233,7 +233,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-chatapi': {
-    intro: 'ChatAPI is one of the older WhatsApp REST gateways. Still in market but less actively developed.',
+    intro: 'ChatAPI is one of the older Telegram REST gateways. Still in market but less actively developed.',
     features: [
       { feature: 'Dashboard', botwave: 'Modern', competitor: 'Legacy' },
       { feature: 'Updates', botwave: 'Frequent', competitor: 'Infrequent' },
@@ -250,7 +250,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-maytapi': {
-    intro: 'Maytapi offers WhatsApp API hosting with simple pricing. Similar trade-off to other REST gateways.',
+    intro: 'Maytapi offers Telegram API hosting with simple pricing. Similar trade-off to other REST gateways.',
     features: [
       { feature: 'Dashboard', botwave: 'Full', competitor: 'Basic' },
       { feature: 'Pricing', botwave: 'Tier subscription', competitor: 'Per-instance monthly' },
@@ -267,7 +267,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-360dialog': {
-    intro: '360dialog is an official WhatsApp Business API BSP (Business Solution Provider). Different category entirely from BotWave\'s unofficial Linked Device approach.',
+    intro: '360dialog is an official Telegram Business API BSP (Business Solution Provider). Different category entirely from BotWave\'s unofficial Linked Device approach.',
     features: [
       { feature: 'Type', botwave: 'Unofficial (Linked Device)', competitor: 'Official Business API (BSP)' },
       { feature: 'Approval needed', botwave: 'No', competitor: 'Meta Business verification required' },
@@ -281,14 +281,14 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Communities, creators, small businesses, anyone without a registered company.'],
     whoIsAltFor: ['Enterprises with high-volume outbound notifications and the budget for it.'],
     verdict: 'Different products. Use BotWave for community/SMB use; 360dialog for enterprise notifications.',
-    relatedCompare: ['botwave-vs-whatsapp-business-api', 'whatsapp-bot-vs-whatsapp-business-api', 'botwave-vs-twilio', 'botwave-vs-messagebird'],
+    relatedCompare: ['botwave-vs-telegram-business-api', 'telegram-bot-vs-telegram-business-api', 'botwave-vs-twilio', 'botwave-vs-messagebird'],
     faqs: [
       { question: 'Can I use both?', answer: 'Yes, many teams use Business API for outbound notifications and BotWave for community/group moderation on a separate number.' },
     ],
   },
 
   'botwave-vs-twilio': {
-    intro: 'Twilio offers a WhatsApp Business API channel. Like 360dialog, this is the official enterprise route, not directly comparable to BotWave\'s unofficial Linked Device.',
+    intro: 'Twilio offers a Telegram Business API channel. Like 360dialog, this is the official enterprise route, not directly comparable to BotWave\'s unofficial Linked Device.',
     features: [
       { feature: 'Type', botwave: 'Unofficial Linked Device', competitor: 'Official Business API' },
       { feature: 'Setup', botwave: '90s', competitor: 'Multi-day Meta + Twilio verification' },
@@ -297,19 +297,19 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'Group support', botwave: 'Yes', competitor: 'No' },
     ],
     botwaveStrengths: ['Speed-to-market', 'Cost predictability', 'Group features'],
-    altStrengths: ['Enterprise SLAs', 'Multi-channel (SMS, Voice, WhatsApp)'],
+    altStrengths: ['Enterprise SLAs', 'Multi-channel (SMS, Voice, Telegram)'],
     whoIsBotwaveFor: ['SMBs, creators, communities.'],
     whoIsAltFor: ['Multi-channel enterprise (already on Twilio).'],
     verdict: 'BotWave for speed and SMB; Twilio if you\'re already running multi-channel on Twilio.',
-    relatedCompare: ['botwave-vs-360dialog', 'botwave-vs-messagebird', 'botwave-vs-whatsapp-business-api'],
-    faqs: [{ question: 'Can I send from Twilio to BotWave bot?', answer: 'No, they live on separate WhatsApp numbers.' }],
+    relatedCompare: ['botwave-vs-360dialog', 'botwave-vs-messagebird', 'botwave-vs-telegram-business-api'],
+    faqs: [{ question: 'Can I send from Twilio to BotWave bot?', answer: 'No, they live on separate Telegram numbers.' }],
   },
 
   'botwave-vs-messagebird': {
     intro: 'MessageBird (now Bird) is another official BSP with multi-channel reach. Same enterprise-vs-SMB framing as Twilio and 360dialog.',
     features: [
       { feature: 'Type', botwave: 'Unofficial', competitor: 'Official Business API' },
-      { feature: 'Channels', botwave: 'WhatsApp + Telegram', competitor: 'WhatsApp, SMS, Email, Voice, more' },
+      { feature: 'Channels', botwave: 'Telegram + Telegram', competitor: 'Telegram, SMS, Email, Voice, more' },
       { feature: 'Pricing', botwave: 'Tier', competitor: 'Per-conversation' },
       { feature: 'Group support', botwave: 'Yes', competitor: 'No' },
     ],
@@ -323,7 +323,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-wati': {
-    intro: 'Wati is a popular team inbox + Business API tool aimed at SMBs that have approval for WhatsApp Business API.',
+    intro: 'Wati is a popular team inbox + Business API tool aimed at SMBs that have approval for Telegram Business API.',
     features: [
       { feature: 'Type', botwave: 'Unofficial bot platform', competitor: 'Team inbox + Business API' },
       { feature: 'Use case', botwave: 'Community & automation', competitor: 'Sales/Support team inbox' },
@@ -341,10 +341,10 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-respond-io': {
-    intro: 'Respond.io is a multi-channel customer messaging platform with WhatsApp Business API.',
+    intro: 'Respond.io is a multi-channel customer messaging platform with Telegram Business API.',
     features: [
       { feature: 'Type', botwave: 'Bot platform', competitor: 'Team inbox' },
-      { feature: 'Channels', botwave: 'WhatsApp + Telegram', competitor: 'WhatsApp, Messenger, Instagram, more' },
+      { feature: 'Channels', botwave: 'Telegram + Telegram', competitor: 'Telegram, Messenger, Instagram, more' },
       { feature: 'Pricing', botwave: 'Lower tiers', competitor: 'Higher' },
       { feature: 'Group features', botwave: 'Yes', competitor: 'No' },
     ],
@@ -358,11 +358,11 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-intercom': {
-    intro: 'Intercom is a heavyweight customer messaging platform with WhatsApp as one channel.',
+    intro: 'Intercom is a heavyweight customer messaging platform with Telegram as one channel.',
     features: [
       { feature: 'Type', botwave: 'Bot platform', competitor: 'Customer messaging suite' },
       { feature: 'Pricing', botwave: '$ tier', competitor: '$$$$ enterprise tier' },
-      { feature: 'WhatsApp groups', botwave: 'Yes', competitor: 'No' },
+      { feature: 'Telegram groups', botwave: 'Yes', competitor: 'No' },
     ],
     botwaveStrengths: ['Affordable', 'Groups', 'Lightweight'],
     altStrengths: ['Massive ecosystem', 'Enterprise features'],
@@ -374,7 +374,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-zendesk': {
-    intro: 'Zendesk is an enterprise help-desk product with WhatsApp as a channel.',
+    intro: 'Zendesk is an enterprise help-desk product with Telegram as a channel.',
     features: [
       { feature: 'Type', botwave: 'Bot platform', competitor: 'Help desk' },
       { feature: 'Pricing', botwave: '$ tier', competitor: '$$$ enterprise' },
@@ -393,7 +393,7 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Freshchat is Freshworks\' messaging product. Like other help-desks, BSP-based.',
     features: [
       { feature: 'Type', botwave: 'Bot', competitor: 'Help desk' },
-      { feature: 'WhatsApp', botwave: 'Linked Device', competitor: 'Business API' },
+      { feature: 'Telegram', botwave: 'Linked Device', competitor: 'Business API' },
       { feature: 'Pricing', botwave: '$', competitor: '$$$' },
     ],
     botwaveStrengths: ['Cheap, fast.'],
@@ -406,9 +406,9 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-chatfuel': {
-    intro: 'Chatfuel is a no-code chatbot builder for Messenger/Instagram with WhatsApp support.',
+    intro: 'Chatfuel is a no-code chatbot builder for Messenger/Instagram with Telegram support.',
     features: [
-      { feature: 'WhatsApp type', botwave: 'Linked Device', competitor: 'Business API' },
+      { feature: 'Telegram type', botwave: 'Linked Device', competitor: 'Business API' },
       { feature: 'Groups', botwave: 'Yes', competitor: 'No' },
       { feature: 'Visual flow builder', botwave: 'No', competitor: 'Yes' },
       { feature: 'AI built-in', botwave: 'Yes', competitor: 'Add-on' },
@@ -423,9 +423,9 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-manychat': {
-    intro: 'Manychat is a popular no-code Messenger/IG/WhatsApp chatbot builder for marketers.',
+    intro: 'Manychat is a popular no-code Messenger/IG/Telegram chatbot builder for marketers.',
     features: [
-      { feature: 'WhatsApp type', botwave: 'Linked Device', competitor: 'Business API' },
+      { feature: 'Telegram type', botwave: 'Linked Device', competitor: 'Business API' },
       { feature: 'Visual flows', botwave: 'No', competitor: 'Yes' },
       { feature: 'Groups', botwave: 'Yes', competitor: 'No' },
       { feature: 'AI', botwave: 'Built-in', competitor: 'Add-on' },
@@ -433,14 +433,14 @@ export const compareContent: Record<string, CompareContent> = {
     botwaveStrengths: ['Group moderation', 'AI included'],
     altStrengths: ['Visual flow builder', 'Marketing automation'],
     whoIsBotwaveFor: ['Community / AI use cases.'],
-    whoIsAltFor: ['Marketers building Messenger/IG/WhatsApp funnels.'],
+    whoIsAltFor: ['Marketers building Messenger/IG/Telegram funnels.'],
     verdict: 'Marketers → Manychat. Communities/AI → BotWave.',
     relatedCompare: ['botwave-vs-chatfuel', 'botwave-vs-manychat-telegram'],
-    faqs: [{ question: 'Manychat WhatsApp limits?', answer: 'Business API only, with all template/pre-approval constraints.' }],
+    faqs: [{ question: 'Manychat Telegram limits?', answer: 'Business API only, with all template/pre-approval constraints.' }],
   },
 
   'botwave-vs-manychat-telegram': {
-    intro: 'Manychat does not have first-class Telegram support; it focuses on Messenger/IG/WhatsApp. For Telegram automation BotWave is the more natural choice.',
+    intro: 'Manychat does not have first-class Telegram support; it focuses on Messenger/IG/Telegram. For Telegram automation BotWave is the more natural choice.',
     features: [
       { feature: 'Telegram support', botwave: 'First-class', competitor: 'Limited/none' },
       { feature: 'Userbot', botwave: 'Yes', competitor: 'No' },
@@ -456,14 +456,14 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-botpress': {
-    intro: 'Botpress is an open-source conversational AI platform with WhatsApp as one channel.',
+    intro: 'Botpress is an open-source conversational AI platform with Telegram as one channel.',
     features: [
-      { feature: 'Type', botwave: 'WhatsApp/Telegram bot', competitor: 'Conversational AI framework' },
+      { feature: 'Type', botwave: 'Telegram/Telegram bot', competitor: 'Conversational AI framework' },
       { feature: 'Self-host', botwave: 'No', competitor: 'Yes' },
       { feature: 'Code required', botwave: 'No', competitor: 'JS/TS coding + flow studio' },
       { feature: 'Pricing', botwave: '$', competitor: 'Free OSS + cloud tier' },
     ],
-    botwaveStrengths: ['Zero-config WhatsApp/Telegram', 'Built-in AI without prompt-engineering setup'],
+    botwaveStrengths: ['Zero-config Telegram/Telegram', 'Built-in AI without prompt-engineering setup'],
     altStrengths: ['Total flow customisation', 'Open source'],
     whoIsBotwaveFor: ['Quick to ship use cases.'],
     whoIsAltFor: ['Conversational AI engineers building complex dialog trees.'],
@@ -489,10 +489,10 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-dialogflow': {
-    intro: 'Dialogflow (Google) is an NLU service. WhatsApp integration via Twilio/360dialog.',
+    intro: 'Dialogflow (Google) is an NLU service. Telegram integration via Twilio/360dialog.',
     features: [
       { feature: 'Type', botwave: 'Bot platform', competitor: 'NLU only' },
-      { feature: 'WhatsApp', botwave: 'Built-in', competitor: 'Via BSP' },
+      { feature: 'Telegram', botwave: 'Built-in', competitor: 'Via BSP' },
       { feature: 'AI', botwave: 'Multi-model (Groq, Gemini)', competitor: 'Google NLU' },
     ],
     botwaveStrengths: ['Bundled', 'No BSP needed.'],
@@ -505,9 +505,9 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-chatbot': {
-    intro: 'Generic "Chatbot" comparison, usually means specific products. BotWave is purpose-built for WhatsApp/Telegram.',
+    intro: 'Generic "Chatbot" comparison, usually means specific products. BotWave is purpose-built for Telegram/Telegram.',
     features: [
-      { feature: 'WhatsApp groups', botwave: 'Yes', competitor: 'Varies' },
+      { feature: 'Telegram groups', botwave: 'Yes', competitor: 'Varies' },
       { feature: 'AI', botwave: 'Built-in', competitor: 'Varies' },
       { feature: 'Pricing', botwave: 'Tier', competitor: 'Varies' },
     ],
@@ -521,7 +521,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-callmebot': {
-    intro: 'CallMeBot is a simple URL-based WhatsApp notification service, not a bot platform.',
+    intro: 'CallMeBot is a simple URL-based Telegram notification service, not a bot platform.',
     features: [
       { feature: 'Type', botwave: 'Full bot', competitor: 'Notification URL' },
       { feature: 'Two-way', botwave: 'Yes', competitor: 'One-way (send only)' },
@@ -536,7 +536,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-venom-bot': {
-    intro: 'Venom-Bot is an open-source WhatsApp Web library, alternative to Baileys but less actively maintained.',
+    intro: 'Venom-Bot is an open-source Telegram Web library, alternative to Baileys but less actively maintained.',
     features: [
       { feature: 'Type', botwave: 'Product', competitor: 'Library' },
       { feature: 'Hosting', botwave: 'Managed', competitor: 'You' },
@@ -552,7 +552,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-baymax-bot': {
-    intro: 'Baymax is a community WhatsApp bot. Smaller user base than BotWave.',
+    intro: 'Baymax is a community Telegram bot. Smaller user base than BotWave.',
     features: [
       { feature: 'Active development', botwave: 'Daily', competitor: 'Slower' },
       { feature: 'Anti-ban', botwave: 'Pro-grade', competitor: 'Basic' },
@@ -567,8 +567,8 @@ export const compareContent: Record<string, CompareContent> = {
     faqs: [{ question: 'OSS?', answer: 'BotWave SDK is open; runtime closed.' }],
   },
 
-  'botwave-vs-whatsapp-web-plus': {
-    intro: 'WhatsApp Web Plus is a browser extension that adds features to WhatsApp Web. Not a bot platform.',
+  'botwave-vs-telegram-web-plus': {
+    intro: 'Telegram Web Plus is a browser extension that adds features to Telegram Web. Not a bot platform.',
     features: [
       { feature: 'Type', botwave: 'Bot', competitor: 'Browser extension' },
       { feature: 'Multi-account', botwave: 'Yes', competitor: 'No' },
@@ -577,14 +577,14 @@ export const compareContent: Record<string, CompareContent> = {
     botwaveStrengths: ['Real automation'],
     altStrengths: ['UI personal use'],
     whoIsBotwaveFor: ['Anyone automating.'],
-    whoIsAltFor: ['Personal WhatsApp Web users.'],
+    whoIsAltFor: ['Personal Telegram Web users.'],
     verdict: 'Different categories.',
-    relatedCompare: ['botwave-vs-whatsapp-business-api'],
-    faqs: [{ question: 'Is the extension risky?', answer: 'Browser-extensions modifying WhatsApp Web can be flagged; use cautiously.' }],
+    relatedCompare: ['botwave-vs-telegram-business-api'],
+    faqs: [{ question: 'Is the extension risky?', answer: 'Browser-extensions modifying Telegram Web can be flagged; use cautiously.' }],
   },
 
-  'botwave-vs-whatsapp-business-api': {
-    intro: 'WhatsApp Business API (Cloud API / On-Premises API) is Meta\'s official enterprise channel. BotWave\'s unofficial Linked Device approach is a different category, see the dedicated FAQ.',
+  'botwave-vs-telegram-business-api': {
+    intro: 'Telegram Business API (Cloud API / On-Premises API) is Meta\'s official enterprise channel. BotWave\'s unofficial Linked Device approach is a different category, see the dedicated FAQ.',
     features: [
       { feature: 'Approval', botwave: 'None', competitor: 'Required' },
       { feature: 'Templates', botwave: 'No', competitor: 'Required for outbound' },
@@ -597,14 +597,14 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['SMB, community, dev/prototyping.'],
     whoIsAltFor: ['Enterprise notifications.'],
     verdict: 'Pick the right tool for the scale.',
-    relatedCompare: ['botwave-vs-360dialog', 'botwave-vs-twilio', 'whatsapp-bot-vs-whatsapp-business-api'],
+    relatedCompare: ['botwave-vs-360dialog', 'botwave-vs-twilio', 'telegram-bot-vs-telegram-business-api'],
     faqs: [{ question: 'Can I switch later?', answer: 'Yes, many teams start on BotWave and add a Business API number when they grow.' }],
   },
 
   'botwave-vs-group-booster-bot': {
     intro: 'Group Booster is a Telegram bot for group analytics. BotWave is a multi-platform bot that includes Telegram group features.',
     features: [
-      { feature: 'Platforms', botwave: 'WhatsApp + Telegram', competitor: 'Telegram only' },
+      { feature: 'Platforms', botwave: 'Telegram + Telegram', competitor: 'Telegram only' },
       { feature: 'Analytics', botwave: 'Yes', competitor: 'Yes (specialised)' },
       { feature: 'Moderation', botwave: 'Yes', competitor: 'Limited' },
     ],
@@ -713,7 +713,7 @@ export const compareContent: Record<string, CompareContent> = {
   'botwave-vs-telegram-bots': {
     intro: 'Generic comparison: BotWave\'s multi-platform approach vs single-platform Telegram bot products.',
     features: [
-      { feature: 'WhatsApp included', botwave: 'Yes', competitor: 'No' },
+      { feature: 'Telegram included', botwave: 'Yes', competitor: 'No' },
       { feature: 'Single dashboard', botwave: 'Yes', competitor: 'No (separate per bot)' },
       { feature: 'AI multi-provider', botwave: 'Yes', competitor: 'Varies' },
     ],
@@ -728,9 +728,9 @@ export const compareContent: Record<string, CompareContent> = {
 
   /* -------------------------- Listicle / best-of comparisons -------------------------- */
 
-  'best-whatsapp-bots-2026': {
+  'best-telegram-bots-2026': {
     intro:
-      '6 WhatsApp bot platforms compared on features, anti-ban, dashboard, AI, and pricing, ranked for 2026 based on real-world testing across 200+ sessions.',
+      '6 Telegram bot platforms compared on features, anti-ban, dashboard, AI, and pricing, ranked for 2026 based on real-world testing across 200+ sessions.',
     features: [
       { feature: '1. BotWave', botwave: 'Best overall, free tier, anti-ban, AI, multi-platform', competitor: '-' },
       { feature: '2. Evolution API', botwave: 'Best for self-hosted REST', competitor: '-' },
@@ -754,14 +754,14 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Anyone wanting a bot, not a project.'],
     whoIsAltFor: ['Specialised needs (enterprise, REST-only, self-host).'],
     verdict: 'BotWave ranks #1 for the most users. Niches go to specialised tools.',
-    relatedCompare: ['best-free-whatsapp-bot', 'best-free-bots-2026', 'whatsapp-automation-tools-ranked', 'best-ai-chatbot-whatsapp'],
+    relatedCompare: ['best-free-telegram-bot', 'best-free-bots-2026', 'telegram-automation-tools-ranked', 'best-ai-chatbot-telegram'],
     faqs: [
-      { question: 'Why not WhatsApp Business API on the list?', answer: 'It is a different category (official BSP). See WhatsApp Bot vs Business API.' },
+      { question: 'Why not Telegram Business API on the list?', answer: 'It is a different category (official BSP). See Telegram Bot vs Business API.' },
     ],
   },
 
-  'best-free-whatsapp-bot': {
-    intro: 'Five "free" WhatsApp bot options compared. "Free" varies, some are free libraries, some are free tiers, some are free trials.',
+  'best-free-telegram-bot': {
+    intro: 'Five "free" Telegram bot options compared. "Free" varies, some are free libraries, some are free tiers, some are free trials.',
     features: [
       { feature: 'BotWave free tier', botwave: 'Forever; 1 session; AI 10/day', competitor: '-' },
       { feature: 'Baileys', botwave: 'Free library; you host', competitor: '-' },
@@ -774,12 +774,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Anyone wanting free without ops.'],
     whoIsAltFor: ['Developers OK with hosting costs.'],
     verdict: 'BotWave is the only no-server free option.',
-    relatedCompare: ['best-whatsapp-bots-2026', 'free-vs-paid-whatsapp-bots'],
+    relatedCompare: ['best-telegram-bots-2026', 'free-vs-paid-telegram-bots'],
     faqs: [{ question: 'BotWave free limits?', answer: '1 session, 200 msg/day cap (auto), 10 AI/day, no priority support.' }],
   },
 
   'best-free-bots-2026': {
-    intro: 'Free bot options across WhatsApp + Telegram for 2026.',
+    intro: 'Free bot options across Telegram + Telegram for 2026.',
     features: [
       { feature: 'BotWave', botwave: 'WA + TG, free tier', competitor: '-' },
       { feature: 'Baileys', botwave: 'WA library', competitor: '-' },
@@ -791,26 +791,8 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Both platforms.'],
     whoIsAltFor: ['Developers.'],
     verdict: 'BotWave for non-devs; libraries for devs.',
-    relatedCompare: ['best-free-whatsapp-bot', 'best-whatsapp-bots-2026', 'best-telegram-bots-2026'],
+    relatedCompare: ['best-free-telegram-bot', 'best-telegram-bots-2026', 'best-telegram-bots-2026'],
     faqs: [{ question: 'Indefinite?', answer: 'BotWave\'s free tier is indefinite.' }],
-  },
-
-  'best-telegram-bots-2026': {
-    intro: 'Top Telegram bots for 2026, moderation, analytics, and multi-purpose.',
-    features: [
-      { feature: 'BotWave', botwave: 'Cross-platform with TG support', competitor: '-' },
-      { feature: 'Rose', botwave: 'Heavy moderation', competitor: '-' },
-      { feature: 'GroupHelp', botwave: 'Moderation', competitor: '-' },
-      { feature: 'Combot', botwave: 'Analytics', competitor: '-' },
-      { feature: 'Shieldy', botwave: 'Captcha', competitor: '-' },
-    ],
-    botwaveStrengths: ['Cross-platform; AI; unified dashboard.'],
-    altStrengths: ['TG-specific depth (Rose, GroupHelp).'],
-    whoIsBotwaveFor: ['Cross-platform admins.'],
-    whoIsAltFor: ['TG-only specialists.'],
-    verdict: 'Use BotWave + Rose/GroupHelp together for serious TG groups.',
-    relatedCompare: ['best-telegram-moderation-bots-2026', 'best-telegram-bot-builders-2026'],
-    faqs: [{ question: 'Userbots?', answer: 'BotWave supports userbots; others don\'t.' }],
   },
 
   'best-telegram-bot-builders-2026': {
@@ -849,7 +831,7 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'best-ai-chatbots-2026': {
-    intro: 'AI chatbots usable in WhatsApp or Telegram in 2026.',
+    intro: 'AI chatbots usable in Telegram or Telegram in 2026.',
     features: [
       { feature: 'BotWave', botwave: 'Groq + Gemini bundled', competitor: '-' },
       { feature: 'OpenAI ChatGPT (manual)', botwave: 'Direct API; you wire', competitor: '-' },
@@ -861,12 +843,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Most.'],
     whoIsAltFor: ['Specialised.'],
     verdict: 'BotWave for quick AI assistant; Botpress for conversation design.',
-    relatedCompare: ['best-ai-chatbot-whatsapp', 'best-whatsapp-bots-2026'],
+    relatedCompare: ['best-ai-chatbot-telegram', 'best-telegram-bots-2026'],
     faqs: [{ question: 'Models?', answer: 'Groq (llama 70b/8b), Gemini Flash, OpenAI via BYOK.' }],
   },
 
-  'best-ai-chatbot-whatsapp': {
-    intro: 'AI chatbots specifically for WhatsApp in 2026.',
+  'best-ai-chatbot-telegram': {
+    intro: 'AI chatbots specifically for Telegram in 2026.',
     features: [
       { feature: 'BotWave', botwave: 'Native WA + multi-AI', competitor: '-' },
       { feature: 'ManyChat AI', botwave: 'Marketing flows', competitor: '-' },
@@ -878,12 +860,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Personal/community assistants.'],
     whoIsAltFor: ['Marketing funnels.'],
     verdict: 'BotWave for AI assistants; ManyChat/Chatfuel for funnels.',
-    relatedCompare: ['best-ai-chatbots-2026', 'best-whatsapp-bots-2026'],
+    relatedCompare: ['best-ai-chatbots-2026', 'best-telegram-bots-2026'],
     faqs: [{ question: 'Cost?', answer: 'Free tier: 10/day. Paid: unlimited up to fair-use cap.' }],
   },
 
   'best-anti-spam-bots': {
-    intro: 'Anti-spam tools for WhatsApp and Telegram.',
+    intro: 'Anti-spam tools for Telegram and Telegram.',
     features: [
       { feature: 'BotWave', botwave: 'WA + TG anti-spam', competitor: '-' },
       { feature: 'Shieldy', botwave: 'TG captcha', competitor: '-' },
@@ -926,11 +908,11 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Cross.'],
     whoIsAltFor: ['TG.'],
     verdict: 'BotWave first; supplement with TG specialists.',
-    relatedCompare: ['best-moderation-bots', 'best-whatsapp-group-management-tools'],
+    relatedCompare: ['best-moderation-bots', 'best-telegram-group-management-tools'],
     faqs: [{ question: 'Welcome WA?', answer: 'Yes, fully customisable.' }],
   },
 
-  'best-whatsapp-group-management-tools': {
+  'best-telegram-group-management-tools': {
     intro: 'WA-specific group management.',
     features: [
       { feature: 'BotWave', botwave: 'Native', competitor: '-' },
@@ -942,12 +924,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Moderators.'],
     whoIsAltFor: ['Marketers (with care).'],
     verdict: 'BotWave for moderation; specialised for marketing.',
-    relatedCompare: ['best-group-management-bots', 'best-whatsapp-automation-tools-2026'],
+    relatedCompare: ['best-group-management-bots', 'best-telegram-automation-tools-2026'],
     faqs: [{ question: 'WA bulk?', answer: 'BotWave caps responsibly; do not use for unsolicited bulk.' }],
   },
 
-  'best-sticker-bot-whatsapp': {
-    intro: 'WhatsApp sticker maker bots compared.',
+  'best-sticker-bot-telegram': {
+    intro: 'Telegram sticker maker bots compared.',
     features: [
       { feature: 'BotWave', botwave: '!sticker, animated, square, packs', competitor: '-' },
       { feature: 'Sticker Studio', botwave: 'Standalone app', competitor: '-' },
@@ -958,12 +940,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Communities.'],
     whoIsAltFor: ['Personal use.'],
     verdict: 'BotWave for groups; standalone for personal.',
-    relatedCompare: ['best-whatsapp-bots-2026'],
+    relatedCompare: ['best-telegram-bots-2026'],
     faqs: [{ question: 'Animated?', answer: 'Yes, !sticker on a short video.' }],
   },
 
-  'best-whatsapp-automation-tools-2026': {
-    intro: 'Top WhatsApp automation platforms across business + community use cases in 2026.',
+  'best-telegram-automation-tools-2026': {
+    intro: 'Top Telegram automation platforms across business + community use cases in 2026.',
     features: [
       { feature: 'BotWave', botwave: 'No-code, free tier', competitor: '-' },
       { feature: 'Evolution API', botwave: 'OSS REST', competitor: '-' },
@@ -975,12 +957,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['SMB + community.'],
     whoIsAltFor: ['Specific verticals.'],
     verdict: 'BotWave is the default no-code option.',
-    relatedCompare: ['best-whatsapp-bots-2026', 'whatsapp-automation-tools-ranked'],
+    relatedCompare: ['best-telegram-bots-2026', 'telegram-automation-tools-ranked'],
     faqs: [{ question: 'Why not WA Business app?', answer: 'It has no automation API.' }],
   },
 
-  'best-whatsapp-bot-nigeria': {
-    intro: 'WhatsApp bots evaluated specifically for Nigerian users, payment, support, language.',
+  'best-telegram-bot-nigeria': {
+    intro: 'Telegram bots evaluated specifically for Nigerian users, payment, support, language.',
     features: [
       { feature: 'BotWave', botwave: 'Naira pricing, mobile money, local community, Nigerian English', competitor: '-' },
       { feature: 'Evolution', botwave: 'No local payment', competitor: '-' },
@@ -991,12 +973,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Nigerian creators, vendors, communities.'],
     whoIsAltFor: ['Diaspora / international ops.'],
     verdict: 'BotWave is the obvious local pick.',
-    relatedCompare: ['best-free-whatsapp-bot', 'best-whatsapp-bots-2026'],
+    relatedCompare: ['best-free-telegram-bot', 'best-telegram-bots-2026'],
     faqs: [{ question: 'Pidgin?', answer: 'Yes, AI mode supports Pidgin.' }],
   },
 
-  'whatsapp-automation-tools-ranked': {
-    intro: 'Full ranking of every WhatsApp automation tool, mapped by capability vs price.',
+  'telegram-automation-tools-ranked': {
+    intro: 'Full ranking of every Telegram automation tool, mapped by capability vs price.',
     features: [
       { feature: 'BotWave', botwave: 'High capability, low price', competitor: '-' },
       { feature: 'Evolution API', botwave: 'High capability (DIY), self-host cost', competitor: '-' },
@@ -1008,12 +990,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Most.'],
     whoIsAltFor: ['Enterprise.'],
     verdict: 'BotWave wins value-for-money.',
-    relatedCompare: ['best-whatsapp-bots-2026', 'best-whatsapp-automation-tools-2026'],
+    relatedCompare: ['best-telegram-bots-2026', 'best-telegram-automation-tools-2026'],
     faqs: [{ question: 'Methodology?', answer: 'Hands-on test across 200+ sessions, 6 months.' }],
   },
 
-  'whatsapp-bot-vs-whatsapp-business-api': {
-    intro: 'Direct comparison of unofficial WhatsApp bots (Linked Device) vs official WhatsApp Business API.',
+  'telegram-bot-vs-telegram-business-api': {
+    intro: 'Direct comparison of unofficial Telegram bots (Linked Device) vs official Telegram Business API.',
     features: [
       { feature: 'Setup speed', botwave: '90s', competitor: 'Multi-day' },
       { feature: 'Cost', botwave: 'Low fixed', competitor: 'Per-conversation' },
@@ -1027,12 +1009,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['SMB, community.'],
     whoIsAltFor: ['Enterprise outbound.'],
     verdict: 'Right tool for the scale; many run both on separate numbers.',
-    relatedCompare: ['botwave-vs-whatsapp-business-api', 'botwave-vs-360dialog', 'botwave-vs-twilio'],
+    relatedCompare: ['botwave-vs-telegram-business-api', 'botwave-vs-360dialog', 'botwave-vs-twilio'],
     faqs: [{ question: 'Mixed setup?', answer: 'Common, Business API on number A for outbound, BotWave on number B for groups.' }],
   },
 
-  'whatsapp-business-vs-bot': {
-    intro: 'WhatsApp Business (app) vs WhatsApp bot, different products.',
+  'telegram-business-vs-bot': {
+    intro: 'Telegram Business (app) vs Telegram bot, different products.',
     features: [
       { feature: 'Type', botwave: 'Automation bot', competitor: 'Manual app' },
       { feature: 'Automation', botwave: 'Full', competitor: 'Quick replies, away message' },
@@ -1043,7 +1025,7 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Anyone past quick-replies.'],
     whoIsAltFor: ['Manual small biz.'],
     verdict: 'Upgrade path: Business app → BotWave.',
-    relatedCompare: ['whatsapp-bot-vs-whatsapp-business-api'],
+    relatedCompare: ['telegram-bot-vs-telegram-business-api'],
     faqs: [{ question: 'Both?', answer: 'Yes, Business app + BotWave on same number works.' }],
   },
 
@@ -1083,24 +1065,7 @@ export const compareContent: Record<string, CompareContent> = {
     faqs: [{ question: 'Pyrogram or Telethon?', answer: 'Both still good; BotWave uses Telethon-style under the hood.' }],
   },
 
-  'telegram-automation-tools-ranked': {
-    intro: 'Full ranking of Telegram automation tools in 2026.',
-    features: [
-      { feature: 'BotWave', botwave: 'Bots + userbots, cross-platform', competitor: '-' },
-      { feature: 'Rose / Combot / Shieldy', botwave: 'TG mod specialists', competitor: '-' },
-      { feature: 'Pyrogram / Telethon', botwave: 'Libraries', competitor: '-' },
-      { feature: 'Manybot', botwave: 'Visual bot builder', competitor: '-' },
-    ],
-    botwaveStrengths: ['Unified WA + TG control.'],
-    altStrengths: ['Specialised depth.'],
-    whoIsBotwaveFor: ['Cross-platform.'],
-    whoIsAltFor: ['TG-only depth.'],
-    verdict: 'BotWave for breadth.',
-    relatedCompare: ['best-telegram-bots-2026', 'best-telegram-moderation-bots-2026', 'dead-telegram-userbots-2026'],
-    faqs: [{ question: 'Userbot in BotWave?', answer: 'Yes.' }],
-  },
-
-  'free-vs-paid-whatsapp-bots': {
+  'free-vs-paid-telegram-bots': {
     intro: 'When does the free tier stop being enough? Honest breakdown of when to upgrade.',
     features: [
       { feature: 'Sessions', botwave: '1 free / 3+ paid', competitor: '-' },
@@ -1115,12 +1080,12 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Free = personal/community. Paid = business.'],
     whoIsAltFor: ['-'],
     verdict: 'Start free; upgrade when you hit the quota.',
-    relatedCompare: ['best-free-whatsapp-bot', 'best-whatsapp-bots-2026'],
+    relatedCompare: ['best-free-telegram-bot', 'best-telegram-bots-2026'],
     faqs: [{ question: 'Refund?', answer: '14-day money-back on paid tiers.' }],
   },
 
-  'nodejs-vs-python-whatsapp-bot': {
-    intro: 'Node.js (Baileys) vs Python (yowsup/openwa) for building WhatsApp bots, for developers comparing libraries.',
+  'nodejs-vs-python-telegram-bot': {
+    intro: 'Node.js (Baileys) vs Python (yowsup/openwa) for building Telegram bots, for developers comparing libraries.',
     features: [
       { feature: 'Active maintenance', botwave: 'Baileys very active', competitor: 'yowsup stale' },
       { feature: 'Performance', botwave: 'Node fast', competitor: 'Python fine for low volume' },
