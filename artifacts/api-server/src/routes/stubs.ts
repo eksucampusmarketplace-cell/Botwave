@@ -270,6 +270,6 @@ router.use("/study", requireAuthFallback);
 router.use("/miniapp", requireAuthFallback);
 router.use("/game", notConfigured);
 router.use("/indexnow", notConfigured);
-router.use("/evolution", notConfigured);
+// /evolution removed (WhatsApp-only, not applicable)
 
 export default router;

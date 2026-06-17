@@ -41,7 +41,7 @@ export default function DocsPage() {
 
           <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Documentation</h1>
           <p className="text-lg text-[var(--text-secondary)] mb-12">
-            Setup guides, feature tutorials, and troubleshooting for Telegram Bot and Telegram Bot.
+            Setup guides, feature tutorials, and troubleshooting for your Telegram bot.
           </p>
 
           {popular.length > 0 && (

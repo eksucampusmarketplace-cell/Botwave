@@ -4,7 +4,7 @@ import Footer from '@/components/layout/Footer';
 
 const layers = [
   {
-    name: 'SafeConnect Layer',
+    name: 'SecureToken Layer',
     tagline: 'Your device, your IP',
     description: 'BotWave uses the official Telegram Bot API — fully sanctioned by Telegram. Your bot token is unique to your account and is never shared. Telegram bots are officially encouraged, meaning zero platform ban risk.',
     color: 'emerald',

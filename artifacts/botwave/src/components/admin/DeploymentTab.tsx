@@ -17,7 +17,7 @@ interface ContainerInfo {
   state: string;
   ports: string;
   created: string;
-  service: 'botwave' | 'evolution' | 'infra';
+  service: 'botwave' | 'infra';
 }
 
 interface DeployRecord {
@@ -36,7 +36,7 @@ interface BackupInfo {
   size: number;
 }
 
-type ServiceTab = 'botwave' | 'evolution';
+type ServiceTab = 'botwave';
 type SubTab = 'containers' | 'env' | 'history' | 'help';
 
 // ── Sensitive key patterns (values are masked) ─────────
@@ -80,7 +80,7 @@ const VPS_HELP = [
       { cmd: 'docker ps -a', desc: 'Show all containers (including stopped)' },
       { cmd: 'docker logs botwave_web --tail 50', desc: 'See last 50 lines of web logs' },
       { cmd: 'docker logs botwave_telegram --tail 50', desc: 'See last 50 lines of Telegram bot logs' },
-      { cmd: 'docker logs evolution_api --tail 50', desc: 'See last 50 lines of Evolution API logs' },
+      
       { cmd: 'docker restart botwave_web', desc: 'Restart just the web container' },
       { cmd: 'docker restart botwave_telegram', desc: 'Restart just the Telegram bot' },
       { cmd: 'docker stop botwave_web', desc: 'Stop the web container' },
@@ -100,7 +100,7 @@ const VPS_HELP = [
     category: 'Env Vars (Manual Edit)',
     commands: [
       { cmd: 'nano /opt/botwave/deploy/.env.botwave', desc: 'Edit BotWave env vars' },
-      { cmd: 'nano /opt/botwave/deploy/.env.evolution', desc: 'Edit Evolution API env vars' },
+      
       { cmd: 'cat /opt/botwave/deploy/.env.botwave', desc: 'View BotWave env vars' },
     ],
   },
@@ -131,8 +131,8 @@ const VPS_HELP = [
 const CONTAINER_LABELS: Record<string, string> = {
   botwave_web: 'Web (Frontend)',
   botwave_telegram: 'Telegram Bot',
-  evolution_api: 'Evolution API',
-  evolution_postgres: 'Postgres DB',
+
+
   botwave_redis: 'Redis Cache',
   botwave_nginx: 'Nginx (HTTPS)',
   botwave_certbot: 'Certbot (SSL)',
@@ -147,9 +147,9 @@ export default function DeploymentTab() {
   // Container state
   const [containers, setContainers] = useState<{
     botwave: ContainerInfo[];
-    evolution: ContainerInfo[];
+
     infra: ContainerInfo[];
-  }>({ botwave: [], evolution: [], infra: [] });
+  }>({ botwave: [], infra: [] });
   const [loadingContainers, setLoadingContainers] = useState(false);
 
   // Env vars state
@@ -319,7 +319,7 @@ export default function DeploymentTab() {
 
   // ── Deploy Handlers ──────────────────────────────────
 
-  const handleDeploy = async (target: 'all' | 'botwave' | 'evolution', gitPull: boolean = true) => {
+  const handleDeploy = async (target: 'all' | 'botwave', gitPull: boolean = true) => {
     if (!confirm(`Deploy ${target}${gitPull ? ' (with git pull)' : ' (restart only)'}? This may take 1-3 minutes.`)) return;
     setDeploying(true);
     setDeployOutput('Deploying... this may take a few minutes.\n');
@@ -379,7 +379,7 @@ export default function DeploymentTab() {
 
   const serviceTabs: { id: ServiceTab; label: string }[] = [
     { id: 'botwave', label: 'BOTWAVE' },
-    { id: 'evolution', label: 'EVOLUTION API' },
+
   ];
 
   const subTabs: { id: SubTab; label: string }[] = [
@@ -389,7 +389,7 @@ export default function DeploymentTab() {
     { id: 'help', label: 'VPS HELP' },
   ];
 
-  const serviceContainers = serviceTab === 'botwave' ? containers.botwave : containers.evolution;
+  const serviceContainers = containers.botwave;
 
   return (
     <div className="p-4 sm:p-6">
@@ -432,7 +432,7 @@ export default function DeploymentTab() {
           DEPLOY BOTWAVE
         </button>
         <button
-          onClick={() => handleDeploy('evolution', true)}
+          onClick={() => handleDeploy('botwave', true)}
           disabled={deploying}
           className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-mono text-xs px-4 py-2.5 transition-colors"
         >

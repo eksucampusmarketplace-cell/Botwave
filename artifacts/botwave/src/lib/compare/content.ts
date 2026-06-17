@@ -41,9 +41,9 @@ export interface CompareContent {
 /* -------------------------- Direct competitor head-to-heads -------------------------- */
 
 export const compareContent: Record<string, CompareContent> = {
-  'botwave-vs-evolution-api': {
+  'botwave-vs-telegraf': {
     intro:
-      'BotWave and Evolution API both rely on the Baileys library under the hood, but they target completely different users. Evolution API is a self-hosted REST API for developers who want to wire Telegram into custom backends. BotWave is a managed dashboard that gives you a fully working bot in 90 seconds without writing code. This page is the honest, line-by-line comparison.',
+      'BotWave and Telegraf both rely on the Telegram Bot API under the hood, but they target completely different users. Telegraf is a self-hosted REST API for developers who want to wire Telegram into custom backends. BotWave is a managed dashboard that gives you a fully working bot in 90 seconds without writing code. This page is the honest, line-by-line comparison.',
     features: [
       { feature: 'Setup time', botwave: '90 seconds (pairing code in dashboard)', competitor: 'Hours (Docker, env vars, port mapping)' },
       { feature: 'Hosting', botwave: 'We host', competitor: 'You host (Docker / VPS)' },
@@ -55,22 +55,22 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'AI chat (Groq/Gemini)', botwave: 'Built-in !ai', competitor: 'BYO; you wire it up' },
       { feature: 'Multi-session UI', botwave: 'Yes, in dashboard', competitor: 'Yes, but no UI; via API' },
       { feature: 'Pricing, free tier', botwave: 'Yes, 1 session free forever', competitor: 'Free if you self-host (server cost ~$5/mo)' },
-      { feature: 'Pricing, paid', botwave: 'NGN-friendly tiers, BYOK supported', competitor: 'Self-host only; or pay for managed Evolution hosts' },
-      { feature: 'Updates / maintenance', botwave: 'We patch Baileys breaking changes', competitor: 'You patch' },
+      { feature: 'Pricing, paid', botwave: 'NGN-friendly tiers, BYOK supported', competitor: 'Self-host only; or pay for managed Telegraf hosts' },
+      { feature: 'Updates / maintenance', botwave: 'We patch library breaking changes', competitor: 'You patch' },
       { feature: 'Open source', botwave: 'Closed product; open SDK', competitor: 'Yes' },
     ],
     botwaveStrengths: [
       'You get a working Telegram bot in 90 seconds without writing code.',
-      'Anti-ban (warmup, randomised delays, daily caps) is configured by default, Evolution leaves that to you.',
+      'Anti-ban (warmup, randomised delays, daily caps) is configured by default, Telegraf leaves that to you.',
       'Built-in features (AI, stickers, moderation, downloads) cover the 90% of what most teams need without integration work.',
-      'You don\'t maintain a server, monitor Baileys breaking changes, or roll Docker.',
+      'You don\'t maintain a server, monitor library breaking changes, or roll Docker.',
       'Local payment methods (NGN, mobile money) and a free tier vs paying VPS hosting up-front.',
     ],
     altStrengths: [
-      'If you already have a custom backend and just need Telegram as a transport, Evolution API plugs in cleanly.',
+      'If you already have a custom backend and just need Telegram as a transport, Telegraf plugs in cleanly.',
       'Source code transparency, you can audit and modify every line.',
       'No vendor lock-in: your data and session credentials live entirely on your server.',
-      'Multi-instance scaling: you can run 100 Evolution containers if you have the infra to manage them.',
+      'Multi-instance scaling: you can run 100 Telegraf containers if you have the infra to manage them.',
       'No per-message pricing concerns since you only pay your server bill.',
     ],
     whoIsBotwaveFor: [
@@ -86,19 +86,19 @@ export const compareContent: Record<string, CompareContent> = {
       'Anyone with strong DevOps capacity who wants full source control.',
     ],
     verdict:
-      'Pick BotWave if you want a working bot today without touching code or servers. Pick Evolution API if you are a developer building Telegram into a custom product and you have the DevOps capacity to host, monitor, and patch a Baileys-based service. Many BotWave customers actually migrated from Evolution because they got tired of the operational burden.',
-    relatedCompare: ['botwave-vs-baileys', 'baileys-vs-evolution-api', 'botwave-vs-greenapi', 'botwave-vs-whapi'],
+      'Pick BotWave if you want a working bot today without touching code or servers. Pick Telegraf if you are a developer building Telegram into a custom product and you have the DevOps capacity to host, monitor, and patch a Telegraf-based service. Many BotWave customers actually migrated from Telegraf because they got tired of the operational burden.',
+    relatedCompare: ['botwave-vs-telegraf', 'telegraf-vs-node-telegram-bot-api', 'botwave-vs-greenapi', 'botwave-vs-whapi'],
     relatedHowTo: ['create-telegram-bot', 'telegram-anti-ban-setup'],
     faqs: [
-      { question: 'Can I migrate an Evolution API session into BotWave?', answer: 'Sessions cannot be transferred, re-pair your number in BotWave. Group config, member lists, and analytics start fresh, but the number itself stays the same.' },
-      { question: 'Does BotWave use Evolution API internally?', answer: 'No. BotWave uses Baileys directly, the same upstream library Evolution wraps. We skip the Evolution layer.' },
-      { question: 'Is Evolution API officially supported by Telegram?', answer: 'No, neither BotWave nor Evolution is "official". Both are Linked Device clients of Telegram, same trust model as Telegram Web.' },
+      { question: 'Can I migrate an Telegraf session into BotWave?', answer: 'Sessions cannot be transferred, re-pair your number in BotWave. Group config, member lists, and analytics start fresh, but the number itself stays the same.' },
+      { question: 'Does BotWave use Telegraf internally?', answer: 'No. BotWave uses the Telegram Bot API directly, the same Telegram Bot API. We skip the Telegraf layer.' },
+      { question: 'Is Telegraf officially supported by Telegram?', answer: 'No, neither BotWave nor Telegraf is "official". Both are Linked Device clients of Telegram, same trust model as Telegram Web.' },
     ],
   },
 
-  'botwave-vs-baileys': {
+  'botwave-vs-telegraf': {
     intro:
-      'Baileys is the Node.js library that powers most Telegram automation, including BotWave itself. Comparing "BotWave vs Baileys" is really comparing a managed product to a raw library, same way you might compare Vercel to running Node yourself.',
+      'Telegraf is the Node.js library that powers most Telegram automation, including BotWave itself. Comparing "BotWave vs Telegraf" is really comparing a managed product to a raw library, same way you might compare Vercel to running Node yourself.',
     features: [
       { feature: 'What you get', botwave: 'A working bot', competitor: 'A Node.js library' },
       { feature: 'Code required', botwave: 'None', competitor: 'TypeScript / JavaScript' },
@@ -108,7 +108,7 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'Anti-ban heuristics', botwave: 'Pre-configured', competitor: 'You design and tune' },
       { feature: 'Dashboard', botwave: 'Yes', competitor: 'No (build it)' },
       { feature: 'Time to first message', botwave: '~90 seconds', competitor: '4-10 hours of dev work' },
-      { feature: 'Maintenance', botwave: 'We track Baileys updates', competitor: 'You handle breaking changes' },
+      { feature: 'Maintenance', botwave: 'We track Telegraf updates', competitor: 'You handle breaking changes' },
       { feature: 'Pricing', botwave: 'Free tier + tiers from NGN-friendly prices', competitor: 'Free library + your server costs' },
     ],
     botwaveStrengths: [
@@ -126,18 +126,18 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Anyone who isn\'t building Telegram infrastructure as their core product.'],
     whoIsAltFor: ['Engineering teams shipping their own Telegram service or product.'],
     verdict:
-      'Use BotWave to ship a bot. Use Baileys directly if you ARE the Telegram infrastructure team.',
-    relatedCompare: ['botwave-vs-evolution-api', 'baileys-vs-evolution-api', 'nodejs-vs-python-telegram-bot'],
+      'Use BotWave to ship a bot. Use Telegraf directly if you ARE the Telegram infrastructure team.',
+    relatedCompare: ['botwave-vs-telegraf', 'telegraf-vs-node-telegram-bot-api', 'nodejs-vs-python-telegram-bot'],
     relatedHowTo: ['create-telegram-bot', 'telegram-anti-ban-setup'],
     faqs: [
-      { question: 'Does BotWave open-source its Baileys wrapper?', answer: 'We open-source SDKs for embedding BotWave; the Baileys orchestration is proprietary.' },
-      { question: 'Can I use my own Baileys version with BotWave?', answer: 'Not currently, we maintain a pinned, patched fork for stability.' },
+      { question: 'Does BotWave open-source its Telegraf wrapper?', answer: 'We open-source SDKs for embedding BotWave; the Telegraf orchestration is proprietary.' },
+      { question: 'Can I use my own Telegraf version with BotWave?', answer: 'Not currently, we maintain a pinned, patched fork for stability.' },
     ],
   },
 
-  'baileys-vs-evolution-api': {
+  'telegraf-vs-node-telegram-bot-api': {
     intro:
-      'Both are open Telegram-automation choices for developers. Baileys is the underlying Node.js library; Evolution API is a REST wrapper around it. Picking between them comes down to whether you want a library or a service.',
+      'Both are open Telegram-automation choices for developers. Telegraf is the underlying Node.js library; Telegraf is a REST wrapper around it. Picking between them comes down to whether you want a library or a service.',
     features: [
       { feature: 'Form factor', botwave: 'Library (npm package)', competitor: 'REST service (Docker)' },
       { feature: 'Language', botwave: 'TypeScript/Node only', competitor: 'Any language (HTTP)' },
@@ -147,7 +147,7 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'Sustained by', botwave: 'Open-source community', competitor: 'Atendai team + community' },
     ],
     botwaveStrengths: [
-      'Most flexibility, direct API to every Baileys feature.',
+      'Most flexibility, direct API to every Telegraf feature.',
       'No HTTP overhead.',
       'Smaller surface area to debug.',
     ],
@@ -156,20 +156,20 @@ export const compareContent: Record<string, CompareContent> = {
       'Multi-session and webhooks out of the box.',
       'Cleaner separation of concerns (your app vs the Telegram layer).',
     ],
-    whoIsBotwaveFor: ['Note: this row is for Baileys.', 'Node.js teams comfortable working close to the library.'],
+    whoIsBotwaveFor: ['Note: this row is for Telegraf.', 'Node.js teams comfortable working close to the library.'],
     whoIsAltFor: ['Multi-language teams who want a REST contract instead of a library.'],
     verdict:
-      'Baileys for Node-native control; Evolution API for language-agnostic REST. Either way, you\'re running infrastructure, for a managed alternative see BotWave.',
-    relatedCompare: ['botwave-vs-evolution-api', 'botwave-vs-baileys'],
+      'Telegraf for Node-native control; Telegraf for language-agnostic REST. Either way, you\'re running infrastructure, for a managed alternative see BotWave.',
+    relatedCompare: ['botwave-vs-telegraf', 'botwave-vs-telegraf'],
     relatedHowTo: ['create-telegram-bot'],
     faqs: [
-      { question: 'Is Evolution just Baileys with REST?', answer: 'Roughly yes, plus multi-session orchestration, webhook routing, and an opinionated process model.' },
+      { question: 'Is this just Telegraf with REST?', answer: 'Roughly yes, plus multi-session orchestration, webhook routing, and an opinionated process model.' },
     ],
   },
 
   'botwave-vs-greenapi': {
     intro:
-      'Green API is a hosted Telegram gateway popular in Eastern Europe. It exposes REST endpoints and is similar in audience to Evolution API\'s hosted offering. BotWave covers the same ground but adds a no-code dashboard and free tier.',
+      'Green API is a hosted Telegram gateway popular in Eastern Europe. It exposes REST endpoints and is similar in audience to Telegraf\'s hosted offering. BotWave covers the same ground but adds a no-code dashboard and free tier.',
     features: [
       { feature: 'Setup', botwave: '90s pairing code', competitor: 'Account → instance → QR' },
       { feature: 'Dashboard', botwave: 'Full', competitor: 'Minimal' },
@@ -190,14 +190,14 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Most users who don\'t want to write integration code.'],
     whoIsAltFor: ['Developers who only need REST send/receive and prefer pay-as-you-go.'],
     verdict: 'BotWave if you want features without code; Green API if you want bare-bones REST.',
-    relatedCompare: ['botwave-vs-evolution-api', 'botwave-vs-whapi', 'botwave-vs-ultramsg', 'botwave-vs-maytapi', 'botwave-vs-chatapi'],
+    relatedCompare: ['botwave-vs-telegraf', 'botwave-vs-whapi', 'botwave-vs-ultramsg', 'botwave-vs-maytapi', 'botwave-vs-chatapi'],
     faqs: [
-      { question: 'Is Green API official?', answer: 'No, also a Baileys-class unofficial client.' },
+      { question: 'Is Green API official?', answer: 'No, also a Telegraf-class unofficial client.' },
     ],
   },
 
   'botwave-vs-whapi': {
-    intro: 'WhaPi (whapi.cloud) is another REST-style Telegram gateway. Comparison is similar to Green API and Evolution: dashboard-led product (BotWave) vs REST endpoints (WhaPi).',
+    intro: 'WhaPi (whapi.cloud) is another REST-style Telegram gateway. Comparison is similar to Green API and Telegraf: dashboard-led product (BotWave) vs REST endpoints (WhaPi).',
     features: [
       { feature: 'Form factor', botwave: 'Dashboard + features', competitor: 'REST API' },
       { feature: 'Free tier', botwave: 'Yes', competitor: 'Trial only' },
@@ -536,18 +536,18 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'botwave-vs-venom-bot': {
-    intro: 'Venom-Bot is an open-source Telegram Web library, alternative to Baileys but less actively maintained.',
+    intro: 'Venom-Bot is an open-source Telegram Web library, alternative to Telegraf but less actively maintained.',
     features: [
       { feature: 'Type', botwave: 'Product', competitor: 'Library' },
       { feature: 'Hosting', botwave: 'Managed', competitor: 'You' },
-      { feature: 'Library health', botwave: 'Baileys (active)', competitor: 'Venom (slowing)' },
+      { feature: 'Library health', botwave: 'Telegraf (active)', competitor: 'Venom (slowing)' },
     ],
     botwaveStrengths: ['Active upstream', 'Managed'],
     altStrengths: ['Browser-driven approach for edge cases'],
     whoIsBotwaveFor: ['Most.'],
     whoIsAltFor: ['Edge cases needing browser scripting.'],
     verdict: 'BotWave for stability; Venom only for niche scripting.',
-    relatedCompare: ['botwave-vs-baileys', 'botwave-vs-baymax-bot'],
+    relatedCompare: ['botwave-vs-telegraf', 'botwave-vs-baymax-bot'],
     faqs: [{ question: 'Is Venom abandoned?', answer: 'Maintained sporadically; community-led.' }],
   },
 
@@ -563,7 +563,7 @@ export const compareContent: Record<string, CompareContent> = {
     whoIsBotwaveFor: ['Most users.'],
     whoIsAltFor: ['OSS tinkerers.'],
     verdict: 'BotWave for reliability.',
-    relatedCompare: ['botwave-vs-venom-bot', 'botwave-vs-baileys'],
+    relatedCompare: ['botwave-vs-venom-bot', 'botwave-vs-telegraf'],
     faqs: [{ question: 'OSS?', answer: 'BotWave SDK is open; runtime closed.' }],
   },
 
@@ -733,7 +733,7 @@ export const compareContent: Record<string, CompareContent> = {
       '6 Telegram bot platforms compared on features, anti-ban, dashboard, AI, and pricing, ranked for 2026 based on real-world testing across 200+ sessions.',
     features: [
       { feature: '1. BotWave', botwave: 'Best overall, free tier, anti-ban, AI, multi-platform', competitor: '-' },
-      { feature: '2. Evolution API', botwave: 'Best for self-hosted REST', competitor: '-' },
+      { feature: '2. Telegraf', botwave: 'Best for self-hosted REST', competitor: '-' },
       { feature: '3. Green API', botwave: 'Best for pay-per-message REST', competitor: '-' },
       { feature: '4. UltraMsg', botwave: 'Solid REST with predictable pricing', competitor: '-' },
       { feature: '5. WhaPi', botwave: 'EU REST gateway', competitor: '-' },
@@ -747,7 +747,7 @@ export const compareContent: Record<string, CompareContent> = {
       'Cross-platform (Telegram + userbot bundled).',
     ],
     altStrengths: [
-      'Evolution: source transparency.',
+      'Telegraf: source transparency.',
       'Green/UltraMsg/WhaPi: REST simplicity.',
       'Twilio: official compliance.',
     ],
@@ -764,8 +764,8 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Five "free" Telegram bot options compared. "Free" varies, some are free libraries, some are free tiers, some are free trials.',
     features: [
       { feature: 'BotWave free tier', botwave: 'Forever; 1 session; AI 10/day', competitor: '-' },
-      { feature: 'Baileys', botwave: 'Free library; you host', competitor: '-' },
-      { feature: 'Evolution API', botwave: 'Free OSS; you host', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'Free library; you host', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'Free OSS; you host', competitor: '-' },
       { feature: 'Green API trial', botwave: 'Time-limited', competitor: '-' },
       { feature: 'WhaPi trial', botwave: 'Time-limited', competitor: '-' },
     ],
@@ -782,7 +782,7 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Free bot options across Telegram + Telegram for 2026.',
     features: [
       { feature: 'BotWave', botwave: 'WA + TG, free tier', competitor: '-' },
-      { feature: 'Baileys', botwave: 'WA library', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'WA library', competitor: '-' },
       { feature: 'python-telegram-bot', botwave: 'TG library', competitor: '-' },
       { feature: 'Rose', botwave: 'TG group bot', competitor: '-' },
     ],
@@ -853,7 +853,7 @@ export const compareContent: Record<string, CompareContent> = {
       { feature: 'BotWave', botwave: 'Native WA + multi-AI', competitor: '-' },
       { feature: 'ManyChat AI', botwave: 'Marketing flows', competitor: '-' },
       { feature: 'Chatfuel AI', botwave: 'Marketing flows', competitor: '-' },
-      { feature: 'Custom Baileys + OpenAI', botwave: 'DIY', competitor: '-' },
+      { feature: 'Custom Telegraf + OpenAI', botwave: 'DIY', competitor: '-' },
     ],
     botwaveStrengths: ['Best built-in AI for WA.'],
     altStrengths: ['Marketing flow depth (ManyChat/Chatfuel).'],
@@ -948,7 +948,7 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Top Telegram automation platforms across business + community use cases in 2026.',
     features: [
       { feature: 'BotWave', botwave: 'No-code, free tier', competitor: '-' },
-      { feature: 'Evolution API', botwave: 'OSS REST', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'OSS REST', competitor: '-' },
       { feature: 'Wati / Respond.io', botwave: 'Team inbox (BSP)', competitor: '-' },
       { feature: 'Twilio', botwave: 'Enterprise BSP', competitor: '-' },
     ],
@@ -965,7 +965,7 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Telegram bots evaluated specifically for Nigerian users, payment, support, language.',
     features: [
       { feature: 'BotWave', botwave: 'Naira pricing, mobile money, local community, Nigerian English', competitor: '-' },
-      { feature: 'Evolution', botwave: 'No local payment', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'No local payment', competitor: '-' },
       { feature: 'International gateways', botwave: 'USD pricing', competitor: '-' },
     ],
     botwaveStrengths: ['Naira pricing, local payment, Nigerian English & Pidgin support.'],
@@ -981,7 +981,7 @@ export const compareContent: Record<string, CompareContent> = {
     intro: 'Full ranking of every Telegram automation tool, mapped by capability vs price.',
     features: [
       { feature: 'BotWave', botwave: 'High capability, low price', competitor: '-' },
-      { feature: 'Evolution API', botwave: 'High capability (DIY), self-host cost', competitor: '-' },
+      { feature: 'Telegraf', botwave: 'High capability (DIY), self-host cost', competitor: '-' },
       { feature: 'REST gateways', botwave: 'Mid capability, mid price', competitor: '-' },
       { feature: 'Business API BSPs', botwave: 'High capability, high price', competitor: '-' },
     ],
@@ -1085,19 +1085,19 @@ export const compareContent: Record<string, CompareContent> = {
   },
 
   'nodejs-vs-python-telegram-bot': {
-    intro: 'Node.js (Baileys) vs Python (yowsup/openwa) for building Telegram bots, for developers comparing libraries.',
+    intro: 'Node.js (Telegraf) vs Python (yowsup/openwa) for building Telegram bots, for developers comparing libraries.',
     features: [
-      { feature: 'Active maintenance', botwave: 'Baileys very active', competitor: 'yowsup stale' },
+      { feature: 'Active maintenance', botwave: 'Telegraf very active', competitor: 'yowsup stale' },
       { feature: 'Performance', botwave: 'Node fast', competitor: 'Python fine for low volume' },
       { feature: 'Community', botwave: 'Large', competitor: 'Smaller' },
     ],
-    botwaveStrengths: ['Baileys ecosystem dominant.'],
+    botwaveStrengths: ['Telegraf ecosystem dominant.'],
     altStrengths: ['Python familiarity.'],
     whoIsBotwaveFor: ['Most engineers.'],
     whoIsAltFor: ['Python-only teams comfortable with stale libs.'],
-    verdict: 'Node.js + Baileys wins for new projects.',
-    relatedCompare: ['botwave-vs-baileys', 'baileys-vs-evolution-api'],
-    faqs: [{ question: 'PHP?', answer: 'Use REST gateways like Evolution or BotWave\'s API.' }],
+    verdict: 'Node.js + Telegraf wins for new projects.',
+    relatedCompare: ['botwave-vs-telegraf', 'telegraf-vs-node-telegram-bot-api'],
+    faqs: [{ question: 'PHP?', answer: 'Use REST gateways like Telegraf or BotWave\'s API.' }],
   },
 };
 

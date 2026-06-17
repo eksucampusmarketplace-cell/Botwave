@@ -35,10 +35,10 @@ const clusters = [
 const additionalFeatures = [
   { title: 'Games and Engagement', icon: '🎮', description: 'Trivia, hangman, word chain, polls, leaderboards, and XP systems to keep groups active.', link: '/commands' },
   { title: 'Anti-Ban Engine', icon: '🔒', description: 'Session warmup, message variation, human-like timing, presence simulation, and daily caps.', link: '/docs' },
-  { title: 'SafeConnect Layer', icon: '📡', description: 'QR-based connection from your own device. Your IP, your session, no shared infrastructure.', link: '/docs' },
+  { title: 'SecureToken Layer', icon: '📡', description: 'Secure webhook connection using your @BotFather token. Your bot, your data, no shared infrastructure.', link: '/docs' },
   { title: 'Smart Session Recovery', icon: '🔄', description: 'Automatic reconnection with exponential backoff. Sessions survive container restarts and network drops.', link: '/docs' },
-  { title: 'Ghost Mode Moderation', icon: '👻', description: 'Read-but-skip behavior where the bot occasionally ignores messages like a real person would.', link: '/docs' },
-  { title: 'Multi-Platform Dashboard', icon: '📊', description: 'Manage Telegram Bot and Telegram Bot sessions from one unified dashboard.', link: '/docs' },
+  { title: 'Ghost Mode Moderation', icon: '👻', description: 'Smart reply filtering where the bot skips irrelevant messages and only responds to valid commands.', link: '/docs' },
+  { title: 'Multi-Platform Dashboard', icon: '📊', description: 'Manage Manage your Telegram bots from one unified dashboard.', link: '/docs' },
 ];
 
 const colorMap: Record<string, string> = {
@@ -109,7 +109,7 @@ export default function FeaturesPage() {
 
           <div className="text-center p-10 rounded-2xl bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20">
             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">Ready to automate?</h2>
-            <p className="text-[var(--text-secondary)] mb-6">Free forever. No credit card. Works on Telegram Bot and Telegram Bot.</p>
+            <p className="text-[var(--text-secondary)] mb-6">Free forever. No credit card. Works with any Telegram bot via @BotFather.</p>
             <Link href="/signup" className="btn-primary inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold">
               Get Started Free →
             </Link>

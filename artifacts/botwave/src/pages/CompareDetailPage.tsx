@@ -5,14 +5,14 @@ import Footer from '@/components/layout/Footer';
 import { comparePages } from '@/lib/compare/data';
 
 const compareContent: Record<string, { intro: string; botwave: string[]; other: string[]; verdict: string }> = {
-  'botwave-vs-evolution-api': {
-    intro: "Evolution API is a popular open-source API wrapper for messaging bots. It's powerful but requires technical knowledge, your own hosting, and configuration. BotWave wraps all of that into a no-code dashboard with official Telegram support.",
+  'botwave-vs-telegraf': {
+    intro: "Telegraf is a popular Node.js framework for building Telegram bots. It's powerful but requires coding, your own hosting, and configuration. BotWave gives you a fully working bot in 90 seconds without writing code.",
     botwave: ['No hosting required', 'No coding needed', 'Official Telegram Bot API (zero ban risk)', 'Commands included (stickers, AI, games)', 'Dashboard with analytics', 'Free tier available', '2-minute setup'],
     other: ['Requires VPS/cloud hosting ($5-20/mo)', 'Node.js + Docker knowledge needed', 'No built-in commands (just API)', 'No official API support', 'Self-managed', 'Open source (free software, expensive to run)'],
-    verdict: "BotWave is better if you want a working Telegram bot without building one. Evolution API is better if you're a developer building a fully custom solution for clients."
+    verdict: "BotWave is better if you want a working bot without writing code. Telegraf is better if you're a developer building a fully custom solution."
   },
-  'botwave-vs-baileys': {
-    intro: "Baileys is an open-source messaging library. Using it directly means building your own bot from scratch in Node.js with no dashboard, no commands, and significant infrastructure work.",
+  'botwave-vs-python-telegram-bot': {
+    intro: "python-telegram-bot is an open-source Python library. Using it directly means building your own bot from scratch with no dashboard, no commands, and significant infrastructure work.",
     botwave: ['No coding needed', 'Commands included', 'Official Telegram Bot API', 'Hosted and managed', 'Dashboard UI', 'Free tier'],
     other: ['Requires Node.js + JavaScript knowledge', 'Build every command from scratch', 'Must implement all features manually', 'Host yourself', 'No UI unless you build one', 'Free library, expensive to build'],
     verdict: "BotWave gives you a dashboard, 150+ commands, and hosting — built for non-developers. Use a raw library if you're a developer who needs complete custom control."

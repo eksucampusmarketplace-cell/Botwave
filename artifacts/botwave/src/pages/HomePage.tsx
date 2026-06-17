@@ -187,14 +187,14 @@ function NotifyMeButton({ highlight, planName }: { highlight: boolean; planName:
 
 const faqs = [
   { q: 'Is BotWave actually free?', a: 'Yes. Free plan includes 300 messages/month, 10 AI queries/day, and 1 Telegram Bot session. No credit card required. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
-  { q: "What's the difference between Telegram Bot and Telegram Bot?", a: 'Telegram Bot uses the official Bot API via @BotFather with zero ban risk, ideal for group management and moderation. Telegram Bot automates your real Telegram account via MTProto to do things like .ban, .mute, .purge, .gban as if you typed them yourself. Both are managed from the same dashboard.' },
+  { q: "How does BotWave work with Telegram Bot API?", a: "BotWave connects to your bot via the official @BotFather token using Telegram's Bot API. It handles commands, moderation, AI chat, and group management — all with zero account ban risk." },
   { q: 'How many groups can my bot manage?', a: 'No group limit on any plan. Your bot works in every group your connected account is in. The only limit is messages per month (300 on free, unlimited on paid plans).' },
   { q: 'Does BotWave work on iPhone?', a: 'Yes. BotWave works on any device. Paste a bot token from @BotFather. iPhone, Android, desktop, any browser.' },
   { q: 'Can I use BotWave for my school or business group?', a: 'Yes. BotWave works well for campus groups, church groups, business communities, and social clubs. Polls, trivia, anti-spam, AI chat, and auto-replies all help manage larger groups.' },
   { q: 'Is my Telegram account safe?', a: 'BotWave only processes messages in groups where the bot is active. Private messages are never read or stored. All processing happens in memory and is discarded immediately. Telegram Bot uses the official API with zero ban risk.' },
   { q: 'How do I set up a bot?', a: 'Sign up at botwave.online, go to your dashboard, and pick your platform. Telegram Bot: paste your @BotFather token. Bot: enter your API credentials. Live in under 2 minutes, no coding needed.' },
   { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for Nigeria and Africa. Payments are in Naira via bank transfer. The platform is optimized for Nigerian internet speeds and Telegram usage patterns.' },
-  { q: 'How is BotWave different from other bots?', a: 'BotWave supports both Telegram Bot and Telegram Bot from one dashboard. It runs from your own accounts, has strong anti-ban protection, AI chat, and 150+ built-in commands. Most alternatives support only one platform.' },
+  { q: 'How is BotWave different from other bots?', a: 'BotWave gives you a complete no-code dashboard to manage your Telegram bot. It supports AI chat, moderation, games, sticker tools, and 150+ built-in commands. Most alternatives require writing code.' },
 ];
 
 export default function HomePage() {
@@ -681,8 +681,8 @@ export default function HomePage() {
                 <Link href="/compare" className="text-xs text-blue-400 hover:underline">All 58 →</Link>
               </div>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/compare/botwave-vs-evolution-api" className="text-[var(--text-secondary)] hover:text-blue-400">vs Evolution API</Link></li>
-                <li><Link href="/compare/botwave-vs-baileys" className="text-[var(--text-secondary)] hover:text-blue-400">vs Baileys</Link></li>
+                
+                
                 <li><Link href="/compare/botwave-vs-twilio" className="text-[var(--text-secondary)] hover:text-blue-400">vs Twilio</Link></li>
                 <li><Link href="/compare/botwave-vs-wati" className="text-[var(--text-secondary)] hover:text-blue-400">vs WATI</Link></li>
                 <li><Link href="/compare/best-telegram-bots-2026" className="text-[var(--text-secondary)] hover:text-blue-400">Best Telegram bots 2026</Link></li>

@@ -51,7 +51,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     description: 'Detailed comparison of Telegram bots vs Telegram bots for African use cases, group size, moderation, anti-spam, AI.',
     keywords: ['telegram bot vs telegram bot', 'best chat bot africa', 'telegram or telegram for bots', 'african community bot'],
     faqs: [
-      { question: 'Why are Telegram bots usually free but Telegram bots not?', answer: 'Telegram has an official Bot API, anyone can spin one up at zero cost. Telegram relies on either the Telegram Business API (paid, per-conversation pricing) or unofficial libraries (Baileys, what BotWave uses). The bot infra cost is higher on Telegram, so most providers charge.' },
+      { question: 'Why are Telegram bots usually free but Telegram bots not?', answer: 'Telegram has an official Bot API, anyone can spin one up at zero cost. Telegram Bot API is free and official. BotWave adds AI, anti-spam, and scheduling on top of it.' },
       { question: 'Group size, which is better for big communities?', answer: 'Telegram supports up to 200,000 members per group. Telegram caps at 1024. For mega-communities (crypto, esports, fan-clubs), Telegram wins. For SMB customer chat and tight-knit groups, Telegram.' },
       { question: 'Which is better for African business comms?', answer: 'Telegram dominates 1:1 customer comms in Nigeria, Ghana, Kenya, SA. Telegram dominates niche tech, crypto, and creator communities. Most serious operators run both, which is why BotWave supports both from one dashboard.' },
       { question: 'Can I migrate my Telegram bot users to Telegram?', answer: 'Not automatically, they\'re separate platforms with different IDs. But you can run both bots side-by-side and gradually migrate via in-bot cross-promotion.' },
@@ -97,7 +97,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     keywords: ['best free bot 2026', 'free chat bot platforms', 'telegram bot platforms', 'telegram bot platforms'],
     faqs: [
       { question: 'Which free bot platforms are NOT free anymore in 2026?', answer: 'Bigin, Whippy, and several wamr clones converted to paid-only. BotWave, ManyChat (with Messenger limits), and Telegram\'s native bot framework remain free.' },
-      { question: 'Are open-source bots actually free?', answer: 'Free to download (Baileys, Telegraf, etc.), but you pay for server, monitoring, anti-ban tuning, AI keys. End-to-end cost: $20-80/month minimum. Hosted free tiers (like BotWave free) net out cheaper for solo operators.' },
+      { question: 'Are open-source bots actually free?', answer: 'Free to download (Telegraf, node-telegram-bot-api, etc.), but you pay for server, monitoring, anti-ban tuning, AI keys. End-to-end cost: $20-80/month minimum. Hosted free tiers (like BotWave free) net out cheaper for solo operators.' },
       { question: 'Free for how many users / messages?', answer: 'BotWave free: 300 msgs/mo. ManyChat free: 1,000 contacts. Telegram bots: unlimited (rate-limited by Telegram). DIY: depends on your server.' },
     ],
   },

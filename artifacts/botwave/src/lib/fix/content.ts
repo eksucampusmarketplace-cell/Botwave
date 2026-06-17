@@ -486,7 +486,7 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'telegram-bot-428-error': {
-    intro: '428 = precondition required, Baileys couldn\'t complete a handshake step, usually a connection/network blip. Almost always self-recovers within a minute.',
+    intro: '428 = precondition required, the Telegram Bot API client couldn\'t complete a handshake step, usually a connection/network blip. Almost always self-recovers within a minute.',
     symptoms: ['Single 428 entry then back to normal.', 'Repeated 428s under network instability.'],
     quickFix: ['Wait 60s for auto-reconnect.'],
     causes: [
@@ -504,10 +504,10 @@ export const fixContent: Record<string, FixContent> = {
   },
 
   'telegram-bot-515-error': {
-    intro: '515 = Telegram expected a fresh stream after auth, Baileys handles this automatically by re-establishing.',
+    intro: '515 = Telegram expected a fresh connection after auth. The bot client handles this automatically.',
     symptoms: ['515 in log.', 'Brief disconnect then reconnect.'],
-    quickFix: ['Wait; Baileys auto-recovers.'],
-    causes: [{ label: 'Normal post-auth handshake quirk', detail: 'Baileys library handles this.', fix: ['Self-resolves.'] }],
+    quickFix: ['Wait; the bot auto-recovers.'],
+    causes: [{ label: 'Normal post-auth handshake quirk', fix: ['Self-resolves.'] }],
     resolutionSteps: [{ title: 'Wait 30s', body: '' }],
     expectedResult: 'Session reconnects automatically.',
     relatedFix: ['telegram-bot-428-error', 'telegram-bot-disconnected'],
@@ -768,26 +768,6 @@ export const fixContent: Record<string, FixContent> = {
     faqs: [{ question: 'Why does Telegram remove idle devices?', answer: 'Security policy: idle Linked Devices auto-expire after ~14 days of no phone-side activity.' }],
   },
 
-  'telegram-evolution-api-error': {
-    intro: 'Errors from the Evolution API integration (a third-party Telegram API). BotWave\'s native Baileys integration is more reliable; consider migrating.',
-    symptoms: ['Evolution API errors in logs.', '"Cannot reach evolution endpoint".'],
-    quickFix: ['Check the Evolution API server status; if down, fail over to BotWave native.'],
-    causes: [
-      { label: 'Evolution API server down', detail: '', fix: ['Restart or wait.'] },
-      { label: 'Auth/key issue', detail: '', fix: ['Rotate API key.'] },
-      { label: 'Network between BotWave and Evolution', detail: '', fix: ['Check connectivity.'] },
-    ],
-    resolutionSteps: [
-      { title: 'Check Evolution server status', body: '' },
-      { title: 'Rotate the API key in Dashboard → Integrations', body: '' },
-      { title: 'If persistent, switch the session to BotWave native', body: 'No Evolution dependency.' },
-    ],
-    expectedResult: 'Evolution-backed session operational, or migrated off.',
-    relatedFix: ['telegram-bot-disconnected'],
-    relatedHowTo: ['set-up-bot-dashboard'],
-    relatedCompare: ['botwave-vs-evolution-api', 'baileys-vs-evolution-api'],
-    faqs: [{ question: 'Should I keep Evolution?', answer: 'Most setups are simpler on BotWave native Baileys. Use Evolution only if you have a specific dependency.' }],
-  },
 };
 
 export function getFixContent(slug: string): FixContent | undefined {

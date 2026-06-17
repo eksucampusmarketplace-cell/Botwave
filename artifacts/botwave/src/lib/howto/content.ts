@@ -56,7 +56,7 @@ export interface HowToContent {
 export const howToContent: Record<string, HowToContent> = {
   'create-telegram-bot': {
     intro:
-      'BotWave converts your own Telegram number into a fully programmable bot in under two minutes. The bot runs from your device IP via the Baileys library, which is dramatically safer than the server-IP approach used by most paid Telegram bot services. This guide walks you through every screen you will see, from signup to your first !sticker command.',
+      'BotWave converts your own Telegram number into a fully programmable bot in under two minutes. The bot runs via the official Telegram Bot API, the safest approach with zero ban risk. This guide walks you through every screen you will see, from signup to your first !sticker command.',
     prerequisites: [
       'A working Telegram account (regular or Business) installed on your phone.',
       'A free BotWave account at botwave.online/signup.',
@@ -107,7 +107,7 @@ export const howToContent: Record<string, HowToContent> = {
     ],
     relatedHowTo: ['telegram-pairing-code', 'connect-telegram-bot-qr', 'telegram-anti-ban-setup', 'set-up-bot-dashboard'],
     relatedFix: ['telegram-qr-not-scanning', 'telegram-pairing-code-expired', 'telegram-bot-disconnected'],
-    relatedCompare: ['botwave-vs-baileys', 'botwave-vs-evolution-api', 'best-free-telegram-bot'],
+    relatedCompare: ['botwave-vs-manychat', 'best-free-telegram-bot'],
     relatedUseCase: ['schools', 'businesses', 'creators'],
     faqs: [
       {
@@ -118,7 +118,7 @@ export const howToContent: Record<string, HowToContent> = {
       {
         question: 'Is BotWave the same as a Telegram Business API account?',
         answer:
-          'No. BotWave runs on a regular Telegram (or Telegram Business app) account via the Baileys library, it is a Linked Device, the same way Telegram Web is a Linked Device. The official Telegram Business API (Cloud API) requires a Meta-approved business account, a phone number not used in the consumer app, and is billed per conversation. BotWave is faster to set up and free to start; the Business API is the right choice if you need broadcast-template messaging at scale.',
+          'No. BotWave runs on a regular Telegram (or Telegram Business app) account via the official Bot API. It is completely safe and sanctioned by Telegram.',
       },
       {
         question: 'Will my Telegram number get banned for using BotWave?',
@@ -937,7 +937,7 @@ export const howToContent: Record<string, HowToContent> = {
 
   'create-telegram-stickers-bot': {
     intro:
-      'Building a dedicated Telegram sticker bot used to mean spinning up Baileys, writing media handlers, and dealing with WebP encoding. BotWave gives you a sticker bot in 2 minutes with full sticker-pack support, animated stickers, and customisation.',
+      'Building a Telegram sticker bot used to mean writing low-level handlers and dealing with WebP encoding. BotWave gives you a sticker bot in 2 minutes with full sticker-pack support, animated stickers, and customisation.',
     prerequisites: ['BotWave session connected.', '!sticker command enabled (default).'],
     steps: [
       { title: 'Pair a session, see "Create a Telegram Bot"', body: 'No special config needed for sticker mode; it ships ready.' },

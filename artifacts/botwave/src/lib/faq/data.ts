@@ -203,7 +203,7 @@ These limits keep your bot within Telegram's official guidelines.`,
 - Dedicated support
 - White-label option
 
-Telegram Bot and Telegram Bot connections are included in all plans.
+Telegram Bot connections are included in all plans.
 
 You can start free and upgrade when you need more sessions or higher limits.`,
     category: 'Pricing',
