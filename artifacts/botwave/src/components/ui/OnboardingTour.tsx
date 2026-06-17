@@ -38,7 +38,7 @@ const steps = [
   },
   {
     target: '[data-tour="nav-settings"]',
-    content: 'Configure anti-ban settings, bot customization, and manage your account here.',
+    content: 'Configure rate limit protection, bot customization, and manage your account here.',
     placement: 'bottom' as const,
   },
 ];

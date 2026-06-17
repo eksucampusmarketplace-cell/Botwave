@@ -3,7 +3,7 @@ export interface DocPage {
   title: string;
   description: string;
   category: string;
-  platform: 'all' | 'whatsapp' | 'telegram' | 'userbot';
+  platform: 'all' | 'telegram' | 'userbot';
   content: string;
   seoKeywords: string[];
   relatedDocs: string[];
@@ -59,53 +59,8 @@ Send a command in any group where your bot is active:
 - Set up [welcome messages](/docs/welcome-messages) for your groups
 - Enable [anti-spam protection](/docs/anti-spam-setup)
 - Try the [AI assistant](/docs/ai-commands)`,
-    seoKeywords: ['botwave setup', 'how to set up whatsapp bot', 'whatsapp bot setup guide', 'telegram bot setup'],
-    relatedDocs: ['connect-telegram', 'connect-telegram', 'anti-spam-setup'],
-  },
-  {
-    slug: 'connect-telegram',
-    title: 'How to Connect WhatsApp',
-    description: 'Step-by-step guide to connecting your WhatsApp number to BotWave via QR code scan.',
-    category: 'Setup',
-    platform: 'whatsapp',
-    content: `## How to Connect WhatsApp to BotWave
-
-### Prerequisites
-- A WhatsApp account on your phone
-- A web browser on your computer or phone
-
-### Connection Steps
-
-1. **Sign up / Log in** at [botwave.online](https://www.botwave.online)
-2. Go to your **Dashboard**
-3. Click **"Connect WhatsApp"**
-4. A QR code will appear on screen
-5. On your phone, open **WhatsApp**
-6. Go to **Settings > Linked Devices > Link a Device**
-7. Scan the QR code shown on the dashboard
-8. Wait 5-10 seconds for the connection to establish
-9. You'll see a green "Connected" status
-
-### After Connecting
-- Your bot automatically works in all your groups
-- Test it by typing \`!ping\` in any group
-- Type \`!help\` to see all available commands
-
-### Troubleshooting
-
-**QR code expired?**
-Click "Refresh QR" to get a new one. QR codes expire after 60 seconds.
-
-**Connection drops after a few hours?**
-This usually means your phone lost internet connection. Make sure your phone stays connected to WiFi or data. BotWave uses WhatsApp's Linked Devices feature, which requires your phone to have internet.
-
-**"Session already exists" error?**
-Go to WhatsApp > Settings > Linked Devices and remove the old BotWave session. Then try connecting again.
-
-**Bot not responding in groups?**
-Make sure you're using the \`!\` prefix. Type \`!ping\` to test. If it still doesn't work, check that the bot session is showing as "Active" in your dashboard.`,
-    seoKeywords: ['connect whatsapp bot', 'whatsapp qr code bot', 'whatsapp bot setup', 'link whatsapp bot'],
-    relatedDocs: ['getting-started', 'qr-troubleshooting', 'anti-ban-explained'],
+    seoKeywords: ['botwave setup', 'telegram bot setup guide', 'how to set up telegram bot'],
+    relatedDocs: ['connect-telegram', 'connect-userbot', 'anti-spam-setup'],
   },
   {
     slug: 'connect-telegram',
@@ -242,93 +197,90 @@ Globally ban a spammer across ALL your groups with one command.
   },
   {
     slug: 'anti-ban-explained',
-    title: 'How the Anti-Ban System Works',
-    description: 'Understand how BotWave protects your WhatsApp account from bans with advanced anti-detection technology.',
+    title: 'Telegram Rate Limit & Account Protection',
+    description: 'How BotWave keeps your Telegram bot and userbot safe from rate limits, flood waits, and account restrictions.',
     category: 'Security',
-    platform: 'whatsapp',
-    content: `## How the BotWave Anti-Ban System Works
+    platform: 'telegram',
+    content: `## Telegram Rate Limit & Account Protection
 
-### Why WhatsApp Bans Bots
-WhatsApp detects bots by looking for patterns that don't match human behavior:
-- Sending identical messages repeatedly
-- Responding instantly every time
-- Being active 24/7 with no breaks
-- Sending the same media files (identical file hashes)
-- High message volume from a single account
+### Telegram Bot API (Zero Ban Risk)
+Telegram Bot API is an **official, sanctioned API**. Your personal account is never involved. Bots do not get banned for normal usage — only for spam or ToS violations (e.g., sending unsolicited messages to users who never contacted the bot).
 
-### How BotWave Prevents Bans
+### Telegram Userbot (MTProto) — How BotWave Protects You
 
-**Session Warmup**
-New sessions start with a limit of 15 messages/day. Over 7 days, this gradually increases to 200 messages/day. This mimics how a real person would start using a new device.
+Telegram monitors MTProto accounts for flood and spam patterns. BotWave applies several protections:
 
-**Human-Like Timing**
-- Read receipts are sent first, then typing indicators, then the actual response
-- Random delays between 1-5 seconds before replying
-- 5% chance of a 15-30 second "distracted" delay
-- 3% chance of a 30-60 second delay
-- Quieter responses late at night (12am-6am)
+**Rate Limiting**
+Commands that send messages enforce per-chat cooldowns. Bulk operations (broadcast, purge) are throttled automatically to stay within Telegram's flood limits.
 
-**Message Variation**
-- 50-100 different response templates per command
-- Dynamic variable injection (name, time, date)
-- Occasional typos and casual phrasing
-- Zero-width characters for unique byte fingerprints
+**Flood Wait Handling**
+When Telegram returns a \`FLOOD_WAIT\` error, BotWave catches it, waits the required duration, and retries. You won't lose messages silently.
 
-**Read-But-Skip**
-15% of the time in groups, the bot reads a message but doesn't respond. Like a real person who reads but doesn't reply to everything.
-
-**Media Fingerprint Jittering**
-Random bytes are appended to stickers and images so each file has a unique hash. WhatsApp can't detect them as bot-generated.
+**Human-Like Delays**
+Mass-action commands (like adding members or sending to multiple chats) include randomised delays between operations to avoid triggering Telegram's automation detection.
 
 **Daily Limits**
-Hard cap of 200 messages per day per session. This keeps your account well within normal usage patterns.
+The userbot respects a configurable daily outbound cap. Default: 200 messages/day from a fresh session, ramping up after 7 days of normal use.
 
-### Your Device, Your IP
-The most important anti-ban feature: your Telegram bot session runs from your own device IP via QR code. You're not sharing a server IP with thousands of other bot users. This alone drastically reduces ban risk compared to other bot platforms.`,
-    seoKeywords: ['whatsapp anti ban', 'whatsapp bot ban protection', 'how to avoid whatsapp ban', 'whatsapp bot safe', 'anti ban system'],
-    relatedDocs: ['connect-telegram', 'qr-troubleshooting', 'getting-started'],
+### Telegram Bot API Limits (Reference)
+- **sendMessage**: 30 messages/second to different chats, 20 messages/minute to the same chat
+- **Broadcast to N chats**: use 30 msg/s max; BotWave queues and throttles automatically
+- **Group size**: no practical API limit for reading/replying
+
+### Best Practices
+1. Don't enable broadcast to users who never started the bot (violates ToS)
+2. Keep daily outbound volume reasonable for fresh userbot sessions
+3. Use the official Bot API for group management — it has zero account risk`,
+    seoKeywords: ['telegram bot rate limit', 'telegram flood wait', 'telegram userbot ban', 'telegram bot protection', 'telegram account safe'],
+    relatedDocs: ['connect-telegram', 'connect-userbot', 'getting-started'],
   },
   {
     slug: 'qr-troubleshooting',
-    title: 'QR Code Login Troubleshooting',
-    description: 'Fix common QR code scanning issues when connecting WhatsApp or Telegram Userbot to BotWave.',
+    title: 'Telegram Connection Troubleshooting',
+    description: 'Fix common issues connecting your Telegram bot or userbot to BotWave.',
     category: 'Troubleshooting',
-    platform: 'whatsapp',
-    content: `## QR Code Troubleshooting
+    platform: 'telegram',
+    content: `## Telegram Connection Troubleshooting
 
-### QR Code Expired
-QR codes expire after about 60 seconds. Click "Refresh QR" to get a new one. Make sure you scan quickly after the code appears.
+### Telegram Bot Not Connecting
 
-### QR Code Won't Scan
-- Make sure your phone camera is clean and focused
-- Increase your screen brightness
-- Try zooming in on the QR code
-- Make sure you're scanning from WhatsApp > Settings > Linked Devices > Link a Device
+**"Invalid token" error**
+- Make sure you copied the full token from @BotFather (format: \`123456789:ABCdefGHI...\`)
+- Don't include extra spaces or line breaks
+- If the token was revoked, generate a new one with \`/token\` in @BotFather
 
-### Connected But Disconnects After a Few Hours
-Common causes:
-1. **Phone lost internet** - Your phone needs to stay connected to WiFi or mobile data
-2. **WhatsApp updated** - Sometimes WhatsApp updates reset linked devices. Reconnect.
-3. **Too many linked devices** - WhatsApp allows up to 4 linked devices. Remove unused ones.
+**Bot connected but not responding in groups**
+1. Confirm the bot is a member of the group
+2. **Make the bot an admin** — required for most moderation commands
+3. Test with \`/ping\` to check the bot is alive
+4. Check the dashboard shows "Active" for that session
 
-### "Session Already Exists" Error
-1. Open WhatsApp on your phone
-2. Go to Settings > Linked Devices
-3. Find and remove the old BotWave session
-4. Go back to the BotWave dashboard
-5. Click "Connect WhatsApp" again
-6. Scan the new QR code
+**"Bot was blocked" or "Forbidden" errors**
+The bot was blocked by the user or removed from the group. Add it back and grant admin rights.
 
-### Session Shows "Disconnected" in Dashboard
-This can happen after a server restart. Click "Reconnect" in the dashboard. If that doesn't work, remove the linked device from your phone and scan a fresh QR code.
+### Telegram Userbot Not Connecting
 
-### Bot Connected But Not Responding
-1. Check that the session shows "Active" in the dashboard
-2. Make sure you're using the \`!\` prefix: \`!ping\`
-3. Check if you've hit the daily message limit (200 on free plan)
-4. Try in a different group to rule out group-specific issues`,
-    seoKeywords: ['whatsapp qr code not working', 'whatsapp bot disconnected', 'whatsapp linked device issues', 'qr scan troubleshooting'],
-    relatedDocs: ['connect-telegram', 'anti-ban-explained', 'reconnecting-sessions'],
+**"Phone number invalid"**
+Enter your number in international format without the \`+\`: e.g., \`2348012345678\`
+
+**OTP code not received**
+- Check Telegram's official app — the code arrives as a Telegram message from "Telegram"
+- If you enabled 2FA, you'll also need your cloud password after the OTP
+
+**Session shows "Needs Re-Auth"**
+Your session string expired or was revoked. Go to Dashboard → Sessions → Reconnect and re-enter your phone and OTP.
+
+### Session Shows "Disconnected"
+
+1. Click **Reconnect** in the dashboard
+2. If the bot token approach: verify the token is still valid in @BotFather
+3. If userbot: complete the re-auth flow with your phone number
+
+### Bot Connected But Slow to Respond
+- Telegram Bot API has a polling or webhook delay of 0-3 seconds — this is normal
+- If delays are longer, check the server status at [t.me/botwavegrp](https://t.me/botwavegrp)`,
+    seoKeywords: ['telegram bot not working', 'telegram bot connection error', 'telegram userbot setup', 'telegram bot token invalid'],
+    relatedDocs: ['connect-telegram', 'connect-userbot', 'reconnecting-sessions'],
   },
   {
     slug: 'ai-commands',

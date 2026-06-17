@@ -17,16 +17,6 @@ export function sanitizePhoneNumber(phone: string): string {
   return phone.replace(/[^0-9+]/g, '');
 }
 
-export function formatJid(phone: string, isGroup = false): string {
-  if (isGroup) {
-    return `${phone}@g.us`;
-  }
-  return `${sanitizePhoneNumber(phone)}@s.whatsapp.net`;
-}
-
-export function extractPhoneFromJid(jid: string): string {
-  return jid.split('@')[0];
-}
 
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;

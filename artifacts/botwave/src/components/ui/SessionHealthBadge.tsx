@@ -9,7 +9,7 @@
  *     or "no proxy" if the session is going direct from server IP
  *   - The disconnect count in the last 24h, colour-coded green/yellow/red
  *
- * Works uniformly across whatsapp / telegram_bot / telegram_userbot — the
+ * Works uniformly across telegram_bot / telegram_userbot — the
  * health endpoint is platform-agnostic because bot_sessions and
  * bot_health_events are too.
  *
@@ -76,8 +76,8 @@ export default function SessionHealthBadge({ sessionId }: Props) {
         : 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20';
 
   // Proxy badge: green if pinned, grey if going direct (server IP).
-  // Going direct is a meaningful warning when scaling beyond 1 session —
-  // CLAUDE.md rule #8 says WhatsApp will mass-disconnect in that case.
+  // Going direct is a meaningful warning when scaling beyond 1 session
+  // as Telegram may rate-limit by IP for high-volume userbot sessions.
   const proxyColour = hasProxy
     ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20'
     : 'bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-500/20';

@@ -1,4 +1,4 @@
-export type Platform = 'whatsapp' | 'telegram' | 'userbot';
+export type Platform = 'telegram' | 'userbot';
 
 export interface CommandData {
   slug: string;
@@ -3826,8 +3826,7 @@ export const userbotCommands: CommandData[] = [
 ];
 
 export const allCommands = {
-  whatsapp: whatsappCommands,
-  telegram: telegramCommands,
+  telegram: [...whatsappCommands, ...telegramCommands],
   userbot: userbotCommands,
 };
 
@@ -3844,12 +3843,6 @@ export function getAllCategories(platform: Platform): string[] {
 }
 
 export const platformMeta: Record<Platform, { name: string; prefix: string; description: string; icon: string }> = {
-  whatsapp: {
-    name: 'WhatsApp Bot',
-    prefix: '!',
-    description: 'Connect via QR code scan. 80+ commands for group automation, AI chat, media tools, games, and moderation.',
-    icon: 'W',
-  },
   telegram: {
     name: 'Telegram Bot',
     prefix: '/',

@@ -80,7 +80,7 @@ export interface PlayerInfo {
   id: string;
   displayName: string;
   avatar: string;
-  whatsappJid?: string;
+  telegramId?: string;
   ready: boolean;
   connected: boolean;
   timeRemaining?: number;
@@ -117,8 +117,8 @@ export interface GameRoom {
   moves: GameMove[];
   chat: ChatMessage[];
   createdAt: number;
-  createdBy: string; // whatsapp jid or player id
-  chatJid?: string; // whatsapp group/chat jid for bot updates
+  createdBy: string; // telegram user id or player id
+  chatId?: string; // telegram group/chat id for bot updates
   sessionId?: string; // bot session id for sending updates
   winner?: string;
   resultType?: 'checkmate' | 'resign' | 'timeout' | 'draw' | 'stalemate' | 'abandon';

@@ -51,7 +51,7 @@ export default function QrAlertBanner() {
                 {disconnected.length} session{disconnected.length > 1 ? 's' : ''} disconnected
               </p>
               <p className="text-xs text-red-400/70">
-                {disconnected.map((s) => s.name || s.id).join(', ')} &mdash; scan QR to reconnect
+                {disconnected.map((s) => s.name || s.id).join(', ')} &mdash; reconnect from Sessions
               </p>
             </div>
           </div>

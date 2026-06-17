@@ -17,12 +17,9 @@ export type SessionState =
   | 'active'
   | 'inactive'
   | 'connecting'
-  | 'qr_pending'
-  | 'pairing_sent'
-  | 'needs_reauth'
-  | 'pairing_failed';
+  | 'needs_reauth';
 
-export type Platform = 'whatsapp' | 'telegram_bot' | 'telegram_userbot';
+export type Platform = 'telegram_bot' | 'telegram_userbot';
 
 export interface BotSession {
   id: string;
