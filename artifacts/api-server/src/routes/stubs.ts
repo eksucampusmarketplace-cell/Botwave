@@ -1,6 +1,123 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const router = Router();
+
+// --- In-memory rate limiter for /translate (10 req/hour per IP) ---
+const translateRateMap = new Map<string, { count: number; resetAt: number }>();
+const TRANSLATE_LIMIT = 10;
+const TRANSLATE_WINDOW_MS = 60 * 60 * 1000;
+
+function translateRateLimit(req: Request, res: Response, next: NextFunction) {
+  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const entry = translateRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    translateRateMap.set(ip, { count: 1, resetAt: now + TRANSLATE_WINDOW_MS });
+    return next();
+  }
+  if (entry.count >= TRANSLATE_LIMIT) {
+    return res.status(429).json({ error: "Rate limit exceeded. Maximum 10 translations per hour." });
+  }
+  entry.count++;
+  return next();
+}
+
+// --- Admin session store (in-memory, keyed by token) ---
+const adminSessions = new Map<string, { createdAt: number }>();
+const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const token = req.cookies?.["admin_token"] as string | undefined;
+  if (!token) return res.status(401).json({ error: "Not authenticated." });
+  const session = adminSessions.get(token);
+  if (!session || Date.now() > session.createdAt + ADMIN_SESSION_TTL_MS) {
+    adminSessions.delete(token ?? "");
+    return res.status(401).json({ error: "Session expired. Please log in again." });
+  }
+  return next();
+}
+
+// POST /admin/login — check ADMIN_PASSWORD env var
+router.post("/admin/login", (req, res) => {
+  const { password } = req.body as { password?: string };
+  const adminPassword = process.env["ADMIN_PASSWORD"];
+  if (!adminPassword) {
+    return res.status(503).json({ error: "Admin access not configured on this server." });
+  }
+  if (!password) {
+    return res.status(400).json({ error: "Password required." });
+  }
+  const expected = Buffer.from(adminPassword);
+  const provided = Buffer.from(password);
+  const match = expected.length === provided.length && timingSafeEqual(expected, provided);
+  if (!match) {
+    return res.status(401).json({ error: "Invalid password." });
+  }
+  const token = createHmac("sha256", adminPassword).update(`${Date.now()}-${Math.random()}`).digest("hex");
+  adminSessions.set(token, { createdAt: Date.now() });
+  res.cookie("admin_token", token, { httpOnly: true, sameSite: "lax", maxAge: ADMIN_SESSION_TTL_MS });
+  return res.json({ success: true });
+});
+
+// DELETE /admin/login — logout
+router.delete("/admin/login", (req, res) => {
+  const token = req.cookies?.["admin_token"] as string | undefined;
+  if (token) adminSessions.delete(token);
+  res.clearCookie("admin_token");
+  return res.json({ success: true });
+});
+
+// GET /admin/login — check if authenticated
+router.get("/admin/login", requireAdmin, (_req, res) => {
+  return res.json({ authenticated: true });
+});
+
+// All other /admin/* routes require admin auth
+router.use("/admin", requireAdmin);
+
+// POST /telegram/validate — validate a BotFather token
+router.post("/telegram/validate", async (req, res) => {
+  const { token } = req.body as { token?: string };
+  if (!token?.trim()) return res.status(400).json({ success: false, error: "Token is required." });
+  const cleaned = token.trim();
+  if (!/^\d+:[A-Za-z0-9_-]{35,}$/.test(cleaned)) {
+    return res.status(400).json({ success: false, error: "Invalid token format. Paste the full token from @BotFather." });
+  }
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${cleaned}/getMe`, { signal: AbortSignal.timeout(8000) });
+    const tgData = (await tgRes.json()) as { ok: boolean; result?: { username: string; first_name: string; can_join_groups?: boolean; can_read_all_group_messages?: boolean } };
+    if (!tgData.ok) {
+      return res.status(400).json({ success: false, error: "Token rejected by Telegram. Double-check it from @BotFather." });
+    }
+    return res.json({
+      success: true,
+      data: {
+        username: tgData.result?.username ?? "",
+        firstName: tgData.result?.first_name ?? "",
+        canJoinGroups: tgData.result?.can_join_groups ?? true,
+        canReadAllGroupMessages: tgData.result?.can_read_all_group_messages ?? false,
+      },
+    });
+  } catch {
+    return res.status(503).json({ success: false, error: "Could not reach Telegram. Check your internet connection." });
+  }
+});
+
+// GET /telegram/config — stub (returns empty config)
+router.get("/telegram/config", (_req, res) => {
+  return res.json({ success: true, data: {} });
+});
+
+// POST /telegram/config — stub (accepts config, no-ops)
+router.post("/telegram/config", (_req, res) => {
+  return res.json({ success: true, message: "Config saved." });
+});
+
+// GET /bot/qr-alerts — returns empty (no QR/userbot sessions)
+router.get("/bot/qr-alerts", (_req, res) => {
+  return res.json({ success: true, data: { disconnected: [] } });
+});
 
 const SUPPORTED_LANGUAGES: Record<string, string> = {
   en: "English", es: "Spanish", fr: "French", pt: "Portuguese", de: "German",
@@ -13,7 +130,7 @@ router.get("/translate", (_req, res) => {
   return res.status(200).json({ supported_languages: Object.keys(SUPPORTED_LANGUAGES) });
 });
 
-router.post("/translate", async (req, res) => {
+router.post("/translate", translateRateLimit, async (req, res) => {
   const { text, targetLang, sourceLang } = req.body as Record<string, string>;
   if (!text?.trim()) return res.status(400).json({ error: "text is required" });
   if (text.length > 5000) return res.status(400).json({ error: "Text too long (max 5000 chars)" });

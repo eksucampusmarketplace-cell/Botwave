@@ -6,9 +6,25 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('Admin access is restricted to authorized staff only.');
+    setError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        navigate('/admin');
+      } else {
+        setError(data.error || 'Invalid password.');
+      }
+    } catch {
+      setError('Could not connect to server. Try again.');
+    }
   };
 
   return (
