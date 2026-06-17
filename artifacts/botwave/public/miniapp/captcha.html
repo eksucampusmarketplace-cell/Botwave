@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Verify - BotWave</title>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .container { max-width: 400px; width: 100%; text-align: center; }
+  .card { background: #12121a; border-radius: 16px; padding: 32px 24px; border: 1px solid rgba(255,255,255,0.06); }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+  h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+  p { font-size: 0.85rem; color: #8b8b9a; margin-bottom: 20px; line-height: 1.5; }
+  .turnstile-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: #3b82f6; color: white; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status { margin-top: 16px; font-size: 0.8rem; padding: 10px; border-radius: 8px; display: none; }
+  .status.success { display: block; background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+  .status.error { display: block; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+  .math-challenge { margin: 20px 0; }
+  .math-challenge .question { font-size: 1.5rem; font-weight: 700; color: #3b82f6; margin-bottom: 12px; }
+  .math-challenge input { width: 120px; padding: 10px; text-align: center; font-size: 1.2rem; background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; outline: none; }
+  .math-challenge input:focus { border-color: #3b82f6; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="icon">🔒</div>
+    <h1>Verify You&rsquo;re Human</h1>
+    <p id="desc">Complete the verification below to join the group.</p>
+
+    <!-- Turnstile widget (shown when captcha_mode = turnstile) -->
+    <div id="turnstile-section" style="display:none">
+      <div class="turnstile-wrap">
+        <div class="cf-turnstile" data-sitekey="" data-callback="onTurnstileSuccess" data-theme="dark"></div>
+      </div>
+    </div>
+
+    <!-- Math challenge (shown when captcha_mode = math) -->
+    <div id="math-section" class="math-challenge" style="display:none">
+      <div class="question" id="math-question"></div>
+      <input type="number" id="math-answer" placeholder="?" autocomplete="off">
+    </div>
+
+    <!-- Text challenge (shown when captcha_mode = text) -->
+    <div id="text-section" class="math-challenge" style="display:none">
+      <div class="question" id="text-question" style="font-size:1.1rem;letter-spacing:4px"></div>
+      <input type="text" id="text-answer" placeholder="Type the text above" autocomplete="off">
+    </div>
+
+    <!-- Button mode -->
+    <div id="button-section" style="display:none">
+      <p>Tap the button below to verify.</p>
+    </div>
+
+    <button class="btn btn-primary" id="verify-btn" disabled>Verify</button>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script>
+var params = new URLSearchParams(window.location.search);
+var sessionId = params.get('sessionId');
+var chatId = params.get('chatId');
+var userId = params.get('userId');
+var mode = params.get('mode') || 'button';
+var siteKey = params.get('siteKey') || '';
+
+var turnstileToken = '';
+var mathAnswer = 0;
+var textChallenge = '';
+
+function init() {
+  var btn = document.getElementById('verify-btn');
+
+  if (mode === 'turnstile' && siteKey) {
+    document.getElementById('turnstile-section').style.display = 'block';
+    document.querySelector('.cf-turnstile').setAttribute('data-sitekey', siteKey);
+  } else if (mode === 'math') {
+    document.getElementById('math-section').style.display = 'block';
+    var a = Math.floor(Math.random() * 20) + 1;
+    var b = Math.floor(Math.random() * 20) + 1;
+    mathAnswer = a + b;
+    document.getElementById('math-question').textContent = a + ' + ' + b + ' = ?';
+    btn.disabled = false;
+  } else if (mode === 'text' || mode === 'text2') {
+    document.getElementById('text-section').style.display = 'block';
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    textChallenge = '';
+    for (var i = 0; i < 6; i++) textChallenge += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('text-question').textContent = textChallenge;
+    btn.disabled = false;
+  } else {
+    document.getElementById('button-section').style.display = 'block';
+    btn.disabled = false;
+  }
+
+  btn.addEventListener('click', verify);
+}
+
+function onTurnstileSuccess(token) {
+  turnstileToken = token;
+  document.getElementById('verify-btn').disabled = false;
+}
+
+function showStatus(msg, isError) {
+  var el = document.getElementById('status');
+  el.className = 'status ' + (isError ? 'error' : 'success');
+  el.textContent = msg;
+}
+
+function verify() {
+  var answer = '';
+  if (mode === 'math') {
+    answer = document.getElementById('math-answer').value;
+    if (parseInt(answer) !== mathAnswer) { showStatus('Wrong answer. Try again!', true); return; }
+  } else if (mode === 'text' || mode === 'text2') {
+    answer = document.getElementById('text-answer').value;
+    if (answer !== textChallenge) { showStatus('Text does not match. Try again!', true); return; }
+  } else if (mode === 'turnstile') {
+    answer = turnstileToken;
+    if (!answer) { showStatus('Please complete the Turnstile challenge.', true); return; }
+  } else {
+    answer = 'button_verified';
+  }
+
+  document.getElementById('verify-btn').disabled = true;
+  document.getElementById('verify-btn').textContent = 'Verifying...';
+
+  fetch('/api/telegram/captcha/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: sessionId, chatId: chatId, userId: userId, mode: mode, answer: answer }),
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    if (data.success) {
+      showStatus('Verified! You can now use the group.', false);
+      document.getElementById('verify-btn').textContent = 'Verified';
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.close();
+      }
+    } else {
+      showStatus(data.error || 'Verification failed. Try again.', true);
+      document.getElementById('verify-btn').disabled = false;
+      document.getElementById('verify-btn').textContent = 'Verify';
+    }
+  }).catch(function() {
+    showStatus('Network error. Please try again.', true);
+    document.getElementById('verify-btn').disabled = false;
+    document.getElementById('verify-btn').textContent = 'Verify';
+  });
+}
+
+init();
+</script>
+</body>
+</html>

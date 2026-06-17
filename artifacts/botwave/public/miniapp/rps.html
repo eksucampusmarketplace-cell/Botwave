@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock Paper Scissors</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#fff)}
+h1{font-size:1.5rem;margin-bottom:.5rem}
+#stats{margin-bottom:1rem;font-size:.9rem;opacity:.8}
+.choices{display:flex;gap:1rem;margin:1.5rem 0}
+.choice{font-size:3rem;cursor:pointer;padding:1rem;border-radius:50%;background:var(--tg-theme-secondary-bg-color,#16213e);transition:transform .2s;width:80px;height:80px;display:flex;align-items:center;justify-content:center;border:none}
+.choice:active{transform:scale(.9)}
+#result{font-size:1.3rem;margin:1rem 0;min-height:2rem}
+#matchup{font-size:2rem;margin:1rem 0;min-height:2.5rem}
+</style>
+</head>
+<body>
+<h1>✊✋✌️ Rock Paper Scissors</h1>
+<div id="stats">Wins: 0 | Losses: 0 | Draws: 0</div>
+<div id="matchup"></div>
+<div class="choices">
+<button class="choice" onclick="play('rock')">🪨</button>
+<button class="choice" onclick="play('paper')">📄</button>
+<button class="choice" onclick="play('scissors')">✂️</button>
+</div>
+<div id="result">Choose your weapon!</div>
+<script>
+let wins=0,losses=0,draws=0;
+const emoji={rock:'🪨',paper:'📄',scissors:'✂️'};
+const opts=['rock','paper','scissors'];
+
+function play(choice){
+  const bot=opts[Math.floor(Math.random()*3)];
+  document.getElementById('matchup').textContent=`${emoji[choice]} vs ${emoji[bot]}`;
+  let result;
+  if(choice===bot){result='draw';draws++;}
+  else if((choice==='rock'&&bot==='scissors')||(choice==='paper'&&bot==='rock')||(choice==='scissors'&&bot==='paper')){result='win';wins++;}
+  else{result='lose';losses++;}
+  const msg={win:'You win! 🎉',lose:'You lose! 😔',draw:"It's a draw! 🤝"};
+  document.getElementById('result').textContent=msg[result];
+  document.getElementById('stats').textContent=`Wins: ${wins} | Losses: ${losses} | Draws: ${draws}`;
+}
+</script>
+</body>
+</html>

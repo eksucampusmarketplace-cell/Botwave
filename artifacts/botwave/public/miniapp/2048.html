@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2048</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--tg-theme-bg-color,#1a1a2e);color:var(--tg-theme-text-color,#fff);touch-action:none}
+h1{font-size:1.5rem;margin-bottom:.3rem}
+#score{margin-bottom:.5rem;font-size:1rem}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:min(85vw,320px);padding:8px;background:#0f3460;border-radius:12px}
+.tile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:bold;font-size:1.4rem;transition:all .1s}
+.t0{background:#1a1a3e;color:transparent}
+.t2{background:#eee4da;color:#776e65}.t4{background:#ede0c8;color:#776e65}
+.t8{background:#f2b179;color:#fff}.t16{background:#f59563;color:#fff}
+.t32{background:#f67c5f;color:#fff}.t64{background:#f65e3b;color:#fff}
+.t128{background:#edcf72;color:#fff;font-size:1.2rem}.t256{background:#edcc61;color:#fff;font-size:1.2rem}
+.t512{background:#edc850;color:#fff;font-size:1.2rem}.t1024{background:#edc53f;color:#fff;font-size:1rem}
+.t2048{background:#edc22e;color:#fff;font-size:1rem}.tbig{background:#3c3a32;color:#fff;font-size:.9rem}
+button{padding:.6rem 1.5rem;border:none;border-radius:8px;background:var(--tg-theme-button-color,#e94560);color:#fff;font-size:1rem;cursor:pointer;margin-top:.5rem}
+.controls{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,50px);gap:4px;margin-top:.5rem}
+.controls button{font-size:1.3rem;padding:.4rem}
+</style>
+</head>
+<body>
+<h1>2048</h1>
+<div id="score">Score: 0</div>
+<div class="board" id="board"></div>
+<div class="controls">
+<div></div><button onclick="move('up')">⬆️</button><div></div>
+<button onclick="move('left')">⬅️</button><button onclick="move('down')">⬇️</button><button onclick="move('right')">➡️</button>
+</div>
+<button onclick="init()">New Game</button>
+<script>
+let grid,score;
+function init(){grid=Array(16).fill(0);score=0;addTile();addTile();render();}
+function addTile(){const e=grid.reduce((a,v,i)=>v===0?[...a,i]:a,[]);if(!e.length)return;grid[e[Math.floor(Math.random()*e.length)]]=Math.random()<.9?2:4;}
+function render(){
+  const b=document.getElementById('board');b.innerHTML='';
+  grid.forEach(v=>{
+    const d=document.createElement('div');
+    const cls=v===0?'t0':v<=2048?'t'+v:'tbig';
+    d.className='tile '+cls;d.textContent=v||'';b.appendChild(d);
+  });
+  document.getElementById('score').textContent='Score: '+score;
+}
+function slide(row){
+  let a=row.filter(v=>v);
+  for(let i=0;i<a.length-1;i++){if(a[i]===a[i+1]){a[i]*=2;score+=a[i];a.splice(i+1,1);}}
+  while(a.length<4)a.push(0);return a;
+}
+function move(dir){
+  let moved=false;const prev=JSON.stringify(grid);
+  if(dir==='left')for(let r=0;r<4;r++){const row=grid.slice(r*4,r*4+4);const s=slide(row);for(let c=0;c<4;c++)grid[r*4+c]=s[c];}
+  if(dir==='right')for(let r=0;r<4;r++){const row=grid.slice(r*4,r*4+4).reverse();const s=slide(row).reverse();for(let c=0;c<4;c++)grid[r*4+c]=s[c];}
+  if(dir==='up')for(let c=0;c<4;c++){const col=[grid[c],grid[c+4],grid[c+8],grid[c+12]];const s=slide(col);for(let r=0;r<4;r++)grid[r*4+c]=s[r];}
+  if(dir==='down')for(let c=0;c<4;c++){const col=[grid[c],grid[c+4],grid[c+8],grid[c+12]].reverse();const s=slide(col).reverse();for(let r=0;r<4;r++)grid[r*4+c]=s[r];}
+  if(JSON.stringify(grid)!==prev){addTile();render();}
+}
+document.addEventListener('keydown',e=>{const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};if(m[e.key]){e.preventDefault();move(m[e.key]);}});
+let sx,sy;
+document.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;});
+document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>Math.abs(dy)){move(dx>0?'right':'left');}else if(Math.abs(dy)>30){move(dy>0?'down':'up');}});
+init();
+</script>
+</body>
+</html>

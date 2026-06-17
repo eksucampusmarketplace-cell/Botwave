@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BotWave"
+version = "1.0.0"
+id = "artifacts/botwave"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23400
+
+[services.development]
+run = "pnpm --filter @workspace/botwave run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/botwave", "run", "build" ]
+publicDir = "artifacts/botwave/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23400"
+BASE_PATH = "/"
