@@ -1,6 +1,7 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ThemeProvider from "@/components/ui/ThemeProvider";
+
 import HomePage from "@/pages/HomePage";
 import CommandsPage from "@/pages/CommandsPage";
 import FAQPage from "@/pages/FAQPage";
@@ -18,8 +19,18 @@ import FixPage from "@/pages/FixPage";
 import FixDetailPage from "@/pages/FixDetailPage";
 import PricingPage from "@/pages/PricingPage";
 import UseCasesPage from "@/pages/UseCasesPage";
+import IntegrationsPage from "@/pages/IntegrationsPage";
+import TemplatesPage from "@/pages/TemplatesPage";
+import ChangelogPage from "@/pages/ChangelogPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
+import WhatsAppBotPage from "@/pages/WhatsAppBotPage";
+import TelegramBotPage from "@/pages/TelegramBotPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import DashboardPage from "@/pages/DashboardPage";
 import GuestPostsPage from "@/pages/GuestPostsPage";
 import NotFound from "@/pages/not-found";
 
@@ -31,6 +42,18 @@ function Router() {
       {/* Home */}
       <Route path="/" component={HomePage} />
 
+      {/* Platform landing pages */}
+      <Route path="/whatsapp-bot" component={WhatsAppBotPage} />
+      <Route path="/telegram-bot" component={TelegramBotPage} />
+
+      {/* Region-specific landing pages (serve same content) */}
+      <Route path="/whatsapp-bot-nigeria" component={WhatsAppBotPage} />
+      <Route path="/whatsapp-bot-south-africa" component={WhatsAppBotPage} />
+      <Route path="/whatsapp-bot-india" component={WhatsAppBotPage} />
+      <Route path="/whatsapp-bot-usa" component={WhatsAppBotPage} />
+      <Route path="/telegram-bot-nigeria" component={TelegramBotPage} />
+      <Route path="/telegram-userbot-commands" component={TelegramBotPage} />
+
       {/* Features */}
       <Route path="/features" component={FeaturesPage} />
       <Route path="/features/:slug" component={FeaturesPage} />
@@ -41,6 +64,7 @@ function Router() {
 
       {/* Commands */}
       <Route path="/commands" component={CommandsPage} />
+      <Route path="/commands/telegram" component={CommandsPage} />
       <Route path="/commands/:platform" component={CommandsPage} />
       <Route path="/commands/:platform/:slug" component={CommandsPage} />
 
@@ -72,20 +96,32 @@ function Router() {
       <Route path="/fix" component={FixPage} />
       <Route path="/fix/:slug" component={FixDetailPage} />
 
+      {/* Integrations, Templates, Changelog */}
+      <Route path="/integrations" component={IntegrationsPage} />
+      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/changelog" component={ChangelogPage} />
+
+      {/* Legal */}
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
+
       {/* Community / Guest Posts */}
       <Route path="/guest-posts" component={GuestPostsPage} />
+
+      {/* Dashboard (requires auth — shows stub/login prompt) */}
+      <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/dashboard/:section" component={DashboardPage} />
+      <Route path="/dashboard/:section/:id" component={DashboardPage} />
 
       {/* Auth */}
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
-      <Route path="/forgot-password" component={LoginPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
 
-      {/* Location-specific landing pages */}
-      <Route path="/telegram-bot-nigeria" component={HomePage} />
-      <Route path="/telegram-userbot-commands" component={HomePage} />
-      <Route path="/whatsapp-bot-nigeria" component={HomePage} />
-      <Route path="/whatsapp-bot-south-africa" component={HomePage} />
-      <Route path="/whatsapp-bot-india" component={HomePage} />
+      {/* Admin (redirect to login) */}
+      <Route path="/admin" component={LoginPage} />
+      <Route path="/admin/:section" component={LoginPage} />
 
       <Route component={NotFound} />
     </Switch>
