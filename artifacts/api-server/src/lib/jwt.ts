@@ -1,6 +1,10 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env["JWT_SECRET"] ?? "botwave-dev-secret-change-in-production";
+const rawSecret = process.env["JWT_SECRET"];
+if (!rawSecret) {
+  throw new Error("JWT_SECRET must be set. Generate a strong secret and add it to your environment variables.");
+}
+const JWT_SECRET: string = rawSecret;
 const JWT_EXPIRES_IN = "7d";
 
 export interface JwtPayload {
