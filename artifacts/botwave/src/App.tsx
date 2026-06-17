@@ -26,12 +26,30 @@ import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import WhatsAppBotPage from "@/pages/WhatsAppBotPage";
 import TelegramBotPage from "@/pages/TelegramBotPage";
+import TelegramBotForGroupsPage from "@/pages/TelegramBotForGroupsPage";
+import TelegramAutoReplyPage from "@/pages/TelegramAutoReplyPage";
+import TelegramGroupAnalyticsPage from "@/pages/TelegramGroupAnalyticsPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/DashboardPage";
 import GuestPostsPage from "@/pages/GuestPostsPage";
+import AboutPage from "@/pages/AboutPage";
+import AcademyPage from "@/pages/AcademyPage";
+import CommunityPage from "@/pages/CommunityPage";
+import CommunityCommandsPage from "@/pages/CommunityCommandsPage";
+import SecurityPage from "@/pages/SecurityPage";
+import StatusPage from "@/pages/StatusPage";
+import TycoonPage from "@/pages/TycoonPage";
+import WhatIsBotWavePage from "@/pages/WhatIsBotWavePage";
+import CaseStudiesPage from "@/pages/CaseStudiesPage";
+import FeatureSuggestionsPage from "@/pages/FeatureSuggestionsPage";
+import MailboxPage from "@/pages/MailboxPage";
+import SearchEnginesPage from "@/pages/SearchEnginesPage";
+import DeployTelegramBotPage from "@/pages/DeployTelegramBotPage";
+import AdminLoginPage from "@/pages/AdminLoginPage";
+import GamePage from "@/pages/GamePage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -42,11 +60,19 @@ function Router() {
       {/* Home */}
       <Route path="/" component={HomePage} />
 
+      {/* About / What is BotWave */}
+      <Route path="/about" component={AboutPage} />
+      <Route path="/what-is-botwave" component={WhatIsBotWavePage} />
+
       {/* Platform landing pages */}
       <Route path="/whatsapp-bot" component={WhatsAppBotPage} />
       <Route path="/telegram-bot" component={TelegramBotPage} />
+      <Route path="/telegram-bot-for-groups" component={TelegramBotForGroupsPage} />
+      <Route path="/telegram-auto-reply" component={TelegramAutoReplyPage} />
+      <Route path="/telegram-group-analytics" component={TelegramGroupAnalyticsPage} />
+      <Route path="/deploy-telegram-bot" component={DeployTelegramBotPage} />
 
-      {/* Region-specific landing pages (serve same content) */}
+      {/* Region-specific landing pages */}
       <Route path="/whatsapp-bot-nigeria" component={WhatsAppBotPage} />
       <Route path="/whatsapp-bot-south-africa" component={WhatsAppBotPage} />
       <Route path="/whatsapp-bot-india" component={WhatsAppBotPage} />
@@ -56,6 +82,9 @@ function Router() {
 
       {/* Features */}
       <Route path="/features" component={FeaturesPage} />
+      <Route path="/features/ai" component={FeaturesPage} />
+      <Route path="/features/media" component={FeaturesPage} />
+      <Route path="/features/moderation" component={FeaturesPage} />
       <Route path="/features/:slug" component={FeaturesPage} />
 
       {/* Pricing */}
@@ -65,6 +94,7 @@ function Router() {
       {/* Commands */}
       <Route path="/commands" component={CommandsPage} />
       <Route path="/commands/telegram" component={CommandsPage} />
+      <Route path="/commands/userbot" component={CommandsPage} />
       <Route path="/commands/:platform" component={CommandsPage} />
       <Route path="/commands/:platform/:slug" component={CommandsPage} />
 
@@ -105,12 +135,45 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
 
-      {/* Community / Guest Posts */}
+      {/* Community */}
+      <Route path="/community" component={CommunityPage} />
+      <Route path="/community-commands" component={CommunityCommandsPage} />
       <Route path="/guest-posts" component={GuestPostsPage} />
+      <Route path="/feature-suggestions" component={FeatureSuggestionsPage} />
+      <Route path="/case-studies" component={CaseStudiesPage} />
 
-      {/* Dashboard (requires auth — shows stub/login prompt) */}
+      {/* Academy & Learning */}
+      <Route path="/academy" component={AcademyPage} />
+
+      {/* Security & Status */}
+      <Route path="/security" component={SecurityPage} />
+      <Route path="/status" component={StatusPage} />
+
+      {/* Mailbox */}
+      <Route path="/mailbox" component={MailboxPage} />
+      <Route path="/mailbox/:slug" component={MailboxPage} />
+
+      {/* Search engines */}
+      <Route path="/search-engines" component={SearchEnginesPage} />
+      <Route path="/search-engines/:slug" component={SearchEnginesPage} />
+
+      {/* Tycoon game lander */}
+      <Route path="/tycoon" component={TycoonPage} />
+
+      {/* Game routes */}
+      <Route path="/play/:roomId" component={GamePage} />
+      <Route path="/review/:roomId" component={GamePage} />
+      <Route path="/spectate/:roomId" component={GamePage} />
+      <Route path="/tournament/:tournamentId" component={GamePage} />
+      <Route path="/puzzle" component={GamePage} />
+      <Route path="/profile/:userId" component={AboutPage} />
+      <Route path="/miniapp/:sessionId/:chatId" component={GamePage} />
+      <Route path="/study-login" component={LoginPage} />
+
+      {/* Dashboard */}
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/dashboard/:section" component={DashboardPage} />
+      <Route path="/dashboard/telegram/:sessionId" component={DashboardPage} />
       <Route path="/dashboard/:section/:id" component={DashboardPage} />
 
       {/* Auth */}
@@ -119,9 +182,11 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
 
-      {/* Admin (redirect to login) */}
-      <Route path="/admin" component={LoginPage} />
-      <Route path="/admin/:section" component={LoginPage} />
+      {/* Admin */}
+      <Route path="/admin/login" component={AdminLoginPage} />
+      <Route path="/admin" component={AdminLoginPage} />
+      <Route path="/admin/dashboard" component={AdminLoginPage} />
+      <Route path="/admin/dashboard/:section" component={AdminLoginPage} />
 
       <Route component={NotFound} />
     </Switch>

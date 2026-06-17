@@ -5,10 +5,7 @@ import { useState, useEffect } from 'react';
 
 // eslint-disable-next-line
 // dynamic removed
-const Joyride: any = null; //
-  () => import('react-joyride').then((mod) => mod.Joyride) as any,
-  { ssr: false },
-);
+const Joyride: any = null;
 
 const TOUR_KEY = 'botwave_tour_completed';
 
@@ -56,6 +53,7 @@ export default function OnboardingTour() {
       const timer = setTimeout(() => setRun(true), 1500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   if (!run) return null;

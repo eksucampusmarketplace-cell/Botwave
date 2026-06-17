@@ -1,8 +1,7 @@
 
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'wouter';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface NavItem {
@@ -32,7 +31,7 @@ const navItems: NavItem[] = [
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [pathname] = useLocation();
+  const [pathname, navigate] = useLocation();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -56,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
     }, 60_000);
     return () => clearInterval(check);
-  }, [lastActivity, router]);
+  }, [lastActivity, navigate]);
 
   const handleLogout = async () => {
     await fetch('/api/admin/login', { method: 'DELETE' });

@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { useParams } from 'wouter';
 import { Link } from 'wouter';
 import Navbar from '@/components/layout/Navbar';
@@ -6,7 +7,7 @@ import { faqItems } from '@/lib/faq/data';
 
 function renderAnswer(answer: string) {
   const lines = answer.split('\n');
-  const elements: JSX.Element[] = [];
+  const elements: ReactElement[] = [];
 
   lines.forEach((line, i) => {
     if (line.startsWith('**') && line.endsWith('**')) {

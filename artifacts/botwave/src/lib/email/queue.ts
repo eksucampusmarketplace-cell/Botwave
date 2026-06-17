@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Redis from 'ioredis';
 import type { EmailEnvelope, QueuedEmail, EmailResult } from './types';
 

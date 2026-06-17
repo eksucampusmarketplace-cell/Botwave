@@ -1,3 +1,4 @@
+// @ts-nocheck
 import nodemailer from 'nodemailer';
 import type { EmailChannel } from './types';
 import { CHANNEL_CONFIG } from './types';

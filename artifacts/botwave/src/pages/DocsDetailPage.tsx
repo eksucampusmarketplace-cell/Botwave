@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { useParams } from 'wouter';
 import { Link } from 'wouter';
 import Navbar from '@/components/layout/Navbar';
@@ -6,7 +7,7 @@ import { docPages } from '@/lib/docs/data';
 
 function renderMarkdown(content: string) {
   const lines = content.split('\n');
-  const elements: JSX.Element[] = [];
+  const elements: ReactElement[] = [];
   let i = 0;
 
   while (i < lines.length) {

@@ -104,6 +104,7 @@ export default function SupportChat() {
       pollRef.current = setInterval(fetchTickets, 10000);
       return () => { if (pollRef.current) clearInterval(pollRef.current); };
     }
+    return undefined;
   }, [isOpen, tab, view, activeTicket, fetchMessages, fetchTickets]);
 
   useEffect(() => {

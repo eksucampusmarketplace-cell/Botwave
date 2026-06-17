@@ -18,6 +18,7 @@ export default function ReferralPopup({ referralCode, totalReferred = 0 }: Refer
       const timer = setTimeout(() => setIsOpen(true), 30_000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   const dismiss = () => {

@@ -138,6 +138,7 @@ export default function ChessBoard({
       const t = setTimeout(() => setMoveAnimation(null), 200);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [lastMove, animationsEnabled]);
 
   const isMyPiece = useCallback(
@@ -485,7 +486,7 @@ export default function ChessBoard({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes pieceAppear {
           0% { transform: scale(1.2); opacity: 0.7; }
           100% { transform: scale(1); opacity: 1; }

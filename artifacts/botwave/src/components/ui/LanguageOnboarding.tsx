@@ -15,10 +15,7 @@ const LANG_ONBOARDING_KEY = 'botwave_lang_onboarding_completed';
 // Dynamic import to avoid SSR issues with Joyride
 // eslint-disable-next-line
 // dynamic removed
-const Joyride: any = null; //
-  () => import('react-joyride').then(mod => mod.Joyride) as any,
-  { ssr: false }
-);
+const Joyride: any = null;
 
 const POPULAR_LANGS: { code: SupportedLocale; flag: string }[] = [
   { code: 'en', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
@@ -49,6 +46,7 @@ export default function LanguageOnboarding({ onLanguageSelect }: LanguageOnboard
       const timer = setTimeout(() => setRun(true), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   const handleSelect = useCallback((code: SupportedLocale) => {
