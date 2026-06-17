@@ -18,10 +18,42 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "artifacts/bot-runner: Telegram Bot Runner"
+args = "Frontend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Bot Runner"
 
 [[workflows.workflow]]
-name = "artifacts/bot-runner: Telegram Bot Runner"
+name = "Frontend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/botwave run dev"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Bot Runner"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -32,7 +64,7 @@ args = "pnpm --filter @workspace/bot-runner run dev"
 outputType = "console"
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
 
 [postMerge]
@@ -41,11 +73,7 @@ timeoutMs = 20000
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
+externalPort = 80
 
 [[ports]]
 localPort = 8081
@@ -55,6 +83,15 @@ externalPort = 8081
 localPort = 23400
 externalPort = 80
 
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
 [userenv]
 
 [userenv.shared]
+PORT = "5000"
+BASE_PATH = "/"
+NODE_ENV = "development"
+BOT_PLATFORM = "telegram"
+API_PORT = "8080"
