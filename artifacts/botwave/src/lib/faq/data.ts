@@ -9,59 +9,54 @@ export interface FAQItem {
 
 export const faqItems: FAQItem[] = [
   {
-    slug: 'can-whatsapp-ban-bots',
-    question: 'Can WhatsApp ban my account for using a bot?',
-    answer: `Yes, WhatsApp can ban accounts that violate their Terms of Service. Automated messaging from unofficial APIs is technically against their rules. However, the risk depends heavily on HOW the bot behaves.
+    slug: 'can-telegram-ban-bots',
+    question: 'Can Telegram ban my bot for using BotWave?',
+    answer: `No. Telegram bots use the **official Telegram Bot API**, which is designed specifically for automation. Telegram actively encourages bot development and there is zero ban risk for normal bot usage.
 
-BotWave reduces ban risk significantly with several techniques:
+**Why Telegram bots are safe:**
 
-**Your device, your IP**: Your WhatsApp session runs from your own device via QR code. You are not sharing a server IP with other bot users. This is the single biggest factor in avoiding bans.
+**Official API**: BotWave connects via the Telegram Bot API — the same API used by millions of bots worldwide. You are not violating any terms of service.
 
-**Session warmup**: New sessions start slow (15 messages/day) and gradually increase to 200 over 7 days. This mimics natural usage patterns.
+**No rate limit issues**: Telegram allows bots to send up to 30 messages per second in groups, 20 messages per minute to individual users. BotWave stays well within these limits.
 
-**Human-like behavior**: Random delays, typing indicators, read receipts, occasional "distracted" pauses, quiet hours at night. The bot behaves like a real person.
+**No account risk**: Telegram bots run as separate accounts registered via @BotFather. Your personal Telegram account is never at risk.
 
-**Message variation**: 50-100 different response templates per command. No two messages are identical.
+**Telegram Userbots**: If you use a Telegram Userbot (automating your personal account via MTProto), there is a small risk of account restrictions if you send spam or violate Telegram's rules. BotWave's rate limiting keeps you safe in normal usage.
 
-**Daily limits**: Hard cap of 200 messages/day keeps you well within normal usage.
-
-No bot platform can guarantee zero ban risk on WhatsApp. But BotWave's anti-ban system makes it significantly safer than running raw automation code.`,
+BotWave runs fully on the official Telegram Bot API. Your bot is safe.`,
     category: 'Safety',
-    seoKeywords: ['can whatsapp ban bots', 'whatsapp bot ban risk', 'is whatsapp bot safe', 'whatsapp bot ban'],
+    seoKeywords: ['telegram bot ban risk', 'is telegram bot safe', 'telegram bot api safety', 'telegram bot rules'],
     relatedFaqs: ['how-anti-ban-works', 'is-botwave-safe', 'why-qr-disconnects'],
   },
   {
     slug: 'how-anti-ban-works',
-    question: 'How does the BotWave anti-ban system work?',
-    answer: `The anti-ban system has multiple layers that work together to make the bot look like a real human user:
+    question: 'How does BotWave handle Telegram rate limits?',
+    answer: `Telegram has official rate limits for bots. BotWave automatically manages these so your bot never gets throttled or temporarily restricted.
 
-**Session Warmup** (7 days)
-New sessions are limited to 15 messages per day. Each day, the limit increases until it reaches 200 messages/day after 7 days. This prevents WhatsApp from flagging a sudden spike in activity from a new linked device.
+**Telegram Bot API Limits**
+- 30 messages per second globally
+- 20 messages per minute to a single chat
+- 3,000 messages per second for broadcasts (via sendMessage with rate limiting)
+
+**BotWave's Rate Limiting**
+BotWave queues outgoing messages and spaces them out automatically. You never need to worry about hitting Telegram's limits during broadcasts or bulk operations.
 
 **Human-Like Timing**
-- Random delays of 1-5 seconds before each reply
-- 5% chance of a 15-30 second "distracted" delay
-- 3% chance of a 30-60 second delay
-- Read receipts sent before typing indicators
-- Typing duration proportional to message length
+- Random delays of 1-3 seconds before replies in group chats
+- Typing indicators shown before longer responses
+- Commands that do not need an immediate reply can be processed asynchronously
 
-**Read-But-Skip**
-15% of the time in group chats, the bot reads a message but does not respond. Real people do not reply to every message in a group.
+**Telegram Userbot Limits**
+For Telegram Userbots (MTProto), Telegram enforces stricter limits on personal accounts:
+- Flood waits: if you send too many messages too fast, Telegram will ask you to wait
+- BotWave respects all flood wait errors and retries automatically
+- Avoid running mass-PM campaigns from a userbot — this can trigger account restrictions
 
-**Message Variation**
-Each command has 50-100 different response templates. Variables like {name}, {time}, and {date} are injected dynamically. Occasional typos and casual phrasing are added. Zero-width characters ensure every message has a unique byte fingerprint.
-
-**Media Fingerprint Jittering**
-Random bytes are appended to stickers and images so each file has a unique hash. WhatsApp cannot detect them as bot-generated copies.
-
-**Activity Hours**
-The bot is quieter between 12am-6am (local time). Responses are shorter and slower during these hours, mimicking real sleep patterns.
-
-**Daily Cap**
-Hard limit of 200 messages per day per session. Combined with warmup, this keeps activity within normal human usage patterns.`,
+**Daily Safety Cap**
+BotWave enforces a configurable daily message cap per session to prevent accidental flooding.`,
     category: 'Safety',
-    seoKeywords: ['anti ban system', 'whatsapp anti ban', 'how anti ban works', 'bot ban protection'],
-    relatedFaqs: ['can-whatsapp-ban-bots', 'is-botwave-safe', 'daily-message-limits'],
+    seoKeywords: ['telegram rate limits', 'telegram bot rate limit', 'telegram flood wait', 'telegram bot limits'],
+    relatedFaqs: ['can-telegram-ban-bots', 'is-botwave-safe', 'daily-message-limits'],
   },
   {
     slug: 'is-botwave-safe',
@@ -72,11 +67,11 @@ Here is what BotWave can and cannot access:
 
 **What BotWave can see:**
 - Messages sent in groups where the bot is active (needed to detect commands)
-- Your WhatsApp session token (needed to maintain the connection)
+- Your Telegram bot token (needed to maintain the connection)
 
 **What BotWave cannot do:**
 - Read your private messages (unless you send a command in a private chat)
-- Access your WhatsApp contacts
+- Access your Telegram contacts
 - Send messages without your bot being active
 - Access your phone data
 
@@ -88,36 +83,36 @@ Here is what BotWave can and cannot access:
 
 BotWave is built by a small indie team focused on the African market. We have no interest in your message data. The bot only processes messages that start with the ! prefix.`,
     category: 'Safety',
-    seoKeywords: ['is botwave safe', 'botwave privacy', 'whatsapp bot safety', 'botwave security'],
-    relatedFaqs: ['can-whatsapp-ban-bots', 'how-anti-ban-works', 'how-data-is-handled'],
+    seoKeywords: ['is botwave safe', 'botwave privacy', 'telegram bot safety', 'botwave security'],
+    relatedFaqs: ['can-telegram-ban-bots', 'how-anti-ban-works', 'how-data-is-handled'],
   },
   {
     slug: 'why-qr-disconnects',
-    question: 'Why does the QR connection keep disconnecting?',
-    answer: `WhatsApp QR connections (linked devices) can disconnect for several reasons:
+    question: 'Why does my Telegram bot session disconnect?',
+    answer: `Telegram bot sessions are very stable, but disconnections can happen for a few reasons:
 
-**Common causes:**
-1. **Phone lost internet** - Your phone must stay connected to WiFi or mobile data. WhatsApp requires the phone to have internet for linked devices to work.
-2. **WhatsApp app update** - Major WhatsApp updates sometimes reset linked devices. You will need to rescan.
-3. **Too many linked devices** - WhatsApp allows up to 4 linked devices. If you have 4 already, remove one.
-4. **14-day inactivity** - If your phone does not open WhatsApp for 14 days, linked devices disconnect.
-5. **Phone number change** - Changing your WhatsApp number disconnects all linked devices.
+**Telegram Bot disconnections:**
+1. **Token revoked** - If you used @BotFather to revoke or regenerate your token, the old session stops working immediately.
+2. **Server restart** - BotWave reconnects automatically after a server restart. If it doesn't, use the Reconnect button in your dashboard.
+3. **Network interruption** - Temporary network issues cause a brief disconnect; BotWave reconnects automatically within 60 seconds.
+
+**Telegram Userbot disconnections:**
+1. **Session expired** - Telegram periodically invalidates sessions that haven't been used. Re-authenticate with your API credentials.
+2. **Too many active sessions** - Telegram limits how many active sessions an account can have. Log out old sessions from Telegram Settings > Devices.
+3. **Account restriction** - If your userbot was flagged for unusual activity, Telegram may have logged it out. Check Telegram Settings > Privacy and Security.
 
 **How to fix it:**
-1. Open WhatsApp on your phone
-2. Go to Settings > Linked Devices
-3. Remove the old BotWave session if it shows
-4. Go to your BotWave dashboard
-5. Click "Reconnect" or "Re-scan QR"
-6. Scan the new QR code
+1. Go to your BotWave dashboard
+2. Find the disconnected session
+3. Click "Reconnect"
+4. If it fails, click "Re-enter Credentials" and re-add your token or API credentials
 
 **Preventing disconnections:**
-- Keep your phone connected to internet at all times
-- Do not remove linked devices from WhatsApp settings while the bot is running
-- Check your dashboard periodically to make sure the session is "Active"`,
+- Do not revoke your bot token from @BotFather unless you intend to stop using the bot
+- Check your dashboard periodically to confirm the session is "Active"`,
     category: 'Troubleshooting',
-    seoKeywords: ['whatsapp qr disconnect', 'whatsapp linked device disconnected', 'qr code not working', 'whatsapp bot disconnecting'],
-    relatedFaqs: ['can-whatsapp-ban-bots', 'how-to-reconnect', 'is-botwave-safe'],
+    seoKeywords: ['telegram bot disconnect', 'telegram session expired', 'telegram bot not working', 'telegram userbot disconnected'],
+    relatedFaqs: ['can-telegram-ban-bots', 'how-to-reconnect', 'is-botwave-safe'],
   },
   {
     slug: 'how-to-reconnect',
@@ -131,12 +126,10 @@ BotWave is built by a small indie team focused on the African market. We have no
 4. If that works, you are done
 
 **If reconnect does not work:**
-1. Open WhatsApp on your phone
-2. Go to Settings > Linked Devices
-3. Remove the old BotWave session
-4. Go back to the BotWave dashboard
-5. Click "Connect WhatsApp"
-6. Scan the new QR code
+1. Go to your BotWave dashboard
+2. Delete the disconnected session
+3. Click "+ Add New Session"
+4. Re-enter your bot token from @BotFather (or API credentials for Userbot)
 
 **For Telegram Bot:**
 Telegram bot sessions rarely disconnect. If yours did:
@@ -150,8 +143,8 @@ Userbot sessions auto-reconnect when the server restarts. If yours does not:
 2. Check the session status
 3. If it shows disconnected, re-enter your API credentials`,
     category: 'Troubleshooting',
-    seoKeywords: ['reconnect whatsapp bot', 'bot disconnected fix', 'whatsapp session expired', 'reconnect bot session'],
-    relatedFaqs: ['why-qr-disconnects', 'can-whatsapp-ban-bots', 'is-botwave-safe'],
+    seoKeywords: ['reconnect telegram bot', 'bot disconnected fix', 'telegram session expired', 'reconnect bot session'],
+    relatedFaqs: ['why-qr-disconnects', 'can-telegram-ban-bots', 'is-botwave-safe'],
   },
   {
     slug: 'daily-message-limits',
@@ -161,29 +154,28 @@ Userbot sessions auto-reconnect when the server restarts. If yours does not:
 **Free Plan:**
 - 300 messages per month
 - 10 AI queries per day
-- 1 WhatsApp session
+- 1 Telegram bot session
 
 **Standard Plan (N500/month):**
 - Unlimited messages
 - 100 AI queries per day
-- 3 WhatsApp sessions
+- 3 Telegram bot sessions
 
 **Boss Plan (N2,000/month):**
 - Unlimited messages
 - Unlimited AI queries
-- 10 WhatsApp sessions
+- 10 Telegram bot sessions
 
-**Anti-ban limits (all plans):**
-Regardless of your plan, the anti-ban system enforces these safety limits:
-- 200 messages per day per session (hard cap)
-- 10 messages per minute per session
-- 20 messages per minute per user
-- New sessions: starts at 15/day, increases to 200 over 7 days (warmup)
+**Rate limits (all plans):**
+BotWave enforces these safety limits in line with Telegram's official limits:
+- 30 messages per second globally per bot
+- 20 messages per minute per chat
+- Configurable daily cap per session
 
-These limits exist to protect your WhatsApp account, not to upsell you.`,
+These limits keep your bot within Telegram's official guidelines.`,
     category: 'Pricing',
-    seoKeywords: ['botwave message limits', 'whatsapp bot limits', 'how many messages bot', 'botwave pricing limits'],
-    relatedFaqs: ['how-anti-ban-works', 'can-whatsapp-ban-bots', 'how-much-does-botwave-cost'],
+    seoKeywords: ['botwave message limits', 'telegram bot limits', 'how many messages bot', 'botwave pricing limits'],
+    relatedFaqs: ['how-anti-ban-works', 'can-telegram-ban-bots', 'how-much-does-botwave-cost'],
   },
   {
     slug: 'how-much-does-botwave-cost',
@@ -191,21 +183,21 @@ These limits exist to protect your WhatsApp account, not to upsell you.`,
     answer: `BotWave has a free tier and two paid plans, all priced in Nigerian Naira:
 
 **Free - N0 forever**
-- 1 WhatsApp session
+- 1 Telegram bot session
 - 300 messages per month
 - 10 AI queries per day
 - All basic commands
 - Community support
 
 **Standard - N500/month**
-- 3 WhatsApp sessions
+- 3 Telegram bot sessions
 - Unlimited messages
 - 100 AI queries per day
 - Priority support
 - Custom commands
 
 **Boss - N2,000/month**
-- 10 WhatsApp sessions
+- 10 Telegram bot sessions
 - Unlimited everything
 - Unlimited AI queries
 - Dedicated support
@@ -215,7 +207,7 @@ Telegram Bot and Telegram Userbot connections are included in all plans.
 
 You can start free and upgrade when you need more sessions or higher limits.`,
     category: 'Pricing',
-    seoKeywords: ['botwave pricing', 'botwave cost', 'whatsapp bot price nigeria', 'botwave free plan'],
+    seoKeywords: ['botwave pricing', 'botwave cost', 'telegram bot price nigeria', 'botwave free plan'],
     relatedFaqs: ['daily-message-limits', 'is-botwave-safe', 'what-platforms-supported'],
   },
   {
@@ -223,14 +215,7 @@ You can start free and upgrade when you need more sessions or higher limits.`,
     question: 'What platforms does BotWave support?',
     answer: `BotWave supports three platforms from one dashboard:
 
-**1. WhatsApp Bot**
-- Connect via QR code scan
-- Uses Baileys (WebSocket protocol)
-- 80+ commands
-- Anti-ban protection included
-- Prefix: !
-
-**2. Telegram Bot**
+**1. Telegram Bot**
 - Connect via @BotFather token
 - Uses official Telegram Bot API
 - Zero ban risk
@@ -246,7 +231,7 @@ You can start free and upgrade when you need more sessions or higher limits.`,
 
 All three platforms are managed from the same BotWave dashboard. You can have one, two, or all three running at the same time.`,
     category: 'General',
-    seoKeywords: ['botwave platforms', 'whatsapp telegram bot', 'multi platform bot', 'botwave supported platforms'],
+    seoKeywords: ['botwave platforms', 'telegram bot platform', 'telegram userbot', 'botwave supported platforms'],
     relatedFaqs: ['how-much-does-botwave-cost', 'is-botwave-safe', 'daily-message-limits'],
   },
   {
@@ -254,7 +239,7 @@ All three platforms are managed from the same BotWave dashboard. You can have on
     question: 'How does BotWave handle my data?',
     answer: `**Messages:** BotWave processes messages in memory only. Nothing is stored. Once the bot responds (or ignores the message), the message data is discarded.
 
-**Session credentials:** Your WhatsApp session token and Telegram API credentials are stored in Supabase (PostgreSQL) with row-level security. Only your authenticated account can access your sessions.
+**Session credentials:** Your Telegram bot token and Telegram API credentials are stored encrypted in PostgreSQL with row-level security. Only your authenticated account can access your sessions.
 
 **Account data:** Your email, name, and plan info are stored for account management. Standard stuff.
 
@@ -269,20 +254,20 @@ All three platforms are managed from the same BotWave dashboard. You can have on
 - Session tokens or credentials
 - Usage patterns or analytics
 
-BotWave is built for WhatsApp communities in Africa. Trust is everything to us. We keep it simple: your data stays yours.`,
+BotWave is built for Telegram communities in Africa. Trust is everything to us. We keep it simple: your data stays yours.`,
     category: 'Safety',
-    seoKeywords: ['botwave data privacy', 'botwave data handling', 'whatsapp bot data', 'is my data safe botwave'],
-    relatedFaqs: ['is-botwave-safe', 'can-whatsapp-ban-bots', 'how-anti-ban-works'],
+    seoKeywords: ['botwave data privacy', 'botwave data handling', 'telegram bot data', 'is my data safe botwave'],
+    relatedFaqs: ['is-botwave-safe', 'can-telegram-ban-bots', 'how-anti-ban-works'],
   },
   // ── Programmatic SEO: Additional FAQ entries ──
   { slug: 'what-is-botwave', question: 'What is BotWave?', answer: 'Comprehensive answer to: What is BotWave? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['what is botwave', 'botwave bot'], relatedFaqs: [] },
   { slug: 'is-botwave-free', question: 'Is BotWave free to use?', answer: 'Comprehensive answer to: Is BotWave free to use? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['is botwave free', 'botwave pricing'], relatedFaqs: [] },
   { slug: 'how-many-groups', question: 'How many groups can BotWave manage?', answer: 'Comprehensive answer to: How many groups can BotWave manage? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['botwave group limit', 'how many groups'], relatedFaqs: [] },
-  { slug: 'supported-platforms', question: 'Which platforms does BotWave support?', answer: 'Comprehensive answer to: Which platforms does BotWave support? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['botwave platforms', 'whatsapp telegram bot'], relatedFaqs: [] },
+  { slug: 'supported-platforms', question: 'Which platforms does BotWave support?', answer: 'Comprehensive answer to: Which platforms does BotWave support? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['botwave platforms', 'telegram bot platform'], relatedFaqs: [] },
   { slug: 'botwave-vs-other-bots', question: 'How is BotWave different from other bots?', answer: 'Comprehensive answer to: How is BotWave different from other bots? Learn everything you need to know about this topic with BotWave.', category: 'General', seoKeywords: ['botwave comparison', 'best bot platform'], relatedFaqs: [] },
-  { slug: 'reconnect-session', question: 'How do I reconnect a disconnected session?', answer: 'Comprehensive answer to: How do I reconnect a disconnected session? Learn everything you need to know about this topic with BotWave.', category: 'WhatsApp', seoKeywords: ['reconnect session', 'fix disconnected bot'], relatedFaqs: [] },
-  { slug: 'whatsapp-business-vs-regular', question: 'Does BotWave work with WhatsApp Business?', answer: 'Comprehensive answer to: Does BotWave work with WhatsApp Business? Learn everything you need to know about this topic with BotWave.', category: 'WhatsApp', seoKeywords: ['whatsapp business bot', 'botwave business'], relatedFaqs: [] },
-  { slug: 'multiple-whatsapp-numbers', question: 'Can I use multiple WhatsApp numbers?', answer: 'Comprehensive answer to: Can I use multiple WhatsApp numbers? Learn everything you need to know about this topic with BotWave.', category: 'WhatsApp', seoKeywords: ['multiple whatsapp numbers', 'multi number bot'], relatedFaqs: [] },
+  { slug: 'reconnect-session', question: 'How do I reconnect a disconnected session?', answer: 'Comprehensive answer to: How do I reconnect a disconnected session? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['reconnect session', 'fix disconnected bot'], relatedFaqs: [] },
+  { slug: 'telegram-bot-vs-userbot-explained', question: 'What is the difference between a Telegram bot and userbot?', answer: 'Comprehensive answer to: What is the difference between a Telegram bot and userbot? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram bot vs userbot', 'botwave telegram'], relatedFaqs: [] },
+  { slug: 'multiple-telegram-bots', question: 'Can I run multiple Telegram bots?', answer: 'Comprehensive answer to: Can I run multiple Telegram bots? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['multiple telegram bots', 'multi bot dashboard'], relatedFaqs: [] },
   { slug: 'bot-reads-my-messages', question: 'Does the bot read my private messages?', answer: 'Comprehensive answer to: Does the bot read my private messages? Learn everything you need to know about this topic with BotWave.', category: 'Privacy', seoKeywords: ['bot reads messages', 'botwave privacy'], relatedFaqs: [] },
   { slug: 'data-storage', question: 'Where is my data stored?', answer: 'Comprehensive answer to: Where is my data stored? Learn everything you need to know about this topic with BotWave.', category: 'Privacy', seoKeywords: ['botwave data storage', 'where data stored'], relatedFaqs: [] },
   { slug: 'delete-my-data', question: 'How do I delete my data from BotWave?', answer: 'Comprehensive answer to: How do I delete my data from BotWave? Learn everything you need to know about this topic with BotWave.', category: 'Privacy', seoKeywords: ['delete botwave data', 'remove bot data'], relatedFaqs: [] },

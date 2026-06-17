@@ -1,7 +1,7 @@
 /**
  * Feature Requests - shared logic for submitting and processing feature suggestions.
  *
- * Users submit ideas via Telegram, WhatsApp, or web.
+ * Users submit ideas via Telegram or web.
  * Groq processes them automatically (no approval needed).
  * Admin views AI responses in the dashboard.
  */
@@ -11,7 +11,7 @@ import { callAI, AIRateLimitError, AIQuotaExhaustedError } from './ai-provider';
 export interface FeatureRequest {
   id: string;
   user_identifier: string;
-  platform: 'telegram' | 'whatsapp' | 'web';
+  platform: 'telegram' | 'web';
   description: string;
   ai_response: string | null;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'needs_review';
@@ -20,7 +20,7 @@ export interface FeatureRequest {
   updated_at: string;
 }
 
-const FEATURE_SYSTEM_PROMPT = `You are the BotWave Feature Analyst. A user has submitted a feature request for BotWave, a WhatsApp/Telegram bot automation SaaS platform.
+const FEATURE_SYSTEM_PROMPT = `You are the BotWave Feature Analyst. A user has submitted a feature request for BotWave, a Telegram bot automation SaaS platform.
 
 Your job:
 1. Analyze the request for feasibility and clarity.

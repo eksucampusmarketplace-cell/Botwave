@@ -32,7 +32,7 @@ export default function SessionAlerts() {
             id: `reauth-${session.id}`,
             type: 'error',
             title: `${session.session_name} DISCONNECTED`,
-            message: 'WhatsApp session needs re-authentication. Open Sessions to reconnect.',
+            message: 'Bot session needs re-authentication. Open Sessions to reconnect.',
             timestamp: Date.now(),
           });
         } else if (session.state === 'inactive') {

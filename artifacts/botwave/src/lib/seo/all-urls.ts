@@ -16,7 +16,7 @@
  *   define the URLs here once and import them from both places.
  */
 
-import { whatsappCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
+import { telegramCommands, userbotCommands } from '@/lib/commands/data';
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
 import { useCases } from '@/lib/usecases/data';
@@ -38,7 +38,7 @@ export const CORE_PATHS: string[] = [
   '/features/ai',
   '/features/moderation',
   '/features/media',
-  '/whatsapp-bot',
+  '/telegram-bot',
   '/telegram-bot',
   '/telegram-group-analytics',
   '/status',
@@ -65,7 +65,7 @@ export const CORE_PATHS: string[] = [
   '/use-cases',
   '/mailbox',
   '/commands',
-  '/commands/whatsapp',
+  '/commands/telegram',
   '/commands/telegram',
   '/commands/userbot',
   '/search-engines',
@@ -75,23 +75,23 @@ export const CORE_PATHS: string[] = [
 
 /** Static long-form blog posts (slug only — keeps the list copy-pasteable). */
 export const BLOG_SLUGS: string[] = [
-  'how-to-create-free-whatsapp-bot-2026',
-  'best-free-whatsapp-bot-groups-nigeria',
-  'whatsapp-bot-vs-telegram-bot-africa',
-  'whatsapp-bot-for-business-nigeria',
-  'free-whatsapp-group-management-bot',
-  'how-to-automate-whatsapp-messages-free',
+  'how-to-create-free-telegram-bot-2026',
+  'best-free-telegram-bot-groups-nigeria',
+  'telegram-bot-vs-messenger-bot-africa',
+  'telegram-bot-for-business-nigeria',
+  'free-telegram-group-management-bot',
+  'how-to-automate-telegram-messages-free',
   'best-free-bot-platforms-2026',
-  'free-whatsapp-sticker-bot-how-to-make-stickers',
-  'whatsapp-bot-commands-list-2026',
-  'whatsapp-anti-spam-bot-for-groups',
-  'whatsapp-ai-chatbot-free',
-  'whatsapp-bot-for-schools-campus-groups',
-  'whatsapp-bot-south-africa',
+  'free-telegram-sticker-bot-how-to-make-stickers',
+  'telegram-bot-commands-list-2026',
+  'telegram-anti-spam-bot-for-groups',
+  'telegram-ai-chatbot-free',
+  'telegram-bot-for-schools-campus-groups',
+  'telegram-bot-south-africa',
   'telegram-bot-for-groups-nigeria',
   'telegram-userbot-automation',
   'free-telegram-group-management-bot',
-  'telegram-bot-vs-whatsapp-bot',
+  'telegram-bot-vs-discord-bot',
   'telegram-anti-spam-bot',
 ];
 
@@ -138,8 +138,7 @@ export function getAllPublicUrls(): string[] {
     urls.add(abs(`/search-engines/${engine.slug}`));
   }
 
-  // Commands (WhatsApp / Telegram / Userbot).
-  for (const cmd of whatsappCommands) urls.add(abs(`/commands/whatsapp/${cmd.slug}`));
+  // Commands (Telegram / Userbot).
   for (const cmd of telegramCommands) urls.add(abs(`/commands/telegram/${cmd.slug}`));
   for (const cmd of userbotCommands) urls.add(abs(`/commands/userbot/${cmd.slug}`));
 

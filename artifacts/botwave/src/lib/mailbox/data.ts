@@ -1,6 +1,6 @@
 // Mailbox / temp email feature content pages.
 // SEO-focused public marketing pages explaining what the BotWave inbox does,
-// mirroring the /commands/whatsapp/[slug] pattern.
+// mirroring the /commands/telegram/[slug] pattern.
 
 export interface MailboxPage {
   slug: string;

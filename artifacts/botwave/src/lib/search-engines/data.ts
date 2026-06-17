@@ -61,7 +61,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'The default search engine for ~90% of the planet. Optimised for Googlebot, Google Discover, and Google AI Overviews.',
     indexSource: "Google's own index, crawled by Googlebot (desktop + mobile).",
     userAgents: 'Googlebot, Googlebot-Image, Googlebot-News, Google-Extended (AI training)',
-    searchUrl: 'https://www.google.com/search?q=BotWave+whatsapp+bot',
+    searchUrl: 'https://www.google.com/search?q=BotWave+telegram+bot',
     optimization: [
       'Every public page emits Article / SoftwareApplication / FAQPage / HowTo / BreadcrumbList JSON-LD so Google can extract structured facts.',
       'Sitemap is chunked at 2,000 URLs per /sitemap/<id>.xml so crawl budget is spent evenly across the 20k+ landing pages.',
@@ -70,7 +70,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'Core Web Vitals optimised, most pages are server-rendered with no client-side JS for the critical render path.',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on google.com, the homepage should appear in the top 5.',
+      'Search "BotWave telegram bot" on google.com, the homepage should appear in the top 5.',
       'In Google Search Console (Coverage report), the indexed page count for botwave.online should match the URLs listed in this site\'s sitemap.xml.',
       'Add &as_qdr=h to your Google query to filter to the last hour, confirms freshness signals are reaching Googlebot.',
     ],
@@ -113,7 +113,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'No interstitials / intrusive popups (Discover penalises layout shift).',
     ],
     howToVerify: [
-      'On an Android phone signed into a Google account, swipe right from the home screen to open Discover. Search interests for "WhatsApp bot" or "Telegram automation", BotWave articles should surface within a few days of publishing.',
+      'On an Android phone signed into a Google account, swipe right from the home screen to open Discover. Search interests for "Telegram bot" or "Telegram automation", BotWave articles should surface within a few days of publishing.',
       'In Google Search Console, the Discover performance report (left sidebar → Performance → Discover) shows impressions / clicks from this surface.',
     ],
     faqs: [
@@ -147,7 +147,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'Whatever ranks on Google ranks on Startpage with very high correlation.',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on startpage.com, results should mirror Google within a few hours of any Google-index update.',
+      'Search "BotWave telegram bot" on startpage.com, results should mirror Google within a few hours of any Google-index update.',
     ],
     faqs: [
       {
@@ -170,7 +170,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'The second-largest English-language index. Powers Yahoo, DuckDuckGo, Ecosia, AOL, and is the live-web layer behind ChatGPT Search.',
     indexSource: 'Microsoft\'s own index, crawled by Bingbot. Updated near-real-time via IndexNow.',
     userAgents: 'Bingbot, adidxbot',
-    searchUrl: 'https://www.bing.com/search?q=BotWave+whatsapp+bot',
+    searchUrl: 'https://www.bing.com/search?q=BotWave+telegram+bot',
     optimization: [
       'IndexNow integration: every published / updated URL is POSTed to api.indexnow.org in real time. Bing receives the ping in seconds.',
       'Bing Webmaster Tools account is verified; sitemap.xml is submitted.',
@@ -214,7 +214,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'No special tags required; DDG re-ranks Bing\'s results with privacy-first heuristics (zero personalisation, no ad-targeted re-ranking).',
     ],
     howToVerify: [
-      'Search "BotWave whatsapp bot" on duckduckgo.com, top results should match Bing.',
+      'Search "BotWave telegram bot" on duckduckgo.com, top results should match Bing.',
       'Search "site:botwave.online" on duckduckgo.com to count indexed URLs (mirrors Bing\'s site: operator).',
     ],
     faqs: [
@@ -350,7 +350,7 @@ export const searchEngines: SearchEngineEntry[] = [
       'Conversational search with inline source citations. Skims the live web on every query, does not rely on a cached index.',
     indexSource: 'Live web crawl + multiple LLM-driven ranking signals. Citations are real URLs you can click.',
     userAgents: 'PerplexityBot (training), Perplexity-User (live browsing)',
-    searchUrl: 'https://www.perplexity.ai/search?q=BotWave+whatsapp+bot',
+    searchUrl: 'https://www.perplexity.ai/search?q=BotWave+telegram+bot',
     optimization: [
       'robots.txt explicitly allows PerplexityBot + Perplexity-User.',
       'FAQPage + HowTo JSON-LD on every long-form page, Perplexity\'s answer synthesiser preferentially cites pages with clean Q&A structure.',
@@ -359,7 +359,7 @@ export const searchEngines: SearchEngineEntry[] = [
     ],
     howToVerify: [
       'On perplexity.ai, ask "What is BotWave and how does it work?", BotWave URLs should appear in the citation footnotes.',
-      'Try "best free WhatsApp bot 2026", BotWave should rank in the cited list.',
+      'Try "best free Telegram bot 2026", BotWave should rank in the cited list.',
     ],
     faqs: [
       {
@@ -393,8 +393,8 @@ export const searchEngines: SearchEngineEntry[] = [
       'OpenGraph metadata is complete on every page, ChatGPT Search uses og:image + og:description for the answer card.',
     ],
     howToVerify: [
-      'In ChatGPT (with Search enabled), ask "best free WhatsApp bot for groups in Nigeria", BotWave should appear in the citations.',
-      'Ask "how to make a WhatsApp bot without coding" and watch the citation footer for botwave.online URLs.',
+      'In ChatGPT (with Search enabled), ask "best free Telegram bot for groups in Nigeria", BotWave should appear in the citations.',
+      'Ask "how to make a Telegram bot without coding" and watch the citation footer for botwave.online URLs.',
     ],
     faqs: [
       {
@@ -428,7 +428,7 @@ export const searchEngines: SearchEngineEntry[] = [
     ],
     howToVerify: [
       'In Brave Browser, click the Leo AI sidebar and ask "what is BotWave", answers should cite botwave.online.',
-      'Search "BotWave whatsapp bot" on search.brave.com.',
+      'Search "BotWave telegram bot" on search.brave.com, BotWave should appear.',
     ],
     faqs: [
       {
@@ -461,7 +461,7 @@ export const searchEngines: SearchEngineEntry[] = [
       '/api/llms-full.txt provides a developer-friendly summary of all bot commands + API endpoints.',
     ],
     howToVerify: [
-      'On you.com, ask "how to use BotWave API to send WhatsApp messages", code-rich citations should appear.',
+      'On you.com, ask "how to use BotWave API to send Telegram messages", code-rich citations should appear.',
     ],
     faqs: [
       {
@@ -505,9 +505,9 @@ export const searchEngines: SearchEngineEntry[] = [
     slug: 'meta-ai',
     name: 'Meta AI',
     umbrella: 'ai',
-    audience: 'Facebook, Instagram, WhatsApp, Messenger users',
+    audience: 'Telegram users',
     oneLiner:
-      "Meta's AI assistant baked into every Meta app. WhatsApp users can mention @Meta AI inside a chat.",
+      "Meta AI can be prompted on the web for research about Telegram bots.",
     indexSource: 'Meta\'s own crawl + partner search (Bing for live web).',
     userAgents: 'Meta-ExternalAgent, FacebookBot',
     searchUrl: 'https://www.meta.ai/',
@@ -517,12 +517,12 @@ export const searchEngines: SearchEngineEntry[] = [
       'OpenGraph meta tags are critical (Meta\'s graph reader is the most-used in the world).',
     ],
     howToVerify: [
-      'In WhatsApp on a 2026-and-later release, type "@Meta AI what is BotWave" in any chat, Meta AI should respond with a summary.',
-      'On meta.ai (web), ask "best WhatsApp bot in Nigeria", BotWave should appear.',
+      'On meta.ai (web), ask "what is BotWave Telegram bot", Meta AI should respond with a summary.',
+      'On meta.ai (web), ask "best Telegram bot in Nigeria", BotWave should appear.',
     ],
     faqs: [
       {
-        question: 'Does Meta AI on WhatsApp see private messages?',
+        question: 'Does Meta AI index Telegram content?',
         answer:
           'Meta AI only sees messages that explicitly tag @Meta AI. Untagged messages remain end-to-end encrypted between participants.',
       },

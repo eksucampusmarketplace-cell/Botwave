@@ -54,8 +54,8 @@ export default function SafetyNotice() {
           },
           {
             icon: '&#128274;',
-            title: 'Use an Established WhatsApp Number',
-            text: 'We recommend using a WhatsApp number that has been active for at least 3 months. New numbers have a higher risk of being flagged.',
+            title: 'Keep Your Bot Token Safe',
+            text: 'Never share your @BotFather token publicly. If compromised, revoke it immediately via @BotFather and generate a new one.',
           },
           {
             icon: '&#128165;',

@@ -214,7 +214,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               className="text-center py-8"
             >
               <h3 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 mb-2">Linked!</h3>
-              <p className="text-sm text-[var(--text-secondary)]">WhatsApp device connected successfully.</p>
+              <p className="text-sm text-[var(--text-secondary)]">Telegram session connected successfully.</p>
               <p className="text-sm text-[var(--text-secondary)] mt-1">Bot is now active and listening.</p>
             </motion.div>
           )}
@@ -252,7 +252,7 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                 <div className="bg-white p-3 rounded-lg">
                   {qrImageSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={qrImageSrc} alt="WhatsApp pairing QR code" className="h-[220px] w-[220px]" />
+                    <img src={qrImageSrc} alt="Telegram pairing QR code" className="h-[220px] w-[220px]" />
                   ) : (
                     <QRCodeSVG
                       value={qrCode}
@@ -267,9 +267,9 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               <div className="bg-[var(--bg)] border border-[var(--border)] p-3 mb-4 rounded-xl space-y-1.5">
                 <div className="text-xs text-[var(--text-muted)] font-semibold mb-2">How to scan:</div>
                 {[
-                  ['1', 'Open', 'WhatsApp', 'on your phone'],
-                  ['2', 'Go to', 'Settings > Linked Devices', ''],
-                  ['3', 'Tap', 'Link a Device', ''],
+                  ['1', 'Open', 'Telegram', 'on your phone'],
+                  ['2', 'Go to', 'Settings > Devices', ''],
+                  ['3', 'Tap', 'Scan QR Code', ''],
                   ['4', 'Point your camera', 'at the QR code', 'above'],
                 ].map(([num, pre, highlight, post]) => (
                   <div key={num} className="flex items-start gap-2">
@@ -327,10 +327,10 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
               <div className="bg-[var(--bg)] border border-[var(--border)] p-3 mb-4 rounded-xl space-y-1.5">
                 <div className="text-xs text-[var(--text-muted)] font-semibold mb-2">How to link:</div>
                 {[
-                  ['1', 'Open', 'WhatsApp', 'on your phone'],
-                  ['2', 'Go to', 'Settings > Linked Devices', ''],
-                  ['3', 'Tap', 'Link a Device', ''],
-                  ['4', 'Choose', 'Link with phone number instead', ''],
+                  ['1', 'Open', 'Telegram', 'on your phone'],
+                  ['2', 'Go to', 'Settings > Devices', ''],
+                  ['3', 'Tap', 'Link Desktop Device', ''],
+                  ['4', 'Choose', 'Link by phone number', ''],
                   ['5', 'Enter the', '8-digit code', 'shown above'],
                 ].map(([num, pre, highlight, post]) => (
                   <div key={num} className="flex items-start gap-2">
@@ -342,12 +342,12 @@ export default function QRCodeDisplay({ onClose, qrCode, qrGeneratedAt, pairingC
                 ))}
               </div>
 
-              {/* WhatsApp scam warning */}
+              {/* Telegram note */}
               <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-600/20 p-2 sm:p-3 mb-3 rounded-xl">
                 <div className="flex items-start gap-2">
                   <span className="text-yellow-500 text-xs mt-0.5">!</span>
                   <p className="text-xs text-yellow-700 dark:text-yellow-600/80 leading-relaxed">
-                    WhatsApp may show a &quot;could be a scam&quot; warning - this is normal. Tap <span className="text-yellow-500 font-bold">Continue</span> to proceed.
+                    Make sure you are entering the code on the same Telegram account you want to link. The code expires after a few minutes.
                   </p>
                 </div>
               </div>

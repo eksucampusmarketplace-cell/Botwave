@@ -86,7 +86,7 @@ export const PLANS: Record<string, PlanConfig> = {
       'Group analytics',
       'Chatbot flow builder (3 flows)',
       'Rate limit dashboard',
-      'QR expiry alerts (email + WhatsApp)',
+      'Session alerts (email + Telegram)',
     ],
   },
   boss: {

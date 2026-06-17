@@ -19,7 +19,7 @@
 // GSC already trusts.
 import type { MetadataRoute } from 'next';
 
-import { whatsappCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
+import { telegramCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
 import { useCases } from '@/lib/usecases/data';
@@ -83,7 +83,7 @@ function corePages(baseUrl: string): SitemapEntry[] {
     { url: `${baseUrl}/features/ai`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/features/moderation`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/features/media`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/whatsapp-bot`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/telegram-bot`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${baseUrl}/telegram-bot`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${baseUrl}/telegram-group-analytics`, lastModified: REVIEW_DATE, changeFrequency: 'monthly', priority: 0.7 },
     // Pages whose rendered HTML legitimately differs each deploy: keep BUILD_DATE.
@@ -121,15 +121,15 @@ function corePages(baseUrl: string): SitemapEntry[] {
 function commandPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${baseUrl}/commands/whatsapp`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/userbot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     // Per-command reference pages are evergreen — command syntax barely
     // changes month-to-month. Tie lastmod to REVIEW_DATE so the freshness
     // signal matches the rendered "Last reviewed" line, and bumping the
     // review date refreshes the whole command catalogue at once.
-    ...whatsappCommands.map((cmd) => ({
-      url: `${baseUrl}/commands/whatsapp/${cmd.slug}`,
+    ...telegramCommands.map((cmd) => ({
+      url: `${baseUrl}/commands/telegram/${cmd.slug}`,
       lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.5,
@@ -210,23 +210,23 @@ function contentPages(baseUrl: string): SitemapEntry[] {
 function blogPages(baseUrl: string): SitemapEntry[] {
   return [
     { url: `${baseUrl}/blog`, lastModified: new Date('2026-05-18'), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${baseUrl}/blog/how-to-create-free-whatsapp-bot-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${baseUrl}/blog/best-free-whatsapp-bot-groups-nigeria`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/whatsapp-bot-vs-telegram-bot-africa`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/whatsapp-bot-for-business-nigeria`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/free-whatsapp-group-management-bot`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/how-to-automate-whatsapp-messages-free`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/blog/how-to-create-free-telegram-bot-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/blog/best-free-telegram-bot-groups-nigeria`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/blog/telegram-bot-vs-messenger-bot-africa`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/blog/telegram-bot-for-business-nigeria`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/blog/free-telegram-group-management-bot`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${baseUrl}/blog/how-to-automate-telegram-messages-free`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/blog/best-free-bot-platforms-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/free-whatsapp-sticker-bot-how-to-make-stickers`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/whatsapp-bot-commands-list-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/whatsapp-anti-spam-bot-for-groups`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/whatsapp-ai-chatbot-free`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/whatsapp-bot-for-schools-campus-groups`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/whatsapp-bot-south-africa`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/free-telegram-sticker-bot-how-to-make-stickers`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-bot-commands-list-2026`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-anti-spam-bot-for-groups`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-ai-chatbot-free`, lastModified: new Date('2026-05-10'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-bot-for-schools-campus-groups`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-bot-south-africa`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-bot-for-groups-nigeria`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/blog/telegram-userbot-automation`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/free-telegram-group-management-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${baseUrl}/blog/telegram-bot-vs-whatsapp-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-bot-vs-discord-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-anti-spam-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
   ];
 }

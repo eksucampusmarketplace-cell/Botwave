@@ -60,10 +60,10 @@ Send a command in any group where your bot is active:
 - Enable [anti-spam protection](/docs/anti-spam-setup)
 - Try the [AI assistant](/docs/ai-commands)`,
     seoKeywords: ['botwave setup', 'how to set up whatsapp bot', 'whatsapp bot setup guide', 'telegram bot setup'],
-    relatedDocs: ['connect-whatsapp', 'connect-telegram', 'anti-spam-setup'],
+    relatedDocs: ['connect-telegram', 'connect-telegram', 'anti-spam-setup'],
   },
   {
-    slug: 'connect-whatsapp',
+    slug: 'connect-telegram',
     title: 'How to Connect WhatsApp',
     description: 'Step-by-step guide to connecting your WhatsApp number to BotWave via QR code scan.',
     category: 'Setup',
@@ -284,9 +284,9 @@ Random bytes are appended to stickers and images so each file has a unique hash.
 Hard cap of 200 messages per day per session. This keeps your account well within normal usage patterns.
 
 ### Your Device, Your IP
-The most important anti-ban feature: your WhatsApp session runs from your own device IP via QR code. You're not sharing a server IP with thousands of other bot users. This alone drastically reduces ban risk compared to other bot platforms.`,
+The most important anti-ban feature: your Telegram bot session runs from your own device IP via QR code. You're not sharing a server IP with thousands of other bot users. This alone drastically reduces ban risk compared to other bot platforms.`,
     seoKeywords: ['whatsapp anti ban', 'whatsapp bot ban protection', 'how to avoid whatsapp ban', 'whatsapp bot safe', 'anti ban system'],
-    relatedDocs: ['connect-whatsapp', 'qr-troubleshooting', 'getting-started'],
+    relatedDocs: ['connect-telegram', 'qr-troubleshooting', 'getting-started'],
   },
   {
     slug: 'qr-troubleshooting',
@@ -328,7 +328,7 @@ This can happen after a server restart. Click "Reconnect" in the dashboard. If t
 3. Check if you've hit the daily message limit (200 on free plan)
 4. Try in a different group to rule out group-specific issues`,
     seoKeywords: ['whatsapp qr code not working', 'whatsapp bot disconnected', 'whatsapp linked device issues', 'qr scan troubleshooting'],
-    relatedDocs: ['connect-whatsapp', 'anti-ban-explained', 'reconnecting-sessions'],
+    relatedDocs: ['connect-telegram', 'anti-ban-explained', 'reconnecting-sessions'],
   },
   {
     slug: 'ai-commands',
@@ -453,7 +453,7 @@ Telegram bot sessions rarely disconnect. If they do:
 - Don't unlink devices from WhatsApp settings while the bot is running
 - Don't revoke your Telegram bot token while the bot is active`,
     seoKeywords: ['whatsapp bot disconnected', 'reconnect whatsapp bot', 'bot session expired', 'whatsapp bot not responding'],
-    relatedDocs: ['qr-troubleshooting', 'connect-whatsapp', 'connect-telegram'],
+    relatedDocs: ['qr-troubleshooting', 'connect-telegram', 'connect-telegram'],
   },
   {
     slug: 'dashboard-tour',
@@ -802,7 +802,7 @@ BotWave supports running multiple sessions in parallel \u2014 useful for managin
 
 ### Per-Plan Limits
 
-| Plan | WhatsApp sessions | Telegram bots | Telegram userbots |
+| Plan | Telegram bot sessions | Telegram bots | Telegram userbots |
 | --- | --- | --- | --- |
 | Free | 1 | 1 | 0 |
 | Pro | 3 | 5 | 1 |
@@ -834,9 +834,9 @@ If two of your sessions are in the same group, only **one will respond** to a gi
 - For multiple personalities, use **per-group system prompts** (see [AI Providers](/docs/ai-providers)) instead of separate sessions.
 
 > [!NOTE]
-> Multiple WhatsApp sessions count as separate "linked devices" on your phone. WhatsApp currently allows 4 linked devices per number. If you hit the limit, remove old/unused linked devices from WhatsApp \u2192 Settings \u2192 Linked Devices.`,
-    seoKeywords: ['multiple whatsapp bots', 'run multiple telegram bots', 'multi-account bot', 'botwave plans'],
-    relatedDocs: ['billing-and-plans', 'connect-whatsapp', 'dashboard-tour'],
+> Multiple Telegram bot sessions count as separate "linked devices" on your phone. WhatsApp currently allows 4 linked devices per number. If you hit the limit, remove old/unused linked devices from WhatsApp \u2192 Settings \u2192 Linked Devices.`,
+    seoKeywords: ['multiple telegram bots', 'run multiple telegram bots', 'multi-account bot', 'botwave plans'],
+    relatedDocs: ['billing-and-plans', 'connect-telegram', 'dashboard-tour'],
   },
   {
     slug: 'privacy-and-data',
@@ -871,7 +871,7 @@ BotWave is built so that the **least possible amount of your messaging data** is
 
 - **In transit**: TLS 1.3 everywhere.
 - **At rest**: AES-256 for auth state, bcrypt for passwords.
-- WhatsApp session keys are sealed with a per-account derived key, so even a partial DB leak does not expose enough material to take over a session.
+- Telegram bot session keys are sealed with a per-account derived key, so even a partial DB leak does not expose enough material to take over a session.
 
 ### Your Rights
 
@@ -894,7 +894,7 @@ We do **not** sell or share your data with advertisers, brokers, or third-party 
 For abuse reports, send to \`abuse@botwave.online\`. We respond within 24 hours.
 
 For lawful requests, see our [Terms of Service](/privacy) for the legal contact.`,
-    seoKeywords: ['botwave privacy', 'whatsapp bot privacy', 'is botwave safe', 'whatsapp bot data', 'gdpr bot'],
+    seoKeywords: ['botwave privacy', 'telegram bot privacy', 'is botwave safe', 'whatsapp bot data', 'gdpr bot'],
     relatedDocs: ['anti-ban-explained', 'common-errors', 'billing-and-plans'],
   },
   {
@@ -949,7 +949,7 @@ Cancel any time from **Settings \u2192 Billing**. You keep access until the end 
 
 - **Upgrade**: charged pro-rata immediately for the difference.
 - **Downgrade**: takes effect at the end of the current period.`,
-    seoKeywords: ['botwave pricing', 'botwave plans', 'whatsapp bot pricing', 'telegram bot pricing', 'botwave billing'],
+    seoKeywords: ['botwave pricing', 'botwave plans', 'telegram bot pricing', 'telegram bot pricing', 'botwave billing'],
     relatedDocs: ['multi-session', 'api-webhooks', 'privacy-and-data'],
   },
   {
@@ -1014,7 +1014,7 @@ Your configured AI provider rejected the request. Common causes: invalid key, ex
 
 > [!NOTE]
 > If none of the fixes above resolve your issue, open a ticket via the in-app help widget or email \`support@botwave.online\` with the session ID and exact error message.`,
-    seoKeywords: ['botwave error', 'whatsapp bot error', 'telegram bot error', 'bot not working', 'fix bot errors'],
+    seoKeywords: ['botwave error', 'telegram bot error', 'telegram bot error', 'bot not working', 'fix bot errors'],
     relatedDocs: ['qr-troubleshooting', 'reconnecting-sessions', 'api-webhooks'],
   },
   {
@@ -1199,9 +1199,9 @@ There is no Apple webmaster console, so robots.txt is the only signal you contro
 
 > Apply these nine steps in order, and your bot platform will be discoverable across Google, the Bing umbrella, and every AI answer engine in 2026.`,
     seoKeywords: [
-      'whatsapp bot seo guide',
+      'telegram bot seo guide',
       'bot platform seo 2026',
-      'indexnow whatsapp bot',
+      'indexnow telegram bot',
       'ai answer engine seo',
       'perplexity seo guide',
       'chatgpt search seo',

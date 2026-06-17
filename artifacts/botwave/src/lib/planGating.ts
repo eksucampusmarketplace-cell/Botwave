@@ -25,7 +25,7 @@ export interface PlanLimits {
   hasApiAccess: boolean;
   hasCustomBranding: boolean;
   hasQrAlertEmail: boolean;
-  hasQrAlertWhatsApp: boolean;
+  hasQrAlertTelegram: boolean;
 }
 
 const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
@@ -42,7 +42,7 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     hasApiAccess: false,
     hasCustomBranding: false,
     hasQrAlertEmail: false,
-    hasQrAlertWhatsApp: false,
+    hasQrAlertTelegram: false,
   },
   lite: {
     templateLimit: 10,
@@ -57,7 +57,7 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     hasApiAccess: false,
     hasCustomBranding: false,
     hasQrAlertEmail: true,
-    hasQrAlertWhatsApp: false,
+    hasQrAlertTelegram: false,
   },
   standard: {
     templateLimit: 50,
@@ -72,7 +72,7 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     hasApiAccess: false,
     hasCustomBranding: false,
     hasQrAlertEmail: true,
-    hasQrAlertWhatsApp: true,
+    hasQrAlertTelegram: true,
   },
   boss: {
     templateLimit: -1,
@@ -87,7 +87,7 @@ const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     hasApiAccess: true,
     hasCustomBranding: true,
     hasQrAlertEmail: true,
-    hasQrAlertWhatsApp: true,
+    hasQrAlertTelegram: true,
   },
 };
 

@@ -92,7 +92,7 @@ router.post("/feature-request", (req, res) => {
 
 const COMMUNITY_COMMANDS = [
   { id: "1", name: "!ai", category: "AI", description: "Ask Google Gemini any question directly in chat", likes: 324, author: "BotWave Team", status: "approved" },
-  { id: "2", name: "!sticker", category: "Media", description: "Convert any image or GIF to a WhatsApp sticker", likes: 287, author: "BotWave Team", status: "approved" },
+  { id: "2", name: "!sticker", category: "Media", description: "Convert any image or GIF to a Telegram sticker", likes: 287, author: "BotWave Team", status: "approved" },
   { id: "3", name: "!download", category: "Media", description: "Download TikTok, YouTube, Instagram videos without watermark", likes: 265, author: "BotWave Team", status: "approved" },
   { id: "4", name: "!translate", category: "Utility", description: "Translate any message to 20+ languages. Reply to a message to translate it.", likes: 241, author: "BotWave Team", status: "approved" },
   { id: "5", name: "!trivia", category: "Games", description: "Start a trivia quiz in your group. 15 categories available.", likes: 198, author: "BotWave Team", status: "approved" },

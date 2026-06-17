@@ -28,7 +28,7 @@ export interface PricingTier {
   priceUsdEquivalent: string;
   /** Monthly message quota. `null` means unlimited. */
   quotaLimit: number | null;
-  /** How many WhatsApp/Telegram sessions can run on this tier. */
+  /** How many Telegram sessions can run on this tier. */
   sessionLimit: number;
   /** Daily AI query limit. `null` means unlimited. */
   aiDailyLimit: number | null;
@@ -56,7 +56,7 @@ export const PRICING_TIERS: PricingTier[] = [
     aiDailyLimit: 10,
     features: [
       '300 messages per month',
-      '1 WhatsApp or Telegram session',
+      '1 Telegram bot or Userbot session',
       '10 AI queries per day (Groq llama-3.3-70b)',
       'All 150+ built-in commands',
       'Sticker maker, games, polls, translate',
@@ -70,10 +70,9 @@ export const PRICING_TIERS: PricingTier[] = [
       'BotWave\'s free plan covers personal use and small groups: 300 messages/month, 10 AI queries/day, 1 session, 150+ commands. Forever free, no credit card needed.',
     keywords: [
       'botwave free plan',
-      'free whatsapp bot',
       'free telegram bot',
-      'whatsapp bot no card',
-      'best free whatsapp bot 2026',
+      'free telegram bot no card',
+      'best free telegram bot 2026',
     ],
   },
   {
@@ -87,7 +86,7 @@ export const PRICING_TIERS: PricingTier[] = [
     aiDailyLimit: 50,
     features: [
       '2,000 messages per month',
-      '1 WhatsApp or Telegram session',
+      '1 Telegram bot or Userbot session',
       '50 AI queries per day',
       'Auto-reply (custom triggers + business hours)',
       '10 saved message templates',
@@ -96,16 +95,16 @@ export const PRICING_TIERS: PricingTier[] = [
       'QR-expiry alerts via email',
       'Email support',
     ],
-    bestFor: 'Small WhatsApp / Telegram groups, study groups, side projects.',
+    bestFor: 'Small Telegram groups, study groups, side projects.',
     seoTitle: 'BotWave Lite Plan, 2,000 msgs, auto-reply (coming soon)',
     seoDescription:
       'BotWave Lite: 2,000 messages, 50 AI queries/day, auto-reply, business hours, 10 templates, 5 custom commands. Pricing coming soon. Free tier available today.',
     keywords: [
       'botwave lite plan',
-      'cheap whatsapp bot nigeria',
-      'whatsapp auto reply lite',
-      'whatsapp bot 500 naira',
-      'small group whatsapp bot',
+      'cheap telegram bot nigeria',
+      'telegram auto reply bot',
+      'telegram bot 500 naira',
+      'small group telegram bot',
     ],
   },
   {
@@ -119,7 +118,7 @@ export const PRICING_TIERS: PricingTier[] = [
     aiDailyLimit: 200,
     features: [
       '10,000 messages per month',
-      '3 WhatsApp or Telegram sessions',
+      '3 Telegram bot or Userbot sessions',
       '200 AI queries per day',
       'Auto-reply + status viewer',
       'Group analytics dashboard',
@@ -127,7 +126,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '50 message templates',
       '20 custom commands',
       'Priority email support',
-      'QR-expiry alerts via email + WhatsApp',
+      'Session alerts via email + Telegram',
     ],
     bestFor: 'Active community admins, small business support, content creators.',
     recommended: true,
@@ -136,10 +135,10 @@ export const PRICING_TIERS: PricingTier[] = [
       'BotWave Standard: 10k messages, 3 sessions, 200 AI/day, group analytics, chatbot flow builder, priority support. Pricing coming soon. Free tier available today.',
     keywords: [
       'botwave standard plan',
-      'whatsapp bot for business nigeria',
-      'whatsapp group analytics',
-      'whatsapp chatbot flow builder',
-      'whatsapp bot 2000 naira',
+      'telegram bot for business nigeria',
+      'telegram group analytics',
+      'telegram chatbot flow builder',
+      'telegram bot 2000 naira',
     ],
   },
   {
@@ -153,7 +152,7 @@ export const PRICING_TIERS: PricingTier[] = [
     aiDailyLimit: null, // unlimited
     features: [
       'Unlimited messages',
-      '5 WhatsApp or Telegram sessions',
+      '5 Telegram bot or Userbot sessions',
       'Unlimited AI queries',
       'API access (REST + webhooks)',
       'Custom branding',
@@ -161,8 +160,8 @@ export const PRICING_TIERS: PricingTier[] = [
       'Group analytics + CSV export',
       'E-commerce integrations (Flutterwave, Paystack, Stripe)',
       'Unlimited templates + custom commands',
-      'Priority WhatsApp + email support',
-      'All channel alerts (email + WhatsApp + Telegram)',
+      'Priority Telegram + email support',
+      'All channel alerts (email + Telegram)',
     ],
     bestFor: 'Agencies, communities >1k members, businesses needing API access.',
     seoTitle: 'BotWave Boss Plan, unlimited messages + API (coming soon)',
@@ -170,10 +169,10 @@ export const PRICING_TIERS: PricingTier[] = [
       'BotWave Boss: unlimited messages, 5 sessions, unlimited AI, REST API, custom branding, priority support. For agencies + power users. Pricing coming soon.',
     keywords: [
       'botwave boss plan',
-      'whatsapp bot api access',
-      'whatsapp bot for agency',
-      'unlimited whatsapp bot',
-      'whatsapp bot 5000 naira',
+      'telegram bot api access',
+      'telegram bot for agency',
+      'unlimited telegram bot',
+      'telegram bot 5000 naira',
     ],
   },
 ];

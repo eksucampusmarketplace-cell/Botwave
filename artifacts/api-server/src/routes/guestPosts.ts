@@ -15,7 +15,7 @@ const posts: Array<{
   {
     id: "1",
     author_name: "Emeka O.",
-    title: "BotWave saved my WhatsApp group!",
+    title: "BotWave saved my Telegram group!",
     body: "I was spending 2 hours daily managing my 500-member group. After setting up BotWave, the anti-spam and welcome messages handle everything automatically. Highly recommended!",
     original_lang: "en",
     display_lang: "en",
@@ -26,7 +26,7 @@ const posts: Array<{
     id: "2",
     author_name: "Fatima A.",
     title: "The sticker maker is incredible",
-    body: "My students love that they can make custom stickers right inside our WhatsApp group. No need for separate apps. BotWave makes it so easy.",
+    body: "My students love that they can make custom stickers right inside our Telegram group. No need for separate apps. BotWave makes it so easy.",
     original_lang: "en",
     display_lang: "en",
     upvotes: 38,

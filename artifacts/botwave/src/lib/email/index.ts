@@ -103,7 +103,7 @@ export async function sendSessionDownEmail(to: string, username: string, session
   return sendEmail({
     channel: 'notify',
     to,
-    subject: '⚠️ WhatsApp Session Disconnected',
+    subject: '⚠️ Telegram Bot Session Disconnected',
     html: sessionDownTemplate(username, sessionId),
   });
 }

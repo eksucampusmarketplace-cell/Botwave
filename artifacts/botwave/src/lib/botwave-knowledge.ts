@@ -1,10 +1,10 @@
 import { knowledgeBase, type KBEntry } from '../bot/whatsapp/commands/knowledgeBase';
 
 const FAQ_ITEMS: KBEntry[] = [
-  { keywords: ['what is botwave', 'about botwave'], question: 'What is BotWave?', answer: 'BotWave is a free WhatsApp and Telegram bot automation platform with 150+ commands including AI chat, sticker maker, anti-spam, group management, and more. No coding required.', category: 'general' },
+  { keywords: ['what is botwave', 'about botwave'], question: 'What is BotWave?', answer: 'BotWave is a free Telegram bot automation platform with 150+ commands including AI chat, sticker maker, anti-spam, group management, and more. No coding required.', category: 'general' },
   { keywords: ['free', 'cost', 'price'], question: 'Is BotWave really free?', answer: 'Yes! Free tier includes 300 messages/month, 10 AI queries/day, 1 session. Paid plans with higher limits are coming soon.', category: 'billing' },
-  { keywords: ['connect', 'start', 'setup whatsapp'], question: 'How do I connect my WhatsApp?', answer: 'Sign up at botwave.online, go to dashboard, click "Connect WhatsApp", scan the QR code with your phone. Your bot is live in under 2 minutes.', category: 'setup' },
-  { keywords: ['ban', 'banned', 'will i get banned'], question: 'Will WhatsApp ban my number?', answer: 'BotWave has advanced anti-ban protection: session warmup, human-like delays, message variation, rate limiting. Your session runs from your own device IP. Risk is very low.', category: 'features' },
+  { keywords: ['connect', 'start', 'setup', 'botfather'], question: 'How do I connect my Telegram bot?', answer: 'Sign up at botwave.online, go to dashboard, click "Connect Telegram Bot", paste your BotFather token. Your bot is live in under 2 minutes.', category: 'setup' },
+  { keywords: ['ban', 'banned', 'will i get banned'], question: 'Will Telegram restrict my bot?', answer: 'BotWave uses the official Telegram Bot API — zero ban risk for normal use. For Userbots, BotWave\'s rate limiter keeps you within safe Telegram limits.', category: 'features' },
   { keywords: ['telegram', 'telegram bot', 'userbot'], question: 'What Telegram platforms are supported?', answer: 'BotWave supports Telegram Bot (via @BotFather, zero ban risk) and Telegram Userbot (MTProto, runs on your real account).', category: 'features' },
   { keywords: ['human', 'support', 'help', 'agent', 'contact'], question: 'How do I contact a human for support?', answer: "Type 'talk to human' in the chat box, or use the support widget on the website to create a ticket.", category: 'general' },
 ];
@@ -41,17 +41,17 @@ export function searchKnowledgeBase(query: string, limit = 3): SearchResult[] {
 }
 
 export function getBotwaveSystemPrompt(additionalContext?: string): string {
-  return `You are BotWave's AI assistant. You help users with questions about BotWave - a WhatsApp and Telegram bot automation platform.
+  return `You are BotWave's AI assistant. You help users with questions about BotWave - a Telegram bot automation platform.
 
 KEY FACTS:
 - BotWave is free (300 msgs/month). Paid plans are coming soon.
-- Connect via QR code for WhatsApp, or BotFather token for Telegram Bot, or API credentials for Telegram Userbot.
+- Connect via BotFather token for Telegram Bot, or API credentials for Telegram Userbot.
 - 150+ commands: !sticker, !ai, !download, !trivia, !poll, !weather, !translate, !game, !logo, !brandkit, !viewonce, !antidelete, !spy, !tagall, !scan, !digest, !study, !doc, etc.
-- Anti-ban protection: 7-day warmup, human-like delays, message variation.
+- Telegram Bot API: official API, zero ban risk for legitimate use.
 - AI chat uses Groq (primary) and Google Gemini (fallback). No API key needed from user.
 - Support is available via the chat widget on the website.
 - Study Hub: upload study materials, AI generates summaries, quiz questions, and flashcards.
-- The bot runs from the user's own WhatsApp – NOT a separate number.
+- The bot runs as a separate Telegram bot account registered via @BotFather.
 
 RULES:
 - Answer concisely (1-3 sentences if possible).

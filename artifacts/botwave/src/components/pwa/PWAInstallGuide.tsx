@@ -73,7 +73,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
           <div>
             <p className="font-mono text-xs text-green tracking-[2px]">PWA INSTALLED</p>
             <p className="font-mono text-[10px] text-[#5a9a7a] mt-1">
-              BotWave is running as an app. You can now connect your WhatsApp session.
+              BotWave is running as an app. You can now connect your Telegram bot.
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function PWAInstallGuide({ onInstallConfirmed }: PWAInstallGuideP
         INSTALL BOTWAVE APP FIRST
       </h3>
       <p className="font-mono text-[10px] text-[#5a9a7a] mb-6">
-        You must install BotWave as an app on your device before connecting a WhatsApp session.
+        You must install BotWave as an app on your device before connecting a Telegram bot session.
         This keeps the bot running in the background.
       </p>
 
