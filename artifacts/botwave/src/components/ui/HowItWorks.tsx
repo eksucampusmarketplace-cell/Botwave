@@ -11,9 +11,9 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Choose Your Platform',
-    cmd: '$ botwave init --platform [telegram-bot|telegram-userbot]',
-    description: 'Pick your platform: paste a Telegram Bot token from @BotFather, or log in with your Telegram account for userbot mode.',
+    title: 'Connect Your Bot',
+    cmd: '$ botwave init --platform telegram-bot',
+    description: 'Paste your Telegram Bot token from @BotFather. Your bot is connected in seconds.',
   },
   {
     number: '03',

@@ -21,7 +21,7 @@ export const faqItems: FAQItem[] = [
 
 **No account risk**: Telegram bots run as separate accounts registered via @BotFather. Your personal Telegram account is never at risk.
 
-**Telegram Userbots**: If you use a Telegram Userbot (automating your personal account via MTProto), there is a small risk of account restrictions if you send spam or violate Telegram's rules. BotWave's rate limiting keeps you safe in normal usage.
+**Telegram Bots**: If you use a Telegram Bot (automating your personal account via MTProto), there is a small risk of account restrictions if you send spam or violate Telegram's rules. BotWave's rate limiting keeps you safe in normal usage.
 
 BotWave runs fully on the official Telegram Bot API. Your bot is safe.`,
     category: 'Safety',
@@ -46,8 +46,8 @@ BotWave queues outgoing messages and spaces them out automatically. You never ne
 - Typing indicators shown before longer responses
 - Commands that do not need an immediate reply can be processed asynchronously
 
-**Telegram Userbot Limits**
-For Telegram Userbots (MTProto), Telegram enforces stricter limits on personal accounts:
+**Telegram Bot Limits**
+For Telegram Bots (MTProto), Telegram enforces stricter limits on personal accounts:
 - Flood waits: if you send too many messages too fast, Telegram will ask you to wait
 - BotWave respects all flood wait errors and retries automatically
 - Avoid running mass-PM campaigns from a userbot — this can trigger account restrictions
@@ -96,7 +96,7 @@ BotWave is built by a small indie team focused on the African market. We have no
 2. **Server restart** - BotWave reconnects automatically after a server restart. If it doesn't, use the Reconnect button in your dashboard.
 3. **Network interruption** - Temporary network issues cause a brief disconnect; BotWave reconnects automatically within 60 seconds.
 
-**Telegram Userbot disconnections:**
+**Telegram Bot disconnections:**
 1. **Session expired** - Telegram periodically invalidates sessions that haven't been used. Re-authenticate with your API credentials.
 2. **Too many active sessions** - Telegram limits how many active sessions an account can have. Log out old sessions from Telegram Settings > Devices.
 3. **Account restriction** - If your userbot was flagged for unusual activity, Telegram may have logged it out. Check Telegram Settings > Privacy and Security.
@@ -137,7 +137,7 @@ Telegram bot sessions rarely disconnect. If yours did:
 2. If the token was revoked, generate a new one
 3. Update the token in your BotWave dashboard
 
-**For Telegram Userbot:**
+**For Telegram Bot:**
 Userbot sessions auto-reconnect when the server restarts. If yours does not:
 1. Go to your dashboard
 2. Check the session status
@@ -203,7 +203,7 @@ These limits keep your bot within Telegram's official guidelines.`,
 - Dedicated support
 - White-label option
 
-Telegram Bot and Telegram Userbot connections are included in all plans.
+Telegram Bot and Telegram Bot connections are included in all plans.
 
 You can start free and upgrade when you need more sessions or higher limits.`,
     category: 'Pricing',
@@ -222,7 +222,7 @@ You can start free and upgrade when you need more sessions or higher limits.`,
 - 50+ commands
 - Prefix: /
 
-**3. Telegram Userbot**
+**3. Telegram Bot**
 - Connect via API ID and API Hash from my.telegram.org
 - Uses MTProto protocol (GramJS)
 - Automates your real Telegram account
@@ -273,7 +273,7 @@ BotWave is built for Telegram communities in Africa. Trust is everything to us. 
   { slug: 'delete-my-data', question: 'How do I delete my data from BotWave?', answer: 'Comprehensive answer to: How do I delete my data from BotWave? Learn everything you need to know about this topic with BotWave.', category: 'Privacy', seoKeywords: ['delete botwave data', 'remove bot data'], relatedFaqs: [] },
   { slug: 'telegram-bot-token', question: 'How do I get a Telegram bot token?', answer: 'Comprehensive answer to: How do I get a Telegram bot token? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram bot token', 'get telegram token'], relatedFaqs: [] },
   { slug: 'telegram-bot-vs-userbot', question: 'What is the difference between bot and userbot?', answer: 'Comprehensive answer to: What is the difference between bot and userbot? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram bot vs userbot', 'userbot difference'], relatedFaqs: [] },
-  { slug: 'telegram-userbot-safe', question: 'Is using a Telegram userbot safe?', answer: 'Comprehensive answer to: Is using a Telegram userbot safe? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram userbot safe', 'is userbot safe'], relatedFaqs: [] },
+  { slug: 'telegram-bot-safe', question: 'Is using a Telegram userbot safe?', answer: 'Comprehensive answer to: Is using a Telegram userbot safe? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram userbot safe', 'is userbot safe'], relatedFaqs: [] },
   { slug: 'telegram-bot-admin', question: 'Does my Telegram bot need admin rights?', answer: 'Comprehensive answer to: Does my Telegram bot need admin rights? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram bot admin', 'bot admin permissions'], relatedFaqs: [] },
   { slug: 'telegram-api-id', question: 'How do I get Telegram API ID and hash?', answer: 'Comprehensive answer to: How do I get Telegram API ID and hash? Learn everything you need to know about this topic with BotWave.', category: 'Telegram', seoKeywords: ['telegram api id', 'telegram api hash'], relatedFaqs: [] },
   { slug: 'what-commands-available', question: 'What commands are available?', answer: 'Comprehensive answer to: What commands are available? Learn everything you need to know about this topic with BotWave.', category: 'Features', seoKeywords: ['botwave commands', 'available commands'], relatedFaqs: [] },

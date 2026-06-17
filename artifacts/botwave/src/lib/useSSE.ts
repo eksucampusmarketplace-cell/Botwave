@@ -10,7 +10,6 @@ interface SSEOptions {
 interface SSESessionData {
   id: string;
   session_name: string;
-  phone_number: string;
   state: string;
   last_active: string | null;
 }

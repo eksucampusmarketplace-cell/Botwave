@@ -19,8 +19,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.bot_sessions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  phone_number TEXT NOT NULL,
   session_name TEXT NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'telegram-bot',
+  bot_token TEXT,
   state TEXT DEFAULT 'inactive' CHECK (state IN ('active', 'inactive', 'connecting', 'needs_reauth')),
   auth_state JSONB,
   last_active TIMESTAMPTZ,

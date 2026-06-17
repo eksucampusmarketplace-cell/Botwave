@@ -9,19 +9,19 @@ import FeatureCard from '@/components/ui/FeatureCard';
 import HowItWorks from '@/components/ui/HowItWorks';
 import Disclaimer from '@/components/ui/Disclaimer';
 
-type PlatformBadge = 'Telegram Bot' | 'Telegram Userbot';
+type PlatformBadge = 'Telegram Bot' | 'Telegram Bot';
 
 const features: { icon: string; title: string; description: string; platforms: PlatformBadge[] }[] = [
   { icon: 'sticker', title: 'Sticker Maker', description: 'Convert any image or video into a sticker instantly with a simple command.', platforms: ['Telegram Bot'] },
-  { icon: 'ai', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'ai', title: 'AI Chat Reply', description: 'Tag the bot and get intelligent AI replies. Ask anything, get smart answers.', platforms: ['Telegram Bot', 'Telegram Bot'] },
   { icon: 'download', title: 'Media Downloader', description: 'Download YouTube, TikTok and Instagram Reels without watermarks, directly in chat.', platforms: ['Telegram Bot'] },
-  { icon: 'welcome', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'shield', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'welcome', title: 'Welcome Bot', description: 'Greet new group members with a custom, personalized welcome message automatically.', platforms: ['Telegram Bot', 'Telegram Bot'] },
+  { icon: 'shield', title: 'Anti-Spam Protection', description: 'Detects and removes spam or flood messages automatically to keep your group clean.', platforms: ['Telegram Bot', 'Telegram Bot'] },
   { icon: 'game', title: 'Mini Games', description: 'Trivia, Hangman, Word Chain, Number Guess \u2014 play fun games right inside your group.', platforms: ['Telegram Bot'] },
   { icon: 'chart', title: 'Polls & Leaderboard', description: 'Create group polls and track engagement with a live leaderboard.', platforms: ['Telegram Bot'] },
-  { icon: 'tools', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes \u2014 all accessible with simple commands.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'reply', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['Telegram Bot', 'Telegram Userbot'] },
-  { icon: 'lock', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands \u2014 nothing else is stored or shared.', platforms: ['Telegram Bot', 'Telegram Userbot'] },
+  { icon: 'tools', title: 'Smart Tools', description: 'Weather, dictionary, jokes, horoscope, quotes \u2014 all accessible with simple commands.', platforms: ['Telegram Bot', 'Telegram Bot'] },
+  { icon: 'reply', title: 'Auto Reply', description: "Set custom auto-replies for when you're offline, busy, or want to automate responses.", platforms: ['Telegram Bot', 'Telegram Bot'] },
+  { icon: 'lock', title: 'Privacy First', description: 'Your chats stay private. The bot only responds to commands \u2014 nothing else is stored or shared.', platforms: ['Telegram Bot', 'Telegram Bot'] },
 ];
 
 const stats = [
@@ -187,14 +187,14 @@ function NotifyMeButton({ highlight, planName }: { highlight: boolean; planName:
 
 const faqs = [
   { q: 'Is BotWave actually free?', a: 'Yes. Free plan includes 300 messages/month, 10 AI queries/day, and 1 Telegram Bot session. No credit card required. Paid plans exist for power users who need unlimited messages and multiple sessions.' },
-  { q: "What's the difference between Telegram Bot and Telegram Userbot?", a: 'Telegram Bot uses the official Bot API via @BotFather with zero ban risk, ideal for group management and moderation. Telegram Userbot automates your real Telegram account via MTProto to do things like .ban, .mute, .purge, .gban as if you typed them yourself. Both are managed from the same dashboard.' },
+  { q: "What's the difference between Telegram Bot and Telegram Bot?", a: 'Telegram Bot uses the official Bot API via @BotFather with zero ban risk, ideal for group management and moderation. Telegram Bot automates your real Telegram account via MTProto to do things like .ban, .mute, .purge, .gban as if you typed them yourself. Both are managed from the same dashboard.' },
   { q: 'How many groups can my bot manage?', a: 'No group limit on any plan. Your bot works in every group your connected account is in. The only limit is messages per month (300 on free, unlimited on paid plans).' },
-  { q: 'Does BotWave work on iPhone?', a: 'Yes. BotWave works on any device. Paste a token for Telegram Bot, or enter API credentials for Userbot. iPhone, Android, desktop, any browser.' },
+  { q: 'Does BotWave work on iPhone?', a: 'Yes. BotWave works on any device. Paste a bot token from @BotFather. iPhone, Android, desktop, any browser.' },
   { q: 'Can I use BotWave for my school or business group?', a: 'Yes. BotWave works well for campus groups, church groups, business communities, and social clubs. Polls, trivia, anti-spam, AI chat, and auto-replies all help manage larger groups.' },
   { q: 'Is my Telegram account safe?', a: 'BotWave only processes messages in groups where the bot is active. Private messages are never read or stored. All processing happens in memory and is discarded immediately. Telegram Bot uses the official API with zero ban risk.' },
-  { q: 'How do I set up a bot?', a: 'Sign up at botwave.online, go to your dashboard, and pick your platform. Telegram Bot: paste your @BotFather token. Userbot: enter your API credentials. Live in under 2 minutes, no coding needed.' },
+  { q: 'How do I set up a bot?', a: 'Sign up at botwave.online, go to your dashboard, and pick your platform. Telegram Bot: paste your @BotFather token. Bot: enter your API credentials. Live in under 2 minutes, no coding needed.' },
   { q: 'Does BotWave work in Nigeria?', a: 'Yes, BotWave is built for Nigeria and Africa. Payments are in Naira via bank transfer. The platform is optimized for Nigerian internet speeds and Telegram usage patterns.' },
-  { q: 'How is BotWave different from other bots?', a: 'BotWave supports both Telegram Bot and Telegram Userbot from one dashboard. It runs from your own accounts, has strong anti-ban protection, AI chat, and 150+ built-in commands. Most alternatives support only one platform.' },
+  { q: 'How is BotWave different from other bots?', a: 'BotWave supports both Telegram Bot and Telegram Bot from one dashboard. It runs from your own accounts, has strong anti-ban protection, AI chat, and 150+ built-in commands. Most alternatives support only one platform.' },
 ];
 
 export default function HomePage() {
@@ -223,7 +223,7 @@ export default function HomePage() {
               </h1>
 
               <p className="text-xl text-[var(--text-secondary)] max-w-xl mb-4 leading-relaxed">
-                <strong>BotWave is a free Telegram bot automation platform.</strong> Connect via Bot token or Userbot credentials, all from one dashboard.
+                <strong>BotWave is a free Telegram bot automation platform.</strong> Connect via Bot token from @BotFather, all from one dashboard.
               </p>
               <p className="text-lg text-[var(--text-secondary)] max-w-xl mb-10 leading-relaxed">
                 150+ built-in commands: AI chat, stickers, games, anti-spam, media downloads, and group management. No coding, no credit card, no catch.
@@ -425,7 +425,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-block px-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Security</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Your Accounts Are Safe With BotWave</h2>
-            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">BotWave uses the official Telegram Bot API with zero ban risk. For userbots, the advanced anti-ban system uses human-like delays and message variation to reduce risk significantly.</p>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">BotWave uses the official Telegram Bot API with zero ban risk. The official Telegram Bot API is fully supported with zero ban risk.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
@@ -454,7 +454,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="text-center mb-14">
             <span className="inline-block px-4 py-2 bg-[var(--bg-alt)] border border-[var(--border)] rounded-full text-[var(--primary)] text-sm font-semibold mb-4">Telegram</span>
             <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] tracking-tight">Built for Telegram</h2>
-            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Connect your Telegram Bot token or link your Telegram Userbot. Manage groups, auto-reply, and anti-spam from the same dashboard.</p>
+            <p className="mt-4 text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">Connect your Telegram Bot token or link your Telegram Bot. Manage groups, auto-reply, and anti-spam from the same dashboard.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} viewport={{ once: true }} className="glass-card rounded-2xl p-8">
@@ -470,7 +470,7 @@ export default function HomePage() {
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} viewport={{ once: true }} className="glass-card rounded-2xl p-8">
               <div className="w-14 h-14 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-xl flex items-center justify-center text-2xl mb-5">{'⚡'}</div>
-              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Telegram Userbot</h3>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">Telegram Bot</h3>
               <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">Automate your real Telegram account via MTProto (GramJS). Execute commands like .ban, .mute, .afk, .purge, .kang as if you typed them yourself. 100+ commands with anti-ban protection.</p>
               <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
                 <li className="flex items-center gap-2"><span className="text-green-500">{'✓'}</span> MTProto, full account automation</li>
@@ -482,7 +482,7 @@ export default function HomePage() {
           </div>
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }} viewport={{ once: true }} className="flex flex-wrap gap-4 justify-center mt-10">
             <Link href="/telegram-bot-nigeria" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors">Telegram Bot Nigeria</Link>
-            <Link href="/commands" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">All Userbot Commands</Link>
+            <Link href="/commands" className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">All Bot Commands</Link>
             <Link href="/blog/telegram-anti-spam-bot" className="px-6 py-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)] text-sm font-semibold rounded-xl hover:border-blue-500/30 transition-colors">Anti-Spam Guide</Link>
           </motion.div>
         </div>
@@ -502,7 +502,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { slug: 'telegram-bot-for-groups-nigeria', title: 'Telegram Bot for Groups in Nigeria', tag: 'Telegram' },
-              { slug: 'telegram-userbot-automation', title: 'Telegram Userbot Automation Guide', tag: 'Userbot' },
+              { slug: 'telegram-bot-automation', title: 'Telegram Bot Automation Guide', tag: 'Telegram Bot' },
               { slug: 'free-telegram-group-management-bot', title: 'Free Telegram Group Management Bot', tag: 'Telegram' },
               { slug: 'telegram-anti-spam-bot', title: 'Free Telegram Anti-Spam Bot', tag: 'Security' },
               { slug: 'best-free-bot-platforms-2026', title: 'Best Free Bot Platforms of 2026', tag: 'Roundup' },
@@ -566,7 +566,7 @@ export default function HomePage() {
                 {[
                   ['Price', 'Free forever', '$10-50/month'],
                   ['Telegram Bot', 'Yes (Bot API)', 'Some'],
-                  ['Telegram Userbot', 'Yes (MTProto)', 'No'],
+                  ['Telegram Bot', 'Yes (MTProto)', 'No'],
                   ['One dashboard', 'Both platforms', '1 platform only'],
                   ['Anti-ban system', 'Advanced (human-like delays)', 'Basic or none'],
                   ['AI chat', 'Google Gemini', 'ChatGPT ($$$)'],
@@ -615,10 +615,10 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-6 text-center">What Is BotWave?</h2>
           <div className="space-y-4 text-base text-[var(--text-secondary)] leading-relaxed">
             <p>
-              <strong>BotWave</strong> is a free, no-code Telegram bot automation platform that supports both Telegram Bot and Telegram Userbot. It was created by BotWave Team in 2026 and serves users in Nigeria and worldwide.
+              <strong>BotWave</strong> is a free, no-code Telegram bot automation platform that supports both Telegram Bot and Telegram Bot. It was created by BotWave Team in 2026 and serves users in Nigeria and worldwide.
             </p>
             <p>
-              <strong>How it works:</strong> Sign up at botwave.online, connect your account (Telegram Bot via @BotFather token, or Telegram Userbot via MTProto API credentials), and your bot is live in under 2 minutes.
+              <strong>How it works:</strong> Sign up at botwave.online, connect your account (Telegram Bot via @BotFather token, or Telegram Bot via MTProto API credentials), and your bot is live in under 2 minutes.
             </p>
             <p>
               <strong>Key features:</strong> 150+ built-in commands including AI chat (Google Gemini), sticker creation, media downloads, trivia games, polls, anti-spam protection, auto-reply, and group management.
@@ -719,7 +719,7 @@ export default function HomePage() {
               <Link href="/blog/telegram-bot-for-business-nigeria" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot for Nigerian businesses</Link>
               <Link href="/blog/telegram-ai-chatbot-free" className="text-[var(--text-secondary)] hover:text-blue-400">Free Telegram AI chatbot</Link>
               <Link href="/blog/telegram-anti-spam-bot" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram anti-spam bot</Link>
-              <Link href="/blog/telegram-userbot-automation" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram userbot automation guide</Link>
+              <Link href="/blog/telegram-bot-automation" className="text-[var(--text-secondary)] hover:text-blue-400">Telegram bot automation guide</Link>
             </div>
           </div>
 

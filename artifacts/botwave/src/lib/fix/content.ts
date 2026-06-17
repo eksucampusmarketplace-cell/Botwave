@@ -158,14 +158,14 @@ export const fixContent: Record<string, FixContent> = {
 
   'telegram-qr-not-scanning': {
     intro: 'The pairing QR refuses to be recognised by Telegram. Almost always one of: code already expired, camera focus issue, Telegram Web logged out everywhere recently, or a screen-zoom problem distorting the QR. Walk through this in order.',
-    symptoms: ['Phone camera shows the QR but does not register it.', 'Phone shows "QR code expired" within seconds.', 'Telegram says "Cannot scan code" or hangs after scan.'],
+    symptoms: ['Phone camera shows the QR but does not register it.', 'Phone shows "bot token expired" within seconds.', 'Telegram says "Cannot scan code" or hangs after scan.'],
     quickFix: [
       'In BotWave, click "Regenerate QR", old codes expire after 20 seconds.',
       'Hold the phone steady 15-25 cm from the screen.',
       'If using a dual monitor, move the QR window to your primary display.',
     ],
     causes: [
-      { label: 'QR expired (>20s old)', detail: 'Telegram QR codes rotate every 20s for security.', fix: ['Regenerate.'] },
+      { label: 'QR expired (>20s old)', detail: 'Telegram bot tokens rotate every 20s for security.', fix: ['Regenerate.'] },
       { label: 'Phone camera focus', detail: 'Auto-focus needs a moment; if you move the phone too fast it cannot lock.', fix: ['Hold steady for 3 seconds.'] },
       { label: 'Screen zoom / extreme HiDPI scaling', detail: 'A QR rendered too large or too small fails QR detection.', fix: ['Reset browser zoom to 100%.'] },
       { label: 'Telegram logged out everywhere', detail: 'A recent "log out from all devices" can leave the Linked Devices screen in a weird state.', fix: ['Close and re-open Telegram.'] },
@@ -182,7 +182,7 @@ export const fixContent: Record<string, FixContent> = {
     relatedFix: ['telegram-pairing-code-expired'],
     relatedHowTo: ['connect-telegram-bot-qr', 'telegram-pairing-code', 'create-telegram-bot'],
     faqs: [
-      { question: 'Can I use a screenshot of the QR from another device?', answer: 'Telegram blocks screenshots of QR codes scanned from a screen → another screen. Use the camera on the actual phone.' },
+      { question: 'Can I use a screenshot of the QR from another device?', answer: 'Telegram blocks screenshots of bot tokens scanned from a screen → another screen. Use the camera on the actual phone.' },
     ],
   },
 

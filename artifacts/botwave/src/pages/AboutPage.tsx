@@ -34,7 +34,7 @@ const values = [
 
 const platforms = [
   { name: 'Telegram Bot API', desc: 'Official Telegram bot via @BotFather. Zero ban risk. Anti-spam, CAPTCHA, welcome messages, and full group management.', icon: '✈️', color: 'blue' },
-  { name: 'Telegram Userbot', desc: 'Connect your real Telegram account via MTProto. Full personal account automation.', icon: '👤', color: 'violet' },
+  { name: 'Telegram Bot', desc: 'Connect your real Telegram account via MTProto. Full personal account automation.', icon: '👤', color: 'violet' },
 ];
 
 export default function AboutPage() {

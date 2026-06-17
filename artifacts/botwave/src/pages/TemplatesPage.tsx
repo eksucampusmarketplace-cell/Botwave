@@ -113,7 +113,7 @@ export default function TemplatesPage() {
             </span>
             <h1 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Bot Templates</h1>
             <p className="text-lg text-[var(--text-secondary)] max-w-2xl">
-              Prebuilt bot configurations you can activate in minutes. Pick a template, connect your Telegram Bot or Userbot, and it works.
+              Prebuilt bot configurations you can activate in minutes. Pick a template, connect your Telegram Bot, and it works.
             </p>
           </div>
 

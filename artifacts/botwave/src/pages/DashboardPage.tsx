@@ -25,14 +25,13 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-type Platform = 'telegram-bot' | 'telegram-userbot';
+type Platform = 'telegram-bot';
 
 interface ApiSession {
   id: string;
   name: string;
   platform: string;
   status: string;
-  phoneNumber?: string | null;
   botToken?: string | null;
   features: Record<string, boolean>;
   createdAt: string;
@@ -79,12 +78,10 @@ const CATEGORIES: { id: FeatureCategory; label: string; icon: string }[] = [
 
 const platformLabels: Record<Platform, string> = {
   'telegram-bot': 'Telegram Bot',
-  'telegram-userbot': 'Telegram Userbot',
 };
 
 const platformIcons: Record<Platform, string> = {
   'telegram-bot': '🤖',
-  'telegram-userbot': '👤',
 };
 
 const statusColors: Record<string, string> = {
@@ -345,7 +342,7 @@ export default function DashboardPage() {
                   <div className="text-5xl mb-4">🤖</div>
                   <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">No sessions yet</h2>
                   <p className="text-[var(--text-secondary)] mb-6 max-w-sm mx-auto">
-                    Connect your Telegram bot or userbot account to start automating your groups.
+                    Connect your Telegram bot to start automating your groups.
                   </p>
                   <button
                     onClick={() => setShowAddModal(true)}
@@ -512,24 +509,18 @@ export default function DashboardPage() {
 
             {step === 1 && (
               <div>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">Choose which platform to connect:</p>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Connect your Telegram bot to BotWave:</p>
                 <div className="space-y-2">
-                  {(['telegram-bot', 'telegram-userbot'] as Platform[]).map(platform => (
-                    <button
-                      key={platform}
-                      onClick={() => { setSelectedPlatform(platform); setStep(2); }}
-                      className="w-full flex items-center gap-3 p-4 rounded-xl border border-[var(--border)] hover:border-blue-400 text-left transition-colors"
-                    >
-                      <span className="text-2xl">{platformIcons[platform]}</span>
-                      <div>
-                        <p className="font-semibold text-[var(--text-primary)] text-sm">{platformLabels[platform]}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          {platform === 'telegram-bot' && 'Connect via @BotFather token'}
-                          {platform === 'telegram-userbot' && 'Connect your personal Telegram account'}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => { setSelectedPlatform('telegram-bot'); setStep(2); }}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl border border-[var(--border)] hover:border-blue-400 text-left transition-colors"
+                  >
+                    <span className="text-2xl">🤖</span>
+                    <div>
+                      <p className="font-semibold text-[var(--text-primary)] text-sm">Telegram Bot</p>
+                      <p className="text-xs text-[var(--text-muted)]">Connect via @BotFather token</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}

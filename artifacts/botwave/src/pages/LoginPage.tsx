@@ -11,7 +11,7 @@ const terminalLines = [
   { cls: 'output', text: '→ Awaiting credentials...' },
   { cls: 'blank', text: '' },
   { cls: 'comment', text: '# Session capabilities:' },
-  { cls: 'flag', text: '  → Telegram Bot & Userbot automation' },
+  { cls: 'flag', text: '  → Telegram Bot automation' },
   { cls: 'flag', text: '  → AI responses' },
   { cls: 'flag', text: '  → 50+ bot commands' },
   { cls: 'flag', text: '  → Anti-ban protection' },

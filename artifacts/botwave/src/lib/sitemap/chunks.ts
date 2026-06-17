@@ -19,7 +19,7 @@
 // GSC already trusts.
 import type { MetadataRoute } from 'next';
 
-import { telegramCommands, telegramCommands, userbotCommands } from '@/lib/commands/data';
+import { telegramCommands } from '@/lib/commands/data';
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
 import { useCases } from '@/lib/usecases/data';
@@ -123,7 +123,6 @@ function commandPages(baseUrl: string): SitemapEntry[] {
     { url: `${baseUrl}/commands`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/commands/telegram`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${baseUrl}/commands/userbot`, lastModified: BUILD_DATE, changeFrequency: 'weekly', priority: 0.7 },
     // Per-command reference pages are evergreen — command syntax barely
     // changes month-to-month. Tie lastmod to REVIEW_DATE so the freshness
     // signal matches the rendered "Last reviewed" line, and bumping the
@@ -140,8 +139,6 @@ function commandPages(baseUrl: string): SitemapEntry[] {
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
-    ...userbotCommands.map((cmd) => ({
-      url: `${baseUrl}/commands/userbot/${cmd.slug}`,
       lastModified: REVIEW_DATE,
       changeFrequency: 'monthly' as const,
       priority: 0.4,
@@ -224,7 +221,7 @@ function blogPages(baseUrl: string): SitemapEntry[] {
     { url: `${baseUrl}/blog/telegram-bot-for-schools-campus-groups`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-bot-south-africa`, lastModified: new Date('2026-05-13'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-bot-for-groups-nigeria`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/blog/telegram-userbot-automation`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/blog/telegram-bot-automation`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/free-telegram-group-management-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-bot-vs-discord-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/blog/telegram-anti-spam-bot`, lastModified: new Date('2026-05-18'), changeFrequency: 'monthly', priority: 0.7 },

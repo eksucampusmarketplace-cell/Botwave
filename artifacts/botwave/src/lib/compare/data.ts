@@ -281,10 +281,10 @@ export const comparePages: ComparePage[] = [
     keywords: ['botwave vs manychat telegram', 'manychat telegram alternative', 'manychat vs botwave telegram'],
   },
   {
-    slug: 'dead-telegram-userbots-2026',
-    title: 'Dead Telegram Userbots in 2026',
+    slug: 'dead-telegram-bots-2026',
+    title: 'Dead Telegram Bots in 2026',
     description: 'Many popular Telegram userbots have shut down or stopped working. Here is what happened and what alternatives remain active.',
-    seoTitle: 'Dead Telegram Userbots (2026) - Which Ones Still Work?',
+    seoTitle: 'Dead Telegram Bots (2026) - Which Ones Still Work?',
     seoDescription: 'List of dead and discontinued Telegram userbots in 2026. Paperplane, Userge, Telethon bots that stopped. Active alternatives.',
     keywords: ['dead telegram userbots', 'telegram userbot not working', 'telegram userbot shut down', 'active telegram userbot 2026'],
   },

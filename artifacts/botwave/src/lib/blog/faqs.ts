@@ -29,7 +29,7 @@ export const blogMeta: Record<string, BlogMeta> = {
       { question: 'Do I need coding skills to create a Telegram bot in 2026?', answer: 'No. With BotWave you sign up, create a bot via @BotFather, and the bot is live with 100+ commands. No code, no server setup, no Node.js, the platform handles all of that.' },
       { question: 'Will Telegram restrict my bot?', answer: 'Telegram\'s policy targets bulk unsolicited messaging, not automation per se. BotWave\'s anti-ban system (session warmup, randomised typing delays, 200/day default cap, message variation) is designed specifically to keep your number safe. We have seen <0.5% ban rates across 12,000+ active sessions in 2026.' },
       { question: 'Is the free tier really free?', answer: 'Yes. Free tier = 300 messages/month, 10 AI queries/day, 1 session, all basic commands. No credit card required. Paid plans for higher limits are coming soon.' },
-      { question: 'Which is better, pairing code or QR code?', answer: 'Pairing code is more reliable on shared/public networks (no camera required) and is the default in BotWave\'s 2026 onboarding. QR is faster if you have your phone in hand.' },
+      { question: 'Which is better, pairing code or bot token?', answer: 'Pairing code is more reliable on shared/public networks (no camera required) and is the default in BotWave\'s 2026 onboarding. QR is faster if you have your phone in hand.' },
       { question: 'Can I run multiple Telegram bots from one BotWave account?', answer: 'Free tier supports 1 session. Paid tiers (coming soon) will support 3+ sessions, each independently connected via BotFather token.' },
       { question: 'What happens if I unpair my device?', answer: 'The bot stops immediately. Your settings (welcome messages, AI context, scheduled posts) are preserved, re-pair and everything resumes.' },
     ],
@@ -177,7 +177,7 @@ export const blogMeta: Record<string, BlogMeta> = {
     ],
   },
 
-  'telegram-userbot-automation': {
+  'telegram-bot-automation': {
     description: 'Telegram userbot automation, what userbots are, when to use them vs regular bots, and how BotWave handles them.',
     keywords: ['telegram userbot', 'userbot automation', 'telegram self bot', 'telegram api userbot'],
     faqs: [

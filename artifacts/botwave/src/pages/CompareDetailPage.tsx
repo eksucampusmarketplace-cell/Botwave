@@ -17,9 +17,9 @@ const compareContent: Record<string, { intro: string; botwave: string[]; other: 
     other: ['Requires Node.js + JavaScript knowledge', 'Build every command from scratch', 'Must implement all features manually', 'Host yourself', 'No UI unless you build one', 'Free library, expensive to build'],
     verdict: "BotWave gives you a dashboard, 150+ commands, and hosting — built for non-developers. Use a raw library if you're a developer who needs complete custom control."
   },
-  'best-whatsapp-bots-2026': {
+  'best-telegram-bots-2026': {
     intro: "There are several Telegram bot platforms in 2026. Here's an honest comparison of the top options.",
-    botwave: ['Free tier with 300 msgs/month', '150+ built-in commands', 'Official Telegram Bot API', 'Telegram Bot + Userbot in one dashboard', 'Nigeria-native (Naira billing)', '2-minute setup'],
+    botwave: ['Free tier with 300 msgs/month', '150+ built-in commands', 'Official Telegram Bot API', 'Telegram Bot management in one dashboard', 'Nigeria-native (Naira billing)', '2-minute setup'],
     other: ['Most platforms: $20-50/month', 'Limited command sets (10-30 commands)', 'Unofficial APIs with ban risk', 'Single platform only', 'USD billing only', 'Complex setup required'],
     verdict: "BotWave leads on features-per-dollar (especially on the free tier), zero ban risk via official API, and multi-platform Telegram support. Best for individual users, community managers, and small businesses."
   },

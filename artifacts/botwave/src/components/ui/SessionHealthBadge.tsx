@@ -9,7 +9,7 @@
  *     or "no proxy" if the session is going direct from server IP
  *   - The disconnect count in the last 24h, colour-coded green/yellow/red
  *
- * Works uniformly across telegram_bot / telegram_userbot — the
+ * Works with Telegram Bot sessions — the
  * health endpoint is platform-agnostic because bot_sessions and
  * bot_health_events are too.
  *
@@ -77,7 +77,7 @@ export default function SessionHealthBadge({ sessionId }: Props) {
 
   // Proxy badge: green if pinned, grey if going direct (server IP).
   // Going direct is a meaningful warning when scaling beyond 1 session
-  // as Telegram may rate-limit by IP for high-volume userbot sessions.
+  // as Telegram may rate-limit by IP for high-volume sessions.
   const proxyColour = hasProxy
     ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20'
     : 'bg-gray-100 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-500/20';
@@ -98,7 +98,7 @@ export default function SessionHealthBadge({ sessionId }: Props) {
     ? `Assigned ${new Date(data.proxy.lastAssigned).toLocaleString()}`
     : hasProxy
       ? 'Proxy bound this session'
-      : 'Session is connecting from the server IP — at high disconnect risk if you have multiple sessions';
+      : 'Session is connecting from the server IP — consider adding a proxy for multiple sessions';
 
   return (
     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">

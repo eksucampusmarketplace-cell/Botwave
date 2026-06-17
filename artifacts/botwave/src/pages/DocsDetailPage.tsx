@@ -87,13 +87,13 @@ function renderMarkdown(content: string) {
 const platformColors: Record<string, string> = {
   all: 'bg-blue-500/10 text-blue-500',
   telegram: 'bg-blue-500/10 text-blue-500',
-  userbot: 'bg-violet-600/10 text-violet-600',
+  bot: 'bg-blue-500/10 text-blue-500',
 };
 
 const platformLabels: Record<string, string> = {
   all: 'All Platforms',
   telegram: 'Telegram Bot',
-  userbot: 'Userbot',
+  bot: 'Telegram Bot',
 };
 
 export default function DocsDetailPage() {

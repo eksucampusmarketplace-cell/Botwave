@@ -25,7 +25,7 @@ const integrations = [
     category: 'Platforms',
     items: [
       { name: 'Telegram Bot API', description: 'Official Telegram bot support via @BotFather. Zero ban risk. Full group management, anti-spam, CAPTCHA, and federation.', status: 'live', icon: '✈️' },
-      { name: 'Telegram Userbot (GramJS)', description: 'Connect your real Telegram account. Run automation from your personal account with MTProto.', status: 'live', icon: '👤' },
+      { name: 'Telegram Bot (GramJS)', description: 'Connect your real Telegram account. Run automation from your personal account with MTProto.', status: 'live', icon: '👤' },
     ],
   },
   {

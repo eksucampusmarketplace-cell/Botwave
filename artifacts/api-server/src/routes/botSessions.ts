@@ -19,8 +19,8 @@ router.get("/sessions", async (req, res) => {
 router.post("/sessions", async (req, res) => {
   const { name, platform, botToken } = req.body as Record<string, string>;
   if (!name) return res.status(400).json({ error: "Session name is required" });
-  if (!platform || !["telegram-bot", "telegram-userbot"].includes(platform)) {
-    return res.status(400).json({ error: "Invalid platform" });
+  if (!platform || platform !== "telegram-bot") {
+    return res.status(400).json({ error: "Invalid platform. Only telegram-bot is supported." });
   }
 
   const [session] = await db

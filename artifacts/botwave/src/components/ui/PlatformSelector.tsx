@@ -1,25 +1,17 @@
 
-
 import { motion } from 'framer-motion';
-import type { Platform } from '@/lib/types';
 
 interface PlatformSelectorProps {
-  selected: Platform | null;
-  onSelect: (platform: Platform) => void;
+  selected: string | null;
+  onSelect: (platform: string) => void;
 }
 
-const platforms: { id: Platform; label: string; icon: string; description: string }[] = [
+const platforms = [
   {
-    id: 'telegram_bot',
+    id: 'telegram-bot',
     label: 'Telegram Bot',
     icon: '🤖',
     description: 'Connect a Telegram bot via @BotFather token',
-  },
-  {
-    id: 'telegram_userbot',
-    label: 'Telegram Userbot',
-    icon: '👤',
-    description: 'Automate a real Telegram account via MTProto',
   },
 ];
 

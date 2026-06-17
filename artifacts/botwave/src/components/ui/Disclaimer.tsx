@@ -13,12 +13,6 @@ const disclaimerItems = [
     This is fully supported by Telegram with <strong className="text-amber-400">zero ban risk</strong> for the bot itself.
   </>,
   <>
-    <strong className="text-amber-400">Telegram Userbot:</strong> Userbot mode automates a{' '}
-    <strong className="text-amber-400">real Telegram account</strong> via the MTProto API.
-    Use responsibly - Telegram enforces rate limits and may restrict accounts that abuse automation.{' '}
-    <strong className="text-amber-400">Use at your own risk.</strong>
-  </>,
-  <>
     BotWave takes <strong className="text-amber-400">no responsibility</strong> for any account bans, suspensions,
     data loss, or any damages that arise from using this service. Use is entirely{' '}
     <strong className="text-amber-400">at your own risk</strong>.

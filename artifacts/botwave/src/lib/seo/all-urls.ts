@@ -16,7 +16,7 @@
  *   define the URLs here once and import them from both places.
  */
 
-import { telegramCommands, userbotCommands } from '@/lib/commands/data';
+import { telegramCommands } from '@/lib/commands/data';
 import { docPages } from '@/lib/docs/data';
 import { faqItems } from '@/lib/faq/data';
 import { useCases } from '@/lib/usecases/data';
@@ -66,8 +66,6 @@ export const CORE_PATHS: string[] = [
   '/mailbox',
   '/commands',
   '/commands/telegram',
-  '/commands/telegram',
-  '/commands/userbot',
   '/search-engines',
   '/llms.txt',
   '/llms-full.txt',
@@ -89,7 +87,7 @@ export const BLOG_SLUGS: string[] = [
   'telegram-bot-for-schools-campus-groups',
   'telegram-bot-south-africa',
   'telegram-bot-for-groups-nigeria',
-  'telegram-userbot-automation',
+  'telegram-bot-automation',
   'free-telegram-group-management-bot',
   'telegram-bot-vs-discord-bot',
   'telegram-anti-spam-bot',
@@ -112,7 +110,7 @@ function abs(path: string): string {
  *   - blog posts: 18
  *   - pricing tiers: 4 (anchored)
  *   - search-engine deep pages: ~14
- *   - commands: ~150 (wa + tg + userbot)
+ *   - commands: ~150 (telegram bot)
  *   - docs/faq/use-cases/compare/fix/how-to/mailbox: ~250
  *   - landing pages: 20,000+
  *
@@ -138,9 +136,8 @@ export function getAllPublicUrls(): string[] {
     urls.add(abs(`/search-engines/${engine.slug}`));
   }
 
-  // Commands (Telegram / Userbot).
+  // Commands (Telegram Bot).
   for (const cmd of telegramCommands) urls.add(abs(`/commands/telegram/${cmd.slug}`));
-  for (const cmd of userbotCommands) urls.add(abs(`/commands/userbot/${cmd.slug}`));
 
   // Long-tail content categories — every slug counts as its own URL.
   for (const doc of docPages) urls.add(abs(`/docs/${doc.slug}`));

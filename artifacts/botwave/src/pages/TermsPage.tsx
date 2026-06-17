@@ -18,7 +18,7 @@ const sections = [
     id: 'service',
     title: '2. Service description',
     paragraphs: [
-      'BotWave is a self-service automation platform for Telegram. You connect your own Telegram account (via Telegram bot token or Telegram Userbot session) and the Service runs configurable bots, group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features.',
+      'BotWave is a self-service automation platform for Telegram. You connect your own Telegram account (via Telegram bot token or Telegram Bot session) and the Service runs configurable bots, group moderation, AI replies, sticker maker, media downloader, games, scheduled messages, and other features.',
       'BotWave is a software platform. We do not provide Telegram itself and do not act as a messaging service of record.',
     ],
     items: [],
@@ -70,7 +70,7 @@ const sections = [
     id: 'liability',
     title: '7. Limitation of liability',
     paragraphs: [
-      'BotWave is provided "as is" without warranties of any kind. Telegram Bots use the official Bot API with zero official ban risk, but Telegram Userbots carry inherent platform risk. We are not liable for account restrictions that may result from Userbot usage.',
+      'BotWave is provided "as is" without warranties of any kind. Telegram Bots use the official Bot API with zero official ban risk, but We are not liable for account restrictions arising from misuse of the Bot API.',
       'Our total liability to you for any claim arising from these Terms will not exceed the amount you paid us in the 3 months preceding the claim.',
     ],
     items: [],

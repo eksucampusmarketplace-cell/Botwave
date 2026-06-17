@@ -30,8 +30,8 @@ export const recentBlogPosts: RecentPost[] = [
     readMinutes: 7,
   },
   {
-    slug: 'telegram-userbot-automation',
-    title: 'Telegram Userbot Automation',
+    slug: 'telegram-bot-automation',
+    title: 'Telegram Bot Automation',
     description: 'Run your own personal Telegram userbot. 200+ commands, auto-reply, AFK mode, anti-spam.',
     publishedAt: '2026-05-18',
     readMinutes: 9,

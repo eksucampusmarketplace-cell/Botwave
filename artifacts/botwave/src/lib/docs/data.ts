@@ -17,7 +17,7 @@ export const docPages: DocPage[] = [
   {
     slug: 'getting-started',
     title: 'Getting Started with BotWave',
-    description: 'Set up your first bot in under 2 minutes. Connect WhatsApp, Telegram Bot, or Telegram Userbot from one dashboard.',
+    description: 'Set up your first bot in under 2 minutes. Connect Telegram Bot, or Telegram Bot from one dashboard.',
     category: 'Setup',
     platform: 'all',
     content: `## Getting Started with BotWave
@@ -28,9 +28,9 @@ Go to [botwave.online/signup](https://www.botwave.online/signup) and create a fr
 ### Step 2: Choose Your Platform
 From your dashboard, pick which platform you want to connect:
 
-**WhatsApp Bot**
-1. Click "Connect WhatsApp"
-2. Scan the QR code with your phone (WhatsApp > Settings > Linked Devices > Link a Device)
+**Telegram Bot**
+1. Click "Connect Telegram"
+2. Scan the bot token with your phone (Telegram > Settings > Linked Devices > Link a Device)
 3. Wait for the connection to establish
 4. Your bot is now live in all your groups
 
@@ -41,18 +41,18 @@ From your dashboard, pick which platform you want to connect:
 4. Paste it in the BotWave dashboard
 5. Add the bot to your group and make it admin
 
-**Telegram Userbot**
+**Telegram Bot**
 1. Go to my.telegram.org and log in
 2. Create an application to get your API ID and API Hash
 3. Enter these in the BotWave dashboard
-4. Scan the QR code or enter the verification code
+4. Scan the bot token or enter the verification code
 5. Your userbot is live
 
 ### Step 3: Test It
 Send a command in any group where your bot is active:
-- WhatsApp: Type \`!ping\` or \`!help\`
+- Telegram: Type \`!ping\` or \`!help\`
 - Telegram Bot: Type \`/start\` or \`/help\`
-- Telegram Userbot: Type \`.alive\` or \`.ping\`
+- Telegram Bot: Type \`.alive\` or \`.ping\`
 
 ### What's Next?
 - Browse the [Command Gallery](/commands) to see all available commands
@@ -107,11 +107,11 @@ Type \`/start\` or \`/ping\` in a group where the bot is admin.`,
   },
   {
     slug: 'connect-userbot',
-    title: 'How to Set Up Telegram Userbot',
+    title: 'How to Set Up Telegram Bot',
     description: 'Connect your Telegram account as a userbot using MTProto API credentials.',
     category: 'Setup',
     platform: 'userbot',
-    content: `## How to Set Up Telegram Userbot
+    content: `## How to Set Up Telegram Bot
 
 ### What is a Userbot?
 A userbot automates your real Telegram account. Unlike a regular bot, it acts as YOU. It can do everything you can do: ban users, delete messages, pin posts, and more. Commands use a \`.\` prefix.
@@ -132,9 +132,9 @@ A userbot automates your real Telegram account. Unlike a regular bot, it acts as
 
 1. Log in to [botwave.online](https://www.botwave.online)
 2. Go to your **Dashboard**
-3. Click **"Connect Telegram Userbot"**
+3. Click **"Connect Telegram Bot"**
 4. Enter your **API ID** and **API Hash**
-5. Scan the QR code with your Telegram app, or enter the verification code sent to your Telegram
+5. Scan the bot token with your Telegram app, or enter the verification code sent to your Telegram
 6. You'll see "Connected" with your account name
 
 ### Important Notes
@@ -148,14 +148,14 @@ A userbot automates your real Telegram account. Unlike a regular bot, it acts as
   {
     slug: 'anti-spam-setup',
     title: 'Anti-Spam and Moderation Setup',
-    description: 'Set up automated spam protection for WhatsApp and Telegram groups. Anti-flood, captcha, blacklist, and more.',
+    description: 'Set up automated spam protection for Telegram groups. Anti-flood, captcha, blacklist, and more.',
     category: 'Features',
     platform: 'all',
     content: `## Setting Up Anti-Spam Protection
 
-### WhatsApp Anti-Spam
+### Telegram Anti-Spam
 
-BotWave includes built-in flood detection for WhatsApp groups:
+BotWave includes built-in flood detection for Telegram groups:
 - **Flood detection**: If a user sends 5+ messages in 10 seconds, they get a warning
 - **Rate limiting**: Maximum 10 messages per minute per session, 20 per user
 - **Anti-delete**: Enable with \`!antidelete on\` to recover deleted messages
@@ -179,7 +179,7 @@ Full suite of anti-spam tools:
 **Anti-Raid**
 \`/antiraid on\` - Detect and block mass join attacks. Useful during raids.
 
-### Telegram Userbot Anti-Spam
+### Telegram Bot Anti-Spam
 
 **.antiflood [limit]**
 Set flood limit for groups where you're admin. Uses your admin rights directly.
@@ -192,7 +192,7 @@ Globally ban a spammer across ALL your groups with one command.
 2. Enable captcha (Telegram): \`/captcha on\`
 3. Blacklist common spam words: \`/blacklist add crypto\`, \`/blacklist add earn money\`
 4. Set welcome message with rules: \`/welcome Welcome {name}! Read the pinned rules.\``,
-    seoKeywords: ['whatsapp anti spam bot', 'telegram anti spam', 'group spam protection', 'whatsapp moderation bot'],
+    seoKeywords: ['telegram anti spam bot', 'telegram anti spam', 'group spam protection', 'telegram moderation bot'],
     relatedDocs: ['getting-started', 'anti-ban-explained', 'group-management'],
   },
   {
@@ -206,7 +206,7 @@ Globally ban a spammer across ALL your groups with one command.
 ### Telegram Bot API (Zero Ban Risk)
 Telegram Bot API is an **official, sanctioned API**. Your personal account is never involved. Bots do not get banned for normal usage — only for spam or ToS violations (e.g., sending unsolicited messages to users who never contacted the bot).
 
-### Telegram Userbot (MTProto) — How BotWave Protects You
+### Telegram Bot (MTProto) — How BotWave Protects You
 
 Telegram monitors MTProto accounts for flood and spam patterns. BotWave applies several protections:
 
@@ -258,7 +258,7 @@ The userbot respects a configurable daily outbound cap. Default: 200 messages/da
 **"Bot was blocked" or "Forbidden" errors**
 The bot was blocked by the user or removed from the group. Add it back and grant admin rights.
 
-### Telegram Userbot Not Connecting
+### Telegram Bot Not Connecting
 
 **"Phone number invalid"**
 Enter your number in international format without the \`+\`: e.g., \`2348012345678\`
@@ -290,7 +290,7 @@ Your session string expired or was revoked. Go to Dashboard → Sessions → Rec
     platform: 'all',
     content: `## AI Commands
 
-### WhatsApp AI (\`!ai\`)
+### Telegram AI (\`!ai\`)
 Type \`!ai\` followed by any question or prompt:
 - \`!ai explain blockchain simply\`
 - \`!ai write a birthday message for my friend\`
@@ -317,14 +317,14 @@ Ask BotWave about its own features:
 
 ### Auto-Reply Setup
 Set automatic responses for when you're away:
-- WhatsApp: \`!afk studying\` - auto-reply to tags with your reason
+- Telegram: \`!afk studying\` - auto-reply to tags with your reason
 - Userbot: \`.afk busy\` - same for Telegram
 
 ### AI Limits
 - Free plan: 10 AI queries per day
 - Standard plan: 100 queries per day
 - Boss plan: Unlimited queries`,
-    seoKeywords: ['whatsapp ai bot', 'whatsapp ai chatbot', 'ai auto reply whatsapp', 'whatsapp ai commands'],
+    seoKeywords: ['telegram ai bot', 'telegram ai chatbot', 'ai auto reply telegram', 'telegram ai commands'],
     relatedDocs: ['getting-started', 'anti-spam-setup', 'welcome-messages'],
   },
   {
@@ -337,13 +337,13 @@ Set automatic responses for when you're away:
 
 ### Setting a Welcome Message
 
-**WhatsApp:**
+**Telegram:**
 \`!welcome Welcome to the group, {name}! Please read the pinned rules.\`
 
 **Telegram Bot:**
 \`/welcome Hey {name}, welcome to {group}! We have {count} members.\`
 
-**Telegram Userbot:**
+**Telegram Bot:**
 \`.setwelcome Welcome {name}!\`
 
 ### Available Variables
@@ -352,12 +352,12 @@ Set automatic responses for when you're away:
 - \`{count}\` - Member count (Telegram only)
 
 ### Disabling Welcome Messages
-- WhatsApp: \`!welcome off\`
+- Telegram: \`!welcome off\`
 - Telegram: \`/welcome off\`
 - Userbot: \`.rmwelcome\`
 
 ### Setting a Goodbye Message
-- WhatsApp: \`!goodbye Bye {name}, we'll miss you!\`
+- Telegram: \`!goodbye Bye {name}, we'll miss you!\`
 - Telegram: \`/goodbye {name} has left the chat.\`
 
 ### Tips
@@ -365,29 +365,29 @@ Set automatic responses for when you're away:
 - Include a link to group rules
 - Mention the command prefix so new members know how to use the bot
 - For Telegram, combine with CAPTCHA for spam protection`,
-    seoKeywords: ['whatsapp welcome bot', 'telegram welcome message', 'auto greet new members', 'welcome message bot'],
+    seoKeywords: ['telegram welcome bot', 'telegram welcome message', 'auto greet new members', 'welcome message bot'],
     relatedDocs: ['getting-started', 'anti-spam-setup', 'ai-commands'],
   },
   {
     slug: 'reconnecting-sessions',
     title: 'Reconnecting Disconnected Sessions',
-    description: 'How to reconnect when your WhatsApp or Telegram session disconnects from BotWave.',
+    description: 'How to reconnect when your Telegram session disconnects from BotWave.',
     category: 'Troubleshooting',
     platform: 'all',
     content: `## Reconnecting Disconnected Sessions
 
 ### Why Sessions Disconnect
-- Phone lost internet connection (WhatsApp)
-- WhatsApp app was updated
+- Phone lost internet connection (Telegram)
+- Telegram app was updated
 - Server maintenance (rare)
 - Session was idle for too long
 - You manually logged out from linked devices
 
-### Reconnecting WhatsApp
+### Reconnecting Telegram
 1. Open your BotWave dashboard
 2. Find the disconnected session
 3. Click "Reconnect" or "Re-scan QR"
-4. If reconnect doesn't work, scan a new QR code
+4. If reconnect doesn't work, scan a new bot token
 
 ### Reconnecting Telegram Bot
 Telegram bot sessions rarely disconnect. If they do:
@@ -395,16 +395,16 @@ Telegram bot sessions rarely disconnect. If they do:
 2. Open @BotFather, send /mybots, select your bot
 3. If the token was revoked, generate a new one and update it in BotWave
 
-### Reconnecting Telegram Userbot
+### Reconnecting Telegram Bot
 1. Open your BotWave dashboard
 2. The userbot should auto-reconnect on server restart
 3. If it doesn't, re-enter your API credentials
 
 ### Preventing Disconnections
-- Keep your phone connected to internet (WhatsApp)
-- Don't unlink devices from WhatsApp settings while the bot is running
+- Keep your phone connected to internet (Telegram)
+- Don't unlink devices from Telegram settings while the bot is running
 - Don't revoke your Telegram bot token while the bot is active`,
-    seoKeywords: ['whatsapp bot disconnected', 'reconnect whatsapp bot', 'bot session expired', 'whatsapp bot not responding'],
+    seoKeywords: ['telegram bot disconnected', 'reconnect telegram bot', 'bot session expired', 'telegram bot not responding'],
     relatedDocs: ['qr-troubleshooting', 'connect-telegram', 'connect-telegram'],
   },
   {
@@ -423,7 +423,7 @@ The left sidebar groups everything into four areas:
 
 | Section | What it does |
 | --- | --- |
-| **Sessions** | Connect / disconnect WhatsApp, Telegram Bot, and Telegram Userbot. Live status indicators. |
+| **Sessions** | Connect / disconnect Telegram Bot, and Telegram Bot. Live status indicators. |
 | **Commands** | Toggle individual commands on or off per session. |
 | **Analytics** | Daily message counts, top commands, top groups, growth charts. |
 | **Settings** | Account, billing, API keys, webhook endpoints, notification preferences. |
@@ -462,7 +462,7 @@ If you need to integrate BotWave with another service, generate a key here. See 
 - \`g a\` \u2014 jump to Analytics
 - \`g b\` \u2014 jump to Billing
 - \`?\` \u2014 open the full shortcut help`,
-    seoKeywords: ['botwave dashboard', 'how to use botwave', 'botwave panel', 'whatsapp bot dashboard'],
+    seoKeywords: ['botwave dashboard', 'how to use botwave', 'botwave panel', 'telegram bot dashboard'],
     relatedDocs: ['getting-started', 'api-webhooks', 'billing-and-plans'],
   },
   {
@@ -519,7 +519,7 @@ Variables you can use:
 ### Per-Group Overrides
 
 Need a stricter bot in your work group and a chatty one in your fun group? Open the group's settings inside the **Sessions** panel and override the system prompt + temperature there.`,
-    seoKeywords: ['ai bot whatsapp', 'gemini whatsapp bot', 'openai telegram bot', 'groq bot', 'ai chatbot setup'],
+    seoKeywords: ['ai bot telegram', 'gemini telegram bot', 'openai telegram bot', 'groq bot', 'ai chatbot setup'],
     relatedDocs: ['ai-commands', 'custom-commands', 'api-webhooks'],
   },
   {
@@ -594,7 +594,7 @@ Rules for {{group}}:
 \`\`\`text
 Weather for {{arg}}: {{ai:Give the current weather for the city "{{arg}}" in one short sentence.}}
 \`\`\``,
-    seoKeywords: ['custom whatsapp commands', 'create bot commands', 'custom telegram bot commands', 'no-code bot'],
+    seoKeywords: ['custom telegram commands', 'create bot commands', 'custom telegram bot commands', 'no-code bot'],
     relatedDocs: ['ai-providers', 'welcome-messages', 'api-webhooks'],
   },
   {
@@ -605,7 +605,7 @@ Weather for {{arg}}: {{ai:Give the current weather for the city "{{arg}}" in one
     platform: 'all',
     content: `## Group Management & Moderation
 
-The moderation toolkit gives you the same controls a paid Telegram mod-bot offers \u2014 plus WhatsApp support.
+The moderation toolkit gives you the same controls a paid Telegram mod-bot offers \u2014 plus Telegram support.
 
 ### Permission Model
 
@@ -646,7 +646,7 @@ In **Sessions \u2192 (your session) \u2192 Anti-Flood**, set per-user limits:
 ### Filters / Auto-Replies
 
 Set keyword-triggered auto-replies (e.g. user says "support" \u2192 bot replies with a help link). Filters are case-insensitive by default and can match exact words or substrings.`,
-    seoKeywords: ['whatsapp group moderation', 'telegram mod bot', 'anti-spam bot', 'group management bot'],
+    seoKeywords: ['telegram group moderation', 'telegram mod bot', 'anti-spam bot', 'group management bot'],
     relatedDocs: ['anti-spam-setup', 'welcome-messages', 'custom-commands'],
   },
   {
@@ -739,18 +739,18 @@ const expected = crypto
   .digest('hex');
 if (sig !== expected) return res.status(401).end();
 \`\`\``,
-    seoKeywords: ['botwave api', 'whatsapp bot api', 'telegram bot webhooks', 'whatsapp api integration'],
+    seoKeywords: ['botwave api', 'telegram bot api', 'telegram bot webhooks', 'telegram api integration'],
     relatedDocs: ['custom-commands', 'dashboard-tour', 'billing-and-plans'],
   },
   {
     slug: 'multi-session',
     title: 'Multi-Session & Account Limits',
-    description: 'Run multiple WhatsApp numbers and Telegram bots from one account. Limits per plan, isolation, and best practices.',
+    description: 'Run multiple Telegram bot and Telegram bots from one account. Limits per plan, isolation, and best practices.',
     category: 'Advanced',
     platform: 'all',
     content: `## Multi-Session & Account Limits
 
-BotWave supports running multiple sessions in parallel \u2014 useful for managing several WhatsApp numbers, multiple Telegram bots, or one-of-each.
+BotWave supports running multiple sessions in parallel \u2014 useful for managing several Telegram bot, multiple Telegram bots, or one-of-each.
 
 ### Per-Plan Limits
 
@@ -782,11 +782,11 @@ If two of your sessions are in the same group, only **one will respond** to a gi
 ### Best Practices
 
 - Use **one session per use-case**, not per group. A single session can serve many groups.
-- Don't connect the same WhatsApp number on multiple browsers or devices outside BotWave \u2014 it can corrupt auth state.
+- Don't connect the same Telegram bot on multiple browsers or devices outside BotWave \u2014 it can corrupt auth state.
 - For multiple personalities, use **per-group system prompts** (see [AI Providers](/docs/ai-providers)) instead of separate sessions.
 
 > [!NOTE]
-> Multiple Telegram bot sessions count as separate "linked devices" on your phone. WhatsApp currently allows 4 linked devices per number. If you hit the limit, remove old/unused linked devices from WhatsApp \u2192 Settings \u2192 Linked Devices.`,
+> Multiple Telegram bot sessions count as separate "linked devices" on your phone. Telegram currently allows 4 linked devices per number. If you hit the limit, remove old/unused linked devices from Telegram \u2192 Settings \u2192 Linked Devices.`,
     seoKeywords: ['multiple telegram bots', 'run multiple telegram bots', 'multi-account bot', 'botwave plans'],
     relatedDocs: ['billing-and-plans', 'connect-telegram', 'dashboard-tour'],
   },
@@ -806,7 +806,7 @@ BotWave is built so that the **least possible amount of your messaging data** is
 | --- | --- | --- |
 | Account email | Yes | Login + billing |
 | Hashed password | Yes (bcrypt) | Auth |
-| Session auth state (WhatsApp) | Yes (encrypted at rest) | So your bot reconnects automatically |
+| Session auth state (Telegram) | Yes (encrypted at rest) | So your bot reconnects automatically |
 | Session auth state (Telegram bot tokens) | Yes (encrypted at rest) | Same as above |
 | Command execution logs | 30 days | Debugging, abuse review |
 | Message content | **Not stored long-term.** Only buffered for the seconds needed to process the command. | We don't want it. |
@@ -846,7 +846,7 @@ We do **not** sell or share your data with advertisers, brokers, or third-party 
 For abuse reports, send to \`abuse@botwave.online\`. We respond within 24 hours.
 
 For lawful requests, see our [Terms of Service](/privacy) for the legal contact.`,
-    seoKeywords: ['botwave privacy', 'telegram bot privacy', 'is botwave safe', 'whatsapp bot data', 'gdpr bot'],
+    seoKeywords: ['botwave privacy', 'telegram bot privacy', 'is botwave safe', 'telegram bot data', 'gdpr bot'],
     relatedDocs: ['anti-ban-explained', 'common-errors', 'billing-and-plans'],
   },
   {
@@ -861,9 +861,9 @@ For lawful requests, see our [Terms of Service](/privacy) for the legal contact.
 
 | Plan | Price | Best for | Key limits |
 | --- | --- | --- | --- |
-| **Free** | $0 | Trying it out, small personal groups | 1 WhatsApp + 1 Telegram bot, 200 msgs/day per session |
-| **Pro** | $5 / month | Small communities and side projects | 3 WhatsApp + 5 Telegram bots, 5,000 msgs/day per session, API access |
-| **Business** | $29 / month | Agencies, support teams, communities >10k | 10 WhatsApp + 25 Telegram bots, fair-use limits, priority queue, SLA |
+| **Free** | $0 | Trying it out, small personal groups | 1 Telegram + 1 Telegram bot, 200 msgs/day per session |
+| **Pro** | $5 / month | Small communities and side projects | 3 Telegram + 5 Telegram bots, 5,000 msgs/day per session, API access |
+| **Business** | $29 / month | Agencies, support teams, communities >10k | 10 Telegram + 25 Telegram bots, fair-use limits, priority queue, SLA |
 
 Yearly billing saves 2 months (pay 10, get 12).
 
@@ -920,16 +920,16 @@ You tried to use a command or API endpoint with a session ID that doesn't exist 
 
 **Fix:** Reconnect the session from the dashboard. The session may have been removed because of inactivity or a manual disconnect.
 
-### "Device was unlinked" (WhatsApp)
+### "Device was unlinked" (Telegram)
 
-WhatsApp removed BotWave from your linked devices, usually because:
+Telegram removed BotWave from your linked devices, usually because:
 - You manually unlinked it
 - Your phone has been offline for more than 14 days
-- You used WhatsApp Web in a way that conflicted with the linked device
+- You used Telegram Web in a way that conflicted with the linked device
 
 **Fix:**
-1. On your phone: WhatsApp \u2192 Settings \u2192 Linked Devices \u2014 confirm BotWave is gone
-2. In the dashboard, click **Connect WhatsApp** again and re-scan
+1. On your phone: Telegram \u2192 Settings \u2192 Linked Devices \u2014 confirm BotWave is gone
+2. In the dashboard, click **Connect Telegram** again and re-scan
 
 ### "401 Unauthorized" (API)
 
@@ -949,9 +949,9 @@ Your Telegram bot can't moderate because it's not an admin in the group.
 
 **Fix:** Promote the bot \u2014 group settings \u2192 Administrators \u2192 Add Administrator \u2192 select your bot \u2192 grant at least "Delete messages", "Ban users", and "Pin messages".
 
-### "QR code expired"
+### "bot token expired"
 
-QR codes are short-lived (\u224860s) so they can't be intercepted.
+bot tokens are short-lived (\u224860s) so they can't be intercepted.
 
 **Fix:** Click **Refresh QR**. Have your phone open to the Linked Devices screen so you can scan immediately.
 
@@ -973,7 +973,7 @@ Your configured AI provider rejected the request. Common causes: invalid key, ex
     slug: 'search-engine-optimization-guide-2026',
     title: 'Search Engine Optimization Guide for Bot Platforms (2026)',
     description:
-      'Step-by-step guide to making a WhatsApp/Telegram bot platform discoverable across Google, the Bing umbrella, and modern AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com).',
+      'Step-by-step guide to making a Telegram bot platform discoverable across Google, the Bing umbrella, and modern AI answer engines (Perplexity, ChatGPT Search, Brave Leo, You.com).',
     category: 'Advanced',
     platform: 'all',
     lastUpdated: '2026-05-22',
@@ -981,7 +981,7 @@ Your configured AI provider rejected the request. Common causes: invalid key, ex
 
 This is the **complete** SEO playbook BotWave uses to stay discoverable across the modern search landscape, traditional engines, the Bing umbrella, and the new AI answer engines. Everything below is what we actually run in production; nothing is theoretical.
 
-If you are scaling a bot platform (WhatsApp, Telegram, or any high-volume programmatic site), follow these steps in order. The earlier steps unblock the later ones.
+If you are scaling a bot platform (Telegram, Telegram, or any high-volume programmatic site), follow these steps in order. The earlier steps unblock the later ones.
 
 ### The 2026 search landscape, what you actually need to cover
 
@@ -1137,8 +1137,8 @@ There is no Apple webmaster console, so robots.txt is the only signal you contro
 
 1. **Indexing the dashboard.** Auth-required pages should be in \`Disallow:\` so they don't pollute the index. We block \`/api/\`, \`/dashboard/\`, \`/admin/\`.
 2. **Indexing the QR-pairing page with a query string.** Dynamic QR URLs change every load. Block the pattern in \`robots.txt\` or use \`<meta name="robots" content="noindex">\` on the route.
-3. **Duplicate pages per region.** If you build \`/whatsapp-bot-nigeria\`, \`/whatsapp-bot-lagos\`, \`/whatsapp-bot-abuja\` with the same body, Google will pick one canonical and ignore the rest. Differentiate the body or merge.
-4. **Forgetting OpenGraph on programmatic pages.** When Meta AI / WhatsApp / Telegram unfurl your URL, they read \`og:image\` and \`og:description\`. We auto-generate OG images via \`/api/og?title=\` from the page title.
+3. **Duplicate pages per region.** If you build \`/telegram-bot-nigeria\`, \`/telegram-bot-lagos\`, \`/telegram-bot-abuja\` with the same body, Google will pick one canonical and ignore the rest. Differentiate the body or merge.
+4. **Forgetting OpenGraph on programmatic pages.** When Meta AI / Telegram / Telegram unfurl your URL, they read \`og:image\` and \`og:description\`. We auto-generate OG images via \`/api/og?title=\` from the page title.
 
 ### Useful resources
 

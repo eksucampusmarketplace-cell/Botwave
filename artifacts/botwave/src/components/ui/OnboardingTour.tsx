@@ -18,7 +18,7 @@ const steps = [
   },
   {
     target: '[data-tour="add-session"]',
-    content: 'Click here to connect a new Telegram bot or userbot. You\'ll need your @BotFather token.',
+    content: 'Click here to connect a new Telegram bot. You\'ll need your @BotFather token.',
     placement: 'top' as const,
   },
   {

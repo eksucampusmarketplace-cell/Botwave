@@ -9,7 +9,7 @@ const courses = [
     lessons: 6,
     duration: '30 min',
     level: 'Beginner',
-    topics: ['What is a Telegram bot', 'How @BotFather token works', 'Understanding Bot API vs Userbot', 'Your first bot setup', 'Basic commands and features', 'Group management best practices'],
+    topics: ['What is a Telegram bot', 'How @BotFather token works', 'Understanding the Telegram Bot API', 'Your first bot setup', 'Basic commands and features', 'Group management best practices'],
     link: '/docs/getting-started',
     icon: '📱',
   },

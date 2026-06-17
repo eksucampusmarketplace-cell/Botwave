@@ -7,14 +7,12 @@ function PlatformSection({ platform }: { platform: Platform }) {
   const meta = platformMeta[platform];
   const commands = allCommands[platform];
   const categories = [...new Set(commands.map(c => c.category))];
-  const urlPrefix = platform === 'userbot' ? '/commands/userbot' : `/commands/${platform}`;
+  const urlPrefix = `/commands/${platform}`;
 
   return (
     <div className="mb-20">
       <div className="flex items-center gap-4 mb-8">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold ${
-          platform === 'telegram' ? 'bg-blue-500' : 'bg-violet-600'
-        }`}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold bg-blue-500">
           {meta.icon}
         </div>
         <div>
@@ -77,15 +75,13 @@ export default function CommandsPage() {
             Command Gallery
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mb-4">
-            {totalCommands}+ commands across Telegram Bot and Telegram Userbot. Everything you need to automate, moderate, and supercharge your groups.
+            {totalCommands}+ Telegram Bot commands. Everything you need to automate, moderate, and supercharge your groups.
           </p>
           <div className="flex gap-3 flex-wrap mb-12">
             <a href="#telegram" className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium hover:bg-blue-500/20 transition-colors">Telegram Bot</a>
-            <a href="#userbot" className="px-4 py-2 rounded-lg bg-violet-600/10 border border-violet-600/20 text-violet-600 text-sm font-medium hover:bg-violet-600/20 transition-colors">Telegram Userbot</a>
           </div>
 
           <div id="telegram"><PlatformSection platform="telegram" /></div>
-          <div id="userbot"><PlatformSection platform="userbot" /></div>
         </div>
       </div>
       <Footer />

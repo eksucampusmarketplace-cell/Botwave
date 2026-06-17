@@ -9,7 +9,7 @@ const terminalLines = [
   { cls: 'output', text: '→ Setting up your workspace...' },
   { cls: 'blank', text: '' },
   { cls: 'comment', text: '# What you get:' },
-  { cls: 'flag', text: '  → Telegram Bot & Userbot automation' },
+  { cls: 'flag', text: '  → Telegram Bot automation' },
   { cls: 'flag', text: '  → 50+ automation commands' },
   { cls: 'flag', text: '  → AI chatbot (BYOK)' },
   { cls: 'flag', text: '  → Sticker maker & media tools' },

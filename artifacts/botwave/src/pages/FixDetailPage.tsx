@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { fixPages } from '@/lib/fix/data';
 
 const fixContent: Record<string, string> = {
-  'whatsapp-bot-disconnected': `## Why Telegram Bots Disconnect
+  'telegram-bot-disconnected': `## Why Telegram Bots Disconnect
 
 Telegram Bot sessions are long-lived API connections. They can occasionally drop for a few reasons.
 
@@ -39,9 +39,9 @@ If the bot was removed from a group it was polling, it may show as disconnected.
 4. Verify your bot token is still valid in @BotFather
 5. Wait 5-10 seconds for connection`,
 
-  'whatsapp-bot-banned': `## Telegram Bot Restrictions
+  'telegram-bot-banned': `## Telegram Bot Restrictions
 
-Unlike unofficial messaging APIs, Telegram Bots use the official Bot API — so there is zero platform ban risk for bots. However, Telegram Userbots (personal account automation) can sometimes get restricted.
+Unlike unofficial messaging APIs, Telegram Bots use the official Bot API — so there is zero platform ban risk for bots. However, Telegram Bots (personal account automation) can sometimes get restricted.
 
 ### Telegram Bot (zero ban risk)
 Telegram bots are officially supported and encouraged by Telegram. Your bot cannot be "banned" by Telegram for normal automation use. The only way a bot gets disabled is if:
@@ -49,13 +49,13 @@ Telegram bots are officially supported and encouraged by Telegram. Your bot cann
 - Telegram removes it for ToS violations (spam, scams, illegal content)
 - Your token expires (it doesn't — tokens are permanent unless revoked)
 
-### Telegram Userbot Restrictions
-Userbots use your real Telegram account via MTProto. Telegram can restrict accounts for:
+### Telegram Bot Restrictions
+Telegram bots can be restricted if abused. Common causes:
 - Sending spam to users who haven't messaged you first
 - Rapid joining/leaving many groups
 - Getting reported by many users
 
-### If Your Userbot Account Got Restricted
+### If Your Bot Gets Restricted
 
 1. **SpamBot check**: Message @SpamBot on Telegram — it will tell you if you're restricted
 2. **Request unban**: @SpamBot also has an "I didn't send spam" button for appeals
@@ -66,9 +66,9 @@ Userbots use your real Telegram account via MTProto. Telegram can restrict accou
 
 - Only message users who have messaged you first
 - Don't mass-join groups you didn't create
-- Keep your message rate under 50 per hour for Userbots`,
+- Keep your message rate reasonable to avoid rate limits`,
 
-  'whatsapp-qr-not-scanning': `## Fix Telegram Bot Token Not Working
+  'telegram-qr-not-scanning': `## Fix Telegram Bot Token Not Working
 
 ### Quick Diagnosis
 

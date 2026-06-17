@@ -1211,7 +1211,7 @@ export const howToContent: Record<string, HowToContent> = {
     prerequisites: ['BotWave session.', 'Phone with Telegram.'],
     steps: [
       { title: 'Dashboard → Sessions → New', body: 'Pick "Connect via QR" instead of pairing code.' },
-      { title: 'Open Telegram → Linked Devices → Link a Device', body: 'Hold the phone\'s camera up to the QR code on the dashboard.' },
+      { title: 'Open Telegram → Linked Devices → Link a Device', body: 'Hold the phone\'s camera up to the bot token on the dashboard.' },
       { title: 'Wait for handshake', body: '5-10 seconds. The session flips to Connected.' },
     ],
     expectedResult: 'Linked Device entry appears in Telegram; BotWave session is live.',

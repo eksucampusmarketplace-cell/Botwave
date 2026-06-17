@@ -19,30 +19,19 @@ export type SessionState =
   | 'connecting'
   | 'needs_reauth';
 
-export type Platform = 'telegram_bot' | 'telegram_userbot';
+export type Platform = 'telegram-bot';
 
 export interface BotSession {
   id: string;
   user_id: string;
-  phone_number: string;
   session_name: string;
   state: SessionState;
   last_active: string | null;
   created_at: string;
   updated_at: string;
-  evolution_instance_id?: string;
-  assigned_instance?: string;
-  qr_code?: string;
-  qr_generated_at?: string;
-  pairing_code?: string;
-  queue_position?: number | null;
-  last_pairing_error?: string | null;
   platform?: Platform;
   telegram_bot_token?: string;
   telegram_bot_username?: string;
-  telegram_api_id?: number;
-  telegram_api_hash?: string;
-  telegram_session_string?: string;
   proxy_type?: 'shared' | 'custom';
   proxy_host?: string;
   proxy_port?: string;
@@ -81,7 +70,6 @@ export interface AdminStats {
   totalMessages: number;
   totalCommands: number;
   systemStatus: string;
-  evolutionStatus: string;
 }
 
 // ─── Message Types ────────────────────────────────────────────────────────────
@@ -89,13 +77,13 @@ export interface AdminStats {
 export interface Message {
   id: string;
   session_id: string;
-  sender_jid: string;
+  sender_id: string;
   sender_name: string | null;
   content: string | null;
   message_type: 'text' | 'image' | 'video' | 'audio' | 'sticker' | 'document';
   timestamp: string;
   is_group: boolean;
-  group_jid: string | null;
+  group_id: string | null;
 }
 
 // ─── User Types ───────────────────────────────────────────────────────────────
@@ -156,7 +144,6 @@ export interface Subscription {
   ai_daily_limit: number;
   billing_start: string | null;
   next_renewal: string | null;
-  squad_transaction_ref: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -170,8 +157,7 @@ export interface Payment {
   currency: string;
   plan: string;
   status: 'pending' | 'success' | 'failed';
-  squad_transaction_ref: string | null;
-  squad_gateway_ref: string | null;
+  payment_ref: string | null;
   payment_channel: string | null;
   created_at: string;
 }
@@ -193,17 +179,5 @@ export interface RewardTransaction {
   action: string;
   amount: number;
   description: string | null;
-  created_at: string;
-}
-
-export interface AirtimeCashout {
-  id: string;
-  user_id: string;
-  phone_number: string;
-  amount: number;
-  network: string | null;
-  status: 'pending' | 'success' | 'failed';
-  inlomax_reference: string | null;
-  error_message: string | null;
   created_at: string;
 }

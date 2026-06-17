@@ -1,37 +1,21 @@
 
-
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import SessionHealthBadge from './SessionHealthBadge';
 
-type Platform = 'telegram_bot' | 'telegram_userbot';
-
 interface SessionCardProps {
   name: string;
-  phone: string;
   status: 'connected' | 'disconnected' | 'pending' | 'active' | 'inactive' | 'needs_reauth' | 'connecting';
   lastPairingError?: string | null;
   lastActive: string;
   lastActiveRaw?: string | null;
-  platform?: Platform;
   sessionId?: string;
   onConnect: () => void;
   onDisconnect?: () => void;
   onDelete?: () => void;
 }
 
-const platformIcons: Record<Platform, string> = {
-  telegram_bot: '🤖',
-  telegram_userbot: '👤',
-};
-
-const platformLabels: Record<Platform, string> = {
-  telegram_bot: 'TG Bot',
-  telegram_userbot: 'TG User',
-};
-
-export default function SessionCard({ name, phone, status, lastActive, lastActiveRaw, platform, sessionId, lastPairingError, onConnect, onDisconnect, onDelete }: SessionCardProps) {
-  // Detect stale sessions: active but last_active > 2 hours ago
+export default function SessionCard({ name, status, lastActive, lastActiveRaw, sessionId, lastPairingError, onConnect, onDisconnect, onDelete }: SessionCardProps) {
   const isStale = (() => {
     if (status !== 'active' && status !== 'connected') return false;
     if (!lastActiveRaw) return false;
@@ -39,6 +23,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
     if (isNaN(lastActiveTime)) return false;
     return Date.now() - lastActiveTime > 2 * 60 * 60 * 1000;
   })();
+
   const statusColors = {
     connected: 'bg-green-500 text-white',
     active: 'bg-green-500 text-white',
@@ -64,21 +49,17 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
       whileHover={{ scale: 1.01 }}
       className="bg-[var(--card-bg,var(--surface))] border border-[var(--border)] p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-sm"
     >
-
       <div className="flex items-center gap-4">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${statusColors[status]}`}>
-          {platform ? platformIcons[platform] : name[0]}
+          🤖
         </div>
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-[var(--text-primary)]">{name}</h3>
-            {platform && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
-                {platformLabels[platform]}
-              </span>
-            )}
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+              TG Bot
+            </span>
           </div>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">{phone}</p>
           <p className="text-xs text-[var(--text-muted)] mt-1">Last active: {lastActive}</p>
           {isStale && (
             <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5 font-medium">
@@ -118,7 +99,7 @@ export default function SessionCard({ name, phone, status, lastActive, lastActiv
             DISCONNECT
           </motion.button>
         )}
-        {sessionId && (platform === 'telegram_bot' || platform === 'telegram_userbot') && (status === 'connected' || status === 'active') && (
+        {sessionId && (status === 'connected' || status === 'active') && (
           <Link href={`/dashboard/telegram/${sessionId}`}>
             <motion.button
               whileHover={{ scale: 1.05 }}

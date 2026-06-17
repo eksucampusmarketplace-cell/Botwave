@@ -13,8 +13,6 @@ interface SessionHealthProps {
   total: number;
   active: number;
   needsReauth: number;
-  pairingSent: number;
-  qrPending: number;
   inactive: number;
   sessions?: SessionDetail[];
 }
@@ -28,7 +26,7 @@ function formatLatency(lastActive: string | null): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-export default function SessionHealthWidget({ total, active, needsReauth, pairingSent, qrPending, inactive, sessions }: SessionHealthProps) {
+export default function SessionHealthWidget({ total, active, needsReauth, inactive, sessions }: SessionHealthProps) {
   const healthPercent = total > 0 ? Math.round((active / total) * 100) : 0;
 
   const healthColor = healthPercent >= 70
@@ -59,7 +57,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
         Session Health
       </h2>
 
-      {/* Health ratio */}
       <div className="flex items-center justify-between mb-2">
         <span className={`text-2xl font-bold ${healthColor}`}>
           {healthPercent}%
@@ -69,7 +66,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
         </span>
       </div>
 
-      {/* Progress bar */}
       <div className="w-full h-2 bg-[var(--border)] rounded-full overflow-hidden mb-4">
         <motion.div
           initial={{ width: 0 }}
@@ -79,7 +75,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
         />
       </div>
 
-      {/* Connected vs total */}
       <div className="flex justify-between items-center mb-4">
         <span className="text-sm text-[var(--text-secondary)] font-medium">Connected</span>
         <span className="text-sm font-semibold text-[var(--text-primary)]">
@@ -87,7 +82,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
         </span>
       </div>
 
-      {/* Breakdown */}
       <div className="space-y-2.5 border-t border-[var(--border)] pt-3">
         <div className="flex justify-between items-center">
           <span className="text-sm text-[var(--text-secondary)]">
@@ -105,24 +99,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
             <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-500">{needsReauth}</span>
           </div>
         )}
-        {pairingSent > 0 && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-[var(--text-secondary)]">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2" />
-              Pairing Sent
-            </span>
-            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{pairingSent}</span>
-          </div>
-        )}
-        {qrPending > 0 && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-[var(--text-secondary)]">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-400 mr-2" />
-              QR Pending
-            </span>
-            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{qrPending}</span>
-          </div>
-        )}
         {inactive > 0 && (
           <div className="flex justify-between items-center">
             <span className="text-sm text-[var(--text-secondary)]">
@@ -134,7 +110,6 @@ export default function SessionHealthWidget({ total, active, needsReauth, pairin
         )}
       </div>
 
-      {/* Per-session latency details */}
       {sessions && sessions.length > 0 && (
         <div className="border-t border-[var(--border)] pt-3 mt-3 space-y-2">
           <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
